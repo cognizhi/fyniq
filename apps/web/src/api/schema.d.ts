@@ -26240,6 +26240,17 @@ export interface components {
              */
             id: string;
             /**
+             * @description How many options vest that day.
+             * @example 1000
+             */
+            next_vests?: string;
+            /**
+             * Format: date
+             * @description The next day more of it vests, a month's day after today; left out when nothing more will.
+             * @example 2026-11-15
+             */
+            next_vests_on?: string;
+            /**
              * @description A note.
              * @example New hire grant
              */
@@ -26305,10 +26316,35 @@ export interface components {
              */
             class_code?: string;
             /**
+             * @description Of those, the options vested: what exercises may take.
+             * @example 40000
+             */
+            exercisable: string;
+            /**
+             * @description The options effective exercises turned into shares by the day, never back in the pool.
+             * @example 0
+             */
+            exercised: string;
+            /**
+             * @description The options their expiries let lapse by the day.
+             * @example 0
+             */
+            expired: string;
+            /**
+             * @description The options the recorded grants' forfeitures took by the day.
+             * @example 45000
+             */
+            forfeited: string;
+            /**
              * @description The options the recorded grants granted on or before the day.
              * @example 68000
              */
             granted: string;
+            /**
+             * @description The recorded grants' options not exercised, forfeited or expired at the end of the day.
+             * @example 425000
+             */
+            outstanding: string;
             /** @description Every resolution, drafts and recorded, the latest passed first. */
             resolutions: components["schemas"]["PoolResolutionView"][];
             /**

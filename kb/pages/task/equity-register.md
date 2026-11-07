@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
 sources:
-  - docs/user-guide/equity-register.md sha256:843c313e1a446f2712d37650df152cd7347eb8550bb7b0266d09fa40170582cf
+  - docs/user-guide/equity-register.md sha256:4574d09e37dfaba9f92713ac08871f9d30062b9cb1c9074613134a854d78dfc5
 data_class: general
 taint: trusted
 status: published
@@ -83,6 +83,8 @@ aliases:
   - leaver options
   - exercise options
   - exercise price
+  - my shares and options
+  - my options vesting
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -321,6 +323,26 @@ aliases:
   an exercise price of 0 is not exercised this way yet [accountant to confirm].
 
 (src: docs/user-guide/equity-register.md#the-option-pool-and-grants)
+
+## Record the pool and a grant
+
+- **Equity › Option pool** shows the pool (size by resolution, granted, forfeited or expired back in
+  it, exercised and now shares, outstanding, vested, **available**), every grant with its vesting,
+  expiry and status, what vests or expires in the next 30 days, and the resolutions that set it.
+- An Accountant selects **Record a resolution** (shares set aside, class, day passed) or **New
+  grant** (holder, options, exercise price, grant date, vesting, expiry), attaches the signed
+  resolution or the grant letter on its page and selects **Ask for approval**; on a recorded grant,
+  **Forfeit or let lapse** drafts a forfeiture or expiry with its notice.
+
+(src: docs/user-guide/equity-register.md#record-the-pool-and-a-grant)
+
+## My shares and options
+
+- A person whose sign-in is linked to their contact sees their own grants under **My shares and
+  options**: vested, what vests next and when, the exercise price, the vesting and what is
+  exercised. Nobody else's, and no cash value; to exercise, they ask the finance team.
+
+(src: docs/user-guide/equity-register.md#my-shares-and-options)
 
 ## Correct a transaction
 

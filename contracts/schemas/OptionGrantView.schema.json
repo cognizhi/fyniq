@@ -151,6 +151,21 @@
       "format": "uuid",
       "type": "string"
     },
+    "next_vests": {
+      "description": "How many options vest that day.",
+      "examples": [
+        "1000"
+      ],
+      "type": "string"
+    },
+    "next_vests_on": {
+      "description": "The next day more of it vests, a month's day after today; left out when nothing more will.",
+      "examples": [
+        "2026-11-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
     "note": {
       "description": "A note.",
       "examples": [

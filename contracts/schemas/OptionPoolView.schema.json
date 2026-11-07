@@ -25,10 +25,45 @@
       ],
       "type": "string"
     },
+    "exercisable": {
+      "description": "Of those, the options vested: what exercises may take.",
+      "examples": [
+        "40000"
+      ],
+      "type": "string"
+    },
+    "exercised": {
+      "description": "The options effective exercises turned into shares by the day, never back in the pool.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "expired": {
+      "description": "The options their expiries let lapse by the day.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "forfeited": {
+      "description": "The options the recorded grants' forfeitures took by the day.",
+      "examples": [
+        "45000"
+      ],
+      "type": "string"
+    },
     "granted": {
       "description": "The options the recorded grants granted on or before the day.",
       "examples": [
         "68000"
+      ],
+      "type": "string"
+    },
+    "outstanding": {
+      "description": "The recorded grants' options not exercised, forfeited or expired at the end of the day.",
+      "examples": [
+        "425000"
       ],
       "type": "string"
     },
@@ -66,6 +101,11 @@
     "size",
     "granted",
     "returned",
+    "forfeited",
+    "expired",
+    "exercised",
+    "outstanding",
+    "exercisable",
     "unallocated",
     "resolutions"
   ],

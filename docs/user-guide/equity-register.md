@@ -2,7 +2,7 @@
 key: equity.register
 title: Equity register
 mode: basic
-roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary]
+roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary, employee]
 requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
@@ -282,6 +282,29 @@ monies: it then posts Dr 2040 Share application monies · Cr share capital with 
 exercise price, and the holder holds the shares. Exercised options never return to the pool; a
 reversal of the exercise makes them outstanding again. A grant at an exercise price of 0 is not
 exercised this way yet: ask your accountant [accountant to confirm].
+
+## Record the pool and a grant
+
+**Equity › Option pool** shows the pool: its size by resolution, the options granted, those
+forfeited or expired back in the pool, those exercised and now shares, what is outstanding and
+vested, and what is **available** to grant. Below it are every grant with its vesting, expiry and
+status, what vests or expires in the next 30 days, and the resolutions that set the pool.
+
+- To set or enlarge the pool, an Accountant selects **Record a resolution**: the shares set aside,
+  the class and the day it was passed. On its page they attach the signed resolution and select
+  **Ask for approval**.
+- To grant options, they select **New grant**: the holder, the options, the exercise price, the
+  grant date, the vesting and the expiry. On the grant's page they attach the grant letter and ask
+  for approval.
+- On a recorded grant, **Forfeit or let lapse** drafts a forfeiture or expiry; attach its notice
+  and ask for approval there.
+
+## My shares and options
+
+Under **My shares and options**, a person whose sign-in is linked to their contact sees their own
+grants: the options vested, what vests next and when, the exercise price, the vesting and what is
+exercised. Nobody else's grants, and no cash value: an option's worth depends on a future sale or
+funding round. To exercise vested options, they ask the company's finance team.
 
 ## Correct a transaction
 
