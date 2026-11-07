@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary, employee]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -99,6 +99,49 @@ new one instead.
 Who sees what: the Owner, the Controller, the Accountant, the Auditor and the Tax agent read the
 holders. The data protection officer reads them masked and opens no file. Identity documents are
 never opened in the app; they stay in the evidence store for the audit.
+
+## Record an investor's rights
+
+On a holder's page, **Rights from the agreements** shows what the agreements give them: the
+directors they may appoint, a board observer seat, whether they appoint or remove a majority of
+the board, their information rights (what and when), a pro-rata right in later rounds, and the
+matters that need their consent. Fyniq records these rights; it computes nothing from them.
+
+- An Accountant selects **Record rights**, names the agreements the rights come from and the day
+  they apply from, attaches the agreements (the shareholders' agreement, a side letter or the
+  subscription agreement) and selects **Ask for approval**. Another Owner or the Controller records
+  them, never the holder. Rights recorded later supersede them.
+- A board majority, or any consent matter, **could confer control**: the holder is then named in the
+  controller test for the company secretary to weigh.
+
+## Registrable controllers and the exempt status
+
+A holder with **more than 25%** of the shares or of the votes is a **registrable controller**. The
+company enters them in its register of registrable controllers within 7 days, and updates ACRA's
+central register within 2 business days after that [verify against ACRA's guidance in force]. It
+sends each controller a notice at least once a year; the reply is due within 30 days, and the
+register is updated within 7 days of it.
+
+- On a holder's page, **Registrable controller** shows what the cap table's test finds, where the
+  registers stand and what is due: **Enter in the register by**, **Update ACRA's register by**, or
+  **In both registers**. The 2 business days leave out weekends only, so the day shown is never
+  later than the law's [verify a public-holiday calendar].
+- Rights that could confer control cannot be tested from the cap table. Until the company
+  secretary's conclusion is recorded, the holder is **Not assessed**, and the check is never all
+  clear.
+- An Accountant selects **Record the conclusion**: a registrable controller, on their grounds and
+  from the day they became one, with the days of both registers and the yearly notices; or not a
+  controller, with the reason. They attach the company secretary's confirmation and ask for
+  approval; another Owner or the Controller records it, never the holder. To add a register day, a
+  notice or the day they ceased, they select **Update the entry**.
+- The checks show what is due: a controller to enter or to lodge, a yearly notice due, a notice
+  unanswered after 30 days, or a controller who no longer holds more than 25%.
+
+Each change to the register also tests the **exempt-private-company status** again: more than 20
+members, or a member that is a company or another entity, ends it [accountant to confirm the Act's
+exceptions]. The test reads each member's holder record, which says individual or entity. When the
+register says otherwise than the status recorded, the checks warn: record the new status from the
+ACRA business profile, and re-check the directors' accounts in debit.
 
 ## Share classes
 

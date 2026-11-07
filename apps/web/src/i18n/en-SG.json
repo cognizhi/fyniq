@@ -480,6 +480,38 @@
       "label": "Holder",
       "tooltip": "A holder's details in force, a draft waiting for approval, their earlier records and their share issues."
     },
+    "holder.rights": {
+      "label": "Rights from the agreements",
+      "tooltip": "The holder's board seats, observer, board majority, information rights, pro-rata and consent matters, as the agreements give them."
+    },
+    "holder.controller": {
+      "label": "Registrable controller",
+      "tooltip": "Whether the holder is a registrable controller: more than 25% of the shares or votes, or rights that confer control."
+    },
+    "investor-rights.draft": {
+      "label": "Record rights",
+      "tooltip": "Record the rights the agreements give the holder. Another Owner or the Controller approves them, never the holder."
+    },
+    "investor-rights.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the drafted rights, with the agreements attached, to another Owner or the Controller to record."
+    },
+    "investor-rights.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the agreements the rights come from: the shareholders' agreement, a side letter or the subscription agreement."
+    },
+    "controller-entry.draft": {
+      "label": "Record the conclusion",
+      "tooltip": "Record whether the holder is a registrable controller, with the register days and the yearly notices, or why they are not."
+    },
+    "controller-entry.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the drafted entry, with the company secretary's confirmation, to another Owner or the Controller to record."
+    },
+    "controller-entry.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply."
+    },
     "equity.classes": {
       "label": "Share classes and rights",
       "tooltip": "Each share class with its rights as the constitution gives them, recorded on another person's approval."

@@ -16,7 +16,7 @@ const recorded = { id: "hr-1", contact_id: "c-mei", status: "recorded" as const,
   details: { kind: "individual" as const, id_type: "nric" as const, id_last4: "567D", nationality: "Singaporean", address: "1 Example Road, Singapore 000001", contact_people: [] } };
 const issue = { id: "si-1", holder_id: "c-mei", holder_name: "Mei Lin Tan", class_account_id: "acc-3010", class_code: "3010", shares: "10000", price: "1.00",
   amount: { amount: "10000.00", currency: "SGD" }, consideration: "cash", resolution_refs: "Incorporation subscription", effective_on: "2025-01-02", before_books: true, recorded_at: "2026-11-03T09:00:00Z" };
-const detail = (extra = {}) => ({ ...mei, record: recorded, history: [recorded], issues: [issue], ...extra });
+const detail = (extra = {}) => ({ ...mei, record: recorded, history: [recorded], issues: [issue], rights_history: [], controller_history: [], ...extra });
 
 // req: FR-EQ-15
 // req: FR-EQ-27
