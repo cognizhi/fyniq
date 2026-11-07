@@ -53,11 +53,20 @@ func originProblem(acc Account, origin, field string) *Problem {
 	return nil
 }
 
-// partyProblem is what is wrong with the person of a line to acc, if anything; field names the line's person. A rule
-// whose settings list no people (Settings.People nil) checks only that the person is there exactly when it must be;
-// the database refuses a contact that is not a director or shareholder either way (FY250).
+// partyProblem is what is wrong with the person of a line to acc, if anything; field names the line's person: a
+// director's account names a director or shareholder, share application monies a shareholder or investor, and no other
+// line a person. A rule whose settings list no people (Settings.People or Subscribers nil) checks only that the person
+// is there exactly when it must be; the database refuses the wrong contact either way (FY250).
 func partyProblem(s Settings, acc Account, party uuid.UUID, field string) *Problem {
 	switch {
+	case acc.SubscriberAccount() && party == uuid.Nil: // B.7: share application monies name their subscriber
+		return &Problem{CodeParty, field, fmt.Sprintf("account %s holds share application monies, so the line names its subscriber", acc.Code),
+			"Choose the shareholder or investor who paid for shares not yet allotted"}
+	case acc.SubscriberAccount() && s.Subscribers != nil && !s.Subscribers[party]:
+		return &Problem{CodeParty, field, "the subscriber is not a shareholder or investor of this organisation",
+			"Choose a contact marked shareholder or investor, or mark the contact as one"}
+	case acc.SubscriberAccount():
+		return nil
 	case acc.DirectorAccount() && party == uuid.Nil:
 		return &Problem{CodeParty, field, fmt.Sprintf("account %s is a director's account, so the line names whose it is", acc.Code),
 			"Choose the director or shareholder the amount belongs to"}

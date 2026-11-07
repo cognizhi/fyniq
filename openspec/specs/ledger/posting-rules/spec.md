@@ -860,6 +860,12 @@ Source: PRD-001 §B.7
 - **WHEN** the issue is posted
 - **THEN** it debits share application monies instead of Bank
 
+#### Scenario: Built as share_issue_cash@1, never unpaid (rev 0.205)
+- **GIVEN** an approved cash issue to one subscriber
+- **WHEN** it is made effective while the subscriber's share application monies on that day are less than its amount
+- **THEN** it is refused
+- **AND** once they cover it, the register posts Dr share application monies naming the subscriber · Cr 3010 or 3020 on the effective date
+
 ### Requirement: Cash received before an allotment takes effect
 Cash received before an allotment takes effect SHALL wait in share application monies pending allotment, a liability per subscriber, whose code and classification are set in the CoA review [accountant to confirm].
 

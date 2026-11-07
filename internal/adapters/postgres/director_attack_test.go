@@ -289,8 +289,22 @@ VALUES ($1, $2, $3, 100, 1, 'SGD', 2, $4::numeric, 'cash', 'Board resolution 14 
 			issue, d.director.ID, class, credited, entryID, d.member); err != nil {
 			return err
 		}
-		return auditRaw(ctx, tx, "share_issue.recorded", "share_issue", issue)
+		if err := auditRaw(ctx, tx, "share_issue.recorded", "share_issue", issue); err != nil {
+			return err
+		}
+		return rawIssueMovement(ctx, tx, issue, d.director.ID, class, "100", "2026-10-14", d.member)
 	})
+}
+
+// rawIssueMovement writes a share issue's holding movement, audited, as equity.RecordIssue does (FY288).
+func rawIssueMovement(ctx context.Context, tx pgx.Tx, issue, holder, class uuid.UUID, shares, on string, by uuid.UUID) error {
+	id := uuid.Must(uuid.NewV7())
+	if _, err := tx.Exec(ctx, `
+INSERT INTO fyniq.holding_movement (id, kind, share_issue_id, holder_id, class_account_id, shares, effective_on, recorded_by, recorded_at)
+VALUES ($1, 'issue', $2, $3, $4, $5::numeric, $6::date, $7, now())`, id, issue, holder, class, shares, on, by); err != nil {
+		return err
+	}
+	return auditRaw(ctx, tx, "holding.moved", "holding_movement", id)
 }
 
 // Share capital moves only with the register of share issues (FR-EQ-08, INV-13; FY255): an entry from the source

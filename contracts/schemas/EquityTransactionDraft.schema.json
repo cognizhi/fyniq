@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "class_conversion between accounts: the carrying amount of the shares converted, in the base currency [accountant to confirm the basis]. Shown for issue_cash: shares × price under RND-LINE.",
+      "examples": [
+        "125000.00"
+      ],
+      "type": "string"
+    },
+    "buyer_id": {
+      "description": "transfer: the holder they go to, a contact marked shareholder or investor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_account_id": {
+      "description": "The class's share-capital account (3010 ordinary, 3020 preference); a conversion's class it converts from.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_id": {
+      "description": "The share class, a recorded class of that account (FR-EQ-16). Left out: the account's first recorded class, if it has one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "issue_cash: the subscriber, a contact marked shareholder or investor; class_conversion: the holder whose shares convert.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction.",
+      "enum": [
+        "issue_cash",
+        "transfer",
+        "class_conversion",
+        "reversal"
+      ],
+      "examples": [
+        "issue_cash"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "A note for the register.",
+      "examples": [
+        "Seed round, second close"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "price": {
+      "description": "issue_cash: the price per share in the base currency, above zero, at most 6 decimals; transfer: the price agreed per share, for information (share duty is the parties' matter).",
+      "examples": [
+        "2.40"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "reversal: what was wrong, such as the ACRA extract shows another number of shares (FR-EQ-26).",
+      "examples": [
+        "ACRA's register shows 50,000 shares, not 52,083"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "resolution_refs": {
+      "description": "The shareholders' approval and the board resolution, by reference: needed for an issue and a conversion.",
+      "examples": [
+        "Board resolution 5 Mar 2027; shareholders' resolution 5 Mar 2027"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "reverses_id": {
+      "description": "reversal: the effective transaction it undoes.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "seller_id": {
+      "description": "transfer: the holder the shares come from.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "shares": {
+      "description": "The number of shares, a whole number above zero; a conversion's shares out.",
+      "examples": [
+        "52083"
+      ],
+      "type": "string"
+    },
+    "to_class_account_id": {
+      "description": "class_conversion: the share-capital account of the class the shares convert into.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "to_class_id": {
+      "description": "class_conversion: the class they convert into.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "to_shares": {
+      "description": "class_conversion: the number of shares in, a whole number above zero.",
+      "examples": [
+        "52083"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "title": "EquityTransactionDraft",
+  "type": "object"
+}

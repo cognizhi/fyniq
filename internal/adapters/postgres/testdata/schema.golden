@@ -774,6 +774,20 @@ heartbeat | detail | text | null |
 heartbeats | name | text | null | 
 heartbeats | last_beat | timestamp with time zone | null | 
 heartbeats | detail | text | null | 
+holding_movement | organisation_id | uuid | not null | current_org()
+holding_movement | id | uuid | not null | uuidv7()
+holding_movement | kind | text | not null | 
+holding_movement | transaction_id | uuid | null | 
+holding_movement | share_issue_id | uuid | null | 
+holding_movement | reverses_id | uuid | null | 
+holding_movement | holder_id | uuid | not null | 
+holding_movement | class_account_id | uuid | not null | 
+holding_movement | class_id | uuid | null | 
+holding_movement | shares | numeric(16,0) | not null | 
+holding_movement | effective_on | date | not null | 
+holding_movement | recorded_by | uuid | not null | 
+holding_movement | recorded_at | timestamp with time zone | not null | 
+holding_movement | created_xact | bigint | not null | ((pg_current_xact_id())::text)::bigint
 idempotency_key | organisation_id | uuid | not null | current_org()
 idempotency_key | id | uuid | not null | uuidv7()
 idempotency_key | client_id | text | not null | 
@@ -1586,7 +1600,7 @@ account | account_pkey | PRIMARY KEY (organisation_id, id)
 account | account_required_dimension_ids_not_null | NOT NULL required_dimension_ids
 account | account_revalue_monetary | CHECK (((NOT revalue) OR ((type = ANY (ARRAY['asset'::text, 'liability'::text])) AND (role IS DISTINCT FROM 'prepayments'::text) AND (role IS DISTINCT FROM 'deferred-revenue'::text) AND (role IS DISTINCT FROM 'customer-deposits'::text))))
 account | account_revalue_not_null | NOT NULL revalue
-account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text])))
+account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text, 'share-application-monies'::text])))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
 account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (useful_life_months <= 600)))
@@ -1760,7 +1774,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -1788,7 +1802,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -2490,7 +2504,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_pay_choice'::text, 'director_fee'::text, 'exempt_status'::text, 'director_confirmation'::text, 'director_settlement'::text, 'director_repayment'::text, 'account_merge'::text, 'owner_succession'::text, 'holder_record'::text, 'share_class'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_pay_choice'::text, 'director_fee'::text, 'exempt_status'::text, 'director_confirmation'::text, 'director_settlement'::text, 'director_repayment'::text, 'account_merge'::text, 'owner_succession'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text])))
 document | document_type_not_null | NOT NULL type
 document | expense_claim_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | payee_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2565,7 +2579,7 @@ document_sequence | document_sequence_pkey | PRIMARY KEY (organisation_id, id)
 document_sequence | document_sequence_prefix_format | CHECK ((prefix ~ '^[A-Z0-9][A-Z0-9/-]{0,11}$'::text))
 document_sequence | document_sequence_prefix_not_null | NOT NULL prefix
 document_sequence | document_sequence_type_key | UNIQUE (organisation_id, document_type)
-document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text])))
+document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'equity_transaction'::text])))
 document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2800,6 +2814,31 @@ heartbeat | heartbeat_last_beat_not_null | NOT NULL last_beat
 heartbeat | heartbeat_name_format | CHECK (((name ~ '^[a-z][a-z0-9_.]*$'::text) AND (length(name) <= 100)))
 heartbeat | heartbeat_name_not_null | NOT NULL name
 heartbeat | heartbeat_pkey | PRIMARY KEY (name)
+holding_movement | holding_movement_account_fkey | FOREIGN KEY (organisation_id, class_account_id) REFERENCES account(organisation_id, id)
+holding_movement | holding_movement_class_account_id_not_null | NOT NULL class_account_id
+holding_movement | holding_movement_class_fkey | FOREIGN KEY (organisation_id, class_id) REFERENCES document(organisation_id, id)
+holding_movement | holding_movement_created_xact_not_null | NOT NULL created_xact
+holding_movement | holding_movement_effective_on_not_null | NOT NULL effective_on
+holding_movement | holding_movement_holder_fkey | FOREIGN KEY (organisation_id, holder_id) REFERENCES contact(organisation_id, id)
+holding_movement | holding_movement_holder_id_not_null | NOT NULL holder_id
+holding_movement | holding_movement_id_not_null | NOT NULL id
+holding_movement | holding_movement_issue_once | UNIQUE (organisation_id, share_issue_id)
+holding_movement | holding_movement_kind_known | CHECK ((kind = ANY (ARRAY['issue'::text, 'transfer'::text, 'class_conversion'::text, 'reversal'::text])))
+holding_movement | holding_movement_kind_names | CHECK ((((kind = 'issue'::text) AND (share_issue_id IS NOT NULL) AND (reverses_id IS NULL) AND (shares > (0)::numeric)) OR ((kind = ANY (ARRAY['transfer'::text, 'class_conversion'::text])) AND (transaction_id IS NOT NULL) AND (share_issue_id IS NULL) AND (reverses_id IS NULL)) OR ((kind = 'reversal'::text) AND (transaction_id IS NOT NULL) AND (share_issue_id IS NULL) AND (reverses_id IS NOT NULL))))
+holding_movement | holding_movement_kind_not_null | NOT NULL kind
+holding_movement | holding_movement_organisation_id_not_null | NOT NULL organisation_id
+holding_movement | holding_movement_pkey | PRIMARY KEY (organisation_id, id)
+holding_movement | holding_movement_recorded_at_not_null | NOT NULL recorded_at
+holding_movement | holding_movement_recorded_by_fkey | FOREIGN KEY (recorded_by) REFERENCES app_user(user_id)
+holding_movement | holding_movement_recorded_by_not_null | NOT NULL recorded_by
+holding_movement | holding_movement_reversed_once | UNIQUE (organisation_id, reverses_id)
+holding_movement | holding_movement_reverses_fkey | FOREIGN KEY (organisation_id, reverses_id) REFERENCES holding_movement(organisation_id, id)
+holding_movement | holding_movement_settled | TRIGGER DEFERRABLE INITIALLY DEFERRED
+holding_movement | holding_movement_share_issue_fkey | FOREIGN KEY (organisation_id, share_issue_id) REFERENCES share_issue(organisation_id, id)
+holding_movement | holding_movement_shares_nonzero | CHECK (((shares <> 'NaN'::numeric) AND (shares <> (0)::numeric)))
+holding_movement | holding_movement_shares_not_null | NOT NULL shares
+holding_movement | holding_movement_transaction_fkey | FOREIGN KEY (organisation_id, transaction_id) REFERENCES document(organisation_id, id)
+holding_movement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 idempotency_key | idempotency_key_client_id_not_null | NOT NULL client_id
 idempotency_key | idempotency_key_client_key | UNIQUE (organisation_id, client_id, key)
 idempotency_key | idempotency_key_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -3002,6 +3041,7 @@ join_request | join_request_status_not_null | NOT NULL status
 join_request | join_request_subject_not_null | NOT NULL subject
 join_request | join_request_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 join_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+journal_entry | equity_transaction_entry_registered | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | journal_entry_balanced | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | journal_entry_created_xact_not_null | NOT NULL created_xact
 journal_entry | journal_entry_id_not_null | NOT NULL id
@@ -3747,6 +3787,7 @@ share_issue | share_issue_id_not_null | NOT NULL id
 share_issue | share_issue_lodgement_length | CHECK (((lodgement_ref IS NULL) OR ((length(btrim(lodgement_ref)) >= 1) AND (length(btrim(lodgement_ref)) <= 100))))
 share_issue | share_issue_minor_units | CHECK (((minor_units >= 0) AND (minor_units <= 4)))
 share_issue | share_issue_minor_units_not_null | NOT NULL minor_units
+share_issue | share_issue_moved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 share_issue | share_issue_organisation_id_not_null | NOT NULL organisation_id
 share_issue | share_issue_pkey | PRIMARY KEY (organisation_id, id)
 share_issue | share_issue_price_not_null | NOT NULL price
@@ -4048,6 +4089,8 @@ CREATE INDEX evidence_original_sha256 ON fyniq.evidence USING btree (organisatio
 CREATE INDEX evidence_sha256 ON fyniq.evidence USING btree (organisation_id, sha256)
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
+CREATE INDEX holding_movement_holder ON fyniq.holding_movement USING btree (organisation_id, holder_id, class_account_id, effective_on)
+CREATE INDEX holding_movement_transaction ON fyniq.holding_movement USING btree (organisation_id, transaction_id)
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
 CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisation_id, message_id)
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
@@ -4210,6 +4253,9 @@ CREATE UNIQUE INDEX fx_rate_day_current ON fyniq.fx_rate USING btree (organisati
 CREATE UNIQUE INDEX fx_rate_pkey ON fyniq.fx_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
+CREATE UNIQUE INDEX holding_movement_issue_once ON fyniq.holding_movement USING btree (organisation_id, share_issue_id)
+CREATE UNIQUE INDEX holding_movement_pkey ON fyniq.holding_movement USING btree (organisation_id, id)
+CREATE UNIQUE INDEX holding_movement_reversed_once ON fyniq.holding_movement USING btree (organisation_id, reverses_id)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX inbound_file_pkey ON fyniq.inbound_file USING btree (organisation_id, id)
@@ -4345,7 +4391,9 @@ CREATE CONSTRAINT TRIGGER document_edit_posted AFTER UPDATE OF current_version O
 CREATE CONSTRAINT TRIGGER document_reversed_posted AFTER UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.status = 'posted'::text) AND (new.status = 'reversed'::text))) EXECUTE FUNCTION document_reversed_posted()
 CREATE CONSTRAINT TRIGGER email_message_remittance_send AFTER INSERT ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((CURRENT_USER = 'fyniq_worker'::name) AND (new.purpose = 'remittance'::text))) EXECUTE FUNCTION remittance_email_sent()
 CREATE CONSTRAINT TRIGGER email_message_scheduled_send AFTER INSERT ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((CURRENT_USER = 'fyniq_worker'::name) AND (new.purpose = 'invoice'::text))) EXECUTE FUNCTION scheduled_invoice_email_sent()
+CREATE CONSTRAINT TRIGGER equity_transaction_entry_registered AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'equity_transaction'::text)) EXECUTE FUNCTION equity_transaction_entry_registered()
 CREATE CONSTRAINT TRIGGER expense_claim_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'expense_claim'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION expense_claim_approved()
+CREATE CONSTRAINT TRIGGER holding_movement_settled AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION holding_movement_settled()
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.amount = (0)::numeric) AND (new.base_amount <> (0)::numeric))) EXECUTE FUNCTION journal_line_base_only()
@@ -4374,6 +4422,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
@@ -4459,6 +4508,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_mem
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE CONSTRAINT TRIGGER share_issue_entry_registered AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'share_issue'::text)) EXECUTE FUNCTION share_issue_entry_registered()
+CREATE CONSTRAINT TRIGGER share_issue_moved AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION share_issue_moved()
 CREATE TRIGGER access_review_attestation_guard BEFORE DELETE OR UPDATE ON fyniq.access_review_attestation FOR EACH ROW EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER access_review_attestation_no_truncate BEFORE TRUNCATE ON fyniq.access_review_attestation FOR EACH STATEMENT EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
@@ -4573,6 +4623,8 @@ CREATE TRIGGER fx_feed_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.fx_feed_r
 CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FOR EACH STATEMENT EXECUTE FUNCTION fx_feed_rate_immutable()
 CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
 CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER holding_movement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.holding_movement FOR EACH ROW EXECUTE FUNCTION holding_movement_guard()
+CREATE TRIGGER holding_movement_no_truncate BEFORE TRUNCATE ON fyniq.holding_movement FOR EACH STATEMENT EXECUTE FUNCTION holding_movement_guard()
 CREATE TRIGGER inbound_file_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_file FOR EACH ROW EXECUTE FUNCTION inbound_file_guard()
 CREATE TRIGGER inbound_file_no_truncate BEFORE TRUNCATE ON fyniq.inbound_file FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER inbound_message_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_message FOR EACH ROW EXECUTE FUNCTION inbound_message_guard()
@@ -4755,6 +4807,7 @@ evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 fixed_asset_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4883,7 +4936,7 @@ connector_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 connector_secret_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0663e962d68100701631e767b398d8c0
 connector_secret_named() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9173546f91feb840e7b1996f3342c4
 contact_member_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0faf2bd332726b6037d87c0a8160e65b
-contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7e0edc5eb3f4311abfec69ca1ebaba57
+contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460c3a4d8b7605ac2302047be645abfc
 conversion_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d31c236d9b87b88fff3de4ebae0ca66
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
@@ -4922,6 +4975,7 @@ end_session(p_hash bytea, p_now timestamp with time zone) → void | security de
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 equity_record_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d43ce384e28f88a5ba6fc7d50c20d1ac
+equity_transaction_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 86ee0e0f60a4e7ae69ba04d79b397a64
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
 expense_claim_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 74b4c1fe18dd61114499b7cd5e6b38d5
@@ -4931,6 +4985,8 @@ fixed_asset_source_guard() → trigger | security invoker | v | search_path=pg_c
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
+holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c75a7178a917890581cec7f3b1ced8f5
+holding_movement_settled() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5bc31cd33b59e7587ae2fb621cac56f2
 identity_may_sign_in(p_issuer text, p_subject text) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 14bbafbe258830341b935c34136b0ae2
 idle_timeout(p_org uuid, p_now timestamp with time zone, p_default interval) → interval | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02a235edb67b54eb3f4c0a1499190573
 inbound_file_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9b3c6d083223c4f8e6521e1cd4cad263
@@ -4961,7 +5017,7 @@ journal_entry_not_statement() → trigger | security invoker | v | search_path=p
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 96a325d578df24994138905973efca70
-journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 54706974cde3888da6cf5247ea638fae
+journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 72faa023f44c52e04ae717ada6a3ef38
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
@@ -5041,9 +5097,11 @@ set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_ca
 set_sign_in_method(p_by uuid, p_change uuid, p_provider text, p_version integer, p_enabled boolean, p_domains text[], p_join boolean, p_end_sessions boolean, p_at timestamp with time zone) → sign_in_method | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b5356cec9d00fe426f79febbb4e6cf1
 set_user_recovery_codes(p_session bytea, p_hashes bytea[], p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e728985ab2ec95c6ef13d75a527f5742
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
+share_class_of(p_org uuid, p_account uuid, p_class uuid) → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 9abfbb94025d5ff9a296aa96ccc94e82
 share_issue_class_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 40a7af4c077c6cf1768958c4068cb8c1
 share_issue_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ecc9f7f60072d3973908c00c944e5815
 share_issue_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61dc3a208f7d88e0269a6cd0b117c760
+share_issue_moved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69fbb43c50cf29d5e32fc52bdeb9618f
 sign_in_counts(p_since timestamp with time zone) → TABLE(provider text, sign_ins bigint) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | bd1dcf44b95ec1a3f39deb1f8b3b033b
 sign_in_essential() → SETOF text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2f62a9dd9ba1a56c12f01dcb67b8312e
 sign_in_methods() → SETOF sign_in_method | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 378f6cc806a963fc9375668b924d1828

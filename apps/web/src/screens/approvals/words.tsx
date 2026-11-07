@@ -58,6 +58,7 @@ const operations: Record<Approval["operation"], string> = {
   "bank_reconciliation.sign": "Sign off a reconciliation under an override of SOD-5",
   "holder_record.record": "Record a holder's details in the equity register",
   "share_class.record": "Record a share class and its rights",
+  "equity_transaction.approve": "Approve an equity transaction: an issue, a transfer, a conversion or a reversal",
 };
 
 export function operationLabel(op: string): string {
@@ -106,6 +107,7 @@ const objects: Record<string, string> = {
   bank_reconciliation: "Bank reconciliation",
   holder_record: "Holder record",
   share_class: "Share class",
+  equity_transaction: "Equity transaction",
 };
 
 export function objectLabel(t: string): string {

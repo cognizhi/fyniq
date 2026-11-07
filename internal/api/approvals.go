@@ -24,8 +24,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/director"
-	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -63,9 +63,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class,equity_transaction" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record,equity_transaction.approve" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -715,6 +715,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectEquityTransaction: // the transaction's version and status, and its holders (FR-EQ-17)
+		version, deps, err := equityTransactionDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectShareClass: // the class version's version and status, and its account (FR-EQ-16)
 		version, deps, err := shareClassDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -972,14 +981,22 @@ func signaturesOf(sigs []storage.ApprovalSignature) []approval.Signature {
 // mayDecide reports whether p may sign a request's current step now: a person other than its requester who has not
 // signed it, holds A on its row and is one the step names.
 func mayDecide(p authn.Principal, r storage.ApprovalRequest, sigs []storage.ApprovalSignature) bool {
-	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy || !mayApprove(p, r.ObjectType) {
+	approver := mayApprove(p, r.ObjectType)
+	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy || !approver && !accountantReviewer(p) {
 		return false
 	}
 	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
 		return false
 	}
-	step := approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs))
-	return step > 0 && approval.Eligible(domainSteps(r.PolicySteps)[step-1], p.UserID, rolesOf(p.Roles))
+	steps := domainSteps(r.PolicySteps)
+	step := approval.CurrentStep(steps, signaturesOf(sigs))
+	return step > 0 && approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) && (approver || approval.Reviews(steps[step-1]))
+}
+
+// accountantReviewer reports whether p holds A on "Accountant review": they sign a step that names the accountant's
+// review (FM-9), and no other (rev 0.205).
+func accountantReviewer(p authn.Principal) bool {
+	return authz.Decide(authz.Policy{Operation: "review", Capability: authz.AccountantReview, Need: authz.Approve}, p.Roles, p.AI()).Allowed
 }
 
 // mayApprove reports whether p holds the approve right (A) on the request's row; the AI never does.
@@ -1100,7 +1117,8 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	if err != nil {
 		return r, 0, err
 	}
-	if !mayApprove(p, r.ObjectType) {
+	approver := mayApprove(p, r.ObjectType)
+	if !approver && !accountantReviewer(p) {
 		return r, 0, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
 			"Ask a member who holds it, such as an Owner, to decide it")
 	}
@@ -1137,6 +1155,10 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	}
 	steps := domainSteps(r.PolicySteps)
 	step := approval.CurrentStep(steps, signaturesOf(sigs))
+	if !approver && (step == 0 || !approval.Reviews(steps[step-1])) { // the Accountant signs the review step only (FM-9)
+		return r, 0, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
+			"Ask a member who holds it, such as an Owner, to decide it")
+	}
 	if step == 0 || !approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) {
 		return r, 0, problem(approval.CodeNotYourStep, fmt.Sprintf("Step %d of the request's policy needs %s.", step, describe(steps[max(step, 1)-1])),
 			"Ask a member that step names to sign it; the steps are signed in order")
@@ -1171,7 +1193,7 @@ func (a *API) recheck(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		i := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == g.Signer })
 		if i >= 0 {
 			roles := memberRoles(members[i])
-			if approves(roles, r.ObjectType) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
+			if (approves(roles, r.ObjectType) || approval.Reviews(steps[g.Step-1]) && reviews(roles)) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
 				continue
 			}
 		}
@@ -1189,6 +1211,15 @@ func memberRoles(m storage.Member) []string {
 		out[i] = r.Role
 	}
 	return out
+}
+
+// reviews reports whether roles hold A on "Accountant review" (FM-9's review step).
+func reviews(roles []string) bool {
+	rs := make([]authz.Role, len(roles))
+	for i, r := range roles {
+		rs[i] = authz.Role(r)
+	}
+	return authz.Decide(authz.Policy{Operation: "review", Capability: authz.AccountantReview, Need: authz.Approve}, rs, false).Allowed
 }
 
 // approves reports whether roles hold A on the row of objectType.
@@ -1256,6 +1287,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return claimantBankExecutable(ctx, u, r, signer)
 	case approval.OpHolderRecordRecord: // FR-EQ-15, FM-1: never the holder themselves
 		return holderRecordExecutable(ctx, u, r, signer)
+	case approval.OpEquityTransactionApprove: // FR-EQ-17, FM-9: never a holder it moves shares of or for
+		return equityTransactionExecutable(ctx, u, r, signer)
 	case approval.OpContactMemberLink: // FR-EQ-01, FM-1: never the member linked or unlinked
 		return memberLinkExecutable(s, signer)
 	case approval.OpDirectorFeePost: // FR-EQ-04, FM-9: never the director the fee is paid to
@@ -1681,6 +1714,21 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			return err
 		}
 		_, err = equity.RecordIn(ctx, u, storage.DocumentHolderRecord, id)
+		return err
+	case approval.OpEquityTransactionApprove: // FR-EQ-17: approved, numbered EQ-, waiting for ACRA's date
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		today, err := orgToday(ctx, a, u)
+		if err != nil {
+			return err
+		}
+		settings, err := journal.LoadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		_, err = equity.ApproveTransactionIn(ctx, u, id, today, settings)
 		return err
 	case approval.OpShareClassRecord: // FR-EQ-16: the class's rights recorded, superseding the version before them
 		id, err := uuid.Parse(r.ObjectKey)

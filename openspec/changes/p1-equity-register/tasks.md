@@ -46,18 +46,19 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 3. Equity transactions, the holdings backstop and share application monies (slice 2)
 
-- [ ] 3.1 Migration (D3, D4, D5):
-  - `holding_movement`, with FY257's rules: a movement names a recorded transaction; an issue's movement equals its
-    `share_issue`; a transfer nets to zero with no negative holding; a reversal reverses all of one transaction, once;
-    nothing changes;
-  - `equity_step`;
+- [x] 3.1 Migration (D3, D4, D5):
+  - `holding_movement`, with FY288's rules (FY257 was taken): a movement names a recorded transaction; an issue's
+    movement equals its `share_issue`; a transfer nets to zero with no negative holding; a reversal reverses all of one
+    transaction, once; nothing changes;
+  - `equity_step` (moved to 3.2's ACRA steps, slice 2b);
   - the `equity_transaction` document type and approval object;
   - 2040 Share application monies in the standard chart (role `share-application-monies`), with the sub-ledger key
     rule widened to it;
   - existing issues given their movements in the migration.
 
   Attack tests for each FY257 rule and for a key-less 2040 line. `// req: FR-EQ-17`, `// req: INV-13`
-- [ ] 3.2 Engine and API:
+- [ ] 3.2 Engine and API (slice 2a built the kinds, draft, approval, effective, reversal and the holdings; slice 2b the
+  ACRA steps, the bank match, the refund and the oracle's golden case):
   - the kinds issue_cash, transfer, class_conversion and reversal (issue_noncash keeps founders' money's route):
     draft, approval (FM-1, FM-9), and effective with ACRA's date and reference, never backdated and never in a closed
     period, writing the issue, its movements and its entry in one unit of work;

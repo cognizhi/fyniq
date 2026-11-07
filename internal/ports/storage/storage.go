@@ -132,6 +132,8 @@ type UnitOfWork interface {
 	// AccountantReviews are the accountant's reviews of closed months (FM-7).
 	AccountantReviews() AccountantReviews
 	ShareIssues() ShareIssues
+	// Holdings are the movements behind every holding of shares (FR-EQ-17).
+	Holdings() Holdings
 	ConversionSteps() ConversionSteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
@@ -439,6 +441,11 @@ var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-
 	"accumulated-depreciation", "suspense", "retained-earnings", "expense-claims-payable", "income-tax-payable", "income-tax-expense",
 	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution", "withholding-tax-payable", "customer-deposits"}
 
+// OptionalRoles are system roles the standard chart gives a new organisation that an existing one may lack without its
+// books being wrong (C.1 #7 does not ask for them): share application monies, 2040 (B.7, rev 0.203), which a cash issue
+// needs before its money arrives (FR-EQ-17).
+var OptionalRoles = []AccountRole{"share-application-monies"}
+
 // AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
 type AccountChange struct {
 	Name     string
@@ -611,6 +618,10 @@ const (
 	// shareholders' agreement as evidence and recorded on another person's approval; a later version of its rights is
 	// another document naming its first.
 	DocumentShareClass DocumentType = "share_class"
+	// DocumentEquityTransaction is an equity transaction (FR-EQ-17): a cash issue to one subscriber, a transfer, a
+	// conversion between classes or the reversal of one, drafted with its evidence, numbered EQ- on its approval and made
+	// effective with ACRA's date, which writes its holding movements (p1-equity-register design D4).
+	DocumentEquityTransaction DocumentType = "equity_transaction"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -843,6 +854,10 @@ const (
 	// CodeConversionStep: a conversion's ACRA steps are recorded between its approval and its effective date, and never
 	// changed (FR-EQ-09).
 	CodeConversionStep = "STORAGE-SHARE-02"
+	// CodeHolding: a holding moves only with an approved equity transaction or a share issue, whole, never below zero,
+	// never changed, in an open period; share capital moves between classes only with a conversion's movements (FR-EQ-17,
+	// INV-13; FY288, FY289).
+	CodeHolding = "STORAGE-SHARE-04"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

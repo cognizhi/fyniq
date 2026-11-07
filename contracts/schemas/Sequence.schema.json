@@ -37,7 +37,8 @@
         "pre_incorporation_cost",
         "director_fee",
         "director_settlement",
-        "director_repayment"
+        "director_repayment",
+        "equity_transaction"
       ],
       "examples": [
         "journal"

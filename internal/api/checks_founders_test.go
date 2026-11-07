@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -65,9 +66,9 @@ func TestTheFoundersChecks(t *testing.T) {
 	class := e.shareCapitalIn(e.books.Org)
 	wantStatus(t, e.checked("founders.share-capital-registered"), "ok")
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
-		_, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: uuid.MustParse(kow), ClassAccountID: uuid.MustParse(class),
+		_, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: uuid.MustParse(kow), ClassAccountID: uuid.MustParse(class),
 			Shares: "1000", Price: "1.000000", Currency: "SGD", Amount: "1000.00", Consideration: storage.ConsiderationCash, ResolutionRefs: "Incorporation subscription",
-			EffectiveOn: time.Date(2025, 9, 1, 0, 0, 0, 0, time.UTC), RecordedBy: uuid.MustParse(c.weiling), RecordedAt: e.clock.Now()})
+			EffectiveOn: time.Date(2025, 9, 1, 0, 0, 0, 0, time.UTC), RecordedBy: uuid.MustParse(c.weiling), RecordedAt: e.clock.Now()}, nil)
 		return err
 	})
 	r = e.checked("founders.share-capital-registered")

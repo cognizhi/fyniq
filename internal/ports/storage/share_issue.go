@@ -51,3 +51,44 @@ type ShareIssues interface {
 	// OfSettlement is the issue a conversion's settlement made, nil while it has none.
 	OfSettlement(ctx context.Context, settlementID uuid.UUID) (*ShareIssue, error)
 }
+
+// The kinds of holding movement (FR-EQ-17; p1-equity-register design D3).
+const (
+	MovementIssue           = "issue"
+	MovementTransfer        = "transfer"
+	MovementClassConversion = "class_conversion"
+	MovementReversal        = "reversal"
+)
+
+// HoldingMovement is shares moving into (+) or out of (-) one holder's holding of one class, on the day ACRA's register
+// of members shows it: an issue, which names its share issue; a transfer or a conversion between classes, which names
+// its equity transaction; or a reversal, which negates one movement of the transaction its equity transaction reverses.
+// What a holder holds is the sum of their movements. Written once, never changed.
+type HoldingMovement struct {
+	ID             uuid.UUID
+	Kind           string
+	TransactionID  *uuid.UUID // the equity transaction made effective; nil for an issue recorded outside one
+	ShareIssueID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	HolderID       uuid.UUID
+	ClassAccountID uuid.UUID
+	ClassID        *uuid.UUID
+	Shares         Decimal // signed, whole
+	EffectiveOn    time.Time
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+}
+
+// Holdings keep the holding movements. Move writes one, audited; the database refuses a movement naming no approved
+// equity transaction of its kind, one of a transaction made effective earlier, an issue's movement unlike its share
+// issue, a reversal unlike the movement it negates, a class that is not a recorded class of its account, shares moved
+// in to a contact who is not a director or shareholder, a date in a closed period, any change or deletion, and at commit
+// a transfer or conversion that does not move shares as one does, a reversal of part of a transaction, a holding below
+// zero on any day, or a share issue with no movement (CodeHolding).
+type Holdings interface {
+	Move(ctx context.Context, m HoldingMovement) (HoldingMovement, error)
+	// List is every movement, earliest effective date first.
+	List(ctx context.Context) ([]HoldingMovement, error)
+	// OfTransaction is an equity transaction's movements, empty while it is not effective.
+	OfTransaction(ctx context.Context, transactionID uuid.UUID) ([]HoldingMovement, error)
+}

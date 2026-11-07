@@ -39,6 +39,7 @@ export const documentNames: Record<Sequence["document_type"], string> = {
   director_fee: "Director fees",
   director_settlement: "Director settlements",
   director_repayment: "Director repayments",
+  equity_transaction: "Equity transactions",
 };
 
 async function listSequences() {

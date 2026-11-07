@@ -85,3 +85,70 @@ func (r shareIssues) OfSettlement(ctx context.Context, settlementID uuid.UUID) (
 	out := toShareIssue(rows[0])
 	return &out, nil
 }
+
+// ------------------------------------------------------------------ holding movements (FR-EQ-17)
+
+func (u *unitOfWork) Holdings() storage.Holdings { return holdings{u} }
+
+type holdings struct{ u *unitOfWork }
+
+func toMovement(r sqlcdb.FyniqHoldingMovement) storage.HoldingMovement {
+	return storage.HoldingMovement{ID: r.ID, Kind: r.Kind, TransactionID: r.TransactionID, ShareIssueID: r.ShareIssueID, ReversesID: r.ReversesID,
+		HolderID: r.HolderID, ClassAccountID: r.ClassAccountID, ClassID: r.ClassID, Shares: storage.Decimal(r.Shares), EffectiveOn: r.EffectiveOn,
+		RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}
+}
+
+func (h holdings) Move(ctx context.Context, m storage.HoldingMovement) (storage.HoldingMovement, error) {
+	if err := h.u.check(); err != nil {
+		return storage.HoldingMovement{}, err
+	}
+	row, err := h.u.q.InsertHoldingMovement(ctx, sqlcdb.InsertHoldingMovementParams{ID: m.ID, Kind: m.Kind, TransactionID: m.TransactionID,
+		ShareIssueID: m.ShareIssueID, ReversesID: m.ReversesID, HolderID: m.HolderID, ClassAccountID: m.ClassAccountID, ClassID: m.ClassID,
+		Shares: string(m.Shares), EffectiveOn: m.EffectiveOn, RecordedBy: m.RecordedBy, RecordedAt: m.RecordedAt})
+	if err != nil {
+		return storage.HoldingMovement{}, mapError(err)
+	}
+	out := toMovement(row)
+	moved := map[string]any{"kind": out.Kind, "holder_id": out.HolderID.String(), "class_account_id": out.ClassAccountID.String(),
+		"shares": string(out.Shares), "effective_on": out.EffectiveOn.Format("2006-01-02")}
+	for k, v := range map[string]*uuid.UUID{"transaction_id": out.TransactionID, "share_issue_id": out.ShareIssueID, "reverses_id": out.ReversesID,
+		"class_id": out.ClassID} {
+		if v != nil {
+			moved[k] = v.String()
+		}
+	}
+	if err := h.u.event(ctx, "holding.moved", "holding_movement", out.ID, nil, map[string][2]any{"movement": {nil, moved}}); err != nil {
+		return storage.HoldingMovement{}, err
+	}
+	return out, nil
+}
+
+func (h holdings) List(ctx context.Context) ([]storage.HoldingMovement, error) {
+	if err := h.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := h.u.q.HoldingMovements(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.HoldingMovement, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toMovement(x))
+	}
+	return out, nil
+}
+
+func (h holdings) OfTransaction(ctx context.Context, transactionID uuid.UUID) ([]storage.HoldingMovement, error) {
+	if err := h.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := h.u.q.HoldingMovementsOfTransaction(ctx, &transactionID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.HoldingMovement, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toMovement(x))
+	}
+	return out, nil
+}

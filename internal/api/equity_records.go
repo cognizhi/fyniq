@@ -371,13 +371,14 @@ func (a *API) holderRecordOf(ctx context.Context, u storage.UnitOfWork, x equity
 type holderView struct {
 	records map[uuid.UUID][]equity.Recorded[equity.HolderRecord]
 	issues  map[uuid.UUID][]storage.ShareIssue
+	moves   map[uuid.UUID][]storage.HoldingMovement
 	classes map[uuid.UUID][]equity.Recorded[equity.ShareClass]
 	codes   map[uuid.UUID]string
 	asked   map[string]string
 }
 
 func (a *API) holderViewOf(ctx context.Context, u storage.UnitOfWork) (holderView, error) {
-	v := holderView{issues: map[uuid.UUID][]storage.ShareIssue{}, codes: map[uuid.UUID]string{}}
+	v := holderView{issues: map[uuid.UUID][]storage.ShareIssue{}, moves: map[uuid.UUID][]storage.HoldingMovement{}, codes: map[uuid.UUID]string{}}
 	var err error
 	if v.records, err = equity.HolderRecords(ctx, u); err != nil {
 		return v, err
@@ -392,6 +393,13 @@ func (a *API) holderViewOf(ctx context.Context, u storage.UnitOfWork) (holderVie
 	for _, s := range issues {
 		v.issues[s.HolderID] = append(v.issues[s.HolderID], s)
 	}
+	moves, err := u.Holdings().List(ctx)
+	if err != nil {
+		return v, err
+	}
+	for _, m := range moves {
+		v.moves[m.HolderID] = append(v.moves[m.HolderID], m)
+	}
 	accounts, err := u.Accounts().List(ctx)
 	if err != nil {
 		return v, err
@@ -403,8 +411,9 @@ func (a *API) holderViewOf(ctx context.Context, u storage.UnitOfWork) (holderVie
 	return v, err
 }
 
-// holdingsOf are a holder's shares by class, from their issues: an issue with no class counts under its account's first
-// recorded class, or its account while it has none (design D2).
+// holdingsOf are a holder's shares by class, from their holding movements (FR-EQ-17): shares with no class count under
+// their account's first recorded class, or their account while it has none (design D2). A class they no longer hold is
+// left out.
 func (v holderView) holdingsOf(contact uuid.UUID) []HolderShares {
 	type key struct {
 		class   string
@@ -412,7 +421,7 @@ func (v holderView) holdingsOf(contact uuid.UUID) []HolderShares {
 	}
 	totals := map[key]int64{}
 	var order []key
-	for _, s := range v.issues[contact] {
+	for _, s := range v.moves[contact] {
 		k := key{account: s.ClassAccountID}
 		if s.ClassID != nil {
 			k.class = s.ClassID.String()
@@ -427,6 +436,9 @@ func (v holderView) holdingsOf(contact uuid.UUID) []HolderShares {
 	}
 	out := []HolderShares{}
 	for _, k := range order {
+		if totals[k] == 0 {
+			continue
+		}
 		h := HolderShares{ClassID: k.class, AccountCode: v.codes[k.account], Shares: strconv.FormatInt(totals[k], 10),
 			ClassName: map[string]string{"3010": "Ordinary shares", "3020": "Preference shares"}[v.codes[k.account]]}
 		if id, err := uuid.Parse(k.class); err == nil {

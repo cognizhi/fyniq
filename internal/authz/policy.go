@@ -1243,6 +1243,23 @@ var (
 	RemoveShareClassEvidence    = Policy{Operation: "removeShareClassEvidence", Capability: CapTable, Need: Create}
 )
 
+// Equity transactions (FR-EQ-17; p1-equity-register slice 2): the Accountant drafts and asks (C/P), an Owner or the
+// Controller approves and records the day ACRA's register shows it (A), stepped up and never for a holder they are.
+var (
+	ListEquityTransactions           = Policy{Operation: "listEquityTransactions", Capability: CapTable, Need: View, Unqualified: true}
+	GetEquityTransaction             = Policy{Operation: "getEquityTransaction", Capability: CapTable, Need: View, Unqualified: true}
+	CreateEquityTransaction          = Policy{Operation: "createEquityTransaction", Capability: CapTable, Need: Create}
+	ReplaceEquityTransaction         = Policy{Operation: "replaceEquityTransaction", Capability: CapTable, Need: Create}
+	RequestEquityTransactionApproval = Policy{Operation: "requestEquityTransactionApproval", Capability: CapTable, Need: Create,
+		Note: "Another person approves it, never a holder it moves shares of or for; the Accountant too when every available approver benefits."}
+	RecordEquityTransactionEffective = Policy{Operation: "recordEquityTransactionEffective", Capability: CapTable, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes, and is never a holder the transaction moves shares of or for."}
+	AddEquityTransactionEvidence    = Policy{Operation: "addEquityTransactionEvidence", Capability: CapTable, Need: Create}
+	ListEquityTransactionEvidence   = Policy{Operation: "listEquityTransactionEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetEquityTransactionEvidence    = Policy{Operation: "getEquityTransactionEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveEquityTransactionEvidence = Policy{Operation: "removeEquityTransactionEvidence", Capability: CapTable, Need: Create}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1412,7 +1429,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,
 	ListHolderRecordEvidence, GetHolderRecordEvidence, RemoveHolderRecordEvidence, ListShareClasses, GetShareClass, CreateShareClass,
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
-	RemoveBrandFile, SetBrandAccent)
+	RemoveBrandFile, SetBrandAccent, ListEquityTransactions, GetEquityTransaction, CreateEquityTransaction, ReplaceEquityTransaction,
+	RequestEquityTransactionApproval, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
+	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -1452,7 +1471,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 		if ai {
 			return Decision{Reason: "the AI never sees, approves or rejects an approval (§9.6)"}
 		}
-		for _, row := range ApprovalRows {
+		// (rev 0.205) "Accountant review" lets the Accountant reach the approvals too: the requests' own steps decide, and
+		// they sign only a step that names them, such as FM-9's review (approval.ReviewRole).
+		for _, row := range append(slices.Clip(ApprovalRows), AccountantReview) {
 			q := p
 			q.Capability = row
 			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the

@@ -105,8 +105,15 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		want.Memo = stored.Memo // a reversal's memo carries its reason, which nothing else keeps
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
-	if e.Source.Type == ledger.SourceShareIssue { // a founder's balance converted to shares, from the register and its settlement (FR-EQ-06)
+	if e.Source.Type == ledger.SourceShareIssue { // a founder's conversion or a cash issue, from the register (FR-EQ-06, FR-EQ-17)
 		want, err := replayConversion(ctx, u, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if e.Source.Type == ledger.SourceEquityTransaction { // a conversion between classes, from its version (FR-EQ-17)
+		want, err := replayClassConversion(ctx, u, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}
