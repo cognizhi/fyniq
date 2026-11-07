@@ -71,18 +71,18 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 4. Budgets (slice 4)
 
-- [ ] 4.1 The `budget` document type and its guard, FY301 (D6), and the approval object `budget`, with its policy and
+- [x] 4.1 The `budget` document type and its guard, FY301 (D6), and the approval object `budget`, with its policy and
   separation rules. The attack tests cover keys, months inside the year, account kinds, duplicate lines, the
   5,000-line limit and recorded budgets that never change. `TestAttackBudgetsKeepTheirRules` `// req: FR-PLN-01`
-- [ ] 4.2 The API (D6, D10): budgets list, create, get, replace, copy with growth (`RND-PLAN` per amount) and the
+- [x] 4.2 The API (D6, D10): budgets list, create, get, replace, copy with growth (`RND-PLAN` per amount) and the
   approval; the year's budget is the latest recorded. With them come the matrix rows and audit.
   `TestBudgetsThroughTheAPI` covers original and revised versions, approval by A, refusal to the preparer where the
   policy separates, and the lock. `// req: FR-PLN-01`
-- [ ] 4.3 Import from XLSX (D6): the bounded reader moved to a shared package, with the bank import still passing its
+- [x] 4.3 Import from XLSX (D6): the bounded reader moved to a shared package, with the bank import still passing its
   tests. Every row error names its row, column and fix, and nothing loads until every row is right. A zip bomb, a
-  binary number and a month outside the year are refused. `TestBudgetImport` `// req: FR-PLN-01`, `// req: ENG-23`
-- [ ] 4.4 C.1 #35 (D6): ⚠ per financial year with postings and no recorded budget, with its drill-down, and passing
-  when every such year has one. `TestTheBudgetCheck` `// req: C.1 #35`
+  binary number and a month outside the year are refused. in `TestBudgetsThroughTheAPI` and `TestTheSheetsHeader` `// req: FR-PLN-01`, `// req: ENG-23`
+- [x] 4.4 C.1 #35 (D6): ⚠ per financial year with postings and no recorded budget, with its drill-down, and passing
+  when every such year has one, in `TestBudgetsThroughTheAPI` `// req: C.1 #35`
 
 ## 5. What reads the budget and the forecast (slice 5)
 

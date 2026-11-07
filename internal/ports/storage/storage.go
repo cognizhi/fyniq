@@ -667,6 +667,9 @@ const (
 	// DocumentForecast is a driver-based forecast (FR-PLN-02, p1-planning design D5): its drivers, plans and scenarios.
 	// It posts nothing; a recorded one changes no more, and the latest recorded is the company's own.
 	DocumentForecast DocumentType = "forecast"
+	// DocumentBudget is a version of a financial year's budget (FR-PLN-01, p1-planning design D6): monthly amounts by
+	// income and expense account and dimension value. Approved, it is recorded and locked; it posts nothing.
+	DocumentBudget DocumentType = "budget"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -937,6 +940,8 @@ const (
 	// CodeForecast: a forecast keeps its own keys, a name, a horizon of 12 to 60 months, decimal strings, scenarios and
 	// rows within their limits (FY300).
 	CodeForecast = "STORAGE-PLAN-01"
+	// CodeBudget: a budget keeps its own keys, a name, its kind and year, and at most 5,000 lines of decimal strings (FY301).
+	CodeBudget = "STORAGE-PLAN-02"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

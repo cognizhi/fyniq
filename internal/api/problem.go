@@ -27,6 +27,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
+	"github.com/cognizhi/fyniq/internal/domain/budget"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -823,6 +824,7 @@ var codeFacts = map[string]struct {
 	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
 	storage.CodeForecast:             {422, "The forecast does not keep that"},
+	storage.CodeBudget:               {422, "The budget does not keep that"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost:  {422, "The cost before the books start does not fit"},
@@ -882,6 +884,9 @@ var codeFacts = map[string]struct {
 	deadlines.CodeWithdrawn:          {409, "The record is withdrawn already"},
 	deadlines.CodeWindow:             {422, "The calendar's window does not fit"},
 	forecasts.CodePlan:               {422, "The forecast does not fit"},
+	budget.CodeBudget:                {422, "The budget does not fit"},
+	budget.CodeRecorded:              {409, "The budget is approved and locked"},
+	budget.CodeImport:                {422, "The budget's sheet does not fit"},
 	forecasts.CodeRecorded:           {409, "The forecast is recorded"},
 	planning.CodeHorizon:             {422, "The forecast's horizon does not fit"},
 	planning.CodeStatutory:           {422, "A statutory figure the forecast needs is missing"},
@@ -952,6 +957,7 @@ var storageFixes = map[string]string{
 	storage.CodeControllerEntry:      "Give a controller its grounds and its days in order, or a holder who is not one the reason, for a contact marked shareholder or investor",
 	storage.CodeAcraExtract:          "Type each holding of a contact marked shareholder or investor, an active share-capital class and whole shares, with the profile's day",
 	storage.CodeGSTForecast:          "Enter the forecast's day, its value in Singapore dollars with cents above zero, and a basis of at most 1,000 characters",
+	storage.CodeBudget:               "Send the budget as the API takes it: a name, original or revised, its year's first day, and at most 5,000 lines of an account, its dimension values and an amount for each month",
 	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
@@ -1098,6 +1104,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		gme *gstmonitor.Error
 		dle *deadlines.Error
 		fce *forecasts.Error
+		bue *budget.Error
 		ple *planning.Error
 		ase *asset.Error
 		pye *payee.Error
@@ -1169,6 +1176,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(dle.Code, sentence(dle.Message), sentence(dle.Fix))
 	case errors.As(err, &fce):
 		return problem(fce.Code, sentence(fce.Message), sentence(fce.Fix))
+	case errors.As(err, &bue):
+		return problem(bue.Code, sentence(bue.Message), sentence(bue.Fix))
 	case errors.As(err, &ple):
 		return problem(ple.Code, sentence(ple.Field+": "+ple.Message), sentence(ple.Fix))
 	case errors.Is(err, planning.ErrDigits):

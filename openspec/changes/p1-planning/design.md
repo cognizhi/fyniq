@@ -273,7 +273,8 @@ year y = ⌈n/12⌉.
 - **Import from XLSX.** The first sheet: an account code column, a column per dimension, and twelve month columns
   with `YYYY-MM` headers.
   - **The reader** is the bounded reader of `internal/bankfile` (archive limits and exact decimals, never a binary
-    number), moved to a shared package.
+    number), moved to `internal/sheet` (`ReadXLSX`), each caller keeping its own words. A month column's header may be
+    YYYY-MM, "Jan 2027" or a date; blank cells are nothing; amounts are written at the currency's minor units.
   - **Errors** name the row, the column, what is wrong and how to fix it (ENG-23). Nothing is loaded until every row
     is right.
 - **Budget vs Actual (FR-RPT-03).** By account and dimension, for months, a quarter or the year to date: actual from

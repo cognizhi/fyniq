@@ -154,6 +154,9 @@ const (
 	// ObjectControllerEntry is the company's conclusion about a registrable controller, to record (FR-EQ-25, design
 	// D10, FM-1): another person who holds A on the cap table approves, never the holder; its key is the entry's ID.
 	ObjectControllerEntry = "controller_entry"
+	// ObjectBudget is a version of a financial year's budget, to approve and so record and lock (FR-PLN-01, FM-1;
+	// p1-planning design D6): another person who holds A on "Budgets, forecasts" approves; its key is the budget's ID.
+	ObjectBudget = "budget"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -257,6 +260,8 @@ const (
 	OpInvestorRightsRecord = "investor_right.record"
 	// OpControllerEntryRecord records a controller entry as drafted, with the company secretary's confirmation (FR-EQ-25).
 	OpControllerEntryRecord = "controller_entry.record"
+	// OpBudgetRecord records a budget as drafted and locks it: the year's budget from then on (FR-PLN-01).
+	OpBudgetRecord = "budget.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -296,6 +301,7 @@ var Operations = map[string]string{
 	OpRoundScenarioApprove:     ObjectRoundScenario,
 	OpInvestorRightsRecord:     ObjectInvestorRights,
 	OpControllerEntryRecord:    ObjectControllerEntry,
+	OpBudgetRecord:             ObjectBudget,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -400,6 +406,8 @@ var Dependencies = map[string][]string{
 	ObjectInvestorRights: {"status", "holder"},
 	// the entry's version and status, and its holder: what is recorded
 	ObjectControllerEntry: {"status", "holder"},
+	// the budget's version and status, and its year: what is recorded
+	ObjectBudget: {"status", "financial_year"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -455,6 +463,7 @@ var Rows = map[string]string{
 	ObjectRoundScenario:       "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectInvestorRights:      "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectControllerEntry:     "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectBudget:              "Budgets, forecasts",
 }
 
 // The limits of a policy.
@@ -539,6 +548,7 @@ var Policies = map[string]Policy{
 	ObjectRoundScenario:       {ObjectType: ObjectRoundScenario, Version: "founder/round_scenario@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectInvestorRights:      {ObjectType: ObjectInvestorRights, Version: "founder/investor_right@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectControllerEntry:     {ObjectType: ObjectControllerEntry, Version: "founder/controller_entry@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectBudget:              {ObjectType: ObjectBudget, Version: "founder/budget@2026-11-08.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
