@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "differences": {
+      "description": "Each holding where the register differs from it on its day, by holder then class: fix the register by a reversal citing the extract, or the typing by a newer extract.",
+      "items": {
+        "$ref": "AcraDifferenceView.schema.json"
+      },
+      "type": "array"
+    },
+    "extract": {
+      "$ref": "AcraExtractView.schema.json",
+      "description": "The extract in force: the recorded one of the latest business profile; absent before one is recorded."
+    }
+  },
+  "required": [
+    "differences"
+  ],
+  "title": "AcraReconciliation",
+  "type": "object"
+}

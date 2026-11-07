@@ -1371,6 +1371,21 @@ var (
 	GetStatutoryTests              = Policy{Operation: "getStatutoryTests", Capability: CapTable, Need: View, Unqualified: true}
 )
 
+// The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
+// Accountant, who holds P on the cap table, with the business profile attached; read by whoever reads the whole table.
+var (
+	ListAcraExtracts          = Policy{Operation: "listAcraExtracts", Capability: CapTable, Need: View, Unqualified: true}
+	CreateAcraExtract         = Policy{Operation: "createAcraExtract", Capability: CapTable, Need: Create}
+	GetAcraExtract            = Policy{Operation: "getAcraExtract", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceAcraExtract        = Policy{Operation: "replaceAcraExtract", Capability: CapTable, Need: Create}
+	RecordAcraExtract         = Policy{Operation: "recordAcraExtract", Capability: CapTable, Need: Post, Note: "A copy of ACRA's register with its PDF: it posts nothing."}
+	AddAcraExtractEvidence    = Policy{Operation: "addAcraExtractEvidence", Capability: CapTable, Need: Create}
+	ListAcraExtractEvidence   = Policy{Operation: "listAcraExtractEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetAcraExtractEvidence    = Policy{Operation: "getAcraExtractEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveAcraExtractEvidence = Policy{Operation: "removeAcraExtractEvidence", Capability: CapTable, Need: Create}
+	GetAcraReconciliation     = Policy{Operation: "getAcraReconciliation", Capability: CapTable, Need: View, Unqualified: true}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1555,7 +1570,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	RequestRoundScenarioApproval, CreateInvestorRights, GetInvestorRights, ReplaceInvestorRights, RequestInvestorRightsApproval,
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
-	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests)
+	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
+	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
+	GetAcraReconciliation)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
