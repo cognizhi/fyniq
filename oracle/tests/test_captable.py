@@ -41,7 +41,7 @@ def test_the_cap_table_at_each_day():
                                                      "BT-0004", "EQ-0005"]
     day_before, round_day, april, may = r["cap_tables"]
     # 11 Mar: the founder alone.
-    assert day_before == {"at": "2027-03-11", "issued": "1000000", "votes": "1000000", "fully_diluted": "1000000",
+    assert day_before == {"at": "2027-03-11", "issued": "1000000", "votes": "1000000", "options": "0", "unallocated": "0", "fully_diluted": "1000000",
                           "lines": [_line("P0001", "3010", "1000000", "1000000", "100.00", "100.00")],
                           "holders": [_holder("P0001", "1000000", "1000000", "100.00", "100.00")]}
     # 12 Mar, G.3: 1,000,000, 200,000 and 52,083 of 1,252,083 are 79.8669…, 15.9733… and 4.1597… per cent.
@@ -86,7 +86,7 @@ def test_a_conversion_moves_its_shares_and_no_vote_is_no_percentage():
     r = Ledger(scenario_from_json(data)).result()
     assert r["rejected"] == []
     before, after = r["cap_tables"]
-    assert before == {"at": "2027-01-31", "issued": "0", "votes": "0", "fully_diluted": "0", "lines": [], "holders": []}
+    assert before == {"at": "2027-01-31", "issued": "0", "votes": "0", "options": "0", "unallocated": "0", "fully_diluted": "0", "lines": [], "holders": []}
     assert after["lines"] == [{"holder": "P0001", "class": "3010", "issued": "83", "votes": "0", "fully_diluted": "83",
                                "ownership": "100.00", "voting": None, "diluted": "100.00"}]
 

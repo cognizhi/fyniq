@@ -96,14 +96,16 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["at", "issued", "votes", "fully_diluted", "lines", "holders"],
+        "required": ["at", "issued", "votes", "options", "unallocated", "fully_diluted", "lines", "holders"],
         "properties": {
           "at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
           "issued": {"$ref": "#/$defs/decimal"},
           "votes": {"$ref": "#/$defs/decimal"},
+          "options": {"description": "The options the grants made by the day granted (FR-EQ-19).", "$ref": "#/$defs/decimal"},
+          "unallocated": {"description": "What the pool in force leaves to grant: its size less the options granted.", "$ref": "#/$defs/decimal"},
           "fully_diluted": {"$ref": "#/$defs/decimal"},
           "lines": {
-            "description": "Every holding with shares, by holder, then class.",
+            "description": "Every holding with shares or options, by holder, then class.",
             "type": "array",
             "items": {
               "type": "object",
