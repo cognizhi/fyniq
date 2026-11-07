@@ -58,6 +58,11 @@ type OptionPoolView struct {
 	ClassCode      string               `json:"class_code,omitempty" doc:"Its account code." example:"3010"`
 	Granted        string               `json:"granted" doc:"The options the recorded grants granted on or before the day." example:"68000"`
 	Returned       string               `json:"returned" doc:"The options recorded forfeitures and expiries gave back on or before the day." example:"0"`
+	Forfeited      string               `json:"forfeited" doc:"The options the recorded grants' forfeitures took by the day." example:"45000"`
+	Expired        string               `json:"expired" doc:"The options their expiries let lapse by the day." example:"0"`
+	Exercised      string               `json:"exercised" doc:"The options effective exercises turned into shares by the day, never back in the pool." example:"0"`
+	Outstanding    string               `json:"outstanding" doc:"The recorded grants' options not exercised, forfeited or expired at the end of the day." example:"425000"`
+	Exercisable    string               `json:"exercisable" doc:"Of those, the options vested: what exercises may take." example:"40000"`
 	Unallocated    string               `json:"unallocated" doc:"What the pool leaves to grant: its size less what is granted, with what is given back." example:"932000"`
 	Resolutions    []PoolResolutionView `json:"resolutions" nullable:"false" doc:"Every resolution, drafts and recorded, the latest passed first."`
 }
@@ -90,6 +95,8 @@ type OptionGrantView struct {
 	Forfeited   string            `json:"forfeited" doc:"The options its recorded forfeitures took, back in the pool." example:"0"`
 	Expired     string            `json:"expired" doc:"The options its recorded expiries let lapse, back in the pool." example:"0"`
 	Exercised   string            `json:"exercised" doc:"The options effective exercises turned into shares, less those a reversal undid." example:"0"`
+	NextVestsOn string            `json:"next_vests_on,omitempty" format:"date" doc:"The next day more of it vests, a month's day after today; left out when nothing more will." example:"2026-11-15"`
+	NextVests   string            `json:"next_vests,omitempty" doc:"How many options vest that day." example:"1000"`
 	Exercisable string            `json:"exercisable" doc:"What is vested and not exercised at the end of today: what an exercise may take (an exercise transaction, createEquityTransaction)." example:"12000"`
 	Events      []OptionEventView `json:"events" nullable:"false" doc:"Its forfeitures and expiries, drafts and recorded, oldest first (createOptionEvent)."`
 	Evidence    int               `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the grant letter." example:"1"`
@@ -341,12 +348,19 @@ func (a *API) grantOf(ctx context.Context, u storage.UnitOfWork, v optionView, d
 	if err != nil {
 		return OptionGrantView{}, err
 	}
+	nextOn, next, more, err := equity.NextVesting(g, recorded, v.exercises[doc.ID], v.today)
+	if err != nil {
+		return OptionGrantView{}, err
+	}
 	out := OptionGrantView{OptionGrantDraft: OptionGrantDraft{HolderID: g.HolderID.String(), Number: g.Number, ExercisePrice: g.ExercisePrice,
 		GrantedOn: g.GrantedOn.Format(time.DateOnly), CliffMonths: g.Vesting.CliffMonths, VestingMonths: g.Vesting.Months, Acceleration: g.Vesting.Acceleration,
 		ExpiresOn: g.ExpiresOn.Format(time.DateOnly), ClassAccountID: g.ClassAccountID.String(), Note: g.Note},
 		ID: doc.ID.String(), Status: "draft", Version: doc.Version, HolderName: name, Currency: base.Code, ClassCode: v.codes[g.ClassAccountID],
 		Vested: standing.Vested.Text('f'), Outstanding: standing.Outstanding.Text('f'), Forfeited: standing.Forfeited.Text('f'),
 		Expired: standing.Expired.Text('f'), Exercised: standing.Exercised.Text('f'), Exercisable: standing.Exercisable.Text('f'), Events: events}
+	if more {
+		out.NextVestsOn, out.NextVests = nextOn.Format(time.DateOnly), next.Text('f')
+	}
 	if doc.Status == storage.DocumentPosted {
 		out.Status = "recorded"
 	}
@@ -497,9 +511,14 @@ func registerOptions(a *API) {
 			if err != nil {
 				return err
 			}
+			standing, err := equity.GrantsStanding(ctx, u, day)
+			if err != nil {
+				return err
+			}
 			out.Body = OptionPoolView{At: day.Format(time.DateOnly), Size: pool.Size.Text('f'), Granted: pool.Granted.Text('f'),
-				Returned: pool.Returned.Text('f'), Unallocated: pool.Unallocated.Text('f'),
-				Resolutions: []PoolResolutionView{}}
+				Returned: pool.Returned.Text('f'), Unallocated: pool.Unallocated.Text('f'), Forfeited: standing.Forfeited.Text('f'),
+				Expired: standing.Expired.Text('f'), Exercised: standing.Exercised.Text('f'), Outstanding: standing.Outstanding.Text('f'),
+				Exercisable: standing.Exercisable.Text('f'), Resolutions: []PoolResolutionView{}}
 			if pool.ClassID != uuid.Nil {
 				out.Body.ClassAccountID, out.Body.ClassCode = pool.ClassID.String(), v.codes[pool.ClassID]
 			}

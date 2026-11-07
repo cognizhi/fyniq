@@ -206,3 +206,77 @@ func checkExercise(ctx context.Context, u storage.UnitOfWork, t *Transaction, s 
 	}
 	return nil
 }
+
+// monthOn is the day k whole months after since: since's day of the month, or a shorter month's last day (the day a
+// month passes, as Vested counts them).
+func monthOn(since time.Time, k int) time.Time {
+	first := time.Date(since.Year(), since.Month(), 1, 0, 0, 0, 0, since.Location()).AddDate(0, k, 0)
+	last := first.AddDate(0, 1, -1).Day()
+	return first.AddDate(0, 0, min(since.Day(), last)-1)
+}
+
+// NextVesting is a grant's next vesting after day (FR-EQ-19): the first month's day after it on which more of what the
+// grant keeps vests, and how many; ok is false when nothing more will vest (all vested, or what is left forfeited or
+// expired).
+func NextVesting(g Grant, events []GrantEvent, exercises []Exercise, day time.Time) (on time.Time, n apd.Decimal, ok bool, err error) {
+	now, err := StandingOf(g, events, exercises, day)
+	if err != nil {
+		return on, n, false, err
+	}
+	for k := 1; k <= max(g.Vesting.Months, 1); k++ {
+		at := monthOn(g.GrantedOn, k)
+		if !at.After(day) {
+			continue
+		}
+		then, err := StandingOf(g, events, exercises, at)
+		if err != nil {
+			return on, n, false, err
+		}
+		if then.Vested.Cmp(&now.Vested) > 0 {
+			_, err := exact.Sub(&n, &then.Vested, &now.Vested)
+			return at, n, err == nil, err
+		}
+	}
+	return on, n, false, nil
+}
+
+// GrantsStanding is the recorded grants' standing summed at the end of day (FR-EQ-19): what the pool screen shows of
+// them, each grant made by the day counted with its events and exercises by then.
+func GrantsStanding(ctx context.Context, u storage.UnitOfWork, day time.Time) (Standing, error) {
+	var out Standing
+	docs, err := all(ctx, u, storage.DocumentOptionGrant)
+	if err != nil {
+		return out, err
+	}
+	events, err := recordedEvents(ctx, u)
+	if err != nil {
+		return out, err
+	}
+	exercises, err := ExercisesIn(ctx, u)
+	if err != nil {
+		return out, err
+	}
+	for _, d := range docs {
+		if d.Status != storage.DocumentPosted {
+			continue
+		}
+		g, err := ReadGrant(d)
+		if err != nil {
+			return out, err
+		}
+		if g.GrantedOn.After(day) {
+			continue
+		}
+		s, err := StandingOf(g, events[d.ID], exercises[d.ID], day)
+		if err != nil {
+			return out, err
+		}
+		for _, sum := range [][2]*apd.Decimal{{&out.Forfeited, &s.Forfeited}, {&out.Expired, &s.Expired}, {&out.Exercised, &s.Exercised},
+			{&out.Outstanding, &s.Outstanding}, {&out.Vested, &s.Vested}, {&out.Exercisable, &s.Exercisable}} {
+			if _, err := exact.Add(sum[0], sum[0], sum[1]); err != nil {
+				return out, err
+			}
+		}
+	}
+	return out, nil
+}

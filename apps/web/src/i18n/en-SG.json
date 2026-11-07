@@ -320,6 +320,58 @@
       "label": "SAFE or note",
       "tooltip": "One SAFE or note: its terms, the signed copy, its approval, what 2700 holds for it today and its conversion."
     },
+    "equity.options": {
+      "label": "Option pool and grants",
+      "tooltip": "The shares set aside for options by resolution, every grant with its vesting, and what the pool leaves to grant."
+    },
+    "equity.option-grant": {
+      "label": "Grant of options",
+      "tooltip": "A grant's terms, what has vested, been exercised, forfeited or expired, and its letter and approval."
+    },
+    "equity.pool-resolution": {
+      "label": "Pool resolution",
+      "tooltip": "A resolution setting the option pool's size from the day it was passed, with the signed resolution."
+    },
+    "equity.my-shares": {
+      "label": "My shares and options",
+      "tooltip": "Your own option grants: what has vested, what vests next and the exercise price. You see only yours."
+    },
+    "pool-resolution.draft": {
+      "label": "Draft the resolution",
+      "tooltip": "Record the shares the shareholders set aside for options, the class and the day the resolution was passed."
+    },
+    "pool-resolution.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the drafted resolution, with its signed copy, to another Owner or the Controller to record."
+    },
+    "pool-resolution.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the signed shareholders' resolution, and the plan's rules."
+    },
+    "option-grant.draft": {
+      "label": "Draft the grant",
+      "tooltip": "Record a grant of options: the holder, the options, the exercise price, the vesting and the expiry. It takes at most what the pool leaves."
+    },
+    "option-grant.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the drafted grant, with its letter, to another Owner or the Controller to record, never the holder."
+    },
+    "option-grant.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the grant letter the holder signed."
+    },
+    "option-event.draft": {
+      "label": "Draft it",
+      "tooltip": "Forfeit options not vested when the holder leaves, or let options lapse. They are back in the pool from that day."
+    },
+    "option-event.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the forfeiture or expiry, with its notice, to another Owner or the Controller to record, never the holder."
+    },
+    "option-event.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the notice: the leaver's letter, the board's minute or the notice of lapse."
+    },
     "instrument.draft": {
       "label": "Draft the instrument",
       "tooltip": "Record a signed SAFE or note: its holder, form, amount and terms. Another Owner or the Controller approves it, with the signed copy attached."
