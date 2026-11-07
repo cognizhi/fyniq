@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "Holds when a line posts to one of these accounts.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "amount_at_least": {
+      "description": "Holds when the change's amount is at or above it: a decimal in the base currency.",
+      "examples": [
+        "5000.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "departments": {
+      "description": "Holds when a line carries one of these values of the Department dimension.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "vendors": {
+      "description": "Holds when the change's vendor is one of these vendor contacts.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "title": "RuleConditionsChange",
+  "type": "object"
+}
