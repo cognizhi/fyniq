@@ -38,7 +38,7 @@ var (
 	Triggers         = []string{"priced_round", "maturity", "liquidity_event", "other"}
 	Denominators     = []string{"post_money_capitalisation", "pre_money_shares", "as_terms"}
 	Classifications  = []string{"", "liability", "equity"} // the accountant's, per instrument [verify]
-	MaxPriceDecimals = 8
+	MaxPriceDecimals = 6                                   // a unit price's scale (money.UnitPriceScale), as share_issue.price keeps it
 )
 
 // Instrument is a SAFE or convertible note (FR-EQ-18, design D6): its holder, amount and the day it was signed; its cap,

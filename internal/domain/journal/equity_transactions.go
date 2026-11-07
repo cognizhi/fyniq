@@ -146,6 +146,8 @@ func (s EquityTransactions) EffectiveIn(ctx context.Context, u storage.UnitOfWor
 			}
 			out.Entries = append(out.Entries, stored)
 		}
+	case equity.KindInstrumentConversion:
+		err = s.convertInstrument(ctx, u, doc, t, e, settings, memo, &out)
 	case equity.KindReversal:
 		err = s.reverse(ctx, u, t, e, settings, move, &out)
 	default:
@@ -216,6 +218,79 @@ func (s EquityTransactions) issueCash(ctx context.Context, u storage.UnitOfWork,
 	issue, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: issueID, HolderID: t.HolderID, ClassAccountID: t.ClassAccountID, ClassID: t.ClassID,
 		Shares: storage.Decimal(t.Shares), Price: storage.Decimal(t.Price), Currency: settings.Base.Code, Amount: storage.Decimal(amount.String()),
 		Consideration: storage.ConsiderationCash, ResolutionRefs: t.ResolutionRefs, LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn,
+		EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today}, &doc.ID)
+	if err != nil {
+		return err
+	}
+	out.Issue = &issue
+	moved, err := u.Holdings().OfTransaction(ctx, doc.ID)
+	out.Movements = moved
+	return err
+}
+
+// convertInstrument makes a SAFE's or note's conversion effective (FR-EQ-18, design D6): refused until its round is
+// effective on or before the day and 2700 holds what it converts for the instrument; then the holder marked
+// shareholder, the entry Dr 2700 naming the instrument · Cr the class, and the issue with its movement. What the
+// conversion leaves of the instrument stays on 2700 until it is settled under its terms.
+func (s EquityTransactions) convertInstrument(ctx context.Context, u storage.UnitOfWork, doc storage.Document, t equity.Transaction, e EquityEffective,
+	settings ledger.Settings, memo string, out *EquityEffected) error {
+	var holding uuid.UUID
+	for id, a := range settings.Accounts {
+		if a.InstrumentAccount() && a.Active && !a.Group {
+			holding = id
+			break
+		}
+	}
+	if holding == uuid.Nil {
+		return effectiveError("the chart of accounts has no convertible instruments account",
+			"Give 2700 Convertible notes / SAFE the role convertible-instruments, and match the instrument's money to it")
+	}
+	round, err := u.Holdings().OfTransaction(ctx, t.RoundID)
+	if err != nil {
+		return err
+	}
+	if len(round) == 0 || round[0].EffectiveOn.After(e.EffectiveOn) {
+		return effectiveError("its round is not effective on or before the day", "Make the round effective first: the SAFEs convert with it, on its day or after")
+	}
+	if reversed, err := equity.Reversed(ctx, u); err != nil {
+		return err
+	} else if reversed[t.RoundID] {
+		return effectiveError("its round was reversed", "Draft the conversions again from the round that replaces it: a reversed round's conversions no longer count")
+	}
+	amount, err := money.ParseStored(t.Amount, settings.Base)
+	if err != nil {
+		return err
+	}
+	held, err := balance.Instrument(ctx, u, settings.Base, holding, t.InstrumentID, e.EffectiveOn)
+	if err != nil {
+		return err
+	}
+	if c, err := held.Cmp(amount); err != nil {
+		return err
+	} else if c < 0 {
+		return effectiveError(fmt.Sprintf("2700 holds %s %s for the instrument on %s, less than the %s %s it converts", held, held.Currency().Code,
+			e.EffectiveOn.Format(time.DateOnly), amount, amount.Currency().Code), "Match the instrument's money to 2700 first, naming it")
+	}
+	if err := markShareholder(ctx, u, t.HolderID); err != nil {
+		return err
+	}
+	issueID, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	entry, err := ledger.PostInstrumentConversion(ledger.InstrumentConversion{ID: issueID, PostOn: e.EffectiveOn, Memo: memo, Instrument: t.InstrumentID,
+		Holding: holding, Class: t.ClassAccountID, Amount: amount}, settings)
+	if err != nil {
+		return err
+	}
+	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	if err != nil {
+		return err
+	}
+	out.Entries = append(out.Entries, stored)
+	issue, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: issueID, HolderID: t.HolderID, ClassAccountID: t.ClassAccountID, ClassID: t.ClassID,
+		Shares: storage.Decimal(t.Shares), Price: storage.Decimal(t.Price), Currency: settings.Base.Code, Amount: storage.Decimal(amount.String()),
+		Consideration: storage.ConsiderationSAFE, ResolutionRefs: t.ResolutionRefs, LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn,
 		EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today}, &doc.ID)
 	if err != nil {
 		return err
@@ -330,6 +405,22 @@ func markShareholder(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) er
 
 // replayCashIssue posts a cash issue's entry again from its row in the register (ENG-06): the monies account is the one
 // its entry debited, which the register does not keep.
+// replayInstrumentConversion posts a conversion's entry again from its issue (ENG-06): the instrument is its 2700 line's.
+func replayInstrumentConversion(s ledger.Settings, e storage.Entry, x storage.ShareIssue) (ledger.Entry, error) {
+	amount, err := money.ParseStored(string(x.Amount), s.Base)
+	if err != nil {
+		return ledger.Entry{}, err
+	}
+	var holding, instrument uuid.UUID
+	for _, l := range e.Lines {
+		if s.Accounts[l.AccountID].InstrumentAccount() && l.InstrumentID != nil {
+			holding, instrument = l.AccountID, *l.InstrumentID
+		}
+	}
+	return ledger.ReplayInstrumentConversion(e.RuleVersion, ledger.InstrumentConversion{ID: x.ID, PostOn: e.PostingDate, Memo: e.Memo,
+		Instrument: instrument, Holding: holding, Class: x.ClassAccountID, Amount: amount}, s)
+}
+
 func replayCashIssue(s ledger.Settings, e storage.Entry, x storage.ShareIssue) (ledger.Entry, error) {
 	amount, err := money.ParseStored(string(x.Amount), s.Base)
 	if err != nil {

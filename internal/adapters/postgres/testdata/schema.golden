@@ -5006,7 +5006,7 @@ end_session(p_hash bytea, p_now timestamp with time zone) → void | security de
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 equity_record_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d43ce384e28f88a5ba6fc7d50c20d1ac
-equity_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b3d70e021ce27c29e4f2e466cf3e90f3
+equity_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 35bf4f36a2fe0387106492f9900467fc
 equity_transaction_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 86ee0e0f60a4e7ae69ba04d79b397a64
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
@@ -5017,7 +5017,7 @@ fixed_asset_source_guard() → trigger | security invoker | v | search_path=pg_c
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
-holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c75a7178a917890581cec7f3b1ced8f5
+holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4fbce41476afa125740252e23a4732a1
 holding_movement_settled() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5bc31cd33b59e7587ae2fb621cac56f2
 identity_may_sign_in(p_issuer text, p_subject text) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 14bbafbe258830341b935c34136b0ae2
 idle_timeout(p_org uuid, p_now timestamp with time zone, p_default interval) → interval | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02a235edb67b54eb3f4c0a1499190573

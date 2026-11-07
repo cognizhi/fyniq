@@ -3956,6 +3956,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/equity-transactions/{transaction_id}/conversions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft the SAFEs' and notes' conversions at a round
+         * @description At an approved issue for cash, the priced round, drafts the conversion of every recorded SAFE and note its next priced round converts (FR-EQ-18, design D6): one instrument_conversion transaction each, for approval. Each one's conversion price is the lower of its cap price and the discounted round price, cut to its decimals; a post-money SAFE's cap price is its cap × (1 − Σ amount ÷ cap over the post-money SAFEs converting) ÷ the shares before the round, a pre-money one's its cap ÷ those shares. Its shares come from RND-SHARE; what is left stays on 2700. A conversion that an enabled template does not cover, every term, carries its review for the accountant (⚠). An instrument that a conversion still standing names is left out, so asking again drafts nothing twice. Side effects: the drafts, audit events. Needs If-Match with the round's ETag: the drafts are at the round as read. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["draftInstrumentConversions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/equity-transactions/{transaction_id}/effective": {
         parameters: {
             query?: never;
@@ -19898,11 +19918,17 @@ export interface components {
              */
             holder_id?: string;
             /**
-             * @description issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction.
+             * Format: uuid
+             * @description instrument_conversion: the recorded SAFE or note converting, whose holder and class it takes.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+             */
+            instrument_id?: string;
+            /**
+             * @description issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions.
              * @example issue_cash
              * @enum {string}
              */
-            kind: "issue_cash" | "transfer" | "class_conversion" | "reversal";
+            kind: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion";
             /**
              * @description A note for the register.
              * @example Seed round, second close
@@ -19929,6 +19955,17 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
              */
             reverses_id?: string;
+            /**
+             * @description instrument_conversion: what the accountant completes in a conversion no enabled template covers (⚠), as it was drafted.
+             * @example the accountant completes it: it follows no template, a discount
+             */
+            readonly review?: string;
+            /**
+             * Format: uuid
+             * @description instrument_conversion: the approved issue for cash, the priced round, it converts at.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02
+             */
+            round_id?: string;
             /**
              * Format: uuid
              * @description transfer: the holder the shares come from.
@@ -62642,7 +62679,7 @@ export interface operations {
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
                 /** @description Only transactions of this kind. */
-                kind?: "issue_cash" | "transfer" | "class_conversion" | "reversal";
+                kind?: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion";
             };
             header?: never;
             path?: never;
@@ -63392,6 +63429,179 @@ export interface operations {
                 };
             };
             /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    draftInstrumentConversions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The equity transaction's ID. */
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityTransactionPage"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityTransactionPage"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
             403: {
                 headers: {
                     [name: string]: unknown;

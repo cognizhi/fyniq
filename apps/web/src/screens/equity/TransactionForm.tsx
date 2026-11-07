@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { TriangleAlert } from "lucide-react";
 import { useId } from "react";
 import type { components } from "../../api/schema";
 import { api } from "../../api/client";
+import { Icon } from "../../ui";
 import { listAccounts } from "../accounting/data";
 import { listHolders } from "./Holders";
-import { kindWords, listTransactions, type TransactionKind } from "./transactionWords";
+import { kindWords, listTransactions, reviewText, type TransactionKind } from "./transactionWords";
 
 export type TransactionDraft = components["schemas"]["EquityTransactionDraft"];
 type ShareClass = components["schemas"]["ShareClassView"];
@@ -22,7 +24,7 @@ export function bodyOf(d: TransactionDraft): TransactionDraft {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(d)) {
     const s = typeof v === "string" ? v.trim() : "";
-    if (s) out[k] = k === "shares" || k === "to_shares" ? s.replace(/,/g, "") : s;
+    if (s && k !== "review") out[k] = k === "shares" || k === "to_shares" ? s.replace(/,/g, "") : s;
   }
   return out as TransactionDraft;
 }
@@ -41,6 +43,8 @@ export function previewOf(d: TransactionDraft, codeOf: (id?: string) => string):
         : "No entry when both classes are on one share-capital account: the shares move between classes.";
     case "reversal":
       return "Undoes every holding movement and entry of the transaction it names, on its effective date.";
+    case "instrument_conversion":
+      return `When ACRA's register shows it, it posts Dr 2700 Convertible instruments, naming the instrument · Cr ${codeOf(d.class_account_id) || "the class"}, with shares × the conversion price. What is left of the instrument's money stays on 2700 until it is settled under its terms.`;
   }
 }
 
@@ -128,7 +132,7 @@ export function TransactionFields({ form, set, kindFixed }: { form: TransactionD
         </label>
         <select className="fy-select" id={`${id}-kind`} value={form.kind} disabled={kindFixed}
           onChange={(e) => set({ ...blankDraft, kind: e.target.value as TransactionKind })}>
-          {(Object.keys(kindWords) as TransactionKind[]).map((k) => (
+          {(Object.keys(kindWords) as TransactionKind[]).filter((k) => k !== "instrument_conversion" || form.kind === k).map((k) => (
             <option key={k} value={k}>
               {kindWords[k]}
             </option>
@@ -184,6 +188,18 @@ export function TransactionFields({ form, set, kindFixed }: { form: TransactionD
             </select>
           </div>
           <div className="fy-field--full">{text("reason", "Why", "Such as: ACRA's register of members shows 50,000 shares; attach the extract")}</div>
+        </>
+      )}
+      {form.kind === "instrument_conversion" && (
+        <>
+          {form.review && (
+            <p className="fy-field--full fy-small" role="note">
+              <Icon of={TriangleAlert} /> {reviewText(form.review)}
+            </p>
+          )}
+          <p className="fy-field--full fy-small fy-secondary">The holder and the share class are the instrument's.</p>
+          {text("shares", "Shares", "A whole number within the instrument's amount, such as 52631")}
+          {text("price", "Conversion price per share", "The lower of the cap price and the discounted round price, such as 2.375")}
         </>
       )}
       <div className="fy-field--full">{text("note", "Note (optional)", undefined, 1000)}</div>

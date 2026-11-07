@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, ownerSession } from "../../test/api";
@@ -128,5 +128,35 @@ describe("the equity transactions", () => {
     expect(screen.getByText("No entry in the company's books")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Reverse it" }).getAttribute("href")).toBe("/equity/transactions/new?reverses=eq-2");
     expect(screen.queryByRole("form", { name: "Record an ACRA step" })).toBeNull();
+  });
+
+  // req: FR-EQ-18
+  it("drafts the SAFE conversions at an approved round, and shows what the accountant completes; axe finds nothing", async () => {
+    const conversion = { ...base, id: "eq-3", status: "draft" as const, version: 1, evidence: 0,
+      details: { kind: "instrument_conversion" as const, instrument_id: "in-1", round_id: "eq-1", holder_id: "c-hatch", class_account_id: "acc-3010",
+        shares: "52083", price: "2.40", review: "the accountant completes it: it follows no template, a discount" },
+      parties: [{ contact_id: "c-hatch", name: "Hatch Capital Pte. Ltd.", role: "subscriber" as const }], amount: sgd("124999.20") };
+    const seen = answer({
+      "GET /v1/equity-transactions/eq-1": { status: 200, body: issue, headers: { ETag: '"2-posted"' } },
+      "GET /v1/equity-transactions/eq-1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/equity-transactions/eq-1/conversions": { status: 201, body: { items: [conversion] } },
+      "GET /v1/equity-transactions/eq-3": { status: 200, body: conversion, headers: { ETag: '"1-draft"' } },
+      "GET /v1/equity-transactions/eq-3/evidence": { status: 200, body: { items: [] } },
+    });
+    renderPage(TransactionPage, { path: "/equity/transactions/eq-1", route: "/equity/transactions/$transactionId", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Draft the SAFE conversions" }));
+    expect(await screen.findByText("Drafted 1 conversion: open each in Transactions, attach the resolutions and ask for approval.")).toBeTruthy();
+    const call = seen.find((s) => s.method === "POST" && s.path === "/v1/equity-transactions/eq-1/conversions");
+    expect(call?.headers.get("Idempotency-Key")).toBeTruthy();
+    expect(call?.headers.get("If-Match")).toBe('"2-posted"');
+
+    cleanup();
+    renderPage(TransactionPage, { path: "/equity/transactions/eq-3", route: "/equity/transactions/$transactionId", session: accountant });
+    expect(await screen.findByRole("heading", { name: "SAFE or note conversion" })).toBeTruthy();
+    expect(screen.getByText(/The accountant completes it: it follows no template, a discount\. Check the shares/)).toBeTruthy();
+    expect(screen.getByText("Conversion price per share")).toBeTruthy();
+    expect(screen.getByText("124,999.20 SGD")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Draft the SAFE conversions" })).toBeNull();
+    await noViolations(document.body);
   });
 });

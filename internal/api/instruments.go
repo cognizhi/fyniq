@@ -45,7 +45,7 @@ type InstrumentDraft struct {
 	Denominator      string `json:"denominator" enum:"post_money_capitalisation,pre_money_shares,as_terms" doc:"How its terms count the shares its price divides by: the company after the SAFEs convert, the shares before the round, or as the terms say, quoted in denominator_note." example:"post_money_capitalisation"`
 	DenominatorNote  string `json:"denominator_note,omitempty" maxLength:"1000" doc:"With as_terms: how the terms count the shares." example:"All shares, options granted and the unallocated pool, before the round"`
 	InterestConverts bool   `json:"interest_converts,omitempty" doc:"A note's interest converts into shares with its principal." example:"false"`
-	PriceDecimals    int    `json:"price_decimals" minimum:"0" maximum:"8" doc:"The decimals the terms give the conversion price." example:"4"`
+	PriceDecimals    int    `json:"price_decimals" minimum:"0" maximum:"6" doc:"The decimals the terms give the conversion price." example:"4"`
 	Classification   string `json:"classification,omitempty" enum:"liability,equity" doc:"The accountant's classification, liability or equity [verify per instrument]; left out until decided." example:"liability"`
 	Template         string `json:"template,omitempty" doc:"The template its terms follow (listInstrumentTemplates), when one does." example:"yc-sg-post-money-cap@1"`
 	ProRata          bool   `json:"pro_rata,omitempty" doc:"A pro rata side letter." example:"true"`

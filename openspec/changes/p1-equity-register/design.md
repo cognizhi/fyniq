@@ -222,11 +222,16 @@ does not cover (an MFN, a discount, interest), converts by a draft for the accou
 
 **Conversion at a priced round** (the trigger is a recorded issue_cash round, or an approved round scenario, D8):
 - **The post-money cap price** is cap ÷ the company capitalisation, which includes the converting SAFEs' own shares.
-  For the safes s with amounts A, the engine solves n_s = A_s × C₀ ÷ (cap_s − ΣA) over the shares C₀ the terms count
-  before the round (shares, options and the pool, as the template says). Each n_s goes through `RND-SHARE`.
+  Each post-money SAFE s with amount A_s and cap cap_s converts into A_s ÷ cap_s of that capitalisation, so the SAFEs
+  together take f = Σ A_t ÷ cap_t and the capitalisation is C₀ ÷ (1 − f), over the shares C₀ the terms count before the
+  round (shares, options and the pool, as the template says). Each one's cap price is cap_s × (1 − f) ÷ C₀. (Built in
+  slice 4b-i: the earlier n_s = A_s × C₀ ÷ (cap_s − ΣA) is the same only when every cap is equal; the two-SAFE test pins
+  the difference.)
 - **A pre-money cap price** is cap ÷ C₀.
 - **The conversion price** is the lower of the cap price and the discounted round price, as the terms say, at the
-  recorded precision.
+  recorded precision, cut down (never rounded up, so the shares never cost more than the terms allow) [accountant to
+  confirm]. The round's own price always competes: when it is below the cap price, the SAFE converts at the round's
+  price, and a post-money SAFE then carries a review for the accountant, since its capitalisation assumed the cap.
 - **The shares** come from `RND-SHARE`(amount, price). The remainder stays on 2700 until settled under the terms.
 - **The draft** is an `instrument_conversion` transaction (Dr 2700 · Cr class), for approval.
 
