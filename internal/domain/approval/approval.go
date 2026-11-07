@@ -130,6 +130,12 @@ const (
 	// ObjectEquityTransaction is an equity transaction, to approve (FR-EQ-17, FM-1, FM-9; rev 0.205): another person who
 	// holds A on the cap table approves, never a holder it moves shares of or for; its key is the transaction's document ID.
 	ObjectEquityTransaction = "equity_transaction"
+	// ObjectInstrument is a SAFE or convertible note, to record (FR-EQ-18, FM-1): another person who holds A on the cap
+	// table approves, never its holder; its key is the instrument's document ID.
+	ObjectInstrument = "instrument"
+	// ObjectInstrumentTemplate is a form the engine may convert by itself, to enable on its lawyer's confirmation
+	// (FR-EQ-18, question 33): another person who holds A on the cap table approves; its key is the enablement's document ID.
+	ObjectInstrumentTemplate = "instrument_template"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -216,6 +222,11 @@ const (
 	// OpEquityTransactionApprove approves an equity transaction as drafted, numbered EQ-, to make effective with ACRA's
 	// date (FR-EQ-17).
 	OpEquityTransactionApprove = "equity_transaction.approve"
+	// OpInstrumentRecord records a SAFE or convertible note as drafted (FR-EQ-18).
+	OpInstrumentRecord = "instrument.record"
+	// OpInstrumentTemplateEnable enables a form the engine may convert by itself, on its lawyer's confirmation
+	// (FR-EQ-18, question 33).
+	OpInstrumentTemplateEnable = "instrument_template.enable"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -247,6 +258,8 @@ var Operations = map[string]string{
 	OpHolderRecordRecord:       ObjectHolderRecord,
 	OpShareClassRecord:         ObjectShareClass,
 	OpEquityTransactionApprove: ObjectEquityTransaction,
+	OpInstrumentRecord:         ObjectInstrument,
+	OpInstrumentTemplateEnable: ObjectInstrumentTemplate,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -335,6 +348,10 @@ var Dependencies = map[string][]string{
 	ObjectShareClass: {"status", "account"},
 	// the transaction's version and status, and the holders it moves shares of or for: what is approved
 	ObjectEquityTransaction: {"status", "parties"},
+	// the instrument's version and status, and its holder: what is recorded
+	ObjectInstrument: {"status", "holder"},
+	// the enablement's version and status, and its template: what is enabled
+	ObjectInstrumentTemplate: {"status", "template"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -382,6 +399,8 @@ var Rows = map[string]string{
 	ObjectHolderRecord:        "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectShareClass:          "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectEquityTransaction:   "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectInstrument:          "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectInstrumentTemplate:  "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -458,6 +477,8 @@ var Policies = map[string]Policy{
 	ObjectHolderRecord:        {ObjectType: ObjectHolderRecord, Version: "founder/holder_record@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectShareClass:          {ObjectType: ObjectShareClass, Version: "founder/share_class@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectEquityTransaction:   {ObjectType: ObjectEquityTransaction, Version: "founder/equity_transaction@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectInstrument:          {ObjectType: ObjectInstrument, Version: "founder/instrument@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectInstrumentTemplate:  {ObjectType: ObjectInstrumentTemplate, Version: "founder/instrument_template@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

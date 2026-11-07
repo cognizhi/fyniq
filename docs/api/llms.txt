@@ -319,6 +319,22 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/installation/connectors/{connector_id}/test` (testInstallationConnector): Test one of the installation's connectors
 - `GET /v1/installation/sign-in-methods` (listSignInMethods): List the sign-in providers and their switches
 - `PATCH /v1/installation/sign-in-methods/{provider}` (changeSignInMethod): Turn a sign-in provider on or off, or set its domains
+- `POST /v1/instrument-template-enablements/{enablement_id}/approval` (requestInstrumentTemplateApproval): Ask for approval to enable a template
+- `GET /v1/instrument-template-enablements/{enablement_id}/evidence` (listInstrumentTemplateEvidence): List a template enablement's files
+- `POST /v1/instrument-template-enablements/{enablement_id}/evidence` (addInstrumentTemplateEvidence): Attach a template's lawyer's confirmation
+- `GET /v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}` (getInstrumentTemplateEvidence): Get a template enablement's file
+- `DELETE /v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}` (removeInstrumentTemplateEvidence): Remove a file from a drafted template enablement
+- `GET /v1/instrument-templates` (listInstrumentTemplates): List the instrument templates
+- `POST /v1/instrument-templates/{template_key}/enablement` (draftInstrumentTemplateEnablement): Draft a template's enablement
+- `GET /v1/instruments` (listInstruments): List the SAFEs and convertible notes
+- `POST /v1/instruments` (createInstrument): Draft a SAFE or convertible note
+- `GET /v1/instruments/{instrument_id}` (getInstrument): Get a SAFE or convertible note
+- `PUT /v1/instruments/{instrument_id}` (replaceInstrument): Change a drafted SAFE or convertible note
+- `POST /v1/instruments/{instrument_id}/approval` (requestInstrumentApproval): Ask for approval to record a SAFE or convertible note
+- `GET /v1/instruments/{instrument_id}/evidence` (listInstrumentEvidence): List a SAFE's or note's files
+- `POST /v1/instruments/{instrument_id}/evidence` (addInstrumentEvidence): Attach a SAFE's or note's documents
+- `GET /v1/instruments/{instrument_id}/evidence/{evidence_id}` (getInstrumentEvidence): Get a SAFE's or note's file
+- `DELETE /v1/instruments/{instrument_id}/evidence/{evidence_id}` (removeInstrumentEvidence): Remove a file from a drafted SAFE or note
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice

@@ -115,7 +115,9 @@
         "bank_reconciliation",
         "holder_record",
         "share_class",
-        "equity_transaction"
+        "equity_transaction",
+        "instrument",
+        "instrument_template"
       ],
       "examples": [
         "organisation_setting"
@@ -175,7 +177,9 @@
         "bank_reconciliation.sign",
         "holder_record.record",
         "share_class.record",
-        "equity_transaction.approve"
+        "equity_transaction.approve",
+        "instrument.record",
+        "instrument_template.enable"
       ],
       "examples": [
         "organisation_setting.change"

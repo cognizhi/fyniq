@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "What the investor paid, in the base currency.",
+      "examples": [
+        "125000.00"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,2})?$",
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "The approval request waiting, if one is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's status: ✖ while no evidence is attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "class_account_id": {
+      "description": "The share-capital account of the class it converts into.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_code": {
+      "description": "The class's account code.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "class_id": {
+      "description": "The recorded class it converts into; left out, the account's first.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "classification": {
+      "description": "The accountant's classification, liability or equity [verify per instrument]; left out until decided.",
+      "enum": [
+        "liability",
+        "equity"
+      ],
+      "examples": [
+        "liability"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The amount's currency, the base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "denominator": {
+      "description": "How its terms count the shares its price divides by: the company after the SAFEs convert, the shares before the round, or as the terms say, quoted in denominator_note.",
+      "enum": [
+        "post_money_capitalisation",
+        "pre_money_shares",
+        "as_terms"
+      ],
+      "examples": [
+        "post_money_capitalisation"
+      ],
+      "type": "string"
+    },
+    "denominator_note": {
+      "description": "With as_terms: how the terms count the shares.",
+      "examples": [
+        "All shares, options granted and the unallocated pool, before the round"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "discount": {
+      "description": "A percentage off the round price, above 0 and below 100.",
+      "examples": [
+        "20"
+      ],
+      "pattern": "^([0-9]+(\\.[0-9]{1,8})?)?$",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "How many files are attached and not removed: asking for approval needs one, the signed instrument.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "form": {
+      "description": "post_money_safe: a SAFE whose valuation cap counts the company after the SAFEs convert; pre_money_safe: one whose cap counts the shares before the round; discount_safe: a discount on the round price and no cap; mfn_safe: the best terms of a later instrument; convertible_note: a loan that converts, with interest and a maturity.",
+      "enum": [
+        "post_money_safe",
+        "pre_money_safe",
+        "discount_safe",
+        "mfn_safe",
+        "convertible_note"
+      ],
+      "examples": [
+        "post_money_safe"
+      ],
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The investor who holds it, a contact marked investor or shareholder. It stays once drafted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Its holder's name.",
+      "examples": [
+        "Lion Rock Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The instrument.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "interest_converts": {
+      "description": "A note's interest converts into shares with its principal.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "interest_rate": {
+      "description": "A note's simple interest, a percentage a year.",
+      "examples": [
+        "8"
+      ],
+      "pattern": "^([0-9]+(\\.[0-9]{1,8})?)?$",
+      "type": "string"
+    },
+    "maturity_on": {
+      "description": "A note's maturity.",
+      "examples": [
+        "2028-06-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "mfn": {
+      "description": "A most-favoured-nation clause.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Lion Rock Ventures, seed"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "price_decimals": {
+      "description": "The decimals the terms give the conversion price.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "maximum": 8,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "pro_rata": {
+      "description": "A pro rata side letter.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-06-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it, as it was recorded."
+    },
+    "signed_on": {
+      "description": "The day both sides signed it.",
+      "examples": [
+        "2026-06-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "draft: waiting for the signed instrument and approval; recorded: in the register.",
+      "enum": [
+        "draft",
+        "recorded"
+      ],
+      "examples": [
+        "recorded"
+      ],
+      "type": "string"
+    },
+    "template": {
+      "description": "The template its terms follow (listInstrumentTemplates), when one does.",
+      "examples": [
+        "yc-sg-post-money-cap@1"
+      ],
+      "type": "string"
+    },
+    "template_enabled": {
+      "description": "Its template is enabled, so it can convert by itself when every term it has is one the template covers.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "trigger": {
+      "description": "What converts it: the next priced round, its maturity, a liquidity event, or what the terms say.",
+      "enum": [
+        "priced_round",
+        "maturity",
+        "liquidity_event",
+        "other"
+      ],
+      "examples": [
+        "priced_round"
+      ],
+      "type": "string"
+    },
+    "valuation_cap": {
+      "description": "A capped SAFE's valuation cap, in the base currency.",
+      "examples": [
+        "2500000"
+      ],
+      "pattern": "^([0-9]+(\\.[0-9]{1,8})?)?$",
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "holder_name",
+    "currency",
+    "class_code",
+    "evidence",
+    "checks",
+    "form",
+    "holder_id",
+    "amount",
+    "signed_on",
+    "trigger",
+    "class_account_id",
+    "denominator",
+    "price_decimals"
+  ],
+  "title": "InstrumentView",
+  "type": "object"
+}
