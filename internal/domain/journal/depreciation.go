@@ -326,3 +326,42 @@ func DepreciationStates(ctx context.Context, u storage.UnitOfWork, doc storage.D
 	slices.SortStableFunc(out, func(a, b DepreciationState) int { return a.Month.Compare(b.Month) })
 	return out, nil
 }
+
+// PlannedDepreciation is the depreciation the asset register's schedules give each of the n months from the month of
+// from, in the base currency, month by month (FR-PLN-02: the forecast's depreciation of the assets already held;
+// p1-planning design D3). It reads every recorded asset's schedule, a disposed one included up to its disposal; a month
+// past every schedule has none.
+func PlannedDepreciation(ctx context.Context, u storage.UnitOfWork, from time.Time, n int, base money.Currency) ([]money.Money, error) {
+	start := time.Date(from.Year(), from.Month(), 1, 0, 0, 0, 0, time.UTC)
+	out := make([]money.Money, n)
+	for i := range out {
+		out[i] = money.Zero(base)
+	}
+	f := storage.DocumentFilter{Type: storage.DocumentFixedAsset, Status: storage.DocumentPosted, Limit: MaxDue}
+	for {
+		docs, err := u.Documents().Page(ctx, f)
+		if err != nil {
+			return nil, err
+		}
+		for _, doc := range docs {
+			ds, err := depreciationOf(doc)
+			if err != nil {
+				return nil, err
+			}
+			for _, d := range ds {
+				m := time.Date(d.Month.Year(), d.Month.Month(), 1, 0, 0, 0, 0, time.UTC)
+				i := (m.Year()-start.Year())*12 + int(m.Month()) - int(start.Month())
+				if i < 0 || i >= n {
+					continue
+				}
+				if out[i], err = out[i].Add(d.Amount); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if len(docs) < f.Limit {
+			return out, nil
+		}
+		f.AfterDate, f.AfterID = docs[len(docs)-1].Date, &docs[len(docs)-1].ID
+	}
+}

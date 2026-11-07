@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arr_end": {
+      "description": "ARR at the horizon.",
+      "examples": [
+        "987252.12"
+      ],
+      "type": "string"
+    },
+    "average_burn": {
+      "description": "The average net burn of the first 12 months.",
+      "examples": [
+        "18187.69"
+      ],
+      "type": "string"
+    },
+    "break_even": {
+      "description": "The first month with revenue whose EBITDA is not negative (YYYY-MM); absent: not within the forecast.",
+      "examples": [
+        "2029-05"
+      ],
+      "type": "string"
+    },
+    "buffer_months": {
+      "description": "The buffer the gap used: the scenario's, the forecast's or planning.buffer_months.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cash_out_month": {
+      "description": "The first month cash closes below zero (YYYY-MM); absent: not within the horizon.",
+      "examples": [
+        "2028-03"
+      ],
+      "type": "string"
+    },
+    "customers_end": {
+      "description": "Customers at the horizon, to 1 decimal.",
+      "examples": [
+        "621.9"
+      ],
+      "type": "string"
+    },
+    "funding_gap": {
+      "description": "The buffer × the average burn, less the minimum cash, at least 0.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "minimum_cash": {
+      "description": "The lowest month-end cash.",
+      "examples": [
+        "-91351.81"
+      ],
+      "type": "string"
+    },
+    "minimum_month": {
+      "description": "Its month (YYYY-MM).",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    },
+    "revenue_next_12": {
+      "description": "The revenue of the next 12 months.",
+      "examples": [
+        "575399.18"
+      ],
+      "type": "string"
+    },
+    "runway_beyond": {
+      "description": "true: no cash-out month within the horizon, so runway is more than runway_months.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "runway_months": {
+      "description": "The months before the cash-out month; the horizon when there is none, with runway_beyond.",
+      "examples": [
+        16
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "runway_months",
+    "runway_beyond",
+    "minimum_cash",
+    "minimum_month",
+    "average_burn",
+    "funding_gap",
+    "buffer_months",
+    "revenue_next_12",
+    "arr_end",
+    "customers_end"
+  ],
+  "title": "ForecastKey",
+  "type": "object"
+}

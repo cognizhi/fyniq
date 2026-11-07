@@ -30,6 +30,7 @@ const (
 	Minutes   Kind = "minutes"    // a whole number of minutes
 	Days      Kind = "days"       // a whole number of days
 	Years     Kind = "years"      // a whole number of years
+	Months    Kind = "months"     // a whole number of months
 	AmountSGD Kind = "amount_sgd" // Singapore dollars, with cents, such as "50.00"
 	Percent   Kind = "percent"    // a percentage with at most two decimals, such as "3" or "2.5"
 	Text      Kind = "text"       // a fixed text, such as the data region
@@ -187,6 +188,9 @@ var Catalogue = []Definition{
 	{Key: "notify.email_details", Group: "Notifications", Label: "Details in notification email", Kind: Switch, Recommended: "false",
 		Reason: "Notification email says what kind of thing happened and links to Fyniq; amounts, names and reasons stay in the app, since the email provider keeps mail outside Singapore",
 		Guide:  guide + "notifications", Requirement: "FR-NTF-02", DualControl: true},
+	{Key: "planning.buffer_months", Group: "Planning", Label: "Cash buffer to keep", Kind: Months, Recommended: "6",
+		Reason: "Months of average net burn a forecast keeps as a buffer: its funding gap, and the short-term cash flow's buffer line and alert, as the workbook and C.1 #36",
+		Guide:  guide + "cash-buffer", Requirement: "FR-PLN-03", Min: "0", Max: "36"},
 	{Key: "purchases.payment_terms_days", Group: "Defaults", Label: "Payment terms for bills", Kind: Days, Recommended: "30",
 		Reason: "A bill from a vendor with no terms of its own falls due 30 days after its date",
 		Guide:  guide + "payment-terms", Requirement: "FR-ORG-04", Min: "0", Max: "365"},
@@ -257,7 +261,7 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send true or false")
 		}
 		return raw, nil
-	case Minutes, Days, Years:
+	case Minutes, Days, Months, Years:
 		if !whole.MatchString(raw) {
 			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", d.Kind, d.Min, d.Max))
 		}

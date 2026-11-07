@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "books": {
+      "$ref": "ForecastBooks.schema.json",
+      "description": "The books' figures at the start."
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "forecast_id": {
+      "description": "The forecast; absent for a plan run without saving it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "on": {
+      "description": "The day it was worked out: today.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "packs": {
+      "description": "The statutory pack versions it read.",
+      "items": {
+        "description": "A statutory pack version, \u003cpack\u003e@\u003cyear\u003e.\u003cn\u003e (ENG-30).",
+        "examples": [
+          "sg-cpf@2026.1"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "runs": {
+      "description": "Each scenario asked for, with and then without its funding plan.",
+      "items": {
+        "$ref": "ForecastRun.schema.json"
+      },
+      "type": "array"
+    },
+    "sandbox": {
+      "description": "What a forecast never does.",
+      "examples": [
+        "A forecast never posts: nothing here changes the books (FR-PLN-08)."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "on",
+    "books",
+    "packs",
+    "runs",
+    "sandbox"
+  ],
+  "title": "ForecastResults",
+  "type": "object"
+}

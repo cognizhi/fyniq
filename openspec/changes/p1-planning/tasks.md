@@ -56,18 +56,18 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 3. Forecasts as documents (slice 3)
 
-- [ ] 3.1 The `forecast` document type and its guard, FY300 (D5), with the type widened NOT VALID and validated in the
+- [x] 3.1 The `forecast` document type and its guard, FY300 (D5), with the type widened NOT VALID and validated in the
   next migration. The attack tests cover keys, limits, decimal strings and recorded versions that never change.
   `TestAttackForecastsKeepTheirRules` `// req: FR-PLN-02`, `// req: FR-PLN-08`
-- [ ] 3.2 The API (D5, D10): forecasts list, create, get, replace and record; results by scenario; compare; and
+- [x] 3.2 The API (D5, D10): forecasts list, create, get, replace and record; results by scenario; compare; and
   `POST /v1/forecasts:run`, which saves nothing. With them come the matrix rows, audit on every write, `make openapi`
   and the web build. `TestForecastsThroughTheAPI` runs Base, Best, Worst and a custom scenario, and the run without
   funding, from the books' starting figures on the sample company. `// req: FR-PLN-02`, `// req: FR-PLN-03`,
   `// req: FR-PLN-08`
-- [ ] 3.3 `planning.buffer_months` (D11), with its guide section, its KB page and a scenario's own buffer. The setting
+- [x] 3.3 `planning.buffer_months` (D11), with its guide section, its KB page and a scenario's own buffer. The setting
   test covers its range and recommended value. `// req: FR-PLN-03`
-- [ ] 3.4 Sandboxed: every forecast write and run leaves the ledger and the sub-ledgers as they were.
-  `TestPlanningNeverPosts` `// req: FR-PLN-08`
+- [x] 3.4 Sandboxed: every forecast write and run leaves the ledger and the sub-ledgers as they were: the ledger's
+  revision is unchanged after them, in `TestForecastsThroughTheAPI`. `// req: FR-PLN-08`
 
 ## 4. Budgets (slice 4)
 

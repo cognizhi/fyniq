@@ -179,6 +179,7 @@ var fyCodes = map[string]string{
 	"FY297": storage.CodeAcraExtract,     // an ACRA extract outside its rules (000270)
 	"FY298": storage.CodeGSTForecast,     // a GST forecast outside its rules (000272)
 	"FY299": storage.CodeStatutoryFiling, // a filing record outside its rules, or a second live one of its item (000274)
+	"FY300": storage.CodeForecast,        // a forecast outside its keys, limits or decimal strings (000277)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

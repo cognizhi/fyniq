@@ -1,0 +1,443 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ai": {
+      "description": "AI and API costs: their share of revenue.",
+      "examples": [
+        "2014.80"
+      ],
+      "type": "string"
+    },
+    "arpa": {
+      "description": "Revenue per customer.",
+      "examples": [
+        "120.00"
+      ],
+      "type": "string"
+    },
+    "arr": {
+      "description": "12 × subscription revenue.",
+      "examples": [
+        "123552.00"
+      ],
+      "type": "string"
+    },
+    "burn_multiple": {
+      "description": "Net burn ÷ the month's increase in ARR, to 2 decimals; absent without an increase.",
+      "examples": [
+        "1.35"
+      ],
+      "type": "string"
+    },
+    "cac": {
+      "description": "S\u0026M ÷ new customers; absent without new customers.",
+      "examples": [
+        "903.03"
+      ],
+      "type": "string"
+    },
+    "capex": {
+      "description": "Cash for assets bought (negative).",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "cash": {
+      "description": "Cash at the end of the month.",
+      "examples": [
+        "781283.66"
+      ],
+      "type": "string"
+    },
+    "cash_open": {
+      "description": "Cash at the start of the month.",
+      "examples": [
+        "791132.86"
+      ],
+      "type": "string"
+    },
+    "collections": {
+      "description": "Cash from customers, by the collection pattern.",
+      "examples": [
+        "36573.80"
+      ],
+      "type": "string"
+    },
+    "contractors": {
+      "description": "Contractors: their share of services revenue.",
+      "examples": [
+        "1500.00"
+      ],
+      "type": "string"
+    },
+    "customers": {
+      "description": "Customers at the end of the month, to 1 decimal.",
+      "examples": [
+        "85.8"
+      ],
+      "type": "string"
+    },
+    "customers_open": {
+      "description": "Customers at the start of the month, to 1 decimal (they stay fractional, as the workbook).",
+      "examples": [
+        "78.0"
+      ],
+      "type": "string"
+    },
+    "depreciation": {
+      "description": "The register's assets and the planned capex, straight line.",
+      "examples": [
+        "616.67"
+      ],
+      "type": "string"
+    },
+    "direct_costs": {
+      "description": "Total direct costs.",
+      "examples": [
+        "5542.75"
+      ],
+      "type": "string"
+    },
+    "ebitda": {
+      "description": "Gross profit less payroll and other expenses.",
+      "examples": [
+        "-6127.00"
+      ],
+      "type": "string"
+    },
+    "equity_raised": {
+      "description": "Cash from equity and SAFEs.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "fees": {
+      "description": "Payment fees: their share of revenue.",
+      "examples": [
+        "483.55"
+      ],
+      "type": "string"
+    },
+    "grants": {
+      "description": "Grants received.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "grants_received": {
+      "description": "Cash from grants.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "gross_margin": {
+      "description": "Gross profit as a percentage of revenue (RND-PERCENT); absent without revenue.",
+      "examples": [
+        "86.2"
+      ],
+      "type": "string"
+    },
+    "gross_profit": {
+      "description": "Revenue less direct costs.",
+      "examples": [
+        "34753.25"
+      ],
+      "type": "string"
+    },
+    "headcount": {
+      "description": "People employed in the month.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "hosting": {
+      "description": "Hosting: its share of subscription revenue.",
+      "examples": [
+        "1544.40"
+      ],
+      "type": "string"
+    },
+    "interest": {
+      "description": "Interest on the loans' balance at the start of the month.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "interest_paid": {
+      "description": "Interest paid (negative).",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "loan_repayments": {
+      "description": "Loan principal repaid (negative).",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "loans_drawn": {
+      "description": "Cash from loans drawn.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "lost_customers": {
+      "description": "Customers lost, to 1 decimal.",
+      "examples": [
+        "1.2"
+      ],
+      "type": "string"
+    },
+    "ltv": {
+      "description": "ARPA × gross margin ÷ churn; absent without revenue or churn.",
+      "examples": [
+        "6898.50"
+      ],
+      "type": "string"
+    },
+    "ltv_to_cac": {
+      "description": "LTV ÷ CAC, to 2 decimals; absent when either is.",
+      "examples": [
+        "7.64"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month (YYYY-MM).",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    },
+    "net_burn": {
+      "description": "Cash used by operations and capex, 0 when they bring cash in.",
+      "examples": [
+        "9849.20"
+      ],
+      "type": "string"
+    },
+    "net_cash_flow": {
+      "description": "The month's net cash flow.",
+      "examples": [
+        "-9849.20"
+      ],
+      "type": "string"
+    },
+    "net_profit": {
+      "description": "Profit before tax less tax.",
+      "examples": [
+        "-6743.67"
+      ],
+      "type": "string"
+    },
+    "new_customers": {
+      "description": "New customers, to 1 decimal.",
+      "examples": [
+        "9.0"
+      ],
+      "type": "string"
+    },
+    "operating_cash_flow": {
+      "description": "The operating cash flow.",
+      "examples": [
+        "-9849.20"
+      ],
+      "type": "string"
+    },
+    "other_expenses": {
+      "description": "Each other expense line, in the plan's order.",
+      "items": {
+        "description": "An other expense line's amount in the month, in the plan's order.",
+        "examples": [
+          "2500.00"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "other_expenses_total": {
+      "description": "Their total.",
+      "examples": [
+        "7350.00"
+      ],
+      "type": "string"
+    },
+    "other_revenue": {
+      "description": "Other revenue.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "payroll": {
+      "description": "The payroll of R\u0026D, S\u0026M and G\u0026A.",
+      "examples": [
+        "33530.25"
+      ],
+      "type": "string"
+    },
+    "payroll_cogs": {
+      "description": "The payroll of the COGS function, with employer CPF and SDL.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "payroll_ga": {
+      "description": "The G\u0026A payroll.",
+      "examples": [
+        "7031.25"
+      ],
+      "type": "string"
+    },
+    "payroll_paid": {
+      "description": "Cash to staff (negative).",
+      "examples": [
+        "-33530.25"
+      ],
+      "type": "string"
+    },
+    "payroll_rd": {
+      "description": "The R\u0026D payroll.",
+      "examples": [
+        "20871.75"
+      ],
+      "type": "string"
+    },
+    "payroll_sm": {
+      "description": "The S\u0026M payroll.",
+      "examples": [
+        "5627.25"
+      ],
+      "type": "string"
+    },
+    "profit_before_tax": {
+      "description": "EBITDA less depreciation and interest, plus grants.",
+      "examples": [
+        "-6743.67"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "description": "Total revenue.",
+      "examples": [
+        "40296.00"
+      ],
+      "type": "string"
+    },
+    "sales_marketing": {
+      "description": "S\u0026M payroll and the expense line of a report group whose accounts are all S\u0026M.",
+      "examples": [
+        "8127.25"
+      ],
+      "type": "string"
+    },
+    "services_revenue": {
+      "description": "Services revenue.",
+      "examples": [
+        "30000.00"
+      ],
+      "type": "string"
+    },
+    "subscription_revenue": {
+      "description": "Customers × ARPA.",
+      "examples": [
+        "10296.00"
+      ],
+      "type": "string"
+    },
+    "suppliers": {
+      "description": "Cash to suppliers (negative).",
+      "examples": [
+        "-12892.75"
+      ],
+      "type": "string"
+    },
+    "tax": {
+      "description": "Corporate tax, booked in a forecast year's last month.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "tax_paid": {
+      "description": "Tax paid, the payment lag after its year (negative).",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "year": {
+      "description": "The forecast year, 1 for months 1 to 12.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "month",
+    "year",
+    "customers_open",
+    "new_customers",
+    "lost_customers",
+    "customers",
+    "arpa",
+    "subscription_revenue",
+    "services_revenue",
+    "other_revenue",
+    "revenue",
+    "hosting",
+    "ai",
+    "contractors",
+    "fees",
+    "payroll_cogs",
+    "direct_costs",
+    "gross_profit",
+    "payroll_rd",
+    "payroll_sm",
+    "payroll_ga",
+    "payroll",
+    "headcount",
+    "other_expenses",
+    "other_expenses_total",
+    "ebitda",
+    "depreciation",
+    "grants",
+    "interest",
+    "profit_before_tax",
+    "tax",
+    "net_profit",
+    "collections",
+    "suppliers",
+    "payroll_paid",
+    "grants_received",
+    "interest_paid",
+    "tax_paid",
+    "operating_cash_flow",
+    "capex",
+    "equity_raised",
+    "loans_drawn",
+    "loan_repayments",
+    "net_cash_flow",
+    "cash_open",
+    "cash",
+    "net_burn",
+    "arr",
+    "sales_marketing"
+  ],
+  "title": "ForecastMonth",
+  "type": "object"
+}

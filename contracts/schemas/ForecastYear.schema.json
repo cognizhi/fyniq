@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arr": {
+      "description": "ARR at its end.",
+      "examples": [
+        "254649.60"
+      ],
+      "type": "string"
+    },
+    "cash": {
+      "description": "Cash at its end; absent when it ends past the horizon.",
+      "examples": [
+        "2756660.90"
+      ],
+      "type": "string"
+    },
+    "customers": {
+      "description": "Customers at its end, to 1 decimal.",
+      "examples": [
+        "168.4"
+      ],
+      "type": "string"
+    },
+    "ebitda": {
+      "description": "Its EBITDA.",
+      "examples": [
+        "-98213.41"
+      ],
+      "type": "string"
+    },
+    "gross_profit": {
+      "description": "Its gross profit.",
+      "examples": [
+        "491233.20"
+      ],
+      "type": "string"
+    },
+    "headcount": {
+      "description": "Headcount at its end.",
+      "examples": [
+        9
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "net_burn": {
+      "description": "Its net burn.",
+      "examples": [
+        "218252.20"
+      ],
+      "type": "string"
+    },
+    "net_profit": {
+      "description": "Its net profit.",
+      "examples": [
+        "-105612.08"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "description": "Its revenue.",
+      "examples": [
+        "575399.18"
+      ],
+      "type": "string"
+    },
+    "year": {
+      "description": "The forecast year.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "year"
+  ],
+  "title": "ForecastYear",
+  "type": "object"
+}

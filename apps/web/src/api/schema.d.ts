@@ -4984,6 +4984,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/forecasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the forecasts
+         * @description Every forecast: the latest recorded first, the company's own, then the others recorded, then the drafts, a page at a time (FR-PLN-02). Read-only; no side effects.
+         */
+        get: operations["listForecasts"];
+        put?: never;
+        /**
+         * Draft a forecast
+         * @description Drafts a driver-based forecast (FR-PLN-02, design D5): the workbook's model, worked in exact decimals (RND-PLAN). Without scenarios it gets Base, Best and Worst with the workbook's levers. A draft is a sandbox: change it, read its results, and record it once it is the company's plan. It never posts (FR-PLN-08). Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createForecast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/forecasts/{forecast_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a forecast
+         * @description A forecast's plan, drafted or recorded, with its status and who recorded it (FR-PLN-02). Its figures are getForecastResults'. Read-only; no side effects.
+         */
+        get: operations["getForecast"];
+        /**
+         * Change a drafted forecast
+         * @description Saves a new version of a forecast not recorded yet (FR-PLN-02); a recorded one changes no more (PLAN-11): draft a new one instead. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceForecast"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/forecasts/{forecast_id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare a forecast's scenarios
+         * @description Every scenario of a forecast side by side (FR-PLN-03): each with and without its funding plan, its key results, yearly summary and tax estimate, without the months. Read-only; no side effects.
+         */
+        get: operations["compareForecastScenarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/forecasts/{forecast_id}/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a forecast
+         * @description Records a drafted forecast as the company's plan (FR-PLN-02, design D5): from then on the latest recorded is Home's, never changed. It posts nothing (FR-PLN-08) and needs no approval. Side effects: the forecast recorded, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordForecast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/forecasts/{forecast_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work a forecast out
+         * @description A forecast's figures today (FR-PLN-02, FR-PLN-03): from the books at its last actual month and the sg-cit, sg-cpf and sg-sdl packs, each scenario with and then without its funding plan, month by month, with the yearly summary, the tax estimate and the key results. Every figure is RND-PLAN's: a driver line rounded once, a total the sum of the lines shown. Worked out on every read, never stored: a closed month or a new pack moves it. Read-only; no side effects.
+         */
+        get: operations["getForecastResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/forecasts:run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Work a plan out without saving it
+         * @description Works a plan out as getForecastResults does, from the books and the packs, without saving anything (FR-PLN-02, FR-PLN-08): a sandbox for a what-if. Every problem of the plan comes back together. Saves nothing; no side effects.
+         */
+        post: operations["runForecast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/fx/feed": {
         parameters: {
             query?: never;
@@ -23303,6 +23431,933 @@ export interface components {
              */
             line: number;
         };
+        ForecastBooks: {
+            /**
+             * @description The cash and cash equivalents at the last actual month's end.
+             * @example 791132.86
+             */
+            cash: string;
+            /** @description Each report group's average over the last three actual months, for the expense lines. */
+            hints: components["schemas"]["ForecastHint"][];
+            /**
+             * @description The last month with complete actuals (YYYY-MM).
+             * @example 2026-10
+             */
+            last_actual: string;
+            /**
+             * Format: int64
+             * @description The ledger revision they were read at (ENG-46).
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * @description Owed by the company then, on the payables control account: paid in month 1.
+             * @example 5677.00
+             */
+            payables: string;
+            /**
+             * @description Owed to the company then, on the receivables control account: collected 60% in month 1 and 40% in month 2, as the workbook.
+             * @example 40745.00
+             */
+            receivables: string;
+            /**
+             * @description The forecast's first month (YYYY-MM).
+             * @example 2026-11
+             */
+            start: string;
+        };
+        ForecastCapex: {
+            /**
+             * @description Its cost, paid in its month.
+             * @example 8000.00
+             */
+            amount: string;
+            /**
+             * @description What is bought.
+             * @example Laptops for 2027 hires
+             */
+            item?: string;
+            /**
+             * Format: int64
+             * @description Months it is depreciated over, straight line.
+             * @example 36
+             */
+            life: number;
+            /**
+             * @description The month it is bought (YYYY-MM); one before the forecast counts as the first month.
+             * @example 2027-01
+             */
+            month: string;
+        };
+        ForecastCollection: {
+            /**
+             * @description Collected two months after, as a fraction.
+             * @example 0.1
+             */
+            month_after: string;
+            /**
+             * @description Collected the month after, as a fraction.
+             * @example 0.6
+             */
+            next_month: string;
+            /**
+             * @description Collected in the month itself, as a fraction.
+             * @example 0.3
+             */
+            this_month: string;
+        };
+        ForecastCosts: {
+            /**
+             * @description AI and API costs, as a fraction of total revenue.
+             * @example 0.05
+             */
+            ai: string;
+            /**
+             * @description Contractors, as a fraction of services revenue.
+             * @example 0.05
+             */
+            contractors: string;
+            /**
+             * @description Payment fees, as a fraction of total revenue.
+             * @example 0.012
+             */
+            fees: string;
+            /**
+             * @description Hosting, as a fraction of subscription revenue.
+             * @example 0.15
+             */
+            hosting: string;
+            /**
+             * @description Each forecast year's salary increase, as a fraction.
+             * @example 0.04
+             */
+            salary_increase: string;
+        };
+        ForecastFunding: {
+            /**
+             * @description The amount.
+             * @example 100000.00
+             */
+            amount: string;
+            /**
+             * @description The month the money arrives (YYYY-MM).
+             * @example 2027-02
+             */
+            month: string;
+            /**
+             * @description Notes.
+             * @example SME working-capital loan
+             */
+            notes?: string;
+            /**
+             * @description A loan's yearly interest rate, as a fraction.
+             * @example 0.055
+             */
+            rate?: string;
+            /**
+             * Format: int64
+             * @description A loan's months of equal repayments, from the month after it is drawn.
+             * @example 36
+             */
+            tenor?: number;
+            /**
+             * @description Equity, a SAFE or a loan raised, which the fundraising levers move and scale; or a grant, which arrives as planned.
+             * @example Loan
+             * @enum {string}
+             */
+            type: "Equity" | "SAFE" | "Loan" | "Grant";
+        };
+        ForecastHint: {
+            /**
+             * @description Its average a month over the last three actual months, from the balance service.
+             * @example 2410.55
+             */
+            average: string;
+            /**
+             * @description The chart's report group.
+             * @example Sales & marketing
+             */
+            report_group: string;
+        };
+        ForecastHire: {
+            /**
+             * @description true: employer CPF at the rate for 55 and below up to the Ordinary Wage ceiling (sg-cpf), as the workbook; SDL applies to everyone (sg-sdl).
+             * @example true
+             */
+            cpf: boolean;
+            /**
+             * @description The last month, if they leave.
+             * @example 2028-02
+             */
+            end?: string;
+            /**
+             * @description Where the cost goes: COGS (cost of revenue), R&D, S&M or G&A.
+             * @example R&D
+             * @enum {string}
+             */
+            function: "COGS" | "R&D" | "S&M" | "G&A";
+            /**
+             * @description The person or the role.
+             * @example Senior engineer (hire)
+             */
+            role: string;
+            /**
+             * @description The monthly salary at today's rate: it rises by the salary increase each forecast year.
+             * @example 8500.00
+             */
+            salary: string;
+            /**
+             * @description The first month (YYYY-MM); one before the forecast is the current team, whom the hiring delay does not move.
+             * @example 2027-01
+             */
+            start: string;
+        };
+        ForecastKey: {
+            /**
+             * @description ARR at the horizon.
+             * @example 987252.12
+             */
+            arr_end: string;
+            /**
+             * @description The average net burn of the first 12 months.
+             * @example 18187.69
+             */
+            average_burn: string;
+            /**
+             * @description The first month with revenue whose EBITDA is not negative (YYYY-MM); absent: not within the forecast.
+             * @example 2029-05
+             */
+            break_even?: string;
+            /**
+             * Format: int64
+             * @description The buffer the gap used: the scenario's, the forecast's or planning.buffer_months.
+             * @example 6
+             */
+            buffer_months: number;
+            /**
+             * @description The first month cash closes below zero (YYYY-MM); absent: not within the horizon.
+             * @example 2028-03
+             */
+            cash_out_month?: string;
+            /**
+             * @description Customers at the horizon, to 1 decimal.
+             * @example 621.9
+             */
+            customers_end: string;
+            /**
+             * @description The buffer × the average burn, less the minimum cash, at least 0.
+             * @example 0.00
+             */
+            funding_gap: string;
+            /**
+             * @description The lowest month-end cash.
+             * @example -91351.81
+             */
+            minimum_cash: string;
+            /**
+             * @description Its month (YYYY-MM).
+             * @example 2026-11
+             */
+            minimum_month: string;
+            /**
+             * @description The revenue of the next 12 months.
+             * @example 575399.18
+             */
+            revenue_next_12: string;
+            /**
+             * @description true: no cash-out month within the horizon, so runway is more than runway_months.
+             * @example false
+             */
+            runway_beyond: boolean;
+            /**
+             * Format: int64
+             * @description The months before the cash-out month; the horizon when there is none, with runway_beyond.
+             * @example 16
+             */
+            runway_months: number;
+        };
+        ForecastLevers: {
+            /**
+             * @description × churn.
+             * @example 1.3
+             */
+            churn: string;
+            /**
+             * @description × each direct-cost percentage.
+             * @example 1.1
+             */
+            direct_costs: string;
+            /**
+             * @description × the money raised (not grants).
+             * @example 0.6
+             */
+            fund_amount: string;
+            /**
+             * Format: int64
+             * @description Months the money raised waits (not grants).
+             * @example 3
+             */
+            fund_delay: number;
+            /**
+             * Format: int64
+             * @description Months every planned hire waits.
+             * @example 3
+             */
+            hire_delay: number;
+            /**
+             * @description × new customers.
+             * @example 0.7
+             */
+            new_customers: string;
+            /**
+             * @description × each other operating expense.
+             * @example 1.1
+             */
+            opex: string;
+            /**
+             * @description × ARPA.
+             * @example 0.9
+             */
+            price: string;
+            /**
+             * @description × services revenue.
+             * @example 0.7
+             */
+            services: string;
+        };
+        ForecastMonth: {
+            /**
+             * @description AI and API costs: their share of revenue.
+             * @example 2014.80
+             */
+            ai: string;
+            /**
+             * @description Revenue per customer.
+             * @example 120.00
+             */
+            arpa: string;
+            /**
+             * @description 12 × subscription revenue.
+             * @example 123552.00
+             */
+            arr: string;
+            /**
+             * @description Net burn ÷ the month's increase in ARR, to 2 decimals; absent without an increase.
+             * @example 1.35
+             */
+            burn_multiple?: string;
+            /**
+             * @description S&M ÷ new customers; absent without new customers.
+             * @example 903.03
+             */
+            cac?: string;
+            /**
+             * @description Cash for assets bought (negative).
+             * @example 0.00
+             */
+            capex: string;
+            /**
+             * @description Cash at the end of the month.
+             * @example 781283.66
+             */
+            cash: string;
+            /**
+             * @description Cash at the start of the month.
+             * @example 791132.86
+             */
+            cash_open: string;
+            /**
+             * @description Cash from customers, by the collection pattern.
+             * @example 36573.80
+             */
+            collections: string;
+            /**
+             * @description Contractors: their share of services revenue.
+             * @example 1500.00
+             */
+            contractors: string;
+            /**
+             * @description Customers at the end of the month, to 1 decimal.
+             * @example 85.8
+             */
+            customers: string;
+            /**
+             * @description Customers at the start of the month, to 1 decimal (they stay fractional, as the workbook).
+             * @example 78.0
+             */
+            customers_open: string;
+            /**
+             * @description The register's assets and the planned capex, straight line.
+             * @example 616.67
+             */
+            depreciation: string;
+            /**
+             * @description Total direct costs.
+             * @example 5542.75
+             */
+            direct_costs: string;
+            /**
+             * @description Gross profit less payroll and other expenses.
+             * @example -6127.00
+             */
+            ebitda: string;
+            /**
+             * @description Cash from equity and SAFEs.
+             * @example 0.00
+             */
+            equity_raised: string;
+            /**
+             * @description Payment fees: their share of revenue.
+             * @example 483.55
+             */
+            fees: string;
+            /**
+             * @description Grants received.
+             * @example 0.00
+             */
+            grants: string;
+            /**
+             * @description Cash from grants.
+             * @example 0.00
+             */
+            grants_received: string;
+            /**
+             * @description Gross profit as a percentage of revenue (RND-PERCENT); absent without revenue.
+             * @example 86.2
+             */
+            gross_margin?: string;
+            /**
+             * @description Revenue less direct costs.
+             * @example 34753.25
+             */
+            gross_profit: string;
+            /**
+             * Format: int64
+             * @description People employed in the month.
+             * @example 5
+             */
+            headcount: number;
+            /**
+             * @description Hosting: its share of subscription revenue.
+             * @example 1544.40
+             */
+            hosting: string;
+            /**
+             * @description Interest on the loans' balance at the start of the month.
+             * @example 0.00
+             */
+            interest: string;
+            /**
+             * @description Interest paid (negative).
+             * @example 0.00
+             */
+            interest_paid: string;
+            /**
+             * @description Loan principal repaid (negative).
+             * @example 0.00
+             */
+            loan_repayments: string;
+            /**
+             * @description Cash from loans drawn.
+             * @example 0.00
+             */
+            loans_drawn: string;
+            /**
+             * @description Customers lost, to 1 decimal.
+             * @example 1.2
+             */
+            lost_customers: string;
+            /**
+             * @description ARPA × gross margin ÷ churn; absent without revenue or churn.
+             * @example 6898.50
+             */
+            ltv?: string;
+            /**
+             * @description LTV ÷ CAC, to 2 decimals; absent when either is.
+             * @example 7.64
+             */
+            ltv_to_cac?: string;
+            /**
+             * @description The month (YYYY-MM).
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description Cash used by operations and capex, 0 when they bring cash in.
+             * @example 9849.20
+             */
+            net_burn: string;
+            /**
+             * @description The month's net cash flow.
+             * @example -9849.20
+             */
+            net_cash_flow: string;
+            /**
+             * @description Profit before tax less tax.
+             * @example -6743.67
+             */
+            net_profit: string;
+            /**
+             * @description New customers, to 1 decimal.
+             * @example 9.0
+             */
+            new_customers: string;
+            /**
+             * @description The operating cash flow.
+             * @example -9849.20
+             */
+            operating_cash_flow: string;
+            /** @description Each other expense line, in the plan's order. */
+            other_expenses: string[];
+            /**
+             * @description Their total.
+             * @example 7350.00
+             */
+            other_expenses_total: string;
+            /**
+             * @description Other revenue.
+             * @example 0.00
+             */
+            other_revenue: string;
+            /**
+             * @description The payroll of R&D, S&M and G&A.
+             * @example 33530.25
+             */
+            payroll: string;
+            /**
+             * @description The payroll of the COGS function, with employer CPF and SDL.
+             * @example 0.00
+             */
+            payroll_cogs: string;
+            /**
+             * @description The G&A payroll.
+             * @example 7031.25
+             */
+            payroll_ga: string;
+            /**
+             * @description Cash to staff (negative).
+             * @example -33530.25
+             */
+            payroll_paid: string;
+            /**
+             * @description The R&D payroll.
+             * @example 20871.75
+             */
+            payroll_rd: string;
+            /**
+             * @description The S&M payroll.
+             * @example 5627.25
+             */
+            payroll_sm: string;
+            /**
+             * @description EBITDA less depreciation and interest, plus grants.
+             * @example -6743.67
+             */
+            profit_before_tax: string;
+            /**
+             * @description Total revenue.
+             * @example 40296.00
+             */
+            revenue: string;
+            /**
+             * @description S&M payroll and the expense line of a report group whose accounts are all S&M.
+             * @example 8127.25
+             */
+            sales_marketing: string;
+            /**
+             * @description Services revenue.
+             * @example 30000.00
+             */
+            services_revenue: string;
+            /**
+             * @description Customers × ARPA.
+             * @example 10296.00
+             */
+            subscription_revenue: string;
+            /**
+             * @description Cash to suppliers (negative).
+             * @example -12892.75
+             */
+            suppliers: string;
+            /**
+             * @description Corporate tax, booked in a forecast year's last month.
+             * @example 0.00
+             */
+            tax: string;
+            /**
+             * @description Tax paid, the payment lag after its year (negative).
+             * @example 0.00
+             */
+            tax_paid: string;
+            /**
+             * Format: int64
+             * @description The forecast year, 1 for months 1 to 12.
+             * @example 1
+             */
+            year: number;
+        };
+        ForecastOpex: {
+            /**
+             * @description Its amount in the first month.
+             * @example 2500.00
+             */
+            base: string;
+            /**
+             * @description Its monthly growth, as a fraction.
+             * @example 0.02
+             */
+            growth: string;
+            /**
+             * @description What it is.
+             * @example Sales & marketing
+             */
+            label: string;
+            /**
+             * @description A share of total revenue added each month, as a fraction.
+             * @example 0
+             */
+            percent: string;
+            /**
+             * @description The chart's income or expense report group it plans, by name: the books' average of the last three months is shown beside it, and a group whose accounts are all S&M adds the line to S&M for CAC.
+             * @example Sales & marketing
+             */
+            report_group?: string;
+        };
+        ForecastPage: {
+            items: components["schemas"]["ForecastView"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYifQ
+             */
+            next_cursor?: string;
+        };
+        ForecastPlan: {
+            /**
+             * Format: int64
+             * @description Months of average net burn to keep as a buffer for the funding gap; left out, the setting planning.buffer_months (6).
+             * @example 6
+             */
+            buffer_months?: number;
+            /** @description The purchases of assets. */
+            capex: components["schemas"]["ForecastCapex"][];
+            /**
+             * @description Added to the books' cash at the start, such as money already committed; 0 for none.
+             * @example 0.00
+             */
+            cash_adjustment: string;
+            /** @description The direct-cost percentages and the salary increase. */
+            costs: components["schemas"]["ForecastCosts"];
+            /** @description The money planned to be raised or received; none of it is received yet, so runway is also shown without it (FR-PLN-03). */
+            funding: components["schemas"]["ForecastFunding"][];
+            /** @description The team and the planned hires. */
+            headcount: components["schemas"]["ForecastHire"][];
+            /**
+             * Format: int64
+             * @description Months to forecast, 12 to 60.
+             * @example 36
+             */
+            horizon: number;
+            /**
+             * @description The last month with complete actuals (YYYY-MM): the forecast starts the month after. Left out, the last closed month, else the month before today.
+             * @example 2026-10
+             */
+            last_actual?: string;
+            /**
+             * @description The forecast's name.
+             * @example FY2027 plan
+             */
+            name: string;
+            /** @description The other operating expenses, each a monthly base that grows, plus a share of revenue. */
+            opex: components["schemas"]["ForecastOpex"][];
+            /** @description The revenue drivers. */
+            revenue: components["schemas"]["ForecastRevenue"];
+            /** @description The scenarios; left out, Base, Best and Worst with the workbook's levers. Custom ones carry their own levers and buffer. */
+            scenarios?: components["schemas"]["ForecastScenario"][] | null;
+            /** @description What the tax estimate needs beyond the sg-cit pack. */
+            tax: components["schemas"]["ForecastTax"];
+        };
+        ForecastResults: {
+            /** @description The books' figures at the start. */
+            books: components["schemas"]["ForecastBooks"];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The forecast; absent for a plan run without saving it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+             */
+            forecast_id?: string;
+            /**
+             * Format: date
+             * @description The day it was worked out: today.
+             * @example 2026-11-20
+             */
+            on: string;
+            /** @description The statutory pack versions it read. */
+            packs: string[];
+            /** @description Each scenario asked for, with and then without its funding plan. */
+            runs: components["schemas"]["ForecastRun"][];
+            /**
+             * @description What a forecast never does.
+             * @example A forecast never posts: nothing here changes the books (FR-PLN-08).
+             */
+            sandbox: string;
+        };
+        ForecastRevenue: {
+            /**
+             * @description Revenue per customer per month in year 1.
+             * @example 120.00
+             */
+            arpa: string;
+            /**
+             * @description The share of customers at the start of a month who leave in it, as a fraction.
+             * @example 0.015
+             */
+            churn: string;
+            /** @description When a month's revenue is collected; together 100%, else ⚠. */
+            collection: components["schemas"]["ForecastCollection"];
+            /**
+             * @description Paying customers at the start; may have one decimal.
+             * @example 78
+             */
+            customers: string;
+            /**
+             * @description New customers in the first month; may have one decimal.
+             * @example 9
+             */
+            new_customers: string;
+            /**
+             * @description Monthly growth of new customers, as a fraction.
+             * @example 0.04
+             */
+            new_growth: string;
+            /**
+             * @description Other revenue each month.
+             * @example 0.00
+             */
+            other: string;
+            /**
+             * @description The yearly increase of ARPA, as a fraction.
+             * @example 0.05
+             */
+            price_increase: string;
+            /**
+             * @description Services revenue in the first month.
+             * @example 30000.00
+             */
+            services: string;
+            /**
+             * @description Monthly growth of services, as a fraction.
+             * @example 0.01
+             */
+            services_growth: string;
+        };
+        ForecastRun: {
+            /**
+             * @description false: the collection pattern does not total 100%, so revenue is not all collected (⚠).
+             * @example true
+             */
+            collections_ok: boolean;
+            /** @description The key results. */
+            key_results: components["schemas"]["ForecastKey"];
+            /** @description Every month from 1 to the horizon; left out of a comparison. */
+            months?: components["schemas"]["ForecastMonth"][] | null;
+            /**
+             * @description The scenario.
+             * @example Base
+             */
+            scenario: string;
+            /** @description The tax estimate by forecast year. */
+            tax_years: components["schemas"]["ForecastTaxYear"][];
+            /**
+             * @description true: with the funding plan; false: without it, as Home, the tiles and the alerts read runway, since none of it is received yet (FR-PLN-03).
+             * @example true
+             */
+            with_funding: boolean;
+            /** @description The yearly summary, five forecast years. */
+            years: components["schemas"]["ForecastYear"][];
+        };
+        ForecastScenario: {
+            /**
+             * Format: int64
+             * @description Its own buffer, in months of burn; left out, the forecast's.
+             * @example 3
+             */
+            buffer_months?: number;
+            /** @description How it moves the plan. */
+            levers: components["schemas"]["ForecastLevers"];
+            /**
+             * @description Its name.
+             * @example Worst
+             */
+            name: string;
+        };
+        ForecastTax: {
+            /**
+             * @description Unabsorbed tax losses at the start.
+             * @example 0.00
+             */
+            losses_brought_forward: string;
+            /**
+             * Format: int64
+             * @description Months from a forecast year's end to the payment of its tax.
+             * @example 9
+             */
+            payment_lag: number;
+            /**
+             * Format: int64
+             * @description Forecast years under the start-up tax exemption, a qualifying company's first three Years of Assessment; the rest are under the partial exemption.
+             * @example 3
+             */
+            start_up_years: number;
+        };
+        ForecastTaxYear: {
+            /**
+             * @description Profit less losses, at least 0.
+             * @example 120000.00
+             */
+            chargeable_income: string;
+            /**
+             * @description The exempt amount of the scheme, to the cent.
+             * @example 85000.00
+             */
+            exempt: string;
+            /**
+             * @description The rate of sg-cit on the rest, to the cent.
+             * @example 5950.00
+             */
+            gross_tax: string;
+            /**
+             * @description Losses set off first.
+             * @example 0.00
+             */
+            losses_brought_forward: string;
+            /**
+             * @description Losses left for the next year.
+             * @example 0.00
+             */
+            losses_carried_forward: string;
+            /**
+             * @description The year's profit before tax.
+             * @example 120000.00
+             */
+            profit_before_tax: string;
+            /**
+             * @description The YA's rebate from sg-cit, to the cent; 0 when the YA has none.
+             * @example 0.00
+             */
+            rebate: string;
+            /**
+             * @description sute: the start-up tax exemption; pte: the partial tax exemption.
+             * @example sute
+             * @enum {string}
+             */
+            scheme: "sute" | "pte";
+            /**
+             * @description The year's tax, rounded once (RND-PLAN).
+             * @example 5950.00
+             */
+            tax: string;
+            /**
+             * Format: int64
+             * @description The Year of Assessment: the year after the calendar year the forecast year ends in.
+             * @example 2028
+             */
+            ya: number;
+            /**
+             * Format: int64
+             * @description The forecast year.
+             * @example 1
+             */
+            year: number;
+        };
+        ForecastView: {
+            /**
+             * Format: uuid
+             * @description The forecast's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+             */
+            id: string;
+            /** @description Its drivers, plans and scenarios. */
+            plan: components["schemas"]["ForecastPlan"];
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-20T09:30:00Z
+             */
+            recorded_at?: string;
+            /** @description Who recorded it. */
+            recorded_by?: components["schemas"]["Person"];
+            /**
+             * @description draft: a sandbox to change and run; recorded: the latest recorded, the company's own and Home's; superseded: a later one is recorded.
+             * @example recorded
+             * @enum {string}
+             */
+            status: "draft" | "recorded" | "superseded";
+            /**
+             * Format: int64
+             * @description The version of its content; with its status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        ForecastYear: {
+            /**
+             * @description ARR at its end.
+             * @example 254649.60
+             */
+            arr?: string;
+            /**
+             * @description Cash at its end; absent when it ends past the horizon.
+             * @example 2756660.90
+             */
+            cash?: string;
+            /**
+             * @description Customers at its end, to 1 decimal.
+             * @example 168.4
+             */
+            customers?: string;
+            /**
+             * @description Its EBITDA.
+             * @example -98213.41
+             */
+            ebitda?: string;
+            /**
+             * @description Its gross profit.
+             * @example 491233.20
+             */
+            gross_profit?: string;
+            /**
+             * Format: int64
+             * @description Headcount at its end.
+             * @example 9
+             */
+            headcount?: number;
+            /**
+             * @description Its net burn.
+             * @example 218252.20
+             */
+            net_burn?: string;
+            /**
+             * @description Its net profit.
+             * @example -105612.08
+             */
+            net_profit?: string;
+            /**
+             * @description Its revenue.
+             * @example 575399.18
+             */
+            revenue?: string;
+            /**
+             * Format: int64
+             * @description The forecast year.
+             * @example 1
+             */
+            year: number;
+        };
         ForeignMoneyAccount: {
             /**
              * Format: uuid
@@ -32964,11 +34019,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description What it holds: switch is "true" or "false"; minutes, days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.
+             * @description What it holds: switch is "true" or "false"; minutes, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.
              * @example days
              * @enum {string}
              */
-            kind: "switch" | "minutes" | "days" | "years" | "amount_sgd" | "percent" | "text" | "account_code" | "choice";
+            kind: "switch" | "minutes" | "days" | "months" | "years" | "amount_sgd" | "percent" | "text" | "account_code" | "choice";
             /**
              * @description Its name.
              * @example Payment terms for invoices
@@ -75769,6 +76824,1025 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listForecasts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createForecast: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastPlan"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastView"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getForecast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceForecast: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastPlan"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    compareForecastScenarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResults"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordForecast: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getForecastResults: {
+        parameters: {
+            query?: {
+                /** @description One scenario by name; left out, every scenario. */
+                scenario?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResults"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    runForecast: {
+        parameters: {
+            query?: {
+                /** @description One scenario by name; left out, every scenario. */
+                scenario?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastPlan"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResults"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

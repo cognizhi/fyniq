@@ -30,6 +30,8 @@ export function valueText(kind: Setting["kind"], v: string): string {
       return `${v} ${v === "1" ? "minute" : "minutes"}`;
     case "days":
       return `${v} ${v === "1" ? "day" : "days"}`;
+    case "months":
+      return `${v} ${v === "1" ? "month" : "months"}`;
     case "years":
       return `${v} ${v === "1" ? "year" : "years"}`;
     case "amount_sgd":
@@ -94,7 +96,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
       className="fy-input max-w-72"
       id={id}
       value={value}
-      inputMode={s.kind === "minutes" || s.kind === "days" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
+      inputMode={s.kind === "minutes" || s.kind === "days" || s.kind === "months" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
       onChange={(e) => onChange(e.target.value)}
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}

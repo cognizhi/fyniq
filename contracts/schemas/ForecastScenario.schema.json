@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buffer_months": {
+      "description": "Its own buffer, in months of burn; left out, the forecast's.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 36,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "levers": {
+      "$ref": "ForecastLevers.schema.json",
+      "description": "How it moves the plan."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Worst"
+      ],
+      "maxLength": 40,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "levers"
+  ],
+  "title": "ForecastScenario",
+  "type": "object"
+}

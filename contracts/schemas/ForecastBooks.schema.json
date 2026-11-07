@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cash": {
+      "description": "The cash and cash equivalents at the last actual month's end.",
+      "examples": [
+        "791132.86"
+      ],
+      "type": "string"
+    },
+    "hints": {
+      "description": "Each report group's average over the last three actual months, for the expense lines.",
+      "items": {
+        "$ref": "ForecastHint.schema.json"
+      },
+      "type": "array"
+    },
+    "last_actual": {
+      "description": "The last month with complete actuals (YYYY-MM).",
+      "examples": [
+        "2026-10"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision they were read at (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "payables": {
+      "description": "Owed by the company then, on the payables control account: paid in month 1.",
+      "examples": [
+        "5677.00"
+      ],
+      "type": "string"
+    },
+    "receivables": {
+      "description": "Owed to the company then, on the receivables control account: collected 60% in month 1 and 40% in month 2, as the workbook.",
+      "examples": [
+        "40745.00"
+      ],
+      "type": "string"
+    },
+    "start": {
+      "description": "The forecast's first month (YYYY-MM).",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "last_actual",
+    "start",
+    "cash",
+    "receivables",
+    "payables",
+    "hints",
+    "ledger_revision"
+  ],
+  "title": "ForecastBooks",
+  "type": "object"
+}

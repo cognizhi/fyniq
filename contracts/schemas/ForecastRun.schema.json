@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "collections_ok": {
+      "description": "false: the collection pattern does not total 100%, so revenue is not all collected (⚠).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "key_results": {
+      "$ref": "ForecastKey.schema.json",
+      "description": "The key results."
+    },
+    "months": {
+      "description": "Every month from 1 to the horizon; left out of a comparison.",
+      "items": {
+        "$ref": "ForecastMonth.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "scenario": {
+      "description": "The scenario.",
+      "examples": [
+        "Base"
+      ],
+      "type": "string"
+    },
+    "tax_years": {
+      "description": "The tax estimate by forecast year.",
+      "items": {
+        "$ref": "ForecastTaxYear.schema.json"
+      },
+      "type": "array"
+    },
+    "with_funding": {
+      "description": "true: with the funding plan; false: without it, as Home, the tiles and the alerts read runway, since none of it is received yet (FR-PLN-03).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "years": {
+      "description": "The yearly summary, five forecast years.",
+      "items": {
+        "$ref": "ForecastYear.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "scenario",
+    "with_funding",
+    "collections_ok",
+    "key_results",
+    "years",
+    "tax_years"
+  ],
+  "title": "ForecastRun",
+  "type": "object"
+}

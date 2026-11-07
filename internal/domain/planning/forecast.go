@@ -74,6 +74,7 @@ type Result struct {
 	Start         time.Time
 	Horizon       int
 	OpeningCash   *apd.Decimal
+	Buffer        *apd.Decimal // the months of burn the funding gap kept: the scenario's, else the forecast's
 	Months        []Month
 	Taxes         []TaxYear
 	Years         []YearSummary
@@ -450,6 +451,7 @@ func Run(in Inputs, sc Scenario, st Statutory) (Result, error) {
 	if buffer == nil {
 		buffer = zero()
 	}
+	out.Buffer = buffer
 	// buffer × (Σ burn ÷ 12) − minimum cash, at least 0, exactly, then rounded once
 	gap := c.over(c.sub(c.mul(buffer, burn12), c.mul(k.MinimumCash, d(12))), d(12))
 	if gap.sign() < 0 {

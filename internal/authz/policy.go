@@ -1405,6 +1405,20 @@ var (
 	RemoveGSTForecastEvidence = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
 )
 
+// Forecasts (FR-PLN-02, FR-PLN-03, FR-PLN-08; p1-planning slice 3, design D10): read by whoever views budgets and
+// forecasts; drafted, changed, run and recorded by whoever prepares them, the Accountant, and the Owner and the
+// Controller, who hold A. They are the company's, so a department's budget holder (C dept) does not.
+var (
+	ListForecasts            = Policy{Operation: "listForecasts", Capability: Budgets, Need: View, Unqualified: true}
+	CreateForecast           = Policy{Operation: "createForecast", Capability: Budgets, Need: Create, Unqualified: true}
+	GetForecast              = Policy{Operation: "getForecast", Capability: Budgets, Need: View, Unqualified: true}
+	ReplaceForecast          = Policy{Operation: "replaceForecast", Capability: Budgets, Need: Create, Unqualified: true}
+	RecordForecast           = Policy{Operation: "recordForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "The company's plan: it posts nothing."}
+	GetForecastResults       = Policy{Operation: "getForecastResults", Capability: Budgets, Need: View, Unqualified: true}
+	CompareForecastScenarios = Policy{Operation: "compareForecastScenarios", Capability: Budgets, Need: View, Unqualified: true}
+	RunForecast              = Policy{Operation: "runForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "Saves nothing."}
+)
+
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
 // filed or not required, and a record withdrawn, by the Owner, the Controller, the Accountant and the Tax agent (the
 // owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row).
@@ -1611,7 +1625,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
-	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence)
+	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
+	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

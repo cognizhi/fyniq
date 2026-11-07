@@ -664,6 +664,9 @@ const (
 	// D6): filed on a day with its reference and the acknowledgement attached, or not required with the reason; or the
 	// withdrawal of an earlier record, which is reversed beside it. An item has at most one live record (FY299).
 	DocumentStatutoryFiling DocumentType = "statutory_filing"
+	// DocumentForecast is a driver-based forecast (FR-PLN-02, p1-planning design D5): its drivers, plans and scenarios.
+	// It posts nothing; a recorded one changes no more, and the latest recorded is the company's own.
+	DocumentForecast DocumentType = "forecast"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -931,6 +934,9 @@ const (
 	// CodeStatutoryFiling: a filing record keeps its own keys, an item's key and its outcome's fields; a withdrawal names
 	// a reversed record of its item, once; an item has at most one live record (FY299).
 	CodeStatutoryFiling = "STORAGE-CALENDAR-01"
+	// CodeForecast: a forecast keeps its own keys, a name, a horizon of 12 to 60 months, decimal strings, scenarios and
+	// rows within their limits (FY300).
+	CodeForecast = "STORAGE-PLAN-01"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

@@ -12639,6 +12639,204 @@ Records a drafted forecast (FR-TAX-05, design D4): from then on the latest recor
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `GST-30`, `GST-31`, `GST-32`, `STORAGE-GST-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Planning
+
+Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08).
+
+### `GET /v1/forecasts`
+
+**List the forecasts** (`listForecasts`)
+
+Every forecast: the latest recorded first, the company's own, then the others recorded, then the drafts, a page at a time (FR-PLN-02). Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`ForecastPage`](../../contracts/schemas/ForecastPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/forecasts`
+
+**Draft a forecast** (`createForecast`)
+
+Drafts a driver-based forecast (FR-PLN-02, design D5): the workbook's model, worked in exact decimals (RND-PLAN). Without scenarios it gets Base, Best and Worst with the workbook's levers. A draft is a sandbox: change it, read its results, and record it once it is the company's plan. It never posts (FR-PLN-08). Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Budgets, forecasts
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ForecastPlan`](../../contracts/schemas/ForecastPlan.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ForecastView`](../../contracts/schemas/ForecastView.schema.json)
+  - `201` Created [`ForecastView`](../../contracts/schemas/ForecastView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/forecasts/{forecast_id}`
+
+**Get a forecast** (`getForecast`)
+
+A forecast's plan, drafted or recorded, with its status and who recorded it (FR-PLN-02). Its figures are getForecastResults'. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+- **Responses:**
+  - `200` OK [`ForecastView`](../../contracts/schemas/ForecastView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/forecasts/{forecast_id}`
+
+**Change a drafted forecast** (`replaceForecast`)
+
+Saves a new version of a forecast not recorded yet (FR-PLN-02); a recorded one changes no more (PLAN-11): draft a new one instead. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Budgets, forecasts
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ForecastPlan`](../../contracts/schemas/ForecastPlan.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ForecastView`](../../contracts/schemas/ForecastView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/forecasts/{forecast_id}/comparison`
+
+**Compare a forecast's scenarios** (`compareForecastScenarios`)
+
+Every scenario of a forecast side by side (FR-PLN-03): each with and without its funding plan, its key results, yearly summary and tax estimate, without the months. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+- **Responses:**
+  - `200` OK [`ForecastResults`](../../contracts/schemas/ForecastResults.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/forecasts/{forecast_id}/record`
+
+**Record a forecast** (`recordForecast`)
+
+Records a drafted forecast as the company's plan (FR-PLN-02, design D5): from then on the latest recorded is Home's, never changed. It posts nothing (FR-PLN-08) and needs no approval. Side effects: the forecast recorded, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Budgets, forecasts. The company's plan: it posts nothing.
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ForecastView`](../../contracts/schemas/ForecastView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/forecasts/{forecast_id}/results`
+
+**Work a forecast out** (`getForecastResults`)
+
+A forecast's figures today (FR-PLN-02, FR-PLN-03): from the books at its last actual month and the sg-cit, sg-cpf and sg-sdl packs, each scenario with and then without its funding plan, month by month, with the yearly summary, the tax estimate and the key results. Every figure is RND-PLAN's: a driver line rounded once, a total the sum of the lines shown. Worked out on every read, never stored: a closed month or a new pack moves it. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+  - `scenario` (query): One scenario by name; left out, every scenario.
+- **Responses:**
+  - `200` OK [`ForecastResults`](../../contracts/schemas/ForecastResults.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/forecasts:run`
+
+**Work a plan out without saving it** (`runForecast`)
+
+Works a plan out as getForecastResults does, from the books and the packs, without saving anything (FR-PLN-02, FR-PLN-08): a sandbox for a what-if. Every problem of the plan comes back together. Saves nothing; no side effects.
+
+- **Permission:** Create on Budgets, forecasts. Saves nothing.
+- **Parameters:**
+  - `scenario` (query): One scenario by name; left out, every scenario.
+- **Request body:** [`ForecastPlan`](../../contracts/schemas/ForecastPlan.schema.json)
+- **Responses:**
+  - `200` OK [`ForecastResults`](../../contracts/schemas/ForecastResults.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
 ## Checks
 
 The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05).

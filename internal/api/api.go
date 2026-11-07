@@ -177,6 +177,7 @@ func Config(version string) huma.Config {
 		{Name: "Equity", Description: "The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17)."},
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
+		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
@@ -320,6 +321,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAcra(a)
 	registerGSTMonitor(a)
 	registerCalendar(a)
+	registerForecasts(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)
 	registerJournals(a)

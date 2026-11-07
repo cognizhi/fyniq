@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "losses_brought_forward": {
+      "description": "Unabsorbed tax losses at the start.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "payment_lag": {
+      "description": "Months from a forecast year's end to the payment of its tax.",
+      "examples": [
+        9
+      ],
+      "format": "int64",
+      "maximum": 24,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "start_up_years": {
+      "description": "Forecast years under the start-up tax exemption, a qualifying company's first three Years of Assessment; the rest are under the partial exemption.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 3,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "start_up_years",
+    "losses_brought_forward",
+    "payment_lag"
+  ],
+  "title": "ForecastTax",
+  "type": "object"
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "average": {
+      "description": "Its average a month over the last three actual months, from the balance service.",
+      "examples": [
+        "2410.55"
+      ],
+      "type": "string"
+    },
+    "report_group": {
+      "description": "The chart's report group.",
+      "examples": [
+        "Sales \u0026 marketing"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_group",
+    "average"
+  ],
+  "title": "ForecastHint",
+  "type": "object"
+}

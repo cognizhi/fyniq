@@ -16861,6 +16861,1260 @@ components:
         - document_id
         - line
       type: object
+    ForecastBooks:
+      additionalProperties: false
+      properties:
+        cash:
+          description: The cash and cash equivalents at the last actual month's end.
+          examples:
+            - "791132.86"
+          type: string
+        hints:
+          description: Each report group's average over the last three actual months, for the expense lines.
+          items:
+            $ref: "#/components/schemas/ForecastHint"
+          type: array
+        last_actual:
+          description: The last month with complete actuals (YYYY-MM).
+          examples:
+            - 2026-10
+          type: string
+        ledger_revision:
+          description: The ledger revision they were read at (ENG-46).
+          examples:
+            - 42
+          format: int64
+          type: integer
+        payables:
+          description: "Owed by the company then, on the payables control account: paid in month 1."
+          examples:
+            - "5677.00"
+          type: string
+        receivables:
+          description: "Owed to the company then, on the receivables control account: collected 60% in month 1 and 40% in month 2, as the workbook."
+          examples:
+            - "40745.00"
+          type: string
+        start:
+          description: The forecast's first month (YYYY-MM).
+          examples:
+            - 2026-11
+          type: string
+      required:
+        - last_actual
+        - start
+        - cash
+        - receivables
+        - payables
+        - hints
+        - ledger_revision
+      type: object
+    ForecastCapex:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Its cost, paid in its month.
+          examples:
+            - "8000.00"
+          type: string
+        item:
+          description: What is bought.
+          examples:
+            - Laptops for 2027 hires
+          maxLength: 80
+          type: string
+        life:
+          description: Months it is depreciated over, straight line.
+          examples:
+            - 36
+          format: int64
+          maximum: 600
+          minimum: 1
+          type: integer
+        month:
+          description: The month it is bought (YYYY-MM); one before the forecast counts as the first month.
+          examples:
+            - 2027-01
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      required:
+        - amount
+        - month
+        - life
+      type: object
+    ForecastCollection:
+      additionalProperties: false
+      properties:
+        month_after:
+          description: Collected two months after, as a fraction.
+          examples:
+            - "0.1"
+          type: string
+        next_month:
+          description: Collected the month after, as a fraction.
+          examples:
+            - "0.6"
+          type: string
+        this_month:
+          description: Collected in the month itself, as a fraction.
+          examples:
+            - "0.3"
+          type: string
+      required:
+        - this_month
+        - next_month
+        - month_after
+      type: object
+    ForecastCosts:
+      additionalProperties: false
+      properties:
+        ai:
+          description: AI and API costs, as a fraction of total revenue.
+          examples:
+            - "0.05"
+          type: string
+        contractors:
+          description: Contractors, as a fraction of services revenue.
+          examples:
+            - "0.05"
+          type: string
+        fees:
+          description: Payment fees, as a fraction of total revenue.
+          examples:
+            - "0.012"
+          type: string
+        hosting:
+          description: Hosting, as a fraction of subscription revenue.
+          examples:
+            - "0.15"
+          type: string
+        salary_increase:
+          description: Each forecast year's salary increase, as a fraction.
+          examples:
+            - "0.04"
+          type: string
+      required:
+        - hosting
+        - ai
+        - contractors
+        - fees
+        - salary_increase
+      type: object
+    ForecastFunding:
+      additionalProperties: false
+      properties:
+        amount:
+          description: The amount.
+          examples:
+            - "100000.00"
+          type: string
+        month:
+          description: The month the money arrives (YYYY-MM).
+          examples:
+            - 2027-02
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        notes:
+          description: Notes.
+          examples:
+            - SME working-capital loan
+          maxLength: 200
+          type: string
+        rate:
+          description: A loan's yearly interest rate, as a fraction.
+          examples:
+            - "0.055"
+          type: string
+        tenor:
+          description: A loan's months of equal repayments, from the month after it is drawn.
+          examples:
+            - 36
+          format: int64
+          maximum: 360
+          minimum: 0
+          type: integer
+        type:
+          description: Equity, a SAFE or a loan raised, which the fundraising levers move and scale; or a grant, which arrives as planned.
+          enum:
+            - Equity
+            - SAFE
+            - Loan
+            - Grant
+          examples:
+            - Loan
+          type: string
+      required:
+        - type
+        - month
+        - amount
+      type: object
+    ForecastHint:
+      additionalProperties: false
+      properties:
+        average:
+          description: Its average a month over the last three actual months, from the balance service.
+          examples:
+            - "2410.55"
+          type: string
+        report_group:
+          description: The chart's report group.
+          examples:
+            - Sales & marketing
+          type: string
+      required:
+        - report_group
+        - average
+      type: object
+    ForecastHire:
+      additionalProperties: false
+      properties:
+        cpf:
+          description: "true: employer CPF at the rate for 55 and below up to the Ordinary Wage ceiling (sg-cpf), as the workbook; SDL applies to everyone (sg-sdl)."
+          examples:
+            - true
+          type: boolean
+        end:
+          description: The last month, if they leave.
+          examples:
+            - 2028-02
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        function:
+          description: "Where the cost goes: COGS (cost of revenue), R&D, S&M or G&A."
+          enum:
+            - COGS
+            - R&D
+            - S&M
+            - G&A
+          examples:
+            - R&D
+          type: string
+        role:
+          description: The person or the role.
+          examples:
+            - Senior engineer (hire)
+          maxLength: 80
+          type: string
+        salary:
+          description: "The monthly salary at today's rate: it rises by the salary increase each forecast year."
+          examples:
+            - "8500.00"
+          type: string
+        start:
+          description: The first month (YYYY-MM); one before the forecast is the current team, whom the hiring delay does not move.
+          examples:
+            - 2027-01
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      required:
+        - role
+        - function
+        - start
+        - salary
+        - cpf
+      type: object
+    ForecastKey:
+      additionalProperties: false
+      properties:
+        arr_end:
+          description: ARR at the horizon.
+          examples:
+            - "987252.12"
+          type: string
+        average_burn:
+          description: The average net burn of the first 12 months.
+          examples:
+            - "18187.69"
+          type: string
+        break_even:
+          description: "The first month with revenue whose EBITDA is not negative (YYYY-MM); absent: not within the forecast."
+          examples:
+            - 2029-05
+          type: string
+        buffer_months:
+          description: "The buffer the gap used: the scenario's, the forecast's or planning.buffer_months."
+          examples:
+            - 6
+          format: int64
+          type: integer
+        cash_out_month:
+          description: "The first month cash closes below zero (YYYY-MM); absent: not within the horizon."
+          examples:
+            - 2028-03
+          type: string
+        customers_end:
+          description: Customers at the horizon, to 1 decimal.
+          examples:
+            - "621.9"
+          type: string
+        funding_gap:
+          description: The buffer × the average burn, less the minimum cash, at least 0.
+          examples:
+            - "0.00"
+          type: string
+        minimum_cash:
+          description: The lowest month-end cash.
+          examples:
+            - "-91351.81"
+          type: string
+        minimum_month:
+          description: Its month (YYYY-MM).
+          examples:
+            - 2026-11
+          type: string
+        revenue_next_12:
+          description: The revenue of the next 12 months.
+          examples:
+            - "575399.18"
+          type: string
+        runway_beyond:
+          description: "true: no cash-out month within the horizon, so runway is more than runway_months."
+          examples:
+            - false
+          type: boolean
+        runway_months:
+          description: The months before the cash-out month; the horizon when there is none, with runway_beyond.
+          examples:
+            - 16
+          format: int64
+          type: integer
+      required:
+        - runway_months
+        - runway_beyond
+        - minimum_cash
+        - minimum_month
+        - average_burn
+        - funding_gap
+        - buffer_months
+        - revenue_next_12
+        - arr_end
+        - customers_end
+      type: object
+    ForecastLevers:
+      additionalProperties: false
+      properties:
+        churn:
+          description: × churn.
+          examples:
+            - "1.3"
+          type: string
+        direct_costs:
+          description: × each direct-cost percentage.
+          examples:
+            - "1.1"
+          type: string
+        fund_amount:
+          description: × the money raised (not grants).
+          examples:
+            - "0.6"
+          type: string
+        fund_delay:
+          description: Months the money raised waits (not grants).
+          examples:
+            - 3
+          format: int64
+          maximum: 24
+          minimum: 0
+          type: integer
+        hire_delay:
+          description: Months every planned hire waits.
+          examples:
+            - 3
+          format: int64
+          maximum: 24
+          minimum: 0
+          type: integer
+        new_customers:
+          description: × new customers.
+          examples:
+            - "0.7"
+          type: string
+        opex:
+          description: × each other operating expense.
+          examples:
+            - "1.1"
+          type: string
+        price:
+          description: × ARPA.
+          examples:
+            - "0.9"
+          type: string
+        services:
+          description: × services revenue.
+          examples:
+            - "0.7"
+          type: string
+      required:
+        - new_customers
+        - churn
+        - price
+        - services
+        - opex
+        - direct_costs
+        - fund_amount
+        - hire_delay
+        - fund_delay
+      type: object
+    ForecastMonth:
+      additionalProperties: false
+      properties:
+        ai:
+          description: "AI and API costs: their share of revenue."
+          examples:
+            - "2014.80"
+          type: string
+        arpa:
+          description: Revenue per customer.
+          examples:
+            - "120.00"
+          type: string
+        arr:
+          description: 12 × subscription revenue.
+          examples:
+            - "123552.00"
+          type: string
+        burn_multiple:
+          description: Net burn ÷ the month's increase in ARR, to 2 decimals; absent without an increase.
+          examples:
+            - "1.35"
+          type: string
+        cac:
+          description: S&M ÷ new customers; absent without new customers.
+          examples:
+            - "903.03"
+          type: string
+        capex:
+          description: Cash for assets bought (negative).
+          examples:
+            - "0.00"
+          type: string
+        cash:
+          description: Cash at the end of the month.
+          examples:
+            - "781283.66"
+          type: string
+        cash_open:
+          description: Cash at the start of the month.
+          examples:
+            - "791132.86"
+          type: string
+        collections:
+          description: Cash from customers, by the collection pattern.
+          examples:
+            - "36573.80"
+          type: string
+        contractors:
+          description: "Contractors: their share of services revenue."
+          examples:
+            - "1500.00"
+          type: string
+        customers:
+          description: Customers at the end of the month, to 1 decimal.
+          examples:
+            - "85.8"
+          type: string
+        customers_open:
+          description: Customers at the start of the month, to 1 decimal (they stay fractional, as the workbook).
+          examples:
+            - "78.0"
+          type: string
+        depreciation:
+          description: The register's assets and the planned capex, straight line.
+          examples:
+            - "616.67"
+          type: string
+        direct_costs:
+          description: Total direct costs.
+          examples:
+            - "5542.75"
+          type: string
+        ebitda:
+          description: Gross profit less payroll and other expenses.
+          examples:
+            - "-6127.00"
+          type: string
+        equity_raised:
+          description: Cash from equity and SAFEs.
+          examples:
+            - "0.00"
+          type: string
+        fees:
+          description: "Payment fees: their share of revenue."
+          examples:
+            - "483.55"
+          type: string
+        grants:
+          description: Grants received.
+          examples:
+            - "0.00"
+          type: string
+        grants_received:
+          description: Cash from grants.
+          examples:
+            - "0.00"
+          type: string
+        gross_margin:
+          description: Gross profit as a percentage of revenue (RND-PERCENT); absent without revenue.
+          examples:
+            - "86.2"
+          type: string
+        gross_profit:
+          description: Revenue less direct costs.
+          examples:
+            - "34753.25"
+          type: string
+        headcount:
+          description: People employed in the month.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        hosting:
+          description: "Hosting: its share of subscription revenue."
+          examples:
+            - "1544.40"
+          type: string
+        interest:
+          description: Interest on the loans' balance at the start of the month.
+          examples:
+            - "0.00"
+          type: string
+        interest_paid:
+          description: Interest paid (negative).
+          examples:
+            - "0.00"
+          type: string
+        loan_repayments:
+          description: Loan principal repaid (negative).
+          examples:
+            - "0.00"
+          type: string
+        loans_drawn:
+          description: Cash from loans drawn.
+          examples:
+            - "0.00"
+          type: string
+        lost_customers:
+          description: Customers lost, to 1 decimal.
+          examples:
+            - "1.2"
+          type: string
+        ltv:
+          description: ARPA × gross margin ÷ churn; absent without revenue or churn.
+          examples:
+            - "6898.50"
+          type: string
+        ltv_to_cac:
+          description: LTV ÷ CAC, to 2 decimals; absent when either is.
+          examples:
+            - "7.64"
+          type: string
+        month:
+          description: The month (YYYY-MM).
+          examples:
+            - 2026-11
+          type: string
+        net_burn:
+          description: Cash used by operations and capex, 0 when they bring cash in.
+          examples:
+            - "9849.20"
+          type: string
+        net_cash_flow:
+          description: The month's net cash flow.
+          examples:
+            - "-9849.20"
+          type: string
+        net_profit:
+          description: Profit before tax less tax.
+          examples:
+            - "-6743.67"
+          type: string
+        new_customers:
+          description: New customers, to 1 decimal.
+          examples:
+            - "9.0"
+          type: string
+        operating_cash_flow:
+          description: The operating cash flow.
+          examples:
+            - "-9849.20"
+          type: string
+        other_expenses:
+          description: Each other expense line, in the plan's order.
+          items:
+            description: An other expense line's amount in the month, in the plan's order.
+            examples:
+              - "2500.00"
+            type: string
+          type: array
+        other_expenses_total:
+          description: Their total.
+          examples:
+            - "7350.00"
+          type: string
+        other_revenue:
+          description: Other revenue.
+          examples:
+            - "0.00"
+          type: string
+        payroll:
+          description: The payroll of R&D, S&M and G&A.
+          examples:
+            - "33530.25"
+          type: string
+        payroll_cogs:
+          description: The payroll of the COGS function, with employer CPF and SDL.
+          examples:
+            - "0.00"
+          type: string
+        payroll_ga:
+          description: The G&A payroll.
+          examples:
+            - "7031.25"
+          type: string
+        payroll_paid:
+          description: Cash to staff (negative).
+          examples:
+            - "-33530.25"
+          type: string
+        payroll_rd:
+          description: The R&D payroll.
+          examples:
+            - "20871.75"
+          type: string
+        payroll_sm:
+          description: The S&M payroll.
+          examples:
+            - "5627.25"
+          type: string
+        profit_before_tax:
+          description: EBITDA less depreciation and interest, plus grants.
+          examples:
+            - "-6743.67"
+          type: string
+        revenue:
+          description: Total revenue.
+          examples:
+            - "40296.00"
+          type: string
+        sales_marketing:
+          description: S&M payroll and the expense line of a report group whose accounts are all S&M.
+          examples:
+            - "8127.25"
+          type: string
+        services_revenue:
+          description: Services revenue.
+          examples:
+            - "30000.00"
+          type: string
+        subscription_revenue:
+          description: Customers × ARPA.
+          examples:
+            - "10296.00"
+          type: string
+        suppliers:
+          description: Cash to suppliers (negative).
+          examples:
+            - "-12892.75"
+          type: string
+        tax:
+          description: Corporate tax, booked in a forecast year's last month.
+          examples:
+            - "0.00"
+          type: string
+        tax_paid:
+          description: Tax paid, the payment lag after its year (negative).
+          examples:
+            - "0.00"
+          type: string
+        year:
+          description: The forecast year, 1 for months 1 to 12.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - month
+        - year
+        - customers_open
+        - new_customers
+        - lost_customers
+        - customers
+        - arpa
+        - subscription_revenue
+        - services_revenue
+        - other_revenue
+        - revenue
+        - hosting
+        - ai
+        - contractors
+        - fees
+        - payroll_cogs
+        - direct_costs
+        - gross_profit
+        - payroll_rd
+        - payroll_sm
+        - payroll_ga
+        - payroll
+        - headcount
+        - other_expenses
+        - other_expenses_total
+        - ebitda
+        - depreciation
+        - grants
+        - interest
+        - profit_before_tax
+        - tax
+        - net_profit
+        - collections
+        - suppliers
+        - payroll_paid
+        - grants_received
+        - interest_paid
+        - tax_paid
+        - operating_cash_flow
+        - capex
+        - equity_raised
+        - loans_drawn
+        - loan_repayments
+        - net_cash_flow
+        - cash_open
+        - cash
+        - net_burn
+        - arr
+        - sales_marketing
+      type: object
+    ForecastOpex:
+      additionalProperties: false
+      properties:
+        base:
+          description: Its amount in the first month.
+          examples:
+            - "2500.00"
+          type: string
+        growth:
+          description: Its monthly growth, as a fraction.
+          examples:
+            - "0.02"
+          type: string
+        label:
+          description: What it is.
+          examples:
+            - Sales & marketing
+          maxLength: 80
+          minLength: 1
+          type: string
+        percent:
+          description: A share of total revenue added each month, as a fraction.
+          examples:
+            - "0"
+          type: string
+        report_group:
+          description: "The chart's income or expense report group it plans, by name: the books' average of the last three months is shown beside it, and a group whose accounts are all S&M adds the line to S&M for CAC."
+          examples:
+            - Sales & marketing
+          maxLength: 80
+          type: string
+      required:
+        - label
+        - base
+        - growth
+        - percent
+      type: object
+    ForecastPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/ForecastView"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYifQ
+          type: string
+      required:
+        - items
+      type: object
+    ForecastPlan:
+      additionalProperties: false
+      properties:
+        buffer_months:
+          description: Months of average net burn to keep as a buffer for the funding gap; left out, the setting planning.buffer_months (6).
+          examples:
+            - 6
+          format: int64
+          maximum: 36
+          minimum: 0
+          type: integer
+        capex:
+          description: The purchases of assets.
+          items:
+            $ref: "#/components/schemas/ForecastCapex"
+          maxItems: 50
+          type: array
+        cash_adjustment:
+          description: Added to the books' cash at the start, such as money already committed; 0 for none.
+          examples:
+            - "0.00"
+          type: string
+        costs:
+          $ref: "#/components/schemas/ForecastCosts"
+          description: The direct-cost percentages and the salary increase.
+        funding:
+          description: The money planned to be raised or received; none of it is received yet, so runway is also shown without it (FR-PLN-03).
+          items:
+            $ref: "#/components/schemas/ForecastFunding"
+          maxItems: 50
+          type: array
+        headcount:
+          description: The team and the planned hires.
+          items:
+            $ref: "#/components/schemas/ForecastHire"
+          maxItems: 100
+          type: array
+        horizon:
+          description: Months to forecast, 12 to 60.
+          examples:
+            - 36
+          format: int64
+          maximum: 60
+          minimum: 12
+          type: integer
+        last_actual:
+          description: "The last month with complete actuals (YYYY-MM): the forecast starts the month after. Left out, the last closed month, else the month before today."
+          examples:
+            - 2026-10
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        name:
+          description: The forecast's name.
+          examples:
+            - FY2027 plan
+          maxLength: 80
+          minLength: 1
+          type: string
+        opex:
+          description: The other operating expenses, each a monthly base that grows, plus a share of revenue.
+          items:
+            $ref: "#/components/schemas/ForecastOpex"
+          maxItems: 30
+          type: array
+        revenue:
+          $ref: "#/components/schemas/ForecastRevenue"
+          description: The revenue drivers.
+        scenarios:
+          description: The scenarios; left out, Base, Best and Worst with the workbook's levers. Custom ones carry their own levers and buffer.
+          items:
+            $ref: "#/components/schemas/ForecastScenario"
+          maxItems: 10
+          minItems: 1
+          type:
+            - array
+            - "null"
+        tax:
+          $ref: "#/components/schemas/ForecastTax"
+          description: What the tax estimate needs beyond the sg-cit pack.
+      required:
+        - name
+        - horizon
+        - cash_adjustment
+        - revenue
+        - costs
+        - opex
+        - headcount
+        - capex
+        - funding
+        - tax
+      type: object
+    ForecastResults:
+      additionalProperties: false
+      properties:
+        books:
+          $ref: "#/components/schemas/ForecastBooks"
+          description: The books' figures at the start.
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        forecast_id:
+          description: The forecast; absent for a plan run without saving it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+          format: uuid
+          type: string
+        "on":
+          description: "The day it was worked out: today."
+          examples:
+            - "2026-11-20"
+          format: date
+          type: string
+        packs:
+          description: The statutory pack versions it read.
+          items:
+            description: A statutory pack version, <pack>@<year>.<n> (ENG-30).
+            examples:
+              - sg-cpf@2026.1
+            type: string
+          type: array
+        runs:
+          description: Each scenario asked for, with and then without its funding plan.
+          items:
+            $ref: "#/components/schemas/ForecastRun"
+          type: array
+        sandbox:
+          description: What a forecast never does.
+          examples:
+            - "A forecast never posts: nothing here changes the books (FR-PLN-08)."
+          type: string
+      required:
+        - currency
+        - "on"
+        - books
+        - packs
+        - runs
+        - sandbox
+      type: object
+    ForecastRevenue:
+      additionalProperties: false
+      properties:
+        arpa:
+          description: Revenue per customer per month in year 1.
+          examples:
+            - "120.00"
+          type: string
+        churn:
+          description: The share of customers at the start of a month who leave in it, as a fraction.
+          examples:
+            - "0.015"
+          type: string
+        collection:
+          $ref: "#/components/schemas/ForecastCollection"
+          description: When a month's revenue is collected; together 100%, else ⚠.
+        customers:
+          description: Paying customers at the start; may have one decimal.
+          examples:
+            - "78"
+          type: string
+        new_customers:
+          description: New customers in the first month; may have one decimal.
+          examples:
+            - "9"
+          type: string
+        new_growth:
+          description: Monthly growth of new customers, as a fraction.
+          examples:
+            - "0.04"
+          type: string
+        other:
+          description: Other revenue each month.
+          examples:
+            - "0.00"
+          type: string
+        price_increase:
+          description: The yearly increase of ARPA, as a fraction.
+          examples:
+            - "0.05"
+          type: string
+        services:
+          description: Services revenue in the first month.
+          examples:
+            - "30000.00"
+          type: string
+        services_growth:
+          description: Monthly growth of services, as a fraction.
+          examples:
+            - "0.01"
+          type: string
+      required:
+        - customers
+        - new_customers
+        - new_growth
+        - churn
+        - arpa
+        - price_increase
+        - services
+        - services_growth
+        - other
+        - collection
+      type: object
+    ForecastRun:
+      additionalProperties: false
+      properties:
+        collections_ok:
+          description: "false: the collection pattern does not total 100%, so revenue is not all collected (⚠)."
+          examples:
+            - true
+          type: boolean
+        key_results:
+          $ref: "#/components/schemas/ForecastKey"
+          description: The key results.
+        months:
+          description: Every month from 1 to the horizon; left out of a comparison.
+          items:
+            $ref: "#/components/schemas/ForecastMonth"
+          type:
+            - array
+            - "null"
+        scenario:
+          description: The scenario.
+          examples:
+            - Base
+          type: string
+        tax_years:
+          description: The tax estimate by forecast year.
+          items:
+            $ref: "#/components/schemas/ForecastTaxYear"
+          type: array
+        with_funding:
+          description: "true: with the funding plan; false: without it, as Home, the tiles and the alerts read runway, since none of it is received yet (FR-PLN-03)."
+          examples:
+            - true
+          type: boolean
+        years:
+          description: The yearly summary, five forecast years.
+          items:
+            $ref: "#/components/schemas/ForecastYear"
+          type: array
+      required:
+        - scenario
+        - with_funding
+        - collections_ok
+        - key_results
+        - years
+        - tax_years
+      type: object
+    ForecastScenario:
+      additionalProperties: false
+      properties:
+        buffer_months:
+          description: Its own buffer, in months of burn; left out, the forecast's.
+          examples:
+            - 3
+          format: int64
+          maximum: 36
+          minimum: 0
+          type: integer
+        levers:
+          $ref: "#/components/schemas/ForecastLevers"
+          description: How it moves the plan.
+        name:
+          description: Its name.
+          examples:
+            - Worst
+          maxLength: 40
+          minLength: 1
+          type: string
+      required:
+        - name
+        - levers
+      type: object
+    ForecastTax:
+      additionalProperties: false
+      properties:
+        losses_brought_forward:
+          description: Unabsorbed tax losses at the start.
+          examples:
+            - "0.00"
+          type: string
+        payment_lag:
+          description: Months from a forecast year's end to the payment of its tax.
+          examples:
+            - 9
+          format: int64
+          maximum: 24
+          minimum: 0
+          type: integer
+        start_up_years:
+          description: Forecast years under the start-up tax exemption, a qualifying company's first three Years of Assessment; the rest are under the partial exemption.
+          examples:
+            - 3
+          format: int64
+          maximum: 3
+          minimum: 0
+          type: integer
+      required:
+        - start_up_years
+        - losses_brought_forward
+        - payment_lag
+      type: object
+    ForecastTaxYear:
+      additionalProperties: false
+      properties:
+        chargeable_income:
+          description: Profit less losses, at least 0.
+          examples:
+            - "120000.00"
+          type: string
+        exempt:
+          description: The exempt amount of the scheme, to the cent.
+          examples:
+            - "85000.00"
+          type: string
+        gross_tax:
+          description: The rate of sg-cit on the rest, to the cent.
+          examples:
+            - "5950.00"
+          type: string
+        losses_brought_forward:
+          description: Losses set off first.
+          examples:
+            - "0.00"
+          type: string
+        losses_carried_forward:
+          description: Losses left for the next year.
+          examples:
+            - "0.00"
+          type: string
+        profit_before_tax:
+          description: The year's profit before tax.
+          examples:
+            - "120000.00"
+          type: string
+        rebate:
+          description: The YA's rebate from sg-cit, to the cent; 0 when the YA has none.
+          examples:
+            - "0.00"
+          type: string
+        scheme:
+          description: "sute: the start-up tax exemption; pte: the partial tax exemption."
+          enum:
+            - sute
+            - pte
+          examples:
+            - sute
+          type: string
+        tax:
+          description: The year's tax, rounded once (RND-PLAN).
+          examples:
+            - "5950.00"
+          type: string
+        ya:
+          description: "The Year of Assessment: the year after the calendar year the forecast year ends in."
+          examples:
+            - 2028
+          format: int64
+          type: integer
+        year:
+          description: The forecast year.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - year
+        - ya
+        - scheme
+        - profit_before_tax
+        - losses_brought_forward
+        - chargeable_income
+        - exempt
+        - gross_tax
+        - rebate
+        - tax
+        - losses_carried_forward
+      type: object
+    ForecastView:
+      additionalProperties: false
+      properties:
+        id:
+          description: The forecast's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+          format: uuid
+          type: string
+        plan:
+          $ref: "#/components/schemas/ForecastPlan"
+          description: Its drivers, plans and scenarios.
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-11-20T09:30:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          $ref: "#/components/schemas/Person"
+          description: Who recorded it.
+        status:
+          description: "draft: a sandbox to change and run; recorded: the latest recorded, the company's own and Home's; superseded: a later one is recorded."
+          enum:
+            - draft
+            - recorded
+            - superseded
+          examples:
+            - recorded
+          type: string
+        version:
+          description: The version of its content; with its status it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - status
+        - version
+        - plan
+      type: object
+    ForecastYear:
+      additionalProperties: false
+      properties:
+        arr:
+          description: ARR at its end.
+          examples:
+            - "254649.60"
+          type: string
+        cash:
+          description: Cash at its end; absent when it ends past the horizon.
+          examples:
+            - "2756660.90"
+          type: string
+        customers:
+          description: Customers at its end, to 1 decimal.
+          examples:
+            - "168.4"
+          type: string
+        ebitda:
+          description: Its EBITDA.
+          examples:
+            - "-98213.41"
+          type: string
+        gross_profit:
+          description: Its gross profit.
+          examples:
+            - "491233.20"
+          type: string
+        headcount:
+          description: Headcount at its end.
+          examples:
+            - 9
+          format: int64
+          type: integer
+        net_burn:
+          description: Its net burn.
+          examples:
+            - "218252.20"
+          type: string
+        net_profit:
+          description: Its net profit.
+          examples:
+            - "-105612.08"
+          type: string
+        revenue:
+          description: Its revenue.
+          examples:
+            - "575399.18"
+          type: string
+        year:
+          description: The forecast year.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - year
+      type: object
     ForeignMoneyAccount:
       additionalProperties: false
       properties:
@@ -30680,11 +31934,12 @@ components:
             - sales.payment_terms_days
           type: string
         kind:
-          description: "What it holds: switch is \"true\" or \"false\"; minutes, days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices."
+          description: "What it holds: switch is \"true\" or \"false\"; minutes, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices."
           enum:
             - switch
             - minutes
             - days
+            - months
             - years
             - amount_sgd
             - percent
@@ -89551,6 +90806,1297 @@ paths:
       x-fyniq-permission:
         capability: Fixed assets
         right: P
+  /v1/forecasts:
+    get:
+      description: "Every forecast: the latest recorded first, the company's own, then the others recorded, then the drafts, a page at a time (FR-PLN-02). Read-only; no side effects."
+      operationId: listForecasts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the forecasts
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+    post:
+      description: "Drafts a driver-based forecast (FR-PLN-02, design D5): the workbook's model, worked in exact decimals (RND-PLAN). Without scenarios it gets Base, Best and Worst with the workbook's levers. A draft is a sandbox: change it, read its results, and record it once it is the company's plan. It never posts (FR-PLN-08). Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createForecast
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForecastPlan"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastView"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Draft a forecast
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: C
+  /v1/forecasts/{forecast_id}:
+    get:
+      description: A forecast's plan, drafted or recorded, with its status and who recorded it (FR-PLN-02). Its figures are getForecastResults'. Read-only; no side effects.
+      operationId: getForecast
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastView"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a forecast
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+    put:
+      description: "Saves a new version of a forecast not recorded yet (FR-PLN-02); a recorded one changes no more (PLAN-11): draft a new one instead. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceForecast
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForecastPlan"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a drafted forecast
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: C
+  /v1/forecasts/{forecast_id}/comparison:
+    get:
+      description: "Every scenario of a forecast side by side (FR-PLN-03): each with and without its funding plan, its key results, yearly summary and tax estimate, without the months. Read-only; no side effects."
+      operationId: compareForecastScenarios
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResults"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Compare a forecast's scenarios
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+  /v1/forecasts/{forecast_id}/record:
+    post:
+      description: "Records a drafted forecast as the company's plan (FR-PLN-02, design D5): from then on the latest recorded is Home's, never changed. It posts nothing (FR-PLN-08) and needs no approval. Side effects: the forecast recorded, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: recordForecast
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record a forecast
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        note: "The company's plan: it posts nothing."
+        right: C
+  /v1/forecasts/{forecast_id}/results:
+    get:
+      description: "A forecast's figures today (FR-PLN-02, FR-PLN-03): from the books at its last actual month and the sg-cit, sg-cpf and sg-sdl packs, each scenario with and then without its funding plan, month by month, with the yearly summary, the tax estimate and the key results. Every figure is RND-PLAN's: a driver line rounded once, a total the sum of the lines shown. Worked out on every read, never stored: a closed month or a new pack moves it. Read-only; no side effects."
+      operationId: getForecastResults
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+        - description: One scenario by name; left out, every scenario.
+          explode: false
+          in: query
+          name: scenario
+          schema:
+            description: One scenario by name; left out, every scenario.
+            examples:
+              - Base
+            maxLength: 40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResults"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work a forecast out
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+  /v1/forecasts:run:
+    post:
+      description: "Works a plan out as getForecastResults does, from the books and the packs, without saving anything (FR-PLN-02, FR-PLN-08): a sandbox for a what-if. Every problem of the plan comes back together. Saves nothing; no side effects."
+      operationId: runForecast
+      parameters:
+        - description: One scenario by name; left out, every scenario.
+          explode: false
+          in: query
+          name: scenario
+          schema:
+            description: One scenario by name; left out, every scenario.
+            examples:
+              - Base
+            maxLength: 40
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForecastPlan"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResults"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work a plan out without saving it
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A forecast run saves nothing, so a repeat is harmless and answers the same (FR-PLN-08).
+        Prefer: "A forecast run saves nothing: return=preview would answer the same as the request itself (FR-INT-14)."
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        note: Saves nothing.
+        right: C
   /v1/fx/feed:
     get:
       description: "The daily rate feed's rates into the organisation's base currency between two dates, at most 366 days apart (FR-GL-05; PRD-001 rev 0.70): the same for every organisation, each as published, with its RND-RATE rate. The feed publishes business days only. Locally the feed is a directory of rates files; MAS's rates arrive at the cloud gate. A page at a time. Read-only; no side effects."
@@ -158311,6 +160857,8 @@ tags:
     name: Operations
   - description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."
     name: Compliance
+  - description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."
+    name: Planning
   - description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."
     name: Checks
   - description: Customers and vendors (FR-CT-01).

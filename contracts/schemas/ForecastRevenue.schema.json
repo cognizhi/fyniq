@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arpa": {
+      "description": "Revenue per customer per month in year 1.",
+      "examples": [
+        "120.00"
+      ],
+      "type": "string"
+    },
+    "churn": {
+      "description": "The share of customers at the start of a month who leave in it, as a fraction.",
+      "examples": [
+        "0.015"
+      ],
+      "type": "string"
+    },
+    "collection": {
+      "$ref": "ForecastCollection.schema.json",
+      "description": "When a month's revenue is collected; together 100%, else ⚠."
+    },
+    "customers": {
+      "description": "Paying customers at the start; may have one decimal.",
+      "examples": [
+        "78"
+      ],
+      "type": "string"
+    },
+    "new_customers": {
+      "description": "New customers in the first month; may have one decimal.",
+      "examples": [
+        "9"
+      ],
+      "type": "string"
+    },
+    "new_growth": {
+      "description": "Monthly growth of new customers, as a fraction.",
+      "examples": [
+        "0.04"
+      ],
+      "type": "string"
+    },
+    "other": {
+      "description": "Other revenue each month.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "price_increase": {
+      "description": "The yearly increase of ARPA, as a fraction.",
+      "examples": [
+        "0.05"
+      ],
+      "type": "string"
+    },
+    "services": {
+      "description": "Services revenue in the first month.",
+      "examples": [
+        "30000.00"
+      ],
+      "type": "string"
+    },
+    "services_growth": {
+      "description": "Monthly growth of services, as a fraction.",
+      "examples": [
+        "0.01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "customers",
+    "new_customers",
+    "new_growth",
+    "churn",
+    "arpa",
+    "price_increase",
+    "services",
+    "services_growth",
+    "other",
+    "collection"
+  ],
+  "title": "ForecastRevenue",
+  "type": "object"
+}
