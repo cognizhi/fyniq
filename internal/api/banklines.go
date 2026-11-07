@@ -43,9 +43,11 @@ type BankPartDraft struct {
 
 // BankCategorisation is how a person codes a line: the contact and reference it names, and its parts.
 type BankCategorisation struct {
-	ContactID string          `json:"contact_id,omitempty" format:"uuid" doc:"The customer or supplier it was with." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"`
-	Reference string          `json:"reference,omitempty" maxLength:"140" doc:"A reference kept with it." example:"Invoice 88213"`
-	Parts     []BankPartDraft `json:"parts" minItems:"1" maxItems:"50" doc:"Its parts: together they make the line's amount."`
+	ContactID string `json:"contact_id,omitempty" format:"uuid" doc:"The customer or supplier it was with." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"`
+	// FR-EQ-18: money received under a SAFE or note, or repaid, on 2700.
+	InstrumentID string          `json:"instrument_id,omitempty" format:"uuid" doc:"The recorded SAFE or convertible note (listInstruments) a part on 2700 Convertible notes / SAFE is for: money in received under it, money out repaid. Required with such a part, refused without one." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
+	Reference    string          `json:"reference,omitempty" maxLength:"140" doc:"A reference kept with it." example:"Invoice 88213"`
+	Parts        []BankPartDraft `json:"parts" minItems:"1" maxItems:"50" doc:"Its parts: together they make the line's amount."`
 }
 
 // BankInvoicesMatch matches money in to a customer's invoices (FR-BNK-07, FR-BNK-08).
@@ -352,6 +354,13 @@ func registerBankLines(a *API) {
 						fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.contact_id", Message: "is not an ID", Fix: "Send the contact's ID"})
 					}
 					d.ContactID = &c
+				}
+				if in.Body.InstrumentID != "" {
+					c, err := uuid.Parse(in.Body.InstrumentID)
+					if err != nil {
+						fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.instrument_id", Message: "is not an ID", Fix: "Send the instrument's ID"})
+					}
+					d.InstrumentID = &c
 				}
 				for i, x := range in.Body.Parts {
 					at := func(f string) string { return "body.parts[" + strconv.Itoa(i) + "]." + f }

@@ -54,6 +54,14 @@
       "maxLength": 100,
       "type": "string"
     },
+    "instrument_id": {
+      "description": "Only on 2700 Convertible notes / SAFE: the recorded SAFE or note (listInstruments) the amount is for, such as a note's accrued interest. Required there and refused on any other account (FR-EQ-18; LEDGER-49).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "origin": {
       "description": "Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41).",
       "enum": [

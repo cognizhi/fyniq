@@ -54,6 +54,14 @@
       ],
       "type": "string"
     },
+    "instrument_id": {
+      "description": "On 2700 only: the SAFE or convertible note the amount is for (FR-EQ-18).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "line_no": {
       "description": "The line's number in the entry.",
       "examples": [

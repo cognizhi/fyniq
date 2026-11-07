@@ -105,7 +105,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 5. SAFEs and convertible notes (slice 4)
 
-- [ ] 5.1 Migration and storage (D6):
+- [x] 5.1 Migration and storage (D6):
   - `instrument` and `instrument_template`, seeded with `yc-sg-post-money-cap@1`, disabled until its
     `lawyer_confirmed` evidence;
   - 2700's role `convertible-instruments`, with the instrument as its sub-ledger key.
@@ -113,7 +113,9 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   Attack tests. `// req: FR-EQ-18`
   (Slice 4a-i built the register: `instrument` and `instrument_template` documents, recorded on another person's approval
   with their evidence (the signed instrument; the lawyer's confirmation), FY291 and FY249 as the backstop, and the API.
-  Slice 4a-ii follows with 2700's role and key, the money matched from the bank, and the founder's route to a SAFE.)
+  Slice 4a-ii keyed 2700 by instrument: its role `convertible-instruments`, `journal_line.instrument_id` with FY292, bank
+  lines in and out and journals naming the instrument, and each instrument's balance read from the ledger. The founder's
+  route to a SAFE (FR-EQ-05) comes with the conversions.)
 - [ ] 5.2 Engine and API:
   - recording an instrument (approved), its cash matched Dr Bank · Cr 2700;
   - conversion at a priced round, under both conventions with `RND-SHARE`;

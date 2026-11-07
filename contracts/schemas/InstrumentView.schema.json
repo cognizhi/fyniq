@@ -116,6 +116,10 @@
       ],
       "type": "string"
     },
+    "held": {
+      "$ref": "Money.schema.json",
+      "description": "Once recorded: what 2700 Convertible notes / SAFE holds for it today, from the ledger: the money received under it, less what converted or was repaid (FR-EQ-18). Absent while the chart has no account of role convertible-instruments."
+    },
     "holder_id": {
       "description": "The investor who holds it, a contact marked investor or shareholder. It stays once drafted.",
       "examples": [

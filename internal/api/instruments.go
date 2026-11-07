@@ -15,8 +15,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -60,6 +62,7 @@ type InstrumentView struct {
 	Currency        string      `json:"currency" doc:"The amount's currency, the base currency." example:"SGD"`
 	ClassCode       string      `json:"class_code" doc:"The class's account code." example:"3010"`
 	TemplateEnabled bool        `json:"template_enabled,omitempty" doc:"Its template is enabled, so it can convert by itself when every term it has is one the template covers." example:"false"`
+	Held            *Money      `json:"held,omitempty" doc:"Once recorded: what 2700 Convertible notes / SAFE holds for it today, from the ledger: the money received under it, less what converted or was repaid (FR-EQ-18). Absent while the chart has no account of role convertible-instruments."`
 	Evidence        int         `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the signed instrument." example:"1"`
 	ApprovalID      string      `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a11"`
 	RecordedBy      *Person     `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded."`
@@ -231,6 +234,8 @@ type instrumentView struct {
 	codes   map[uuid.UUID]string
 	asked   map[string]string
 	enabled map[string]bool
+	ledger  uuid.UUID // 2700, the account of role convertible-instruments; uuid.Nil when the chart has none
+	today   time.Time
 }
 
 func (a *API) instrumentViewOf(ctx context.Context, u storage.UnitOfWork) (instrumentView, error) {
@@ -241,6 +246,12 @@ func (a *API) instrumentViewOf(ctx context.Context, u storage.UnitOfWork) (instr
 	}
 	for _, x := range accounts {
 		v.codes[x.ID] = x.Code
+		if x.Role == ledger.RoleConvertibleInstruments && x.Active && !x.Group {
+			v.ledger = x.ID
+		}
+	}
+	if v.today, err = orgToday(ctx, a, u); err != nil {
+		return v, err
 	}
 	if v.asked, err = a.waiting(ctx, u, approval.ObjectInstrument); err != nil {
 		return v, err
@@ -273,6 +284,13 @@ func (a *API) instrumentOf(ctx context.Context, u storage.UnitOfWork, v instrume
 		Currency: i.Amount.Currency().Code, ClassCode: v.codes[i.ClassAccountID], TemplateEnabled: i.Template != "" && v.enabled[i.Template]}
 	if doc.Status == storage.DocumentPosted {
 		out.Status = "recorded"
+		if v.ledger != uuid.Nil {
+			held, err := balance.Instrument(ctx, u, i.Amount.Currency(), v.ledger, doc.ID, v.today)
+			if err != nil {
+				return InstrumentView{}, err
+			}
+			out.Held = &Money{Amount: held.String(), Currency: held.Currency().Code}
+		}
 	}
 	if out.Evidence, out.ApprovalID, out.RecordedBy, out.RecordedAt, out.Checks, err = a.recordCommon(ctx, u, doc, v.asked); err != nil {
 		return out, err

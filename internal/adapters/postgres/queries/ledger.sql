@@ -9,7 +9,8 @@ RETURNING id, ledger_revision, posting_date, period_id, recorded_at;
 -- name: InsertLines :exec
 -- One statement for all of an entry's lines, so the balances cache updates once (INV-08).
 INSERT INTO fyniq.journal_line
-  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id, dimension_set_id)
+  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id, dimension_set_id,
+   instrument_id)
 SELECT sqlc.arg(entry_id)::uuid,
        unnest(sqlc.arg(line_nos)::int[]),
        unnest(sqlc.arg(account_ids)::uuid[]),
@@ -20,7 +21,8 @@ SELECT sqlc.arg(entry_id)::uuid,
        unnest(sqlc.arg(base_amounts)::numeric[]),
        nullif(unnest(sqlc.arg(descriptions)::text[]), ''),
        nullif(unnest(sqlc.arg(party_ids)::text[]), '')::uuid,
-       nullif(unnest(sqlc.arg(dimension_set_ids)::text[]), '')::uuid;
+       nullif(unnest(sqlc.arg(dimension_set_ids)::text[]), '')::uuid,
+       nullif(unnest(sqlc.arg(instrument_ids)::text[]), '')::uuid;
 
 -- name: GetEntry :one
 SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
@@ -30,7 +32,7 @@ FROM fyniq.journal_entry WHERE id = $1;
 -- name: GetEntryLines :many
 -- A line's dimension values are its set's, in ascending order; none for a line with no set (FR-DIM-02).
 SELECT l.id, l.line_no, l.account_id, l.currency, l.amount, l.fx_rate, l.fx_rate_source, l.base_currency, l.base_amount,
-       l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
+       l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
 FROM fyniq.journal_line l
 LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
 WHERE l.entry_id = $1 ORDER BY l.line_no;
@@ -56,7 +58,7 @@ SELECT id FROM fyniq.journal_entry WHERE posting_identity = $1;
 -- provenance and the source document's number when it has one.
 SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
        e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
-       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
 FROM fyniq.journal_line l
 JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
 LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
