@@ -88,6 +88,10 @@
   plain decimal in the field before the form is saved; characters only, no JavaScript number. Guide `home.md` (Copy and
   paste amounts), compiled into `home.overview`. Tests `amount.test.ts`. **Left:** the live-update feed (FR-UX-19), one
   polite status region for the shell's counts (FR-UX-21), the lint rule against optimistic money (FR-UX-22).)
+  (6 Nov 2026, PRD-001 rev 0.194, no optimistic money: the web app has no linter, so `noOptimisticMoney.test.ts` reads its
+  sources and fails on a query-cache write that does not name the server's answer it stores ("the server's answer
+  (FR-UX-22)" on its line) and on an `onMutate` that writes the cache. **Left:** the live-update feed (FR-UX-19) and one
+  polite status region for the shell's counts (FR-UX-21).)
 
 ## 4. Modes and help
 
