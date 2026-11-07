@@ -317,6 +317,36 @@ func TestP1FoundersMoneyByPerson(t *testing.T) {
 	}
 }
 
+// G4-043 in golden/equity.json, worked out by hand (README, "Cash share issues"): an investor's S$600,000.00 arrives on
+// 26 Feb on a bank line naming them on 2040; on 12 Mar, 250,000 shares at 2.40 take it into 3010 from the register.
+// P0004's S$1,000.00, refunded from the bank on 10 Mar, pays nothing towards their issue on 11 Mar, which is refused; so
+// are a person on a line with no part on 2040, a part on 2040 naming no one, a person who is no subscriber and a class
+// on an expense account.
+// req: FR-EQ-17
+// req: QA-ENG-02
+func TestP1CashShareIssue(t *testing.T) {
+	r := run(t, load(t, "equity.json"))
+	if want := []string{"EQ-0002", "BT-0004", "BT-0005", "BT-0006", "EQ-0003"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	byDoc := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byDoc[e.Document] = e.Lines
+	}
+	party := func(l EntryLine, p string) EntryLine { l.Party = p; return l }
+	for doc, lines := range map[string][]EntryLine{
+		"BT-0001": {el("1010", "SGD", "600000.00", "600000.00"), party(el("2040", "SGD", "-600000.00", "-600000.00"), "P0003")},
+		"EQ-0001": {party(el("2040", "SGD", "600000.00", "600000.00"), "P0003"), el("3010", "SGD", "-600000.00", "-600000.00")},
+	} {
+		if got := byDoc[doc]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", doc, got, lines)
+		}
+	}
+	if len(r.People) != 0 {
+		t.Errorf("people %v: every subscriber's monies net to nothing by 31 Mar", r.People)
+	}
+}
+
 // The statements and KPIs of golden/statements.json, worked out by hand (README, "Statements" and "KPIs"): in April
 // 50.00 is paid to 1990, an account with no cash-flow line. It sits in no section, so the balance sheet does not
 // balance and `unplaced` names it, but the cash flow keeps it under Other accounts: operating −50.00, the net change

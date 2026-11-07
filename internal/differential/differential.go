@@ -38,6 +38,9 @@ type Scenario struct {
 	Accounts     []Account      `json:"accounts"`
 	// People are the directors and shareholders a line on a director's account may name (FR-EQ-01).
 	People []string `json:"people,omitempty"`
+	// Subscribers are the investors not among People: with them, the persons a line on share application monies may
+	// name (B.7, FR-EQ-17).
+	Subscribers []string `json:"subscribers,omitempty"`
 	// Dimensions are the organisation's dimensions and their values, which a line may name (FR-DIM-01; README,
 	// "Dimensions").
 	Dimensions []Dimension `json:"dimensions,omitempty"`
@@ -281,6 +284,11 @@ func RunEngine(s Scenario) (Result, error) {
 	for _, p := range s.People {
 		id := stableID("party", p)
 		settings.People[id], personOf[id] = true, p
+	}
+	settings.Subscribers = map[uuid.UUID]bool{}
+	for _, p := range append(slices.Clone(s.People), s.Subscribers...) {
+		id := stableID("party", p)
+		settings.Subscribers[id], personOf[id] = true, p
 	}
 	applySettings(s, settings)
 	sources, err := newP1(s, base, settings)

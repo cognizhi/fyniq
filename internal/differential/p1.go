@@ -164,7 +164,7 @@ func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, erro
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
 	}
-	for _, p := range s.People {
+	for _, p := range append(slices.Clone(s.People), s.Subscribers...) {
 		r.personOf[stableID("party", p)] = p
 	}
 	r.valueOf = dimensionNames(settings)
@@ -238,6 +238,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.directorRepayment(d, date)
 	case "director_conversion":
 		return r.directorConversion(d, date)
+	case "share_issue_cash":
+		return r.shareIssueCash(d, date)
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}
@@ -510,6 +512,7 @@ type bankTransactionDoc struct {
 	Amount       string `json:"amount"`
 	FXRate       string `json:"fx_rate"`
 	FXRateSource string `json:"fx_rate_source"`
+	Person       string `json:"person"` // the subscriber a part on share application monies names (B.7)
 	Parts        []struct {
 		Account      string `json:"account"`
 		Amount       string `json:"amount"`
@@ -533,6 +536,16 @@ func (r *p1) bankTransaction(i int, d Document, date time.Time) (ledger.Entry, b
 		return ledger.Entry{}, false
 	}
 	t := ledger.BankTransaction{ID: stableID("document", d.ID), Version: max(d.Version, 1), Date: date, Account: account(x.Account), Amount: amount, Rate: rate}
+	if x.Person != "" { // the subscriber of the line's parts on share application monies, and only of them (rev 0.206)
+		monies := false
+		for _, p := range x.Parts {
+			monies = monies || r.settings.Accounts[account(p.Account)].SubscriberAccount()
+		}
+		if !monies {
+			return ledger.Entry{}, false
+		}
+		t.Party = stableID("party", x.Person)
+	}
 	for _, p := range x.Parts {
 		a, ok := r.amount(p.Amount, x.Currency)
 		if !ok {

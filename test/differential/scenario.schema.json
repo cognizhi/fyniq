@@ -37,7 +37,7 @@
           "active": {"type": "boolean"},
           "role": {
             "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
-            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration"]
+            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration", "share-application-monies"]
           },
           "requires": {
             "description": "Optional (FR-DIM-01): the dimensions, by name, each one of dimensions, that a line a person enters on the account names a value of (README, \"Dimensions\").",
@@ -70,6 +70,12 @@
     },
     "people": {
       "description": "Optional. The directors and shareholders: the only persons a line on a director's account may name (FR-EQ-01). Left out, there are none.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/documentId"}
+    },
+    "subscribers": {
+      "description": "Optional. The investors who are not among people: with people, the only persons a line on share application monies may name (B.7, FR-EQ-17; PRD-001 rev 0.206). Left out, there are none.",
       "type": "array",
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/documentId"}
@@ -215,7 +221,7 @@
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
-                                         "director_conversion", "account_merge"]}},
+                                         "director_conversion", "account_merge", "share_issue_cash"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -237,7 +243,8 @@
         {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}},
         {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
         {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}},
-        {"if": {"properties": {"type": {"const": "account_merge"}}}, "then": {"$ref": "#/$defs/accountMerge"}}
+        {"if": {"properties": {"type": {"const": "account_merge"}}}, "then": {"$ref": "#/$defs/accountMerge"}},
+        {"if": {"properties": {"type": {"const": "share_issue_cash"}}}, "then": {"$ref": "#/$defs/shareIssueCash"}}
       ]
     },
     "settings": {
@@ -603,6 +610,22 @@
         "difference": {"description": "Under the fair-value basis: the income or expense account the difference goes to.", "type": "string"}
       }
     },
+    "shareIssueCash": {
+      "description": "A cash issue to one subscriber made effective from share application monies (share_issue_cash@1, FR-EQ-17, B.7, RND-LINE; PRD-001 rev 0.205).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "class", "shares", "price"],
+      "properties": {
+        "type": {"const": "share_issue_cash"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day ACRA's register of members shows the allotment, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The subscriber, one of people or subscribers.", "$ref": "#/$defs/documentId"},
+        "class": {"description": "The share-capital account of the class allotted (3010 or 3020).", "type": "string"},
+        "shares": {"description": "The number of shares, a whole number above zero.", "type": "string"},
+        "price": {"description": "The price per share in the base currency, at most 6 decimals.", "type": "string"}
+      }
+    },
     "accountMerge": {
       "description": "The merge of an account into another (account_merge@1, FR-COA-04, Appendix B.8; README, Account merges).",
       "type": "object",
@@ -718,6 +741,7 @@
         "amount": {"description": "Signed gross: money in positive, money out negative.", "$ref": "#/$defs/money"},
         "fx_rate": {"$ref": "#/$defs/rate"},
         "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "person": {"description": "The subscriber a part on share application monies names, one of people or subscribers (B.7; rev 0.206): money in for shares, or a refund out.", "$ref": "#/$defs/documentId"},
         "parts": {
           "type": "array",
           "items": {

@@ -29,8 +29,8 @@ costs and other expenses; net profit = profit before tax + income tax. Each line
 placed by its cash-flow line, and only on its own side (rev 0.159 [accountant to confirm]): an asset
 with Cash & cash equivalents, Receivables or Other current assets in current assets, and with Capital
 expenditure or Depreciation & amortisation in non-current assets; a liability with Payables & accruals,
-Payroll liabilities, Tax liabilities or Deferred revenue in current liabilities, and with Borrowings in
-borrowings; an equity account with Share capital or Dividends & other equity in equity. The account with
+Payroll liabilities, Tax liabilities, Deferred revenue or (rev 0.207) Share application monies in current
+liabilities, and with Borrowings in borrowings; an equity account with Share capital or Dividends & other equity in equity. The account with
 the role ``retained-earnings`` is always in equity,
 and its report group also holds the profit to date (every earlier year's and this year's: FR-GL-10
 folds the years into retained earnings, and FR-RPT-01 shows the year's profit inside them). Assets are
@@ -44,7 +44,8 @@ owes the company: their balances on those accounts show on the advances account 
 
 **Cash flow, indirect** (money in positive), on the same placement. Each entry of the month is
 *investing* when it has a line on a capital-expenditure asset, else *financing* when it has a line on an
-account placed in borrowings or equity, else *operating*: FR-RPT-01 classifies transactions ("a
+account placed in borrowings or equity, or on a liability on Share application monies (money received for
+shares, IAS 7 para 17(a); rev 0.207), else *operating*: FR-RPT-01 classifies transactions ("a
 transaction that moved no money ... is left out of investing and financing"). An entry's cash is the sum
 of its lines on the cash accounts (assets on Cash & cash equivalents). Investing and financing are their
 entries' cash. Operating is net profit; plus the depreciation and amortisation the operating entries put
@@ -55,7 +56,8 @@ current liabilities, by its line); less the operating entries' lines on every ot
 no section (``other_accounts``, p1-reports design D3, rev 0.159 [accountant to confirm]). So operating is
 always the operating entries' cash, ``ties`` always holds, and net burn is the true cash.
 An investing or financing entry with no line on a cash account moved no money: it is listed apart as
-non-cash, a conversion of a founder's balance labelled "Converted to shares" and a waiver "Waived" (FR-EQ-10).
+non-cash, a conversion of a founder's balance labelled "Converted to shares", a waiver "Waived" (FR-EQ-10) and
+a cash issue allotted from share application monies "Allotted from share application monies" (rev 0.207).
 The check ``ties`` is opening cash + net change = closing cash.
 
 **Movement in equity**: opening equity (the month before's closing), the month's net profit, the
@@ -80,6 +82,8 @@ CASH = "Cash & cash equivalents"
 CAPITAL_EXPENDITURE = "Capital expenditure"
 DEPRECIATION = "Depreciation & amortisation"
 SHARE_CAPITAL = "Share capital"
+# (rev 0.207) Money received for shares not yet allotted (2040, B.7): a current liability whose cash is financing.
+SHARE_APPLICATION = "Share application monies"
 # The standard chart's cash-flow lines (p1-reports design D2), by the balance-sheet section each places.
 SECTIONS = {
     CASH: "current_assets",
@@ -91,6 +95,7 @@ SECTIONS = {
     "Payroll liabilities": "current_liabilities",
     "Tax liabilities": "current_liabilities",
     "Deferred revenue": "current_liabilities",
+    SHARE_APPLICATION: "current_liabilities",
     "Borrowings": "borrowings",
     SHARE_CAPITAL: "equity",
     "Dividends & other equity": "equity",
@@ -109,7 +114,8 @@ FUNCTIONS = ("R&D", "S&M", "G&A", "Other")
 # A director's or shareholder's accounts, whose per-person net debit shows under the advances (D14).
 DIRECTOR_ROLES = frozenset({"director-loan", "deferred-remuneration"})
 # The non-cash entries that say what they were, by their document's type (FR-EQ-10).
-NON_CASH_LABELS = {"director_conversion": "Converted to shares", "director_waiver": "Waived"}
+NON_CASH_LABELS = {"director_conversion": "Converted to shares", "director_waiver": "Waived",
+                   "share_issue_cash": "Allotted from share application monies"}
 NON_CASH_SHARES = frozenset({"director_conversion"})
 
 
@@ -201,6 +207,8 @@ class Statements:
             return "investing"
         if any(balance_sheet_section(a) in ("borrowings", "equity") for a in moved):
             return "financing"
+        if any(balance_sheet_section(a) == "current_liabilities" and a.cash_flow_line == SHARE_APPLICATION for a in moved):
+            return "financing"  # money received for shares (IAS 7 para 17(a); rev 0.207)
         return "operating"
 
     def cash(self, entry: Entry) -> Decimal:
