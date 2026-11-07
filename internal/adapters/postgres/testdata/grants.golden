@@ -74,6 +74,8 @@ fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
+fyniq_api       INSERT    brand_version
+fyniq_api       SELECT    brand_version
 fyniq_api       INSERT    break_glass (cap, currency, expires_at, minor_units, reason, started_at, started_by)
 fyniq_api       SELECT    break_glass
 fyniq_api       UPDATE    break_glass (ended_at, ended_by, version)
@@ -379,6 +381,7 @@ fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
+fyniq_executor  SELECT    brand_version
 fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
 fyniq_executor  SELECT    close_checklist_entry
@@ -476,6 +479,7 @@ fyniq_readonly  SELECT    bank_signal
 fyniq_readonly  SELECT    bank_statement
 fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
+fyniq_readonly  SELECT    brand_version
 fyniq_readonly  SELECT    break_glass
 fyniq_readonly  SELECT    break_glass_use
 fyniq_readonly  SELECT    capture_address
@@ -610,6 +614,7 @@ fyniq_worker    SELECT    bank_transfer
 fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
+fyniq_worker    SELECT    brand_version
 fyniq_worker    SELECT    break_glass
 fyniq_worker    SELECT    break_glass_use
 fyniq_worker    SELECT    capture_address

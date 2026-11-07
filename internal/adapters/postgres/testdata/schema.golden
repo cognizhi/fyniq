@@ -351,6 +351,22 @@ bill_payment_plan | bill_id | uuid | not null |
 bill_payment_plan | planned_on | date | null | 
 bill_payment_plan | recorded_by | text | not null | 
 bill_payment_plan | recorded_at | timestamp with time zone | not null | now()
+brand_version | organisation_id | uuid | not null | current_org()
+brand_version | id | uuid | not null | uuidv7()
+brand_version | version | integer | not null | 
+brand_version | light_type | text | null | 
+brand_version | light_sha256 | bytea | null | 
+brand_version | light_size | integer | null | 
+brand_version | dark_type | text | null | 
+brand_version | dark_sha256 | bytea | null | 
+brand_version | dark_size | integer | null | 
+brand_version | icon_type | text | null | 
+brand_version | icon_sha256 | bytea | null | 
+brand_version | icon_size | integer | null | 
+brand_version | accent | text | null | 
+brand_version | cleaned | jsonb | not null | '{}'::jsonb
+brand_version | created_by | uuid | not null | 
+brand_version | created_at | timestamp with time zone | not null | 
 break_glass | organisation_id | uuid | not null | current_org()
 break_glass | id | uuid | not null | uuidv7()
 break_glass | started_by | uuid | not null | 
@@ -2093,6 +2109,24 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+brand_version | brand_version_accent | CHECK (((accent IS NULL) OR (accent ~ '^#[0-9A-F]{6}$'::text)))
+brand_version | brand_version_cleaned_not_null | NOT NULL cleaned
+brand_version | brand_version_cleaned_object | CHECK ((jsonb_typeof(cleaned) = 'object'::text))
+brand_version | brand_version_created_at_not_null | NOT NULL created_at
+brand_version | brand_version_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+brand_version | brand_version_created_by_not_null | NOT NULL created_by
+brand_version | brand_version_files_whole | CHECK ((((light_type IS NULL) = (light_sha256 IS NULL)) AND ((light_sha256 IS NULL) = (light_size IS NULL)) AND ((dark_type IS NULL) = (dark_sha256 IS NULL)) AND ((dark_sha256 IS NULL) = (dark_size IS NULL)) AND ((icon_type IS NULL) = (icon_sha256 IS NULL)) AND ((icon_sha256 IS NULL) = (icon_size IS NULL))))
+brand_version | brand_version_hashes | CHECK (((COALESCE(length(light_sha256), 32) = 32) AND (COALESCE(length(dark_sha256), 32) = 32) AND (COALESCE(length(icon_sha256), 32) = 32)))
+brand_version | brand_version_id_not_null | NOT NULL id
+brand_version | brand_version_number | UNIQUE (organisation_id, version)
+brand_version | brand_version_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+brand_version | brand_version_organisation_id_not_null | NOT NULL organisation_id
+brand_version | brand_version_pkey | PRIMARY KEY (organisation_id, id)
+brand_version | brand_version_positive | CHECK ((version > 0))
+brand_version | brand_version_sizes | CHECK ((((COALESCE(light_size, 1) >= 1) AND (COALESCE(light_size, 1) <= 2097152)) AND ((COALESCE(dark_size, 1) >= 1) AND (COALESCE(dark_size, 1) <= 2097152)) AND ((COALESCE(icon_size, 1) >= 1) AND (COALESCE(icon_size, 1) <= 2097152))))
+brand_version | brand_version_types | CHECK (((COALESCE(light_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text])) AND (COALESCE(dark_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text])) AND (COALESCE(icon_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text]))))
+brand_version | brand_version_version_not_null | NOT NULL version
+brand_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 break_glass | break_glass_cap_not_null | NOT NULL cap
 break_glass | break_glass_cap_scale | CHECK (((cap <> 'NaN'::numeric) AND (cap = trunc(cap, (minor_units)::integer)) AND (cap >= (0)::numeric)))
 break_glass | break_glass_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
@@ -4085,6 +4119,8 @@ CREATE UNIQUE INDEX bank_transfer_from_line ON fyniq.bank_transfer USING btree (
 CREATE UNIQUE INDEX bank_transfer_pkey ON fyniq.bank_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (organisation_id, to_line_id) WHERE ((to_line_id IS NOT NULL) AND (undone_at IS NULL))
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
+CREATE UNIQUE INDEX brand_version_number ON fyniq.brand_version USING btree (organisation_id, version)
+CREATE UNIQUE INDEX brand_version_pkey ON fyniq.brand_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_use_batch_once ON fyniq.break_glass_use USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX break_glass_use_pkey ON fyniq.break_glass_use USING btree (organisation_id, id)
@@ -4361,6 +4397,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rec
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_rule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_signal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_signal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.brand_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('brand_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.check_owner DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_owner', 'id')
@@ -4447,6 +4484,7 @@ CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
 CREATE TRIGGER bank_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_transfer FOR EACH ROW EXECUTE FUNCTION bank_transfer_guard()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
+CREATE TRIGGER brand_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brand_version FOR EACH ROW EXECUTE FUNCTION brand_version_guard()
 CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass FOR EACH ROW EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_use_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass_use FOR EACH ROW EXECUTE FUNCTION break_glass_use_guard()
@@ -4659,6 +4697,7 @@ bank_signal | tenant_isolation | * | (organisation_id = current_org()) | (organi
 bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+brand_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4798,6 +4837,7 @@ bank_transfer_guard() → trigger | security invoker | v | search_path=pg_catalo
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
 bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
+brand_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df02ba30772ae414556351eb8481e851
 break_glass_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 962a60f5cbf377604e7f27ec16e6b71d
 break_glass_logged() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f70eaef3b0d084ec8e9d0c8a089609f8
 break_glass_use_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e1ad9c7c29fcd99d1d82045f444fa13b

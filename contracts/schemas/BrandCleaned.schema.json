@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attributes": {
+      "description": "How many attributes were removed: event handlers and anything outside the safe set.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "elements": {
+      "description": "The kinds of element removed, such as script or image.",
+      "items": {
+        "description": "An SVG element's name.",
+        "examples": [
+          "script"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "external": {
+      "description": "How many references to anything outside the file were removed.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "elements",
+    "attributes",
+    "external"
+  ],
+  "title": "BrandCleaned",
+  "type": "object"
+}

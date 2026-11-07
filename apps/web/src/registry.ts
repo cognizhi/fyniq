@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -155,6 +155,7 @@ export const routes = [
   { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
+  { kind: "route", id: "settings-brand", path: "/settings/brand", mode: "basic", signedIn: true, help: "settings.brand", guide: "settings.brand" },
   { kind: "route", id: "settings-sign-in-providers", path: "/settings/sign-in-providers", mode: "expert", signedIn: true, help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
   { kind: "route", id: "settings-integration", path: "/settings/integrations/$connector", mode: "expert", signedIn: true, help: "settings.integration", guide: "settings.integrations#a-connectors-page" },
   { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
@@ -457,6 +458,7 @@ export const actions = [
   { kind: "action", id: "passkey.revoke", mode: "basic", help: "passkey.revoke", guide: "preferences.security#revoke-a-passkey" },
   { kind: "action", id: "device.sign-out", mode: "basic", help: "device.sign-out", guide: "preferences.security#your-devices" },
   { kind: "action", id: "device.sign-out-others", mode: "basic", help: "device.sign-out-others", guide: "preferences.security#your-devices" },
+  { kind: "action", id: "brand.upload", mode: "basic", help: "brand.upload", guide: "settings.brand#upload-your-logo" },
   { kind: "action", id: "join.ask", mode: "basic", help: "join.ask", guide: "auth.sign-in#ask-to-join-by-your-email-domain" },
   { kind: "action", id: "join.approve", mode: "expert", help: "join.approve", guide: "settings.members#requests-to-join" },
   { kind: "action", id: "join.reject", mode: "expert", help: "join.reject", guide: "settings.members#requests-to-join" },
@@ -497,6 +499,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },
+  { kind: "nav", id: "settings.brand", route: "/settings/brand", icon: Palette, group: "organisation", roles: ["owner", "administrator", "controller"], mode: "basic", help: "settings.brand", guide: "settings.brand" },
   { kind: "nav", id: "settings.accounting", route: "/settings/accounting", icon: BookCheck, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payroll_administrator", "payment_releaser", "approver", "auditor", "tax_agent", "board_viewer", "company_secretary", "dpo"], mode: "expert", help: "settings.accounting", guide: "settings.accounting" },
   { kind: "nav", id: "settings.members", route: "/settings/members", icon: Users, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.members", guide: "settings.members" },
   { kind: "nav", id: "settings.access-review", route: "/settings/access-review", icon: ClipboardCheck, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.access-review", guide: "settings.access-review" },

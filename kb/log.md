@@ -395,3 +395,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | members-and-roles.md, sign-in.md, profile-and-security.md → members.remove, auth.sign-in, preferences.security (account recovery, SEC-35, PRD-001 rev 0.198); members.invite, members.roles rehashed
 
 ## [2026-11-07] compile | sign-in.md, members-and-roles.md, sign-in-providers.md → auth.sign-in, members.invite, settings.sign-in-providers (joining by email domain, FR-ADM-08, PRD-001 rev 0.199); members.remove, members.roles rehashed
+
+## [2026-11-07] compile | logo-and-brand.md (new) → settings.brand (new) (logo, icon, SVG cleaning and accent colour, FR-ORG-09, PRD-001 rev 0.200)
