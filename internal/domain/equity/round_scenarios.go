@@ -295,6 +295,15 @@ func OutcomeIn(ctx context.Context, u storage.UnitOfWork, s Scenario, set ledger
 	return ModelRound(m, before, safes, func(k string) bool { return enabled[k] })
 }
 
+// ModelScenarioIn is a scenario tried in the sandbox (FR-EQ-21): checked on its own and against the books in u, then
+// modelled as OutcomeIn does. It saves nothing, so it needs no right to draft.
+func ModelScenarioIn(ctx context.Context, u storage.UnitOfWork, s Scenario, set ledger.Settings) (RoundOutcome, error) {
+	if err := checkedScenario(ctx, u, s, set); err != nil {
+		return RoundOutcome{}, err
+	}
+	return OutcomeIn(ctx, u, s, set)
+}
+
 // DraftScenarioIn saves a scenario in u: a draft, modelled on read until it is approved.
 func DraftScenarioIn(ctx context.Context, u storage.UnitOfWork, s Scenario, set ledger.Settings, today time.Time) (storage.Document, error) {
 	s.Date = today

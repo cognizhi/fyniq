@@ -117,6 +117,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "equity-instrument-new": lazyRouteComponent(() => import("./screens/equity/InstrumentNew"), "InstrumentNew"),
   "equity-instrument": lazyRouteComponent(() => import("./screens/equity/InstrumentPage"), "InstrumentPage"),
   "equity-options": lazyRouteComponent(() => import("./screens/equity/OptionPool"), "OptionPool"),
+  "equity-rounds": lazyRouteComponent(() => import("./screens/equity/RoundSimulator"), "RoundSimulator"),
   "equity-option-grant-new": lazyRouteComponent(() => import("./screens/equity/OptionGrant"), "OptionGrantNew"),
   "equity-option-grant": lazyRouteComponent(() => import("./screens/equity/OptionGrant"), "OptionGrantPage"),
   "equity-pool-resolution-new": lazyRouteComponent(() => import("./screens/equity/PoolResolution"), "PoolResolutionNew"),

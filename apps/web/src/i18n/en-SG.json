@@ -336,6 +336,70 @@
       "label": "My shares and options",
       "tooltip": "Your own option grants: what has vested, what vests next and the exercise price. You see only yours."
     },
+    "equity.rounds": {
+      "label": "Round simulator",
+      "tooltip": "Try a funding round in a sandbox and see what everyone would own before and after it. Nothing is posted."
+    },
+    "round-scenario.save": {
+      "label": "Save scenario",
+      "tooltip": "Keep this scenario to compare it side by side. It stays a sandbox: nothing is posted or recorded."
+    },
+    "round-scenario.ask": {
+      "label": "Send for approval",
+      "tooltip": "Send the saved scenario to another Owner or the Controller. Once approved, it drafts the round's share issues."
+    },
+    "round.raise": {
+      "label": "How much you raise",
+      "tooltip": "The money the new investor puts in. They get the whole shares it buys at the round's price."
+    },
+    "round.pre-money": {
+      "label": "Value before the money",
+      "tooltip": "The pre-money valuation: what the company is agreed to be worth before the new money. It sets the price per share."
+    },
+    "round.price": {
+      "label": "Price per share",
+      "tooltip": "What each new share costs. Each investor gets the whole shares their money buys (RND-SHARE)."
+    },
+    "round.top-up": {
+      "label": "Option pool top-up",
+      "tooltip": "More shares set aside for employee options with the round. Before the money, the existing holders bear the dilution."
+    },
+    "round.basis": {
+      "label": "Set the price from",
+      "tooltip": "A pre-money valuation, divided by the shares fully diluted before the round, or a price per share you type in."
+    },
+    "round.on": {
+      "label": "Round takes effect on",
+      "tooltip": "The round dilutes the cap table as it stands at the end of the day before this day."
+    },
+    "round.investors": {
+      "label": "New money per investor",
+      "tooltip": "Each investor's money. An existing holder taking up their pro-rata right is an investor too."
+    },
+    "round.conversions": {
+      "label": "SAFEs and notes converting",
+      "tooltip": "The recorded SAFEs and notes that convert at this round, each at its own terms."
+    },
+    "round.resolutions": {
+      "label": "Resolutions",
+      "tooltip": "The board and shareholders' resolutions the round's share issues will name. Needed to send it for approval."
+    },
+    "round.outcome": {
+      "label": "Who would own what",
+      "tooltip": "Each holder's part of every share and option, fully diluted, now and after the round, as the server works it out."
+    },
+    "round.you": {
+      "label": "You would own",
+      "tooltip": "Your part fully diluted after the round, and the points it moves from today."
+    },
+    "round.pro-forma": {
+      "label": "Pro-forma cap table",
+      "tooltip": "Every holder before and after the round, fully diluted, with the points each loses or gains and the new money."
+    },
+    "round.side-by-side": {
+      "label": "Side by side",
+      "tooltip": "The saved scenarios next to each other: the value, the money raised, the price, the top-up and each holder's part after."
+    },
     "pool-resolution.draft": {
       "label": "Draft the resolution",
       "tooltip": "Record the shares the shareholders set aside for options, the class and the day the resolution was passed."
