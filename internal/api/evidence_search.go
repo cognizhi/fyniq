@@ -40,7 +40,7 @@ var EvidenceActivities = []EvidenceActivity{
 	{"founders", "Founders' money", authz.DirectorAccounts, []storage.DocumentType{storage.DocumentPreIncorporationCost, storage.DocumentDirectorPayChoice,
 		storage.DocumentDirectorFee, storage.DocumentExemptStatus, storage.DocumentDirectorSettlement}},
 	{"owner_succession", "Owner successions", authz.UsersAndRoles, []storage.DocumentType{storage.DocumentOwnerSuccession}},
-	{"equity", "The equity register", authz.CapTable, []storage.DocumentType{storage.DocumentHolderRecord, storage.DocumentShareClass}},
+	{"equity", "The equity register", authz.CapTable, []storage.DocumentType{storage.DocumentHolderRecord, storage.DocumentShareClass, storage.DocumentEquityTransaction}},
 }
 
 // ActivityKey names a kind of record an evidence search covers.

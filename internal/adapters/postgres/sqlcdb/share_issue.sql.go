@@ -12,6 +12,143 @@ import (
 	"github.com/google/uuid"
 )
 
+const holdingMovements = `-- name: HoldingMovements :many
+SELECT organisation_id, id, kind, transaction_id, share_issue_id, reverses_id, holder_id, class_account_id, class_id, shares, effective_on, recorded_by, recorded_at, created_xact FROM fyniq.holding_movement ORDER BY effective_on, id
+`
+
+func (q *Queries) HoldingMovements(ctx context.Context) ([]FyniqHoldingMovement, error) {
+	rows, err := q.db.Query(ctx, holdingMovements)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqHoldingMovement
+	for rows.Next() {
+		var i FyniqHoldingMovement
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Kind,
+			&i.TransactionID,
+			&i.ShareIssueID,
+			&i.ReversesID,
+			&i.HolderID,
+			&i.ClassAccountID,
+			&i.ClassID,
+			&i.Shares,
+			&i.EffectiveOn,
+			&i.RecordedBy,
+			&i.RecordedAt,
+			&i.CreatedXact,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const holdingMovementsOfTransaction = `-- name: HoldingMovementsOfTransaction :many
+SELECT organisation_id, id, kind, transaction_id, share_issue_id, reverses_id, holder_id, class_account_id, class_id, shares, effective_on, recorded_by, recorded_at, created_xact FROM fyniq.holding_movement WHERE transaction_id = $1 ORDER BY id
+`
+
+func (q *Queries) HoldingMovementsOfTransaction(ctx context.Context, transactionID *uuid.UUID) ([]FyniqHoldingMovement, error) {
+	rows, err := q.db.Query(ctx, holdingMovementsOfTransaction, transactionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqHoldingMovement
+	for rows.Next() {
+		var i FyniqHoldingMovement
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Kind,
+			&i.TransactionID,
+			&i.ShareIssueID,
+			&i.ReversesID,
+			&i.HolderID,
+			&i.ClassAccountID,
+			&i.ClassID,
+			&i.Shares,
+			&i.EffectiveOn,
+			&i.RecordedBy,
+			&i.RecordedAt,
+			&i.CreatedXact,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertHoldingMovement = `-- name: InsertHoldingMovement :one
+INSERT INTO fyniq.holding_movement (id, kind, transaction_id, share_issue_id, reverses_id, holder_id, class_account_id, class_id, shares,
+                                    effective_on, recorded_by, recorded_at)
+VALUES ($1::uuid, $2::text, $3::uuid, $4::uuid,
+        $5::uuid, $6::uuid, $7::uuid, $8::uuid,
+        $9::numeric, $10::date, $11::uuid, $12::timestamptz)
+RETURNING organisation_id, id, kind, transaction_id, share_issue_id, reverses_id, holder_id, class_account_id, class_id, shares, effective_on, recorded_by, recorded_at, created_xact
+`
+
+type InsertHoldingMovementParams struct {
+	ID             uuid.UUID
+	Kind           string
+	TransactionID  *uuid.UUID
+	ShareIssueID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	HolderID       uuid.UUID
+	ClassAccountID uuid.UUID
+	ClassID        *uuid.UUID
+	Shares         string
+	EffectiveOn    time.Time
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+}
+
+func (q *Queries) InsertHoldingMovement(ctx context.Context, arg InsertHoldingMovementParams) (FyniqHoldingMovement, error) {
+	row := q.db.QueryRow(ctx, insertHoldingMovement,
+		arg.ID,
+		arg.Kind,
+		arg.TransactionID,
+		arg.ShareIssueID,
+		arg.ReversesID,
+		arg.HolderID,
+		arg.ClassAccountID,
+		arg.ClassID,
+		arg.Shares,
+		arg.EffectiveOn,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i FyniqHoldingMovement
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Kind,
+		&i.TransactionID,
+		&i.ShareIssueID,
+		&i.ReversesID,
+		&i.HolderID,
+		&i.ClassAccountID,
+		&i.ClassID,
+		&i.Shares,
+		&i.EffectiveOn,
+		&i.RecordedBy,
+		&i.RecordedAt,
+		&i.CreatedXact,
+	)
+	return i, err
+}
+
 const insertShareIssue = `-- name: InsertShareIssue :one
 INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
                                lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id)

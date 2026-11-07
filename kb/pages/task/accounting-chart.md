@@ -4,14 +4,14 @@ type: task
 title: Set up and keep the chart of accounts
 summary: Load the standard chart; add, change, deactivate or merge accounts; system accounts; dimensions, their values and the ones an account requires
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:1dd9f5771f2c7259642b482ee8f54d368d7fefeee8adaf236f24b2230ccca836
+  - docs/user-guide/chart-of-accounts.md sha256:dc9b789d6b8d49f6f95da772c61b64fdb77faf4eb5c4de09e0c4d64ecd6a39d4
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-07
 aliases:
   - revalued at month end
   - monetary account
@@ -51,7 +51,7 @@ aliases:
 ## Start from the standard chart
 
 - A new company starts with no accounts: **Load the standard chart**, and confirm.
-- The standard Singapore start-up chart has 88 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
+- The standard Singapore start-up chart has 89 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
 
 (src: docs/user-guide/chart-of-accounts.md#start-from-the-standard-chart)
 

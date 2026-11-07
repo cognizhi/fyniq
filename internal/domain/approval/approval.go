@@ -127,6 +127,9 @@ const (
 	// ObjectShareClass is a share class with its rights, to record (FR-EQ-16, FM-1): another person who holds A on the
 	// cap table approves; its key is the class version's document ID.
 	ObjectShareClass = "share_class"
+	// ObjectEquityTransaction is an equity transaction, to approve (FR-EQ-17, FM-1, FM-9; rev 0.205): another person who
+	// holds A on the cap table approves, never a holder it moves shares of or for; its key is the transaction's document ID.
+	ObjectEquityTransaction = "equity_transaction"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -210,6 +213,9 @@ const (
 	OpHolderRecordRecord = "holder_record.record"
 	// OpShareClassRecord records a share class's rights as drafted, superseding the version before it (FR-EQ-16).
 	OpShareClassRecord = "share_class.record"
+	// OpEquityTransactionApprove approves an equity transaction as drafted, numbered EQ-, to make effective with ACRA's
+	// date (FR-EQ-17).
+	OpEquityTransactionApprove = "equity_transaction.approve"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -224,22 +230,23 @@ var Operations = map[string]string{
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
 	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
-	OpReimbursementVoid:  ObjectReimbursement,
-	OpCashAdvanceVoid:    ObjectCashAdvance,
-	OpAssetDisposalVoid:  ObjectAssetDisposal,
-	OpFixedAssetVoid:     ObjectFixedAsset,
-	OpPayeeBankChange:    ObjectPayeeBankChange,
-	OpClaimantBankChange: ObjectClaimantBankChange,
-	OpBatchApprove:       ObjectPaymentBatch,
-	OpBatchReapprove:     ObjectPaymentBatch,
-	OpContactMemberLink:  ObjectContactMemberLink,
-	OpDirectorFeePost:    ObjectDirectorFee,
-	OpSettlementApprove:  ObjectDirectorSettlement,
-	OpRepaymentVoid:      ObjectDirectorRepayment,
-	OpAccountMerge:       ObjectAccount,
-	OpReconciliationSign: ObjectReconciliation,
-	OpHolderRecordRecord: ObjectHolderRecord,
-	OpShareClassRecord:   ObjectShareClass,
+	OpReimbursementVoid:        ObjectReimbursement,
+	OpCashAdvanceVoid:          ObjectCashAdvance,
+	OpAssetDisposalVoid:        ObjectAssetDisposal,
+	OpFixedAssetVoid:           ObjectFixedAsset,
+	OpPayeeBankChange:          ObjectPayeeBankChange,
+	OpClaimantBankChange:       ObjectClaimantBankChange,
+	OpBatchApprove:             ObjectPaymentBatch,
+	OpBatchReapprove:           ObjectPaymentBatch,
+	OpContactMemberLink:        ObjectContactMemberLink,
+	OpDirectorFeePost:          ObjectDirectorFee,
+	OpSettlementApprove:        ObjectDirectorSettlement,
+	OpRepaymentVoid:            ObjectDirectorRepayment,
+	OpAccountMerge:             ObjectAccount,
+	OpReconciliationSign:       ObjectReconciliation,
+	OpHolderRecordRecord:       ObjectHolderRecord,
+	OpShareClassRecord:         ObjectShareClass,
+	OpEquityTransactionApprove: ObjectEquityTransaction,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -326,6 +333,8 @@ var Dependencies = map[string][]string{
 	ObjectHolderRecord: {"status", "holder"},
 	// the class version's version and status, and its account: what is recorded
 	ObjectShareClass: {"status", "account"},
+	// the transaction's version and status, and the holders it moves shares of or for: what is approved
+	ObjectEquityTransaction: {"status", "parties"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -372,6 +381,7 @@ var Rows = map[string]string{
 	ObjectReconciliation:      "Users, roles, team mode",
 	ObjectHolderRecord:        "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectShareClass:          "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectEquityTransaction:   "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -447,6 +457,7 @@ var Policies = map[string]Policy{
 	ObjectReconciliation:      {ObjectType: ObjectReconciliation, Version: "founder/bank_reconciliation@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
 	ObjectHolderRecord:        {ObjectType: ObjectHolderRecord, Version: "founder/holder_record@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectShareClass:          {ObjectType: ObjectShareClass, Version: "founder/share_class@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectEquityTransaction:   {ObjectType: ObjectEquityTransaction, Version: "founder/equity_transaction@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -589,6 +600,14 @@ func CheckSigner(r Request, signer uuid.UUID, now time.Time) *Problem {
 	}
 	return nil
 }
+
+// ReviewRole is the role a step names for the accountant's recorded review (FM-9, FM-7): the Accountant signs such a
+// step by their A on "Accountant review", without A on the object's row (rev 0.205). No policy can name it on a row it
+// does not approve (CheckSteps), so only a review the engine adds asks for it there.
+const ReviewRole = "accountant"
+
+// Reviews reports whether step s is a review the Accountant signs by their review right.
+func Reviews(s Step) bool { return slices.Contains(s.Roles, ReviewRole) }
 
 // Eligible reports whether a person with roles may sign step s, besides holding A on the object's row: the step
 // names none, one of their roles, or them.

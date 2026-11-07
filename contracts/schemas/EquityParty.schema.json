@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The holder's contact ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Their name.",
+      "examples": [
+        "Seedling Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "What they are in the transaction.",
+      "enum": [
+        "subscriber",
+        "seller",
+        "buyer",
+        "holder"
+      ],
+      "examples": [
+        "subscriber"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "name",
+    "role"
+  ],
+  "title": "EquityParty",
+  "type": "object"
+}

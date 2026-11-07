@@ -110,9 +110,9 @@ func matrixShareIssue(e *env, tok string) (string, [2]string) {
 		g = [2]string{e.shareCapitalIn(org), f.person}
 		ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
 		if err := e.store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-			_, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: uuid.MustParse(f.person), ClassAccountID: uuid.MustParse(g[0]),
+			_, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: uuid.MustParse(f.person), ClassAccountID: uuid.MustParse(g[0]),
 				Shares: "1000", Price: "1.000000", Currency: "SGD", Amount: "1000.00", Consideration: storage.ConsiderationCash, ResolutionRefs: "Incorporation subscription",
-				EffectiveOn: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), RecordedBy: uuid.MustParse(matrixApprover(e)), RecordedAt: e.clock.Now()})
+				EffectiveOn: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), RecordedBy: uuid.MustParse(matrixApprover(e)), RecordedAt: e.clock.Now()}, nil)
 			return err
 		}); err != nil {
 			e.t.Fatal(err)

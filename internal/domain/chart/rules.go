@@ -99,7 +99,7 @@ func CheckAccount(a storage.NewAccount) []Problem {
 	if !slices.Contains(types, a.Type) {
 		add(CodeType, "type", fmt.Sprintf("%q is not an account type", a.Type), "Use asset, liability, equity, revenue or expense")
 	}
-	if a.Role != "" && !slices.Contains(storage.SystemRoles, a.Role) {
+	if a.Role != "" && !slices.Contains(storage.SystemRoles, a.Role) && !slices.Contains(storage.OptionalRoles, a.Role) {
 		add(CodeRole, "role", fmt.Sprintf("%q is not a system role", a.Role), "Leave the role empty; system roles come with the standard chart")
 	}
 	checkAttributes(a.Name, a.AccountAttributes, add)

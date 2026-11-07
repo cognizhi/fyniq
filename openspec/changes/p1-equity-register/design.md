@@ -168,6 +168,15 @@ They raise ⏰ and ⚠ as FOUNDER-38…40 do.
 **A transfer** makes no entry. Share duty (0.2% of the higher of price and net asset value) is the parties' matter and
 is shown as information only.
 
+**Revised while building (rev 0.205):**
+- A cash issue has one subscriber. A round with several is several transactions, so FM-9 excludes each subscriber from
+  their own and the accountant's review applies as for founders' settlements.
+- A conversion between accounts moves the carrying amount the Accountant enters, shown in the approval
+  [accountant to confirm the basis].
+- The backstop is FY288 (FY257 was taken by dimensions); the conversion's entry is held to its movements by FY289.
+- The accountant's review step could not be signed: the Accountant holds no A on the approval rows. Their A on
+  "Accountant review" now reaches a step that names the review, and no other.
+
 ### D5 Cash issues and share application monies (B.7, G4-043)
 
 **The account.** The standard chart gains **2040 Share application monies** (liability, Payables & accruals, role

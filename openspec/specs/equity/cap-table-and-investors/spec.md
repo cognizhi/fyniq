@@ -77,6 +77,25 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 - **WHEN** a recorded equity transaction is wrong
 - **THEN** it is corrected by a reversing transaction, never edited
 
+#### Scenario: Built as drafted, approved and made effective (rev 0.205)
+- **WHEN** the Accountant drafts a cash issue, transfer, conversion between classes or reversal with its evidence
+- **THEN** another person who holds A on the cap table approves it, and it is numbered EQ-
+- **AND** an Owner or the Controller makes it effective with the day ACRA's register shows it, never after today, before its approval or in a closed period
+
+#### Scenario: One subscriber per cash issue, never effective unpaid (rev 0.205)
+- **WHEN** a cash issue is made effective
+- **THEN** it allots shares to its one subscriber once their share application monies on that day cover its amount
+- **AND** the subscriber is marked shareholder
+
+#### Scenario: Every holding from its movements (rev 0.205)
+- **WHEN** shares are issued, transferred, converted or given back by a reversal
+- **THEN** each holding moves by a holding movement, and the database refuses one outside an effective transaction or share issue, a transfer that does not net to zero, and a holding below zero on any day
+
+#### Scenario: A conversion between accounts moves its carrying amount (rev 0.205)
+- **GIVEN** a conversion between classes whose accounts differ
+- **WHEN** it is made effective
+- **THEN** the carrying amount the Accountant entered moves between 3010 and 3020 [accountant to confirm the basis]
+
 #### Scenario: A reversal corrects Fyniq's record only
 - **GIVEN** Fyniq's record was wrong and ACRA's register is right
 - **WHEN** the transaction is reversed

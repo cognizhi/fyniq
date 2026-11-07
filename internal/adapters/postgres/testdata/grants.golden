@@ -183,6 +183,8 @@ fyniq_api       SELECT    gst_registration
 fyniq_api       UPDATE    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency, version)
 fyniq_api       SELECT    heartbeats
 fyniq_api       EXECUTE   hold_outbox()
+fyniq_api       INSERT    holding_movement (class_account_id, class_id, effective_on, holder_id, id, kind, recorded_at, recorded_by, reverses_id, share_issue_id, shares, transaction_id)
+fyniq_api       SELECT    holding_movement
 fyniq_api       INSERT    idempotency_key (client_id, created_at, expires_at, key, request_hash)
 fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
@@ -329,6 +331,7 @@ fyniq_api       EXECUTE   set_session_email()
 fyniq_api       EXECUTE   set_sign_in_method()
 fyniq_api       EXECUTE   set_user_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
+fyniq_api       EXECUTE   share_class_of()
 fyniq_api       INSERT    share_issue (amount, class_account_id, class_id, consideration, currency, effective_on, entry_id, holder_id, id, lodgement_ref, minor_units, price, recorded_at, recorded_by, resolution_refs, settlement_id, shares)
 fyniq_api       SELECT    share_issue
 fyniq_api       EXECUTE   sign_in_counts()
@@ -522,6 +525,7 @@ fyniq_readonly  SELECT    fx_feed_rates
 fyniq_readonly  SELECT    fx_rate
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
+fyniq_readonly  SELECT    holding_movement
 fyniq_readonly  SELECT    idempotency_key
 fyniq_readonly  SELECT    inbound_file
 fyniq_readonly  SELECT    inbound_message
@@ -570,6 +574,7 @@ fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  EXECUTE   share_class_of()
 fyniq_readonly  SELECT    share_issue
 fyniq_readonly  SELECT    sod_override
 fyniq_readonly  SELECT    statement_mapping
@@ -683,6 +688,7 @@ fyniq_worker    SELECT    fx_rate
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
 fyniq_worker    EXECUTE   hold_outbox()
+fyniq_worker    SELECT    holding_movement
 fyniq_worker    DELETE    idempotency_key
 fyniq_worker    SELECT    idempotency_key (expires_at, id, organisation_id)
 fyniq_worker    INSERT    inbound_file (blob_key, file_name, kind, media_type, message_id, original_sha256, sha256, size_bytes, stored_at)
@@ -764,6 +770,7 @@ fyniq_worker    SELECT    role_assignment
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    EXECUTE   share_class_of()
 fyniq_worker    SELECT    share_issue
 fyniq_worker    SELECT    sod_override
 fyniq_worker    SELECT    statement_mapping

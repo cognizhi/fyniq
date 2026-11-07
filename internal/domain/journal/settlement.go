@@ -304,10 +304,10 @@ func (s DirectorSettlements) EffectiveIn(ctx context.Context, u storage.UnitOfWo
 	if err != nil {
 		return storage.ShareIssue{}, storage.Entry{}, err
 	}
-	issue, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: issueID, HolderID: st.ContactID, ClassAccountID: rule.Class, ClassID: class,
+	issue, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: issueID, HolderID: st.ContactID, ClassAccountID: rule.Class, ClassID: class,
 		Shares: storage.Decimal(shares.Count.Text('f')), Price: storage.Decimal(st.Conversion.Price), Currency: settings.Base.Code,
 		Amount: storage.Decimal(rule.Equity.String()), Consideration: storage.ConsiderationDebtCapitalised, ResolutionRefs: e.ResolutionRefs,
-		LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn, SettlementID: &id, EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today})
+		LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn, SettlementID: &id, EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today}, nil)
 	if err != nil {
 		return storage.ShareIssue{}, storage.Entry{}, err
 	}
@@ -327,8 +327,8 @@ func shares(s director.Settlement) string {
 	return "converted at " + s.Conversion.Price + " a share"
 }
 
-// replayConversion posts a conversion's share issue again as its entry posted it (ENG-06), from the issue and the
-// settlement it decided.
+// replayConversion posts a share issue's entry again as it posted (ENG-06): a founder's conversion from the issue and the
+// settlement it decided, a cash issue from the issue.
 func replayConversion(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
 	id, err := uuid.Parse(e.Source.ID)
 	if err != nil {
@@ -339,8 +339,11 @@ func replayConversion(ctx context.Context, u storage.UnitOfWork, s ledger.Settin
 		return ledger.Entry{}, err
 	}
 	for _, x := range all {
-		if x.ID != id || x.SettlementID == nil {
+		if x.ID != id {
 			continue
+		}
+		if x.SettlementID == nil { // a cash issue: Dr share application monies · Cr the class (share_issue_cash@1)
+			return replayCashIssue(s, e, x)
 		}
 		doc, err := u.Documents().Get(ctx, *x.SettlementID)
 		if err != nil {

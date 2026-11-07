@@ -403,7 +403,10 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency, Type: string(a.Type),
 			Requires: a.RequiredDimensions}
 	}
-	if s.People, err = people(ctx, u); err != nil {
+	if s.People, err = people(ctx, u, "director"); err != nil {
+		return ledger.Settings{}, err
+	}
+	if s.Subscribers, err = people(ctx, u, "holder"); err != nil { // B.7: who may hold share application monies
 		return ledger.Settings{}, err
 	}
 	if s.Dimensions, s.Values, err = dimensions(ctx, u); err != nil {
@@ -433,11 +436,13 @@ func dimensions(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]ledger
 	return dims, values, nil
 }
 
-// people are the contacts marked director or shareholder: those a line on a director's account may name (FR-EQ-01).
-func people(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]bool, error) {
+// people are the contacts of a role (Contacts().Page's): "director" for directors and shareholders, whom a line on a
+// director's account may name (FR-EQ-01); "holder" for shareholders and investors, whom share application monies may
+// (B.7).
+func people(ctx context.Context, u storage.UnitOfWork, role string) (map[uuid.UUID]bool, error) {
 	out := map[uuid.UUID]bool{}
 	for after := uuid.Nil; ; {
-		page, err := u.Contacts().Page(ctx, after, "director", 500)
+		page, err := u.Contacts().Page(ctx, after, role, 500)
 		if err != nil {
 			return nil, err
 		}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_on": {
+      "description": "The day ACRA's register of members shows it: no later than today, no earlier than its approval.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "lodgement_ref": {
+      "description": "ACRA's lodgement reference, such as the return of allotment's transaction number.",
+      "examples": [
+        "AA2027031200456"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "effective_on"
+  ],
+  "title": "EquityEffectiveRequest",
+  "type": "object"
+}

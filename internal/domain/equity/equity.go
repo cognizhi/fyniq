@@ -131,3 +131,23 @@ func CheckBeforeBooks(ctx context.Context, u storage.UnitOfWork, i Issue, s ledg
 	}
 	return out, nil
 }
+
+// RecordIssue writes an allotment to the register with its holding movement, in u (FR-EQ-08, FR-EQ-17): the issue and
+// its shares into the holder's holding, together, as the database requires at commit (FY288). transaction names the
+// equity transaction the issue makes effective; nil for one recorded outside one (before the books start, or a founder's
+// conversion).
+func RecordIssue(ctx context.Context, u storage.UnitOfWork, s storage.ShareIssue, transaction *uuid.UUID) (storage.ShareIssue, error) {
+	out, err := u.ShareIssues().Record(ctx, s)
+	if err != nil {
+		return out, err
+	}
+	id, err := uuid.NewV7()
+	if err != nil {
+		return out, err
+	}
+	issue := out.ID
+	_, err = u.Holdings().Move(ctx, storage.HoldingMovement{ID: id, Kind: storage.MovementIssue, TransactionID: transaction, ShareIssueID: &issue,
+		HolderID: out.HolderID, ClassAccountID: out.ClassAccountID, ClassID: out.ClassID, Shares: out.Shares, EffectiveOn: out.EffectiveOn,
+		RecordedBy: out.RecordedBy, RecordedAt: out.RecordedAt})
+	return out, err
+}

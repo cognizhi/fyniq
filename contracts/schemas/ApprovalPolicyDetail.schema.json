@@ -76,7 +76,8 @@
         "account",
         "bank_reconciliation",
         "holder_record",
-        "share_class"
+        "share_class",
+        "equity_transaction"
       ],
       "examples": [
         "organisation_setting"
