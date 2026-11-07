@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "deadlines": {
+      "description": "Every item due in the window, with each earlier one still overdue, by due day; the items not assessed first.",
+      "items": {
+        "$ref": "StatutoryItem.schema.json"
+      },
+      "type": "array"
+    },
+    "from": {
+      "description": "The window's first day.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "pack": {
+      "description": "The sg-deadlines version the days come from.",
+      "examples": [
+        "sg-deadlines@2026.1"
+      ],
+      "type": "string"
+    },
+    "starts": {
+      "description": "The day its rules start: nothing due before it is in the calendar.",
+      "examples": [
+        "2026-11-07"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "to": {
+      "description": "The window's last day.",
+      "examples": [
+        "2027-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "today": {
+      "description": "The organisation's today, which decides each status.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "today",
+    "deadlines"
+  ],
+  "title": "StatutoryCalendarView",
+  "type": "object"
+}

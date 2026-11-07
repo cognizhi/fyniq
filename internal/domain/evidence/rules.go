@@ -44,8 +44,14 @@ var ManualJournal = Activity{Key: "manual_journal", Label: "a manual journal abo
 // JournalThreshold is the setting above which a manual journal's debits need its evidence: S$1,000.00 by default.
 const JournalThreshold = "evidence.journal_threshold"
 
+// StatutoryFiling is an item of the statutory calendar recorded as filed (FR-TAX-07): required, the submission or
+// payment acknowledgement; an AGM's is its minutes (FR-DOC-06's table: GST F5, Form C-S/C, ECI and AIS filings, CPF
+// payments).
+var StatutoryFiling = Activity{Key: "statutory_filing", Label: "a statutory filing or payment", Setting: "evidence.statutory_filing",
+	Expected: "the submission or payment acknowledgement", Default: LevelRequired}
+
 // Activities are the activities built here, in the order Checks lists them.
-var Activities = []Activity{Bill, ManualJournal}
+var Activities = []Activity{Bill, ManualJournal, StatutoryFiling}
 
 // Needs reports what an activity at level makes of a record with files attached: it blocks when its evidence is
 // required and none is attached, and warns when it is recommended and none is.

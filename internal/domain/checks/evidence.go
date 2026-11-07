@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/deadlines"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
@@ -19,8 +20,8 @@ var onEvidence = []string{"document", "journal_entry", "evidence", "organisation
 // The checks of the evidence rules (FR-DOC-06, rev 0.182; moved from p1-checks by rev 0.166's rule).
 var evidenceChecks = []Definition{
 	{Key: "evidence.missing", Ref: "C.2 #30", Area: "Evidence", Worst: Warning, Title: "Posted records have their evidence",
-		Explain: "A bill rests on the supplier's invoice or receipt, and a manual journal above the evidence threshold on a supporting " +
-			"calculation or document (FR-DOC-06). Each posted record of an open month whose evidence is required or recommended, " +
+		Explain: "A bill rests on the supplier's invoice or receipt, a manual journal above the evidence threshold on a supporting " +
+			"calculation or document, and a filing recorded as done on its acknowledgement (FR-DOC-06). Each posted record of an open month whose evidence is required or recommended, " +
 			"with no file attached, is listed: one posted while its evidence was only recommended, or before the rule. Attach the file " +
 			"in the record's Evidence panel.",
 		Rules: "FR-DOC-06", Owner: "accountant", View: viewJournals, Triggers: onEvidence, Run: missingEvidence},
@@ -93,8 +94,29 @@ func missingEvidence(ctx context.Context, u storage.UnitOfWork, e *Env) (Result,
 			items = append(items, docItem("journal", d, "", fmt.Sprintf("Debits of %s %s and no %s attached", debits, e.Base.Code, evidence.ManualJournal.Expected)))
 		}
 	}
+	if value(evidence.StatutoryFiling.Setting) != evidence.LevelOptional {
+		filings, err := documents(ctx, u, []storage.DocumentType{storage.DocumentStatutoryFiling}, storage.DocumentPosted, from, to)
+		if err != nil {
+			return Result{}, err
+		}
+		bare, err := missing(filings)
+		if err != nil {
+			return Result{}, err
+		}
+		for _, d := range bare {
+			f, err := deadlines.ReadFiling(d)
+			if err != nil {
+				return Result{}, err
+			}
+			if f.Outcome != deadlines.OutcomeFiled {
+				continue // not required, or a withdrawal: its reason is its evidence
+			}
+			items = append(items, Item{Kind: "statutory_filing", ID: d.ID.String(), Label: f.Key,
+				Detail: "Recorded as filed with no " + evidence.StatutoryFiling.Expected + " attached: withdraw it and record it again with the file"})
+		}
+	}
 	if len(items) == 0 {
-		return Fine("Every posted bill, and every manual journal above the evidence threshold, of the open months has its evidence"), nil
+		return Fine("Every posted bill, every manual journal above the evidence threshold, and every filing recorded, of the open months, has its evidence"), nil
 	}
 	return Found(Warning, items, fmt.Sprintf("%d posted record(s) without their evidence", len(items)),
 		"Attach each one's file in its Evidence panel"), nil

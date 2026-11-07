@@ -98,7 +98,11 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
   - the registers' items listed with their links.
 
   `// req: FR-TAX-07`, `// req: CMP-02`, `// req: FR-EQ-09`, `// req: FR-EQ-25`
-- [ ] 4.2 The `statutory_filing` document (D6):
+  (7 Nov 2026, PRD-001 rev 0.211, in part: `deadlines.Read` with the rules' items, the GST registration items and the
+  four settings, in `TestTheStatutoryCalendarThroughTheAPI`: a December year end; quarterly GST; staff from November;
+  the statements sent; the branch register; no financial year; no pack in force; 2028 without holidays. The registers'
+  items (D7), a March year end and monthly GST follow in slice 3b.)
+- [x] 4.2 The `statutory_filing` document (D6):
   - migration with the document type, FY299 guard, and the partial unique index on a live record's key (built
     concurrently, in its own migration);
   - record and withdraw;
@@ -107,7 +111,11 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
   Attack tests: a second live record of a key, an unknown key form, a filed outcome without its date. Audit events.
   `// req: FR-TAX-07`, `// req: FR-DOC-06`, `// req: AUD-01`
-- [ ] 4.3 Appendix D's Statutory calendar row (D8):
+  (7 Nov 2026, PRD-001 rev 0.211: drafted, given its acknowledgement and recorded, since FR-DOC-06 requires it;
+  `evidence.statutory_filing` is required; the live-record rule is FY299's lock on the item's key (migrations 000274,
+  000275), not an index; a record posts nothing, so its withdrawal reverses nothing. Tests
+  `TestAttackStatutoryFilingsKeepTheirRules`, and C.2 #30 under a recommended rule in `TestTheStatutoryCalendarThroughTheAPI`.)
+- [x] 4.3 Appendix D's Statutory calendar row (D8):
   - in the PRD (rev 0.2xx), `access/roles-and-segregation` (stamped) and `authz.Grants`, in one commit;
   - the API's `getStatutoryCalendar`, `recordStatutoryFiling`, `withdrawStatutoryFiling` and the evidence operations,
     with matrix rows;
@@ -115,6 +123,8 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
   - `make openapi`.
 
   `// req: FR-TAX-07`, `// req: QA-SEC-03`
+  (7 Nov 2026, PRD-001 rev 0.211: also `createStatutoryFiling`, `replaceStatutoryFiling`, `getStatutoryFiling` and
+  `listStatutoryFilings`; matrix rows for the 11 operations.)
 - [ ] 4.4 C.2 #13 `gst.return-due` and C.2 #15 `compliance.deadlines` (D9), each with fixtures for OK, ⏰ due soon,
   ⏰ overdue and Not assessed. `// req: C.2 #13`, `// req: C.2 #15`, `// req: CMP-02`, `// req: QA-RPT-02`
 - [ ] 4.5 The daily `notify.deadlines` job (D10):

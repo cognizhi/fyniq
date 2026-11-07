@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
+requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
 status: draft
 ---
 
@@ -64,6 +64,21 @@ or are expected to be more than $1 million in the next 12 months.
   met.
 - Taxable supplies are the standard-rated and zero-rated sales. Exempt and out-of-scope sales, and
   sales of the company's own assets, are left out.
+
+## Statutory calendar
+
+**Compliance › Calendar** lists every filing and payment deadline from the company's financial years
+and GST return periods. Three settings decide what it holds:
+
+- **Pays staff**: turn it on from the first month the company pays anyone. From then, the calendar
+  adds the CPF contributions of each month, due by the 14th of the next month, and each year's
+  employment income for IR8A and the Auto-Inclusion Scheme, due by 1 March. It is off unless you turn it on.
+- **Annual general meeting**: **hold** an AGM within six months after the year's end, the default; or
+  **send the financial statements** to every member within five months, so no AGM is held; or
+  **dispensed**, when all members passed a resolution to dispense with AGMs. A member may still ask for
+  an AGM.
+- **Keeps a branch register outside Singapore**: the annual return is due eight months after the
+  year's end instead of seven. It is off unless you turn it on.
 
 ## Document numbering
 
@@ -301,6 +316,9 @@ Some records need a file to show they are real before they post:
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a
   supporting calculation or document attached. **Evidence for manual journals above** sets the amount.
+- **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as
+  filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return,
+  CPF Board's of a payment, or an AGM's minutes.
 
 Each is **required** by default. **Recommended** lets the record post without a file, and **Checks**
 lists it (missing recommended evidence). **Optional** asks for nothing. Changing any of these needs a

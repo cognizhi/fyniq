@@ -2513,7 +2513,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_pay_choice'::text, 'director_fee'::text, 'exempt_status'::text, 'director_confirmation'::text, 'director_settlement'::text, 'director_repayment'::text, 'account_merge'::text, 'owner_succession'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'acra_extract'::text, 'gst_forecast'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'director_pay_choice'::text, 'director_fee'::text, 'exempt_status'::text, 'director_confirmation'::text, 'director_settlement'::text, 'director_repayment'::text, 'account_merge'::text, 'owner_succession'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'acra_extract'::text, 'gst_forecast'::text, 'statutory_filing'::text])))
 document | document_type_not_null | NOT NULL type
 document | expense_claim_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | payee_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -4771,6 +4771,8 @@ CREATE TRIGGER share_issue_no_truncate BEFORE TRUNCATE ON fyniq.share_issue FOR 
 CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
 CREATE TRIGGER statement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'statement'::text)) EXECUTE FUNCTION statement_guard()
 CREATE TRIGGER statement_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statement_mapping FOR EACH ROW EXECUTE FUNCTION statement_mapping_guard()
+CREATE TRIGGER statutory_filing_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION statutory_filing_guard()
+CREATE TRIGGER statutory_filing_live BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'statutory_filing'::text) AND (new.status = 'posted'::text) AND (old.status = 'draft'::text))) EXECUTE FUNCTION statutory_filing_live()
 CREATE TRIGGER statutory_pack_activation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statutory_pack_activation FOR EACH ROW EXECUTE FUNCTION statutory_pack_activation_guard()
 CREATE TRIGGER statutory_pack_row_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_row FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
 CREATE TRIGGER statutory_pack_version_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_version FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
@@ -5000,7 +5002,7 @@ document_guard() → trigger | security invoker | v | search_path=pg_catalog, fy
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
 document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 97397fe0fb679efd098ac3a2a47a0ab0
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
-document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d6e33fbb741d2091b6653922fdd9230
+document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8b251f0c6b45c478243230c7d16583bc
 document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
 document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c5e8cf759ed24db83f888a0284df37c4
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
@@ -5163,6 +5165,8 @@ start_session_from(p_hash bytea, p_issuer text, p_subject text, p_provider text,
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 statement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f57d5f472d19b821ddeea1e5123d676
 statement_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29d615528a6b2d6d1b5a1b34b7c9c575
+statutory_filing_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6b025ba0b3bbfd735c26c03e76718009
+statutory_filing_live() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25a8e8f729c38fac7a10f4d1bc2707bf
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a

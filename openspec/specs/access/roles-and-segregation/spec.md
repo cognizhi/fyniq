@@ -1414,6 +1414,23 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the Compliance Center
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Statutory calendar
+In Standard mode, each role SHALL hold only the rights over the statutory calendar, its deadlines and the filings recorded as done, that the permission matrix gives it (rev 0.211).
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the statutory calendar
+- **THEN** the Owner, the Finance controller, the Accountant and the Tax agent can record an item as filed or not required, and withdraw a record (C)
+
+#### Scenario: View
+- **WHEN** a role acts on the statutory calendar
+- **THEN** the Administrator, the Auditor and the Compliance officer / DPO can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the statutory calendar
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Board viewer and the AI assistant have no right over it (—)
+
 ### Requirement: Permission matrix: Checks and books health
 In Standard mode, each role SHALL hold only the rights over the checks and books health that the permission matrix gives it (rev 0.163).
 

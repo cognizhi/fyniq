@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "anchor": {
+      "description": "The day it counts from: a period's or a year's end, or a forecast's day.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "area": {
+      "description": "Its area, to filter by.",
+      "enum": [
+        "tax",
+        "payroll",
+        "corporate"
+      ],
+      "examples": [
+        "tax"
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "Its due day; absent while not assessed.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "extended": {
+      "description": "true when a one-off extension moved its day.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "filing": {
+      "$ref": "StatutoryFilingView.schema.json",
+      "description": "The live record, once the item is recorded."
+    },
+    "key": {
+      "description": "The item: its obligation and its anchor day. Record it with this key.",
+      "examples": [
+        "eci:2026-12-31"
+      ],
+      "type": "string"
+    },
+    "obligation": {
+      "description": "What is due.",
+      "enum": [
+        "gst_f5",
+        "cpf",
+        "ir8a_ais",
+        "eci",
+        "form_cs",
+        "annual_return",
+        "agm",
+        "statements_to_members",
+        "gst_register_retrospective",
+        "gst_register_prospective",
+        "financial_year",
+        "sg-deadlines"
+      ],
+      "examples": [
+        "eci"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is not assessed.",
+      "examples": [
+        "The books start and the first financial year's end are not set: set them in Settings › Organisation"
+      ],
+      "type": "string"
+    },
+    "rolled": {
+      "description": "true when its day moved to the next working day.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "source": {
+      "description": "The pack's sources of the rule, by id.",
+      "examples": [
+        "iras-eci"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "open; due_soon: within 14 days; overdue; filed or not_required: recorded; not_assessed: an input is missing, which reason names.",
+      "enum": [
+        "open",
+        "due_soon",
+        "overdue",
+        "filed",
+        "not_required",
+        "not_assessed"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What is due, in plain words.",
+      "examples": [
+        "Estimated chargeable income for the year ended 31 Dec 2026"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "The rule's words, from the sg-deadlines pack.",
+      "examples": [
+        "Estimated chargeable income: within 3 months from the end of the financial year, unless waived (revenue of $5 million or below and ECI nil)"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "obligation",
+    "title",
+    "status"
+  ],
+  "title": "StatutoryItem",
+  "type": "object"
+}

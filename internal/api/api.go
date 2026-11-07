@@ -319,6 +319,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHolderRights(a)
 	registerAcra(a)
 	registerGSTMonitor(a)
+	registerCalendar(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)
 	registerJournals(a)
