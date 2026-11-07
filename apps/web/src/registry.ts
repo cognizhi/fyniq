@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -122,7 +122,10 @@ export const routes = [
   // a founder's own account, Money I put in, is Basic.
   { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
   { kind: "route", id: "director-settlement", path: "/accounting/directors/$contactId/settle", mode: "expert", signedIn: true, help: "accounting.director-settlement", guide: "equity.director-accounts#settle-a-balance" },
-  { kind: "route", id: "share-issues", path: "/equity/transactions", mode: "expert", signedIn: true, help: "equity.share-issues", guide: "equity.director-accounts#the-register-of-share-issues" },
+  { kind: "route", id: "share-issues", path: "/equity/transactions", mode: "expert", signedIn: true, help: "equity.share-issues", guide: "equity.register#the-register-of-share-issues" },
+  { kind: "route", id: "equity-holders", path: "/equity/holders", mode: "expert", signedIn: true, help: "equity.holders", guide: "equity.register#holders" },
+  { kind: "route", id: "equity-holder", path: "/equity/holders/$contactId", mode: "expert", signedIn: true, help: "equity.holder", guide: "equity.register#record-a-holders-details" },
+  { kind: "route", id: "equity-classes", path: "/equity/classes", mode: "expert", signedIn: true, help: "equity.classes", guide: "equity.register#share-classes" },
   { kind: "route", id: "money-i-put-in", path: "/me/money-i-put-in", mode: "basic", signedIn: true, help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   // Costs before the books start (FR-EQ-03; p1-founders-money task 2.2): Basic, as the founders record their own costs.
   { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
@@ -296,8 +299,15 @@ export const actions = [
   { kind: "action", id: "director-settlement.ask", mode: "expert", help: "director-settlement.ask", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-settlement.effective", mode: "expert", help: "director-settlement.effective", guide: "equity.director-accounts#convert-a-balance-to-shares" },
   { kind: "action", id: "director-settlement.acra-step", mode: "expert", help: "director-settlement.acra-step", guide: "equity.director-accounts#convert-a-balance-to-shares" },
-  { kind: "action", id: "share-issues.record-before-books", mode: "expert", help: "share-issues.record-before-books", guide: "equity.director-accounts#the-register-of-share-issues" },
-  { kind: "action", id: "director-accounts.share-issues", mode: "expert", help: "director-accounts.share-issues", guide: "equity.director-accounts#the-register-of-share-issues" },
+  { kind: "action", id: "share-issues.record-before-books", mode: "expert", help: "share-issues.record-before-books", guide: "equity.register#the-register-of-share-issues" },
+  { kind: "action", id: "equity.add-holder", mode: "expert", help: "equity.add-holder", guide: "equity.register#holders" },
+  { kind: "action", id: "holder-record.draft", mode: "expert", help: "holder-record.draft", guide: "equity.register#record-a-holders-details" },
+  { kind: "action", id: "holder-record.ask", mode: "expert", help: "holder-record.ask", guide: "equity.register#record-a-holders-details" },
+  { kind: "action", id: "holder-record.attach-evidence", mode: "expert", help: "holder-record.attach-evidence", guide: "equity.register#record-a-holders-details" },
+  { kind: "action", id: "share-class.attach-evidence", mode: "expert", help: "share-class.attach-evidence", guide: "equity.register#share-classes" },
+  { kind: "action", id: "share-class.draft", mode: "expert", help: "share-class.draft", guide: "equity.register#share-classes" },
+  { kind: "action", id: "share-class.ask", mode: "expert", help: "share-class.ask", guide: "equity.register#share-classes" },
+  { kind: "action", id: "director-accounts.share-issues", mode: "expert", help: "director-accounts.share-issues", guide: "equity.register#the-register-of-share-issues" },
   { kind: "action", id: "director-settlement.attach-evidence", mode: "expert", help: "director-settlement.attach-evidence", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-fee.attach-evidence", mode: "expert", help: "director-fee.attach-evidence", guide: "equity.director-accounts#record-a-directors-fee" },
   { kind: "action", id: "pay-choice.attach-evidence", mode: "expert", help: "pay-choice.attach-evidence", guide: "equity.director-accounts#record-a-pay-choice" },
@@ -492,6 +502,7 @@ export const nav = [
   // Reports show to the roles that read every account (Appendix D "Reports, dashboards", V without a qualifier).
   { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
+  { kind: "nav", id: "nav.equity", route: "/equity/holders", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "expert", help: "nav.equity", guide: "equity.register" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 

@@ -4,14 +4,14 @@ type: task
 title: Keep your contacts, items and prices
 summary: Add or change a contact, its balances and activity, duplicates, a vendor's bank details and their approved changes, its templates, and items with prices
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:c2075f20b373f935264d3b0dc45359e215c9034b137ef5f04b843b3f719d2823
+  - docs/user-guide/contacts-and-items.md sha256:b457848cd5b0d0155b6805374abafc6d32d34eb95045db8699868b30938d52b6
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-07
 aliases:
   - customer
   - vendor
@@ -42,6 +42,7 @@ aliases:
   - item sales this year
   - quantity sold
   - contact activity
+  - mark an investor
 ---
 
 # Keep your contacts, items and prices
@@ -58,6 +59,7 @@ aliases:
 ## Add or change a contact
 
 - **New contact**: tick **A customer**, **A vendor** or both, enter the legal name and what is known (UEN or tax ID, billing and remittance emails, payment terms, currency, Peppol ID, address), then **Add the contact**. Empty payment terms use the organisation's default.
+- **A director**, **A shareholder** or **An investor** marks the company's founders and holders: their director accounts ([[founders.director-accounts]]) and their details in the equity register ([[equity.register]]) follow from it.
 - For a vendor, enter its **Country**, and its **Tax residence** when it is resident for tax somewhere else; a vendor resident outside Singapore may have tax withheld from its payments ([[purchases.bills]]).
 - A supplier offering a discount for paying early takes its **Early-payment discount (%)** and **If paid within (days)** of the bill's date, such as 2% within 10 days; its bills then show the discount and the last day to take it.
 - Before adding, Fyniq checks for a contact with the same name, UEN or tax ID, or email, and says which and why; check it is a new company, then **Add it anyway**, or use the one there. Such a contact shows **Possible duplicate** in the list.
@@ -111,7 +113,7 @@ aliases:
 
 ## Common problems
 
-- CT-01, the legal name is blank or too long; CT-02, neither a customer nor a vendor; CT-03, not an email address; CT-04, not a two-letter code such as SG for the country or the tax residence.
+- CT-01, the legal name is blank or too long; CT-02, neither a customer, a vendor, a director, a shareholder nor an investor; CT-03, not an email address; CT-04, not a two-letter code such as SG for the country or the tax residence.
 - CT-11, the early-payment discount terms are not right: both a percentage above 0 and below 100 and 1 to 365 days, or neither.
 - A price that is not a plain decimal: digits with up to 6 decimals, no commas or currency sign.
 - PAYEE-11, no bank letter or vendor's confirmation attached: attach one, then ask again. PAYEE-12, payments to the vendor are frozen while a change waits. PAYEE-13, another change of that currency waits.

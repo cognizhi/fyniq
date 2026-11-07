@@ -4,14 +4,14 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF; the related-party schedule
 sources:
-  - docs/user-guide/director-accounts.md sha256:7efb8ff780815a1360810e4fafe6f294d1e83819acbd302bf33f207e6b14a3ff
+  - docs/user-guide/director-accounts.md sha256:e4e63aa2f9bf7d3fdb768378e86091f5a734113b07b49b348a3f0cc7997239ba
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-03
+compiled_at: 2026-11-07
 aliases:
   - director accounts
   - director's account
@@ -25,8 +25,6 @@ aliases:
   - section 162
   - settle a balance
   - convert to shares
-  - share issue
-  - register of share issues
   - ACRA steps
   - return of allotment
   - related parties
@@ -132,14 +130,9 @@ aliases:
 
 ## The register of share issues
 
-- **Register of share issues**, on Director accounts: every allotment with its holder, class,
-  number, price, what paid for it, the resolutions and ACRA's reference; share capital changes
-  only with it or the opening balances.
+- Every allotment, a conversion's included, is in the register of share issues, now part of the
+  equity register ([[equity.register]]).
   (src: docs/user-guide/director-accounts.md#the-register-of-share-issues)
-- **Record shares issued before the books start** (Owner or Controller), such as the
-  incorporation subscription: no entry posts, the opening balances hold their share capital.
-  Conversions add theirs when ACRA registers them; transfers, cash issues and the cap table come
-  with the equity register. (src: docs/user-guide/director-accounts.md#the-register-of-share-issues)
 
 ## Name the person on a line
 
