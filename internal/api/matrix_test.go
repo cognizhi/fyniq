@@ -1584,6 +1584,31 @@ var matrixCalls = map[string]matrixCall{
 	"confirmSuperAdminRecovery": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/super-admins/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01/recovery-confirmations", tok, nil), nil
 	},
+	// A person's own recovery (SEC-35) is their browser session's, which the matrix's principals lack: an allowed role is
+	// refused past its policy (API-AUTHZ-04). TestAccountRecovery runs them with real sessions.
+	"getMyRecoveryCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/session/recovery-codes", tok, nil), nil
+	},
+	"replaceMyRecoveryCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/recovery-codes", tok, nil), nil
+	},
+	"recoverAccount": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/recovery", tok, map[string]any{"recovery_code": "NEVER-VALID-0",
+			"confirmation_code": "NEVER-A-VALID-CONFIRMATION-0"}), nil
+	},
+	// A confirmation is of another member's recovery: in the organisation in Standard mode, which has several, as its Owner.
+	"confirmAccountRecovery": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		lost := s.joinedIn(s.books.Org, "Lost "+uuid.NewString()[:8], "employee")
+		var m storage.Membership
+		if err := s.store.Do(context.Background(), s.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			m, err = u.Members().Membership(ctx, lost)
+			return err
+		}); err != nil {
+			e.t.Fatal(err)
+		}
+		return s.call(http.MethodPost, "/v1/members/"+m.ID.String()+"/recovery-confirmations", e.asIn(tok, e.standardBo()), nil), nil
+	},
 	"recoverSuperAdmin": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/super-admins/recovery", tok, map[string]any{"recovery_code": "NEVER-A-VALID-RECOVERY-CODE-0",
 			"confirmation_code": "NEVER-A-VALID-CONFIRMATION-0"}), nil

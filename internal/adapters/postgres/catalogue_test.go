@@ -41,7 +41,8 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
-	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method"}
+	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
+	"user_recovery_code", "recovery_confirmation", "account_recovery"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}

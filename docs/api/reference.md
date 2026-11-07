@@ -177,13 +177,13 @@ Creates the one-time invitation that makes its redeemer the installation's secon
 - **Responses:**
   - `201` Created [`OneTimeCode`](../../contracts/schemas/OneTimeCode.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `409` Conflict: `API-SUPERADMIN-02` Super admin change refused.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-SUPERADMIN-02`, `API-UNAVAILABLE-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-SUPERADMIN-02`, `API-UNAVAILABLE-01`
 
 ### `POST /v1/super-admins/recovery`
 
@@ -766,7 +766,7 @@ Sets a provider's switches (FR-ADM-08): on or off (off refuses new sign-ins thro
   - `202` Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. [`InstallationChange`](../../contracts/schemas/InstallationChange.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SIGNIN-01` That would leave a Super admin no way to sign in.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
@@ -777,7 +777,7 @@ Sets a provider's switches (FR-ADM-08): on or off (off refuses new sign-ins thro
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SIGNIN-01`, `STORAGE-VERSION-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SIGNIN-01`, `STORAGE-VERSION-01`
 
 ### `GET /v1/session`
 
@@ -881,13 +881,13 @@ Removes one of your sign-ins: that account at its provider signs you in no more 
 - **Responses:**
   - `200` OK [`SignInIdentity`](../../contracts/schemas/SignInIdentity.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-IDENTITY-01` Confirm it's you first.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `STORAGE-IDENTITY-01` Confirm it's you first.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `STORAGE-IDENTITY-02` That sign-in cannot be removed.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-IDENTITY-01`, `STORAGE-IDENTITY-02`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-IDENTITY-01`, `STORAGE-IDENTITY-02`
 
 ### `GET /v1/session/passkeys`
 
@@ -970,6 +970,64 @@ Revokes one of your passkeys: it works no more, for step-up or anything else (FR
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-PASSKEY-01`
+
+### `POST /v1/session/recovery`
+
+**Recover your account** (`recoverAccount`)
+
+Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new passkey; your other sessions and tokens end; your recovery codes are replaced; and for 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back. Side effects: the recovery, ten new codes (shown once), the revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice to you and every Owner. Wrong, used or expired codes change nothing. It takes no Idempotency-Key: a response with codes is never stored.
+
+- **Permission:** Create on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back.
+- **Request body:** [`AccountRecoveryRequest`](../../contracts/schemas/AccountRecoveryRequest.schema.json)
+- **Responses:**
+  - `200` OK [`RecoveredAccount`](../../contracts/schemas/RecoveredAccount.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RECOVERY-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/session/recovery-codes`
+
+**Say whether you keep recovery codes** (`getMyRecoveryCodes`)
+
+How many of your recovery codes are unused, and when you made them (SEC-35); never the codes. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Read-only; no side effects.
+
+- **Permission:** View on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35).
+- **Responses:**
+  - `200` OK [`RecoveryCodeStatus`](../../contracts/schemas/RecoveryCodeStatus.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/session/recovery-codes`
+
+**Make your recovery codes** (`replaceMyRecoveryCodes`)
+
+Gives you ten recovery codes, shown once; your earlier unused codes stop working (SEC-35). Keep them offline or in a password manager: with an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). The session passed a second factor in the last 5 minutes. Side effects: the codes, kept as keyed hashes only, and their event in the installation's trail. It takes no Idempotency-Key: a response with codes is never stored.
+
+- **Permission:** Create on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). The session passed a second factor in the last 5 minutes.
+- **Responses:**
+  - `200` OK [`MyRecoveryCodes`](../../contracts/schemas/MyRecoveryCodes.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RECOVERY-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/session/step-up`
 
@@ -3498,7 +3556,7 @@ Releases a batch still waiting for approval without a second person, under your 
 - **Responses:**
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `TEAM-04` Your roles conflict for this action.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal; `PB-01` Not a payment batch.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
@@ -3507,7 +3565,7 @@ Releases a batch still waiting for approval without a second person, under your 
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `BREAKGLASS-03`, `BREAKGLASS-04`, `BREAKGLASS-05`, `BREAKGLASS-06`, `BREAKGLASS-07`, `BREAKGLASS-08`, `DIM-05`, `DIM-06`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `PAYEE-12`, `PAYEE-15`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-09`, `PB-10`, `PB-11`, `PB-12`, `PB-13`, `PB-14`, `PB-15`, `PB-16`, `PB-25`, `STORAGE-BATCH-01`, `STORAGE-BATCH-02`, `STORAGE-BREAKGLASS-01`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `TEAM-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `BREAKGLASS-03`, `BREAKGLASS-04`, `BREAKGLASS-05`, `BREAKGLASS-06`, `BREAKGLASS-07`, `BREAKGLASS-08`, `DIM-05`, `DIM-06`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `PAYEE-12`, `PAYEE-15`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-09`, `PB-10`, `PB-11`, `PB-12`, `PB-13`, `PB-14`, `PB-15`, `PB-16`, `PB-25`, `STORAGE-BATCH-01`, `STORAGE-BATCH-02`, `STORAGE-BREAKGLASS-01`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `TEAM-04`
 
 ### `POST /v1/payment-batches/{batch_id}/cancel`
 
@@ -3630,7 +3688,7 @@ Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a p
 - **Responses:**
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal; `PB-01` Not a payment batch.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-17` The batch needs approving again; `PB-18` The batch is released already; `PB-20` The batch is not in that state; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -3639,7 +3697,7 @@ Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a p
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-05`, `DIM-06`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `PAYEE-12`, `PAYEE-15`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-09`, `PB-10`, `PB-11`, `PB-12`, `PB-13`, `PB-14`, `PB-15`, `PB-16`, `PB-17`, `PB-18`, `PB-19`, `PB-20`, `PB-25`, `STORAGE-BATCH-01`, `STORAGE-BATCH-02`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `TEAM-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-05`, `DIM-06`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `PAYEE-12`, `PAYEE-15`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-09`, `PB-10`, `PB-11`, `PB-12`, `PB-13`, `PB-14`, `PB-15`, `PB-16`, `PB-17`, `PB-18`, `PB-19`, `PB-20`, `PB-25`, `STORAGE-BATCH-01`, `STORAGE-BATCH-02`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `TEAM-04`
 
 ### `GET /v1/purchase-orders`
 
@@ -8802,7 +8860,7 @@ Saves a draft change of your own bank account for reimbursements (FR-AP-22; PRD-
   - `201` Created [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account.
   - `404` Not Found: `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
@@ -8811,7 +8869,7 @@ Saves a draft change of your own bank account for reimbursements (FR-AP-22; PRD-
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/me/bank-changes/{change_id}`
 
@@ -8848,7 +8906,7 @@ Saves a draft change's new content as its next version (FR-AP-22). Left out, the
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -8859,7 +8917,7 @@ Saves a draft change's new content as its next version (FR-AP-22). Left out, the
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/me/bank-changes/{change_id}/approval`
 
@@ -8877,7 +8935,7 @@ Asks for approval of a draft change of your own bank account at the version read
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -8886,7 +8944,7 @@ Asks for approval of a draft change of your own bank account at the version read
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/me/bank-changes/{change_id}/reveal`
 
@@ -10492,7 +10550,7 @@ Saves a draft change of a vendor's bank account in one currency (FR-CT-03; PRD-0
   - `201` Created [`PayeeBankChange`](../../contracts/schemas/PayeeBankChange.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
@@ -10501,7 +10559,7 @@ Saves a draft change of a vendor's bank account in one currency (FR-CT-03; PRD-0
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-15`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-15`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/bank-changes/{change_id}`
 
@@ -10538,7 +10596,7 @@ Saves a draft change's new content as its next version (FR-CT-03). Its vendor an
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayeeBankChange`](../../contracts/schemas/PayeeBankChange.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -10549,7 +10607,7 @@ Saves a draft change's new content as its next version (FR-CT-03). Its vendor an
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-15`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-15`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/bank-changes/{change_id}/approval`
 
@@ -10567,7 +10625,7 @@ Asks for a second person's approval of a draft change at the version read (FR-CT
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -10576,7 +10634,7 @@ Asks for a second person's approval of a draft change at the version read (FR-CT
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/bank-changes/{change_id}/reveal`
 
@@ -10979,7 +11037,7 @@ Starts a break-glass for 24 hours (FM-8; PRD-001 rev 0.175): an Owner, stepped u
   - `201` Created [`BreakGlass`](../../contracts/schemas/BreakGlass.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-01` Break-glass is for Founder mode only; `BREAKGLASS-02` An earlier break-glass waits for its review; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-LOCK-01` Another change is in progress.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -10987,7 +11045,7 @@ Starts a break-glass for 24 hours (FM-8; PRD-001 rev 0.175): an Owner, stepped u
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `BREAKGLASS-01`, `BREAKGLASS-02`, `STORAGE-BREAKGLASS-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `BREAKGLASS-01`, `BREAKGLASS-02`, `STORAGE-BREAKGLASS-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/break-glass/{break_glass_id}`
 
@@ -11142,7 +11200,7 @@ Makes a one-time invitation that gives its redeemer the roles named, valid 7 day
   - `202` Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `409` Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -11150,7 +11208,7 @@ Makes a one-time invitation that gives its redeemer the roles named, valid 7 day
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `TEAM-02`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `TEAM-02`
 
 ### `DELETE /v1/members/invitations/{invitation_id}`
 
@@ -11198,6 +11256,27 @@ Ends a person's membership and each of their roles, expired ones included; their
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `POST /v1/members/{member_id}/recovery-confirmations`
+
+**Confirm a member's account recovery** (`confirmAccountRecovery`)
+
+Creates the one-time confirmation that, with one of their recovery codes, gives a member who lost every authenticator their account back: the second proof a recovery needs (SEC-35). Confirm only after speaking to them, in person or on a call you started, and give them the code that way. An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35). Side effects: the confirmation (it lasts 24 hours and replaces an unused one), its event in the organisation's trail, and a security notice to the member and every Owner. It takes no Idempotency-Key: a response with a code is never stored.
+
+- **Permission:** Create on Users, roles, team mode. An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35).
+- **Parameters:**
+  - `member_id` (path, required): The membership's ID.
+- **Responses:**
+  - `201` Created [`OneTimeCode`](../../contracts/schemas/OneTimeCode.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RECOVERY-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/members/{member_id}/roles`
 
 **Give a member a role** (`assignRole`)
@@ -11216,7 +11295,7 @@ Gives a member a role, theirs until it is revoked or, for an external user, unti
   - `202` Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
@@ -11225,7 +11304,7 @@ Gives a member a role, theirs until it is revoked or, for an external user, unti
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `TEAM-02`, `TEAM-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `TEAM-02`, `TEAM-06`
 
 ### `DELETE /v1/members/{member_id}/roles/{role}`
 
@@ -11242,14 +11321,14 @@ Ends a member's role; their next request no longer holds it (FR-ADM-01). The org
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Member`](../../contracts/schemas/Member.schema.json)
   - `202` Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/members/{member_id}/succession`
 
@@ -11268,7 +11347,7 @@ Starts a succession of another Owner who is permanently unavailable, such as aft
   - `201` Created [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
   - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
@@ -11278,7 +11357,7 @@ Starts a succession of another Owner who is permanently unavailable, such as aft
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
 
 ### `GET /v1/owner-successions`
 
@@ -11315,7 +11394,7 @@ Completes a succession once its 7 days of notice are over (FR-ADM-09; the owner'
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
   - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
@@ -11325,7 +11404,7 @@ Completes a succession once its 7 days of notice are over (FR-ADM-09; the owner'
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
 
 ### `POST /v1/owner-successions/{succession_id}/object`
 
@@ -11654,7 +11733,7 @@ Signs the request's current step and, once every step of its policy has its quor
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9).
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9).
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `APPLY-01` Not a customer credit application; `APPLY-10` Not a customer refund; `BILL-01` Not a bill; `BILLPAY-01` Not a payment of bills; `CLAIM-01` Not an expense claim; `CLAIM-12` Not a reimbursement of expense claims; `CLAIM-28` Not a cash advance; `CREDIT-01` Not a credit application; `CREDIT-10` Not a supplier refund; `DEPOSIT-01` Not a customer deposit; `FOUNDER-31` Not a repayment to a director; `INVOICE-01` Not an invoice; `JOURNAL-01` Not a manual journal; `PAYEE-01` Not a change of bank details; `PO-01` Not a purchase order; `RECEIPT-01` Not a customer receipt; `WRITEOFF-01` Not a write-off.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `DOC-10` The record's evidence is missing; `FOUNDER-18` The fee is posted; `FOUNDER-29` The settlement is decided; `FOUNDER-33` Not an approved repayment with that much open; `FOUNDER-34` The repayment is not posted; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `MERGE-03` Something scheduled still posts to the account; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
@@ -11665,7 +11744,7 @@ Signs the request's current step and, once every step of its policy has its quor
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APPLY-01`, `APPLY-02`, `APPLY-06`, `APPLY-07`, `APPLY-10`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-08`, `APR-09`, `APR-10`, `APR-11`, `APR-15`, `APR-16`, `BILL-01`, `BILL-02`, `BILL-03`, `BILL-04`, `BILL-05`, `BILL-06`, `BILL-07`, `BILL-08`, `BILL-11`, `BILL-13`, `BILL-14`, `BILL-15`, `BILL-16`, `BILLPAY-01`, `BILLPAY-02`, `BILLPAY-06`, `BILLPAY-07`, `CLAIM-01`, `CLAIM-02`, `CLAIM-03`, `CLAIM-04`, `CLAIM-05`, `CLAIM-06`, `CLAIM-07`, `CLAIM-08`, `CLAIM-11`, `CLAIM-12`, `CLAIM-15`, `CLAIM-16`, `CLAIM-18`, `CLAIM-19`, `CLAIM-24`, `CLAIM-25`, `CLAIM-26`, `CLAIM-27`, `CLAIM-28`, `CLAIM-31`, `CLAIM-32`, `CLAIM-36`, `CREDIT-01`, `CREDIT-02`, `CREDIT-06`, `CREDIT-07`, `CREDIT-10`, `DEPOSIT-01`, `DEPOSIT-02`, `DEPOSIT-06`, `DEPOSIT-07`, `DEPOSIT-08`, `DIM-05`, `DIM-06`, `DOC-10`, `FOUNDER-04`, `FOUNDER-15`, `FOUNDER-16`, `FOUNDER-17`, `FOUNDER-18`, `FOUNDER-19`, `FOUNDER-27`, `FOUNDER-28`, `FOUNDER-29`, `FOUNDER-30`, `FOUNDER-31`, `FOUNDER-33`, `FOUNDER-34`, `FX-01`, `FX-08`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-12`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `JOURNAL-01`, `JOURNAL-02`, `JOURNAL-03`, `JOURNAL-04`, `JOURNAL-09`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-21`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-26`, `LEDGER-28`, `LEDGER-29`, `LEDGER-30`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `LEDGER-36`, `LEDGER-37`, `LEDGER-41`, `LEDGER-43`, `LEDGER-44`, `LEDGER-45`, `LEDGER-46`, `LEDGER-47`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `MERGE-01`, `MERGE-02`, `MERGE-03`, `PACK-07`, `PACK-09`, `PACK-10`, `PACK-13`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-18`, `PO-01`, `PO-02`, `PO-03`, `PO-04`, `PO-05`, `PO-06`, `PO-07`, `PO-08`, `PO-09`, `PO-10`, `PO-15`, `RECEIPT-01`, `RECEIPT-02`, `RECEIPT-06`, `RECEIPT-07`, `SET-01`, `SET-02`, `SET-03`, `SET-04`, `SET-06`, `STORAGE-APPROVAL-01`, `STORAGE-BANKING-01`, `STORAGE-CLAIM-01`, `STORAGE-DOC-02`, `STORAGE-DOC-04`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-PARTY-01`, `STORAGE-PASSKEY-01`, `STORAGE-PAYEE-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-TEMPLATE-01`, `STORAGE-VERSION-01`, `TEAM-04`, `TPL-01`, `TPL-02`, `TPL-03`, `TPL-04`, `TPL-05`, `TPL-06`, `TPL-07`, `TPL-08`, `TPL-09`, `TPL-10`, `TPL-11`, `TPL-12`, `TPL-13`, `TPL-15`, `TPL-16`, `TPL-17`, `WRITEOFF-01`, `WRITEOFF-02`, `WRITEOFF-03`, `WRITEOFF-04`, `WRITEOFF-05`, `WRITEOFF-06`, `WRITEOFF-07`, `WRITEOFF-08`, `WRITEOFF-09`, `WRITEOFF-11`, `WRITEOFF-12`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APPLY-01`, `APPLY-02`, `APPLY-06`, `APPLY-07`, `APPLY-10`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-08`, `APR-09`, `APR-10`, `APR-11`, `APR-15`, `APR-16`, `BILL-01`, `BILL-02`, `BILL-03`, `BILL-04`, `BILL-05`, `BILL-06`, `BILL-07`, `BILL-08`, `BILL-11`, `BILL-13`, `BILL-14`, `BILL-15`, `BILL-16`, `BILLPAY-01`, `BILLPAY-02`, `BILLPAY-06`, `BILLPAY-07`, `CLAIM-01`, `CLAIM-02`, `CLAIM-03`, `CLAIM-04`, `CLAIM-05`, `CLAIM-06`, `CLAIM-07`, `CLAIM-08`, `CLAIM-11`, `CLAIM-12`, `CLAIM-15`, `CLAIM-16`, `CLAIM-18`, `CLAIM-19`, `CLAIM-24`, `CLAIM-25`, `CLAIM-26`, `CLAIM-27`, `CLAIM-28`, `CLAIM-31`, `CLAIM-32`, `CLAIM-36`, `CREDIT-01`, `CREDIT-02`, `CREDIT-06`, `CREDIT-07`, `CREDIT-10`, `DEPOSIT-01`, `DEPOSIT-02`, `DEPOSIT-06`, `DEPOSIT-07`, `DEPOSIT-08`, `DIM-05`, `DIM-06`, `DOC-10`, `FOUNDER-04`, `FOUNDER-15`, `FOUNDER-16`, `FOUNDER-17`, `FOUNDER-18`, `FOUNDER-19`, `FOUNDER-27`, `FOUNDER-28`, `FOUNDER-29`, `FOUNDER-30`, `FOUNDER-31`, `FOUNDER-33`, `FOUNDER-34`, `FX-01`, `FX-08`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-12`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `JOURNAL-01`, `JOURNAL-02`, `JOURNAL-03`, `JOURNAL-04`, `JOURNAL-09`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-21`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-26`, `LEDGER-28`, `LEDGER-29`, `LEDGER-30`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `LEDGER-36`, `LEDGER-37`, `LEDGER-41`, `LEDGER-43`, `LEDGER-44`, `LEDGER-45`, `LEDGER-46`, `LEDGER-47`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `MERGE-01`, `MERGE-02`, `MERGE-03`, `PACK-07`, `PACK-09`, `PACK-10`, `PACK-13`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-18`, `PO-01`, `PO-02`, `PO-03`, `PO-04`, `PO-05`, `PO-06`, `PO-07`, `PO-08`, `PO-09`, `PO-10`, `PO-15`, `RECEIPT-01`, `RECEIPT-02`, `RECEIPT-06`, `RECEIPT-07`, `SET-01`, `SET-02`, `SET-03`, `SET-04`, `SET-06`, `STORAGE-APPROVAL-01`, `STORAGE-BANKING-01`, `STORAGE-CLAIM-01`, `STORAGE-DOC-02`, `STORAGE-DOC-04`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-PARTY-01`, `STORAGE-PASSKEY-01`, `STORAGE-PAYEE-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-TEMPLATE-01`, `STORAGE-VERSION-01`, `TEAM-04`, `TPL-01`, `TPL-02`, `TPL-03`, `TPL-04`, `TPL-05`, `TPL-06`, `TPL-07`, `TPL-08`, `TPL-09`, `TPL-10`, `TPL-11`, `TPL-12`, `TPL-13`, `TPL-15`, `TPL-16`, `TPL-17`, `WRITEOFF-01`, `WRITEOFF-02`, `WRITEOFF-03`, `WRITEOFF-04`, `WRITEOFF-05`, `WRITEOFF-06`, `WRITEOFF-07`, `WRITEOFF-08`, `WRITEOFF-09`, `WRITEOFF-11`, `WRITEOFF-12`
 
 ### `POST /v1/approvals/{approval_id}/challenge`
 
@@ -11680,7 +11759,7 @@ A challenge for signing the request with your passkey: 16 random bytes followed 
 - **Responses:**
   - `200` OK [`PasskeyChallenge`](../../contracts/schemas/PasskeyChallenge.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-PASSKEY-02` You have no passkey; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
@@ -11689,7 +11768,7 @@ A challenge for signing the request with your passkey: 16 random bytes followed 
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-02`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-10`, `APR-11`, `STORAGE-APPROVAL-01`, `STORAGE-PASSKEY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-AUTHZ-08`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-02`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-10`, `APR-11`, `STORAGE-APPROVAL-01`, `STORAGE-PASSKEY-01`
 
 ### `POST /v1/approvals/{approval_id}/reject`
 

@@ -258,8 +258,9 @@ func TestEvidenceNeedsTheRecordToo(t *testing.T) {
 }
 
 // Every user signs in with a second factor (SEC-01): a session that passed none reads itself, steps up with a passkey,
-// and, as a Super admin who lost theirs, recovers with two proofs (SEC-35); nothing else.
+// and, as a person or a Super admin who lost theirs, recovers with two proofs (SEC-35); nothing else.
 // req: SEC-01
+// req: SEC-35
 // req: FR-ADM-02
 // asvs: V6.3.3
 func TestOnlyStepUpAndRecoveryNeedNoSecondFactor(t *testing.T) {
@@ -270,7 +271,7 @@ func TestOnlyStepUpAndRecoveryNeedNoSecondFactor(t *testing.T) {
 		}
 	}
 	slices.Sort(got)
-	if want := []string{"getSession", "recoverSuperAdmin", "startStepUp", "stepUp"}; !slices.Equal(got, want) {
+	if want := []string{"getSession", "recoverAccount", "recoverSuperAdmin", "startStepUp", "stepUp"}; !slices.Equal(got, want) {
 		t.Errorf("operations open to a session without a second factor: %v, want %v", got, want)
 	}
 }

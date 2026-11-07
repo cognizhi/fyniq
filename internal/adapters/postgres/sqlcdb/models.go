@@ -50,6 +50,15 @@ type FyniqAccount struct {
 	MergedIntoID         *uuid.UUID
 }
 
+type FyniqAccountRecovery struct {
+	ID              uuid.UUID
+	UserID          uuid.UUID
+	RecoveryCodeID  uuid.UUID
+	ConfirmationID  uuid.UUID
+	RecoveredAt     time.Time
+	CoolingOffUntil time.Time
+}
+
 type FyniqAccountantReview struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1541,6 +1550,17 @@ type FyniqRateLimitWindow struct {
 	Used           int32
 }
 
+type FyniqRecoveryConfirmation struct {
+	ID                     uuid.UUID
+	UserID                 uuid.UUID
+	ConfirmedBy            uuid.UUID
+	ConfirmingOrganisation uuid.UUID
+	CodeHash               []byte
+	CreatedAt              time.Time
+	ExpiresAt              time.Time
+	UsedAt                 *time.Time
+}
+
 type FyniqRecurringBill struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1861,6 +1881,14 @@ type FyniqUserMembership struct {
 	Status         string
 	CreatedAt      time.Time
 	Version        int32
+}
+
+type FyniqUserRecoveryCode struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	CodeHash  []byte
+	CreatedAt time.Time
+	UsedAt    *time.Time
 }
 
 type FyniqUserSession struct {

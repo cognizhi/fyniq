@@ -300,6 +300,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPasskeys(a)
 	registerDevices(a)
 	registerIdentities(a)
+	registerRecovery(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)
 	registerJournals(a)
@@ -401,6 +402,9 @@ func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []strin
 	}
 	a.policies[p.Operation] = p
 	codes = append(slices.Clone(codes), commonCodes...)
+	if slices.Contains(authz.HeldInCoolingOff, p.Operation) {
+		codes = append(codes, CodeCoolingOff) // held after the caller's account recovery (SEC-35)
+	}
 	if !p.Public && !authn.Safe(op.Method) {
 		codes = append(codes, CodeCrossSite) // a write the session cookie authenticates must come from the web app
 	}
@@ -566,6 +570,12 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			"Sign in again with your authenticator app, or confirm it's you with a passkey.")
 	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
+	case p.CoolingOffUntil.After(a.deps.Clock.Now()) && slices.Contains(authz.HeldInCoolingOff, op.OperationID):
+		// SEC-35: after a recovery, the account cannot approve, release, change bank details, roles or sign-in methods,
+		// or use break-glass until the cooling-off ends.
+		refusal = problem(CodeCoolingOff, "Your account was recovered recently, so this waits until "+
+			singapore(p.CoolingOffUntil)+" Singapore time (SEC-35).",
+			"Do it after then, or ask another member to do it.")
 	}
 	var d authz.Decision
 	if refusal == nil {

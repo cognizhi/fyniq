@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "cooling_off_until": {
+      "description": "Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not.",
+      "examples": [
+        "2026-11-08T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
     "features": {
       "$ref": "Features.schema.json",
       "description": "The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."
@@ -36,10 +44,11 @@
       ]
     },
     "step_up_method": {
-      "description": "How your session last passed a second factor: at sign-in (your authenticator app) or with a passkey; absent when it passed none, which leaves it only reading itself and stepping up (SEC-01, rev 0.43).",
+      "description": "How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43).",
       "enum": [
         "sign_in",
-        "passkey"
+        "passkey",
+        "recovery"
       ],
       "examples": [
         "sign_in"

@@ -16,6 +16,7 @@ const (
 	ReviewAutoReconciled   = "auto_reconciled"   // a bank line the system reconciled, in the week's sample (FR-BNK-14, FM-3)
 	ReviewReleaseConflict  = "release_conflict"  // in Founder mode, a payment batch released by who prepared or approved it, or a payee's account change (SOD-1, SOD-2, FM-3)
 	ReviewBreakGlass       = "break_glass"       // an Owner's break-glass, logged as it starts, reviewed once it ends (FM-8)
+	ReviewAccountRecovery  = "account_recovery"  // a person recovered their account with a recovery code and a confirmation (SEC-35, FM-3)
 )
 
 // ReviewLogEntry is a high-risk action that executed, with its review once it has one.

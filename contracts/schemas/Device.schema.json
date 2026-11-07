@@ -56,10 +56,11 @@
       "type": "string"
     },
     "step_up_method": {
-      "description": "How it last passed a second factor.",
+      "description": "How it last passed a second factor: recovery after an account recovery (SEC-35).",
       "enum": [
         "sign_in",
-        "passkey"
+        "passkey",
+        "recovery"
       ],
       "examples": [
         "sign_in"

@@ -135,6 +135,7 @@ const (
 	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
 	CodeRateLimited       = "API-RATE-01"        // the client's requests this minute reached its limit (429)
 	CodeSecondFactor      = "API-AUTHZ-07"       // the session passed no second factor (SEC-01)
+	CodeCoolingOff        = "API-AUTHZ-08"       // held during the cooling-off after the caller's account recovery (SEC-35)
 	CodePasskeyRefused    = "API-PASSKEY-01"     // #nosec G101 -- a problem code's name, not a credential: the passkey's answer failed a check
 	CodeNoPasskey         = "API-PASSKEY-02"     // #nosec G101 -- a problem code's name, not a credential: no passkey to step up with
 	CodeChallenge         = "API-PASSKEY-03"     // the challenge is unknown, another session's, used or expired
@@ -172,6 +173,7 @@ var codeFacts = map[string]struct {
 	CodeSuperAdminRefused:         {409, "Super admin change refused"},
 	CodeRateLimited:               {429, "Too many requests"},
 	CodeSecondFactor:              {403, "A second factor is required"},
+	CodeCoolingOff:                {403, "Held while your account cools off after its recovery"},
 	CodePasskeyRefused:            {422, "The passkey's answer was refused"},
 	CodeNoPasskey:                 {409, "You have no passkey"},
 	CodeChallenge:                 {409, "The challenge cannot be used"},
@@ -616,6 +618,8 @@ var codeFacts = map[string]struct {
 	storage.CodeIdentity:        {409, "That sign-in cannot be removed"},
 	storage.CodeIdentityStepUp:  {403, "Confirm it's you first"},
 	storage.CodeSignInMethod:    {409, "That would leave a Super admin no way to sign in"},
+	storage.CodeRecovery:        {409, "The recovery is not valid"},
+	storage.CodeCoolingOff:      {403, "Held while your account cools off after its recovery"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

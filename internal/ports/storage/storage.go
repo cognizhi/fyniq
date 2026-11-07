@@ -70,6 +70,8 @@ type UnitOfWork interface {
 	ApprovalPolicies() ApprovalPolicies
 	TeamModes() TeamModes
 	Passkeys() Passkeys
+	// Recoveries keep account recovery (SEC-35): global rows, audited in this unit of work's trail.
+	Recoveries() Recoveries
 	// SignInMethods changes the sign-in providers' switches: in a unit of work of the installation organisation only.
 	SignInMethods() SignInMethodWriter
 	ReviewLog() ReviewLog
@@ -774,6 +776,11 @@ const (
 	// CodeSignInMethod is a provider's switch that leaves a Super admin no way to sign in, or a domain that is not one
 	// (FR-ADM-08, rev 0.197).
 	CodeSignInMethod = "STORAGE-SIGNIN-01"
+	// CodeRecovery is an account recovery refused: codes made without a recent second factor, a confirmation of one's
+	// own recovery, or a recovery code or confirmation wrong, used or expired (SEC-35, rev 0.198).
+	CodeRecovery = "STORAGE-RECOVERY-01"
+	// CodeCoolingOff is a change held during the cooling-off after a recovery (SEC-35, rev 0.198).
+	CodeCoolingOff = "STORAGE-RECOVERY-02"
 	// CodeConnectorChange: a step on an installation connector needs the other Super admin's approved change, decided
 	// once, by another person, before it expires (FR-ADM-07).
 	CodeConnectorChange = "STORAGE-CONNECTOR-02"

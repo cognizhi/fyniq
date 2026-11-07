@@ -102,6 +102,12 @@
   `SignInProviders.test.tsx`. **Left:** joining by domain as a pending Employee membership an Owner approves; adding
   providers in the app (P2 or P3).)
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
+  (7 Nov 2026, PRD-001 rev 0.198, on the owner's decisions of 6 Nov 2026: ten recovery codes per person on the profile,
+  keyed hashes; a confirmation from an Owner or Administrator after speaking to the person (one-time, 24 hours); the
+  recovery from a session without a second factor gives it one by recovery, ends other sessions and tokens, replaces
+  the codes, notifies the person and every Owner, logs the weekly review and holds `authz.HeldInCoolingOff` for 24
+  hours. Migrations 000242 and 000243. Tests `TestAccountRecovery` (G4-060), `TestTheCoolingOffHoldsRealOperations`,
+  `recovery.test.tsx`. **Left:** the cooling-off's length as a setting.)
 
 ## 3. Clients, outputs and administration
 

@@ -28,7 +28,7 @@ type Device struct {
 	SignedInAt   time.Time `json:"signed_in_at" doc:"When it signed in." example:"2026-10-20T09:00:00Z"`
 	LastSeenAt   time.Time `json:"last_seen_at" doc:"When it was last used, to the minute." example:"2026-10-20T09:30:00Z"`
 	ExpiresAt    time.Time `json:"expires_at" doc:"When it ends at the latest: 12 hours after it signed in (SEC-05)." example:"2026-10-20T21:00:00Z"`
-	StepUpMethod string    `json:"step_up_method,omitempty" enum:"sign_in,passkey" doc:"How it last passed a second factor." example:"sign_in"`
+	StepUpMethod string    `json:"step_up_method,omitempty" enum:"sign_in,passkey,recovery" doc:"How it last passed a second factor: recovery after an account recovery (SEC-35)." example:"sign_in"`
 	Current      bool      `json:"current" doc:"true for the session making this request." example:"true"`
 }
 

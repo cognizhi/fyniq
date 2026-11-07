@@ -4,7 +4,7 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:887d990202014b8221216a559b823041533eefba775d81793a4e0b90530e04ad
+  - docs/user-guide/profile-and-security.md sha256:dc27039cdee3a5eb3de64bb85887dda0fee54026836c06ef1a5bbd600cfb0b0e
 data_class: general
 taint: trusted
 status: draft
@@ -103,6 +103,14 @@ aliases:
 - Never the one in use nor the last: sign in with another first, or link another. It can be linked again later.
 
 (src: docs/user-guide/profile-and-security.md#remove-a-sign-in)
+
+## Recovery codes
+
+- **Make recovery codes** under **Recovery codes**, confirm it's you, and keep the ten codes shown once (printed, or in a password manager); each works once.
+- With an Owner's or Administrator's confirmation, one gives the account back if every authenticator is lost ([[auth.sign-in]]).
+- The card says how many are unused; **Make new codes** replaces them all. A second passkey on another device keeps one lost device from locking the person out.
+
+(src: docs/user-guide/profile-and-security.md#recovery-codes)
 
 ## Your devices
 

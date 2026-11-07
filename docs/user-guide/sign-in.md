@@ -3,7 +3,7 @@ key: auth.sign-in
 title: Sign in to Fyniq
 mode: basic
 roles: [all]
-requirements: [FR-ADM-08, FR-ADM-02, FR-ADM-03, SEC-01, SEC-05, SEC-08]
+requirements: [FR-ADM-08, FR-ADM-02, FR-ADM-03, SEC-01, SEC-05, SEC-08, SEC-35]
 ---
 
 # Sign in to Fyniq
@@ -58,6 +58,23 @@ provider and from which browser. If it was not you, end that session.
    its next request.
 3. To end every session but this one, select **Sign out everywhere else**.
 
+## Recover your account
+
+If your sign-in provider is down, or you lost that account, sign in with another provider you
+linked on your profile. If you lost every authenticator, your phone with its authenticator app and
+your passkeys, recover your account:
+
+1. Sign in with your provider. Fyniq shows **Confirm it's you**; select **Lost every authenticator?**
+2. Ask an Owner or Administrator of your organisation, in person or by phone, to confirm your
+   recovery. They give you a confirmation.
+3. Type one of your recovery codes and the confirmation, then select **Recover my account**.
+4. Keep the ten new recovery codes Fyniq shows once, then add a new passkey on your profile.
+
+- Your other sessions end, and you and every Owner are told.
+- For 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass
+  and confirming others' recoveries wait.
+- Email alone or a support request never recovers an account.
+
 ## Join a company with an invitation
 
 1. Sign in as above. Fyniq shows **Joining by invitation**, because you have no account yet.
@@ -82,6 +99,8 @@ An invitation works once, within 7 days.
 | Sign-in failed (AUTH-SIGNIN-03): the provider's answer did not pass Fyniq's checks | Sign in again. If it keeps happening, tell the Super admin |
 | Sign-in failed (AUTH-SIGNIN-04): the sign-in service did not answer | Try again in a moment |
 | Sign-in failed (AUTH-SIGNIN-08): that provider accepts only accounts on some email domains | Sign in with your work account at that provider, or choose another way to sign in |
+| The recovery is not valid (STORAGE-RECOVERY-01) | Check both codes. A recovery code works once, and a confirmation for 24 hours: ask for a new one |
+| Held while your account cools off after its recovery (API-AUTHZ-08) | Do it after the time shown, or ask another member to do it |
 | That invitation code is not valid, was used already or has expired | Ask whoever invited you for a new invitation |
 | A second factor is required (API-AUTHZ-07) | Sign in again with your authenticator app, or confirm it's you with a passkey |
 | You have no passkey (API-PASSKEY-02) | Sign in again with your authenticator app, then add a passkey |

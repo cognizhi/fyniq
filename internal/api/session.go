@@ -34,14 +34,15 @@ type signInProvidersInput struct {
 
 // SessionInfo is the caller's own session.
 type SessionInfo struct {
-	Provider       string     `json:"provider,omitempty" doc:"The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token." example:"google"`
-	UserID         string     `json:"user_id,omitempty" format:"uuid" doc:"Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
-	OrganisationID string     `json:"organisation_id,omitempty" format:"uuid" doc:"The organisation your session is in; absent when you are a member of none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
-	Roles          []RoleName `json:"roles" doc:"Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once."`
-	SuperAdmin     bool       `json:"super_admin" doc:"Whether you are a Super admin of this installation (FR-ADM-07)." example:"false"`
-	SteppedUpUntil *time.Time `json:"stepped_up_until,omitempty" doc:"Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not." example:"2026-10-15T09:05:00Z"`
-	StepUpMethod   string     `json:"step_up_method,omitempty" enum:"sign_in,passkey" doc:"How your session last passed a second factor: at sign-in (your authenticator app) or with a passkey; absent when it passed none, which leaves it only reading itself and stepping up (SEC-01, rev 0.43)." example:"sign_in"`
-	Features       *Features  `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
+	Provider        string     `json:"provider,omitempty" doc:"The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token." example:"google"`
+	UserID          string     `json:"user_id,omitempty" format:"uuid" doc:"Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	OrganisationID  string     `json:"organisation_id,omitempty" format:"uuid" doc:"The organisation your session is in; absent when you are a member of none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
+	Roles           []RoleName `json:"roles" doc:"Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once."`
+	SuperAdmin      bool       `json:"super_admin" doc:"Whether you are a Super admin of this installation (FR-ADM-07)." example:"false"`
+	SteppedUpUntil  *time.Time `json:"stepped_up_until,omitempty" doc:"Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not." example:"2026-10-15T09:05:00Z"`
+	StepUpMethod    string     `json:"step_up_method,omitempty" enum:"sign_in,passkey,recovery" doc:"How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43)." example:"sign_in"`
+	CoolingOffUntil *time.Time `json:"cooling_off_until,omitempty" doc:"Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not." example:"2026-11-08T09:00:00Z"`
+	Features        *Features  `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
 }
 
 // Features are the organisation's feature switches on a day (FR-ORG-06): the web app shows only what is on.
@@ -155,6 +156,10 @@ func registerSession(a *API) {
 		}
 		if !p.StepUpAt.IsZero() {
 			out.StepUpMethod = cmpOr(p.StepUpMethod, "sign_in")
+		}
+		if p.CoolingOffUntil.After(a.deps.Clock.Now()) {
+			until := p.CoolingOffUntil.UTC()
+			out.CoolingOffUntil = &until
 		}
 		return &sessionOutput{Body: out}, nil
 	})

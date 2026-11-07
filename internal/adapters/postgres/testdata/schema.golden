@@ -34,6 +34,12 @@ account | useful_life_months | smallint | null |
 account | changed_at | timestamp with time zone | null | 
 account | required_dimension_ids | uuid[] | not null | '{}'::uuid[]
 account | merged_into_id | uuid | null | 
+account_recovery | id | uuid | not null | uuidv7()
+account_recovery | user_id | uuid | not null | 
+account_recovery | recovery_code_id | uuid | not null | 
+account_recovery | confirmation_id | uuid | not null | 
+account_recovery | recovered_at | timestamp with time zone | not null | 
+account_recovery | cooling_off_until | timestamp with time zone | not null | 
 accountant_review | organisation_id | uuid | not null | current_org()
 accountant_review | id | uuid | not null | uuidv7()
 accountant_review | period_id | uuid | not null | 
@@ -1192,6 +1198,14 @@ rate_limit_window | client_id | text | not null |
 rate_limit_window | kind | text | not null | 
 rate_limit_window | window_start | timestamp with time zone | not null | 
 rate_limit_window | used | integer | not null | 1
+recovery_confirmation | id | uuid | not null | uuidv7()
+recovery_confirmation | user_id | uuid | not null | 
+recovery_confirmation | confirmed_by | uuid | not null | 
+recovery_confirmation | confirming_organisation | uuid | not null | 
+recovery_confirmation | code_hash | bytea | not null | 
+recovery_confirmation | created_at | timestamp with time zone | not null | 
+recovery_confirmation | expires_at | timestamp with time zone | not null | 
+recovery_confirmation | used_at | timestamp with time zone | null | 
 recurring_bill | organisation_id | uuid | not null | current_org()
 recurring_bill | id | uuid | not null | uuidv7()
 recurring_bill | name | text | not null | 
@@ -1433,6 +1447,11 @@ user_membership | user_id | uuid | not null |
 user_membership | status | text | not null | 'active'::text
 user_membership | created_at | timestamp with time zone | not null | now()
 user_membership | version | integer | not null | 1
+user_recovery_code | id | uuid | not null | uuidv7()
+user_recovery_code | user_id | uuid | not null | 
+user_recovery_code | code_hash | bytea | not null | 
+user_recovery_code | created_at | timestamp with time zone | not null | 
+user_recovery_code | used_at | timestamp with time zone | null | 
 user_session | token_hash | bytea | not null | 
 user_session | issuer | text | not null | 
 user_session | subject | text | not null | 
@@ -1532,6 +1551,17 @@ account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (us
 account | account_version_not_null | NOT NULL version
 account | account_version_positive | CHECK ((version > 0))
 account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+account_recovery | account_recovery_code_fkey | FOREIGN KEY (recovery_code_id) REFERENCES user_recovery_code(id)
+account_recovery | account_recovery_confirmation_fkey | FOREIGN KEY (confirmation_id) REFERENCES recovery_confirmation(id)
+account_recovery | account_recovery_confirmation_id_not_null | NOT NULL confirmation_id
+account_recovery | account_recovery_cooling_off | CHECK ((cooling_off_until > recovered_at))
+account_recovery | account_recovery_cooling_off_until_not_null | NOT NULL cooling_off_until
+account_recovery | account_recovery_id_not_null | NOT NULL id
+account_recovery | account_recovery_pkey | PRIMARY KEY (id)
+account_recovery | account_recovery_recovered_at_not_null | NOT NULL recovered_at
+account_recovery | account_recovery_recovery_code_id_not_null | NOT NULL recovery_code_id
+account_recovery | account_recovery_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+account_recovery | account_recovery_user_id_not_null | NOT NULL user_id
 accountant_review | accountant_review_close_fkey | FOREIGN KEY (organisation_id, close_id) REFERENCES period_close(organisation_id, id)
 accountant_review | accountant_review_close_id_not_null | NOT NULL close_id
 accountant_review | accountant_review_close_once | UNIQUE (organisation_id, close_id)
@@ -3403,6 +3433,20 @@ rate_limit_window | rate_limit_window_pkey | PRIMARY KEY (organisation_id, id)
 rate_limit_window | rate_limit_window_used_not_null | NOT NULL used
 rate_limit_window | rate_limit_window_used_positive | CHECK ((used > 0))
 rate_limit_window | rate_limit_window_window_start_not_null | NOT NULL window_start
+recovery_confirmation | recovery_confirmation_another | CHECK ((confirmed_by <> user_id))
+recovery_confirmation | recovery_confirmation_by_fkey | FOREIGN KEY (confirmed_by) REFERENCES app_user(user_id)
+recovery_confirmation | recovery_confirmation_code_hash_not_null | NOT NULL code_hash
+recovery_confirmation | recovery_confirmation_confirmed_by_not_null | NOT NULL confirmed_by
+recovery_confirmation | recovery_confirmation_confirming_organisation_not_null | NOT NULL confirming_organisation
+recovery_confirmation | recovery_confirmation_created_at_not_null | NOT NULL created_at
+recovery_confirmation | recovery_confirmation_expires_at_not_null | NOT NULL expires_at
+recovery_confirmation | recovery_confirmation_expiry | CHECK ((expires_at > created_at))
+recovery_confirmation | recovery_confirmation_hash_length | CHECK ((length(code_hash) = 32))
+recovery_confirmation | recovery_confirmation_id_not_null | NOT NULL id
+recovery_confirmation | recovery_confirmation_pkey | PRIMARY KEY (id)
+recovery_confirmation | recovery_confirmation_used_window | CHECK (((used_at IS NULL) OR ((used_at >= created_at) AND (used_at <= expires_at))))
+recovery_confirmation | recovery_confirmation_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+recovery_confirmation | recovery_confirmation_user_id_not_null | NOT NULL user_id
 recurring_bill | recurring_bill_content_version_fkey | FOREIGN KEY (organisation_id, id, content_version) REFERENCES recurring_bill_version(organisation_id, recurring_bill_id, version) DEFERRABLE INITIALLY DEFERRED
 recurring_bill | recurring_bill_content_version_not_null | NOT NULL content_version
 recurring_bill | recurring_bill_created_at_not_null | NOT NULL created_at
@@ -3541,7 +3585,7 @@ review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id
 review_log_entry | review_log_entry_approval_kind | CHECK (((kind = 'approved_change'::text) = (approval_id IS NOT NULL)))
 review_log_entry | review_log_entry_approval_once | UNIQUE (organisation_id, approval_id)
 review_log_entry | review_log_entry_id_not_null | NOT NULL id
-review_log_entry | review_log_entry_kind_known | CHECK ((kind = ANY (ARRAY['approved_change'::text, 'founder_bootstrap'::text, 'self_approved'::text, 'scheduled_issue'::text, 'auto_reconciled'::text, 'release_conflict'::text, 'break_glass'::text])))
+review_log_entry | review_log_entry_kind_known | CHECK ((kind = ANY (ARRAY['approved_change'::text, 'founder_bootstrap'::text, 'self_approved'::text, 'scheduled_issue'::text, 'auto_reconciled'::text, 'release_conflict'::text, 'break_glass'::text, 'account_recovery'::text])))
 review_log_entry | review_log_entry_kind_not_null | NOT NULL kind
 review_log_entry | review_log_entry_logged_at_not_null | NOT NULL logged_at
 review_log_entry | review_log_entry_object_key_not_null | NOT NULL object_key
@@ -3777,6 +3821,14 @@ user_membership | user_membership_user_id_not_null | NOT NULL user_id
 user_membership | user_membership_user_key | UNIQUE (organisation_id, user_id)
 user_membership | user_membership_version_not_null | NOT NULL version
 user_membership | user_membership_version_positive | CHECK ((version > 0))
+user_recovery_code | user_recovery_code_code_hash_not_null | NOT NULL code_hash
+user_recovery_code | user_recovery_code_created_at_not_null | NOT NULL created_at
+user_recovery_code | user_recovery_code_hash_length | CHECK ((length(code_hash) = 32))
+user_recovery_code | user_recovery_code_id_not_null | NOT NULL id
+user_recovery_code | user_recovery_code_pkey | PRIMARY KEY (id)
+user_recovery_code | user_recovery_code_used_after | CHECK (((used_at IS NULL) OR (used_at >= created_at)))
+user_recovery_code | user_recovery_code_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+user_recovery_code | user_recovery_code_user_id_not_null | NOT NULL user_id
 user_session | user_session_created_at_not_null | NOT NULL created_at
 user_session | user_session_ended_after_start | CHECK ((ended_at >= created_at))
 user_session | user_session_expires_at_not_null | NOT NULL expires_at
@@ -3788,7 +3840,7 @@ user_session | user_session_pkey | PRIMARY KEY (token_hash)
 user_session | user_session_provider_length | CHECK (((length(provider) >= 1) AND (length(provider) <= 100)))
 user_session | user_session_provider_not_null | NOT NULL provider
 user_session | user_session_seen_after_start | CHECK ((last_seen_at >= created_at))
-user_session | user_session_step_up_method | CHECK ((((step_up_at IS NULL) AND (step_up_method IS NULL)) OR ((step_up_method = 'sign_in'::text) AND (step_up_at <= created_at)) OR ((step_up_method = 'passkey'::text) AND (step_up_at >= created_at))))
+user_session | user_session_step_up_method | CHECK ((((step_up_at IS NULL) AND (step_up_method IS NULL)) OR ((step_up_method = 'sign_in'::text) AND (step_up_at <= created_at)) OR ((step_up_method = ANY (ARRAY['passkey'::text, 'recovery'::text])) AND (step_up_at >= created_at))))
 user_session | user_session_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
 user_session | user_session_subject_not_null | NOT NULL subject
 user_session | user_session_token_hash_not_null | NOT NULL token_hash
@@ -3858,6 +3910,7 @@ withholding_decision | withholding_decision_tax_agent_not_null | NOT NULL tax_ag
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
+CREATE INDEX account_recovery_user ON fyniq.account_recovery USING btree (user_id, cooling_off_until)
 CREATE INDEX accountant_review_period ON fyniq.accountant_review USING btree (organisation_id, period_id)
 CREATE INDEX accountant_review_query_review ON fyniq.accountant_review_query USING btree (organisation_id, review_id)
 CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
@@ -3931,6 +3984,7 @@ CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING b
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
 CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
+CREATE INDEX user_recovery_code_user ON fyniq.user_recovery_code USING btree (user_id) WHERE (used_at IS NULL)
 CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) WHERE (ended_at IS NULL)
 CREATE INDEX webauthn_challenge_session_idx ON fyniq.webauthn_challenge USING btree (session_hash)
 CREATE INDEX webauthn_credential_user_idx ON fyniq.webauthn_credential USING btree (user_id) WHERE (revoked_at IS NULL)
@@ -3939,6 +3993,7 @@ CREATE UNIQUE INDEX access_review_attestation_pkey ON fyniq.access_review_attest
 CREATE UNIQUE INDEX access_review_attestation_quarter_key ON fyniq.access_review_attestation USING btree (organisation_id, quarter)
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX account_recovery_pkey ON fyniq.account_recovery USING btree (id)
 CREATE UNIQUE INDEX accountant_review_close_once ON fyniq.accountant_review USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX accountant_review_journal_once ON fyniq.accountant_review_journal USING btree (organisation_id, review_id, journal_id)
 CREATE UNIQUE INDEX accountant_review_journal_pkey ON fyniq.accountant_review_journal USING btree (organisation_id, id)
@@ -4124,6 +4179,8 @@ CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organ
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
+CREATE UNIQUE INDEX recovery_confirmation_hash ON fyniq.recovery_confirmation USING btree (code_hash)
+CREATE UNIQUE INDEX recovery_confirmation_pkey ON fyniq.recovery_confirmation USING btree (id)
 CREATE UNIQUE INDEX recurring_bill_pkey ON fyniq.recurring_bill USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_bill_version_key ON fyniq.recurring_bill_version USING btree (organisation_id, recurring_bill_id, version)
 CREATE UNIQUE INDEX recurring_bill_version_pkey ON fyniq.recurring_bill_version USING btree (organisation_id, id)
@@ -4162,6 +4219,8 @@ CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree 
 CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btree (organisation_id, user_id)
+CREATE UNIQUE INDEX user_recovery_code_hash ON fyniq.user_recovery_code USING btree (code_hash)
+CREATE UNIQUE INDEX user_recovery_code_pkey ON fyniq.user_recovery_code USING btree (id)
 CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_hash)
 CREATE UNIQUE INDEX webauthn_challenge_once ON fyniq.webauthn_challenge USING btree (challenge)
 CREATE UNIQUE INDEX webauthn_challenge_pkey ON fyniq.webauthn_challenge USING btree (id)
@@ -4297,6 +4356,7 @@ CREATE TRIGGER access_review_attestation_no_truncate BEFORE TRUNCATE ON fyniq.ac
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER account_merge_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_merge_guard()
+CREATE TRIGGER account_recovery_immutable BEFORE DELETE OR UPDATE ON fyniq.account_recovery FOR EACH ROW EXECUTE FUNCTION account_recovery_immutable()
 CREATE TRIGGER account_required_dimensions_check BEFORE INSERT OR UPDATE OF required_dimension_ids ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_required_dimensions_check()
 CREATE TRIGGER accountant_review_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.accountant_review FOR EACH ROW EXECUTE FUNCTION accountant_review_guard()
 CREATE TRIGGER accountant_review_journal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.accountant_review_journal FOR EACH ROW EXECUTE FUNCTION accountant_review_journal_guard()
@@ -4643,6 +4703,7 @@ access_review_attestation_guard() → trigger | security invoker | v | search_pa
 account_changed_at() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 212c9a1cb1a190c3ac8fa234e62aa816
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 account_merge_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a14c600f743a9d36737eb9b70fb7be62
+account_recovery_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | dae68f416346db992779f429fa05b25d
 account_required_dimensions_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c214041f09e2caefd3dcc34d90b2084a
 accountant_review_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a2ff7829118ff6e84f63b1555498d9e7
 accountant_review_journal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 011ed8a485a15d00757b44f9689b9dd2
@@ -4702,6 +4763,7 @@ claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_unt
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
+confirm_account_recovery(p_by uuid, p_for uuid, p_org uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 556b86484c4b57d11bbd4103bdd28538
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1
 connector_secret_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0663e962d68100701631e767b398d8c0
@@ -4787,7 +4849,7 @@ kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
-link_identity(p_session bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d528d5eafea1c65183e88d46737587c1
+link_identity(p_session bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca318a9298b9116b53e6571480a735ac
 live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
@@ -4827,6 +4889,7 @@ quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalo
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
+recover_account(p_session bytea, p_code bytea, p_confirmation bytea, p_new_hashes bytea[], p_now timestamp with time zone, p_cooling interval) → TABLE(recovery_id uuid, user_id uuid, confirmed_by uuid, confirming_organisation uuid, cooling_off_until timestamp with time zone) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d5ee493ce9e9f93630d83a25c0231a9e
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
@@ -4855,6 +4918,7 @@ set_installation_connector_secret(p_by uuid, p_change uuid, p_id uuid, p_name te
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 set_sign_in_method(p_by uuid, p_change uuid, p_provider text, p_version integer, p_enabled boolean, p_domains text[], p_end_sessions boolean, p_at timestamp with time zone) → sign_in_method | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 5d40fc290515550ad14721ab54b88667
+set_user_recovery_codes(p_session bytea, p_hashes bytea[], p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e728985ab2ec95c6ef13d75a527f5742
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 share_issue_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ecc9f7f60072d3973908c00c944e5815
 share_issue_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61dc3a208f7d88e0269a6cd0b117c760
@@ -4877,8 +4941,10 @@ super_admin_users() → SETOF uuid | security definer | s | search_path=pg_catal
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 unlink_identity(p_session bytea, p_issuer text, p_subject text, p_now timestamp with time zone) → TABLE(unlinked_user uuid, unlinked_provider text) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 04c0e37b7eae3e0e00f09b568764bf44
+user_cooling_off_until(p_user uuid, p_now timestamp with time zone) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 19590232dc6fbb14aaa95eada86bfd83
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
 user_identities(p_user uuid) → TABLE(issuer text, subject text, provider text, created_at timestamp with time zone, linked_at timestamp with time zone, last_used_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 479a2329cb13716ede2a43a4893da0f7
+user_recovery_codes(p_user uuid) → TABLE(unused integer, created_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 307c973ffd3fe303942c23dd565f936f
 user_sessions(p_user uuid, p_now timestamp with time zone, p_idle interval) → SETOF user_session | security definer | s | search_path=pg_catalog, fyniq, pg_temp | d713068278e40cd6ed6ba927ea5a0c69
 webauthn_approval_answer(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f481503b48994d66ccc92191380d8e36
 webauthn_approval_challenge_issue(p_session bytea, p_request uuid, p_envelope_hash bytea, p_nonce bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e140920fc5b676db4cb8e722e83c934a

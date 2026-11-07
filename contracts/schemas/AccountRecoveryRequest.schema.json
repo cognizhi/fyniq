@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confirmation_code": {
+      "description": "The confirmation an Owner or Administrator of your organisation gave you after speaking to you.",
+      "examples": [
+        "FGHIJ-KLMNO-PQRST-UVWXY-ZABCD-E"
+      ],
+      "maxLength": 100,
+      "minLength": 20,
+      "type": "string"
+    },
+    "recovery_code": {
+      "description": "One of your recovery codes. Case, spaces and dashes do not matter.",
+      "examples": [
+        "K7MQ2-WXP4R"
+      ],
+      "maxLength": 40,
+      "minLength": 10,
+      "type": "string"
+    }
+  },
+  "required": [
+    "recovery_code",
+    "confirmation_code"
+  ],
+  "title": "AccountRecoveryRequest",
+  "type": "object"
+}

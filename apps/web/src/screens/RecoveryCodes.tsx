@@ -5,7 +5,7 @@ import { Icon } from "../ui";
 // RecoveryCodes shows a Super admin's ten printed recovery codes, once (open question 36, FR-ADM-09).
 // They live only in this page's memory: never in storage, the address bar or a log (SEC-15). The
 // person confirms they kept them before going on.
-export function RecoveryCodes({ codes, onDone, doneLabel }: { codes: string[]; onDone: () => void; doneLabel: string }) {
+export function RecoveryCodes({ codes, onDone, doneLabel, lead }: { codes: string[]; onDone: () => void; doneLabel: string; lead?: string }) {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const id = useId();
@@ -24,8 +24,7 @@ export function RecoveryCodes({ codes, onDone, doneLabel }: { codes: string[]; o
           <Icon of={KeyRound} size={20} /> Your recovery codes
         </h2>
         <p className="fy-secondary">
-          If you lose your sign-in, one of these codes and the other Super admin's confirmation give you your access back. Each
-          works once.
+          {lead ?? "If you lose your sign-in, one of these codes and the other Super admin's confirmation give you your access back. Each works once."}
         </p>
       </div>
       <div className="fy-banner fy-banner--warning">

@@ -59,6 +59,9 @@ type Principal struct {
 	// SessionHash is the SHA-256 of a first-party session's token: the passkey ceremonies bind their challenges to
 	// it. Set only by the session authenticator; nil for a dev token or an OAuth token.
 	SessionHash []byte
+	// CoolingOffUntil is when the cooling-off after the user's account recovery ends; zero when there is none (SEC-35).
+	// Until then the API holds the operations whose policy says so.
+	CoolingOffUntil time.Time
 }
 
 // StepUpWindow is how recent a step-up must be for an operation that needs one.

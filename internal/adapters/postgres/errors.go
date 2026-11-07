@@ -156,6 +156,11 @@ var fyCodes = map[string]string{
 	"FY271": storage.CodeIdentity,       // a sign-in linked already, or the last or current one removed (000239)
 	"FY272": storage.CodeSignInMethod,   // a provider's switch that leaves a Super admin no way in, or a bad domain (000240)
 	"FY273": storage.CodeVersion,        // a provider's switches changed since they were read (000240)
+	"FY275": storage.CodeRecovery,       // recovery codes made without a recent second factor (000242)
+	"FY276": storage.CodeRecovery,       // a confirmation of one's own recovery, or by someone cooling off (000242)
+	"FY277": storage.CodeRecovery,       // a recovery code or confirmation wrong, used or expired (000242)
+	"FY278": storage.CodeCoolingOff,     // a sign-in linked during the cooling-off after a recovery (000242)
+	"FY279": storage.CodeRecovery,       // an account recovery changed (000242)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
