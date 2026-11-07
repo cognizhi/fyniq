@@ -111,4 +111,12 @@ func TestASAFEConvertsAtAPricedRound(t *testing.T) {
 	if _, err := Convert(g3, []Converting{safe(FormPostMoneySAFE, "2500000.00", "2500000", "")}, on); err == nil {
 		t.Error("SAFEs that convert into the whole company")
 	}
+	seven := safe(FormMFNSAFE, "30000.00", "", "")
+	seven.Instrument.PriceDecimals = 7
+	if _, err := Convert(g3, []Converting{seven}, on); err == nil {
+		t.Error("a precision of 7 decimals")
+	}
+	if len(priceExponents) != MaxPriceDecimals+1 {
+		t.Errorf("%d exponents for 0 to %d decimals", len(priceExponents), MaxPriceDecimals)
+	}
 }
