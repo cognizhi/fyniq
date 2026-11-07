@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, Settings, and signing out
 summary: What Home shows (pulse card, tiles, charts, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:1a76cf4fcdee10b7cc0abf077ec0e20a588d20dd6973c06c41887a16e8328f45
+  - docs/user-guide/home.md sha256:21a488205c93b75533caaa8c86d758a2152254b05c545894c23068d8783d6822
 data_class: general
 taint: trusted
 status: draft
@@ -13,6 +13,8 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-06
 aliases:
+  - copy amounts to excel
+  - paste an amount
   - command palette
   - quick search
   - home page
@@ -69,6 +71,13 @@ aliases:
 - **Appearance** in the header changes theme, high contrast, density and motion: [[preferences.appearance]].
 
 (src: docs/user-guide/home.md#find-anything-with-search) (src: docs/user-guide/home.md#change-how-fyniq-looks)
+
+## Copy and paste amounts
+
+- Amounts copied from a page, a table or a report reach the clipboard as plain numbers for a spreadsheet: −1,234.56 and (1,234.56) become -1234.56, 1,090.00 becomes 1090.00, and the rest of what was copied stays as it was.
+- Pasting into an amount field reads (1,234.56), S$1,234.56, −1,234.56, SGD 1,234.56 or the computer's own number format; the field shows the amount read, such as -1234.56, to check before saving.
+
+(src: docs/user-guide/home.md#copy-and-paste-amounts)
 
 ## Settings
 

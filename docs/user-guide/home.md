@@ -74,6 +74,16 @@ Results marked **Expert** belong to Expert mode.
 To find a record, such as an invoice by its number or a document by its amount, choose **Search the
 records for …** at the end of the list: see [Search the records](search.md).
 
+### Copy and paste amounts
+
+Amounts copied from a page, a table or a report reach the clipboard as plain numbers, ready for a
+spreadsheet: −1,234.56 and (1,234.56) become -1234.56, and 1,090.00 becomes 1090.00, with the rest of
+what you copied as it was.
+
+Pasting an amount into an amount field reads it the way you copied it: (1,234.56), S$1,234.56,
+−1,234.56 or SGD 1,234.56, or the way your computer writes numbers. The field shows the amount it
+read, such as -1234.56, so you can check it before you save.
+
 ### Change how Fyniq looks
 
 Select **Appearance** in the header to change the theme, high contrast, density and motion. See

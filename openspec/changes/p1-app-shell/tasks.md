@@ -82,6 +82,12 @@
   Plain and Accountant views.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
+  (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
+  screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
+  amount field (`inputMode="decimal"`) in the forms people copy and the browser's locale (`pastedAmount`), putting the
+  plain decimal in the field before the form is saved; characters only, no JavaScript number. Guide `home.md` (Copy and
+  paste amounts), compiled into `home.overview`. Tests `amount.test.ts`. **Left:** the live-update feed (FR-UX-19), one
+  polite status region for the shell's counts (FR-UX-21), the lint rule against optimistic money (FR-UX-22).)
 
 ## 4. Modes and help
 
