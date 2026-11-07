@@ -1,9 +1,9 @@
 ---
 key: equity.register
 title: Equity register
-mode: expert
-roles: [owner, controller, accountant, auditor, tax_agent, dpo]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+mode: basic
+roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -11,13 +11,58 @@ requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-P
 ## What it is
 
 **Equity** keeps the company's register of who owns it: the shareholders and investors, the
-share classes with their rights, and the equity transactions that move every share. It is an
-Expert feature. The tabs at the top of each page move between **Holders**, **Classes** and
-**Transactions** (with the register of share issues). The cap table, SAFEs and convertible notes,
-the option pool and rounds join these tabs as they arrive.
+share classes with their rights, and the equity transactions that move every share. Its first
+page, **Who owns the company**, is the cap table, in Basic and Expert mode. The tabs at the top of
+each page move between **Cap table**, **Holders**, **Classes** and **Transactions** (with the
+register of share issues), which are Expert pages. SAFEs and convertible notes, the option pool and
+rounds join these tabs as they arrive.
 
 Holders and classes post no entry. Share capital changes only through the register of share
 issues, the opening balances, and a conversion between classes on different accounts.
+
+## The cap table
+
+**Equity › Cap table**, **Who owns the company**, shows who owns what on a day. It is computed
+from the equity register: from the shares issued before the books start, and from each equity
+transaction on the day ACRA's register of members shows it. No one types a figure into it, and
+it cannot be edited. To change a holding, draft an equity transaction.
+
+- **As at** picks the day; left empty, it is today.
+- **Ownership** shows each holder's part of every share issued, as a bar with a legend, or as a
+  table with **Table**. Each percentage is computed exactly and shown to 2 decimals, so they do
+  not always add up to 100.00.
+- **My holding** shows the shares of the shareholder you sign in as, and their percentage. A
+  director or shareholder is linked to the person who signs in as them on **Directors' accounts**.
+- **Latest round** shows the most recent issue of shares for cash.
+- A note lists the transactions that are approved and wait for ACRA. Their shares count from
+  the day ACRA registers them, not before.
+
+In Basic mode the table lists each shareholder, their type of share, their shares and what they
+own. In Expert mode the table **By holder and class** shows each holder's shares in each class:
+issued, the percentage of every share issued, the percentage of every vote, and fully diluted.
+Fully diluted is the same as issued until SAFEs, notes or an option pool are recorded. **Votes
+assumed** on a line means its class is not recorded yet, so its shares count one vote each until
+you record the class and its rights.
+
+A Board viewer sees only their own holding on this page, never the other holders.
+
+## Compare two days
+
+In Expert mode, **Compare with** takes a second day. **Since** then shows how many shares were
+issued on each day, and each holder's percentage then and now. A holder who held nothing then
+shows 0.00%.
+
+## See where a figure comes from
+
+In Expert mode, select a holding's shares in **By holder and class**. A window lists the
+movements they come from, oldest first: each equity transaction, which you open to see its
+evidence, or the register of share issues for shares recorded before the books start.
+
+## Export the cap table
+
+**Excel** and **PDF** download the cap table at the day shown. The workbook has a sheet of every
+holding and a sheet of every holder, each with a total; the PDF is the cap table to print. Each
+export is recorded in the audit trail with its day, its format and its hash.
 
 ## Holders
 
@@ -158,6 +203,7 @@ a director's balance add their shares when they take effect.
 | The chart has no share application monies account (EQUITY-09) | Add 2040 Share application monies to the chart of accounts |
 | A step its transaction does not take, or dated after today (EQUITY-10) | Choose one of the steps shown, on the day it happened |
 | The transaction moves your own shares, so another person approves it | Ask another Owner or the Controller |
+| The render service did not make the PDF (REPORT-08) | Try again in a moment, or export to Excel |
 
 ## Related
 

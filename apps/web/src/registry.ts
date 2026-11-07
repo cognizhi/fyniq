@@ -122,6 +122,7 @@ export const routes = [
   // a founder's own account, Money I put in, is Basic.
   { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
   { kind: "route", id: "director-settlement", path: "/accounting/directors/$contactId/settle", mode: "expert", signedIn: true, help: "accounting.director-settlement", guide: "equity.director-accounts#settle-a-balance" },
+  { kind: "route", id: "cap-table", path: "/equity", mode: "basic", signedIn: true, help: "equity.cap-table", guide: "equity.register#the-cap-table" },
   { kind: "route", id: "share-issues", path: "/equity/transactions", mode: "expert", signedIn: true, help: "equity.transactions", guide: "equity.register#equity-transactions" },
   { kind: "route", id: "equity-transaction-new", path: "/equity/transactions/new", mode: "expert", signedIn: true, help: "equity-transaction.draft", guide: "equity.register#draft-a-transaction" },
   { kind: "route", id: "equity-transaction", path: "/equity/transactions/$transactionId", mode: "expert", signedIn: true, help: "equity.transaction", guide: "equity.register#make-it-effective" },
@@ -302,6 +303,9 @@ export const actions = [
   { kind: "action", id: "director-settlement.effective", mode: "expert", help: "director-settlement.effective", guide: "equity.director-accounts#convert-a-balance-to-shares" },
   { kind: "action", id: "director-settlement.acra-step", mode: "expert", help: "director-settlement.acra-step", guide: "equity.director-accounts#convert-a-balance-to-shares" },
   { kind: "action", id: "share-issues.record-before-books", mode: "expert", help: "share-issues.record-before-books", guide: "equity.register#the-register-of-share-issues" },
+  { kind: "action", id: "cap-table.export", mode: "basic", help: "cap-table.export", guide: "equity.register#export-the-cap-table" },
+  { kind: "action", id: "cap-table.compare", mode: "expert", help: "cap-table.compare", guide: "equity.register#compare-two-days" },
+  { kind: "action", id: "cap-table.drill-down", mode: "expert", help: "cap-table.by-class", guide: "equity.register#see-where-a-figure-comes-from" },
   { kind: "action", id: "equity-transaction.draft", mode: "expert", help: "equity-transaction.draft", guide: "equity.register#draft-a-transaction" },
   { kind: "action", id: "equity-transaction.ask", mode: "expert", help: "equity-transaction.ask", guide: "equity.register#draft-a-transaction" },
   { kind: "action", id: "equity-transaction.attach-evidence", mode: "expert", help: "equity-transaction.attach-evidence", guide: "equity.register#draft-a-transaction" },
@@ -510,7 +514,7 @@ export const nav = [
   // Reports show to the roles that read every account (Appendix D "Reports, dashboards", V without a qualifier).
   { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
-  { kind: "nav", id: "nav.equity", route: "/equity/holders", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "expert", help: "nav.equity", guide: "equity.register" },
+  { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 
