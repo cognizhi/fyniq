@@ -1266,6 +1266,7 @@ type FyniqNotification struct {
 	CreatedAt      time.Time
 	ReadAt         *time.Time
 	ArchivedAt     *time.Time
+	WithdrawnAt    *time.Time
 }
 
 type FyniqNotificationDigest struct {

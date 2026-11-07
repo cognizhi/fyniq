@@ -25,13 +25,13 @@ UPDATE fyniq.notification SET email_message_id = sqlc.arg(message) WHERE id = sq
 
 -- name: GetNotification :one
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
 WHERE n.id = sqlc.arg(id);
 
 -- name: Notifications :many
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
 WHERE n.user_id = sqlc.arg(user_id)
   AND (sqlc.arg(archived)::boolean = (n.archived_at IS NOT NULL))
@@ -58,11 +58,15 @@ UPDATE fyniq.notification SET read_at = sqlc.arg(at) WHERE user_id = sqlc.arg(us
 
 -- name: HeldNotifications :many
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
-WHERE n.email = sqlc.arg(cadence) AND n.email_message_id IS NULL AND n.digest_id IS NULL
+WHERE n.email = sqlc.arg(cadence) AND n.email_message_id IS NULL AND n.digest_id IS NULL AND n.withdrawn_at IS NULL
 ORDER BY n.id
 LIMIT 5000;
+
+-- name: WithdrawNotifications :execrows
+UPDATE fyniq.notification SET withdrawn_at = sqlc.arg(at)
+WHERE id = ANY(sqlc.arg(ids)::uuid[]) AND withdrawn_at IS NULL AND email_message_id IS NULL AND digest_id IS NULL;
 
 -- name: InsertNotificationDigest :one
 INSERT INTO fyniq.notification_digest (user_id, cadence, email_message_id, sent_at)

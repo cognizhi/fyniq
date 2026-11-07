@@ -979,6 +979,7 @@ notification | digest_id | uuid | null |
 notification | created_at | timestamp with time zone | not null | 
 notification | read_at | timestamp with time zone | null | 
 notification | archived_at | timestamp with time zone | null | 
+notification | withdrawn_at | timestamp with time zone | null | 
 notification_digest | organisation_id | uuid | not null | current_org()
 notification_digest | id | uuid | not null | uuidv7()
 notification_digest | user_id | uuid | not null | 
@@ -4773,7 +4774,7 @@ money_account_guard() → trigger | security invoker | v | search_path=pg_catalo
 money_account_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8171a26dc6379c626b612b8db542d1b9
 notification_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f2b969415ae5bd9d1ebfa65933ad19e
 notification_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d9d3ebc8e803ce5555a7d2b708d60ba
-notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf1b2a8e993363d09a3a57e923c66929
+notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a87982bcfd592985b20b311ab99d6c53
 opening_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2ce7b1e284de3ad59fe6cb84f6a4efd
 organisation_connector_route(p_id uuid) → TABLE(organisation_id uuid, connector text, state text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5f3c5bc22d3b807ee390beb8be8df823
 organisation_connector_routed() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e2531e8042725c748ea5b1b3618ba342

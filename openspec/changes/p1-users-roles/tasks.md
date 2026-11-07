@@ -88,7 +88,16 @@
 ## 3. Clients, outputs and administration
 
 - [ ] 3.1 OAuth clients with class, owner, expiry and scopes; `private_key_jwt` for confidential clients, PKCE for public ones, exact redirect URIs. Test `// req: SEC-07`
-- [ ] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
+- [x] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
+  (6 Nov 2026, PRD-001 rev 0.186, for the outputs that exist: a notification by row (`notify.Sees`) shows, counts and
+  is emailed only while its person's roles hold the right; the list pages past what they no longer see, a read by ID
+  answers not found, and the digest withdraws held email instead of sending it (migration 000238:
+  `notification.withdrawn_at`, once, never of sent email, the worker's alone; FY188). Exports, files, evidence and
+  reports are checked at each request; every answer is `Cache-Control: no-store` and no report result is kept; sessions
+  read the roles at each request and consented tokens are revoked within 60 seconds (`TestTokenLifecycle`). Tests
+  `TestEveryOutputFollowsTheRolesHeldNow` (G4-064), `TestHeldEmailFollowsTheRole`, `TestAPersonSeesWhatTheirRolesHoldNow`.
+  Server-sent events (FR-UX-19), scheduled deliveries, the reader-filtered knowledge-base index (AI-54) and AI traces
+  apply it as they arrive.)
 - [ ] 3.3 Administrative changes go through the approval policy once `p1-approval-engine` lands, and are refused until then. Test `// req: FR-ADM-04`
   (20 Oct 2026: role changes are refused once a second member exists (MEM-05), as FM-1 needs; the other
   administrative changes of FR-ADM-04 arrive with their features. Later on 20 Oct 2026, `p1-approval-engine`

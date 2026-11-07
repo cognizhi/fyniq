@@ -72,6 +72,12 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** each receives their own scope's result
 - **AND** no cached result crosses scopes
 
+#### Scenario: A notification by row follows the role (rev 0.186)
+- **GIVEN** a notification sent to the people whose roles hold a right on a row
+- **WHEN** its person no longer holds that right
+- **THEN** it leaves their notification centre and the bell's count
+- **AND** email of it held for a digest or quiet hours is withdrawn and never sent
+
 ### Requirement: SEC-03 Least privilege for services
 The system SHALL run with least privilege for services, one service identity per service, and no human SHALL have standing production database write access.
 

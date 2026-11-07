@@ -124,7 +124,7 @@ func TestAChangeOfBankDetailsNeedsASecondPerson(t *testing.T) {
 		t.Fatalf("recording a payment while frozen = %d: %s", paid.Status, paid.Raw)
 	}
 	fanOutAll(t, e)
-	for _, who := range []string{weiling, ahkow} {
+	for _, who := range []string{weiling, f.as(f.ahkow)} { // as the founders they are: the notice follows the right to approve it (SEC-34)
 		n := e.call(http.MethodGet, "/v1/notifications", who, nil)
 		if !strings.Contains(n.Raw, `"type":"payee.bank_details"`) {
 			t.Errorf("a founder was not told: %s", n.Raw)

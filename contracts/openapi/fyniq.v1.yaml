@@ -18018,7 +18018,7 @@ components:
       additionalProperties: false
       properties:
         marked:
-          description: How many were unread.
+          description: How many were unread, of those the caller still sees.
           examples:
             - 3
           format: int64
@@ -19020,7 +19020,7 @@ components:
             - eyJhZnRlciI6IjAxOTI4ZjZlIn0
           type: string
         unread:
-          description: "How many of the caller's notifications are unread and not archived: the bell's count."
+          description: "How many of the caller's notifications are unread and not archived, of those they still see: the bell's count."
           examples:
             - 3
           format: int64
@@ -93251,7 +93251,7 @@ paths:
         right: C
   /v1/notifications:
     get:
-      description: "The caller's notifications, newest first, with the bell's unread count (FR-NTF-01): what happened, each with its type, severity, the record it is about and a link; an actionable one links to its Inbox item, where what waits for the caller is. Archived ones only with archived=true. Empty for a caller who is not a person. Read-only; no side effects."
+      description: "The caller's notifications, newest first, with the bell's unread count (FR-NTF-01): what happened, each with its type, severity, the record it is about and a link; an actionable one links to its Inbox item, where what waits for the caller is. Archived ones only with archived=true. One sent to the people whose roles hold a right shows, and counts, only while the caller still holds it (SEC-34); a page may then be short, with next_cursor where the reading stopped. Empty for a caller who is not a person. Read-only; no side effects."
       operationId: listNotifications
       parameters:
         - description: How many items per page, up to 500.

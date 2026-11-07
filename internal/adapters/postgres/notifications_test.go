@@ -15,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/notify"
@@ -330,5 +331,89 @@ func TestDeadWorkReachesThoseWhoLookAfterTheOrganisation(t *testing.T) {
 		if len(ns) != 1 || ns[0].Type != "jobs.failed" || ns[0].Title != "Background work test.fail failed after 2 attempts: the provider answered 503" {
 			t.Fatalf("%s's: %+v", who, ns)
 		}
+	}
+}
+
+// A notification sent to the people whose roles hold a right on a row is emailed only while its person still holds it
+// (SEC-34): an external Accountant's role lapses between the fan-out and the 08:00 digest, so their held notification
+// is withdrawn, never emailed, while the founder named by theirs gets the digest. A withdrawal is recorded once, never
+// of email already sent, and only by the worker.
+// req: SEC-34
+// req: security/identity-and-access A notification by row follows the role (rev 0.186)
+// asvs: V8.3.2
+func TestHeldEmailFollowsTheRole(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Notify follows the role Pte Ltd")
+	sgt := func(d, h int) time.Time { return time.Date(2099, 1, d, h, 0, 0, 0, clock.Singapore) }
+	owner := founder(t, store(t, "fyniq_api"), b.Org, 67, sgt(4, 9))
+	hash := make([]byte, 32)
+	hash[0], hash[1], hash[2] = 7, 68, b.Org[15]
+	ends := sgt(4, 20)
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "External accountant",
+			Roles: []string{"accountant"}, RolesExpireAt: &ends, ExpiresAt: sgt(4, 10), CreatedAt: sgt(4, 9)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	j, err := store(t, "fyniq_api").JoinOrganisation(ctx, storage.NewJoin{CodeHash: hash, DisplayName: "External accountant", Issuer: "urn:fyniq:notify",
+		Subject: uuid.NewString(), Now: sgt(4, 9)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountant := j.UserID
+	verified(t, b.Org, owner, "owner@example.com")
+	verified(t, b.Org, accountant, "accountant@example.com")
+
+	byRow := notify.Audience{Capability: string(authz.Journals), Need: "C"}
+	var row storage.NotificationEvent
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		row, err = notify.Emit(ctx, outbox.Dispatcher{Store: store(t, "fyniq_api"), Queue: local.NewMemory(), Clock: clock.NewFrozen(sgt(4, 10))}, u, b.Org,
+			notify.Event{Type: "period.closed", Title: "December 2098 was closed", Link: "/accounting/periods", Audience: byRow, At: sgt(4, 10)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	fanout(t, b.Org, row, sgt(4, 10))
+	named := emitted(t, b.Org, owner, "period.closed", "December 2098 was closed, as you asked", sgt(4, 10))
+	f := fanout(t, b.Org, named, sgt(4, 10))
+	held := mine(t, b.Org, accountant)
+	if len(held) != 1 || held[0].Email != storage.EmailDaily || held[0].EmailMessageID != nil {
+		t.Fatalf("the Accountant's notification at fan-out, while the role holds: %+v", held)
+	}
+
+	f.Clock = clock.NewFrozen(sgt(5, 8)) // the role ended at 20:00 the day before
+	if n, err := f.Digest(ctx); err != nil || n != 1 {
+		t.Fatalf("the digest: %d sent, %v; want the founder's only", n, err)
+	}
+	var withdrawn *time.Time
+	var digest *uuid.UUID
+	if err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT withdrawn_at, digest_id FROM fyniq.notification WHERE id = $1", held[0].ID).Scan(&withdrawn, &digest)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if withdrawn == nil || !withdrawn.Equal(sgt(5, 8)) || digest != nil {
+		t.Fatalf("the lapsed Accountant's notification: withdrawn %v, digest %v", withdrawn, digest)
+	}
+	if ns := mine(t, b.Org, owner); len(ns) != 1 || ns[0].DigestID == nil {
+		t.Fatalf("the founder's: %+v", ns)
+	}
+	if n, err := f.Digest(ctx); err != nil || n != 0 {
+		t.Fatalf("again: %d sent, %v", n, err)
+	}
+
+	sent := mine(t, b.Org, owner)[0].ID
+	for _, x := range []struct {
+		role, what, stmt string
+		id               uuid.UUID
+		state            string
+	}{
+		{"fyniq_migrator", "withdraw twice", "UPDATE fyniq.notification SET withdrawn_at = now() WHERE id = $1", held[0].ID, "FY188"},
+		{"fyniq_migrator", "withdraw what a digest carried", "UPDATE fyniq.notification SET withdrawn_at = now() WHERE id = $1", sent, "FY188"},
+		{"fyniq_api", "withdraw as the API", "UPDATE fyniq.notification SET withdrawn_at = now() WHERE id = $1", sent, "42501"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.id); return err })
+		wantState(t, x.what, err, x.state, x.state)
 	}
 }

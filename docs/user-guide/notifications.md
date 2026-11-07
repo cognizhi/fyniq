@@ -19,6 +19,9 @@ status: draft
 - Show **Unread**, **All** or **Archived**. **Mark read** and **Mark unread** change one; **Mark all read** marks
   every unread one read; **Archive** moves one to Archived for good.
 - You never hear of something you did yourself.
+- Some notifications go to everyone whose role covers what they are about, such as an approval waiting. If your
+  roles change so that you no longer cover it, it leaves your notifications and the bell's count, and it is not
+  emailed to you. It shows again if the role comes back.
 
 ## Choose how they reach you
 
