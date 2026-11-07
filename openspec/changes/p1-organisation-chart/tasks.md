@@ -21,12 +21,18 @@
   | Accounting date and recorded time | `TestPostedEntriesCarryTheirProvenance` | — |
   | Reports as at a ledger revision | `TestRaceRevisionsAreGapFreeAndAsAtIsStable` | The reports themselves (`p1-reports`) |
   | Valid time and system time for master data | — | Effective-dated settings and account attributes (tasks 2.1, 3.2) |
-- [ ] 1.2 Add what is missing:
+- [x] 1.2 Add what is missing:
   - effective-dated reference data with `WITHOUT OVERLAPS` keys (`btree_gist`);
   - the explicit list of global tables, which application roles may only read;
   - version counters on mutable records.
 
   Attack tests in `internal/adapters/postgres` attempt an overlap, a write to a global table and a stale version
+  (7 Nov 2026: the effective-dated families keep exclusion constraints, the equivalent the data model allows
+  (`period_no_overlap`, `gst_registration_no_overlap`); `TestAttackEffectiveDatedRangesNeverOverlap` tries an overlap as
+  the owner and as the API. The global tables are an explicit list (`globalTables` in `catalogue_test.go`, which checks
+  no application role holds a grant on them) and `TestAttackGlobalTablesAndLedgerInternalsAreReadOnly` writes to them;
+  version counters are kept by the records' guards (`document`, `approval_request`, `evidence`, templates, connectors,
+  banking) and `TestAttackDocumentVersionsAndStatusesCannotBeRewound` tries a stale one.)
 
 ## 2. Organisation settings
 
@@ -54,7 +60,7 @@
   of S$1.00 and 3% in foreign currency, capped at S$50 a document and S$200 a month, accountant to confirm) and the
   capitalisation threshold, as recommended, effective-dated settings (FR-ORG-08); the PRD sets no default for the payment
   terms or the threshold)
-- [ ] 2.3 Feature switches, region and retention, and the recommended defaults with reset and effective dates. Tests `// req: FR-ORG-06`, `// req: FR-ORG-07` and `// req: FR-ORG-08`; changes under FM-1 wait for `p1-approval-engine`
+- [x] 2.3 Feature switches, region and retention, and the recommended defaults with reset and effective dates. Tests `// req: FR-ORG-06`, `// req: FR-ORG-07` and `// req: FR-ORG-08`; changes under FM-1 wait for `p1-approval-engine`
   (20 Oct 2026: migration 000028 adds `fyniq.organisation_setting`, insert-only: a setting's value from a date at the
   key's next version, audited with the value before and after; the value on a day is the latest change in effect then.
   The catalogue (`internal/domain/settings`) holds 16 settings with their recommended values, reasons and guide
@@ -70,6 +76,10 @@
   limit (recommended default 5) and the approval policies, with `p1-approval-engine`; the evidence rules (FR-DOC-06),
   with the evidence work; the capitalisation threshold is read by nothing until the fixed assets (FR-FA-01); the
   screens, with 5.x.)
+  (7 Nov 2026: what was left is built: the FM-1 settings change through the approval engine (object
+  `organisation_setting`), the self-approval threshold is `approvals.self_approval_threshold`, the evidence rules are
+  FR-DOC-06's settings (rev 0.182), the fixed assets read the capitalisation threshold, and Settings › Organisation shows
+  them.)
 - [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
 
 ## 3. Chart of accounts and dimensions

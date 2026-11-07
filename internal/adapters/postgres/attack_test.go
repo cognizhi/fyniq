@@ -929,6 +929,24 @@ func TestAttackGlobalTablesAndLedgerInternalsAreReadOnly(t *testing.T) {
 	}
 }
 
+// Effective-dated reference data never overlaps (p1-organisation-chart 1.2): a period, or a GST registration, whose
+// dates overlap another of the organisation's is refused by the database, whoever writes it: the PRD allows an exclusion
+// constraint as the equivalent of a WITHOUT OVERLAPS key.
+// req: data/data-model Effective-dated reference data
+func TestAttackEffectiveDatedRangesNeverOverlap(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack overlaps Pte Ltd")
+	inOct := "('" + b.Oct.StartsOn.Format("2006-01-02") + "', '" + b.Oct.StartsOn.AddDate(0, 0, 9).Format("2006-01-02") + "')"
+	gst := "INSERT INTO fyniq.gst_registration (registered_from, gst_number, recorded_at) VALUES ('2030-01-01', 'M90000001X', now()), " +
+		"('2030-06-01', 'M90000002X', now())"
+	for _, role := range []string{"fyniq_migrator", "fyniq_api"} {
+		for _, stmt := range []string{"INSERT INTO fyniq.period (starts_on, ends_on) VALUES " + inOct, gst} {
+			err := asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
+			wantState(t, role+": "+stmt, err, "23P01")
+		}
+	}
+}
+
 // req: NFR-PORT-07
 func TestAttackAFailedWriteMidCommandLeavesNoPartialRows(t *testing.T) {
 	ctx := context.Background()
