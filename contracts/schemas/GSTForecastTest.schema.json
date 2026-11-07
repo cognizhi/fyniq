@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apply_by": {
+      "description": "When exceeded: 30 days after the forecast's day (sg-deadlines).",
+      "examples": [
+        "2026-12-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "exceeded": {
+      "description": "true when its value is more than the threshold.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "forecast": {
+      "$ref": "GSTForecastView.schema.json",
+      "description": "The latest recorded forecast whose 12 months hold today."
+    },
+    "registered_from": {
+      "description": "When exceeded: 2 months from the forecast's day (sg-deadlines).",
+      "examples": [
+        "2027-01-20"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "forecast",
+    "exceeded"
+  ],
+  "title": "GSTForecastTest",
+  "type": "object"
+}

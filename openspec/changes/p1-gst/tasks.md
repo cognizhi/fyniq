@@ -43,7 +43,7 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 3. The registration monitor (slice 2)
 
-- [ ] 3.1 `gst.TaxableSupplies` (D3):
+- [x] 3.1 `gst.TaxableSupplies` (D3):
   - invoices, credit notes and bank transactions;
   - Box 1 and Box 2 codes on revenue accounts, at base amounts;
   - reversals on their own day;
@@ -59,22 +59,30 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
   - a bank receipt coded SR.
 
   `// req: FR-TAX-05`, `// req: QA-RPT-01`
-- [ ] 3.2 The `gst_forecast` document (D4):
+- [x] 3.2 The `gst_forecast` document (D4):
   - migration with the document type, FY298 guard, NOT VALID then validated;
   - draft, replace and record with evidence (GST-31 without it).
 
   Attack test: keys, amount and scale whoever writes. Audit events `document.created`, `document.revised` and
   `document.posted` asserted. `// req: FR-TAX-05`, `// req: AUD-01`
-- [ ] 3.3 `gst.Monitor` (D4) and the setting `gst.threshold_warning_percent`. Tests:
+- [x] 3.3 `gst.Monitor` (D4) and the setting `gst.threshold_warning_percent`. Tests:
   - each status: below, near at exactly 80%, liable by last year, liable by a forecast, registered, and Not assessed
     before the threshold's day;
   - the dates to apply by and to start, by D2.
 
   `// req: FR-TAX-05`
-- [ ] 3.4 The API (D8): `getGSTMonitor`, the forecast operations and their evidence, under GST returns, with
+- [x] 3.4 The API (D8): `getGSTMonitor`, the forecast operations and their evidence, under GST returns, with
   authorisation-matrix rows; `make openapi`; the error codes GST-30 and GST-31. `// req: FR-TAX-05`, `// req: QA-SEC-03`
-- [ ] 3.5 C.1 #37 `gst.registration-threshold` (D9), with a fixture for each status, and the trigger on documents and the
+- [x] 3.5 C.1 #37 `gst.registration-threshold` (D9), with a fixture for each status, and the trigger on documents and the
   setting. `// req: C.1 #37`, `// req: QA-RPT-02`
+  (7 Nov 2026, PRD-001 rev 0.210: built in the new package `internal/domain/gstmonitor`, since `gst` is imported by the
+  documents it reads; `gst.PackOn` finds the sg-deadlines version as `gst.Version` finds sg-gst. Both tests read the
+  threshold in force on the day they run, as the pack's conditions say, so 2025's test is assessed in 2026. Tests
+  `TestTheGSTRegistrationMonitorThroughTheAPI` (every figure worked by hand: SR, ZR, a USD invoice at its rate, ES and OS
+  left out, an asset account left out, a void, a credit note, a bank receipt; below, near at 80.5%, liable by a forecast
+  and by 2026, registered, not assessed before 7 Nov 2026), `TestTheWarningComparesExactAmounts`,
+  `TestAForecastKeepsItsRules`, `TestTheForecastInForceIsTheLatestRecorded`, `TestAttackGSTForecastsKeepTheirRules`
+  (which found a JSON number passing for the amount), and the matrix rows.)
 
 ## 4. The statutory calendar (slice 3)
 

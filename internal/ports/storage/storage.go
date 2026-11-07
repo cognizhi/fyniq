@@ -656,6 +656,10 @@ const (
 	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
 	// supersedes it.
 	DocumentAcraExtract DocumentType = "acra_extract"
+	// DocumentGSTForecast is a forecast of the taxable supplies of the 12 months from a day (FR-TAX-05, p1-gst design D4):
+	// its value in Singapore dollars and its basis, recorded with its evidence (signed contracts or confirmed orders, as
+	// IRAS asks) by whoever prepares GST returns; the latest recorded is the prospective test's.
+	DocumentGSTForecast DocumentType = "gst_forecast"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -917,6 +921,9 @@ const (
 	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
 	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
 	CodeAcraExtract = "STORAGE-SHARE-11"
+	// CodeGSTForecast: a GST forecast keeps its own keys, its day and a value in Singapore dollars above zero with cents,
+	// and a basis of at most 1,000 characters (FY298).
+	CodeGSTForecast = "STORAGE-GST-01"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

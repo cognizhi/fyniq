@@ -125,9 +125,24 @@ func Version(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Vers
 			}
 		}
 	}
+	v, ok, err := PackOn(ctx, u, "sg-gst", on)
+	if err != nil || ok {
+		return v, err
+	}
+	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", on.Format(time.DateOnly))
+}
+
+// PackOn is the version of the pack name in force on a day among the organisation's active versions, else among the
+// versions this release carries (ENG-31), and false when neither holds one then: the GST version a document is read
+// with, or the sg-deadlines version a deadline is (FR-TAX-07).
+func PackOn(ctx context.Context, u storage.UnitOfWork, name string, on time.Time) (pack.Version, bool, error) {
+	all, err := releasePacks()
+	if err != nil {
+		return pack.Version{}, false, err
+	}
 	acts, err := u.Packs().Activations(ctx)
 	if err != nil {
-		return pack.Version{}, err
+		return pack.Version{}, false, err
 	}
 	var active []pack.Version
 	for _, v := range all {
@@ -135,13 +150,11 @@ func Version(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Vers
 			active = append(active, v)
 		}
 	}
-	if v, ok := pack.At(active, "sg-gst", on); ok {
-		return v, nil
+	if v, ok := pack.At(active, name, on); ok {
+		return v, true, nil
 	}
-	if v, ok := pack.At(all, "sg-gst", on); ok {
-		return v, nil
-	}
-	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", on.Format(time.DateOnly))
+	v, ok := pack.At(all, name, on)
+	return v, ok, nil
 }
 
 // Codes are the GST codes a document dated on a day is read with: the sg-gst version in force then, its standard rate,

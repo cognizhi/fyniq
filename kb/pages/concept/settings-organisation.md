@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings: GST registration, numbering, features, terms, GST, tolerances, banking, claims, thresholds, disposals, email-in, retention
+summary: Company-wide settings: GST registration and monitor, numbering, features, terms, GST, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:bc6d8d7be21849735a6578d3cc7281eedb05f6b665089ded905c312f7ccb695e
+  - docs/user-guide/organisation-settings.md sha256:9000893c876add788791724ecaf2a6f5cd06bd2c2062b734af70d1649f58a97e
 data_class: general
 taint: trusted
 status: draft
@@ -15,6 +15,8 @@ compiled_at: 2026-11-07
 aliases:
   - GST registration
   - GST registration number
+  - GST registration threshold
+  - must I register for GST
   - deregistered
   - document numbering
   - invoice number prefix
@@ -74,6 +76,14 @@ aliases:
 - **Record a registration** takes the GST registration number and start date from IRAS's notice of registration, and how often returns are filed (quarterly unless IRAS set monthly; quarters from January, April, July and October unless the notice says otherwise); **Change** corrects one or records the day it ends. Two registrations never cover the same day.
 
 (src: docs/user-guide/organisation-settings.md#gst-registration)
+
+## GST registration monitor
+
+- While the company is not registered, **Compliance › GST** tests whether it must register: IRAS asks a business to register when its taxable supplies are more than $1 million in a calendar year, or are expected to be more than $1 million in the next 12 months.
+- **Warn when the year's taxable supplies reach** sets how early the monitor warns on Checks, before either test is met: 80% of the threshold unless changed, from 50 to 99.
+- Taxable supplies are the standard-rated and zero-rated sales; exempt and out-of-scope sales, and sales of the company's own assets, are left out.
+
+(src: docs/user-guide/organisation-settings.md#gst-registration-monitor)
 
 ## Document numbering
 

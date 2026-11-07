@@ -425,3 +425,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (reconcile the register to ACRA's business profile)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (a holder's investments)
+
+## [2026-11-07] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the GST registration monitor and its warning setting, p1-gst slice 2)

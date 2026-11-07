@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "description": "What the forecast rests on, such as the signed contracts; attach them as evidence.",
+      "examples": [
+        "Signed contracts with Lumen Health and Acme Analytics"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "forecast_on": {
+      "description": "The day the forecast was made: its 12 months run from it. Today or earlier.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "value": {
+      "$ref": "Money.schema.json",
+      "description": "The taxable supplies expected in the 12 months, in Singapore dollars: standard-rated and zero-rated sales, without exempt or out-of-scope sales or sales of the company's own assets."
+    }
+  },
+  "required": [
+    "forecast_on",
+    "value",
+    "basis"
+  ],
+  "title": "GSTForecastDraft",
+  "type": "object"
+}
