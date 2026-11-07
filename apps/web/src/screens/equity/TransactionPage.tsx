@@ -15,7 +15,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { EquityTabs } from "./Holders";
 import { bodyOf, TransactionFields, type TransactionDraft } from "./TransactionForm";
-import { drafters, kindWords, recorders, sharesText, StatusChip, stepsOf, transactionOf, type EquityTransaction } from "./transactionWords";
+import { drafters, kindWords, recorders, reviewText, sharesText, StatusChip, stepsOf, transactionOf, type EquityTransaction } from "./transactionWords";
 
 // TransactionPage is Equity › Transactions › a transaction (docs/design/screens EquityRegister's steps and
 // EquityTransaction; FR-EQ-17, FR-EQ-09, FR-DOC-06): what was drafted, its evidence and approval, its ACRA steps with
@@ -125,7 +125,7 @@ export function TransactionPage() {
           <Details t={t} />
           {t.details.review && (
             <p className="fy-card fy-card--pad fy-small" role="note">
-              <Icon of={TriangleAlert} /> The accountant completes it: {t.details.review}. Check the shares and the conversion price against the terms before asking.
+              <Icon of={TriangleAlert} /> {reviewText(t.details.review)} Check the shares and the conversion price against the terms before asking.
             </p>
           )}
           {t.checks.length > 0 && (

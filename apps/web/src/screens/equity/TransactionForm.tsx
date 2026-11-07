@@ -6,7 +6,7 @@ import { api } from "../../api/client";
 import { Icon } from "../../ui";
 import { listAccounts } from "../accounting/data";
 import { listHolders } from "./Holders";
-import { kindWords, listTransactions, type TransactionKind } from "./transactionWords";
+import { kindWords, listTransactions, reviewText, type TransactionKind } from "./transactionWords";
 
 export type TransactionDraft = components["schemas"]["EquityTransactionDraft"];
 type ShareClass = components["schemas"]["ShareClassView"];
@@ -194,7 +194,7 @@ export function TransactionFields({ form, set, kindFixed }: { form: TransactionD
         <>
           {form.review && (
             <p className="fy-field--full fy-small" role="note">
-              <Icon of={TriangleAlert} /> The accountant completes it: {form.review}
+              <Icon of={TriangleAlert} /> {reviewText(form.review)}
             </p>
           )}
           <p className="fy-field--full fy-small fy-secondary">The holder and the share class are the instrument's.</p>

@@ -42,6 +42,12 @@ export const stepsOf: Record<TransactionKind, { kind: string; label: string }[]>
   instrument_conversion: issueSteps,
 };
 
+// reviewText is a conversion's review as a sentence: the API gives it as "the accountant completes it: …".
+export function reviewText(review: string): string {
+  const s = review.trim();
+  return s.charAt(0).toUpperCase() + s.slice(1) + (s.endsWith(".") ? "" : ".");
+}
+
 export async function listTransactions(): Promise<EquityTransaction[]> {
   const { data, error } = await api.GET("/v1/equity-transactions", { params: { query: { page_size: 200 } } });
   if (error) throw error;

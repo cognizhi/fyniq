@@ -134,7 +134,7 @@ describe("the equity transactions", () => {
   it("drafts the SAFE conversions at an approved round, and shows what the accountant completes; axe finds nothing", async () => {
     const conversion = { ...base, id: "eq-3", status: "draft" as const, version: 1, evidence: 0,
       details: { kind: "instrument_conversion" as const, instrument_id: "in-1", round_id: "eq-1", holder_id: "c-hatch", class_account_id: "acc-3010",
-        shares: "52083", price: "2.40", review: "it follows no template; a discount" },
+        shares: "52083", price: "2.40", review: "the accountant completes it: it follows no template, a discount" },
       parties: [{ contact_id: "c-hatch", name: "Hatch Capital Pte. Ltd.", role: "subscriber" as const }], amount: sgd("124999.20") };
     const seen = answer({
       "GET /v1/equity-transactions/eq-1": { status: 200, body: issue, headers: { ETag: '"2-posted"' } },
@@ -153,7 +153,7 @@ describe("the equity transactions", () => {
     cleanup();
     renderPage(TransactionPage, { path: "/equity/transactions/eq-3", route: "/equity/transactions/$transactionId", session: accountant });
     expect(await screen.findByRole("heading", { name: "SAFE or note conversion" })).toBeTruthy();
-    expect(screen.getByText(/The accountant completes it: it follows no template; a discount\./)).toBeTruthy();
+    expect(screen.getByText(/The accountant completes it: it follows no template, a discount\. Check the shares/)).toBeTruthy();
     expect(screen.getByText("Conversion price per share")).toBeTruthy();
     expect(screen.getByText("124,999.20 SGD")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Draft the SAFE conversions" })).toBeNull();
