@@ -10,6 +10,7 @@ import { kindWords, listTransactions, reviewText, type TransactionKind } from ".
 
 export type TransactionDraft = components["schemas"]["EquityTransactionDraft"];
 type ShareClass = components["schemas"]["ShareClassView"];
+type Grant = components["schemas"]["OptionGrantView"];
 
 export const blankDraft: TransactionDraft = { kind: "issue_cash" };
 
@@ -17,6 +18,13 @@ async function recordedClasses(): Promise<ShareClass[]> {
   const { data, error } = await api.GET("/v1/share-classes", { params: { query: { page_size: 200 } } });
   if (error) throw error;
   return (data.items ?? []).filter((c) => c.status === "recorded");
+}
+
+// exercisableGrants are the recorded grants with options vested and not exercised: what an exercise may take.
+async function exercisableGrants(): Promise<Grant[]> {
+  const { data, error } = await api.GET("/v1/option-grants", { params: { query: { page_size: 200 } } });
+  if (error) throw error;
+  return (data.items ?? []).filter((g) => g.status === "recorded" && g.exercisable !== "0");
 }
 
 // bodyOf is a draft as the API takes it: a field left empty is left out, so an ID is never sent blank.
@@ -45,6 +53,8 @@ export function previewOf(d: TransactionDraft, codeOf: (id?: string) => string):
       return "Undoes every holding movement and entry of the transaction it names, on its effective date.";
     case "instrument_conversion":
       return `When ACRA's register shows it, it posts Dr 2700 Convertible instruments, naming the instrument · Cr ${codeOf(d.class_account_id) || "the class"}, with shares × the conversion price. What is left of the instrument's money stays on 2700 until it is settled under its terms.`;
+    case "exercise":
+      return "When ACRA's register shows it, it posts Dr 2040 Share application monies, naming the holder · Cr the grant's class, with shares × the exercise price. It waits until the holder's money is in share application monies, and takes at most the options vested and not exercised on that day.";
   }
 }
 
@@ -55,6 +65,8 @@ export function TransactionFields({ form, set, kindFixed }: { form: TransactionD
   const chart = useQuery({ queryKey: ["accounts", "all"], queryFn: listAccounts });
   const classes = useQuery({ queryKey: ["share-classes", "recorded"], queryFn: recordedClasses });
   const txs = useQuery({ queryKey: ["equity-transactions"], queryFn: listTransactions, enabled: form.kind === "reversal" });
+  const grants = useQuery({ queryKey: ["option-grants", "exercisable"], queryFn: exercisableGrants, enabled: form.kind === "exercise" });
+  const chosen = (grants.data ?? []).find((g) => g.id === form.grant_id);
   const capital = (chart.data ?? []).filter((a) => a.role === "share-capital" && a.active && !a.group);
   const field = (k: keyof TransactionDraft) => (e: { target: { value: string } }) => set({ ...form, [k]: e.target.value });
   const holderSelect = (k: "holder_id" | "seller_id" | "buyer_id", label: string, who: (h: { shareholder: boolean; investor: boolean; director: boolean }) => boolean) => (
@@ -188,6 +200,29 @@ export function TransactionFields({ form, set, kindFixed }: { form: TransactionD
             </select>
           </div>
           <div className="fy-field--full">{text("reason", "Why", "Such as: ACRA's register of members shows 50,000 shares; attach the extract")}</div>
+        </>
+      )}
+      {form.kind === "exercise" && (
+        <>
+          <div className="fy-field fy-field--full">
+            <label className="fy-label" htmlFor={`${id}-grant`}>
+              Grant of options
+            </label>
+            <select className="fy-select" id={`${id}-grant`} value={form.grant_id ?? ""} onChange={field("grant_id")}
+              aria-describedby={`${id}-grant-help`}>
+              <option value="">Choose a recorded grant</option>
+              {(grants.data ?? []).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.holder_name}, granted {g.granted_on}: {Number(g.exercisable).toLocaleString("en-SG")} exercisable at {g.exercise_price} {g.currency}
+                </option>
+              ))}
+            </select>
+            <span className="fy-help" id={`${id}-grant-help`}>
+              The holder, the share class and the price per share are the grant's.
+            </span>
+          </div>
+          {text("shares", "Shares", chosen ? `At most the ${Number(chosen.exercisable).toLocaleString("en-SG")} vested and not exercised` : "A whole number")}
+          <div className="fy-field--full">{text("resolution_refs", "Resolutions", "The board resolution allotting the shares, by reference")}</div>
         </>
       )}
       {form.kind === "instrument_conversion" && (

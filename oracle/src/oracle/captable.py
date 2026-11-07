@@ -26,6 +26,7 @@ REGISTER = "register/holdings"
 POOLS = "register/pools"
 GRANTS = "register/grants"
 EVENTS = "register/grant-events"
+EXERCISES = "register/grant-exercises"
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,7 @@ class Grant:
     cliff: int = 0  # months before anything vests
     months: int = 0  # months it vests over; 0 vests it all on its day
     id: str = ""
+    price: Decimal = Decimal(0)  # the exercise price per share
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,34 @@ class Event:
 
 def events(books: dict[str, Any]) -> list[Event]:
     return books.setdefault(EVENTS, [])
+
+
+@dataclass(frozen=True)
+class Exercise:
+    """Options of a grant exercised into shares from a day."""
+
+    grant: str
+    number: int
+    day: date
+
+
+def exercises(books: dict[str, Any]) -> list[Exercise]:
+    return books.setdefault(EXERCISES, [])
+
+
+def exercise_fits(grant: Grant, taken: list[Event], done: list[Exercise], number: int, day: date) -> bool:
+    """Whether ``number`` more options of ``grant`` exercised on ``day`` fit: on it and each later day an event or
+    exercise of the grant is dated, those exercised by then are at most those vested then, and at most the grant's
+    options less what its events took by then (README, "The option pool and grants")."""
+    mine_taken = [e for e in taken if e.grant == grant.id]
+    mine_done = [x for x in done if x.grant == grant.id]
+    days = {day} | {e.day for e in mine_taken if e.day > day} | {x.day for x in mine_done if x.day > day}
+    for d in sorted(days):
+        exercised = sum(x.number for x in mine_done if x.day <= d) + number
+        kept = grant.number - sum(e.number for e in mine_taken if e.day <= d)
+        if exercised > min(vested(grant, d), kept):
+            return False
+    return True
 
 
 def _months(since: date, day: date) -> int:
@@ -186,6 +216,10 @@ def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any
         g = by_id[e.grant]
         if e.day <= day:
             options[(g.holder, g.share_class)] -= e.number
+    for x in exercises(books):
+        g = by_id[x.grant]
+        if x.day <= day:
+            options[(g.holder, g.share_class)] -= x.number
     lines = []
     for key in sorted(held.keys() | options.keys()):
         shares, optioned = held.get(key, 0), options.get(key, 0)
@@ -196,8 +230,8 @@ def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any
         votes = money.EXACT.multiply(issued, scenario.accounts[share_class].votes_per_share)
         lines.append((holder, share_class, issued, votes, Decimal(shares + optioned)))
     pool = pool_on(pools(books), day)
-    all_options = granted(grants(books), day, events(books))
-    unallocated = Decimal((pool.size if pool else 0) - all_options)
+    all_options = granted(grants(books), day, events(books)) - sum(x.number for x in exercises(books) if x.day <= day)
+    unallocated = Decimal((pool.size if pool else 0) - granted(grants(books), day, events(books)))
     totals = (money.total([ln[2] for ln in lines]), money.total([ln[3] for ln in lines]),
               money.EXACT.add(money.total([ln[4] for ln in lines]), unallocated))
     by_holder: dict[str, list[Decimal]] = {}

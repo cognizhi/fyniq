@@ -179,7 +179,8 @@ EQUITY_REASONS = {"equity-issue-unpaid": "unpaid", "equity-transfer-too-many": "
                   "equity-safe-money-unnamed": "not-a-recorded-safe", "equity-safe-conversion-unfunded": "money-not-held",
                   # the option pool (README, "The option pool and grants")
                   "equity-grant-beyond": "pool-short", "equity-grant-no-pool": "no-pool", "equity-pool-short": "pool-short",
-                  "equity-event-too-many": "more-than-left", "equity-forfeit-vested": "vested"}
+                  "equity-event-too-many": "more-than-left", "equity-forfeit-vested": "vested",
+                  "equity-exercise-not-vested": "not-vested"}
 
 
 # req: QA-ENG-02, FR-EQ-17, FR-EQ-18, FR-EQ-20

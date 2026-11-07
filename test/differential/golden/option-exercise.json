@@ -1,0 +1,278 @@
+{
+  "schema": "fyniq-scenario@1",
+  "base_currency": "SGD",
+  "currencies": {
+    "SGD": 2
+  },
+  "settings": {
+    "accounts": {
+      "gst": "2200"
+    },
+    "money_accounts": {
+      "1010": "SGD"
+    },
+    "books_start": "2027-01-01",
+    "gst": {
+      "registered_from": "2027-01-01",
+      "rates": [
+        {
+          "from": "2024-01-01",
+          "percent": "9"
+        }
+      ]
+    }
+  },
+  "accounts": [
+    {
+      "code": "1010",
+      "type": "asset",
+      "group": false,
+      "active": true
+    },
+    {
+      "code": "2040",
+      "type": "liability",
+      "group": false,
+      "active": true,
+      "role": "share-application-monies"
+    },
+    {
+      "code": "2200",
+      "type": "liability",
+      "group": false,
+      "active": true
+    },
+    {
+      "code": "3010",
+      "type": "equity",
+      "group": false,
+      "active": true,
+      "role": "share-capital"
+    },
+    {
+      "code": "3020",
+      "type": "equity",
+      "group": false,
+      "active": true,
+      "role": "share-capital",
+      "votes_per_share": "0"
+    }
+  ],
+  "people": [
+    "P0001"
+  ],
+  "subscribers": [
+    "P0003",
+    "P0004"
+  ],
+  "name": "equity-option-exercise",
+  "as_of": "2028-03-31",
+  "cap_tables": [
+    "2027-02-02",
+    "2028-01-22"
+  ],
+  "documents": [
+    {
+      "type": "bank_transaction",
+      "id": "BT-0001",
+      "version": 1,
+      "date": "2027-01-05",
+      "account": "1010",
+      "currency": "SGD",
+      "amount": "10000.00",
+      "person": "P0001",
+      "parts": [
+        {
+          "account": "2040",
+          "amount": "10000.00",
+          "gst_code": "NA"
+        }
+      ]
+    },
+    {
+      "type": "share_issue_cash",
+      "id": "EQ-0001",
+      "version": 1,
+      "date": "2027-01-05",
+      "person": "P0001",
+      "class": "3010",
+      "shares": "1000000",
+      "price": "0.01"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0001",
+      "version": 1,
+      "date": "2027-01-10",
+      "size": "100000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0001",
+      "version": 1,
+      "date": "2027-01-15",
+      "person": "P0003",
+      "number": "48000",
+      "class": "3010",
+      "exercise_price": "0.10",
+      "cliff_months": 12,
+      "vesting_months": 48
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0002",
+      "version": 1,
+      "date": "2027-01-15",
+      "person": "P0004",
+      "number": "10000",
+      "class": "3010",
+      "exercise_price": "0.50"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0003",
+      "version": 1,
+      "date": "2027-01-15",
+      "person": "P0004",
+      "number": "1000",
+      "class": "3010",
+      "exercise_price": "0"
+    },
+    {
+      "type": "bank_transaction",
+      "id": "BT-0002",
+      "version": 1,
+      "date": "2027-02-01",
+      "account": "1010",
+      "currency": "SGD",
+      "amount": "2000.00",
+      "person": "P0004",
+      "parts": [
+        {
+          "account": "2040",
+          "amount": "2000.00",
+          "gst_code": "NA"
+        }
+      ]
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0002",
+      "version": 1,
+      "date": "2027-02-02",
+      "grant": "OG-0002",
+      "shares": "4000"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0003",
+      "version": 1,
+      "date": "2027-02-03",
+      "grant": "OG-0002",
+      "shares": "1"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0004",
+      "version": 1,
+      "date": "2027-02-03",
+      "grant": "OG-0001",
+      "shares": "1"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0005",
+      "version": 1,
+      "date": "2027-02-03",
+      "grant": "OG-0003",
+      "shares": "1"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0006",
+      "version": 1,
+      "date": "2027-02-03",
+      "grant": "OG-9999",
+      "shares": "1"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0007",
+      "version": 1,
+      "date": "2027-02-03",
+      "grant": "OG-0002",
+      "shares": "1.5"
+    },
+    {
+      "type": "bank_transaction",
+      "id": "BT-0003",
+      "version": 1,
+      "date": "2028-01-20",
+      "account": "1010",
+      "currency": "SGD",
+      "amount": "1200.00",
+      "person": "P0003",
+      "parts": [
+        {
+          "account": "2040",
+          "amount": "1200.00",
+          "gst_code": "NA"
+        }
+      ]
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0008",
+      "version": 1,
+      "date": "2028-01-20",
+      "grant": "OG-0001",
+      "shares": "12001"
+    },
+    {
+      "type": "option_exercise",
+      "id": "EQ-0009",
+      "version": 1,
+      "date": "2028-01-20",
+      "grant": "OG-0001",
+      "shares": "12000"
+    },
+    {
+      "type": "option_event",
+      "id": "OE-0001",
+      "version": 1,
+      "date": "2028-01-21",
+      "grant": "OG-0001",
+      "kind": "forfeiture",
+      "number": "36001"
+    },
+    {
+      "type": "option_event",
+      "id": "OE-0002",
+      "version": 1,
+      "date": "2028-01-21",
+      "grant": "OG-0001",
+      "kind": "forfeiture",
+      "number": "36000"
+    },
+    {
+      "type": "option_event",
+      "id": "OE-0003",
+      "version": 1,
+      "date": "2028-01-22",
+      "grant": "OG-0001",
+      "kind": "expiry",
+      "number": "1"
+    },
+    {
+      "type": "option_event",
+      "id": "OE-0004",
+      "version": 1,
+      "date": "2028-01-22",
+      "grant": "OG-0002",
+      "kind": "expiry",
+      "number": "6000"
+    }
+  ],
+  "reversals": []
+}

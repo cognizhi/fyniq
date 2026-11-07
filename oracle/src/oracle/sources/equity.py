@@ -289,7 +289,8 @@ def option_grant(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     cliff, months = d.get("cliff_months", 0), d.get("vesting_months", 0)
     if not 0 <= months <= 120 or not 0 <= cliff <= months:
         raise Rejected("bad-vesting")
-    grant = captable.Grant(d["person"], _share_class(r, d["class"]), int(d["number"]), doc.date, cliff, months, doc.id)
+    price = r.quantity(d.get("exercise_price", "0"), zero=True)  # plain, from zero, at most 6 decimals
+    grant = captable.Grant(d["person"], _share_class(r, d["class"]), int(d["number"]), doc.date, cliff, months, doc.id, price)
     pool = captable.pool_on(captable.pools(books), doc.date)
     if pool is None:
         raise Rejected("no-pool")
@@ -314,10 +315,41 @@ def option_event(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     if doc.date < grant.day:
         raise Rejected("before-the-grant")
     number = int(d["number"])
-    left = grant.number - sum(e.number for e in captable.events(books) if e.grant == grant.id)
-    if number > left:
+    taken = sum(e.number for e in captable.events(books) if e.grant == grant.id)
+    exercised = sum(x.number for x in captable.exercises(books) if x.grant == grant.id)
+    if number > grant.number - taken - exercised:
         raise Rejected("more-than-left")
-    if d["kind"] == "forfeiture" and number > left - captable.vested(grant, doc.date):
+    if d["kind"] == "forfeiture" and number > grant.number - taken - captable.vested(grant, doc.date):
         raise Rejected("vested")
     event = captable.Event(grant.id, d["kind"], number, doc.date)
     return Posting([], effects=[lambda: captable.events(books).append(event)])
+
+
+def option_exercise(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """``shares`` of a grant's options exercised on ``date`` (FR-EQ-19): an issue to the grant's person of its class at its
+    exercise price, posted as a cash issue from share application monies (``share_issue_cash@1``), within what is
+    vested and kept on its date and every later day an event or exercise of the grant is dated."""
+    d = doc.data
+    grant = next((g for g in captable.grants(books) if g.id == d["grant"]), None)
+    if grant is None:
+        raise Rejected("not-a-grant")
+    if grant.price <= 0:
+        raise Rejected("no-price")
+    if not _WHOLE_SHARES.fullmatch(d["shares"]):
+        raise Rejected("bad-shares")
+    shares = int(d["shares"])
+    if not captable.exercise_fits(grant, captable.events(books), captable.exercises(books), shares, doc.date):
+        raise Rejected("not-vested")
+    monies = [code for code, a in r.scenario.accounts.items()
+              if a.role == "share-application-monies" and a.active and not a.group]
+    if len(monies) != 1:
+        raise Rejected("no-share-application-monies")
+    amount = money.rnd_line(Decimal(shares), grant.price, r.minor(r.base))
+    if owed(r, grant.holder, monies[0], doc.date) < amount:
+        raise Rejected("unpaid")
+    exercise = captable.Exercise(grant.id, shares, doc.date)
+    return Posting([
+        r.line(monies[0], r.base, amount, amount, party=grant.holder),
+        r.base_line(grant.share_class, money.negate(amount)),
+    ], effects=[captable.move(books, grant.holder, grant.share_class, shares, doc.date),
+                lambda: captable.exercises(books).append(exercise)])

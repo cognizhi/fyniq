@@ -74,15 +74,16 @@ func ReadEvent(doc storage.Document) (GrantEvent, error) {
 	return out, err
 }
 
-// Standing is a grant's options on a day, by its recorded events: those forfeited and expired, those outstanding (not
-// exercised, forfeited or expired), and those vested, never more than the grant keeps (vested and not forfeited or
-// expired) [accountant to confirm: a leaver's vesting stops at the forfeiture].
+// Standing is a grant's options on a day, by its recorded events and its exercises: those forfeited, expired and
+// exercised, those outstanding (not exercised, forfeited or expired), those vested, never more than the grant keeps
+// (vested and not forfeited or expired) [accountant to confirm: a leaver's vesting stops at the forfeiture], and those
+// exercisable, vested and not exercised.
 type Standing struct {
-	Forfeited, Expired, Outstanding, Vested apd.Decimal
+	Forfeited, Expired, Exercised, Outstanding, Vested, Exercisable apd.Decimal
 }
 
-// StandingOf is a grant's standing at the end of day, from its recorded events.
-func StandingOf(g Grant, events []GrantEvent, day time.Time) (Standing, error) {
+// StandingOf is a grant's standing at the end of day, from its recorded events and its exercises.
+func StandingOf(g Grant, events []GrantEvent, exercises []Exercise, day time.Time) (Standing, error) {
 	var out Standing
 	var n apd.Decimal
 	if _, _, err := n.SetString(g.Number); err != nil {
@@ -114,11 +115,18 @@ func StandingOf(g Grant, events []GrantEvent, day time.Time) (Standing, error) {
 	if err != nil {
 		return out, err
 	}
-	if vested.Cmp(&out.Outstanding) > 0 {
+	if vested.Cmp(&out.Outstanding) > 0 { // what is kept: neither forfeited nor expired
 		vested.Set(&out.Outstanding)
 	}
 	out.Vested = vested
-	return out, nil
+	if out.Exercised, err = exercisedOn(exercises, day); err != nil {
+		return out, err
+	}
+	if _, err := exact.Sub(&out.Outstanding, &out.Outstanding, &out.Exercised); err != nil {
+		return out, err
+	}
+	_, err = exact.Sub(&out.Exercisable, &out.Vested, &out.Exercised)
+	return out, err
 }
 
 // CheckEvent is what is wrong with a grant's event on its own, every problem at once (ENG-22): a kind not known, a
@@ -146,10 +154,10 @@ func CheckEvent(e GrantEvent, today time.Time) ledger.Problems {
 	return probs
 }
 
-// CheckEventOf is what is wrong with an event against its grant and the grant's other recorded events (the database's
-// FY293 holds the total too): a day before the grant, more than the grant leaves outstanding by its other events, and
-// for a forfeiture more than is not vested on its day.
-func CheckEventOf(e GrantEvent, g Grant, others []GrantEvent) (ledger.Problems, error) {
+// CheckEventOf is what is wrong with an event against its grant, the grant's other recorded events and its exercises
+// (the database's FY293 holds the total too): a day before the grant, more than the grant leaves outstanding by its
+// other events and exercises, and for a forfeiture more than is not vested on its day.
+func CheckEventOf(e GrantEvent, g Grant, others []GrantEvent, exercises []Exercise) (ledger.Problems, error) {
 	var probs ledger.Problems
 	add := func(field, msg, fix string) {
 		probs = append(probs, ledger.Problem{Code: CodeEvent, Field: field, Message: msg, Fix: fix})
@@ -164,7 +172,7 @@ func CheckEventOf(e GrantEvent, g Grant, others []GrantEvent) (ledger.Problems, 
 	if _, _, err := n.SetString(e.Number); err != nil {
 		return probs, err
 	}
-	every, err := StandingOf(g, others, farFuture) // what every other event leaves, whatever its day
+	every, err := StandingOf(g, others, exercises, farFuture) // what every other event and exercise leaves, whatever its day
 	if err != nil {
 		return probs, err
 	}
@@ -178,8 +186,11 @@ func CheckEventOf(e GrantEvent, g Grant, others []GrantEvent) (ledger.Problems, 
 		if err != nil {
 			return probs, err
 		}
-		var unvested apd.Decimal
-		if _, err := exact.Sub(&unvested, &every.Outstanding, &vested); err != nil {
+		var unvested apd.Decimal // the grant's options less every other event's and less what is vested: exercises are vested
+		if _, err := exact.Add(&unvested, &every.Outstanding, &every.Exercised); err != nil {
+			return probs, err
+		}
+		if _, err := exact.Sub(&unvested, &unvested, &vested); err != nil {
 			return probs, err
 		}
 		if n.Cmp(&unvested) > 0 {
@@ -216,7 +227,11 @@ func checkedEvent(ctx context.Context, u storage.UnitOfWork, e GrantEvent, today
 	if err != nil {
 		return err
 	}
-	more, err := CheckEventOf(e, g, events[e.GrantID])
+	exercises, err := ExercisesIn(ctx, u)
+	if err != nil {
+		return err
+	}
+	more, err := CheckEventOf(e, g, events[e.GrantID], exercises[e.GrantID])
 	if err != nil {
 		return err
 	}

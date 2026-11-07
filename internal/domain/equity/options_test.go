@@ -105,22 +105,22 @@ func TestAGrantsEventsTakeItsOptions(t *testing.T) {
 	day := func(s string) time.Time { d, _ := time.Parse(time.DateOnly, s); return d }
 	g := Grant{Number: "48000", GrantedOn: day("2025-10-15"), Vesting: Vesting{CliffMonths: 12, Months: 48, Acceleration: "none"}}
 	forfeit := GrantEvent{Kind: EventForfeiture, Number: "30000", On: day("2027-04-15")}
-	if probs, err := CheckEventOf(forfeit, g, nil); err != nil || len(probs) > 0 {
+	if probs, err := CheckEventOf(forfeit, g, nil, nil); err != nil || len(probs) > 0 {
 		t.Fatalf("forfeiting the 30,000 not vested: %v %v", probs, err)
 	}
-	if probs, _ := CheckEventOf(GrantEvent{Kind: EventForfeiture, Number: "30001", On: day("2027-04-15")}, g, nil); len(probs) != 1 ||
+	if probs, _ := CheckEventOf(GrantEvent{Kind: EventForfeiture, Number: "30001", On: day("2027-04-15")}, g, nil, nil); len(probs) != 1 ||
 		probs[0].Field != "number" || !strings.Contains(probs[0].Message, "30000 options are not vested on 2027-04-15") {
 		t.Errorf("forfeiting one vested option: %v", probs)
 	}
 	lapse := GrantEvent{Kind: EventExpiry, Number: "18000", On: day("2027-07-15")}
-	if probs, err := CheckEventOf(lapse, g, []GrantEvent{forfeit}); err != nil || len(probs) > 0 {
+	if probs, err := CheckEventOf(lapse, g, []GrantEvent{forfeit}, nil); err != nil || len(probs) > 0 {
 		t.Fatalf("the vested 18,000 lapsing: %v %v", probs, err)
 	}
-	if probs, _ := CheckEventOf(GrantEvent{Kind: EventExpiry, Number: "18001", On: day("2027-07-15")}, g, []GrantEvent{forfeit}); len(probs) != 1 ||
+	if probs, _ := CheckEventOf(GrantEvent{Kind: EventExpiry, Number: "18001", On: day("2027-07-15")}, g, []GrantEvent{forfeit}, nil); len(probs) != 1 ||
 		!strings.Contains(probs[0].Message, "leave 18000 options") {
 		t.Errorf("more than the grant leaves: %v", probs)
 	}
-	if probs, _ := CheckEventOf(GrantEvent{Kind: EventExpiry, Number: "1", On: day("2025-10-14")}, g, nil); len(probs) != 1 || probs[0].Field != "on" {
+	if probs, _ := CheckEventOf(GrantEvent{Kind: EventExpiry, Number: "1", On: day("2025-10-14")}, g, nil, nil); len(probs) != 1 || probs[0].Field != "on" {
 		t.Errorf("a day before the grant: %v", probs)
 	}
 	for _, c := range []struct {
@@ -132,7 +132,7 @@ func TestAGrantsEventsTakeItsOptions(t *testing.T) {
 		{"2027-06-15", "30000", "0", "18000", "18000"}, // vesting would say 20,000: the leaver keeps what vested
 		{"2027-07-15", "30000", "18000", "0", "0"},
 	} {
-		s, err := StandingOf(g, []GrantEvent{forfeit, lapse}, day(c.on))
+		s, err := StandingOf(g, []GrantEvent{forfeit, lapse}, nil, day(c.on))
 		if err != nil {
 			t.Fatal(err)
 		}

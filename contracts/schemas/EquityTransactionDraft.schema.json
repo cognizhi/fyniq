@@ -33,6 +33,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "grant_id": {
+      "description": "exercise: the recorded grant whose options are exercised; its holder, class and exercise price are the issue's, and its shares at most what is vested and not exercised (getOptionGrant's exercisable).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "holder_id": {
       "description": "issue_cash: the subscriber, a contact marked shareholder or investor; class_conversion: the holder whose shares convert.",
       "examples": [
@@ -50,13 +58,14 @@
       "type": "string"
     },
     "kind": {
-      "description": "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions.",
+      "description": "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions; exercise: a recorded grant's options exercised for cash, an issue to its holder at its exercise price (FR-EQ-19).",
       "enum": [
         "issue_cash",
         "transfer",
         "class_conversion",
         "reversal",
-        "instrument_conversion"
+        "instrument_conversion",
+        "exercise"
       ],
       "examples": [
         "issue_cash"

@@ -317,7 +317,12 @@ latest resolution's size (FY293, under a lock on the organisation's pool). So an
 options a later one has, and a smaller resolution cannot leave the grants uncovered. (Slice 5b-i) A forfeiture or
 expiry is an `option_event` document: a forfeiture takes at most the options not vested on its day, an expiry at most
 what is left, and both give their options back to the pool from their day [accountant to confirm against the plan];
-"vested" never counts more than is outstanding, so a leaver keeps only what vested before they left.
+"vested" never counts more than is outstanding, so a leaver keeps only what vested before they left. (Slice 5b-ii) An
+exercise is the D4 kind `exercise`, an issue to the grant's holder of its class at its exercise price, made effective
+from share application monies as a cash issue (share_issue_cash@1); it takes at most what is vested and not exercised,
+checked when drafted and again on its effective day and later. Its options never return to the pool; a reversal of it
+makes them outstanding from the reversal's day. A grant at an exercise price of 0 is not exercised for cash: how to
+record shares issued for no consideration waits for the accountant [accountant to confirm].
 
 **Access.** An employee reads only grants whose holder is the contact linked to them (Appendix D "V own grants").
 

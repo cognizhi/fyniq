@@ -163,6 +163,7 @@ type p1 struct {
 	stagedPool  *equity.PoolResolution
 	stagedGrant *recordedGrant
 	stagedEvent *stagedEvent
+	stagedUse   *stagedExercise
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -279,6 +280,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return ledger.Entry{}, r.optionGrant(d, date) // nor does a grant
 	case "option_event":
 		return ledger.Entry{}, r.optionEvent(d, date) // nor a forfeiture or expiry
+	case "option_exercise":
+		return r.optionExercise(d, date)
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}

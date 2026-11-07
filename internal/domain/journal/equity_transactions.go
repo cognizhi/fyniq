@@ -105,6 +105,10 @@ func (s EquityTransactions) EffectiveIn(ctx context.Context, u storage.UnitOfWor
 	switch t.Kind {
 	case equity.KindIssueCash:
 		err = s.issueCash(ctx, u, doc, t, e, settings, memo, &out)
+	case equity.KindExercise: // FR-EQ-19: a cash issue, within what is vested and not exercised on the day
+		if err = exercisable(ctx, u, t, e.EffectiveOn); err == nil {
+			err = s.issueCash(ctx, u, doc, t, e, settings, memo, &out)
+		}
 	case equity.KindTransfer:
 		if err = holds(ctx, u, t.SellerID, t.ClassAccountID, t.ClassID, t.Shares, e.EffectiveOn); err != nil {
 			return out, err
@@ -166,6 +170,37 @@ func (s EquityTransactions) EffectiveIn(ctx context.Context, u storage.UnitOfWor
 		}
 	}
 	return out, nil
+}
+
+// exercisable refuses an exercise past what its grant has vested and not exercised on the day it is effective, or on a
+// later day an event or another exercise of it is dated (FR-EQ-19).
+func exercisable(ctx context.Context, u storage.UnitOfWork, t equity.Transaction, day time.Time) error {
+	g, err := u.Documents().Get(ctx, t.GrantID)
+	if err != nil {
+		return err
+	}
+	grant, err := equity.ReadGrant(g)
+	if err != nil {
+		return err
+	}
+	events, err := equity.GrantEventsOf(ctx, u, t.GrantID)
+	if err != nil {
+		return err
+	}
+	exercises, err := equity.ExercisesIn(ctx, u)
+	if err != nil {
+		return err
+	}
+	var n apd.Decimal
+	if _, _, err := n.SetString(t.Shares); err != nil {
+		return err
+	}
+	ok, short, left, err := equity.FitsExercise(grant, events, exercises[t.GrantID], n, day)
+	if err != nil || ok {
+		return err
+	}
+	return effectiveError(fmt.Sprintf("%s options are vested and not exercised on %s, fewer than the %s exercised", left.Text('f'),
+		short.Format(time.DateOnly), t.Shares), "Make it effective on a day the options have vested, or draft an exercise of fewer")
 }
 
 // issueCash makes a cash issue effective (B.7, G4-043): refused until the subscriber's share application monies on the
