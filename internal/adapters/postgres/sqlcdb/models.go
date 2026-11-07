@@ -462,6 +462,8 @@ type FyniqBrandVersion struct {
 	Cleaned        []byte
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
+	PrintSha256    []byte
+	PrintSize      *int32
 }
 
 type FyniqBreakGlass struct {

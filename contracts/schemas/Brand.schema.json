@@ -31,6 +31,10 @@
       "$ref": "BrandFileView.schema.json",
       "description": "The logo for light backgrounds."
     },
+    "print": {
+      "$ref": "BrandFileView.schema.json",
+      "description": "The logo as documents show it: a PNG 192 pixels high, drawn from the logo for light backgrounds by the render service when it was uploaded (rev 0.201). Absent without a light logo, or when no render service is configured."
+    },
     "updated_at": {
       "examples": [
         "2026-11-07T09:00:00Z"

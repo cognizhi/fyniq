@@ -17,7 +17,7 @@ import (
 const Class = "render"
 
 // Request is a document to render: a template version's content, the document's data and its issue time; or a report
-// its caller laid out, with no document type, template or data.
+// its caller laid out, with no document type, template or data; or the organisation's logo to rasterise, alone.
 type Request struct {
 	DocumentType string              `json:"document_type"`
 	Content      doctemplate.Content `json:"content"`
@@ -27,6 +27,7 @@ type Request struct {
 	Created      time.Time           `json:"created"`          // the PDF's creation date, so a reprint is the same bytes
 	Check        bool                `json:"check,omitempty"`  // also find the IRAS particulars in the document
 	Pages        bool                `json:"pages,omitempty"`  // also each page as a PNG, for a preview
+	Raster       []byte              `json:"raster,omitempty"` // a logo, an SVG or a PNG, to rasterise for documents and emails (FR-ORG-09), alone
 }
 
 // Response is the rendered document.
@@ -36,6 +37,7 @@ type Response struct {
 	Particulars []string `json:"particulars,omitempty"` // with check: those the document holds
 	Missing     []string `json:"missing,omitempty"`     // with check: those IRAS requires and it lacks
 	Pages       [][]byte `json:"pages,omitempty"`       // with pages: each page as a PNG
+	PNG         []byte   `json:"png,omitempty"`         // with raster: the logo as a PNG, and SHA256 is its hash
 }
 
 // Problem is the render service's refusal: its code says why.
@@ -55,6 +57,7 @@ const (
 	CodeTemplate     = "RENDER-03" // the template breaks its rules (TPL-…)
 	CodeFailed       = "RENDER-04" // Typst could not compile the document
 	CodeBusy         = "RENDER-05" // every compile slot is taken; try again
+	CodeLogo         = "RENDER-06" // the logo to rasterise is not one the brand accepts, or too detailed to print
 )
 
 // Renderer renders documents: the render service, for the api and the worker.

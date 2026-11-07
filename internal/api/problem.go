@@ -625,6 +625,7 @@ var codeFacts = map[string]struct {
 	brand.CodeFormat:            {422, "Not an SVG or a PNG Fyniq reads"},
 	brand.CodeSize:              {422, "The file is too large, too small or too complex"},
 	brand.CodeAccent:            {422, "Not one of the accent options"},
+	brand.CodeDraw:              {422, "The logo cannot be drawn for documents and emails"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

@@ -18,8 +18,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/brand"
+	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // ------------------------------------------------------------------ logo and brand (FR-ORG-09, rev 0.200)
@@ -53,6 +55,7 @@ type Brand struct {
 	Light     *BrandFileView `json:"light,omitempty" doc:"The logo for light backgrounds."`
 	Dark      *BrandFileView `json:"dark,omitempty" doc:"The logo for dark backgrounds; until one is added, dark screens show the light one on a white tile."`
 	Icon      *BrandFileView `json:"icon,omitempty" doc:"The square icon, for the browser tab and the app icon."`
+	Print     *BrandFileView `json:"print,omitempty" doc:"The logo as documents show it: a PNG 192 pixels high, drawn from the logo for light backgrounds by the render service when it was uploaded (rev 0.201). Absent without a light logo, or when no render service is configured."`
 	Accent    string         `json:"accent,omitempty" doc:"The accent colour of documents and emails; absent for the design's default. The app keeps its own colours." example:"#0F766E"`
 	Accents   []AccentOption `json:"accent_options" doc:"The accent colours to choose from: each reads against white at 4.5:1 or more."`
 	UpdatedAt *time.Time     `json:"updated_at,omitempty" example:"2026-11-07T09:00:00Z"`
@@ -66,7 +69,7 @@ type AccentOption struct {
 
 // BrandFileContent is a brand file's bytes.
 type BrandFileContent struct {
-	Kind      string `json:"kind" enum:"light,dark,icon" example:"light"`
+	Kind      string `json:"kind" enum:"light,dark,icon,print" example:"light"`
 	Version   int    `json:"version" example:"2"`
 	MediaType string `json:"media_type" enum:"image/svg+xml,image/png" example:"image/svg+xml"`
 	SHA256    string `json:"sha256" example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
@@ -100,8 +103,13 @@ type brandWriteOutput struct {
 	Body     Brand
 }
 
+// BrandFilePath names one of the brand's files to read, the logo as documents show it included.
+type BrandFilePath struct {
+	Kind string `path:"kind" enum:"light,dark,icon,print" doc:"light: the logo for light backgrounds; dark: for dark ones; icon: the square icon; print: the logo as documents show it." example:"light"`
+}
+
 type brandFileInput struct {
-	BrandKindPath
+	BrandFilePath
 	Version int `query:"version" minimum:"0" doc:"The version to read; 0 or absent for the one in force." example:"2"`
 }
 
@@ -132,12 +140,7 @@ type brandAccentInput struct {
 }
 
 // BrandCodes are the rules a brand file or colour keeps.
-var BrandCodes = []string{brand.CodeFormat, brand.CodeSize, brand.CodeAccent}
-
-// brandKey is where a brand file is kept in the blob store: by organisation and content, so it is written once.
-func brandKey(org uuid.UUID, sum []byte) string {
-	return "brand/" + org.String() + "/" + hex.EncodeToString(sum)
-}
+var BrandCodes = []string{brand.CodeFormat, brand.CodeSize, brand.CodeAccent, brand.CodeDraw}
 
 func brandFileView(f *storage.BrandFile, cleaned map[string]brand.Removed, kind string) *BrandFileView {
 	if f == nil {
@@ -161,6 +164,7 @@ func brandOf(b storage.BrandVersion) Brand {
 	cleaned := map[string]brand.Removed{}
 	_ = json.Unmarshal(b.Cleaned, &cleaned)
 	out.Light, out.Dark, out.Icon = brandFileView(b.Light, cleaned, "light"), brandFileView(b.Dark, cleaned, "dark"), brandFileView(b.Icon, cleaned, "icon")
+	out.Print = brandFileView(b.Print, nil, "print")
 	if b.Version > 0 {
 		t := b.CreatedAt.UTC()
 		out.UpdatedAt = &t
@@ -202,6 +206,31 @@ func (a *API) nextBrand(ctx context.Context, u storage.UnitOfWork, ifMatch strin
 	return brandOf(saved), nil
 }
 
+// drawLogo asks the render service to draw logo, the cleaned logo for light backgrounds, as documents and emails show
+// it (FR-ORG-09, rev 0.201): nil when no render service is configured, as then no document renders either.
+func (a *API) drawLogo(ctx context.Context, logo []byte) ([]byte, error) {
+	if a.deps.Renderer == nil {
+		return nil, nil
+	}
+	res, err := a.deps.Renderer.Render(ctx, render.Request{Raster: logo})
+	var rp *render.Problem
+	switch {
+	case err == nil && len(res.PNG) > 0 && len(res.PNG) <= brand.MaxPrint:
+		return res.PNG, nil
+	case errors.As(err, &rp) && rp.Code == render.CodeLogo:
+		logFailure(ctx, err)
+		return nil, invalid([]FieldProblem{{Code: brand.CodeDraw, Field: "body.file", Message: "cannot be drawn for documents and emails: it is too detailed, or uses what the drawing does not support",
+			Fix: "Upload a simpler SVG, or the logo as a PNG"}})
+	case errors.As(err, &rp) && rp.Code == render.CodeBusy:
+		return nil, problem(doctemplate.CodeRenderer, "The render service is busy.", "Try again in a moment").withHeader("Retry-After", "1")
+	default:
+		if err != nil {
+			logFailure(ctx, err)
+		}
+		return nil, problem(doctemplate.CodeRenderer, "The render service did not draw the logo for documents.", "Try again; if it persists, report it")
+	}
+}
+
 func (a *API) brandPerson(ctx context.Context) error {
 	p, _ := authn.From(ctx)
 	if p.UserID == uuid.Nil {
@@ -235,7 +264,8 @@ func registerBrand(a *API) {
 		OperationID: "getBrandFile", Method: http.MethodGet, Path: "/v1/organisation/brand/files/{kind}", Tags: []string{"Organisation"},
 		Summary: "Read a logo or icon file",
 		Description: "One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, " +
-			"FR-ORG-09), in base64. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects.",
+			"FR-ORG-09), in base64, the logo as documents show it included. An SVG is the cleaned copy: show it as an image, never inline as " +
+			"markup. Read-only; no side effects.",
 	}, append([]string{CodeNotFound, CodeUnavailable}, locks...), func(ctx context.Context, in *brandFileInput) (*brandFileOutput, error) {
 		if a.deps.Staging == nil {
 			return nil, problem(CodeUnavailable, "No file store is configured.", "Ask your administrator to configure it.")
@@ -247,7 +277,7 @@ func registerBrand(a *API) {
 			_, all, err := currentBrand(ctx, u)
 			for _, b := range all {
 				if in.Version == 0 || b.Version == in.Version {
-					file, version = map[string]*storage.BrandFile{"light": b.Light, "dark": b.Dark, "icon": b.Icon}[in.Kind], b.Version
+					file, version = map[string]*storage.BrandFile{"light": b.Light, "dark": b.Dark, "icon": b.Icon, "print": b.Print}[in.Kind], b.Version
 					break
 				}
 			}
@@ -259,7 +289,7 @@ func registerBrand(a *API) {
 		if file == nil {
 			return nil, problem(CodeNotFound, "The brand has no "+in.Kind+" file in that version.", "Read the brand to see which files it has")
 		}
-		r, err := a.deps.Staging.Get(ctx, brandKey(p.Organisation, file.SHA256))
+		r, err := a.deps.Staging.Get(ctx, brand.Key(p.Organisation, file.SHA256))
 		if errors.Is(err, ports.ErrNotFound) {
 			return nil, problem(CodeNotFound, "The file is missing from the store.", "Upload it again")
 		}
@@ -286,8 +316,9 @@ func registerBrand(a *API) {
 		Summary: "Upload a logo or icon",
 		Description: "Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, " +
 			"event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was " +
-			"removed. A PNG is written again without its metadata." + changeNote,
-	}, append(append(append([]string{CodeInvalid, CodeUnavailable, CodeSessionRequired}, versioned...), writes...), BrandCodes...),
+			"removed. A PNG is written again without its metadata. The logo for light backgrounds is also drawn by the render service as " +
+			"documents and emails show it: a PNG 192 pixels high (print)." + changeNote,
+	}, append(append(append([]string{CodeInvalid, CodeUnavailable, CodeSessionRequired, doctemplate.CodeRenderer}, versioned...), writes...), BrandCodes...),
 		func(ctx context.Context, in *brandUploadInput) (*brandWriteOutput, error) {
 			if err := a.brandPerson(ctx); err != nil {
 				return nil, err
@@ -317,12 +348,26 @@ func registerBrand(a *API) {
 					return nil, invalid([]FieldProblem{{Code: brand.CodeFormat, Field: "body.file", Message: "did not pass the malware scan", Fix: "Upload another file"}})
 				}
 			}
-			sum := sha256.Sum256(clean.Data)
+			var drawn []byte
+			if in.Kind == "light" {
+				if drawn, err = a.drawLogo(ctx, clean.Data); err != nil {
+					return nil, err
+				}
+			}
+			sum, printSum := sha256.Sum256(clean.Data), sha256.Sum256(drawn)
 			p, _ := authn.From(ctx)
 			if !wantsPreview(in.Prefer) {
-				if err := a.deps.Staging.Create(ctx, brandKey(p.Organisation, sum[:]), bytes.NewReader(clean.Data)); err != nil && !errors.Is(err, ports.ErrExists) {
-					logFailure(ctx, err)
-					return nil, problem(CodeUnavailable, "The file could not be stored.", "Try again in a few minutes.")
+				for _, f := range []struct {
+					sum  [32]byte
+					data []byte
+				}{{sum, clean.Data}, {printSum, drawn}} {
+					if len(f.data) == 0 {
+						continue
+					}
+					if err := a.deps.Staging.Create(ctx, brand.Key(p.Organisation, f.sum[:]), bytes.NewReader(f.data)); err != nil && !errors.Is(err, ports.ErrExists) {
+						logFailure(ctx, err)
+						return nil, problem(CodeUnavailable, "The file could not be stored.", "Try again in a few minutes.")
+					}
 				}
 			}
 			request := struct{ Kind, IfMatch, SHA256 string }{in.Kind, in.IfMatch, hex.EncodeToString(sum[:])}
@@ -331,7 +376,10 @@ func registerBrand(a *API) {
 					f := &storage.BrandFile{MediaType: clean.MediaType, SHA256: sum[:], Size: len(clean.Data)}
 					switch in.Kind {
 					case "light":
-						b.Light = f
+						b.Light, b.Print = f, nil
+						if len(drawn) > 0 {
+							b.Print = &storage.BrandFile{MediaType: "image/png", SHA256: printSum[:], Size: len(drawn)}
+						}
 					case "dark":
 						b.Dark = f
 					default:
@@ -359,7 +407,8 @@ func registerBrand(a *API) {
 	register(a, authz.RemoveBrandFile, exempt(huma.Operation{
 		OperationID: "removeBrandFile", Method: http.MethodDelete, Path: "/v1/organisation/brand/files/{kind}", Tags: []string{"Organisation"},
 		Summary:     "Remove a logo or icon",
-		Description: "Removes one of the brand's files from the next version (FR-ORG-09); earlier versions keep it." + changeNote,
+		Description: "Removes one of the brand's files from the next version (FR-ORG-09), with the logo for light backgrounds its drawing " +
+			"for documents; earlier versions keep them." + changeNote,
 	}, "Idempotency-Key", "Removing a file from the brand twice changes nothing more (FR-INT-08, rev 0.200)."),
 		append(append([]string{CodeNotFound, CodeSessionRequired}, versioned...), locks...), func(ctx context.Context, in *brandRemoveInput) (*brandWriteOutput, error) {
 			if err := a.brandPerson(ctx); err != nil {
@@ -376,7 +425,7 @@ func registerBrand(a *API) {
 				return a.nextBrand(ctx, u, in.IfMatch, func(b *storage.BrandVersion, cleaned map[string]brand.Removed) {
 					switch in.Kind {
 					case "light":
-						b.Light = nil
+						b.Light, b.Print = nil, nil
 					case "dark":
 						b.Dark = nil
 					default:

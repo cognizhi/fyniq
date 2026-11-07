@@ -5263,6 +5263,9 @@ components:
         light:
           $ref: "#/components/schemas/BrandFileView"
           description: The logo for light backgrounds.
+        print:
+          $ref: "#/components/schemas/BrandFileView"
+          description: "The logo as documents show it: a PNG 192 pixels high, drawn from the logo for light backgrounds by the render service when it was uploaded (rev 0.201). Absent without a light logo, or when no render service is configured."
         updated_at:
           examples:
             - "2026-11-07T09:00:00Z"
@@ -5333,6 +5336,7 @@ components:
             - light
             - dark
             - icon
+            - print
           examples:
             - light
           type: string
@@ -22474,6 +22478,12 @@ components:
           examples:
             - "2027-04-22T09:30:00Z"
           format: date-time
+          type: string
+        logo:
+          contentEncoding: base64
+          description: "The supplier's logo as its documents show it (FR-ORG-09): a PNG, base64, of the brand in force when the document was issued. Absent when it has none."
+          examples:
+            - iVBORw0KGgo=
           type: string
         number:
           description: Its number.
@@ -97780,7 +97790,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails."
         "428":
           content:
             application/problem+json:
@@ -97849,6 +97859,7 @@ paths:
         - BRAND-01
         - BRAND-02
         - BRAND-03
+        - BRAND-04
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
@@ -97857,7 +97868,7 @@ paths:
         right: C
   /v1/organisation/brand/files/{kind}:
     delete:
-      description: "Removes one of the brand's files from the next version (FR-ORG-09); earlier versions keep it. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag (\"0\" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Removes one of the brand's files from the next version (FR-ORG-09), with the logo for light backgrounds its drawing for documents; earlier versions keep them. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag (\"0\" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: removeBrandFile
       parameters:
         - description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon."
@@ -98028,19 +98039,20 @@ paths:
         capability: Organisation profile, financial year, defaults (rev 0.29)
         right: C
     get:
-      description: "One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects."
+      description: "One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64, the logo as documents show it included. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects."
       operationId: getBrandFile
       parameters:
-        - description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon."
+        - description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon; print: the logo as documents show it."
           in: path
           name: kind
           required: true
           schema:
-            description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon."
+            description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon; print: the logo as documents show it."
             enum:
               - light
               - dark
               - icon
+              - print
             examples:
               - light
             type: string
@@ -98166,7 +98178,7 @@ paths:
         capability: (membership)
         right: V
     put:
-      description: "Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag (\"0\" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. The logo for light backgrounds is also drawn by the render service as documents and emails show it: a PNG 192 pixels high (print). Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag (\"0\" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: uploadBrandFile
       parameters:
         - description: "light: the logo for light backgrounds; dark: for dark ones; icon: the square icon."
@@ -98309,7 +98321,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails."
         "428":
           content:
             application/problem+json:
@@ -98352,7 +98364,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now."
       summary: Upload a logo or icon
       tags:
         - Organisation
@@ -98379,9 +98391,11 @@ paths:
         - BRAND-01
         - BRAND-02
         - BRAND-03
+        - BRAND-04
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
+        - TPL-17
       x-fyniq-permission:
         capability: Organisation profile, financial year, defaults (rev 0.29)
         right: C

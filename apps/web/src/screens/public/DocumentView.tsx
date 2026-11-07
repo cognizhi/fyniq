@@ -155,6 +155,7 @@ export function DocumentView() {
       {doc && (
         <>
           <header className="fy-stack fy-stack--2">
+            {doc.logo && <img src={`data:image/png;base64,${doc.logo}`} alt={`${doc.supplier} logo`} style={{ height: 40, width: "auto", maxWidth: 240 }} />}
             <p className="fy-secondary">
               {doc.supplier} · for {doc.customer}
             </p>

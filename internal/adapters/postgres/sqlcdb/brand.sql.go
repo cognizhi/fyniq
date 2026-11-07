@@ -13,7 +13,7 @@ import (
 )
 
 const brandVersions = `-- name: BrandVersions :many
-SELECT organisation_id, id, version, light_type, light_sha256, light_size, dark_type, dark_sha256, dark_size, icon_type, icon_sha256, icon_size, accent, cleaned, created_by, created_at FROM fyniq.brand_version ORDER BY version DESC
+SELECT organisation_id, id, version, light_type, light_sha256, light_size, dark_type, dark_sha256, dark_size, icon_type, icon_sha256, icon_size, accent, cleaned, created_by, created_at, print_sha256, print_size FROM fyniq.brand_version ORDER BY version DESC
 `
 
 func (q *Queries) BrandVersions(ctx context.Context) ([]FyniqBrandVersion, error) {
@@ -42,6 +42,8 @@ func (q *Queries) BrandVersions(ctx context.Context) ([]FyniqBrandVersion, error
 			&i.Cleaned,
 			&i.CreatedBy,
 			&i.CreatedAt,
+			&i.PrintSha256,
+			&i.PrintSize,
 		); err != nil {
 			return nil, err
 		}
@@ -55,11 +57,12 @@ func (q *Queries) BrandVersions(ctx context.Context) ([]FyniqBrandVersion, error
 
 const insertBrandVersion = `-- name: InsertBrandVersion :one
 INSERT INTO fyniq.brand_version (version, light_type, light_sha256, light_size, dark_type, dark_sha256, dark_size, icon_type, icon_sha256,
-  icon_size, accent, cleaned, created_by, created_at)
+  icon_size, print_sha256, print_size, accent, cleaned, created_by, created_at)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9, $10, $11, $12,
-  $13, $14)
-RETURNING organisation_id, id, version, light_type, light_sha256, light_size, dark_type, dark_sha256, dark_size, icon_type, icon_sha256, icon_size, accent, cleaned, created_by, created_at
+  $13, $14,
+  $15, $16)
+RETURNING organisation_id, id, version, light_type, light_sha256, light_size, dark_type, dark_sha256, dark_size, icon_type, icon_sha256, icon_size, accent, cleaned, created_by, created_at, print_sha256, print_size
 `
 
 type InsertBrandVersionParams struct {
@@ -73,6 +76,8 @@ type InsertBrandVersionParams struct {
 	IconType    *string
 	IconSha256  []byte
 	IconSize    *int32
+	PrintSha256 []byte
+	PrintSize   *int32
 	Accent      *string
 	Cleaned     []byte
 	CreatedBy   uuid.UUID
@@ -91,6 +96,8 @@ func (q *Queries) InsertBrandVersion(ctx context.Context, arg InsertBrandVersion
 		arg.IconType,
 		arg.IconSha256,
 		arg.IconSize,
+		arg.PrintSha256,
+		arg.PrintSize,
 		arg.Accent,
 		arg.Cleaned,
 		arg.CreatedBy,
@@ -114,6 +121,8 @@ func (q *Queries) InsertBrandVersion(ctx context.Context, arg InsertBrandVersion
 		&i.Cleaned,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.PrintSha256,
+		&i.PrintSize,
 	)
 	return i, err
 }

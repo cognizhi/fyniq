@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
@@ -51,8 +52,9 @@ func (m *MissingParticulars) Error() string {
 	return "salesmail: the tax invoice lacks " + strings.Join(m.Missing, ", ")
 }
 
-// Render renders a document with a template, finding its particulars, as issued at created.
-type Render func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error)
+// Render renders a document with a template, finding its particulars, as issued at created, with logo (a PNG, the
+// organisation's logo as documents show it; nil for none).
+type Render func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time, logo []byte) (render.Response, error)
 
 // Sender emails documents of one deployment.
 type Sender struct {
@@ -74,7 +76,8 @@ type Sending struct {
 	Subject  string
 	Body     string
 	FileName string
-	Applied  doctemplate.Applied
+	Applied  doctemplate.Applied // its content in the brand's accent when it is the platform's starter
+	Brand    storage.BrandVersion // the brand in force when the document was issued: its logo is the PDF's (FR-ORG-09)
 	PDF      []byte
 	SHA      string
 	Link     string // the online link's token's SHA-256 (task 5.3); empty when the deployment has no web origin
@@ -193,6 +196,10 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to st
 		if out.Applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, out.DocType, &customer); err != nil {
 			return err
 		}
+		if out.Brand, err = brand.At(ctx, u, data.Created); err != nil {
+			return err
+		}
+		out.Applied.Content = brand.Themed(out.Applied.Content, out.Applied.Source, out.Brand)
 		mailType := out.DocType
 		if reminder != nil {
 			out.Purpose = email.PurposeReminder
@@ -242,7 +249,11 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to st
 	if s.Render == nil {
 		return out, ErrNoRenderer
 	}
-	res, err := s.Render(ctx, out.DocType, out.Applied.Content, data.Data, data.Created)
+	logo, err := brand.PrintLogo(ctx, s.Staging, org, out.Brand)
+	if err != nil {
+		return out, err
+	}
+	res, err := s.Render(ctx, out.DocType, out.Applied.Content, data.Data, data.Created, logo)
 	if err != nil {
 		return out, err
 	}

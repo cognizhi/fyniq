@@ -26,6 +26,7 @@ const invoice: PublicDocument = {
   amount_due: sgd("3270.00"),
   can_answer: false,
   link_expires_at: "2027-04-22T09:30:00Z",
+  logo: "iVBORw0KGgo=",
 };
 const quote: PublicDocument = { ...invoice, kind: "quote", number: "QT-0003", due_date: undefined, valid_until: "2026-11-22", amount_due: undefined, status: "sent", can_answer: true };
 
@@ -35,6 +36,7 @@ afterEach(() => {
 
 // req: FR-AR-06
 // req: FR-AR-16
+// req: FR-ORG-09
 describe("The customer's view of a document", () => {
   it("reads the token only from the address's fragment", () => {
     expect(tokenOf(`#${token}`)).toBe(token);
@@ -48,6 +50,7 @@ describe("The customer's view of a document", () => {
     const { container } = renderPage(DocumentView, { path: "/d" });
     expect(await screen.findByRole("heading", { name: "Tax invoice INV-0042" })).toBeTruthy();
     expect(screen.getByText(/Amount due SGD 3,270.00 · due 22 Nov 2026/)).toBeTruthy();
+    expect(screen.getByAltText("Northwind Analytics Pte. Ltd. logo").getAttribute("src")).toBe("data:image/png;base64,iVBORw0KGgo=");
     const lines = screen.getByRole("table", { name: "Lines" });
     expect(within(lines).getAllByRole("row")[1]!.textContent).toContain("Analytics platform, October");
     expect(screen.queryByRole("button", { name: "Accept the quote" })).toBeNull();

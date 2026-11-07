@@ -6401,18 +6401,18 @@ export interface paths {
         };
         /**
          * Read a logo or icon file
-         * @description One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects.
+         * @description One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64, the logo as documents show it included. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects.
          */
         get: operations["getBrandFile"];
         /**
          * Upload a logo or icon
-         * @description Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. The logo for light backgrounds is also drawn by the render service as documents and emails show it: a PNG 192 pixels high (print). Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         put: operations["uploadBrandFile"];
         post?: never;
         /**
          * Remove a logo or icon
-         * @description Removes one of the brand's files from the next version (FR-ORG-09); earlier versions keep it. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Removes one of the brand's files from the next version (FR-ORG-09), with the logo for light backgrounds its drawing for documents; earlier versions keep them. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         delete: operations["removeBrandFile"];
         options?: never;
@@ -13245,6 +13245,8 @@ export interface components {
             icon?: components["schemas"]["BrandFileView"];
             /** @description The logo for light backgrounds. */
             light?: components["schemas"]["BrandFileView"];
+            /** @description The logo as documents show it: a PNG 192 pixels high, drawn from the logo for light backgrounds by the render service when it was uploaded (rev 0.201). Absent without a light logo, or when no render service is configured. */
+            print?: components["schemas"]["BrandFileView"];
             /**
              * Format: date-time
              * @example 2026-11-07T09:00:00Z
@@ -13290,7 +13292,7 @@ export interface components {
              * @example light
              * @enum {string}
              */
-            kind: "light" | "dark" | "icon";
+            kind: "light" | "dark" | "icon" | "print";
             /**
              * @example image/svg+xml
              * @enum {string}
@@ -25245,6 +25247,11 @@ export interface components {
              * @example 2027-04-22T09:30:00Z
              */
             link_expires_at: string;
+            /**
+             * @description The supplier's logo as its documents show it (FR-ORG-09): a PNG, base64, of the brand in force when the document was issued. Absent when it has none.
+             * @example iVBORw0KGgo=
+             */
+            logo?: string;
             /**
              * @description Its number.
              * @example INV-0042
@@ -79728,7 +79735,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -79789,8 +79796,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description light: the logo for light backgrounds; dark: for dark ones; icon: the square icon. */
-                kind: "light" | "dark" | "icon";
+                /** @description light: the logo for light backgrounds; dark: for dark ones; icon: the square icon; print: the logo as documents show it. */
+                kind: "light" | "dark" | "icon" | "print";
             };
             cookie?: never;
         };
@@ -80000,7 +80007,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -80042,7 +80049,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;

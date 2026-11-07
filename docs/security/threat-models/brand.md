@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The organisation's logo for light and dark backgrounds, its icon and accent colour, kept as versions: FR-ORG-09, G4-099 (PRD-001 rev 0.7, rev 0.8, rev 0.200); `p1-organisation-chart` task 2.4 |
+| Feature and requirement IDs | The organisation's logo for light and dark backgrounds, its icon and accent colour, kept as versions, and the logo drawn for documents: FR-ORG-09, G4-099, FR-DOC-04 (PRD-001 rev 0.7, rev 0.8, rev 0.200, rev 0.201); `p1-organisation-chart` task 2.4 |
 | Author, reviewer, date | Claude Code for the founders, 7 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Logo files (general, public in documents), brand versions |
 | Who acts | The Owner, the Administrator or the Controller uploads; every member reads |
@@ -12,8 +12,11 @@
 An upload (`PUT /v1/organisation/brand/files/{kind}`, multipart) is read in full up to its limit, typed by its content,
 cleaned (`internal/domain/brand`: an SVG rewritten from its safe elements and attributes, a PNG decoded and encoded
 again), scanned for malware, stored in the blob store under its SHA-256, and recorded as the next brand version. Members
-read the version in force and its files as base64 JSON; the web app shows them only as images. Trust boundaries:
-uploader → API (the file is hostile input), API → blob store, API → viewers' browsers (the file is shown to everyone).
+read the version in force and its files as base64 JSON; the web app shows them only as images. The logo for light
+backgrounds is also sent to the private render service, which cleans it again and draws it with Typst as a PNG for
+documents (rev 0.201); documents, and the customer's page of a quote or invoice, show the drawing of the brand in force
+when they were issued. Trust boundaries: uploader → API (the file is hostile input), API → blob store, API → render
+service (the file is hostile input again), API → viewers' and customers' browsers (the file is shown to everyone).
 
 ## 2. What can go wrong (STRIDE per boundary)
 
@@ -25,6 +28,8 @@ uploader → API (the file is hostile input), API → blob store, API → viewer
 | T4 | uploader → API | Information disclosure: an external entity reads a local file | Server files leak | Low |
 | T5 | stored file | Tampering: the blob changes after it was recorded | A different logo, or a hostile one, is served | Low |
 | T6 | brand | Repudiation, or a lost logo: a change overwrites history, so an issued document's logo is gone | A reprint differs; no trail | Low |
+| T7 | API → render service | Elevation or denial of service: a logo exploits or exhausts Typst's SVG or PNG reader | The render service is taken over or stalls | Low |
+| T8 | render service → documents | Tampering: a later logo or accent appears on a document already issued | A reprint differs from what the customer received | Medium |
 
 ## 3. What we do about it
 
@@ -36,8 +41,9 @@ uploader → API (the file is hostile input), API → blob store, API → viewer
 | T4 | A document type or entity declaration refuses the file; the decoder knows only XML's own entities | `TestASVSWithEntitiesOrNoShapeIsRefused`, `TestTheLogoAndBrand` |
 | T5 | Blobs are written once under their content's SHA-256 (`Create`), and a read checks the hash before answering | `TestTheLogoAndBrand` |
 | T6 | `brand_version` is insert-only and numbered by the database (FY282, FY283), at the version read; each version is audited | `TestTheLogoAndBrand` |
+| T7 | The render service accepts the logo alone, from its callers' tokens only, cleans it again with the same rules, and draws it in the sandbox every compile has (a fresh folder that is Typst's root, no packages, no system fonts, an empty environment, 30 seconds, four at once); the drawing is at most 512 KB | `TestTheRenderServiceRasterisesTheLogo` (V1.3.4, V5.2.2) |
+| T8 | A document is drawn with the brand version in force when it was issued (posted), read from the insert-only versions, and its drawing checked against its SHA-256 | `TestAnIssuedDocumentKeepsItsLogo`, `TestTheBrandInForceAndItsAccent` |
 
 ## 4. What remains
 
-- The PNG rasterised from an SVG (the render service, Typst) and the logo on documents, emails, reports, the sign-in page
-  and the portal arrive with the rest of task 2.4.
+- The logo in emails (HTML email), PDF reports and board packs, and on the sign-in page arrive with the rest of task 2.4.

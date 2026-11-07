@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -435,7 +436,7 @@ func (a *API) testDocuments(ctx context.Context, t storage.DocumentTemplate, c d
 		variants = append(variants, simplified)
 	}
 	for _, d := range variants {
-		res, err := a.renderDocument(ctx, t.DocumentType, c, d, true, false)
+		res, err := a.renderDocument(ctx, t.DocumentType, c, d, nil, true, false)
 		if err != nil {
 			return err
 		}
@@ -497,18 +498,29 @@ func sampleCreated(d render.Data) time.Time {
 	return day
 }
 
-// renderDocument renders c with d through the render service, finding the particulars when check is set.
-func (a *API) renderDocument(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, check, pages bool) (render.Response, error) {
+// renderDocument renders c with d and logo (the logo as documents show it; nil for none) through the render service,
+// finding the particulars when check is set.
+func (a *API) renderDocument(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, logo []byte, check, pages bool) (render.Response, error) {
 	if a.deps.Renderer == nil {
 		return render.Response{}, problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be rendered.",
 			"Ask the operator to configure the render service; templates without IRAS particulars and emails publish without it")
 	}
-	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check, Pages: pages})
+	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Logo: logo, Check: check, Pages: pages})
 }
 
-// renderDocumentAt renders c with d as a document issued at created, finding its particulars.
-func (a *API) renderDocumentAt(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
-	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+// renderDocumentAt renders c with d and logo as a document issued at created, finding its particulars.
+func (a *API) renderDocumentAt(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time, logo []byte) (render.Response, error) {
+	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Logo: logo, Check: true})
+}
+
+// previewLogo is the logo as documents show it of v, the latest brand version, for a preview: none, and the failure
+// logged, when the store cannot give it, as a preview is no record.
+func (a *API) previewLogo(ctx context.Context, org uuid.UUID, v storage.BrandVersion) []byte {
+	logo, err := brand.PrintLogo(ctx, a.deps.Staging, org, v)
+	if err != nil {
+		logFailure(ctx, err)
+	}
+	return logo
 }
 
 // render sends r to the render service, turning its refusals into problems.
@@ -1036,9 +1048,13 @@ func registerTemplatePreviews(a *API) {
 		}
 		out := TemplatePreview{Kind: b.Kind, DocumentType: b.DocumentType, Missing: []Particular{}}
 		var d render.Data
+		var current storage.BrandVersion
 		p, _ := authn.From(ctx)
 		if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-			d, err = a.sampleOf(ctx, u, b.DocumentType)
+			if d, err = a.sampleOf(ctx, u, b.DocumentType); err != nil {
+				return err
+			}
+			current, err = brand.Current(ctx, u)
 			return err
 		}); err != nil {
 			return nil, err
@@ -1051,7 +1067,7 @@ func registerTemplatePreviews(a *API) {
 			out.Subject, out.Body = subject, body
 			return &templatePreviewOutput{Body: out}, nil
 		}
-		res, err := a.renderDocument(ctx, b.DocumentType, c, d, len(doctemplate.Locked[b.DocumentType]) > 0, true)
+		res, err := a.renderDocument(ctx, b.DocumentType, c, d, a.previewLogo(ctx, p.Organisation, current), len(doctemplate.Locked[b.DocumentType]) > 0, true)
 		if err != nil {
 			return nil, err
 		}

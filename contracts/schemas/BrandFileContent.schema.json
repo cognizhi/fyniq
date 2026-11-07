@@ -13,7 +13,8 @@
       "enum": [
         "light",
         "dark",
-        "icon"
+        "icon",
+        "print"
       ],
       "examples": [
         "light"
