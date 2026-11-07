@@ -947,6 +947,39 @@ func TestAttackEffectiveDatedRangesNeverOverlap(t *testing.T) {
 	}
 }
 
+// An operation is kept as it was asked for (FR-INT-11): no role changes or removes one, the migrator included, so what
+// a caller polls names the job and resource it was given (FY284). Its status is its job's, never its own.
+// req: FR-INT-11
+func TestAttackAnOperationNeverChanges(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack operations Pte Ltd")
+	var id uuid.UUID
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		job, err := u.Outbox().Enqueue(ctx, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "checks.request"})
+		if err != nil {
+			return err
+		}
+		ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "attack"}})
+		op, err := u.Operations().Create(ctx, storage.NewOperation{Kind: "checks_run", JobID: job.ID, Resource: "/v1/checks", RequestedBy: "user:attack",
+			RequestedAt: time.Date(2026, 11, 7, 9, 0, 0, 0, time.UTC)})
+		id = op.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, role := range []string{"fyniq_migrator", "fyniq_api"} {
+		for _, stmt := range []string{"UPDATE fyniq.operation SET resource = '/v1/journals' WHERE id = '" + id.String() + "'",
+			"DELETE FROM fyniq.operation WHERE id = '" + id.String() + "'"} {
+			err := asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
+			if role == "fyniq_api" {
+				wantState(t, role+": "+stmt, err, "42501") // not granted
+			} else {
+				wantState(t, role+": "+stmt, err, "FY284")
+			}
+		}
+	}
+}
+
 // req: NFR-PORT-07
 func TestAttackAFailedWriteMidCommandLeavesNoPartialRows(t *testing.T) {
 	ctx := context.Background()

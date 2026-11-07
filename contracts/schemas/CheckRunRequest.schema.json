@@ -9,6 +9,14 @@
       ],
       "type": "boolean"
     },
+    "operation_id": {
+      "description": "The operation to poll at getOperation until the run is done (FR-INT-11); absent in a preview.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "requested_at": {
       "description": "When it was asked for: the run that follows finishes after it.",
       "examples": [

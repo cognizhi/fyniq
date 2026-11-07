@@ -165,6 +165,7 @@ var fyCodes = map[string]string{
 	"FY281": storage.CodeJoin,           // a domain another organisation claimed (000244)
 	"FY282": storage.CodeVersion,        // a brand version changed or removed (000246)
 	"FY283": storage.CodeVersion,        // a brand version saved over a newer one (000246)
+	"FY284": storage.CodeImmutable,      // an operation changed or removed (000249)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

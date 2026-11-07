@@ -52,6 +52,7 @@ type ReportExportOut struct {
 	SHA256      string `json:"sha256,omitempty" doc:"The SHA-256 of the file, in hexadecimal, as the audit trail records it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	Revision    int64  `json:"ledger_revision,omitempty" doc:"The ledger revision it read the books at (FR-RPT-08)." example:"42"`
 	ReadyAt     string `json:"ready_at,omitempty" format:"date-time" doc:"When it was ready." example:"2026-10-31T09:00:05Z"`
+	OperationID string `json:"operation_id,omitempty" format:"uuid" doc:"In the answer that asked for it: the operation to poll at getOperation until it is ready (FR-INT-11)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
 	ExpiresAt   string `json:"expires_at,omitempty" format:"date-time" doc:"Until when it can be downloaded: 24 hours after it was ready." example:"2026-11-01T09:00:05Z"`
 	Why         string `json:"why,omitempty" doc:"Why it failed, and what to do." example:"the range crosses the start of a financial year: export each year apart"`
 }
@@ -82,6 +83,7 @@ type reportExportInput struct {
 
 type reportExportOutput struct {
 	Status   int
+	Location string `header:"Location" doc:"In the answer that asked for it: the operation to poll until it is ready (FR-INT-11)."`
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
 	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 	Body     ReportExportOut
@@ -120,8 +122,8 @@ func registerReportExports(a *API) {
 		Summary: "Ask for an accountant export",
 		Description: "Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background " +
 			"(FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, " +
-			"or the receivables or payables in detail at a day. The answer is 202 with the export, pending; getReportExport says when it " +
-			"is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours " +
+			"or the receivables or payables in detail at a day. The answer is 202 with the export, pending, and its Location is the " +
+			"operation to poll (FR-INT-11); getReportExport also says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours " +
 			"after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; " +
 			"Prefer: return=preview checks it and asks for nothing.",
 	}, []string{CodeInvalid, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeReportExport},
@@ -155,17 +157,33 @@ func registerReportExports(a *API) {
 				if err != nil {
 					return ReportExportOut{}, err
 				}
+				var job storage.OutboxRow
 				if a.deps.Outbox != nil {
-					if err := reportexport.Queue(ctx, *a.deps.Outbox, u, p.Organisation, x); err != nil {
-						return ReportExportOut{}, err
+					job, err = reportexport.Queue(ctx, *a.deps.Outbox, u, p.Organisation, x)
+				} else { // no dispatcher here: the tick sends it
+					var item storage.NewOutboxItem
+					if item, err = reportexport.Item(x); err == nil {
+						job, err = u.Outbox().Enqueue(ctx, item)
 					}
 				}
-				return reportExportOut(x), nil
+				if err != nil {
+					return ReportExportOut{}, err
+				}
+				op, err := startOperation(ctx, u, "report_export", job.ID, "/v1/report-exports/"+x.ID.String(), a.deps.Clock.Now())
+				out := reportExportOut(x)
+				out.OperationID = op.ID.String()
+				return out, err
 			})
 			if err != nil {
 				return nil, err
 			}
-			return &reportExportOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+			out := &reportExportOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}
+			if w.Previewed {
+				out.Body.OperationID = ""
+			} else {
+				out.Location = operationPath(w.Body.OperationID)
+			}
+			return out, nil
 		})
 
 	register(a, authz.ListReportExports, huma.Operation{

@@ -54,8 +54,11 @@ UPDATE fyniq.check_owner SET person_user_id = sqlc.narg(person_user_id), set_by 
 WHERE key = sqlc.arg(key) AND version = sqlc.arg(version)
 RETURNING *;
 
--- name: OutboxWaiting :one
-SELECT EXISTS (SELECT 1 FROM fyniq.outbox WHERE kind = sqlc.arg(kind) AND state IN ('pending', 'dispatched')) AS waiting;
+-- name: OutboxWaiting :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox WHERE kind = sqlc.arg(kind) AND state IN ('pending', 'dispatched')
+ORDER BY created_at, id LIMIT 1;
 
 -- name: ListCheckReviews :many
 SELECT * FROM fyniq.check_review ORDER BY key, reviewed_at;

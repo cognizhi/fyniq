@@ -379,15 +379,63 @@ func (q *Queries) ListCheckStates(ctx context.Context) ([]FyniqCheckState, error
 	return items, nil
 }
 
-const outboxWaiting = `-- name: OutboxWaiting :one
-SELECT EXISTS (SELECT 1 FROM fyniq.outbox WHERE kind = $1 AND state IN ('pending', 'dispatched')) AS waiting
+const outboxWaiting = `-- name: OutboxWaiting :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox WHERE kind = $1 AND state IN ('pending', 'dispatched')
+ORDER BY created_at, id LIMIT 1
 `
 
-func (q *Queries) OutboxWaiting(ctx context.Context, kind string) (bool, error) {
-	row := q.db.QueryRow(ctx, outboxWaiting, kind)
-	var waiting bool
-	err := row.Scan(&waiting)
-	return waiting, err
+type OutboxWaitingRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+}
+
+func (q *Queries) OutboxWaiting(ctx context.Context, kind string) ([]OutboxWaitingRow, error) {
+	rows, err := q.db.Query(ctx, outboxWaiting, kind)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OutboxWaitingRow
+	for rows.Next() {
+		var i OutboxWaitingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkerClass,
+			&i.Kind,
+			&i.Payload,
+			&i.BusinessKey,
+			&i.State,
+			&i.Attempts,
+			&i.MaxAttempts,
+			&i.Dispatches,
+			&i.TaskName,
+			&i.LeaseHolder,
+			&i.LeaseExpiresAt,
+			&i.DeadlineAt,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const purgeCheckRuns = `-- name: PurgeCheckRuns :execrows

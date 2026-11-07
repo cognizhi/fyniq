@@ -55,6 +55,14 @@
       ],
       "type": "string"
     },
+    "operation_id": {
+      "description": "In the answer that asked for it: the operation to poll at getOperation until it is ready (FR-INT-11).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "ready_at": {
       "description": "When it was ready.",
       "examples": [

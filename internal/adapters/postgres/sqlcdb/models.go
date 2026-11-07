@@ -1360,6 +1360,16 @@ type FyniqOpeningBalance struct {
 	DocumentID     uuid.UUID
 }
 
+type FyniqOperation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	JobID          uuid.UUID
+	Resource       string
+	RequestedBy    string
+	RequestedAt    time.Time
+}
+
 type FyniqOrganisation struct {
 	OrganisationID    uuid.UUID
 	Name              string

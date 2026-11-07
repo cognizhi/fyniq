@@ -85,14 +85,19 @@ func Key(org, id uuid.UUID, name string) string {
 	return "exports/" + org.String() + "/" + id.String() + "/" + name
 }
 
-// Queue asks the worker to prepare x.
-func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, x storage.ReportExport) error {
+// Item is the job that prepares x.
+func Item(x storage.ReportExport) (storage.NewOutboxItem, error) {
 	payload, err := json.Marshal(map[string]string{"export_id": x.ID.String()})
+	return storage.NewOutboxItem{Class: storage.ClassWorker, Kind: Kind, Payload: payload, BusinessKey: "export:" + x.ID.String()}, err
+}
+
+// Queue asks the worker to prepare x, and returns the job.
+func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, x storage.ReportExport) (storage.OutboxRow, error) {
+	item, err := Item(x)
 	if err != nil {
-		return err
+		return storage.OutboxRow{}, err
 	}
-	_, err = d.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: Kind, Payload: payload, BusinessKey: "export:" + x.ID.String()})
-	return err
+	return d.Enqueue(ctx, u, org, item)
 }
 
 // day is a parameter's day.

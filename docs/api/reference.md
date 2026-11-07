@@ -10341,7 +10341,7 @@ The caller's background exports, newest first, each with its status (FR-RPT-09),
 
 **Ask for an accountant export** (`requestReportExport`)
 
-Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending; getReportExport says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending, and its Location is the operation to poll (FR-INT-11); getReportExport also says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
 
 - **Permission:** View on Reports, dashboards
 - **Parameters:**
@@ -10575,6 +10575,31 @@ The P&L's expense accounts over the run, largest first: the top ten, and the res
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
 
+## Operations
+
+Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11).
+
+### `GET /v1/operations/{operation_id}`
+
+**Poll a long operation** (`getOperation`)
+
+The status of long work the caller asked for, which runs in the background (FR-INT-11): an answer of 202 names it in its Location. running answers Retry-After; succeeded and failed say when, and resource is what the work made or changed. Only whoever asked for it reads it: anyone else gets 404. Read-only; no side effects.
+
+- **Permission:** View on (membership). Only whoever asked for the work reads its operation; anyone else gets 404.
+- **Parameters:**
+  - `operation_id` (path, required): The operation, from the Location of the answer that started it.
+- **Responses:**
+  - `200` OK [`Operation`](../../contracts/schemas/Operation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Checks
 
 The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05).
@@ -10599,7 +10624,7 @@ Every check of the checks engine the caller sees (FR-CTL-01), by area, each with
 
 **Run every check now** (`runChecks`)
 
-Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then. A Run now asked while one waits joins it. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then; its Location is the operation to poll (FR-INT-11). A Run now asked while one waits joins it, and its operation names the same run. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
 
 - **Permission:** View on Checks and books health (rev 0.163)
 - **Parameters:**

@@ -237,12 +237,18 @@ func (r checks) Review(ctx context.Context, n storage.NewCheckReview) (storage.C
 		"item": {nil, n.ItemKind + ":" + n.ItemID}, "item_version": {nil, n.ItemVersion}, "note": {nil, n.Note}})
 }
 
-func (r outbox) Waiting(ctx context.Context, kind string) (bool, error) {
+func (r outbox) Waiting(ctx context.Context, kind string) (*storage.OutboxRow, error) {
 	if err := r.u.check(); err != nil {
-		return false, err
+		return nil, err
 	}
-	waiting, err := r.u.q.OutboxWaiting(ctx, kind)
-	return waiting, mapError(err)
+	rows, err := r.u.q.OutboxWaiting(ctx, kind)
+	if err != nil || len(rows) == 0 {
+		return nil, mapError(err)
+	}
+	x := rows[0]
+	row := toOutbox(x.ID, x.WorkerClass, x.Kind, x.Payload, x.BusinessKey, x.State, x.Attempts, x.MaxAttempts, x.Dispatches, x.TaskName,
+		x.LeaseHolder, x.LeaseExpiresAt, x.DeadlineAt, x.LastError)
+	return &row, nil
 }
 
 // changedTypes are the object types of the events u recorded, sorted, each once.

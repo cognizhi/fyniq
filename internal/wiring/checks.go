@@ -54,7 +54,7 @@ func (k *Kit) watchChanges(clock ports.Clock) {
 		if !checks.Reacts(defs, types) {
 			return nil
 		}
-		if waiting, err := u.Outbox().Waiting(ctx, checks.RefreshKind); err != nil || waiting {
+		if waiting, err := u.Outbox().Waiting(ctx, checks.RefreshKind); err != nil || waiting != nil {
 			return err
 		}
 		_, err := d.Enqueue(ctx, u, org, checks.RefreshItem())

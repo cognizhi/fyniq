@@ -244,6 +244,8 @@ fyniq_api       INSERT    notification_preference (email, quiet_from, quiet_to, 
 fyniq_api       SELECT    notification_preference
 fyniq_api       INSERT    opening_balance (document_id)
 fyniq_api       SELECT    opening_balance
+fyniq_api       INSERT    operation
+fyniq_api       SELECT    operation
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (bank_account_name, bank_account_number, bank_name, books_start, document_footer, email, first_year_end, fy_start_month, legal_name, mailing_address, name, paynow_uen, phone, registered_address, time_zone, uen, version, website)
@@ -423,6 +425,7 @@ fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currenc
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    opening_balance
+fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
 fyniq_executor  SELECT    organisation_setting
 fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
@@ -539,6 +542,7 @@ fyniq_readonly  SELECT    notification_digest
 fyniq_readonly  SELECT    notification_event
 fyniq_readonly  SELECT    notification_preference
 fyniq_readonly  SELECT    opening_balance
+fyniq_readonly  SELECT    operation
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    organisation_connector
 fyniq_readonly  SELECT    organisation_connector_secret
@@ -718,6 +722,7 @@ fyniq_worker    SELECT    notification_event
 fyniq_worker    UPDATE    notification_event (fanned_out_at)
 fyniq_worker    SELECT    notification_preference
 fyniq_worker    SELECT    opening_balance
+fyniq_worker    SELECT    operation
 fyniq_worker    SELECT    organisation
 fyniq_worker    SELECT    organisation_connector
 fyniq_worker    SELECT    organisation_connector_secret

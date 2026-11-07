@@ -72,6 +72,8 @@ type UnitOfWork interface {
 	Passkeys() Passkeys
 	// Brand keeps the organisation's logo and brand versions (FR-ORG-09).
 	Brand() Brand
+	// Operations are the long work callers asked for and poll (FR-INT-11).
+	Operations() Operations
 	// JoinRequests are the organisation's requests to join by email domain, and its claimed domains (FR-ADM-08).
 	JoinRequests() JoinRequests
 	// Recoveries keep account recovery (SEC-35): global rows, audited in this unit of work's trail.

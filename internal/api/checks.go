@@ -121,6 +121,7 @@ type checkOutput struct {
 type CheckRunRequest struct {
 	RequestedAt string `json:"requested_at" format:"date-time" doc:"When it was asked for: the run that follows finishes after it." example:"2026-11-01T09:00:00Z"`
 	Waiting     bool   `json:"already_waiting" doc:"true when an earlier Run now was still waiting, so this one joined it." example:"false"`
+	OperationID string `json:"operation_id,omitempty" format:"uuid" doc:"The operation to poll at getOperation until the run is done (FR-INT-11); absent in a preview." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
 }
 
 type runCatalogueInput struct {
@@ -129,9 +130,10 @@ type runCatalogueInput struct {
 }
 
 type runCatalogueOutput struct {
-	Status  int
-	Applied string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was asked for (FR-INT-14)."`
-	Body    CheckRunRequest
+	Status   int
+	Location string `header:"Location" doc:"The operation to poll until the run is done (FR-INT-11)."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was asked for (FR-INT-14)."`
+	Body     CheckRunRequest
 }
 
 // CheckOwnerIn names a check's owner.
@@ -330,9 +332,11 @@ func (a *API) listChecks(ctx context.Context, u storage.UnitOfWork, s seer) (Che
 	} else if !errors.Is(err, ports.ErrNotFound) {
 		return out, err
 	}
-	if out.Requested, err = u.Outbox().Waiting(ctx, checks.RequestKind); err != nil {
+	waiting, err := u.Outbox().Waiting(ctx, checks.RequestKind)
+	if err != nil {
 		return out, err
 	}
+	out.Requested = waiting != nil
 	out.OwnerNames = authz.Decide(authz.SetCheckOwner, s.p.Roles, s.p.AI()).Allowed
 	out.MayReview = authz.Decide(authz.ReviewCheckItem, s.p.Roles, s.p.AI()).Allowed
 	return out, nil
@@ -484,8 +488,8 @@ func registerChecks(a *API) {
 		OperationID: "runChecks", Method: http.MethodPost, Path: "/v1/checks/runs", Tags: []string{"Checks"}, DefaultStatus: http.StatusAccepted,
 		Summary: "Run every check now",
 		Description: "Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: " +
-			"listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then. A Run now asked " +
-			"while one waits joins it. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the " +
+			"listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then; its Location is the " +
+			"operation to poll (FR-INT-11). A Run now asked while one waits joins it, and its operation names the same run. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the " +
 			"background run, which records each check's result, audits each change of status and records the run. " +
 			"Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.",
 	}, []string{CodeRateLimited, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld}, func(ctx context.Context, in *runCatalogueInput) (*runCatalogueOutput, error) {
@@ -494,8 +498,13 @@ func registerChecks(a *API) {
 			now := a.deps.Clock.Now()
 			out := CheckRunRequest{RequestedAt: now.UTC().Format(time.RFC3339)}
 			waiting, err := u.Outbox().Waiting(ctx, checks.RequestKind)
-			if err != nil || waiting {
-				out.Waiting = waiting
+			if err != nil {
+				return out, err
+			}
+			if waiting != nil {
+				out.Waiting = true
+				op, err := startOperation(ctx, u, "checks_run", waiting.ID, "/v1/checks", now)
+				out.OperationID = op.ID.String()
 				return out, err
 			}
 			start := now.UTC().Truncate(rateWindow)
@@ -512,17 +521,29 @@ func registerChecks(a *API) {
 			if err != nil {
 				return out, err
 			}
+			var job storage.OutboxRow
 			if a.deps.Outbox != nil {
-				_, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
+				job, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
 			} else { // no dispatcher here: the tick sends it
-				_, err = u.Outbox().Enqueue(ctx, item)
+				job, err = u.Outbox().Enqueue(ctx, item)
 			}
+			if err != nil {
+				return out, err
+			}
+			op, err := startOperation(ctx, u, "checks_run", job.ID, "/v1/checks", now)
+			out.OperationID = op.ID.String()
 			return out, err
 		})
 		if err != nil {
 			return nil, err
 		}
-		return &runCatalogueOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
+		out := &runCatalogueOutput{Status: w.Status, Applied: applied(w), Body: w.Body}
+		if w.Previewed {
+			out.Body.OperationID = ""
+		} else {
+			out.Location = operationPath(w.Body.OperationID)
+		}
+		return out, nil
 	})
 
 	register(a, authz.ReviewCheckItem, exempt(huma.Operation{
