@@ -1,0 +1,57 @@
+# sg-cpf@2026.1: CPF contribution rates for Singapore citizens and permanent residents from their third year on
+# monthly wages above $750, and the wage ceilings (PRD-001 §10.6, ENG-30; p1-planning D1). The graduated rates up to
+# $750 and the first two years of permanent residence are sg-cpf@2026.2, with p1-payroll-link. Never edit this
+# version once it is active anywhere: a correction is sg-cpf@2026.2 (fyniq-sg-statutory).
+id = "sg-cpf@2026.1"
+title = "Singapore CPF contributions: the rates by age band for citizens and third-year permanent residents above $750 a month, and the wage ceilings"
+effective_from = "2026-01-01"
+review_date = "2027-01-31"
+verifier = "Claude Code against the CPF Board's and IRAS's pages on 8 Nov 2026 (p1-planning); the accountant's review is pending (FR-UX-41)"
+conditions = "Wages earned in a month by a Singapore citizen or a Singapore permanent resident from the third year of permanent residence, in the private sector, with total monthly wages above $750; the age band is the employee's age as the CPF Board counts it for the month; contributions on Ordinary Wages up to the monthly ceiling, and on Additional Wages up to the annual salary ceiling less the year's Ordinary Wages subject to CPF. The graduated rates and the first two years of permanent residence are not in this version"
+
+[[sources]]
+id = "cpf-rates-2026"
+title = "CPF Board: How much CPF contributions to pay"
+url = "https://www.cpf.gov.sg/employer/employer-obligations/how-much-cpf-contributions-to-pay"
+section = "What are the CPF contribution rates? Contribution rates from 1 January 2026 (monthly wages > $750)"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "55 and below 17 20 37 Above 55 to 60 16 18 34 Above 60 to 65 12.5 12.5 25 Above 65 to 70 9 7.5 16.5 Above 70 7.5 5 12.5"
+
+[[sources]]
+id = "cpf-rates-2027"
+title = "CPF Board: CPF Contribution Changes from 1 January 2027"
+url = "https://www.cpf.gov.sg/conrate2023"
+section = "Increase in CPF Contribution Rates from 1 January 2027, for employees earning monthly wages > $750"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "there will be an increase to the CPF contribution rates from 1 January 2027 for employees aged above 55 to 65. The changes apply to wages earned from 1 January 2027: Above 55 to 60 34 35.5 (+1.5) 16.5 (+0.5) 19 (+1) Above 60 to 65 25 26 (+1) 13 (+0.5) 13 (+0.5)"
+
+[[sources]]
+id = "iras-cpf-ceilings"
+title = "IRAS: CPF Relief for Employees"
+url = "https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/tax-reliefs-rebates-and-deductions/tax-reliefs/central-provident-fund(cpf)-relief-for-employees"
+section = "Ordinary Wage (OW) ceiling; Additional Wage (AW) ceiling"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "1 Jan to 31 Dec 2025 $7,400 On or after 1 Jan 2026 $8,000 Notwithstanding the increases to the CPF monthly salary ceiling starting from 1 Sep 2023, the CPF annual salary ceiling will remain at $102,000."
+
+[[tables]]
+name = "rates"
+file = "rates.csv"
+description = "The employer's and the employee's rates as fractions of the wage, by residency group (sc_spr3: Singapore citizens and permanent residents from the third year), for an age above age_above (blank: none) up to age_to (blank: no limit), on total monthly wages above wage_above, for wages earned from effective_from to effective_to"
+
+[[tables]]
+name = "ceilings"
+file = "ceilings.csv"
+description = "ow_monthly: the Ordinary Wage ceiling a month; annual_salary: the annual salary ceiling, from which the Additional Wage ceiling is the year's ceiling less its Ordinary Wages subject to CPF"
+
+[[pinned]]
+name = "rates"
+file = "pinned/rates.csv"
+description = "Hand-pinned rates for a month, an age and a wage, worked from the CPF Board's tables, not from rates.csv"
+
+[[pinned]]
+name = "ceilings"
+file = "pinned/ceilings.csv"
+description = "Hand-pinned ceilings for a month, worked from IRAS's table, not from ceilings.csv"

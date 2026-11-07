@@ -80,7 +80,7 @@ func TestTheShippedPacksLoadAndPassTheirPinnedTests(t *testing.T) {
 	for _, v := range versions {
 		ids = append(ids, v.ID)
 	}
-	if want := []string{"sg-deadlines@2026.1", "sg-gst@2026.1", "sg-gst@2026.2", "sg-gst@2026.3"}; !slices.Equal(ids, want) {
+	if want := []string{"sg-cit@2026.1", "sg-cpf@2026.1", "sg-deadlines@2026.1", "sg-gst@2026.1", "sg-gst@2026.2", "sg-gst@2026.3", "sg-sdl@2026.1"}; !slices.Equal(ids, want) {
 		t.Fatalf("loaded %v; want %v, sorted by id", ids, want)
 	}
 	for _, v := range versions {

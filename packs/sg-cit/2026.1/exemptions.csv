@@ -1,0 +1,5 @@
+scheme,ya_from,ya_to,tier,band,percent,source
+sute,2020,,1,100000.00,0.75,iras-cit-sute
+sute,2020,,2,100000.00,0.50,iras-cit-sute
+pte,2020,,1,10000.00,0.75,iras-cit-pte
+pte,2020,,2,190000.00,0.50,iras-cit-pte

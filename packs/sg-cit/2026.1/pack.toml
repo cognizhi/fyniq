@@ -1,0 +1,84 @@
+# sg-cit@2026.1: Singapore corporate income tax by Year of Assessment: the rate, the start-up and partial tax
+# exemptions, and each YA's rebate with its cash grant (PRD-001 §10.6, ENG-30, FR-PLN-03, FR-PLN-06; p1-planning D1).
+# Never edit this version once it is active anywhere: a correction is sg-cit@2026.2 (fyniq-sg-statutory).
+id = "sg-cit@2026.1"
+title = "Singapore corporate income tax: the rate, the start-up and partial tax exemptions, and the rebates by Year of Assessment"
+effective_from = "2026-01-01"
+review_date = "2027-03-31"
+verifier = "Claude Code against IRAS's page on 8 Nov 2026 (p1-planning); the tax agent's and the accountant's review is pending (FR-UX-41)"
+conditions = "A company taxed in Singapore at the prevailing rate on its normal chargeable income, by Year of Assessment from YA 2020; the start-up exemption only for a qualifying company's first 3 consecutive YAs (incorporated and tax resident in Singapore, at most 20 shareholders as IRAS states, not investment holding or property development), else the partial exemption; the cash grant only for an active company that met the local employee condition"
+
+[[sources]]
+id = "iras-cit-rate"
+title = "IRAS: Corporate Income Tax Rate, Rebates & Tax Exemption Schemes"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/corporate-income-tax-rate-rebates-and-tax-exemption-schemes"
+section = "Corporate Income Tax (CIT) Rate"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "Your company is taxed at a flat rate of 17% of its chargeable income. This applies to both local and foreign companies."
+
+[[sources]]
+id = "iras-cit-sute"
+title = "IRAS: Corporate Income Tax Rate, Rebates & Tax Exemption Schemes"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/corporate-income-tax-rate-rebates-and-tax-exemption-schemes"
+section = "Tax Exemption Scheme for New Start-Up Companies"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "The tax exemptions for qualifying companies for their first 3 consecutive YAs are as follows: YA 2020 onwards 75% exemption on the first $100,000 of normal chargeable income*; and A further 50% exemption on the next $100,000 of normal chargeable income*."
+
+[[sources]]
+id = "iras-cit-pte"
+title = "IRAS: Corporate Income Tax Rate, Rebates & Tax Exemption Schemes"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/corporate-income-tax-rate-rebates-and-tax-exemption-schemes"
+section = "Partial Tax Exemption Scheme"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "YA 2020 onwards 75% exemption on the first $10,000 of normal chargeable income*; and A further 50% exemption on the next $190,000 of normal chargeable income*."
+
+[[sources]]
+id = "iras-cit-rebate"
+title = "IRAS: Corporate Income Tax Rate, Rebates & Tax Exemption Schemes"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/corporate-income-tax-rate-rebates-and-tax-exemption-schemes"
+section = "Rebate Percentages & Caps; CIT Rebate for YA 2026 and CIT Rebate Cash Grant (enhanced, page last updated 7 August 2026)"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "the enhanced CIT Rebate will be 50% of the corporate tax payable; and the enhanced CIT Rebate Cash Grant will be $2,000. The total maximum benefits of the enhanced CIT Rebate and CIT Rebate Cash Grant that a company may receive for YA 2026 is $40,000. If CIT Rebate ≤ $2,000, no CIT Rebate to be given. If CIT Rebate > $2,000, CIT Rebate (capped at $40,000) less $2,000 to be given."
+
+[[sources]]
+id = "iras-cit-examples"
+title = "IRAS: Corporate Income Tax Rate, Rebates & Tax Exemption Schemes"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/corporate-income-tax-rate-rebates-and-tax-exemption-schemes"
+section = "How the Rebates Are Computed, Examples 2 to 5; the start-up exemption's maximum exemption example"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "Tax Payable before CIT Rebate 50,400 Less: CIT Rebate $50,400 x 50% = $25,200 (capped at $40,000) less $2,000 CIT Rebate Cash Grant (23,200) Net Tax Payable 27,200"
+
+[[tables]]
+name = "rates"
+file = "rates.csv"
+description = "The rate on normal chargeable income, by Year of Assessment: ya_to blank while it is the prevailing rate"
+
+[[tables]]
+name = "exemptions"
+file = "exemptions.csv"
+description = "Each scheme's tiers in order: the percentage exempted of the band of normal chargeable income that follows the tiers before it; sute is the start-up exemption, pte the partial exemption"
+
+[[tables]]
+name = "rebates"
+file = "rebates.csv"
+description = "Each YA's rebate: a percentage of the tax payable after tax set-offs, capped, and the cash grant that an eligible company receives instead of the first part of the rebate; a YA without a row has no rebate"
+
+[[pinned]]
+name = "rates"
+file = "pinned/rates.csv"
+description = "Hand-pinned rates by YA, worked from iras-cit-rate, not from rates.csv"
+
+[[pinned]]
+name = "exemptions"
+file = "pinned/exemptions.csv"
+description = "Hand-pinned exempt amounts worked from IRAS's tiers and its maximum exemption example, not from exemptions.csv"
+
+[[pinned]]
+name = "rebates"
+file = "pinned/rebates.csv"
+description = "Hand-pinned rebates from IRAS's Examples 2 to 5 and the cap, not from rebates.csv"

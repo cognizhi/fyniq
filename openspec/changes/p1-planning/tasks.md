@@ -18,16 +18,16 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   - FR-PLN-09: expected dates by average lateness over 12 months.
 
   `// req: FR-PLN-02`, `// req: FR-PLN-03`, `// req: FR-PLN-09`, `// req: RND-PLAN` (spec text)
-- [ ] 1.2 `sg-cit@2026.1` (D1): `rates`, `exemptions` and `rebates` from IRAS's pages and the Budget statements, each
+- [x] 1.2 `sg-cit@2026.1` (D1): `rates`, `exemptions` and `rebates` from IRAS's pages and the Budget statements, each
   row with its source, quote and retrieval date, and `pack.CITOn`. The pinned cases are IRAS's start-up and partial
   exemption examples, and each YA's rebate at and above its cap. `go test ./internal/domain/pack` loads it and passes
   them. `// req: ENG-30`, `// req: QA-ENG-08`
-- [ ] 1.3 `sg-cpf@2026.1` (D1): `rates` for `sc_spr3` by age band on wages above S$750, and `ceilings` (the Ordinary
+- [x] 1.3 `sg-cpf@2026.1` (D1): `rates` for `sc_spr3` by age band on wages above S$750, and `ceilings` (the Ordinary
   Wage ceiling, the annual salary ceiling) from the CPF Board's pages, with `pack.CPFOn`. The pinned cases are worked by
   hand from the CPF Board's tables: S$7,600, S$8,000 and S$12,000 at 55 and below, one per other age band, and the
   ceiling's change on 1 Jan 2026. The skill's table of what the pack holds is updated. `// req: ENG-30`,
   `// req: QA-ENG-08`
-- [ ] 1.4 `sg-sdl@2026.1` (D1): `levy` (rate, minimum, maximum) and `pack.SDLOn`, pinned at S$500 (the minimum),
+- [x] 1.4 `sg-sdl@2026.1` (D1): `levy` (rate, minimum, maximum) and `pack.SDLOn`, pinned at S$500 (the minimum),
   S$2,000 and S$6,000 (the maximum). `// req: ENG-30`, `// req: QA-ENG-08`
 
 ## 2. The forecast engine and its oracle (slice 2)

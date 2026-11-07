@@ -1,0 +1,8 @@
+group,age_above,age_to,wage_above,effective_from,effective_to,employer,employee,source
+sc_spr3,,55,750.00,2026-01-01,,0.17,0.20,cpf-rates-2026 cpf-rates-2027
+sc_spr3,55,60,750.00,2026-01-01,2026-12-31,0.16,0.18,cpf-rates-2026
+sc_spr3,55,60,750.00,2027-01-01,,0.165,0.19,cpf-rates-2027
+sc_spr3,60,65,750.00,2026-01-01,2026-12-31,0.125,0.125,cpf-rates-2026
+sc_spr3,60,65,750.00,2027-01-01,,0.13,0.13,cpf-rates-2027
+sc_spr3,65,70,750.00,2026-01-01,,0.09,0.075,cpf-rates-2026 cpf-rates-2027
+sc_spr3,70,,750.00,2026-01-01,,0.075,0.05,cpf-rates-2026 cpf-rates-2027

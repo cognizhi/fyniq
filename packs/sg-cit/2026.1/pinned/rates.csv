@@ -1,0 +1,4 @@
+case,ya,want_rate,why,source
+CIT-R-01,2026,0.17,"the flat rate of 17% of chargeable income",iras-cit-rate
+CIT-R-02,2031,0.17,"the prevailing rate holds for a YA no announcement has changed",iras-cit-rate
+CIT-R-03,2019,none,"a YA before 2020 is not held by this version",iras-cit-rate
