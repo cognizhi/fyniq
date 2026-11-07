@@ -20,8 +20,8 @@ type Filter = "all" | "customer" | "vendor" | "director";
 
 // holds says whether a contact is of a filter's kind: "director" takes the directors and the shareholders (FR-EQ-01).
 const holds = (c: Contact, f: Filter) => f === "all" || (f === "director" ? c.director || c.shareholder : c[f]);
-const kinds = (c: { customer: boolean; vendor: boolean; director: boolean; shareholder: boolean }) =>
-  [c.customer && "Customer", c.vendor && "Vendor", c.director && "Director", c.shareholder && "Shareholder"].filter(Boolean).join(", ");
+const kinds = (c: { customer: boolean; vendor: boolean; director: boolean; shareholder: boolean; investor?: boolean }) =>
+  [c.customer && "Customer", c.vendor && "Vendor", c.director && "Director", c.shareholder && "Shareholder", c.investor && "Investor"].filter(Boolean).join(", ");
 
 // Who adds and changes contacts and items: C on "Contacts and items" (Appendix D, rev 0.33).
 export const contactEditors = ["bookkeeper", "ar_specialist", "ap_specialist", "accountant", "controller"];
@@ -57,6 +57,7 @@ interface Draft extends Record<TextKey, string> {
   vendor: boolean;
   director: boolean; // a director or shareholder holds a director account, 2500 and 2120 (FR-EQ-01)
   shareholder: boolean;
+  investor: boolean; // a SAFE, note or option holder with no shares yet, a holder in the equity register (FR-EQ-15)
   payment_terms_days: string;
   discount_percent: string; // a supplier's early-payment discount (FR-AP-13): blank for none
   discount_days: string;
@@ -64,7 +65,7 @@ interface Draft extends Record<TextKey, string> {
   active: boolean;
 }
 
-const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, director: false, shareholder: false, payment_terms_days: "", discount_percent: "", discount_days: "", customer_group_id: "", active: true };
+const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, director: false, shareholder: false, investor: false, payment_terms_days: "", discount_percent: "", discount_days: "", customer_group_id: "", active: true };
 
 function draftOf(c: Contact): Draft {
   const s = (v: string | undefined) => v ?? "";
@@ -84,6 +85,7 @@ function draftOf(c: Contact): Draft {
     vendor: c.vendor,
     director: c.director,
     shareholder: c.shareholder,
+    investor: c.investor ?? false,
     payment_terms_days: c.payment_terms_days === undefined ? "" : String(c.payment_terms_days),
     customer_group_id: s(c.customer_group_id),
     discount_percent: s(c.discount_percent),
@@ -158,7 +160,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     if (!d) return;
     const errs: typeof errors = {};
     if (!d.legal_name.trim()) errs.legal_name = "Enter the contact's legal name.";
-    if (!d.customer && !d.vendor && !d.director && !d.shareholder) errs.customer = "Mark it as a customer, a vendor, a director or a shareholder.";
+    if (!d.customer && !d.vendor && !d.director && !d.shareholder && !d.investor) errs.customer = "Mark it as a customer, a vendor, a director, a shareholder or an investor.";
     const terms = d.payment_terms_days.trim();
     if (terms && !(/^\d{1,3}$/.test(terms) && Number(terms) <= 365)) errs.payment_terms_days = "Enter 0 to 365 days, or leave it empty for the organisation's default.";
     const pct = d.discount_percent.trim().replace(/%$/, "").trim();
@@ -174,6 +176,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
       const body: Record<string, string | number | boolean> = { legal_name: d.legal_name.trim(), customer: d.customer, vendor: d.vendor };
       if (d.director) body.director = true;
       if (d.shareholder) body.shareholder = true;
+      if (d.investor) body.investor = true;
       for (const [k] of textFields) if (k !== "legal_name" && d[k].trim()) body[k] = d[k].trim();
       if (d.address.trim()) body.address = d.address.trim();
       if (terms) body.payment_terms_days = Number(terms);
@@ -205,7 +208,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     if (!one.data || !base) return setBusy(false);
     const changes: Record<string, string | number | boolean> = {};
     for (const k of [...textFields.map(([k]) => k), "address"] as TextKey[]) if (d[k].trim() !== base[k]) changes[k] = d[k].trim();
-    for (const k of ["customer", "vendor", "director", "shareholder", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
+    for (const k of ["customer", "vendor", "director", "shareholder", "investor", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
     if (terms !== base.payment_terms_days) changes.payment_terms_days = terms ? Number(terms) : -1; // -1 clears it
     const group = d.customer ? d.customer_group_id : "";
     if (group !== base.customer_group_id) changes.customer_group_id = group; // "" takes it out of its group
@@ -260,7 +263,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
       wide
       eyebrow="Contacts"
       title={isNew ? "New contact" : current ? current.legal_name : "Contact"}
-      description="A customer, a vendor, a director or shareholder, or several. A contact is never deleted: make it inactive to keep its history. Vendor bank details have their own approved change."
+      description="A customer, a vendor, a director, a shareholder or an investor, or several. A contact is never deleted: make it inactive to keep its history. Vendor bank details have their own approved change."
     >
       {one.isError && <Refusal problem={problemOf(one.error)} title="The contact could not be read" />}
       {problem && <Refusal problem={problem} title={isNew ? "The contact was not added" : "The contact was not saved"} />}
@@ -269,7 +272,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
         <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
           <fieldset className="fy-fieldset" aria-describedby={errors.customer ? `${id}-roles-error` : undefined}>
             <legend className="fy-label">It is</legend>
-            <div className="fy-row gap-4">
+            <div className="fy-row fy-row--wrap gap-4">
               <label className="fy-row gap-2">
                 <input type="checkbox" checked={d.customer} onChange={(e) => set("customer", e.target.checked)} />A customer
               </label>
@@ -282,10 +285,14 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
               <label className="fy-row gap-2">
                 <input type="checkbox" checked={d.shareholder} onChange={(e) => set("shareholder", e.target.checked)} />A shareholder
               </label>
+              <label className="fy-row gap-2">
+                <input type="checkbox" checked={d.investor} onChange={(e) => set("investor", e.target.checked)} />An investor
+              </label>
             </div>
             {(d.director || d.shareholder) && (
               <span className="fy-small fy-muted">What the company owes them, or they owe it, is kept on their director account (2500 and 2120), in Accounting › Director accounts.</span>
             )}
+            {(d.shareholder || d.investor) && <span className="fy-small fy-muted">Their details and holdings are kept in Equity › Holders.</span>}
             {errors.customer && (
               <span className="fy-error" id={`${id}-roles-error`}>
                 {errors.customer}

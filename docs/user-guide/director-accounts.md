@@ -137,15 +137,8 @@ or loss, needs their note.
 
 ## The register of share issues
 
-**Register of share issues**, on Director accounts, lists every allotment of shares: who holds
-them, the class, the number, the price, what paid for them, the resolutions and ACRA's
-reference. Share capital changes only with this register or the opening balances.
-
-Record the shares issued before the books start, such as the incorporation subscription, with
-**Record shares issued before the books start**. No entry posts, because the opening balances
-hold their share capital. An Owner or the Controller records them. Conversions add their shares
-when ACRA registers them. Transfers, issues for cash and the cap table come with the equity
-register.
+Every allotment of shares, including a conversion's, is in the register of share issues, now
+part of the Equity register.
 
 ## Name the person on a journal or opening balance
 
@@ -209,5 +202,5 @@ advances, not under the loan, with no entry posted.
 
 ## Related
 
-Founders' money: what the company owes you, and the options · Contacts · Journals · Opening
-balances · Approvals
+Founders' money: what the company owes you, and the options · Equity register · Contacts ·
+Journals · Opening balances · Approvals
