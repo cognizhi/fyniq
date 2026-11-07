@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capitalisation": {
+      "description": "The company's capitalisation once the post-money SAFEs convert, C₀ ÷ (1 − f), shown under RND-DISPLAY to 2 decimals; absent when none converts.",
+      "examples": [
+        "1052631.58"
+      ],
+      "type": "string"
+    },
+    "conversions": {
+      "description": "Each recorded SAFE or note that converts at the round, in the order recorded.",
+      "items": {
+        "$ref": "ConversionWorking.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "post_money_part": {
+      "description": "f: the part of the company the post-money SAFEs convert into, Σ amount ÷ cap, as a percentage shown under RND-DISPLAY to 2 decimals; absent when none converts.",
+      "examples": [
+        "5.00"
+      ],
+      "type": "string"
+    },
+    "round_id": {
+      "description": "The approved issue for cash it converts at, when one was named.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "round_price": {
+      "description": "The round's price per share in the base currency.",
+      "examples": [
+        "3.00"
+      ],
+      "type": "string"
+    },
+    "shares_before": {
+      "description": "C₀: the shares issued and held at the end of the day before the round (today, for a price typed in).",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "round_price",
+    "currency",
+    "shares_before",
+    "conversions"
+  ],
+  "title": "ConversionPreview",
+  "type": "object"
+}

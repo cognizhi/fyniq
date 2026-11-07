@@ -14,8 +14,8 @@ requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-20, FR-EQ-08, FR-EQ
 share classes with their rights, and the equity transactions that move every share. Its first
 page, **Who owns the company**, is the cap table, in Basic and Expert mode. The tabs at the top of
 each page move between **Cap table**, **Holders**, **Classes** and **Transactions** (with the
-register of share issues), which are Expert pages. SAFEs and convertible notes, the option pool and
-rounds join these tabs as they arrive.
+register of share issues) and **SAFEs and notes**, which are Expert pages. The option pool and rounds
+join these tabs as they arrive.
 
 Holders and classes post no entry. Share capital changes only through the register of share
 issues, the opening balances, and a conversion between classes on different accounts.
@@ -164,6 +164,50 @@ monies**: categorise the bank line of their payment to 2040, naming them. It the
 Cr share capital. If an issue does not go ahead, pay the refund from your bank and categorise that
 bank line to 2040 the same way.
 
+## SAFEs and convertible notes
+
+**Equity › SAFEs and notes** lists every SAFE and convertible note: its holder, form, amount, the
+day it was signed, its terms (the valuation cap, a discount, a note's interest and maturity), the
+accountant's classification, what **2700 Convertible notes / SAFE** holds for it today, and where
+it stands: **Draft**, **Waiting for approval**, **Recorded**, **Converting** (its conversion is
+drafted or approved) or **Converted** (its shares were allotted). The tiles count the outstanding
+ones, the drafts and those converting or converted.
+
+## Record a SAFE or note
+
+1. Select **Add instrument**. An Accountant drafts it.
+2. Choose the holder, an investor or shareholder (mark the contact first in Contacts), and the
+   form: a post-money SAFE, a pre-money SAFE, a discount-only SAFE, an MFN SAFE or a convertible
+   note. Enter the amount paid and the day it was signed, then the terms its form has: the
+   valuation cap of a post-money or pre-money SAFE, a discount, and a note's interest and maturity.
+3. Choose what converts it, the share class it converts into, how its terms count the shares its
+   price divides by, and the decimals its terms give the conversion price. The accountant records
+   its classification, liability or equity, from its terms.
+4. Select **Draft the instrument**, attach the signed SAFE or note, then **Ask for approval**:
+   another Owner or the Controller records it, never the holder.
+
+Its money comes in on a bank line: in Banking, categorise the line to **2700 Convertible notes /
+SAFE** and choose the recorded SAFE or note under **SAFE or note**. A repayment out is categorised
+the same way. A line to 2700 that names no recorded instrument is refused.
+
+## The forms Fyniq converts by itself
+
+**Forms Fyniq converts** lists the templates Fyniq knows. A conversion that an enabled template
+covers in every term is ready for approval; any other form, and a SAFE with a discount, a
+most-favoured-nation clause or interest, converts by a draft the accountant completes (⚠). To
+enable a template, an Accountant selects **Enable it**, attaches your lawyer's confirmation that its
+conversion terms are right for the company, and asks for approval; another Owner or the Controller
+approves it, once.
+
+## Preview a conversion
+
+**Conversion preview** works out what each recorded SAFE and note would convert into, as a
+sandbox: nothing posts and nothing is saved. Choose an approved issue for cash under **At the
+round**, or type a round price per share, then select **Preview**. For each instrument it shows
+the working: its ownership at the cap, its cap price, its discounted round price, the conversion
+price cut down to its decimals, the whole shares, and what stays on 2700. At an approved round, an
+Accountant can then select **Draft the SAFE conversions** there.
+
 ## Convert SAFEs and notes
 
 At a priced round, each recorded SAFE or convertible note converts into shares. On the round's
@@ -221,6 +265,9 @@ a director's balance add their shares when they take effect.
 | The subscriber's money is not all in share application monies (EQUITY-08) | Categorise the bank line of their payment to 2040, naming them, then record the effective date |
 | The holder holds fewer of these shares on the day (EQUITY-08) | Check the register: a holder moves only shares they hold |
 | A conversion of the instrument stands already (EQUITY-07) | Change that conversion, or reverse it first |
+| Account 2700 holds SAFEs and convertible notes, so the line names its instrument (LEDGER-49) | Choose the recorded SAFE or note under SAFE or note |
+| The instrument is missing its signed copy (EQUITY-06) | Attach the signed SAFE or note, then ask for approval |
+| The template is enabled already, or is not one Fyniq knows (EQUITY-15) | A template is enabled once; Fyniq knows YC's Singapore post-money SAFE |
 | The round is not an approved issue for cash (EQUITY-07) | Draft the conversions from the round's issue once it is approved |
 | Its round is not effective on or before the day (EQUITY-08) | Make the round effective first: the SAFEs convert with it, on its day or after |
 | Its round was reversed (EQUITY-08) | Draft the conversions again from the round that replaces it |

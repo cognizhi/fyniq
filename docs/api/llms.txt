@@ -329,6 +329,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/instrument-templates/{template_key}/enablement` (draftInstrumentTemplateEnablement): Draft a template's enablement
 - `GET /v1/instruments` (listInstruments): List the SAFEs and convertible notes
 - `POST /v1/instruments` (createInstrument): Draft a SAFE or convertible note
+- `GET /v1/instruments/conversion-preview` (previewInstrumentConversions): Preview the SAFEs' and notes' conversions at a round
 - `GET /v1/instruments/{instrument_id}` (getInstrument): Get a SAFE or convertible note
 - `PUT /v1/instruments/{instrument_id}` (replaceInstrument): Change a drafted SAFE or convertible note
 - `POST /v1/instruments/{instrument_id}/approval` (requestInstrumentApproval): Ask for approval to record a SAFE or convertible note

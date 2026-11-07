@@ -125,7 +125,7 @@ export interface PartForm {
 
 // checkCategorisation reads the change or split form: every part's account, at most one part without its amount, and
 // amounts as plain decimals; every problem at once (ENG-23).
-export function checkCategorisation(parts: PartForm[], contact: string, reference: string, currency: string): { body?: Categorisation; errors: Record<string, string> } {
+export function checkCategorisation(parts: PartForm[], contact: string, reference: string, currency: string, instrument = ""): { body?: Categorisation; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   let open = 0;
   for (const p of parts) {
@@ -139,6 +139,7 @@ export function checkCategorisation(parts: PartForm[], contact: string, referenc
     errors,
     body: {
       contact_id: contact || undefined,
+      instrument_id: instrument || undefined,
       reference: reference.trim() || undefined,
       parts: parts.map((p) => ({
         account_id: p.account_id,

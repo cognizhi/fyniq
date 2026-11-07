@@ -23,7 +23,9 @@ import (
 // S$2.375, S$124,998.63 (52,631 × 2.375 = 124,998.625, RND-SHARE), nothing for the accountant to complete. Asking again
 // drafts nothing; a second conversion of the SAFE is refused. Approved, it is never effective before the round. Once
 // both are on 15 Oct, it posts Dr 2700 124,998.63 naming the SAFE · Cr 3010, 2700 holds S$1.37 for it, and the cap
-// table reads 79.83% founder, 15.97% investor, 4.20% the SAFE holder (G.3).
+// table reads 79.83% founder, 15.97% investor, 4.20% the SAFE holder (G.3). Before it drafts, the preview shows the
+// working: f = 5.00%, a capitalisation of 1,052,631.58 and the cap price 2.375; at a price typed in of S$2.00 the SAFE
+// takes the round's price, 62,500 shares, for the accountant to check.
 // req: FR-EQ-18
 // req: RND-SHARE
 // req: FR-EQ-20
@@ -124,9 +126,35 @@ func TestASAFEConvertsAtTheRound(t *testing.T) {
 	e.problemIs(conversions(prep, round.Header.Get("ETag")), "draftInstrumentConversions", 422, equity.CodeTransaction) // a draft round
 	asked(rpath, round, "Board resolution")
 	approved := e.call(http.MethodGet, rpath, prep, nil).Header.Get("ETag")
-	e.problemIs(conversions(weiling, approved), "draftInstrumentConversions", 403, CodeForbidden) // the Accountant drafts
-	e.problemIs(conversions(prep, round.Header.Get("ETag")), "draftInstrumentConversions", 412, CodeStale)   // the round as drafted
+	e.problemIs(conversions(weiling, approved), "draftInstrumentConversions", 403, CodeForbidden)          // the Accountant drafts
+	e.problemIs(conversions(prep, round.Header.Get("ETag")), "draftInstrumentConversions", 412, CodeStale) // the round as drafted
 	e.problemIs(e.call(http.MethodPost, rpath+"/conversions", prep, nil), "draftInstrumentConversions", 428, CodeIfMatchRequired)
+
+	// The preview at the round, a sandbox: C₀ = 1,000,000, f = 5.00%, the capitalisation 1,000,000 ÷ 0.95 =
+	// 1,052,631.578… shown as 1,052,631.58, and the working of G4-044's price; at a price typed in of S$2.00 the round's
+	// price is below the cap price, so the SAFE takes it and the accountant checks it. The Board reads none of it.
+	preview := e.call(http.MethodGet, "/v1/instruments/conversion-preview?round_id="+round.str("id"), weiling, nil)
+	if preview.Status != http.StatusOK || preview.str("shares_before") != "1000000" || preview.str("post_money_part") != "5.00" ||
+		preview.str("capitalisation") != "1052631.58" || preview.str("round_price") != "3.00" || preview.str("round_id") != round.str("id") {
+		t.Fatalf("the preview at the round: %d %s", preview.Status, preview.Raw)
+	}
+	w := preview.Body["conversions"].([]any)[0].(map[string]any)
+	if w["holder_name"] != "Hatch Capital Pte. Ltd." || w["ownership_at_cap"] != "5.00" || w["cap_price"] != "2.375" || w["price"] != "2.375" ||
+		w["shares"] != "52631" || w["converted"].(map[string]any)["amount"] != "124998.63" || w["left"].(map[string]any)["amount"] != "1.37" ||
+		w["covered"] != true || w["review"] != nil || w["price_decimals"].(float64) != 4 {
+		t.Errorf("G4-044's working: %v", w)
+	}
+	low := e.call(http.MethodGet, "/v1/instruments/conversion-preview?price=2.00", prep, nil)
+	if lw := low.Body["conversions"].([]any)[0].(map[string]any); low.Status != http.StatusOK || low.Body["round_id"] != nil || lw["price"] != "2.00" ||
+		lw["shares"] != "62500" || lw["covered"] != false || !strings.Contains(lw["review"].(string), "below its cap price") {
+		t.Errorf("the preview at S$2.00: %d %s", low.Status, low.Raw)
+	}
+	for _, q := range []string{"", "?price=0", "?price=2.00&round_id=" + round.str("id"), "?price=1.1234567"} {
+		if r := e.call(http.MethodGet, "/v1/instruments/conversion-preview"+q, prep, nil); r.Status != http.StatusUnprocessableEntity {
+			t.Errorf("a preview %q: %d %s", q, r.Status, r.Raw)
+		}
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/instruments/conversion-preview?price=3.00", e.as(authz.BoardViewer), nil), "previewInstrumentConversions", 403, CodeForbidden)
 
 	// Its conversions: one draft, from the template, nothing to complete.
 	drafts := conversions(prep, approved)
@@ -183,8 +211,13 @@ func TestASAFEConvertsAtTheRound(t *testing.T) {
 		}
 		return nil
 	})
-	if got := e.call(http.MethodGet, "/v1/instruments/"+safe.str("id"), weiling, nil); got.str("held", "amount") != "1.37" {
-		t.Errorf("2700 holds for the SAFE once converted: %s", got.Raw)
+	if got := e.call(http.MethodGet, "/v1/instruments/"+safe.str("id"), weiling, nil); got.str("held", "amount") != "1.37" ||
+		got.str("conversion", "status") != "effective" || got.str("conversion", "transaction_id") != conv["id"] {
+		t.Errorf("2700 holds for the SAFE once converted, and its conversion: %s", got.Raw)
+	}
+	if after := e.call(http.MethodGet, "/v1/instruments/conversion-preview?price=3.00", prep, nil); len(after.Body["conversions"].([]any)) != 0 ||
+		after.Body["post_money_part"] != nil {
+		t.Errorf("the preview once the SAFE converted: %s", after.Raw)
 	}
 	if c := e.call(http.MethodGet, "/v1/contacts/"+hatch, weiling, nil); c.Body["shareholder"] != true {
 		t.Errorf("the SAFE holder is not marked shareholder: %s", c.Raw)

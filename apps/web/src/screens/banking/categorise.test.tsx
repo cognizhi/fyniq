@@ -155,6 +155,40 @@ describe("the categorise queue", () => {
     expect(sent.find((s) => s.path === "/v1/bank-lines/l1/categorise")?.body).toEqual({ parts: [{ account_id: "a6100", gst_code: "TX" }] });
   });
 
+  // req: FR-EQ-18
+  // req: FR-EQ-17
+  it("names the SAFE a part on 2700 is for, and the subscriber of a part on 2040; other control accounts stay off", async () => {
+    const acct = (id: string, code: string, name: string, role: string, control: boolean) => ({ id, code, name, type: "liability", role, group: false,
+      active: true, money_account: false, control, payroll_cost: false, revalue: false, parent_id: null, version: 1 });
+    const sent = answer({
+      ...queue([line({ amount: sgd("125000.00") })], { l1: line({ amount: sgd("125000.00") }) }),
+      "GET /v1/accounts": { status: 200, body: { items: [acct("a2700", "2700", "Convertible notes / SAFE", "convertible-instruments", true),
+        acct("a2040", "2040", "Share application monies", "share-application-monies", true), acct("a2500", "2500", "Loan from director", "director-loan", true)] } },
+      "GET /v1/contacts": { status: 200, body: { items: [] } },
+      "GET /v1/purchases/gst-codes": { status: 200, body: { version: "sg-gst@2026.1", codes: [] } },
+      "GET /v1/instruments": { status: 200, body: { items: [{ id: "in-1", status: "recorded", version: 1, holder_name: "Hatch Capital Pte. Ltd.", currency: "SGD", class_code: "3010",
+        evidence: 1, checks: [], form: "post_money_safe", holder_id: "c-hatch", amount: "125000.00", signed_on: "2026-06-18", trigger: "priced_round",
+        class_account_id: "acc-3010", denominator: "post_money_capitalisation", price_decimals: 4 }] } },
+      "POST /v1/bank-lines/l1/categorise": { status: 200, body: { line: line({ status: "categorised" }) } },
+    });
+    renderPage(Categorise, { path: "/banking/categorise", session: bookkeeper, mode: "basic" });
+    expect(await screen.findByText(/No suggestion/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const dialog = await screen.findByRole("dialog");
+    const category = within(dialog).getByLabelText("Category");
+    await waitFor(() => expect(within(category).getAllByRole("option").map((o) => o.textContent)).toEqual(
+      ["Choose an account", "2700 Convertible notes / SAFE", "2040 Share application monies"]));
+    fireEvent.change(category, { target: { value: "a2040" } });
+    expect(within(dialog).getByLabelText("Subscriber")).toBeTruthy();
+    expect(within(dialog).queryByLabelText("SAFE or note")).toBeNull();
+    fireEvent.change(category, { target: { value: "a2700" } });
+    const safe = await within(dialog).findByLabelText("SAFE or note");
+    await waitFor(() => expect(within(safe).getAllByRole("option")).toHaveLength(2));
+    fireEvent.change(safe, { target: { value: "in-1" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Post it" }));
+    await waitFor(() => expect(sent.find((s) => s.path === "/v1/bank-lines/l1/categorise")?.body).toEqual({ instrument_id: "in-1", parts: [{ account_id: "a2700" }] }));
+  });
+
   // req: FR-DIM-01
   // req: FR-DIM-02
   it("asks for a dimension its category requires, even in Basic, and sends the value with the part", async () => {

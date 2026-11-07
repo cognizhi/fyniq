@@ -207,7 +207,7 @@ func TestEquityTransactions(t *testing.T) {
 		t.Errorf("the investor is not marked shareholder: %s", c.Raw)
 	}
 	e.problemIs(effective(done, weiling, "2026-10-15"), "recordEquityTransactionEffective", 409, equity.CodeEffective) // once only
-	e.problemIs(step(done, "allotment_lodged", "2026-10-15"), "recordEquityStep", 409, equity.CodeEffective)                // steps end with it
+	e.problemIs(step(done, "allotment_lodged", "2026-10-15"), "recordEquityStep", 409, equity.CodeEffective)           // steps end with it
 
 	// A conversion of 100,000 ordinary into preference shares, moving their carrying amount from 3010 to 3020.
 	conv := draft(map[string]any{"kind": "class_conversion", "holder_id": fund, "class_account_id": ordinary, "to_class_account_id": preference,

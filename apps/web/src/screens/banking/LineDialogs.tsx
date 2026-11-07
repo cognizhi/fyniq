@@ -12,12 +12,16 @@ import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { DimensionFields } from "../accounting/lines";
+import { formWords, listInstruments } from "../equity/instrumentWords";
 import { checkCategorisation, send, settles, type Line, type PartForm, type Request } from "./lineActions";
 
 type Contact = components["schemas"]["Contact"];
 
 // controlRoles are the roles of the accounts a line posts to by another path (ledger/bank.go): receivables and payables.
 const controlRoles = ["accounts-receivable", "accounts-payable"];
+// subLedgers are the control accounts a part may post to, naming its key: share application monies its subscriber (the
+// contact, B.7) and convertible instruments its SAFE or note (FR-EQ-18).
+const subLedgers = ["share-application-monies", "convertible-instruments"];
 
 // usePostingAccounts are the accounts a line's part can post to: active posting accounts, not a group, a money account
 // or a control account (receivables, payables), which the API refuses.
@@ -27,7 +31,9 @@ export function usePostingAccounts() {
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/accounts", {});
       if (error) throw error;
-      return (data.items ?? []).filter((a) => a.active && !a.group && !a.money_account && !a.control && !controlRoles.includes(a.role ?? ""));
+      return (data.items ?? []).filter(
+        (a) => a.active && !a.group && !a.money_account && (!a.control || subLedgers.includes(a.role ?? "")) && !controlRoles.includes(a.role ?? ""),
+      );
     },
   });
 }
@@ -69,14 +75,20 @@ export function CategoriseDialog({ line, etag, split, onClose, onDone }: { line:
   const codes = useGSTCodes(line);
   const [parts, setParts] = useState<PartForm[]>(split ? [blank("p1"), blank("p2")] : [blank("p1")]);
   const [contact, setContact] = useState("");
+  const [instrument, setInstrument] = useState("");
   const [reference, setReference] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
   const h = helpText(split ? "bank-line.split" : "bank-line.change");
   const set = (key: string, patch: Partial<PartForm>) => setParts(parts.map((p) => (p.key === key ? { ...p, ...patch } : p)));
+  const roleOf = (p: PartForm) => (accounts.data ?? []).find((a) => a.id === p.account_id)?.role ?? "";
+  const onMonies = parts.some((p) => roleOf(p) === "share-application-monies");
+  const onInstruments = parts.some((p) => roleOf(p) === "convertible-instruments");
+  const safes = useQuery({ queryKey: ["instruments"], queryFn: listInstruments, enabled: onInstruments });
+  const instrumentH = helpText("bank-line.instrument");
   const go = async () => {
-    const { body, errors: e } = checkCategorisation(parts, contact, reference, line.amount.currency);
+    const { body, errors: e } = checkCategorisation(parts, contact, reference, line.amount.currency, onInstruments ? instrument : "");
     setErrors(e);
     if (!body) return;
     setBusy(true);
@@ -177,9 +189,29 @@ export function CategoriseDialog({ line, etag, split, onClose, onDone }: { line:
           Add a part
         </button>
       )}
+      {onInstruments && (
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-instrument`} title={instrumentH.tooltip}>
+            {instrumentH.label}
+          </label>
+          <select className="fy-select" id={`${id}-instrument`} value={instrument} onChange={(e) => setInstrument(e.target.value)} aria-describedby={`${id}-instrument-help`}>
+            <option value="">Choose the recorded SAFE or note</option>
+            {(safes.data ?? [])
+              .filter((i) => i.status === "recorded")
+              .map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.holder_name} · {formWords[i.form]} · {formatAmount(i.amount)} {i.currency}
+                </option>
+              ))}
+          </select>
+          <span className="fy-help" id={`${id}-instrument-help`}>
+            {instrumentH.tooltip}
+          </span>
+        </div>
+      )}
       <div className="fy-field">
         <label className="fy-label" htmlFor={`${id}-contact`}>
-          Contact (optional)
+          {onMonies ? "Subscriber" : "Contact (optional)"}
         </label>
         <select className="fy-select" id={`${id}-contact`} value={contact} onChange={(e) => setContact(e.target.value)}>
           <option value="">None</option>

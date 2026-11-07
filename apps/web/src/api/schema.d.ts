@@ -5236,6 +5236,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/instruments/conversion-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview the SAFEs' and notes' conversions at a round
+         * @description Works out what every recorded SAFE and note not converted yet would convert into at a priced round (FR-EQ-18, design D6), with the figures each conversion price comes from: at an approved issue for cash (round_id), over the shares before it, or at a price typed in, over the shares issued today. A post-money SAFE's cap price is its cap × (1 − f) ÷ C₀, f being Σ amount ÷ cap over the post-money SAFEs; a pre-money one's its cap ÷ C₀; the conversion price is the lower of the cap price and the discounted round price, cut down to the instrument's decimals; the shares are RND-SHARE's. Read-only; nothing posts and nothing is saved: draftInstrumentConversions drafts them at an approved round.
+         */
+        get: operations["previewInstrumentConversions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/instruments/{instrument_id}": {
         parameters: {
             query?: never;
@@ -16900,6 +16920,41 @@ export interface components {
              */
             message: string;
         };
+        ConversionPreview: {
+            /**
+             * @description The company's capitalisation once the post-money SAFEs convert, C₀ ÷ (1 − f), shown under RND-DISPLAY to 2 decimals; absent when none converts.
+             * @example 1052631.58
+             */
+            capitalisation?: string;
+            /** @description Each recorded SAFE or note that converts at the round, in the order recorded. */
+            conversions: components["schemas"]["ConversionWorking"][];
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * @description f: the part of the company the post-money SAFEs convert into, Σ amount ÷ cap, as a percentage shown under RND-DISPLAY to 2 decimals; absent when none converts.
+             * @example 5.00
+             */
+            post_money_part?: string;
+            /**
+             * Format: uuid
+             * @description The approved issue for cash it converts at, when one was named.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02
+             */
+            round_id?: string;
+            /**
+             * @description The round's price per share in the base currency.
+             * @example 3.00
+             */
+            round_price: string;
+            /**
+             * @description C₀: the shares issued and held at the end of the day before the round (today, for a price typed in).
+             * @example 1000000
+             */
+            shares_before: string;
+        };
         ConversionStep: {
             /**
              * Format: uuid
@@ -16949,6 +17004,71 @@ export interface components {
              * @example T26ACRA00123
              */
             reference?: string;
+        };
+        ConversionWorking: {
+            /** @description What it converts from: the investor's money. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description A capped SAFE's cap price before its precision, cut to 10 decimals: a post-money SAFE's cap × (1 − f) ÷ C₀, a pre-money one's cap ÷ C₀.
+             * @example 2.375
+             */
+            cap_price?: string;
+            /** @description round(shares × price): Dr 2700 · Cr the class once effective. */
+            converted: components["schemas"]["Money"];
+            /**
+             * @description An enabled template covers every term, so its draft is ready for approval.
+             * @example true
+             */
+            covered: boolean;
+            /**
+             * @description With a discount: the round's price × (100 − discount) ÷ 100, before its precision.
+             * @example 2.4
+             */
+            discount_price?: string;
+            /**
+             * @description Its form.
+             * @example post_money_safe
+             */
+            form: string;
+            /**
+             * @description Its holder.
+             * @example Hatch Capital Pte. Ltd.
+             */
+            holder_name: string;
+            /**
+             * Format: uuid
+             * @description The instrument.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+             */
+            instrument_id: string;
+            /** @description What stays on 2700 until it is settled under the terms. */
+            left: components["schemas"]["Money"];
+            /**
+             * @description A post-money SAFE's: amount ÷ cap, the part of the company its cap gives it, as a percentage shown under RND-DISPLAY.
+             * @example 5.00
+             */
+            ownership_at_cap?: string;
+            /**
+             * @description The conversion price: the lower of the cap price and the discounted round price (the round's price itself with neither), cut down to its decimals.
+             * @example 2.375
+             */
+            price: string;
+            /**
+             * Format: int64
+             * @description The decimals its terms give the conversion price.
+             * @example 4
+             */
+            price_decimals: number;
+            /**
+             * @description Otherwise what the accountant completes in its draft (⚠).
+             * @example the accountant completes it: it follows no template, a discount
+             */
+            review?: string;
+            /**
+             * @description RND-SHARE: the most whole shares with round(shares × price) within the amount.
+             * @example 52631
+             */
+            shares: string;
         };
         CreditApplication: {
             /** @description What was applied, in their currency. */
@@ -22387,6 +22507,25 @@ export interface components {
              */
             next_cursor?: string;
         };
+        InstrumentConversionRef: {
+            /**
+             * @description Its number, EQ-, once approved.
+             * @example EQ-0004
+             */
+            number?: string;
+            /**
+             * @description draft: drafted for approval; approved: waiting for ACRA's date; effective: its shares were allotted.
+             * @example effective
+             * @enum {string}
+             */
+            status: "draft" | "approved" | "effective";
+            /**
+             * Format: uuid
+             * @description The instrument_conversion equity transaction.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a31
+             */
+            transaction_id: string;
+        };
         InstrumentDraft: {
             /**
              * @description What the investor paid, in the base currency.
@@ -22614,6 +22753,8 @@ export interface components {
              * @enum {string}
              */
             classification?: "liability" | "equity";
+            /** @description Its conversion into shares, once one is drafted from a priced round and while it stands (draftInstrumentConversions). */
+            conversion?: components["schemas"]["InstrumentConversionRef"];
             /**
              * @description The amount's currency, the base currency.
              * @example SGD
@@ -73970,6 +74111,104 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    previewInstrumentConversions: {
+        parameters: {
+            query?: {
+                /** @description An approved issue for cash, the priced round, to convert at its price over the shares before it. Give this or price. */
+                round_id?: string;
+                /** @description A round's price per share in the base currency, at most 6 decimals, over the shares issued today: a round not recorded yet. Give this or round_id. */
+                price?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversionPreview"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `EQUITY-15` The template cannot be enabled; `STORAGE-INV-03` The period is closed; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `EQUITY-14` The SAFE or note does not fit; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule; `STORAGE-SHARE-06` The SAFE or note does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -275,6 +275,40 @@ func TestPercentPinnedCases(t *testing.T) {
 	}
 }
 
+// A figure only shown (RND-DISPLAY): G4-044's capitalisation once the SAFE converts, 1,000,000 ÷ 0.95 = 1,052,631.578…,
+// is 1,052,631.58; the design's 10,000,000 ÷ 0.9375 = 10,666,666.666… is 10,666,666.67; half a cent goes up, away from
+// zero on either side, and a negative zero shows as 0.00.
+// req: RND-DISPLAY
+// req: FR-EQ-18
+func TestDisplayRoundsOnceHalfAwayFromZero(t *testing.T) {
+	quo := func(a, b string) *apd.Decimal {
+		x, _, _ := apd.NewFromString(a)
+		y, _, _ := apd.NewFromString(b)
+		var q apd.Decimal
+		if _, err := work.Quo(&q, x, y); err != nil {
+			t.Fatal(err)
+		}
+		return &q
+	}
+	for _, c := range []struct {
+		x      *apd.Decimal
+		places int
+		want   string
+	}{
+		{quo("1000000", "0.95"), 2, "1052631.58"},
+		{quo("10000000", "0.9375"), 2, "10666666.67"},
+		{quo("0.125", "1"), 2, "0.13"},
+		{quo("-0.125", "1"), 2, "-0.13"},
+		{quo("-0.004", "1"), 2, "0.00"},
+		{quo("6.25", "1"), 2, "6.25"},
+		{quo("1", "3"), 4, "0.3333"},
+	} {
+		if got := Display(c.x, c.places); got != c.want {
+			t.Errorf("Display(%s, %d) = %q, want %q", c.x.Text('f'), c.places, got, c.want)
+		}
+	}
+}
+
 // The cap table's percentage: of the exact quotient, to 2 decimals, half-up, once (FR-EQ-20). The G.3 round's three
 // holdings, worked by hand: 1,000,000, 200,000 and 52,083 of 1,252,083 are 79.8669…, 15.9733… and 4.1597… per cent.
 // req: FR-EQ-20
