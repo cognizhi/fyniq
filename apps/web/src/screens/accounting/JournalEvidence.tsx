@@ -41,7 +41,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "acra-extract";
   id: string;
   etag: string;
 }
@@ -72,6 +72,7 @@ const kindsOf = {
   "option-event": ["Leaver's letter", "Board minute", "Notice of lapse"],
   "investor-rights": ["Shareholders' agreement", "Side letter", "Subscription agreement"],
   "controller-entry": ["Company secretary's confirmation", "Register extract", "ACRA acknowledgement", "Notice and reply"],
+  "acra-extract": ["ACRA business profile"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
   "owner-succession": ["board resolution", "accountant's confirmation"],
 };
@@ -100,6 +101,7 @@ const nouns = {
   "option-event": "forfeiture or expiry",
   "investor-rights": "investor's rights",
   "controller-entry": "controller entry",
+  "acra-extract": "ACRA extract",
   "director-settlement": "settlement",
   "owner-succession": "succession",
 };
@@ -152,6 +154,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/investor-rights/{rights_id}/evidence", { params: { path: { rights_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "controller-entry"
                           ? await api.GET("/v1/controller-entries/{entry_id}/evidence", { params: { path: { entry_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "acra-extract"
+                          ? await api.GET("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "director-settlement"
                           ? await api.GET("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "owner-succession"
@@ -319,6 +323,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/investor-rights/{rights_id}/evidence", { params: { path: { rights_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "controller-entry"
                           ? api.POST("/v1/controller-entries/{entry_id}/evidence", { params: { path: { entry_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "acra-extract"
+                          ? api.POST("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "director-settlement"
                           ? api.POST("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "owner-succession"
@@ -380,6 +386,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? await api.GET("/v1/investor-rights/{rights_id}/evidence/{evidence_id}", { params: { path: { rights_id: record.id, evidence_id: e.id } } })
                       : record.kind === "controller-entry"
                         ? await api.GET("/v1/controller-entries/{entry_id}/evidence/{evidence_id}", { params: { path: { entry_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "acra-extract"
+                        ? await api.GET("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id } } })
                       : record.kind === "director-settlement"
                         ? await api.GET("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id } } })
                   : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
@@ -423,6 +431,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.DELETE("/v1/investor-rights/{rights_id}/evidence/{evidence_id}", { params: { path: { rights_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "controller-entry"
                         ? api.DELETE("/v1/controller-entries/{entry_id}/evidence/{evidence_id}", { params: { path: { entry_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "acra-extract"
+                        ? api.DELETE("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "director-settlement"
                         ? api.DELETE("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id }, header } })
                   : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });

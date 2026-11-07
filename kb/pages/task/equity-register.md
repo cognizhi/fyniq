@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:71017bc10476f416d9d9aef8fa07c7c10434397f38a0412975f8622c0f16e8d4
+  - docs/user-guide/equity-register.md sha256:2f7333d43de4e01d659add1f7292fd31c18d2afce15df07a332f28155e8a3311
 data_class: general
 taint: trusted
 status: published
@@ -108,6 +108,12 @@ aliases:
   - controller notice
   - exempt private company
   - exempt status
+  - ACRA reconciliation
+  - business profile
+  - Bizfile
+  - register of members
+  - ACRA extract
+  - register differs from ACRA
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -423,6 +429,19 @@ aliases:
   approval and ACRA steps; an approved scenario changes no more.
 
 (src: docs/user-guide/equity-register.md#model-a-round)
+
+## Reconcile the register to ACRA
+
+- **Equity › Reconciliation** compares the register of members with ACRA's, as the latest business
+  profile shows it, and paid-up capital with share capital in the ledger.
+- An Accountant selects **Type in a business profile**, enters its day and each holder's shares of
+  each class, attaches the PDF and selects **Record**; recorded, it changes no more, and a newer
+  profile takes its place. New extracts start with a row for each holding, the shares left empty.
+- Each difference shows on the page and the checks: where ACRA is right, correct the register by a
+  reversal citing the extract; where the typing is wrong, type the profile in again. With shares
+  and no profile recorded, the check is not assessed.
+
+(src: docs/user-guide/equity-register.md#reconcile-the-register-to-acra)
 
 ## Correct a transaction
 
