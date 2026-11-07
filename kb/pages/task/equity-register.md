@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
 sources:
-  - docs/user-guide/equity-register.md sha256:d09ef99391cc9113375c91d2d438831508240fd949c9e9d120228511117098c3
+  - docs/user-guide/equity-register.md sha256:d59800e3df0613fe437c68444ac2ff06b0b53d8a82be08a8659b1cb0597098d6
 data_class: general
 taint: trusted
 status: published
@@ -78,6 +78,9 @@ aliases:
   - exercise price
   - unallocated options
   - my options
+  - forfeit options
+  - options lapse
+  - leaver options
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -301,6 +304,13 @@ aliases:
   vesting months have passed; a month passes on the grant's day, or a shorter month's last day
   [accountant to confirm].
 - A person whose contact is linked to their sign-in sees their own grants, and nobody else's.
+- A leaver's options not vested are **forfeited**; those vested and not exercised **expire** when
+  their window closes, as at the grant's expiry date. An Accountant drafts the **Forfeiture** or
+  **Expiry** on the grant with the notice; another Owner or the Controller records it, never the
+  holder. A forfeiture takes at most what is not vested on its day, an expiry at most what is left;
+  from its day the options leave the holder's fully diluted shares and return to the pool
+  [accountant to confirm]. **Outstanding** is the grant less those forfeited and expired;
+  **Vested** never counts more than is outstanding.
 
 (src: docs/user-guide/equity-register.md#the-option-pool-and-grants)
 
@@ -348,7 +358,9 @@ aliases:
   the resolution and its day), or sets aside fewer shares than the options granted by a day.
   EQUITY-17: no recorded resolution sets a pool on the grant date (record it first); the pool
   leaves fewer options than the grant on its grant date or a later day. Your own grant of options
-  is approved by another Owner or the Controller.
+  is approved by another Owner or the Controller. EQUITY-18: a forfeiture or expiry of a grant not
+  recorded, of options vested, or of more than the grant has left; your own options' forfeiture or
+  expiry is approved by another Owner or the Controller.
 - REPORT-08: the render service did not make the PDF; try again, or export to Excel.
 
 (src: docs/user-guide/equity-register.md#common-problems)

@@ -39,6 +39,13 @@
       },
       "type": "array"
     },
+    "returned": {
+      "description": "The options recorded forfeitures and expiries gave back on or before the day.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
     "size": {
       "description": "The shares set aside by the latest recorded resolution passed on or before the day; 0 while none is.",
       "examples": [
@@ -47,7 +54,7 @@
       "type": "string"
     },
     "unallocated": {
-      "description": "What the pool leaves to grant: its size less what is granted.",
+      "description": "What the pool leaves to grant: its size less what is granted, with what is given back.",
       "examples": [
         "932000"
       ],
@@ -58,6 +65,7 @@
     "at",
     "size",
     "granted",
+    "returned",
     "unallocated",
     "resolutions"
   ],

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "forfeiture: options not vested, given up when the holder leaves; expiry: options that lapse, at the grant's expiry or once a leaver's window to exercise closes.",
+      "enum": [
+        "forfeiture",
+        "expiry"
+      ],
+      "examples": [
+        "forfeiture"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Left the company on 15 Apr 2027"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "number": {
+      "description": "The options it takes, a whole number above zero: at most what the grant leaves, and for a forfeiture at most what is not vested on its day.",
+      "examples": [
+        "30000"
+      ],
+      "pattern": "^[0-9]{1,14}$",
+      "type": "string"
+    },
+    "on": {
+      "description": "The day the options are forfeited or lapse, on or after the grant date; from it they are back in the pool.",
+      "examples": [
+        "2027-04-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "number",
+    "on"
+  ],
+  "title": "OptionEventDraft",
+  "type": "object"
+}

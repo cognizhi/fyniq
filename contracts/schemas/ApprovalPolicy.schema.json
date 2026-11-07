@@ -71,7 +71,8 @@
         "instrument",
         "instrument_template",
         "option_pool",
-        "option_grant"
+        "option_grant",
+        "option_event"
       ],
       "examples": [
         "organisation_setting"

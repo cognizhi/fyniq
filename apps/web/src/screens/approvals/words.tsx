@@ -63,6 +63,7 @@ const operations: Record<Approval["operation"], string> = {
   "instrument_template.enable": "Enable a SAFE template on its lawyer's confirmation",
   "option_pool.record": "Set the option pool by a resolution",
   "option_grant.record": "Record a grant of options",
+  "option_event.record": "Record a forfeiture or expiry of options",
 };
 
 export function operationLabel(op: string): string {
@@ -116,6 +117,7 @@ const objects: Record<string, string> = {
   instrument_template: "SAFE template",
   option_pool: "Option pool resolution",
   option_grant: "Grant of options",
+  option_event: "Forfeiture or expiry of options",
 };
 
 export function objectLabel(t: string): string {

@@ -142,6 +142,9 @@ const (
 	// ObjectOptionGrant is a grant of options, to record (FR-EQ-19, FM-1): another person who holds A on the cap table
 	// approves, never its holder; its key is the grant's document ID.
 	ObjectOptionGrant = "option_grant"
+	// ObjectOptionEvent is a grant's forfeiture or expiry, to record (FR-EQ-19, FM-1): another person who holds A on
+	// the cap table approves, never the grant's holder; its key is the event's document ID.
+	ObjectOptionEvent = "option_event"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -237,6 +240,8 @@ const (
 	OpOptionPoolRecord = "option_pool.record"
 	// OpOptionGrantRecord records a grant of options as drafted, within what the pool leaves (FR-EQ-19).
 	OpOptionGrantRecord = "option_grant.record"
+	// OpOptionEventRecord records a grant's forfeiture or expiry as drafted, within what is outstanding (FR-EQ-19).
+	OpOptionEventRecord = "option_event.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -272,6 +277,7 @@ var Operations = map[string]string{
 	OpInstrumentTemplateEnable: ObjectInstrumentTemplate,
 	OpOptionPoolRecord:         ObjectOptionPool,
 	OpOptionGrantRecord:        ObjectOptionGrant,
+	OpOptionEventRecord:        ObjectOptionEvent,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -368,6 +374,8 @@ var Dependencies = map[string][]string{
 	ObjectOptionPool: {"status"},
 	// the grant's version and status, and its holder: what is recorded
 	ObjectOptionGrant: {"status", "holder"},
+	// the event's version and status, its grant and its holder
+	ObjectOptionEvent: {"status", "grant", "holder"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -419,6 +427,7 @@ var Rows = map[string]string{
 	ObjectInstrumentTemplate:  "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectOptionPool:          "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectOptionGrant:         "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectOptionEvent:         "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -499,6 +508,7 @@ var Policies = map[string]Policy{
 	ObjectInstrumentTemplate:  {ObjectType: ObjectInstrumentTemplate, Version: "founder/instrument_template@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOptionPool:          {ObjectType: ObjectOptionPool, Version: "founder/option_pool@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOptionGrant:         {ObjectType: ObjectOptionGrant, Version: "founder/option_grant@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectOptionEvent:         {ObjectType: ObjectOptionEvent, Version: "founder/option_event@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

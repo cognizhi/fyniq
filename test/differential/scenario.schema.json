@@ -235,7 +235,7 @@
                                          "director_fee", "director_waiver", "director_repayment",
                                          "director_conversion", "account_merge", "share_issue_cash",
                                          "share_transfer", "instrument", "safe_conversion", "director_safe",
-                                         "option_pool", "option_grant"]}},
+                                         "option_pool", "option_grant", "option_event"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -264,7 +264,8 @@
         {"if": {"properties": {"type": {"const": "safe_conversion"}}}, "then": {"$ref": "#/$defs/safeConversion"}},
         {"if": {"properties": {"type": {"const": "director_safe"}}}, "then": {"$ref": "#/$defs/directorSafe"}},
         {"if": {"properties": {"type": {"const": "option_pool"}}}, "then": {"$ref": "#/$defs/optionPool"}},
-        {"if": {"properties": {"type": {"const": "option_grant"}}}, "then": {"$ref": "#/$defs/optionGrant"}}
+        {"if": {"properties": {"type": {"const": "option_grant"}}}, "then": {"$ref": "#/$defs/optionGrant"}},
+        {"if": {"properties": {"type": {"const": "option_event"}}}, "then": {"$ref": "#/$defs/optionEvent"}}
       ]
     },
     "settings": {
@@ -736,7 +737,24 @@
         "date": {"description": "The grant date.", "$ref": "#/$defs/date"},
         "person": {"description": "The holder of the options, one of people or subscribers.", "$ref": "#/$defs/documentId"},
         "number": {"description": "The options granted, a whole number above zero.", "type": "string"},
-        "class": {"description": "The share-capital account of the class the options are over: the pool's.", "type": "string"}
+        "class": {"description": "The share-capital account of the class the options are over: the pool's.", "type": "string"},
+        "cliff_months": {"description": "Months before anything vests, 0 to vesting_months; 0 when left out.", "type": "integer"},
+        "vesting_months": {"description": "Months it vests over, evenly by whole months, 0 to 120; 0 when left out, which vests it all on the grant date.", "type": "integer"}
+      }
+    },
+    "optionEvent": {
+      "description": "A forfeiture or expiry of a grant's options (FR-EQ-19; README, \"The option pool and grants\"): it posts no entry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "grant", "kind", "number"],
+      "properties": {
+        "type": {"const": "option_event"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day the options are forfeited or lapse, on or after the grant's date.", "$ref": "#/$defs/date"},
+        "grant": {"description": "The grant: an earlier option_grant document, not rejected.", "$ref": "#/$defs/documentId"},
+        "kind": {"description": "forfeiture (options not vested) or expiry (options that lapse).", "type": "string"},
+        "number": {"description": "The options it takes, a whole number above zero.", "type": "string"}
       }
     },
     "accountMerge": {

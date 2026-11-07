@@ -638,6 +638,9 @@ const (
 	// DocumentOptionGrant is a grant of options from the pool (FR-EQ-19): its holder, number, exercise price, grant date,
 	// vesting and expiry, recorded on another person's approval with the grant letter attached; recorded, it never changes.
 	DocumentOptionGrant DocumentType = "option_grant"
+	// DocumentOptionEvent is a forfeiture or expiry of a recorded grant's options (FR-EQ-19, design D9): recorded on
+	// another person's approval with its evidence, never changed; the options return to the pool.
+	DocumentOptionEvent DocumentType = "option_event"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

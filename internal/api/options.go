@@ -23,7 +23,7 @@ import (
 )
 
 // OptionCodes are the codes the option pool and grants answer besides the common ones.
-var OptionCodes = []string{equity.CodePool, equity.CodeGrant, equity.CodeRecorded, storage.CodeOption}
+var OptionCodes = []string{equity.CodePool, equity.CodeGrant, equity.CodeEvent, equity.CodeRecorded, storage.CodeOption}
 
 // PoolResolutionDraft is a resolution setting the option pool's size, as drafted (FR-EQ-19).
 type PoolResolutionDraft struct {
@@ -57,7 +57,8 @@ type OptionPoolView struct {
 	ClassAccountID string               `json:"class_account_id,omitempty" format:"uuid" doc:"The class the options are over, by the resolution in force." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"`
 	ClassCode      string               `json:"class_code,omitempty" doc:"Its account code." example:"3010"`
 	Granted        string               `json:"granted" doc:"The options the recorded grants granted on or before the day." example:"68000"`
-	Unallocated    string               `json:"unallocated" doc:"What the pool leaves to grant: its size less what is granted." example:"932000"`
+	Returned       string               `json:"returned" doc:"The options recorded forfeitures and expiries gave back on or before the day." example:"0"`
+	Unallocated    string               `json:"unallocated" doc:"What the pool leaves to grant: its size less what is granted, with what is given back." example:"932000"`
 	Resolutions    []PoolResolutionView `json:"resolutions" nullable:"false" doc:"Every resolution, drafts and recorded, the latest passed first."`
 }
 
@@ -78,19 +79,22 @@ type OptionGrantDraft struct {
 // OptionGrantView is a grant as the API shows it.
 type OptionGrantView struct {
 	OptionGrantDraft
-	ID          string      `json:"id" format:"uuid" doc:"The grant." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01"`
-	Status      string      `json:"status" enum:"draft,recorded" doc:"draft: waiting for the grant letter and approval; recorded: in the register." example:"recorded"`
-	Version     int         `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
-	HolderName  string      `json:"holder_name" doc:"Its holder's name." example:"Priya Nair"`
-	Currency    string      `json:"currency" doc:"The exercise price's currency, the base currency." example:"SGD"`
-	ClassCode   string      `json:"class_code" doc:"The class's account code." example:"3010"`
-	Vested      string      `json:"vested" doc:"What has vested at the end of today (computed, never stored): none before the cliff, then evenly by whole months, rounded down [accountant to confirm]." example:"12000"`
-	Outstanding string      `json:"outstanding" doc:"The options not exercised, forfeited or lapsed." example:"48000"`
-	Evidence    int         `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the grant letter." example:"1"`
-	ApprovalID  string      `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d11"`
-	RecordedBy  *Person     `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded."`
-	RecordedAt  *time.Time  `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-10-16T09:30:00Z"`
-	Checks      []BillCheck `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no evidence is attached."`
+	ID          string            `json:"id" format:"uuid" doc:"The grant." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01"`
+	Status      string            `json:"status" enum:"draft,recorded" doc:"draft: waiting for the grant letter and approval; recorded: in the register." example:"recorded"`
+	Version     int               `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
+	HolderName  string            `json:"holder_name" doc:"Its holder's name." example:"Priya Nair"`
+	Currency    string            `json:"currency" doc:"The exercise price's currency, the base currency." example:"SGD"`
+	ClassCode   string            `json:"class_code" doc:"The class's account code." example:"3010"`
+	Vested      string            `json:"vested" doc:"What has vested at the end of today (computed, never stored): none before the cliff, then evenly by whole months, rounded down [accountant to confirm]." example:"12000"`
+	Outstanding string            `json:"outstanding" doc:"The options not exercised, forfeited or expired, at the end of today." example:"48000"`
+	Forfeited   string            `json:"forfeited" doc:"The options its recorded forfeitures took, back in the pool." example:"0"`
+	Expired     string            `json:"expired" doc:"The options its recorded expiries let lapse, back in the pool." example:"0"`
+	Events      []OptionEventView `json:"events" nullable:"false" doc:"Its forfeitures and expiries, drafts and recorded, oldest first (createOptionEvent)."`
+	Evidence    int               `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the grant letter." example:"1"`
+	ApprovalID  string            `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d11"`
+	RecordedBy  *Person           `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded."`
+	RecordedAt  *time.Time        `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-10-16T09:30:00Z"`
+	Checks      []BillCheck       `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no evidence is attached."`
 }
 
 // OptionGrantPage is a page of grants, the latest granted first.
@@ -234,6 +238,8 @@ type optionView struct {
 	today      time.Time
 	poolAsked  map[string]string
 	grantAsked map[string]string
+	eventAsked map[string]string
+	events     map[uuid.UUID][]storage.Document // every event document, drafts and recorded, by its grant
 }
 
 func (a *API) optionViewOf(ctx context.Context, u storage.UnitOfWork) (optionView, error) {
@@ -251,8 +257,25 @@ func (a *API) optionViewOf(ctx context.Context, u storage.UnitOfWork) (optionVie
 	if v.poolAsked, err = a.waiting(ctx, u, approval.ObjectOptionPool); err != nil {
 		return v, err
 	}
-	v.grantAsked, err = a.waiting(ctx, u, approval.ObjectOptionGrant)
-	return v, err
+	if v.grantAsked, err = a.waiting(ctx, u, approval.ObjectOptionGrant); err != nil {
+		return v, err
+	}
+	if v.eventAsked, err = a.waiting(ctx, u, approval.ObjectOptionEvent); err != nil {
+		return v, err
+	}
+	docs, err := equity.OptionEvents(ctx, u)
+	if err != nil {
+		return v, err
+	}
+	v.events = map[uuid.UUID][]storage.Document{}
+	for _, d := range docs {
+		e, err := equity.ReadEvent(d)
+		if err != nil {
+			return v, err
+		}
+		v.events[e.GrantID] = append(v.events[e.GrantID], d)
+	}
+	return v, nil
 }
 
 func (a *API) poolResolutionOf(ctx context.Context, u storage.UnitOfWork, v optionView, doc storage.Document, inForce *storage.Document) (PoolResolutionView, error) {
@@ -292,7 +315,23 @@ func (a *API) grantOf(ctx context.Context, u storage.UnitOfWork, v optionView, d
 	if err != nil {
 		return OptionGrantView{}, err
 	}
-	vested, err := equity.Vested(g, v.today)
+	var recorded []equity.GrantEvent
+	events := []OptionEventView{}
+	for _, d := range v.events[doc.ID] {
+		x, err := a.optionEventOf(ctx, u, v, d, name)
+		if err != nil {
+			return OptionGrantView{}, err
+		}
+		events = append(events, x)
+		if d.Status == storage.DocumentPosted {
+			e, err := equity.ReadEvent(d)
+			if err != nil {
+				return OptionGrantView{}, err
+			}
+			recorded = append(recorded, e)
+		}
+	}
+	standing, err := equity.StandingOf(g, recorded, v.today)
 	if err != nil {
 		return OptionGrantView{}, err
 	}
@@ -300,7 +339,8 @@ func (a *API) grantOf(ctx context.Context, u storage.UnitOfWork, v optionView, d
 		GrantedOn: g.GrantedOn.Format(time.DateOnly), CliffMonths: g.Vesting.CliffMonths, VestingMonths: g.Vesting.Months, Acceleration: g.Vesting.Acceleration,
 		ExpiresOn: g.ExpiresOn.Format(time.DateOnly), ClassAccountID: g.ClassAccountID.String(), Note: g.Note},
 		ID: doc.ID.String(), Status: "draft", Version: doc.Version, HolderName: name, Currency: base.Code, ClassCode: v.codes[g.ClassAccountID],
-		Vested: vested.Text('f'), Outstanding: g.Number}
+		Vested: standing.Vested.Text('f'), Outstanding: standing.Outstanding.Text('f'), Forfeited: standing.Forfeited.Text('f'),
+		Expired: standing.Expired.Text('f'), Events: events}
 	if doc.Status == storage.DocumentPosted {
 		out.Status = "recorded"
 	}
@@ -451,7 +491,8 @@ func registerOptions(a *API) {
 			if err != nil {
 				return err
 			}
-			out.Body = OptionPoolView{At: day.Format(time.DateOnly), Size: pool.Size.Text('f'), Granted: pool.Granted.Text('f'), Unallocated: pool.Unallocated.Text('f'),
+			out.Body = OptionPoolView{At: day.Format(time.DateOnly), Size: pool.Size.Text('f'), Granted: pool.Granted.Text('f'),
+				Returned: pool.Returned.Text('f'), Unallocated: pool.Unallocated.Text('f'),
 				Resolutions: []PoolResolutionView{}}
 			if pool.ClassID != uuid.Nil {
 				out.Body.ClassAccountID, out.Body.ClassCode = pool.ClassID.String(), v.codes[pool.ClassID]

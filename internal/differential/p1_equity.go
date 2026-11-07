@@ -39,10 +39,22 @@ func (r *p1) commit() {
 		r.optionBook.Pools = append(r.optionBook.Pools, *r.stagedPool)
 	}
 	if g := r.stagedGrant; g != nil {
-		r.optionBook.Grants = append(r.optionBook.Grants, *g)
-		o := equity.Option{Key: equity.HoldingKey{Holder: g.HolderID, Account: g.ClassAccountID}, On: g.GrantedOn}
-		if _, _, err := o.Number.SetString(g.Number); err == nil {
+		r.optionBook.Grants = append(r.optionBook.Grants, g.terms)
+		o := equity.Option{Key: g.key(), On: g.terms.GrantedOn}
+		if _, _, err := o.Number.SetString(g.terms.Number); err == nil {
 			r.options = append(r.options, o)
+		}
+		if r.grants == nil {
+			r.grants = map[string]*recordedGrant{}
+		}
+		r.grants[g.doc] = g
+	}
+	if x := r.stagedEvent; x != nil {
+		x.grant.events = append(x.grant.events, x.event)
+		r.optionBook.Returns = append(r.optionBook.Returns, equity.Return{On: x.event.On, Number: x.event.Number})
+		gone := equity.Option{Key: x.grant.key(), On: x.event.On}
+		if _, _, err := gone.Number.SetString("-" + x.event.Number); err == nil {
+			r.options = append(r.options, gone)
 		}
 	}
 	r.unstage()
@@ -50,7 +62,52 @@ func (r *p1) commit() {
 
 // unstage forgets what the document being posted staged.
 func (r *p1) unstage() {
-	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound, r.stagedPool, r.stagedGrant = nil, nil, nil, nil, nil, nil
+	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound, r.stagedPool, r.stagedGrant, r.stagedEvent = nil, nil, nil, nil, nil, nil, nil
+}
+
+// recordedGrant is a grant an option_grant document recorded: its document's ID, its terms and its recorded events.
+type recordedGrant struct {
+	doc    string
+	terms  equity.Grant
+	events []equity.GrantEvent
+}
+
+func (g *recordedGrant) key() equity.HoldingKey {
+	return equity.HoldingKey{Holder: g.terms.HolderID, Account: g.terms.ClassAccountID}
+}
+
+// stagedEvent is a forfeiture or expiry being posted, and its grant.
+type stagedEvent struct {
+	grant *recordedGrant
+	event equity.GrantEvent
+}
+
+// optionEvent records a forfeiture or expiry of a recorded grant's options, as recording one does (FR-EQ-19): the
+// product's checks on its own terms (equity.CheckEvent) and against its grant and the grant's recorded events
+// (equity.CheckEventOf: at most what they leave, and a forfeiture at most what is not vested on its day). It posts
+// nothing; from its day the options leave the holder's line and are back in the pool.
+func (r *p1) optionEvent(d Document, date time.Time) bool {
+	var x struct {
+		Grant  string `json:"grant"`
+		Kind   string `json:"kind"`
+		Number string `json:"number"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil {
+		return false
+	}
+	g, ok := r.grants[x.Grant]
+	if !ok {
+		return false
+	}
+	e := equity.GrantEvent{Date: date, GrantID: stableID("document", x.Grant), Kind: x.Kind, Number: x.Number, On: date}
+	if len(equity.CheckEvent(e, time.Time{})) > 0 {
+		return false
+	}
+	if probs, err := equity.CheckEventOf(e, g.terms, g.events); err != nil || len(probs) > 0 {
+		return false
+	}
+	r.stagedEvent = &stagedEvent{grant: g, event: e}
+	return true
 }
 
 // optionPool records a resolution setting the option pool's size from its date, as recording one does (FR-EQ-19): the
@@ -68,7 +125,7 @@ func (r *p1) optionPool(d Document, date time.Time) bool {
 	if len(equity.CheckPool(p, r.settings, time.Time{})) > 0 {
 		return false
 	}
-	book := equity.OptionBook{Pools: append(slices.Clip(r.optionBook.Pools), p), Grants: r.optionBook.Grants}
+	book := equity.OptionBook{Pools: append(slices.Clip(r.optionBook.Pools), p), Grants: r.optionBook.Grants, Returns: r.optionBook.Returns}
 	if short, err := book.ShortFrom(date); err != nil || short != nil {
 		return false
 	}
@@ -82,15 +139,18 @@ func (r *p1) optionPool(d Document, date time.Time) bool {
 // (equity.OptionBook.ShortFrom, FY293). It posts nothing.
 func (r *p1) optionGrant(d Document, date time.Time) bool {
 	var x struct {
-		Person string `json:"person"`
-		Number string `json:"number"`
-		Class  string `json:"class"`
+		Person        string `json:"person"`
+		Number        string `json:"number"`
+		Class         string `json:"class"`
+		CliffMonths   int    `json:"cliff_months"`
+		VestingMonths int    `json:"vesting_months"`
 	}
 	if json.Unmarshal(d.Raw, &x) != nil || !r.settings.Subscribers[stableID("party", x.Person)] {
 		return false
 	}
 	g := equity.Grant{Date: date, HolderID: stableID("party", x.Person), Number: x.Number, ExercisePrice: "0", GrantedOn: date,
-		Vesting: equity.Vesting{Acceleration: "none"}, ExpiresOn: date.AddDate(0, 0, 1), ClassAccountID: account(x.Class)}
+		Vesting: equity.Vesting{CliffMonths: x.CliffMonths, Months: x.VestingMonths, Acceleration: "none"}, ExpiresOn: date.AddDate(0, 0, 1),
+		ClassAccountID: account(x.Class)}
 	if len(equity.CheckGrant(g, r.settings, time.Time{})) > 0 {
 		return false
 	}
@@ -98,11 +158,11 @@ func (r *p1) optionGrant(d Document, date time.Time) bool {
 	if err != nil || in < 0 || pool.ClassID != g.ClassAccountID {
 		return false
 	}
-	book := equity.OptionBook{Pools: r.optionBook.Pools, Grants: append(slices.Clip(r.optionBook.Grants), g)}
+	book := equity.OptionBook{Pools: r.optionBook.Pools, Grants: append(slices.Clip(r.optionBook.Grants), g), Returns: r.optionBook.Returns}
 	if short, err := book.ShortFrom(date); err != nil || short != nil {
 		return false
 	}
-	r.stagedGrant = &g
+	r.stagedGrant = &recordedGrant{doc: d.ID, terms: g}
 	return true
 }
 

@@ -411,3 +411,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the option pool and grants: resolutions, grants, vesting, own grants; EQUITY-16, EQUITY-17)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (fully diluted counts the options and the unallocated pool; slice 5a-ii)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (a grant's forfeitures and expiries; EQUITY-18; slice 5b-i)

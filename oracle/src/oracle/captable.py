@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -25,6 +25,7 @@ from oracle.scenario import Scenario
 REGISTER = "register/holdings"
 POOLS = "register/pools"
 GRANTS = "register/grants"
+EVENTS = "register/grant-events"
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,45 @@ class Grant:
     share_class: str
     number: int
     day: date
+    cliff: int = 0  # months before anything vests
+    months: int = 0  # months it vests over; 0 vests it all on its day
+    id: str = ""
+
+
+@dataclass(frozen=True)
+class Event:
+    """A forfeiture or expiry: options a grant gives up from a day, back in the pool."""
+
+    grant: str
+    kind: str
+    number: int
+    day: date
+
+
+def events(books: dict[str, Any]) -> list[Event]:
+    return books.setdefault(EVENTS, [])
+
+
+def _months(since: date, day: date) -> int:
+    """The whole months from ``since`` to ``day``: one passes on since's day of the month, or on the last day of a
+    month too short to have it."""
+    m = (day.year - since.year) * 12 + day.month - since.month
+    last = (day + timedelta(days=1)).day == 1
+    if day.day < since.day and not last:
+        m -= 1
+    return m
+
+
+def vested(grant: Grant, day: date) -> int:
+    """The options of ``grant`` vested at the end of ``day`` (README, "The option pool and grants")."""
+    if day < grant.day:
+        return 0
+    m = _months(grant.day, day)
+    if grant.months == 0 or m >= grant.months:
+        return grant.number
+    if m < grant.cliff:
+        return 0
+    return grant.number * m // grant.months
 
 
 def pools(books: dict[str, Any]) -> list[Resolution]:
@@ -69,17 +109,18 @@ def pool_on(resolutions: list[Resolution], day: date) -> Resolution | None:
     return found
 
 
-def granted(given: list[Grant], day: date) -> int:
-    return sum(g.number for g in given if g.day <= day)
+def granted(given: list[Grant], day: date, taken: list[Event] = ()) -> int:  # type: ignore[assignment]
+    """The options the grants dated by ``day`` granted, less those the events dated by then took back."""
+    return sum(g.number for g in given if g.day <= day) - sum(e.number for e in taken if e.day <= day)
 
 
-def short_from(resolutions: list[Resolution], given: list[Grant], since: date) -> bool:
-    """Whether, on ``since`` or a later day a resolution or grant is dated, the options granted by then are more than
-    the pool's size then (FY293)."""
+def short_from(resolutions: list[Resolution], given: list[Grant], since: date, taken: list[Event] = ()) -> bool:  # type: ignore[assignment]
+    """Whether, on ``since`` or a later day a resolution or grant is dated, the options granted by then, less those
+    the events took back, are more than the pool's size then (FY293)."""
     days = {since} | {r.day for r in resolutions if r.day >= since} | {g.day for g in given if g.day >= since}
     for d in sorted(days):
         pool = pool_on(resolutions, d)
-        if granted(given, d) > (pool.size if pool else 0):
+        if granted(given, d, taken) > (pool.size if pool else 0):
             return True
     return False
 
@@ -137,9 +178,14 @@ def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any
     for m in movements(books):
         if m.day <= day:
             held[(m.holder, m.share_class)] = held.get((m.holder, m.share_class), 0) + m.shares
+    by_id = {g.id: g for g in grants(books)}
     for g in grants(books):
         if g.day <= day:
             options[(g.holder, g.share_class)] = options.get((g.holder, g.share_class), 0) + g.number
+    for e in events(books):
+        g = by_id[e.grant]
+        if e.day <= day:
+            options[(g.holder, g.share_class)] -= e.number
     lines = []
     for key in sorted(held.keys() | options.keys()):
         shares, optioned = held.get(key, 0), options.get(key, 0)
@@ -150,7 +196,7 @@ def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any
         votes = money.EXACT.multiply(issued, scenario.accounts[share_class].votes_per_share)
         lines.append((holder, share_class, issued, votes, Decimal(shares + optioned)))
     pool = pool_on(pools(books), day)
-    all_options = granted(grants(books), day)
+    all_options = granted(grants(books), day, events(books))
     unallocated = Decimal((pool.size if pool else 0) - all_options)
     totals = (money.total([ln[2] for ln in lines]), money.total([ln[3] for ln in lines]),
               money.EXACT.add(money.total([ln[4] for ln in lines]), unallocated))

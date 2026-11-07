@@ -430,11 +430,19 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
 - `POST /v1/opening-balances/post` (postOpeningBalances): Post the opening balances
 - `GET /v1/operations/{operation_id}` (getOperation): Poll a long operation
+- `GET /v1/option-events/{event_id}` (getOptionEvent): Get a forfeiture or expiry of a grant's options
+- `PUT /v1/option-events/{event_id}` (replaceOptionEvent): Change a drafted forfeiture or expiry
+- `POST /v1/option-events/{event_id}/approval` (requestOptionEventApproval): Ask for approval to record a forfeiture or expiry
+- `GET /v1/option-events/{event_id}/evidence` (listOptionEventEvidence): List a grant event's files
+- `POST /v1/option-events/{event_id}/evidence` (addOptionEventEvidence): Attach a forfeiture's or expiry's notice
+- `GET /v1/option-events/{event_id}/evidence/{evidence_id}` (getOptionEventEvidence): Get a grant event's file
+- `DELETE /v1/option-events/{event_id}/evidence/{evidence_id}` (removeOptionEventEvidence): Remove a file from a drafted grant event
 - `GET /v1/option-grants` (listOptionGrants): List grants of options
 - `POST /v1/option-grants` (createOptionGrant): Draft a grant of options
 - `GET /v1/option-grants/{grant_id}` (getOptionGrant): Get a grant of options
 - `PUT /v1/option-grants/{grant_id}` (replaceOptionGrant): Change a drafted grant of options
 - `POST /v1/option-grants/{grant_id}/approval` (requestOptionGrantApproval): Ask for approval to record a grant of options
+- `POST /v1/option-grants/{grant_id}/events` (createOptionEvent): Draft a forfeiture or expiry of a grant's options
 - `GET /v1/option-grants/{grant_id}/evidence` (listOptionGrantEvidence): List a grant's files
 - `POST /v1/option-grants/{grant_id}/evidence` (addOptionGrantEvidence): Attach a grant's letter
 - `GET /v1/option-grants/{grant_id}/evidence/{evidence_id}` (getOptionGrantEvidence): Get a grant's file

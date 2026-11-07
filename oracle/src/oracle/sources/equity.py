@@ -272,7 +272,7 @@ def option_pool(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     if not _WHOLE_SHARES.fullmatch(d["size"]):
         raise Rejected("bad-shares")
     resolution = captable.Resolution(int(d["size"]), _share_class(r, d["class"]), doc.date)
-    if captable.short_from([*captable.pools(books), resolution], captable.grants(books), doc.date):
+    if captable.short_from([*captable.pools(books), resolution], captable.grants(books), doc.date, captable.events(books)):
         raise Rejected("pool-short")
     return Posting([], effects=[lambda: captable.pools(books).append(resolution)])
 
@@ -286,12 +286,38 @@ def option_grant(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         raise Rejected("not-a-holder")
     if not _WHOLE_SHARES.fullmatch(d["number"]):
         raise Rejected("bad-shares")
-    grant = captable.Grant(d["person"], _share_class(r, d["class"]), int(d["number"]), doc.date)
+    cliff, months = d.get("cliff_months", 0), d.get("vesting_months", 0)
+    if not 0 <= months <= 120 or not 0 <= cliff <= months:
+        raise Rejected("bad-vesting")
+    grant = captable.Grant(d["person"], _share_class(r, d["class"]), int(d["number"]), doc.date, cliff, months, doc.id)
     pool = captable.pool_on(captable.pools(books), doc.date)
     if pool is None:
         raise Rejected("no-pool")
     if pool.share_class != grant.share_class:
         raise Rejected("not-the-pools-class")
-    if captable.short_from(captable.pools(books), [*captable.grants(books), grant], doc.date):
+    if captable.short_from(captable.pools(books), [*captable.grants(books), grant], doc.date, captable.events(books)):
         raise Rejected("pool-short")
     return Posting([], effects=[lambda: captable.grants(books).append(grant)])
+
+
+def option_event(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """``number`` options of ``grant`` forfeited (not vested) or let lapse on ``date`` (FR-EQ-19). It posts nothing; from
+    its date the options leave the holder's line and are back in the pool (README, "The option pool and grants")."""
+    d = doc.data
+    if d["kind"] not in ("forfeiture", "expiry"):
+        raise Rejected("unknown-kind")
+    if not _WHOLE_SHARES.fullmatch(d["number"]):
+        raise Rejected("bad-shares")
+    grant = next((g for g in captable.grants(books) if g.id == d["grant"]), None)
+    if grant is None:
+        raise Rejected("not-a-grant")
+    if doc.date < grant.day:
+        raise Rejected("before-the-grant")
+    number = int(d["number"])
+    left = grant.number - sum(e.number for e in captable.events(books) if e.grant == grant.id)
+    if number > left:
+        raise Rejected("more-than-left")
+    if d["kind"] == "forfeiture" and number > left - captable.vested(grant, doc.date):
+        raise Rejected("vested")
+    event = captable.Event(grant.id, d["kind"], number, doc.date)
+    return Posting([], effects=[lambda: captable.events(books).append(event)])
