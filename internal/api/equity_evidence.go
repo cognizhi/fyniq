@@ -85,6 +85,14 @@ type (
 		OptionEventPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	InvestorRightsEvidencePath struct {
+		InvestorRightsPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
+	ControllerEntryEvidencePath struct {
+		ControllerEntryPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -184,6 +192,38 @@ type (
 		IfMatchHeader
 		PreferHeader
 	}
+	addRightsEvidenceInput struct {
+		InvestorRightsPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listRightsEvidenceInput struct {
+		InvestorRightsPath
+		PageQuery
+	}
+	removeRightsEvidenceInput struct {
+		InvestorRightsEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addControllerEvidenceInput struct {
+		ControllerEntryPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listControllerEvidenceInput struct {
+		ControllerEntryPath
+		PageQuery
+	}
+	removeControllerEvidenceInput struct {
+		ControllerEntryEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
 	addEventEvidenceInput struct {
 		OptionEventPath
 		KeyHeader
@@ -271,7 +311,7 @@ func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, 
 	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
 		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
 		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id",
-		storage.DocumentOptionEvent: "event_id"}[t]
+		storage.DocumentOptionEvent: "event_id", storage.DocumentInvestorRights: "rights_id", storage.DocumentControllerEntry: "entry_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -674,9 +714,71 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentOptionEvent, "event_id", in.EventID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
+	register(a, authz.AddInvestorRightsEvidence, huma.Operation{
+		OperationID: "addInvestorRightsEvidence", Method: http.MethodPost, Path: "/v1/investor-rights/{rights_id}/evidence", Tags: []string{"Evidence"},
+		DefaultStatus: http.StatusCreated, Summary: "Attach the agreements a holder's rights come from",
+		Description: "Attaches a file to drafted investor rights (FR-EQ-22, FR-DOC-05), as multipart/form-data: the subscription " +
+			"agreement, the shareholders' agreement or a side letter. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addRightsEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentInvestorRights, "/v1/investor-rights", in.RightsID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListInvestorRightsEvidence, huma.Operation{
+		OperationID: "listInvestorRightsEvidence", Method: http.MethodGet, Path: "/v1/investor-rights/{rights_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List the files of a holder's rights",
+		Description: "The files attached to investor rights, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listRightsEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentInvestorRights, "rights_id", in.RightsID, in.PageQuery)
+	})
+	register(a, authz.GetInvestorRightsEvidence, huma.Operation{
+		OperationID: "getInvestorRightsEvidence", Method: http.MethodGet, Path: "/v1/investor-rights/{rights_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get a file of a holder's rights",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *InvestorRightsEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentInvestorRights, "rights_id", in.RightsID, in.EvidenceID)
+	})
+	register(a, authz.RemoveInvestorRightsEvidence, huma.Operation{
+		OperationID: "removeInvestorRightsEvidence", Method: http.MethodDelete, Path: "/v1/investor-rights/{rights_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a holder's drafted rights",
+		Description: "Takes a file off investor rights not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeRightsEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentInvestorRights, "rights_id", in.RightsID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
+	register(a, authz.AddControllerEntryEvidence, huma.Operation{
+		OperationID: "addControllerEntryEvidence", Method: http.MethodPost, Path: "/v1/controller-entries/{entry_id}/evidence", Tags: []string{"Evidence"},
+		DefaultStatus: http.StatusCreated, Summary: "Attach the company secretary's confirmation of a controller entry",
+		Description: "Attaches a file to a drafted controller entry (FR-EQ-25, FR-DOC-05), as multipart/form-data: the company " +
+			"secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply. Asking for " +
+			"approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addControllerEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentControllerEntry, "/v1/controller-entries", in.EntryID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListControllerEntryEvidence, huma.Operation{
+		OperationID: "listControllerEntryEvidence", Method: http.MethodGet, Path: "/v1/controller-entries/{entry_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List a controller entry's files",
+		Description: "The files attached to a controller entry, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listControllerEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentControllerEntry, "entry_id", in.EntryID, in.PageQuery)
+	})
+	register(a, authz.GetControllerEntryEvidence, huma.Operation{
+		OperationID: "getControllerEntryEvidence", Method: http.MethodGet, Path: "/v1/controller-entries/{entry_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get a controller entry's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *ControllerEntryEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentControllerEntry, "entry_id", in.EntryID, in.EvidenceID)
+	})
+	register(a, authz.RemoveControllerEntryEvidence, huma.Operation{
+		OperationID: "removeControllerEntryEvidence", Method: http.MethodDelete, Path: "/v1/controller-entries/{entry_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted controller entry",
+		Description: "Takes a file off a controller entry not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeControllerEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentControllerEntry, "entry_id", in.EntryID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
 	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence",
 		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence",
-		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence", "/v1/option-events/{event_id}/evidence"} {
+		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence", "/v1/option-events/{event_id}/evidence",
+		"/v1/investor-rights/{rights_id}/evidence", "/v1/controller-entries/{entry_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

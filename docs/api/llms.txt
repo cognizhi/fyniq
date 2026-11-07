@@ -112,6 +112,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/break-glass/{break_glass_id}/review` (reviewBreakGlass): Review a break-glass
 - `GET /v1/cap-table` (getCapTable): Get the cap table
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table
+- `GET /v1/cap-table/statutory-tests` (getStatutoryTests): Get the cap table's statutory tests
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
 - `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
 - `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card
@@ -159,6 +160,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/summary` (getContactSummary): Get a contact's balances and activity
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
+- `POST /v1/controller-entries` (createControllerEntry): Draft a registrable controller entry
+- `GET /v1/controller-entries/{entry_id}` (getControllerEntry): Get a registrable controller entry
+- `PUT /v1/controller-entries/{entry_id}` (replaceControllerEntry): Change a drafted registrable controller entry
+- `POST /v1/controller-entries/{entry_id}/approval` (requestControllerEntryApproval): Ask for approval to record a registrable controller entry
+- `GET /v1/controller-entries/{entry_id}/evidence` (listControllerEntryEvidence): List a controller entry's files
+- `POST /v1/controller-entries/{entry_id}/evidence` (addControllerEntryEvidence): Attach the company secretary's confirmation of a controller entry
+- `GET /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (getControllerEntryEvidence): Get a controller entry's file
+- `DELETE /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (removeControllerEntryEvidence): Remove a file from a drafted controller entry
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
@@ -337,6 +346,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/instruments/{instrument_id}/evidence` (addInstrumentEvidence): Attach a SAFE's or note's documents
 - `GET /v1/instruments/{instrument_id}/evidence/{evidence_id}` (getInstrumentEvidence): Get a SAFE's or note's file
 - `DELETE /v1/instruments/{instrument_id}/evidence/{evidence_id}` (removeInstrumentEvidence): Remove a file from a drafted SAFE or note
+- `POST /v1/investor-rights` (createInvestorRights): Draft a holder's rights from the agreements
+- `GET /v1/investor-rights/{rights_id}` (getInvestorRights): Get a holder's rights from the agreements
+- `PUT /v1/investor-rights/{rights_id}` (replaceInvestorRights): Change a holder's drafted rights
+- `POST /v1/investor-rights/{rights_id}/approval` (requestInvestorRightsApproval): Ask for approval to record a holder's rights
+- `GET /v1/investor-rights/{rights_id}/evidence` (listInvestorRightsEvidence): List the files of a holder's rights
+- `POST /v1/investor-rights/{rights_id}/evidence` (addInvestorRightsEvidence): Attach the agreements a holder's rights come from
+- `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (getInvestorRightsEvidence): Get a file of a holder's rights
+- `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (removeInvestorRightsEvidence): Remove a file from a holder's drafted rights
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice

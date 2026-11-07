@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "central_register_due": {
+      "description": "The day ACRA's central register is due: 2 business days after the company's, weekends left out (public holidays are not, so it is never later than the law's) [verify].",
+      "examples": [
+        "2025-01-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "company_register_due": {
+      "description": "The day the company's register is due: 7 days after they became one.",
+      "examples": [
+        "2025-01-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entry": {
+      "$ref": "ControllerEntryView.schema.json",
+      "description": "The entry in force."
+    },
+    "holder_id": {
+      "description": "The holder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "notice_due": {
+      "description": "A registered controller's yearly notice: due a year after the last one sent, or after they were entered.",
+      "examples": [
+        "2026-01-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ownership": {
+      "description": "Their percentage of the shares issued today (RND-DISPLAY).",
+      "examples": [
+        "42.19"
+      ],
+      "type": "string"
+    },
+    "rights": {
+      "description": "Their recorded rights could confer control (a board majority, consent matters): a person weighs them.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "shares": {
+      "description": "More than 25% of the shares issued.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "since": {
+      "description": "The first day of their latest run over 25%.",
+      "examples": [
+        "2025-01-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "standing": {
+      "description": "to_enter: not yet in the company's register; to_lodge: entered, ACRA's central register not updated; registered: both; not_assessed: rights to weigh and no conclusion recorded; not_a_controller: concluded not to be one.",
+      "enum": [
+        "to_enter",
+        "to_lodge",
+        "registered",
+        "not_assessed",
+        "not_a_controller"
+      ],
+      "examples": [
+        "registered"
+      ],
+      "type": "string"
+    },
+    "votes": {
+      "description": "More than 25% of the votes.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "voting": {
+      "description": "Their percentage of the votes today.",
+      "examples": [
+        "42.19"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "holder_name",
+    "shares",
+    "votes",
+    "rights",
+    "standing"
+  ],
+  "title": "ControllerTestView",
+  "type": "object"
+}

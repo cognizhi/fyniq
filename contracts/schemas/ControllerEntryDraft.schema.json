@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ceased_on": {
+      "description": "The day they ceased to be a controller.",
+      "examples": [
+        "2028-01-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "central_register_on": {
+      "description": "The day ACRA's central register was updated: within 2 business days after the company's.",
+      "examples": [
+        "2027-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "company_register_on": {
+      "description": "The day they were entered in the company's register of registrable controllers: within 7 days.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "controller": {
+      "description": "true: a registrable controller; false: found not to be one, with the reason, such as rights that do not confer control.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "grounds": {
+      "description": "A controller's grounds, each once; none for a holder who is not one.",
+      "items": {
+        "description": "shares or votes: more than 25% of them; board: the right to appoint or remove directors holding a majority of the board's votes; influence: significant influence or control.",
+        "enum": [
+          "shares",
+          "votes",
+          "board",
+          "influence"
+        ],
+        "examples": [
+          "shares"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "type": "array"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Confirmed by the company secretary"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "notices": {
+      "description": "The yearly notices sent and the replies, oldest first.",
+      "items": {
+        "$ref": "ControllerNoticeDraft.schema.json"
+      },
+      "maxItems": 50,
+      "type": "array"
+    },
+    "reason": {
+      "description": "Why a holder is not a controller, as the company secretary concluded.",
+      "examples": [
+        "The consent matters protect the investment and do not direct the company"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "since": {
+      "description": "The day they became a controller, or the day of the conclusion that they are not.",
+      "examples": [
+        "2027-03-08"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "controller",
+    "grounds",
+    "since",
+    "notices"
+  ],
+  "title": "ControllerEntryDraft",
+  "type": "object"
+}

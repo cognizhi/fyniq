@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval request waiting, if one is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's status: ✖ while no agreement is attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "confers_control": {
+      "description": "A board majority or consent matters: rights that could make the holder a registrable controller whatever their shares, which a person weighs (G4-101).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "evidence": {
+      "description": "How many files are attached and not removed: asking for approval needs one, such as the side letter.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "holder_id": {
+      "description": "The holder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Lion Rock Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The rights' ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-06-19T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it, as it was recorded."
+    },
+    "rights": {
+      "$ref": "InvestorRightsDraft.schema.json",
+      "description": "The rights."
+    },
+    "status": {
+      "description": "draft: waiting for its agreements and approval; recorded: in force; superseded: later rights are in force.",
+      "enum": [
+        "draft",
+        "recorded",
+        "superseded"
+      ],
+      "examples": [
+        "recorded"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "holder_id",
+    "holder_name",
+    "status",
+    "version",
+    "rights",
+    "confers_control",
+    "evidence",
+    "checks"
+  ],
+  "title": "InvestorRightsView",
+  "type": "object"
+}

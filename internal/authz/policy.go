@@ -1348,6 +1348,29 @@ var (
 	RequestRoundScenarioApproval = Policy{Operation: "requestRoundScenarioApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up."}
 )
 
+// Investor rights and registrable controllers (FR-EQ-22, FR-EQ-25; p1-equity-register slice 7, design D10): drafted by
+// the Accountant (C/P) with their evidence, read by whoever reads the whole cap table, recorded by an Owner or the
+// Controller, never the holder. The statutory tests read the whole register.
+var (
+	CreateInvestorRights           = Policy{Operation: "createInvestorRights", Capability: CapTable, Need: Create}
+	GetInvestorRights              = Policy{Operation: "getInvestorRights", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceInvestorRights          = Policy{Operation: "replaceInvestorRights", Capability: CapTable, Need: Create}
+	RequestInvestorRightsApproval  = Policy{Operation: "requestInvestorRightsApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up, never the holder."}
+	AddInvestorRightsEvidence      = Policy{Operation: "addInvestorRightsEvidence", Capability: CapTable, Need: Create}
+	ListInvestorRightsEvidence     = Policy{Operation: "listInvestorRightsEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetInvestorRightsEvidence      = Policy{Operation: "getInvestorRightsEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveInvestorRightsEvidence   = Policy{Operation: "removeInvestorRightsEvidence", Capability: CapTable, Need: Create}
+	CreateControllerEntry          = Policy{Operation: "createControllerEntry", Capability: CapTable, Need: Create}
+	GetControllerEntry             = Policy{Operation: "getControllerEntry", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceControllerEntry         = Policy{Operation: "replaceControllerEntry", Capability: CapTable, Need: Create}
+	RequestControllerEntryApproval = Policy{Operation: "requestControllerEntryApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up, never the holder."}
+	AddControllerEntryEvidence     = Policy{Operation: "addControllerEntryEvidence", Capability: CapTable, Need: Create}
+	ListControllerEntryEvidence    = Policy{Operation: "listControllerEntryEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetControllerEntryEvidence     = Policy{Operation: "getControllerEntryEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveControllerEntryEvidence  = Policy{Operation: "removeControllerEntryEvidence", Capability: CapTable, Need: Create}
+	GetStatutoryTests              = Policy{Operation: "getStatutoryTests", Capability: CapTable, Need: View, Unqualified: true}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1529,7 +1552,10 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants,
 	CreateOptionEvent, GetOptionEvent, ReplaceOptionEvent, RequestOptionEventApproval, AddOptionEventEvidence, ListOptionEventEvidence,
 	GetOptionEventEvidence, RemoveOptionEventEvidence, ListRoundScenarios, CreateRoundScenario, ModelRound, GetRoundScenario, ReplaceRoundScenario,
-	RequestRoundScenarioApproval)
+	RequestRoundScenarioApproval, CreateInvestorRights, GetInvestorRights, ReplaceInvestorRights, RequestInvestorRightsApproval,
+	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
+	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
+	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
