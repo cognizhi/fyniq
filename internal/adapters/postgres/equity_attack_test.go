@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -280,4 +281,80 @@ func TestAttackEquityStepsKeepTheirRules(t *testing.T) {
 		_, err := tx.Exec(ctx, `UPDATE fyniq.equity_step SET on_date = '2026-11-03'`)
 		return err
 	}), "FY290", "42501")
+}
+
+// A SAFE or convertible note keeps its rules whoever writes it (FR-EQ-18; FY291, FY249): its own keys only, a known form,
+// a holder marked shareholder or investor, an amount above zero, a share-capital class and a known template; a template's
+// enablement names a known template and nothing else; and the holder of a recorded instrument stays marked.
+// req: FR-EQ-18
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackInstrumentsKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack instruments Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	create := func(typ storage.DocumentType, payload string) (storage.Document, error) {
+		var doc storage.Document
+		err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: typ, Payload: []byte(payload)})
+			return err
+		})
+		return doc, err
+	}
+	safe := func(holder, account fmt.Stringer, amount, extra string) string {
+		return fmt.Sprintf(`{"date":"2026-11-07","form":"post_money_safe","holder_id":%q,"amount":%q,"currency":"SGD","signed_on":"2026-06-18",`+
+			`"valuation_cap":"2500000","trigger":"priced_round","class_account_id":%q,"denominator":"post_money_capitalisation","price_decimals":4%s}`,
+			holder, amount, account, extra)
+	}
+	for name, payload := range map[string]string{
+		"a key of its own":               safe(d.director.ID, class, "125000.00", `,"holder_nric":"S1234567D"`),
+		"an unknown form":                strings.Replace(safe(d.director.ID, class, "125000.00", ""), "post_money_safe", "warrant", 1),
+		"a customer as its holder":       safe(d.customer.ID, class, "125000.00", ""),
+		"nothing paid":                   safe(d.director.ID, class, "0", ""),
+		"a fraction of a cent":           safe(d.director.ID, class, "1.005", ""),
+		"a class on the director's loan": safe(d.director.ID, d.loan, "125000.00", ""),
+		"an unknown template":            safe(d.director.ID, class, "125000.00", `,"template":"seed-note@1"`),
+	} {
+		if _, err := create(storage.DocumentInstrument, payload); storage.CodeOf(err) != storage.CodeInstrument {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	for name, payload := range map[string]string{
+		"an unknown template": `{"date":"2026-11-07","template":"seed-note@1"}`,
+		"a key of its own":    `{"date":"2026-11-07","template":"yc-sg-post-money-cap@1","enabled":true}`,
+		"no template at all":  `{"date":"2026-11-07"}`,
+	} {
+		if _, err := create(storage.DocumentInstrumentTemplate, payload); storage.CodeOf(err) != storage.CodeInstrument {
+			t.Errorf("an enablement with %s: %v", name, err)
+		}
+	}
+	if _, err := create(storage.DocumentInstrumentTemplate, `{"date":"2026-11-07","template":"yc-sg-post-money-cap@1"}`); err != nil {
+		t.Fatalf("the YC template's enablement: %v", err)
+	}
+	doc, err := create(storage.DocumentInstrument, safe(d.director.ID, class, "125000.00", `,"template":"yc-sg-post-money-cap@1","pro_rata":true`))
+	if err != nil {
+		t.Fatalf("G4-044's SAFE: %v", err)
+	}
+	unmark := func() error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			c, err := u.Contacts().Get(ctx, d.director.ID)
+			if err != nil {
+				return err
+			}
+			det := c.ContactDetails
+			det.Shareholder, det.Investor = false, false
+			_, err = u.Contacts().Update(ctx, c.ID, c.Version, det, true)
+			return err
+		})
+	}
+	if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+	}); err != nil {
+		t.Fatalf("recording the SAFE: %v", err)
+	}
+	if err := unmark(); storage.CodeOf(err) != storage.CodeParty {
+		t.Errorf("unmarking the holder of a recorded SAFE: %v", err)
+	}
 }

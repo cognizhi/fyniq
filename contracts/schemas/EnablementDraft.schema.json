@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "A note, such as the lawyer and the date of their advice.",
+      "examples": [
+        "Advice of 3 Nov 2026"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "title": "EnablementDraft",
+  "type": "object"
+}

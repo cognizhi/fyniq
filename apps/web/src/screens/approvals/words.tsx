@@ -59,6 +59,8 @@ const operations: Record<Approval["operation"], string> = {
   "holder_record.record": "Record a holder's details in the equity register",
   "share_class.record": "Record a share class and its rights",
   "equity_transaction.approve": "Approve an equity transaction: an issue, a transfer, a conversion or a reversal",
+  "instrument.record": "Record a SAFE or convertible note",
+  "instrument_template.enable": "Enable a SAFE template on its lawyer's confirmation",
 };
 
 export function operationLabel(op: string): string {
@@ -108,6 +110,8 @@ const objects: Record<string, string> = {
   holder_record: "Holder record",
   share_class: "Share class",
   equity_transaction: "Equity transaction",
+  instrument: "SAFE or convertible note",
+  instrument_template: "SAFE template",
 };
 
 export function objectLabel(t: string): string {

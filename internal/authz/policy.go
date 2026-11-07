@@ -1272,6 +1272,30 @@ var (
 		Qualified: []string{"own holding; all if granted"}}
 )
 
+// SAFEs and convertible notes (FR-EQ-18; p1-equity-register slice 4): the Accountant drafts and asks (C/P), an Owner or
+// the Controller records, stepped up and never for an instrument they hold; a template is enabled the same way.
+const instrumentNote = "Another person approves it, stepped up, never its holder."
+
+var (
+	ListInstruments                   = Policy{Operation: "listInstruments", Capability: CapTable, Need: View, Unqualified: true}
+	GetInstrument                     = Policy{Operation: "getInstrument", Capability: CapTable, Need: View, Unqualified: true}
+	CreateInstrument                  = Policy{Operation: "createInstrument", Capability: CapTable, Need: Create}
+	ReplaceInstrument                 = Policy{Operation: "replaceInstrument", Capability: CapTable, Need: Create}
+	RequestInstrumentApproval         = Policy{Operation: "requestInstrumentApproval", Capability: CapTable, Need: Create, Note: instrumentNote}
+	AddInstrumentEvidence             = Policy{Operation: "addInstrumentEvidence", Capability: CapTable, Need: Create}
+	ListInstrumentEvidence            = Policy{Operation: "listInstrumentEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetInstrumentEvidence             = Policy{Operation: "getInstrumentEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveInstrumentEvidence          = Policy{Operation: "removeInstrumentEvidence", Capability: CapTable, Need: Create}
+	ListInstrumentTemplates           = Policy{Operation: "listInstrumentTemplates", Capability: CapTable, Need: View, Unqualified: true}
+	DraftInstrumentTemplateEnablement = Policy{Operation: "draftInstrumentTemplateEnablement", Capability: CapTable, Need: Create}
+	RequestInstrumentTemplateApproval = Policy{Operation: "requestInstrumentTemplateApproval", Capability: CapTable, Need: Create,
+		Note: "Another person approves it, stepped up."}
+	AddInstrumentTemplateEvidence    = Policy{Operation: "addInstrumentTemplateEvidence", Capability: CapTable, Need: Create}
+	ListInstrumentTemplateEvidence   = Policy{Operation: "listInstrumentTemplateEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetInstrumentTemplateEvidence    = Policy{Operation: "getInstrumentTemplateEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveInstrumentTemplateEvidence = Policy{Operation: "removeInstrumentTemplateEvidence", Capability: CapTable, Need: Create}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1443,7 +1467,10 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
 	RemoveBrandFile, SetBrandAccent, ListEquityTransactions, GetEquityTransaction, CreateEquityTransaction, ReplaceEquityTransaction,
 	RequestEquityTransactionApproval, RecordEquityStep, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
-	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence, GetCapTable, ExportCapTable, GetMyHolding)
+	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence, GetCapTable, ExportCapTable, GetMyHolding, ListInstruments, GetInstrument,
+	CreateInstrument, ReplaceInstrument, RequestInstrumentApproval, AddInstrumentEvidence, ListInstrumentEvidence, GetInstrumentEvidence,
+	RemoveInstrumentEvidence, ListInstrumentTemplates, DraftInstrumentTemplateEnablement, RequestInstrumentTemplateApproval,
+	AddInstrumentTemplateEvidence, ListInstrumentTemplateEvidence, GetInstrumentTemplateEvidence, RemoveInstrumentTemplateEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

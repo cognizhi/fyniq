@@ -111,6 +111,9 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   - 2700's role `convertible-instruments`, with the instrument as its sub-ledger key.
 
   Attack tests. `// req: FR-EQ-18`
+  (Slice 4a-i built the register: `instrument` and `instrument_template` documents, recorded on another person's approval
+  with their evidence (the signed instrument; the lawyer's confirmation), FY291 and FY249 as the backstop, and the API.
+  Slice 4a-ii follows with 2700's role and key, the money matched from the bank, and the founder's route to a SAFE.)
 - [ ] 5.2 Engine and API:
   - recording an instrument (approved), its cash matched Dr Bank · Cr 2700;
   - conversion at a priced round, under both conventions with `RND-SHARE`;

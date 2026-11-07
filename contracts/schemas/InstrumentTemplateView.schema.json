@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval request waiting, if one is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "covers": {
+      "description": "What it converts by itself; any other term converts by a draft for the accountant.",
+      "examples": [
+        "A post-money valuation cap, no discount, no most-favoured-nation clause and no interest, converting into shares at the next priced round."
+      ],
+      "type": "string"
+    },
+    "enabled": {
+      "description": "The organisation recorded its enablement, with its lawyer's confirmation.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "enablement_id": {
+      "description": "Its enablement, drafted or recorded.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b21"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "enablement_status": {
+      "description": "draft: waiting for the lawyer's confirmation and approval; recorded: enabled.",
+      "enum": [
+        "draft",
+        "recorded"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "evidence": {
+      "description": "The files attached to its enablement: asking for approval needs one, the lawyer's confirmation.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "form": {
+      "description": "The form it converts.",
+      "examples": [
+        "post_money_safe"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The template.",
+      "examples": [
+        "yc-sg-post-money-cap@1"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "SAFE: Valuation Cap, No Discount (Singapore)"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "Where its terms come from, and what is still to verify.",
+      "examples": [
+        "Y Combinator's Singapore SAFE [verify the conversion terms with a Singapore lawyer]"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its enablement's version; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "key",
+    "name",
+    "form",
+    "covers",
+    "source",
+    "enabled"
+  ],
+  "title": "InstrumentTemplateView",
+  "type": "object"
+}
