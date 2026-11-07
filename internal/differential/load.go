@@ -204,7 +204,7 @@ func dimensionFormat(s Scenario) string {
 
 // dateKeys are the keys whose string values are dates in fyniq-scenario@1 (scenario.schema.json's "date").
 var dateKeys = map[string]bool{"date": true, "as_of": true, "books_start": true, "from": true, "registered_from": true,
-	"registered_to": true, "spread_from": true, "depreciate_from": true, "incurred": true, "reverse_on": true}
+	"registered_to": true, "spread_from": true, "depreciate_from": true, "incurred": true, "reverse_on": true, "cap_tables": true}
 
 // realDates names the first date anywhere in the scenario that is not a calendar date, or returns "".
 func realDates(v any, key string) string {
@@ -363,6 +363,11 @@ func p1Format(s Scenario) string {
 	}
 	if len(s.KPIs) > 0 && !s.Statements {
 		return "kpis come only with statements"
+	}
+	for _, a := range s.Accounts { // README, "Cap tables"
+		if a.VotesPerShare != "" && a.Role != "share-capital" {
+			return fmt.Sprintf("account %s has votes_per_share, which only a share-capital account takes", a.Code)
+		}
 	}
 	return ""
 }

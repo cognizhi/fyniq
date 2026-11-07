@@ -95,6 +95,31 @@ def test_a_line_without_its_person_or_a_person_elsewhere_is_rejected(lines, reas
     assert ledger.reasons == [("JNL-0001", reason)]
 
 
+MONIES = {"code": "2040", "type": "liability", "group": False, "active": True, "role": "share-application-monies"}
+
+
+# Rule 9 (rev 0.207): a journal's line on share application monies names its subscriber, one of people or subscribers,
+# and no origin (B.7, FR-EQ-17); a line naming no one there is refused, as the database refuses it (FY249).
+# req: FR-EQ-17
+# req: QA-ENG-01
+@pytest.mark.parametrize(
+    ("monies", "reason"),
+    [
+        (person("2040", "-10.00", "P0003", None), None),  # a subscriber
+        (person("2040", "-10.00", "P0001", None), None),  # a shareholder among the people
+        (person("2040", "-10.00", None, None), "monies-line-without-subscriber"),
+        (person("2040", "-10.00", "P0009", None), "monies-line-without-subscriber"),
+        (person("2040", "-10.00", "P0003", "lent"), "monies-line-without-subscriber"),
+    ],
+)
+def test_share_application_monies_name_their_subscriber(monies, reason):
+    data = scenario(journal("JNL-0001", "2026-01-05", line("1010", "SGD", "10.00"), monies),
+                    accounts=[*DIRECTOR_ACCOUNTS, MONIES])
+    data["people"], data["subscribers"] = ["P0001", "P0002"], ["P0003"]
+    ledger = Ledger(scenario_from_json(data))
+    assert ledger.reasons == ([] if reason is None else [("JNL-0001", reason)])
+
+
 def _cost(**more) -> dict:
     doc = {"type": "pre_incorporation_cost", "id": "PIC-9", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01",
            "person": "P0001", "account": "6010", "gross": "109.00", "gst": "9.00"}

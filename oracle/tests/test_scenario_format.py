@@ -71,14 +71,17 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     # The opening balances are dated the books' start; the edit of the accrual posts its reversal and replacement,
     # and the scheduler reverses the replacement on its reverse_on. The account merge moves an expense account that
     # holds nothing, so it posts no entry (README, "Account merges"); it reads the financial year, so first_year_end.
+    # The share transfer moves 50,000 of the cash issue's 250,000 shares to a second holder and posts no entry (README,
+    # "Share transfers").
     merged = [{"code": code, "type": "expense", "group": False, "active": True} for code in ("6100", "6120")]
     data = p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01",
-                                               "first_year_end": "2026-12-31"}, accounts=P1_ACCOUNTS + merged)
+                                               "first_year_end": "2026-12-31"}, accounts=P1_ACCOUNTS + merged,
+                       people=("P0001", "P0002"))
     data["reversals"] = CORRECTION_EXAMPLES
     result = Ledger(scenario_from_json(data)).result()
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
-        d["id"] for d in P1_EXAMPLES if d["type"] not in ("fixed_asset", "account_merge")]
+        d["id"] for d in P1_EXAMPLES if d["type"] not in ("fixed_asset", "account_merge", "share_transfer")]
     assert any(e["kind"] == "depreciation" for e in result["entries"])
     assert [(e["document"], e["kind"]) for e in result["entries"] if e["kind"] in ("replacement", "auto_reversal")] == [
         (c["document"], "replacement") for c in CORRECTION_EXAMPLES] + [(c["document"], "auto_reversal")

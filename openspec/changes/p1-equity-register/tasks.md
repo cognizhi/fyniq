@@ -81,13 +81,16 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 4. The cap table (slice 3)
 
-- [ ] 4.1 `equity.CapTable(at)` (D7):
+- [x] 4.1 `equity.CapTable(at)` (D7):
   - issued, voting and fully diluted, by holder and class, with exact percentages shown to 2 decimals half-up;
   - two dates compared;
   - drill-down to movements, transactions and evidence.
 
   The oracle's `cap_table` agrees on G.3 and generated scenarios (`make differential`). `// req: FR-EQ-20`,
   `// req: QA-ENG-02`, `// req: RND-DISPLAY`
+  (Slice 3a: `equity.TableAt` and `TableIn`, each line keeping its movements for the drill-down; two dates are two
+  calls, which the API compares in 4.2. The differential gains `share_transfer`, `votes_per_share` and `cap_tables`,
+  the golden case `cap-table.json` and the generator's `equity` source.)
 - [ ] 4.2 API: `GET` the cap table with `at` and `compare`; the `cap_table` export kind (XLSX, 202 with its operation)
   and the PDF through the render service; no write path to holdings but D4. Matrix rows; the Board and Employee scopes.
   `// req: FR-EQ-20`

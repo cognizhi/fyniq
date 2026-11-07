@@ -26,7 +26,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from oracle import money
+from oracle import captable, money
 from oracle.book import Posting, Rejected
 from oracle.rules import Rules
 from oracle.scenario import Source
@@ -201,4 +201,5 @@ def director_conversion(r: Rules, doc: Source, books: dict[str, Any]) -> Posting
                 raise Rejected("account-not-allowed")
             lines.append(r.base_line(d["difference"], money.EXACT.subtract(equity, converted)))
     _at_most_owed(r, person, d["account"], doc.date, amount)
-    return Posting(lines)
+    # The n shares join the person's holding of the class on the day (README, "Cap tables").
+    return Posting(lines, effects=[captable.move(books, person, d["class"], shares, doc.date)])

@@ -120,7 +120,8 @@ def test_non_cash_entries_are_investing_or_financing_and_touch_no_cash(data):
 def test_the_generator_reaches_every_shape_of_the_statements():
     seen: Counter[str] = Counter()
 
-    @settings(max_examples=120, derandomize=True, database=None, deadline=None, suppress_health_check=list(HealthCheck))
+    # 200: the P1 half draws from nine sources since the equity register's joined, so each shape is rarer per example.
+    @settings(max_examples=200, derandomize=True, database=None, deadline=None, suppress_health_check=list(HealthCheck))
     @given(GENERATED)
     def collect(data):
         _, result = _run(data)
