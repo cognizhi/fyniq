@@ -872,6 +872,7 @@ var codeFacts = map[string]struct {
 	equity.CodeTemplate:              {409, "The template cannot be enabled"},
 	equity.CodePool:                  {422, "The pool's resolution does not fit"},
 	equity.CodeGrant:                 {422, "The grant of options does not fit"},
+	equity.CodeEvent:                 {422, "The forfeiture or expiry does not fit"},
 	CodeOwnCost:                      {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:               {422, "The claim cannot be kept as a loan"},
 	director.CodeNotPerson:           {422, "Not a director or shareholder"},

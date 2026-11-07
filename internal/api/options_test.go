@@ -384,3 +384,206 @@ var matrixOptions = map[string]func(e *env, tok string) (response, func() bool){
 		return e.call(http.MethodGet, "/v1/me/option-grants", tok, nil), nil
 	},
 }
+
+// A grant's forfeiture and expiry (FR-EQ-19, design D9; slice 5b-i): Priya's 48,000 options from 15 Oct 2025, 12,000
+// vested on 15 Oct 2026, the day she leaves. The 36,000 not vested are forfeited, never 36,001; then the 12,000 vested
+// lapse. Each is recorded on another person's approval with its notice, never by Mei, who signs in as Priya, and the
+// options are back in the pool from the day: 88,000 unallocated, then 100,000. A grant still a draft has no events.
+// req: FR-EQ-19
+// req: FM-1
+// asvs: V8.2.1
+func TestAGrantsOptionsAreForfeitedAndLapse(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner, authz.Controller)
+	mei := c.as(c.mei, authz.Owner)
+	approve := func(req response, token string) response {
+		return e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", token, hashOf(req), "If-Match", `"1"`)
+	}
+	recorded := func(path string, created response, kind string) response {
+		t.Helper()
+		if f := e.upload(path+"/evidence", prep, map[string]string{"evidence_type": kind}, "file.pdf", []byte("%PDF-1.7 "+kind), "If-Match", created.Header.Get("ETag")); f.Status != http.StatusCreated {
+			t.Fatalf("attaching the %s: %d %s", kind, f.Status, f.Raw)
+		}
+		return e.call(http.MethodPost, path+"/approval", prep, nil, "If-Match", created.Header.Get("ETag"))
+	}
+	priya := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Priya Nair", "investor": true}).str("id")
+	ct := e.call(http.MethodGet, "/v1/contacts/"+priya, weiling, nil)
+	if r := approve(e.call(http.MethodPut, "/v1/contacts/"+priya+"/member", kow, map[string]any{"member_user_id": c.mei}, "If-Match", ct.Header.Get("ETag")), weiling); r.Status != http.StatusOK {
+		t.Fatalf("linking Priya to Mei: %d %s", r.Status, r.Raw)
+	}
+	ordinary := e.shareCapitalIn(e.books.Org)
+	pool := e.call(http.MethodPost, "/v1/option-pool/resolutions", prep, map[string]any{"size": "100000", "class_account_id": ordinary,
+		"resolution_ref": "Ordinary resolution 2 Jan 2025", "resolved_on": "2025-01-02"})
+	if a := approve(recorded("/v1/option-pool/resolutions/"+pool.str("id"), pool, "Resolution"), mei); a.Status != http.StatusOK {
+		t.Fatalf("the pool: %d %s", a.Status, a.Raw)
+	}
+	terms := map[string]any{"holder_id": priya, "number": "48000", "exercise_price": "0.10", "granted_on": "2025-10-15", "cliff_months": 12,
+		"vesting_months": 48, "acceleration": "none", "expires_on": "2035-10-15", "class_account_id": ordinary}
+	draft := e.call(http.MethodPost, "/v1/option-grants", prep, terms)
+	if r := e.call(http.MethodPost, "/v1/option-grants/"+draft.str("id")+"/events", prep, map[string]any{"kind": "expiry", "number": "1", "on": "2026-10-15"},
+		"If-Match", draft.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, "the grant is not recorded") {
+		t.Errorf("an event of a drafted grant: %d %s", r.Status, r.Raw)
+	}
+	g := draft
+	gpath := "/v1/option-grants/" + g.str("id")
+	if a := approve(recorded(gpath, g, "Grant letter"), kow); a.Status != http.StatusOK {
+		t.Fatalf("Priya's grant: %d %s", a.Status, a.Raw)
+	}
+	grantTag := e.call(http.MethodGet, gpath, weiling, nil).Header.Get("ETag")
+	e.problemIs(e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "forfeiture", "number": "36000", "on": "2026-10-15"}),
+		"createOptionEvent", 428, CodeIfMatchRequired)
+	if r := e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "forfeiture", "number": "36001", "on": "2026-10-15"}, "If-Match", grantTag); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, "36000 options are not vested on 2026-10-15") {
+		t.Errorf("forfeiting a vested option: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "expiry", "number": "1", "on": "2025-10-14"}, "If-Match", grantTag); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, `"field":"body.on"`) {
+		t.Errorf("an event before the grant: %d %s", r.Status, r.Raw)
+	}
+	f := e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "forfeiture", "number": "36000", "on": "2026-10-15", "note": "Left on 15 Oct 2026"},
+		"If-Match", grantTag)
+	if f.Status != http.StatusCreated || f.str("status") != "draft" || f.str("holder_name") != "Priya Nair" || !strings.Contains(f.Raw, "Attach the notice") {
+		t.Fatalf("the forfeiture drafted: %d %s", f.Status, f.Raw)
+	}
+	fpath := "/v1/option-events/" + f.str("id")
+	e.problemIs(e.call(http.MethodPost, fpath+"/approval", prep, nil, "If-Match", f.Header.Get("ETag")), "requestOptionEventApproval", 422, equity.CodeNoEvidence)
+	freq := recorded(fpath, f, "Leaver's letter")
+	if freq.Status != http.StatusAccepted || freq.str("object_type") != approval.ObjectOptionEvent || !strings.Contains(freq.Raw, "Forfeit 36000 of Priya Nair's options") {
+		t.Fatalf("asking for the forfeiture: %d %s", freq.Status, freq.Raw)
+	}
+	if a := approve(freq, mei); a.Status == http.StatusOK || !strings.Contains(a.Raw, "your own options") {
+		t.Errorf("Mei approving her own forfeiture: %d %s", a.Status, a.Raw)
+	}
+	if a := approve(freq, kow); a.Status != http.StatusOK {
+		t.Fatalf("approving the forfeiture: %d %s", a.Status, a.Raw)
+	}
+	e.problemIs(e.call(http.MethodPut, fpath, prep, map[string]any{"kind": "forfeiture", "number": "1", "on": "2026-10-15"}, "If-Match", `"1-posted"`),
+		"replaceOptionEvent", 409, equity.CodeRecorded)
+	got := e.call(http.MethodGet, gpath, e.as(authz.Auditor), nil)
+	if got.str("forfeited") != "36000" || got.str("outstanding") != "12000" || got.str("vested") != "12000" || len(got.Body["events"].([]any)) != 1 {
+		t.Errorf("the grant after its forfeiture: %s", got.Raw)
+	}
+	if p := e.call(http.MethodGet, "/v1/option-pool", weiling, nil); p.str("returned") != "36000" || p.str("unallocated") != "88000" {
+		t.Errorf("the pool after the forfeiture: %s", p.Raw)
+	}
+
+	// The vested 12,000 lapse: never 12,001, which the grant does not have.
+	if r := e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "expiry", "number": "12001", "on": "2026-10-15"}, "If-Match", grantTag); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, "leave 12000 options") {
+		t.Errorf("an expiry of more than is left: %d %s", r.Status, r.Raw)
+	}
+	x := e.call(http.MethodPost, gpath+"/events", prep, map[string]any{"kind": "expiry", "number": "12000", "on": "2026-10-15"}, "If-Match", grantTag)
+	if a := approve(recorded("/v1/option-events/"+x.str("id"), x, "Notice of lapse"), kow); a.Status != http.StatusOK {
+		t.Fatalf("the expiry: %d %s", a.Status, a.Raw)
+	}
+	if got := e.call(http.MethodGet, gpath, weiling, nil); got.str("expired") != "12000" || got.str("outstanding") != "0" || got.str("vested") != "0" {
+		t.Errorf("the grant after its expiry: %s", got.Raw)
+	}
+	if p := e.call(http.MethodGet, "/v1/option-pool", weiling, nil); p.str("unallocated") != "100000" {
+		t.Errorf("the pool after the expiry: %s", p.Raw)
+	}
+	if ct := e.call(http.MethodGet, "/v1/cap-table?at=2026-10-15", weiling, nil); ct.str("options") != "0" || ct.str("unallocated_pool") != "100000" ||
+		strings.Contains(ct.Raw, "Priya Nair") {
+		t.Errorf("the cap table once the options are gone: %s", ct.Raw)
+	}
+	if trail := auditTrail(t, e); !strings.Contains(trail, "option_event") {
+		t.Error("the events were not audited")
+	}
+}
+
+// optionEventFixture is the matrix's grant events: a recorded grant and a drafted forfeiture of it with its notice.
+type optionEventFixture struct{ grant, event, eventFile string }
+
+var matrixOptionEventOf = map[*env]optionEventFixture{}
+
+func matrixOptionEvent(e *env) optionEventFixture {
+	e.t.Helper()
+	if f, ok := matrixOptionEventOf[e]; ok {
+		return f
+	}
+	matrixOption(e) // its recorded pool of 1,000 from 2 Jan 2026
+	acc := e.as(authz.Accountant)
+	cur := e.call(http.MethodGet, "/v1/option-grants/"+matrixOption(e).grant, acc, nil)
+	terms := bodyOf(cur, grantKeys...)
+	terms["number"] = "200"
+	g := e.call(http.MethodPost, "/v1/option-grants", acc, terms)
+	e.upload("/v1/option-grants/"+g.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Grant letter"}, "letter.pdf",
+		[]byte("%PDF-1.7 matrix recorded grant"), "If-Match", g.Header.Get("ETag"))
+	e.approveAsAnother(approval.ObjectOptionGrant, g.str("id"), approval.OpOptionGrantRecord, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := equity.RecordIn(ctx, u, storage.DocumentOptionGrant, uuid.MustParse(g.str("id")))
+		return err
+	})
+	ev := e.call(http.MethodPost, "/v1/option-grants/"+g.str("id")+"/events", acc, map[string]any{"kind": "expiry", "number": "10", "on": "2026-10-15"},
+		"If-Match", `"1-posted"`)
+	ef := e.upload("/v1/option-events/"+ev.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Notice of lapse"}, "notice.pdf",
+		[]byte("%PDF-1.7 matrix notice"), "If-Match", ev.Header.Get("ETag"))
+	if g.Status != http.StatusCreated || ev.Status != http.StatusCreated || ef.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's grant events: %d %d %d %s %s", g.Status, ev.Status, ef.Status, g.Raw, ev.Raw)
+	}
+	f := optionEventFixture{grant: g.str("id"), event: ev.str("id"), eventFile: ef.str("id")}
+	matrixOptionEventOf[e] = f
+	return f
+}
+
+// matrixOptionEventState is what a refused call must leave as it was: the grant, its event and the event's files.
+func matrixOptionEventState(e *env, f optionEventFixture) string {
+	acc := e.as(authz.Accountant)
+	var out []string
+	for _, p := range []string{"/v1/option-grants/" + f.grant, "/v1/option-events/" + f.event, "/v1/option-events/" + f.event + "/evidence"} {
+		r := e.call(http.MethodGet, p, acc, nil)
+		out = append(out, r.Header.Get("ETag")+r.Raw)
+	}
+	return strings.Join(out, "|")
+}
+
+var eventKeys = []string{"kind", "number", "on"}
+
+// matrixOptionEvents are the authorisation matrix's rows for a grant's forfeitures and expiries (FR-EQ-19).
+var matrixOptionEvents = map[string]func(e *env, tok string) (response, func() bool){
+	"createOptionEvent": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		was := matrixOptionEventState(e, f)
+		r := e.call(http.MethodPost, "/v1/option-grants/"+f.grant+"/events", tok, map[string]any{"kind": "expiry", "number": "5", "on": "2026-10-15"},
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixOptionEventState(e, f) == was }
+	},
+	"getOptionEvent": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/option-events/"+matrixOptionEvent(e).event, tok, nil), nil
+	},
+	"replaceOptionEvent": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		was := matrixOptionEventState(e, f)
+		cur := e.call(http.MethodGet, "/v1/option-events/"+f.event, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPut, "/v1/option-events/"+f.event, tok, bodyOf(cur, eventKeys...), "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixOptionEventState(e, f) == was }
+	},
+	"requestOptionEventApproval": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		was := matrixOptionEventState(e, f)
+		r := e.call(http.MethodPost, "/v1/option-events/"+f.event+"/approval", steppedUp(e, tok), nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixOptionEventState(e, f) == was }
+	},
+	"addOptionEventEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		was := matrixOptionEventState(e, f)
+		r := e.upload("/v1/option-events/"+f.event+"/evidence", tok, map[string]string{"evidence_type": "Board minute"}, "minute.pdf",
+			[]byte("%PDF-1.7 minute"), "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixOptionEventState(e, f) == was }
+	},
+	"listOptionEventEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/option-events/"+matrixOptionEvent(e).event+"/evidence", tok, nil), nil
+	},
+	"getOptionEventEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		return e.call(http.MethodGet, "/v1/option-events/"+f.event+"/evidence/"+f.eventFile, tok, nil), nil
+	},
+	"removeOptionEventEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixOptionEvent(e)
+		was := matrixOptionEventState(e, f)
+		r := e.call(http.MethodDelete, "/v1/option-events/"+f.event+"/evidence/"+f.eventFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixOptionEventState(e, f) == was }
+	},
+}

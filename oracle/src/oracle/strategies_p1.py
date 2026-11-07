@@ -156,13 +156,15 @@ FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-una
 # transfer of more than the seller holds, to themselves, or of an account that is not share capital; a SAFE that breaks
 # a rule, money on 2700 naming no recorded SAFE, and a conversion of a SAFE whose money never came. The option pool
 # (README, "The option pool and grants"): resolutions covering what is granted, and grants within what the pool leaves;
-# refused, a grant beyond it or before any pool, and a resolution smaller than what is granted.
+# refused, a grant beyond it or before any pool, and a resolution smaller than what is granted. A grant's forfeitures
+# and expiries; refused, one of more than the grant has left, and a forfeiture of options vested.
 EQUITY_POSTING = ["equity-money-in", "equity-money-in", "equity-refund", "equity-issue", "equity-issue",
                   "equity-transfer", "equity-transfer", "equity-safe", "equity-safe-money", "equity-safe-conversion",
-                  "equity-pool", "equity-grant", "equity-grant"]
+                  "equity-pool", "equity-grant", "equity-grant", "equity-forfeiture", "equity-expiry"]
 EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-transfer-to-self",
                    "equity-transfer-not-share-capital", "equity-safe-bad", "equity-safe-money-unnamed",
-                   "equity-safe-conversion-unfunded", "equity-grant-beyond", "equity-grant-no-pool", "equity-pool-short"]
+                   "equity-safe-conversion-unfunded", "equity-grant-beyond", "equity-grant-no-pool", "equity-pool-short",
+                   "equity-event-too-many", "equity-forfeit-vested"]
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
@@ -220,7 +222,9 @@ class _Book:
         # The option pool: the resolution in force (its size and class), the last recorded, as the documents come in
         # date order; and every option granted so far, all by the latest day.
         self.pool: tuple[int, str] | None = None
-        self.granted = 0
+        self.granted = 0  # less what events gave back
+        # grant -> [options it has left, whether they all vested on its day]: the others vest past every date drawn
+        self.grants: dict[str, list[Any]] = {}
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
         """A posted credit to the person on the account: owed, at least and at most."""
@@ -1066,10 +1070,21 @@ def _equity_document(
         kind = "equity-grant-beyond"
     if kind == "equity-pool-short" and book.granted < 2:
         kind = "equity-pool"
+    left = [g for g, (n, _) in book.grants.items() if n > 0]
+    if kind in ("equity-forfeiture", "equity-expiry", "equity-event-too-many", "equity-forfeit-vested") and not left:
+        kind = "equity-grant" if book.pool is not None else "equity-pool"
+    if kind == "equity-forfeiture" and not any(not book.grants[g][1] for g in left):
+        kind = "equity-expiry"  # every grant left vested on its day
+    if kind == "equity-forfeit-vested" and not any(book.grants[g][1] for g in left):
+        kind = "equity-event-too-many"
+    if kind == "equity-grant" and book.pool is not None and book.pool[0] == book.granted:
+        kind = "equity-grant-beyond"
     meant = REJECT if kind in REJECTED_KINDS else POST
     base = {"id": doc_id, "version": 1, "date": day.isoformat()}
     if kind.startswith(("equity-pool", "equity-grant")):
         return _option(draw, base, kind, book), meant, kind
+    if kind in ("equity-forfeiture", "equity-expiry", "equity-event-too-many", "equity-forfeit-vested"):
+        return _option_event(draw, base, kind, book), meant, kind
     if kind in ("equity-safe", "equity-safe-bad"):
         return _safe(draw, base, kind, book), meant, kind
     if kind in ("equity-safe-money", "equity-safe-money-unnamed"):
@@ -1143,13 +1158,40 @@ def _option(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> di
             book.pool = (size, share_class)
         return {"type": "option_pool", **base, "size": str(size), "class": share_class}
     left = book.pool[0] - book.granted if book.pool else 0
+    doc = {"type": "option_grant", **base, "person": draw(st.sampled_from(SUBSCRIBERS)), "number": "0",
+           "class": book.pool[1] if book.pool else draw(st.sampled_from(SHARE_CLASSES))}
+    vests_now = draw(st.booleans())
+    if not vests_now:  # a cliff of ten years: nothing vests by any date drawn
+        doc["cliff_months"], doc["vesting_months"] = 120, 120
     if kind == "equity-grant":
         number = draw(st.integers(1, min(left, 10**6)))
         book.granted += number
+        book.grants[base["id"]] = [number, vests_now]
     else:
         number = left + draw(st.integers(1, 1000))
-    return {"type": "option_grant", **base, "person": draw(st.sampled_from(SUBSCRIBERS)), "number": str(number),
-            "class": book.pool[1] if book.pool else draw(st.sampled_from(SHARE_CLASSES))}
+    doc["number"] = str(number)
+    return doc
+
+
+def _option_event(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:
+    """A forfeiture or expiry of a recorded grant (README, "The option pool and grants"): at most what it has left, a
+    forfeiture only of a grant nothing of which has vested; refused, one more than it has left, or a forfeiture of a
+    grant vested on its day. The documents come in date order, so every grant is dated on or before it."""
+    candidates = [g for g, (n, vests_now) in book.grants.items()
+                  if n > 0 and (kind != "equity-forfeiture" or not vests_now) and (kind != "equity-forfeit-vested" or vests_now)]
+    grant = draw(st.sampled_from(sorted(candidates)))
+    left = book.grants[grant][0]
+    if kind in ("equity-forfeiture", "equity-expiry"):
+        number = draw(st.integers(1, left))
+        book.grants[grant][0] -= number
+        book.granted -= number  # back in the pool from this day
+    elif kind == "equity-event-too-many":
+        number = left + draw(st.integers(1, 1000))
+    else:
+        number = draw(st.integers(1, left))
+    event_kind = "forfeiture" if kind in ("equity-forfeiture", "equity-forfeit-vested") else draw(
+        st.sampled_from(["forfeiture", "expiry"]) if kind == "equity-event-too-many" else st.just("expiry"))
+    return {"type": "option_event", **base, "grant": grant, "kind": event_kind, "number": str(number)}
 
 
 def _safe(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:

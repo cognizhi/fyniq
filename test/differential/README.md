@@ -734,7 +734,12 @@ From FR-EQ-19 and the equity register's design D9 (`p1-equity-register`).
 
 ```json
 {"type": "option_grant", "id": "OG-0001", "version": 1, "date": "2026-05-04", "person": "P0002", "number": "12000",
- "class": "3010"}
+ "class": "3010", "cliff_months": 12, "vesting_months": 48}
+```
+
+```json
+{"type": "option_event", "id": "OE-0001", "version": 1, "date": "2026-06-04", "grant": "OG-0001", "kind": "forfeiture",
+ "number": "9000"}
 ```
 
 A pool resolution records that `size` shares of `class` are set aside for options from `date`, the day it was passed;
@@ -751,13 +756,28 @@ any later day that an earlier document's grant or resolution is dated, the optio
 pool's `size` then: so an earlier-dated grant cannot take options a later one has, nor a smaller resolution leave the
 grants uncovered (the database's FY293).
 
-The format leaves out what nothing it computes reads: a grant's exercise price, vesting and expiry, and the
-resolution's reference. Exercises, forfeitures and expiries are not in the format yet. The cap table counts each
-grant's options in its holder's line fully diluted, and the pool's unallocated options in the day's total (section "Cap
-tables").
+A grant vests by `cliff_months` and `vesting_months`, whole numbers 0 to 120 with the cliff at most the vesting, both 0
+when left out; a grant breaking that is rejected. On a day on or after the grant's `date`, m is the whole months from
+the grant date to it: a month passes on the grant's day of the month, or on the last day of a month too short to have
+it (a grant of 31 Jan has a month on 28 Feb). The options vested are all of them when `vesting_months` is 0 or m is at
+least `vesting_months`; none when m is below `cliff_months`; otherwise `number` × m ÷ `vesting_months`, rounded down to
+whole options. None vest before the grant date.
+
+An event takes `number` options of `grant`, an earlier grant not rejected, on `date`, on or after the grant's date:
+`kind` `forfeiture` gives up options not vested, `expiry` lets options lapse. It posts no entry. It is rejected when
+`kind` is neither, `number` is not a whole number above zero, `grant` is no such grant, `date` is before the grant's,
+`number` is more than the grant's `number` less every earlier event of it (whatever their days), or, for a forfeiture,
+more than that less what is vested on `date`. From its `date` its options leave the grant's holder's line in the cap
+table and are back in the pool: the pool on a day leaves its `size` less the options granted by then, plus those the
+events dated by then took. A grant or resolution that the rule above checks on a later day counts them the same way.
+
+The format leaves out what nothing it computes reads: a grant's exercise price, acceleration and expiry date, and the
+resolution's reference. Exercises are not in the format yet. The cap table counts each grant's options in its holder's
+line fully diluted, and the pool's unallocated options in the day's total (section "Cap tables").
 
 In the examples above, the pool of 20,000 sets aside shares of 3010 from 20 Apr 2026, and P0002's grant of 12,000 on 4
-May leaves 8,000 unallocated.
+May leaves 8,000 unallocated; a month later, with nothing vested before the cliff, 9,000 of them are forfeited, so
+17,000 are unallocated.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -1428,6 +1448,8 @@ Readings the PRD leaves open, each [accountant to confirm]:
 | Voting percentages when no share votes | `null`, as any percentage of a zero total | A percentage of nothing is undefined, never 0.00 |
 | A holder with options and no shares | A line of their own, `issued` 0 and `ownership` 0.00 while any share is issued | Fully diluted counts the options (FR-EQ-19); the product shows the holder with their options (design D9) |
 | Two pool resolutions dated the same day | The later in the scenario is in force | The product takes the later recorded (FY293) |
+| Forfeited and expired options | Back in the pool from the event's day | FR-EQ-19: "forfeitures and expiries update the pool"; the plan's rules decide [accountant to confirm] |
+| A forfeiture's options not vested | The grant's options less every earlier event's, less what is vested on its day | A leaver forfeits what has not vested; what has vested and is not exercised lapses later, as an expiry [accountant to confirm] |
 
 ## Commands
 

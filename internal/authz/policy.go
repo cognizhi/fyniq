@@ -1326,6 +1326,15 @@ var (
 	RemoveOptionGrantEvidence     = Policy{Operation: "removeOptionGrantEvidence", Capability: CapTable, Need: Create}
 	GetMyOptionGrants             = Policy{Operation: "getMyOptionGrants", Capability: CapTable, Need: View, Unqualified: true,
 		Qualified: []string{"own grants", "own holding; all if granted"}}
+	// A grant's forfeitures and expiries (slice 5b-i): drafted and asked like the grant, never approved by its holder.
+	CreateOptionEvent          = Policy{Operation: "createOptionEvent", Capability: CapTable, Need: Create}
+	GetOptionEvent             = Policy{Operation: "getOptionEvent", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceOptionEvent         = Policy{Operation: "replaceOptionEvent", Capability: CapTable, Need: Create}
+	RequestOptionEventApproval = Policy{Operation: "requestOptionEventApproval", Capability: CapTable, Need: Create, Note: optionNote}
+	AddOptionEventEvidence     = Policy{Operation: "addOptionEventEvidence", Capability: CapTable, Need: Create}
+	ListOptionEventEvidence    = Policy{Operation: "listOptionEventEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetOptionEventEvidence     = Policy{Operation: "getOptionEventEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveOptionEventEvidence  = Policy{Operation: "removeOptionEventEvidence", Capability: CapTable, Need: Create}
 )
 
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
@@ -1506,7 +1515,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	DraftInstrumentConversions, PreviewInstrumentConversions, GetOptionPool, CreatePoolResolution, GetPoolResolution,
 	ReplacePoolResolution, RequestPoolResolutionApproval, AddPoolResolutionEvidence, ListPoolResolutionEvidence, GetPoolResolutionEvidence,
 	RemovePoolResolutionEvidence, ListOptionGrants, CreateOptionGrant, GetOptionGrant, ReplaceOptionGrant, RequestOptionGrantApproval,
-	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants)
+	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants,
+	CreateOptionEvent, GetOptionEvent, ReplaceOptionEvent, RequestOptionEventApproval, AddOptionEventEvidence, ListOptionEventEvidence,
+	GetOptionEventEvidence, RemoveOptionEventEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

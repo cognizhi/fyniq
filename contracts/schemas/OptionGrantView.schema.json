@@ -61,6 +61,13 @@
       ],
       "type": "string"
     },
+    "events": {
+      "description": "Its forfeitures and expiries, drafts and recorded, oldest first (createOptionEvent).",
+      "items": {
+        "$ref": "OptionEventView.schema.json"
+      },
+      "type": "array"
+    },
     "evidence": {
       "description": "How many files are attached and not removed: asking for approval needs one, the grant letter.",
       "examples": [
@@ -77,12 +84,26 @@
       "pattern": "^[0-9]{1,10}(\\.[0-9]{1,6})?$",
       "type": "string"
     },
+    "expired": {
+      "description": "The options its recorded expiries let lapse, back in the pool.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
     "expires_on": {
       "description": "The day it lapses, after the grant date.",
       "examples": [
         "2036-10-15"
       ],
       "format": "date",
+      "type": "string"
+    },
+    "forfeited": {
+      "description": "The options its recorded forfeitures took, back in the pool.",
+      "examples": [
+        "0"
+      ],
       "type": "string"
     },
     "granted_on": {
@@ -133,7 +154,7 @@
       "type": "string"
     },
     "outstanding": {
-      "description": "The options not exercised, forfeited or lapsed.",
+      "description": "The options not exercised, forfeited or expired, at the end of today.",
       "examples": [
         "48000"
       ],
@@ -197,6 +218,9 @@
     "class_code",
     "vested",
     "outstanding",
+    "forfeited",
+    "expired",
+    "events",
     "evidence",
     "checks",
     "holder_id",

@@ -11,6 +11,8 @@ Fully diluted on 1 Feb the company is 1,000,000 + 48,000 + 52,000 unallocated = 
 import json
 from pathlib import Path
 
+import pytest
+
 from oracle.ledger import Ledger
 from oracle.scenario import load_scenario, scenario_from_json
 
@@ -60,3 +62,51 @@ def test_of_two_resolutions_on_one_day_the_later_is_in_force():
     r = Ledger(scenario_from_json(data)).result()
     assert r["rejected"] == ["OG-0001"]  # the later resolution of 60,000 is in force
     assert r["cap_tables"][0]["unallocated"] == "60000"
+
+
+EVENTS = GOLDEN.parent / "option-events.json"
+
+
+# req: FR-EQ-19
+# req: QA-ENG-02
+def test_forfeitures_and_expiries_give_options_back_to_the_pool():
+    r = Ledger(load_scenario(EVENTS)).result()
+    # OG-0003 when the pool is full; OG-0007's cliff of 13 months past its 12 of vesting; OE-0001 forfeits one of OG-0002,
+    # which vested all on its day; OE-0002 takes 48,001 of 48,000; OE-0003 is before its grant; OE-0004 names no grant;
+    # OE-0005 is no kind of event; OG-0004 on 14 Mar comes the day before OE-0006 gave 40,000 back; OE-0007 takes 8,001
+    # of the 8,000 left; OP-0002's 91,999 is short of the 92,000 granted and kept by 21 Mar; and OE-0009 forfeits 2,601
+    # when 2,200 of OG-0006's 4,800 are vested: 11 whole months from 31 Mar 2027 to 29 Feb 2028 (the last day of a
+    # month too short for the 31st), past the 6-month cliff, 4,800 × 11 ÷ 24 = 2,200.
+    assert r["rejected"] == ["OG-0003", "OG-0007", "OE-0001", "OE-0002", "OE-0003", "OE-0004", "OE-0005", "OG-0004",
+                             "OE-0007", "OP-0002", "OE-0009"]
+    assert [e["document"] for e in r["entries"]] == ["BT-0001", "EQ-0001"]  # no event posts
+    full, forfeited, lapsed, leap = r["cap_tables"]
+    diluted = {t["at"]: [(ln["holder"], ln["fully_diluted"], ln["diluted"]) for ln in t["lines"]] for t in r["cap_tables"]}
+    # 1 Feb: 48,000 + 52,000 granted, the pool full: 4.36% and 4.73% of 1,100,000.
+    assert (full["options"], full["unallocated"], full["fully_diluted"]) == ("100000", "0", "1100000")
+    assert diluted["2027-02-01"] == [("P0001", "1000000", "90.91"), ("P0003", "48000", "4.36"), ("P0004", "52000", "4.73")]
+    # 15 Mar: 40,000 of OG-0001 forfeited and granted again to P0004 (OG-0005): 8,000 ÷ 1,100,000 = 0.727…% → 0.73.
+    assert (forfeited["options"], forfeited["unallocated"]) == ("100000", "0")
+    assert diluted["2027-03-15"] == [("P0001", "1000000", "90.91"), ("P0003", "8000", "0.73"), ("P0004", "92000", "8.36")]
+    # 20 Mar: OG-0001's last 8,000 lapse, so P0003 has no line, and the pool leaves 8,000.
+    assert (lapsed["options"], lapsed["unallocated"], lapsed["fully_diluted"]) == ("92000", "8000", "1100000")
+    assert diluted["2027-03-20"] == [("P0001", "1000000", "90.91"), ("P0004", "92000", "8.36")]
+    # 29 Feb 2028: OG-0006's 4,800 less the 2,600 not vested, forfeited: 2,200, 0.20%; 5,800 unallocated.
+    assert (leap["options"], leap["unallocated"], leap["fully_diluted"]) == ("94200", "5800", "1100000")
+    assert diluted["2028-02-29"] == [("P0001", "1000000", "90.91"), ("P0003", "2200", "0.20"), ("P0004", "92000", "8.36")]
+
+
+# req: FR-EQ-19
+@pytest.mark.parametrize(("granted", "day", "months"), [
+    ("2027-01-31", "2027-02-27", 0), ("2027-01-31", "2027-02-28", 1),  # February's last day stands for the 31st
+    ("2027-01-31", "2027-03-30", 1), ("2027-01-31", "2027-03-31", 2),
+    ("2027-03-31", "2028-02-29", 11), ("2027-01-15", "2027-01-15", 0), ("2027-01-15", "2028-01-14", 11),
+])
+def test_a_month_passes_on_the_grants_day_or_a_short_months_last(granted, day, months):
+    from datetime import date
+
+    from oracle import captable
+
+    assert captable._months(date.fromisoformat(granted), date.fromisoformat(day)) == months
+    g = captable.Grant("P0003", "3010", 4800, date.fromisoformat(granted), cliff=1, months=24)
+    assert captable.vested(g, date.fromisoformat(day)) == (0 if months < 1 else 4800 * months // 24)

@@ -159,8 +159,10 @@ type p1 struct {
 	// kept by the document being posted until it is accepted (README, "The option pool and grants").
 	optionBook  equity.OptionBook
 	options     []equity.Option
+	grants      map[string]*recordedGrant // by the scenario's ID
 	stagedPool  *equity.PoolResolution
-	stagedGrant *equity.Grant
+	stagedGrant *recordedGrant
+	stagedEvent *stagedEvent
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -275,6 +277,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return ledger.Entry{}, r.optionPool(d, date) // a resolution posts no entry
 	case "option_grant":
 		return ledger.Entry{}, r.optionGrant(d, date) // nor does a grant
+	case "option_event":
+		return ledger.Entry{}, r.optionEvent(d, date) // nor a forfeiture or expiry
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}

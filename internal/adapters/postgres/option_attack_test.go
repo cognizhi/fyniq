@@ -149,3 +149,78 @@ func TestAttackOptionsKeepTheirRules(t *testing.T) {
 		t.Errorf("unmarking the holder of a recorded grant: %v", unmark)
 	}
 }
+
+// A grant's forfeitures and expiries keep their rules whoever writes them (FR-EQ-19; FY293): an event's own keys only,
+// a kind of forfeiture or expiry, whole options above zero and a recorded grant dated on or before its day; recorded,
+// a grant's events never take more than it gave; and what they give back is in the pool from their day, for a later
+// grant only.
+// req: FR-EQ-19
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackGrantEventsKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack grant events Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	create := func(typ storage.DocumentType, payload string) (storage.Document, error) {
+		var doc storage.Document
+		err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: typ, Payload: []byte(payload)})
+			return err
+		})
+		return doc, err
+	}
+	record := func(id uuid.UUID) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Documents().SetStatus(ctx, id, storage.DocumentPosted)
+		})
+	}
+	drafted := func(typ storage.DocumentType, payload string) uuid.UUID {
+		t.Helper()
+		doc, err := create(typ, payload)
+		if err != nil {
+			t.Fatalf("drafting %s: %v", payload, err)
+		}
+		return doc.ID
+	}
+	grant := func(number, on string) string {
+		return fmt.Sprintf(`{"date":"2026-11-07","holder_id":%q,"number":%q,"exercise_price":"0.10","currency":"SGD","granted_on":%q,"cliff_months":0,`+
+			`"vesting_months":0,"acceleration":"none","expires_on":"2036-01-01","class_account_id":%q}`, d.director.ID, number, on, class)
+	}
+	event := func(g uuid.UUID, kind, number, on string) string {
+		return fmt.Sprintf(`{"date":"2026-11-07","grant_id":%q,"kind":%q,"number":%q,"on":%q}`, g, kind, number, on)
+	}
+	if err := record(drafted(storage.DocumentOptionPool, fmt.Sprintf(`{"date":"2026-11-07","size":"100","class_account_id":%q,"resolution_ref":"R","resolved_on":"2026-01-02"}`, class))); err != nil {
+		t.Fatalf("the pool of 100: %v", err)
+	}
+	full := drafted(storage.DocumentOptionGrant, grant("100", "2026-02-01"))
+	if err := record(full); err != nil {
+		t.Fatalf("a grant of the whole pool: %v", err)
+	}
+	unrecorded := drafted(storage.DocumentOptionGrant, grant("1", "2026-02-01"))
+	for name, payload := range map[string]string{
+		"a key of its own":         strings.Replace(event(full, "expiry", "10", "2026-07-01"), `"date"`, `"approved":true,"date"`, 1),
+		"an unknown kind":          event(full, "exercise", "10", "2026-07-01"),
+		"no options":               event(full, "expiry", "0", "2026-07-01"),
+		"a grant not recorded":     event(unrecorded, "expiry", "1", "2026-07-01"),
+		"a day before the grant":   event(full, "expiry", "10", "2026-01-31"),
+		"a grant that is no grant": event(d.director.ID, "expiry", "10", "2026-07-01"),
+	} {
+		if _, err := create(storage.DocumentOptionEvent, payload); storage.CodeOf(err) != storage.CodeOption {
+			t.Errorf("an event with %s: %v", name, err)
+		}
+	}
+	if err := record(drafted(storage.DocumentOptionEvent, event(full, "forfeiture", "60", "2026-07-01"))); err != nil {
+		t.Fatalf("forfeiting 60: %v", err)
+	}
+	if err := record(drafted(storage.DocumentOptionEvent, event(full, "expiry", "41", "2026-08-01"))); storage.CodeOf(err) != storage.CodeOption {
+		t.Errorf("41 more of the 40 left: %v", err)
+	}
+	if err := record(drafted(storage.DocumentOptionGrant, grant("1", "2026-06-30"))); storage.CodeOf(err) != storage.CodeOption {
+		t.Errorf("a grant the day before the forfeiture gave room: %v", err)
+	}
+	if err := record(drafted(storage.DocumentOptionGrant, grant("60", "2026-07-01"))); err != nil {
+		t.Errorf("a grant of the 60 given back, from their day: %v", err)
+	}
+}
