@@ -9395,6 +9395,51 @@ components:
         - message
         - fix
       type: object
+    ConversionPreview:
+      additionalProperties: false
+      properties:
+        capitalisation:
+          description: The company's capitalisation once the post-money SAFEs convert, C₀ ÷ (1 − f), shown under RND-DISPLAY to 2 decimals; absent when none converts.
+          examples:
+            - "1052631.58"
+          type: string
+        conversions:
+          description: Each recorded SAFE or note that converts at the round, in the order recorded.
+          items:
+            $ref: "#/components/schemas/ConversionWorking"
+          type: array
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        post_money_part:
+          description: "f: the part of the company the post-money SAFEs convert into, Σ amount ÷ cap, as a percentage shown under RND-DISPLAY to 2 decimals; absent when none converts."
+          examples:
+            - "5.00"
+          type: string
+        round_id:
+          description: The approved issue for cash it converts at, when one was named.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02
+          format: uuid
+          type: string
+        round_price:
+          description: The round's price per share in the base currency.
+          examples:
+            - "3.00"
+          type: string
+        shares_before:
+          description: "C₀: the shares issued and held at the end of the day before the round (today, for a price typed in)."
+          examples:
+            - "1000000"
+          type: string
+      required:
+        - round_price
+        - currency
+        - shares_before
+        - conversions
+      type: object
     ConversionStep:
       additionalProperties: false
       properties:
@@ -9465,6 +9510,87 @@ components:
       required:
         - kind
         - "on"
+      type: object
+    ConversionWorking:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "What it converts from: the investor's money."
+        cap_price:
+          description: "A capped SAFE's cap price before its precision, cut to 10 decimals: a post-money SAFE's cap × (1 − f) ÷ C₀, a pre-money one's cap ÷ C₀."
+          examples:
+            - "2.375"
+          type: string
+        converted:
+          $ref: "#/components/schemas/Money"
+          description: "round(shares × price): Dr 2700 · Cr the class once effective."
+        covered:
+          description: An enabled template covers every term, so its draft is ready for approval.
+          examples:
+            - true
+          type: boolean
+        discount_price:
+          description: "With a discount: the round's price × (100 − discount) ÷ 100, before its precision."
+          examples:
+            - "2.4"
+          type: string
+        form:
+          description: Its form.
+          examples:
+            - post_money_safe
+          type: string
+        holder_name:
+          description: Its holder.
+          examples:
+            - Hatch Capital Pte. Ltd.
+          type: string
+        instrument_id:
+          description: The instrument.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+          format: uuid
+          type: string
+        left:
+          $ref: "#/components/schemas/Money"
+          description: What stays on 2700 until it is settled under the terms.
+        ownership_at_cap:
+          description: "A post-money SAFE's: amount ÷ cap, the part of the company its cap gives it, as a percentage shown under RND-DISPLAY."
+          examples:
+            - "5.00"
+          type: string
+        price:
+          description: "The conversion price: the lower of the cap price and the discounted round price (the round's price itself with neither), cut down to its decimals."
+          examples:
+            - "2.375"
+          type: string
+        price_decimals:
+          description: The decimals its terms give the conversion price.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        review:
+          description: Otherwise what the accountant completes in its draft (⚠).
+          examples:
+            - "the accountant completes it: it follows no template, a discount"
+          type: string
+        shares:
+          description: "RND-SHARE: the most whole shares with round(shares × price) within the amount."
+          examples:
+            - "52631"
+          type: string
+      required:
+        - instrument_id
+        - holder_name
+        - form
+        - amount
+        - price_decimals
+        - price
+        - shares
+        - converted
+        - left
+        - covered
       type: object
     CreditApplication:
       additionalProperties: false
@@ -17179,6 +17305,33 @@ components:
       required:
         - items
       type: object
+    InstrumentConversionRef:
+      additionalProperties: false
+      properties:
+        number:
+          description: Its number, EQ-, once approved.
+          examples:
+            - EQ-0004
+          type: string
+        status:
+          description: "draft: drafted for approval; approved: waiting for ACRA's date; effective: its shares were allotted."
+          enum:
+            - draft
+            - approved
+            - effective
+          examples:
+            - effective
+          type: string
+        transaction_id:
+          description: The instrument_conversion equity transaction.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a31
+          format: uuid
+          type: string
+      required:
+        - transaction_id
+        - status
+      type: object
     InstrumentDraft:
       additionalProperties: false
       properties:
@@ -17472,6 +17625,9 @@ components:
           examples:
             - liability
           type: string
+        conversion:
+          $ref: "#/components/schemas/InstrumentConversionRef"
+          description: Its conversion into shares, once one is drafted from a priced round and while it stands (draftInstrumentConversions).
         currency:
           description: The amount's currency, the base currency.
           examples:
@@ -88673,6 +88829,145 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: C
+  /v1/instruments/conversion-preview:
+    get:
+      description: "Works out what every recorded SAFE and note not converted yet would convert into at a priced round (FR-EQ-18, design D6), with the figures each conversion price comes from: at an approved issue for cash (round_id), over the shares before it, or at a price typed in, over the shares issued today. A post-money SAFE's cap price is its cap × (1 − f) ÷ C₀, f being Σ amount ÷ cap over the post-money SAFEs; a pre-money one's its cap ÷ C₀; the conversion price is the lower of the cap price and the discounted round price, cut down to the instrument's decimals; the shares are RND-SHARE's. Read-only; nothing posts and nothing is saved: draftInstrumentConversions drafts them at an approved round."
+      operationId: previewInstrumentConversions
+      parameters:
+        - description: An approved issue for cash, the priced round, to convert at its price over the shares before it. Give this or price.
+          explode: false
+          in: query
+          name: round_id
+          schema:
+            description: An approved issue for cash, the priced round, to convert at its price over the shares before it. Give this or price.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02
+            format: uuid
+            type: string
+        - description: "A round's price per share in the base currency, at most 6 decimals, over the shares issued today: a round not recorded yet. Give this or round_id."
+          explode: false
+          in: query
+          name: price
+          schema:
+            description: "A round's price per share in the base currency, at most 6 decimals, over the shares issued today: a round not recorded yet. Give this or round_id."
+            examples:
+              - "3.00"
+            pattern: ^([0-9]{1,10}(\.[0-9]{1,6})?)?$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionPreview"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `EQUITY-15` The template cannot be enabled; `STORAGE-INV-03` The period is closed; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `EQUITY-14` The SAFE or note does not fit; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule; `STORAGE-SHARE-06` The SAFE or note does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Preview the SAFEs' and notes' conversions at a round
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - EQUITY-02
+        - EQUITY-05
+        - EQUITY-06
+        - EQUITY-07
+        - EQUITY-08
+        - EQUITY-09
+        - EQUITY-14
+        - EQUITY-15
+        - LEDGER-01
+        - LEDGER-16
+        - LEDGER-41
+        - LEDGER-48
+        - STORAGE-INV-03
+        - STORAGE-PARTY-01
+        - STORAGE-SHARE-01
+        - STORAGE-SHARE-04
+        - STORAGE-SHARE-06
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
+        right: V
   /v1/instruments/{instrument_id}:
     get:
       description: "Returns an instrument with its ETag: its terms, its status, how many files are attached and the approval waiting (FR-EQ-18). Read-only; no side effects."

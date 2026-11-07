@@ -312,6 +312,46 @@
       "label": "Reverse it",
       "tooltip": "Draft a reversal that undoes this transaction whole, citing why, such as the ACRA register extract."
     },
+    "equity.instruments": {
+      "label": "SAFEs and convertible notes",
+      "tooltip": "Money in today that becomes shares at a priced round: each SAFE and note with its terms, what 2700 holds for it, and its conversion."
+    },
+    "equity.instrument": {
+      "label": "SAFE or note",
+      "tooltip": "One SAFE or note: its terms, the signed copy, its approval, what 2700 holds for it today and its conversion."
+    },
+    "instrument.draft": {
+      "label": "Draft the instrument",
+      "tooltip": "Record a signed SAFE or note: its holder, form, amount and terms. Another Owner or the Controller approves it, with the signed copy attached."
+    },
+    "instrument.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the drafted SAFE or note, with its signed copy, to another Owner or the Controller to record."
+    },
+    "instrument.preview": {
+      "label": "Preview",
+      "tooltip": "Work out what each recorded SAFE and note would convert into at a round, step by step. Nothing posts and nothing is saved."
+    },
+    "instrument-template.enable": {
+      "label": "Enable it",
+      "tooltip": "Draft the template's enablement: attach your lawyer's confirmation, then another person approves it, once."
+    },
+    "instrument-template.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the enablement, with the lawyer's confirmation, to another Owner or the Controller."
+    },
+    "instrument.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the signed SAFE or note, and any side letter, the instrument rests on."
+    },
+    "instrument-enablement.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach your lawyer's confirmation that the template's conversion terms are right for the company."
+    },
+    "bank-line.instrument": {
+      "label": "SAFE or note",
+      "tooltip": "A part on 2700 Convertible notes / SAFE names the recorded SAFE or note the money is for."
+    },
     "equity-transaction.convert-safes": {
       "label": "Draft the SAFE conversions",
       "tooltip": "At this priced round, draft one conversion for each recorded SAFE or note it converts, at the lower of its cap price and its discounted round price, for approval."

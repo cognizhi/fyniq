@@ -11117,6 +11117,27 @@ Drafts a SAFE or convertible note (FR-EQ-18): its form, holder (a contact marked
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-14`, `EQUITY-15`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-06`
 
+### `GET /v1/instruments/conversion-preview`
+
+**Preview the SAFEs' and notes' conversions at a round** (`previewInstrumentConversions`)
+
+Works out what every recorded SAFE and note not converted yet would convert into at a priced round (FR-EQ-18, design D6), with the figures each conversion price comes from: at an approved issue for cash (round_id), over the shares before it, or at a price typed in, over the shares issued today. A post-money SAFE's cap price is its cap × (1 − f) ÷ C₀, f being Σ amount ÷ cap over the post-money SAFEs; a pre-money one's its cap ÷ C₀; the conversion price is the lower of the cap price and the discounted round price, cut down to the instrument's decimals; the shares are RND-SHARE's. Read-only; nothing posts and nothing is saved: draftInstrumentConversions drafts them at an approved round.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `round_id` (query): An approved issue for cash, the priced round, to convert at its price over the shares before it. Give this or price.
+  - `price` (query): A round's price per share in the base currency, at most 6 decimals, over the shares issued today: a round not recorded yet. Give this or round_id.
+- **Responses:**
+  - `200` OK [`ConversionPreview`](../../contracts/schemas/ConversionPreview.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `EQUITY-15` The template cannot be enabled; `STORAGE-INV-03` The period is closed; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `EQUITY-14` The SAFE or note does not fit; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule; `STORAGE-SHARE-06` The SAFE or note does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-02`, `EQUITY-05`, `EQUITY-06`, `EQUITY-07`, `EQUITY-08`, `EQUITY-09`, `EQUITY-14`, `EQUITY-15`, `LEDGER-01`, `LEDGER-16`, `LEDGER-41`, `LEDGER-48`, `STORAGE-INV-03`, `STORAGE-PARTY-01`, `STORAGE-SHARE-01`, `STORAGE-SHARE-04`, `STORAGE-SHARE-06`
+
 ### `GET /v1/instruments/{instrument_id}`
 
 **Get a SAFE or convertible note** (`getInstrument`)

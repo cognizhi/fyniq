@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it converts from: the investor's money."
+    },
+    "cap_price": {
+      "description": "A capped SAFE's cap price before its precision, cut to 10 decimals: a post-money SAFE's cap × (1 − f) ÷ C₀, a pre-money one's cap ÷ C₀.",
+      "examples": [
+        "2.375"
+      ],
+      "type": "string"
+    },
+    "converted": {
+      "$ref": "Money.schema.json",
+      "description": "round(shares × price): Dr 2700 · Cr the class once effective."
+    },
+    "covered": {
+      "description": "An enabled template covers every term, so its draft is ready for approval.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "discount_price": {
+      "description": "With a discount: the round's price × (100 − discount) ÷ 100, before its precision.",
+      "examples": [
+        "2.4"
+      ],
+      "type": "string"
+    },
+    "form": {
+      "description": "Its form.",
+      "examples": [
+        "post_money_safe"
+      ],
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Its holder.",
+      "examples": [
+        "Hatch Capital Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "instrument_id": {
+      "description": "The instrument.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "left": {
+      "$ref": "Money.schema.json",
+      "description": "What stays on 2700 until it is settled under the terms."
+    },
+    "ownership_at_cap": {
+      "description": "A post-money SAFE's: amount ÷ cap, the part of the company its cap gives it, as a percentage shown under RND-DISPLAY.",
+      "examples": [
+        "5.00"
+      ],
+      "type": "string"
+    },
+    "price": {
+      "description": "The conversion price: the lower of the cap price and the discounted round price (the round's price itself with neither), cut down to its decimals.",
+      "examples": [
+        "2.375"
+      ],
+      "type": "string"
+    },
+    "price_decimals": {
+      "description": "The decimals its terms give the conversion price.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "review": {
+      "description": "Otherwise what the accountant completes in its draft (⚠).",
+      "examples": [
+        "the accountant completes it: it follows no template, a discount"
+      ],
+      "type": "string"
+    },
+    "shares": {
+      "description": "RND-SHARE: the most whole shares with round(shares × price) within the amount.",
+      "examples": [
+        "52631"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "instrument_id",
+    "holder_name",
+    "form",
+    "amount",
+    "price_decimals",
+    "price",
+    "shares",
+    "converted",
+    "left",
+    "covered"
+  ],
+  "title": "ConversionWorking",
+  "type": "object"
+}

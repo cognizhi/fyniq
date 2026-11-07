@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 characters only), share classes, equity transactions made effective with ACRA, and SAFE conversions at a round
 sources:
-  - docs/user-guide/equity-register.md sha256:b473111c8593534177e70d57edd45175a91fec2a5b90b1617052f5975aaa6013
+  - docs/user-guide/equity-register.md sha256:29e00ac43625e3c5909ea1618bf1cc07ac5ad6bfc6b67f28c73261b26a36fd06
 data_class: general
 taint: trusted
 status: published
@@ -62,6 +62,12 @@ aliases:
   - priced round
   - conversion price
   - valuation cap
+  - record a SAFE
+  - convertible note
+  - preview a conversion
+  - SAFE template
+  - categorise SAFE money
+  - 2700
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -71,8 +77,8 @@ aliases:
 - **Equity** is the company's register of who owns it: shareholders and investors, share classes
   with their rights, and the equity transactions that move every share. Its first page, **Who owns
   the company**, is the cap table, in Basic and Expert mode.
-- Tabs move between **Cap table**, **Holders**, **Classes** and **Transactions** (with the
-  register of share issues), the last three Expert pages; SAFEs and notes, the option pool and
+- Tabs move between **Cap table**, **Holders**, **Classes**, **Transactions** (with the register
+  of share issues) and **SAFEs and notes**, all but the first Expert pages; the option pool and
   rounds join them later.
 - Holders and classes post no entry; share capital changes only through the register of share
   issues, the opening balances and a conversion between classes on different accounts
@@ -201,6 +207,49 @@ aliases:
 
 (src: docs/user-guide/equity-register.md#make-it-effective)
 
+## SAFEs and convertible notes
+
+- **Equity › SAFEs and notes** lists each SAFE and note: holder, form, amount, day signed, terms
+  (cap, discount, a note's interest and maturity), the accountant's classification, what **2700
+  Convertible notes / SAFE** holds for it today, and its status: **Draft**, **Waiting for
+  approval**, **Recorded**, **Converting** or **Converted**.
+
+(src: docs/user-guide/equity-register.md#safes-and-convertible-notes)
+
+## Record a SAFE or note
+
+- **Add instrument** (an Accountant): the holder (an investor or shareholder), the form
+  (post-money, pre-money, discount-only or MFN SAFE, or a convertible note), the amount paid and
+  day signed, the terms its form has, what converts it, the class, how its terms count the shares,
+  and the price decimals; the accountant records its classification, liability or equity.
+- **Draft the instrument**, attach the signed SAFE or note, then **Ask for approval**: another
+  Owner or the Controller records it, never the holder.
+- Its money comes in on a bank line categorised to 2700, choosing the recorded instrument under
+  **SAFE or note** ([[banking.categorise]]); a repayment out the same way. A line to 2700 naming no
+  recorded instrument is refused.
+
+(src: docs/user-guide/equity-register.md#record-a-safe-or-note)
+
+## The forms Fyniq converts by itself
+
+- **Forms Fyniq converts** lists the known templates. A conversion an enabled template covers in
+  every term is ready for approval; any other form, or a discount, MFN clause or interest, converts
+  by a draft the accountant completes (⚠).
+- To enable one: **Enable it**, attach your lawyer's confirmation, ask for approval; another Owner
+  or the Controller approves it, once.
+
+(src: docs/user-guide/equity-register.md#the-forms-fyniq-converts-by-itself)
+
+## Preview a conversion
+
+- **Conversion preview** is a sandbox (nothing posts or is saved): choose an approved issue for
+  cash under **At the round**, or type a round price, then **Preview**. Each instrument's working:
+  ownership at the cap, cap price, discounted round price, the conversion price cut to its
+  decimals, the whole shares, and what stays on 2700. At an approved round an Accountant can then
+  **Draft the SAFE conversions**.
+
+(src: docs/user-guide/equity-register.md#preview-a-conversion)
+
 ## Convert SAFEs and notes
 
 - At a priced round, on the round's approved issue for cash, an Accountant selects **Draft the SAFE
@@ -250,7 +299,8 @@ aliases:
   attach the identity document, or the constitution and the shareholders' agreement.
 - Your own holder record is approved by another Owner or the Controller.
 - EQUITY-07: a conversion of the instrument stands already (change it, or reverse it first); the
-  round is not an approved issue for cash.
+  round is not an approved issue for cash. LEDGER-49: a line on 2700 names its instrument (choose
+  it under SAFE or note). EQUITY-15: a template is enabled already, or is not one Fyniq knows.
 - EQUITY-08: only an approved transaction becomes effective, never before its approval; the
   subscriber's money is not all in share application monies; the holder holds fewer shares on the
   day; a conversion's round is not effective on or before the day, or was reversed (draft the

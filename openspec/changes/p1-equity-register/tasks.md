@@ -134,7 +134,13 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   and `safe_conversion` documents, bank lines naming a SAFE on 2700, the golden cases `safe-conversion.json` (G4-044,
   then a discount, an MFN and a pre-money SAFE at a later round) and `safe-conversion-caps.json` (two caps and G.3's
   pre-money SAFE), and the generator's SAFE kinds. C.2 #29 and the founder's route to a SAFE follow.)
-- [ ] 5.3 Screen Instruments as designed, with help keys and guide sections. Vitest and axe. `// req: FR-EQ-18`
+- [x] 5.3 Screen Instruments as designed, with help keys and guide sections. Vitest and axe. `// req: FR-EQ-18`
+  (Slice 4c: Equity › SAFEs and notes with each instrument's terms, what 2700 holds and its status; the record page with
+  the signed copy, its approval and its conversion; the templates and their enablement with the lawyer's confirmation;
+  and the conversion preview, worked by the engine (`previewInstrumentConversions`: at an approved round or a price typed
+  in, each price's working under RND-DISPLAY), from which the Accountant drafts the conversions at an approved round.
+  Bank categorisation now offers 2700 and 2040, naming the SAFE or the subscriber. The preview's "From the round
+  simulator" waits for the rounds (D8).)
 
 ## 6. The option pool and grants (slice 5)
 
