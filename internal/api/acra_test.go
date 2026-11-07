@@ -131,7 +131,7 @@ func matrixAcra(e *env) acraFixture {
 	if capital == "" {
 		capital = e.shareCapitalIn(e.books.Org)
 	}
-	holder := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Matrix ACRA holder", "shareholder": true}).str("id")
+	holder := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Matrix ACRA holder", "investor": true}).str("id")
 	x := e.call(http.MethodPost, "/v1/acra-extracts", acc, map[string]any{"profile_on": "2026-10-01",
 		"holdings": []map[string]any{{"holder_id": holder, "class_account_id": capital, "shares": "100"}}})
 	f := e.upload("/v1/acra-extracts/"+x.str("id")+"/evidence", acc, map[string]string{"evidence_type": "ACRA business profile"}, "bizfile.pdf",
