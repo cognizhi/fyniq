@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "balances": {
+      "description": "Each account and currency those entries post to, with its balance through their latest date before and after.",
+      "items": {
+        "$ref": "ImpactBalance.schema.json"
+      },
+      "type": "array"
+    },
+    "entries": {
+      "description": "The entries approving it would post now, debits positive: its ledger impact.",
+      "items": {
+        "$ref": "Entry.schema.json"
+      },
+      "type": "array"
+    },
+    "refused": {
+      "$ref": "ImpactRefusal.schema.json",
+      "description": "What would refuse it if it were approved now, such as a check that fails or a month closed since it was asked for; absent when nothing would."
+    }
+  },
+  "required": [
+    "entries",
+    "balances"
+  ],
+  "title": "ApprovalImpact",
+  "type": "object"
+}
