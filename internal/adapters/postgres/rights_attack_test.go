@@ -81,3 +81,42 @@ func TestAttackHolderRightsKeepTheirRules(t *testing.T) {
 		}
 	}
 }
+
+// An ACRA extract keeps its rules whoever writes it (FR-EQ-26; FY297): its own keys, its day and a list of holdings,
+// each of its own keys, a holder marked shareholder or investor, an active share-capital class and whole shares.
+// req: FR-EQ-26
+// asvs: V8.2.1
+func TestAttackAcraExtractsKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack ACRA extracts Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	create := func(payload string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentAcraExtract, Payload: []byte(payload)})
+			return err
+		})
+	}
+	extract := func(holding string, extra string) string {
+		return fmt.Sprintf(`{"date":"2026-11-07","profile_on":"2026-10-01","holdings":[%s]%s}`, holding, extra)
+	}
+	holding := func(holder, account fmt.Stringer, shares string) string {
+		return fmt.Sprintf(`{"holder_id":%q,"class_account_id":%q,"shares":%q}`, holder, account, shares)
+	}
+	for name, payload := range map[string]string{
+		"a key of its own":               extract(holding(d.director.ID, class, "700000"), `,"matches":true`),
+		"no day":                         strings.Replace(extract(holding(d.director.ID, class, "700000"), ``), `"profile_on":"2026-10-01",`, ``, 1),
+		"holdings that are no list":      strings.Replace(extract(``, ``), `"holdings":[]`, `"holdings":{}`, 1),
+		"a holding's key of its own":     extract(strings.Replace(holding(d.director.ID, class, "700000"), `}`, `,"votes":"1"}`, 1), ``),
+		"half a share":                   extract(holding(d.director.ID, class, "1.5"), ``),
+		"a customer as its holder":       extract(holding(d.customer.ID, class, "700000"), ``),
+		"a class on the director's loan": extract(holding(d.director.ID, d.loan, "700000"), ``),
+	} {
+		if err := create(payload); storage.CodeOf(err) != storage.CodeAcraExtract {
+			t.Errorf("an extract with %s: %v", name, err)
+		}
+	}
+	if err := create(extract(holding(d.director.ID, class, "700000"), `,"note":"Profile of 1 Oct 2026"`)); err != nil {
+		t.Errorf("an extract as its rules allow: %v", err)
+	}
+}

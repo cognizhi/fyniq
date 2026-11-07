@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class_account_id": {
+      "description": "The class, by its share-capital account: 3010 ordinary, 3020 preference [accountant to confirm for several preference series].",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder: a contact marked shareholder or investor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "shares": {
+      "description": "The shares the business profile lists, a whole number.",
+      "examples": [
+        "700000"
+      ],
+      "pattern": "^[1-9][0-9]{0,13}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "class_account_id",
+    "shares"
+  ],
+  "title": "AcraHoldingDraft",
+  "type": "object"
+}

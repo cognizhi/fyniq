@@ -652,6 +652,10 @@ const (
 	// design D10): the grounds, the register days and the yearly notices, or the reason they are not one, recorded on
 	// another person's approval with the company secretary's confirmation attached.
 	DocumentControllerEntry DocumentType = "controller_entry"
+	// DocumentAcraExtract is ACRA's register of members as a business profile gives it (FR-EQ-26, design D11): its day
+	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
+	// supersedes it.
+	DocumentAcraExtract DocumentType = "acra_extract"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -910,6 +914,9 @@ const (
 	// CodeControllerEntry: a controller entry keeps its own keys, a holder marked shareholder or investor, grounds for a
 	// controller and a reason for one who is not, and its days in order (FY296).
 	CodeControllerEntry = "STORAGE-SHARE-10"
+	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
+	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
+	CodeAcraExtract = "STORAGE-SHARE-11"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

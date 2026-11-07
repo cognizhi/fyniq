@@ -229,9 +229,15 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 9. The ACRA reconciliation and integrity (slice 8)
 
-- [ ] 9.1 `acra_extract` and `acra_extract_holding` (D11): typed holdings with the PDF as evidence; the comparison at
+- [x] 9.1 `acra_extract` and `acra_extract_holding` (D11): typed holdings with the PDF as evidence; the comparison at
   the extract's date; C.2 #26 listing each difference; a reversal citing the extract fixes one. Tests: a matching
   extract, a missing holder, a wrong class and a wrong count. `// req: FR-EQ-26`
+  (Slice 8a: the holdings are a list in the `acra_extract` document's payload, each a holder, a class by its
+  share-capital account and whole shares, held by FY297, rather than rows of their own. It is recorded by whoever holds P
+  on the cap table (the Accountant) with the PDF attached, as the exempt status is, with no second approval: it copies
+  ACRA's register and posts nothing. The extract in force is the recorded one of the latest business profile;
+  `getAcraReconciliation` lists each holding that differs at its day. C.2 #26 is ⚠ for each difference and not assessed
+  while shares exist and no extract is recorded.)
 - [ ] 9.2 The reconciliation page (Expert), with help keys and guide sections. Vitest and axe. `// req: FR-EQ-26`,
   `// req: FR-EQ-27`
 

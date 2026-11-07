@@ -500,6 +500,7 @@ var evidenceFix = map[storage.DocumentType]string{
 	storage.DocumentOptionGrant:        "Attach the grant letter",
 	storage.DocumentInvestorRights:     "Attach the agreements the rights come from, such as the shareholders' agreement or a side letter",
 	storage.DocumentControllerEntry:    "Attach the company secretary's confirmation, with the register's extract or ACRA's acknowledgement",
+	storage.DocumentAcraExtract:        "Attach the business profile's PDF the holdings were typed from",
 }
 
 // attached counts the files attached to a document and not removed.
