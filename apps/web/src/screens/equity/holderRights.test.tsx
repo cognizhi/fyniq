@@ -114,6 +114,28 @@ describe("a holder's rights and controller standing", () => {
     });
   });
 
+  it("lists the investments: each share issue with its price and amount, and each SAFE they hold", async () => {
+    const issue = { id: "si-1", holder_id: "c-lion", holder_name: "Lion Rock Ventures Pte. Ltd.", class_account_id: "acc-3010", class_code: "3010", shares: "160000",
+      price: "0.9375", amount: { amount: "150000.00", currency: "SGD" }, consideration: "cash", resolution_refs: "Board resolution 5 Mar 2027", effective_on: "2027-03-12",
+      before_books: false, recorded_at: "2027-03-12T09:00:00Z" };
+    const safe = { id: "in-1", holder_id: "c-lion", holder_name: "Lion Rock Ventures Pte. Ltd.", form: "post_money_safe", amount: "500000.00", currency: "SGD", signed_on: "2026-06-18",
+      status: "recorded", valuation_cap: "8000000", class_account_id: "acc-3010", class_code: "3010", denominator: "post_money_capitalisation", trigger: "priced_round",
+      price_decimals: 4, version: 1, evidence: 1, checks: [] };
+    answer({
+      "GET /v1/holders/c-lion": { status: 200, body: { ...holder, contact_id: "c-lion", name: "Lion Rock Ventures Pte. Ltd.", investor: true, issues: [issue], rights_history: [],
+        controller_history: [] } },
+      "GET /v1/cap-table/statutory-tests": { status: 200, body: tests([]) },
+      "GET /v1/instruments": { status: 200, body: { items: [safe, { ...safe, id: "in-2", holder_id: "c-other" }] } },
+    });
+    renderPage(HolderPage, { path: "/equity/holders/c-lion", route: "/equity/holders/$contactId", session: accountant });
+    const table = await screen.findByRole("table", { name: "Investments" });
+    await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(3));
+    const rows = within(table).getAllByRole("row").map((r) => r.textContent);
+    expect(rows[1]).toBe("Shares for cash on 3010Board resolution 5 Mar 202712 Mar 2027160,0000.9375150,000.00");
+    expect(rows[2]).toBe("Post-money SAFERecorded · cap S$8,000,00018 Jun 2026––500,000.00");
+    await noViolations(document.body);
+  });
+
   it("says a holder under the threshold is no controller, and offers no drafting to an Owner", async () => {
     answer({
       "GET /v1/holders/c-kow": { status: 200, body: { ...holder, rights_history: [], controller_history: [] } },

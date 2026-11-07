@@ -83,6 +83,10 @@ recorded the same way. Trust boundaries:
 
 ## 4. What remains
 
-- The Board's whole cap table "if granted" arrives with the option pool's fully diluted cap table (slice 5a-ii); a grant's
-  exercise, forfeiture and expiry with its events (slice 5b).
-- The `fyniq.read.equity` scope arrives with `p1-mcp-first-party`. Until then, no AI tool reads equity data.
+- The Board's whole cap table "if granted" (Appendix D) needs a grant an Owner gives; design D12 keeps the Board viewer
+  to its own holding in P1, and every whole-table read is Unqualified until then.
+- The `fyniq.read.equity` scope arrives with `p1-mcp-first-party`. Until then, no AI tool reads equity data, and the
+  round simulator's AI lane waits for `p1-ai-assistant`.
+- The controller test's 2 business days leave out weekends only; Singapore's public holidays wait for a calendar
+  [verify]. The ACRA comparison names a class by its share-capital account, which holds for one preference series
+  [accountant to confirm for several].

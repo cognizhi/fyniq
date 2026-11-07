@@ -306,7 +306,7 @@ function BasicInputs({ form, set, locked }: { form: RoundForm; set: (d: Partial<
           The round
         </h2>
       </div>
-      <div className="fy-card__body fy-stack fy-stack--4">
+      <div className="fy-card__body fy-stack fy-stack--3">
         <div className="fy-form fy-form--2">
           <div className="fy-field">
             <label className="fy-label" htmlFor={`${id}-raise`} title={helpText("round.raise").tooltip}>

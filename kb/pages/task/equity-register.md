@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:2f7333d43de4e01d659add1f7292fd31c18d2afce15df07a332f28155e8a3311
+  - docs/user-guide/equity-register.md sha256:774c335bb1830c35173bc5b7ee68249de4d952ee2b96f951cfa58efe81a0ab59
 data_class: general
 taint: trusted
 status: published
@@ -180,6 +180,8 @@ aliases:
   **Shareholders** or **Investors**, or search by name.
 - A holder is a contact: tick **A shareholder**, or **An investor** for a SAFE, note or option
   holder with no shares yet, in Contacts ([[contacts.manage]]). **Add a holder** goes there.
+- A holder's page shows their **Investments**: each share issue with its date, class, shares, price
+  and amount, and each SAFE or note they hold with its amount and the day it was signed.
 
 (src: docs/user-guide/equity-register.md#holders)
 

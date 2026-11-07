@@ -325,7 +325,7 @@ export function AcraReconciliation() {
             {r?.extract && <HoldingsTable x={r.extract} label="Holdings in the business profile" />}
           </div>
         </section>
-        <div className="fy-stack fy-stack--4">
+        <div className="fy-stack fy-stack--6">
           <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="paid-title">
             <h2 className="fy-h3" id="paid-title" title={helpText("acra.paid-up").tooltip}>
               Paid-up capital against the ledger

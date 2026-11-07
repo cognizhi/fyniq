@@ -247,10 +247,20 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 10. Finish
 
-- [ ] 10.1 The canvases match what was built (`make design-check`); the help registry and QA-UI-05 hold; the knowledge
+- [x] 10.1 The canvases match what was built (`make design-check`); the help registry and QA-UI-05 hold; the knowledge
   base lints clean; the threat model `docs/security/threat-models/equity-register.md` covers the holder identifiers,
   the scopes and the backstops.
-- [ ] 10.2 `make check`, `make test` and `make test-e2e` pass; the full authorisation matrix passes.
+  (The equity canvas republished, version 9: a new screen AcraReconciliation; RoundSimulator with the investor a
+  contact, the advanced details in Basic, the pool tile and no assistant card; HolderRecord with the rights as built
+  and the registrable controller card; the eight equity tabs on every equity screen. Building it found FR-EQ-22's
+  investments missing from the holder page: an Investments card now lists each share issue with its price and amount
+  and each SAFE or note held. The threat model's "What remains" names what waits: the Board's whole cap table if
+  granted, `fyniq.read.equity`, public holidays and several preference series.)
+- [x] 10.2 `make check`, `make test` and `make test-e2e` pass; the full authorisation matrix passes.
+  (Run locally on the stack's tip: the full matrix (28 minutes, after the ACRA fixture's holder became an investor so
+  the fee fixture's director lookup never finds it), Playwright's 21 journeys, the full differential (after the oracle
+  labels an exercise's non-cash line as the engine does, a shrunk golden case), and each slice's gates. CI runs
+  `make test` on every pull request.)
 
 ## Workflow follow-up
 

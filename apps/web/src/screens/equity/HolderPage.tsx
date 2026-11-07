@@ -7,6 +7,7 @@ import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
+import { formatAmount } from "../../format/amount";
 import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
@@ -14,6 +15,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { ControllerCard, RightsCard, statutoryTests } from "./HolderRights";
+import { formWords, listInstruments } from "./instrumentWords";
 import { EquityTabs, holdsText, kindText } from "./Holders";
 
 type Detail = components["schemas"]["HolderDetail"];
@@ -226,6 +228,89 @@ function RecordForm({ contactId, draft, start, onClose, onDone }: { contactId: s
   );
 }
 
+const considerationWords: Record<Detail["issues"][number]["consideration"], string> = {
+  cash: "Shares for cash",
+  debt_capitalised: "Shares for a balance owed to them",
+  services: "Shares for services",
+  safe_or_note: "Shares from a SAFE or note",
+};
+
+// Investments are what a holder put in (FR-EQ-22): each share issue with its shares, price and amount, and each SAFE or
+// note they hold, from the register of share issues and the instruments recorded.
+function Investments({ h }: { h: Detail }) {
+  const instruments = useQuery({ queryKey: ["instruments"], queryFn: listInstruments, retry: false });
+  const held = (instruments.data ?? []).filter((i) => i.holder_id === h.contact_id);
+  const none = h.issues.length === 0 && held.length === 0;
+  return (
+    <section className="fy-card" aria-labelledby="holder-issues-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="holder-issues-title" title={helpText("holder.investments").tooltip}>
+          Investments
+        </h2>
+      </div>
+      {none ? (
+        <p className="fy-card__body fy-small fy-muted">No shares, SAFE or note is recorded for this holder.</p>
+      ) : (
+        <div className="fy-tablewrap" style={{ border: 0, borderRadius: 0 }}>
+          <table className="fy-table fy-table--cards" aria-label="Investments">
+            <thead>
+              <tr>
+                <th scope="col">Investment</th>
+                <th scope="col">Date</th>
+                <th scope="col" className="fy-num">
+                  Shares
+                </th>
+                <th scope="col" className="fy-num">
+                  Price
+                </th>
+                <th scope="col" className="fy-num">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {h.issues.map((s) => (
+                <tr key={s.id}>
+                  <td data-card="title">
+                    {considerationWords[s.consideration]} on {s.class_code}
+                    <div className="fy-small fy-muted">{s.resolution_refs}</div>
+                  </td>
+                  <td data-card="meta">{date(s.effective_on)}</td>
+                  <td className="fy-num">{Number(s.shares).toLocaleString("en-SG")}</td>
+                  <td className="fy-num">{s.price}</td>
+                  <td data-card="amount" className="fy-num">
+                    {formatAmount(s.amount.amount)}
+                  </td>
+                </tr>
+              ))}
+              {held.map((i) => (
+                <tr key={i.id}>
+                  <td data-card="title">
+                    <Link to="/equity/instruments/$instrumentId" params={{ instrumentId: i.id }}>
+                      {formWords[i.form]}
+                    </Link>
+                    <div className="fy-small fy-muted">
+                      {i.conversion ? "Converted" : i.status === "recorded" ? "Recorded" : "Draft"}
+                      {i.valuation_cap ? ` · cap S$${formatAmount(i.valuation_cap)}` : ""}
+                      {i.discount ? ` · ${i.discount}% discount` : ""}
+                    </div>
+                  </td>
+                  <td data-card="meta">{date(i.signed_on)}</td>
+                  <td className="fy-num">–</td>
+                  <td className="fy-num">–</td>
+                  <td data-card="amount" className="fy-num">
+                    {formatAmount(i.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // HolderPage is Equity › Holders › a holder (docs/design/screens HolderRecord; FR-EQ-15, FR-EQ-22, FR-EQ-25): the record
 // in force, a draft with its identity document and its approval, every record before, the rights from the agreements,
 // whether they are a registrable controller, and the holder's share issues.
@@ -377,31 +462,7 @@ export function HolderPage() {
           )}
           <RightsCard h={h} mayDraft={mayDraft} onStatus={setStatus} />
           <ControllerCard h={h} tests={tests.data} mayDraft={mayDraft} onStatus={setStatus} />
-          <section className="fy-card" aria-labelledby="holder-issues-title">
-            <div className="fy-card__head">
-              <h2 className="fy-h3" id="holder-issues-title">
-                Share issues
-              </h2>
-            </div>
-            {h.issues.length === 0 ? (
-              <p className="fy-card__body fy-small fy-muted">No shares are recorded for this holder.</p>
-            ) : (
-              <ul className="fy-list" aria-labelledby="holder-issues-title">
-                {h.issues.map((s) => (
-                  <li key={s.id} className="fy-list__item">
-                    <span className="fy-list__main">
-                      <span className="fy-list__title">
-                        <span className="fy-num">{Number(s.shares).toLocaleString("en-SG")}</span> shares on {s.class_code}
-                      </span>
-                      <span className="fy-list__meta">
-                        Effective {date(s.effective_on)} · {s.resolution_refs}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <Investments h={h} />
           {editing && (
             <RecordForm contactId={contactId} draft={editing === "draft" ? draft : null}
               start={editing === "draft" && draft ? draft.details : h.record ? { ...h.record.details } : blank} onClose={() => setEditing(null)} onDone={setStatus} />
