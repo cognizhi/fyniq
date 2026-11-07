@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The holder's contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "director": {
+      "description": "Also a director.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "holdings": {
+      "description": "The shares held, by class, from the register of share issues.",
+      "items": {
+        "$ref": "HolderShares.schema.json"
+      },
+      "type": "array"
+    },
+    "identifier": {
+      "description": "From the record in force: an individual's identifier type and last 4 characters, or an entity's number.",
+      "examples": [
+        "NRIC ending 567A"
+      ],
+      "type": "string"
+    },
+    "investor": {
+      "description": "Marked investor: a SAFE, note or option holder.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "From the record in force; absent before one is recorded.",
+      "enum": [
+        "individual",
+        "entity"
+      ],
+      "examples": [
+        "individual"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The holder's legal name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "pending_record_id": {
+      "description": "A drafted record not recorded yet.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e21"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recorded": {
+      "description": "Whether a holder record is in force.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "shareholder": {
+      "description": "Marked shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "contact_id",
+    "name",
+    "shareholder",
+    "investor",
+    "director",
+    "recorded",
+    "holdings"
+  ],
+  "title": "Holder",
+  "type": "object"
+}

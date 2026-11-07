@@ -121,6 +121,12 @@ const (
 	// who holds A on "Users, roles, team mode" approves the override, as they do the role conflicts' (rev 0.42); its key
 	// is the reconciliation's id.
 	ObjectReconciliation = "bank_reconciliation"
+	// ObjectHolderRecord is a holder's details in the equity register, to record (FR-EQ-15, FM-1; rev 0.203): another
+	// person who holds A on the cap table approves, never the holder; its key is the record's document ID.
+	ObjectHolderRecord = "holder_record"
+	// ObjectShareClass is a share class with its rights, to record (FR-EQ-16, FM-1): another person who holds A on the
+	// cap table approves; its key is the class version's document ID.
+	ObjectShareClass = "share_class"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -200,6 +206,10 @@ const (
 	// OpReconciliationSign signs off a reconciliation as the person who asked, under the override approved, with its
 	// reason (SOD-5).
 	OpReconciliationSign = "bank_reconciliation.sign"
+	// OpHolderRecordRecord records a holder's details as drafted, superseding the record before it (FR-EQ-15).
+	OpHolderRecordRecord = "holder_record.record"
+	// OpShareClassRecord records a share class's rights as drafted, superseding the version before it (FR-EQ-16).
+	OpShareClassRecord = "share_class.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -228,6 +238,8 @@ var Operations = map[string]string{
 	OpRepaymentVoid:      ObjectDirectorRepayment,
 	OpAccountMerge:       ObjectAccount,
 	OpReconciliationSign: ObjectReconciliation,
+	OpHolderRecordRecord: ObjectHolderRecord,
+	OpShareClassRecord:   ObjectShareClass,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -310,6 +322,10 @@ var Dependencies = map[string][]string{
 	ObjectAccount: {"account_version", "into_version", "holdings"},
 	// the reconciliation's version and whether it is signed, and the ledger revision it was prepared at: what is signed
 	ObjectReconciliation: {"signed", "ledger_revision"},
+	// the record's version and status, and its holder: what is recorded
+	ObjectHolderRecord: {"status", "holder"},
+	// the class version's version and status, and its account: what is recorded
+	ObjectShareClass: {"status", "account"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -354,6 +370,8 @@ var Rows = map[string]string{
 	ObjectDirectorRepayment:   "Payment batches",
 	ObjectAccount:             "Chart of accounts, dimensions",
 	ObjectReconciliation:      "Users, roles, team mode",
+	ObjectHolderRecord:        "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectShareClass:          "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -427,6 +445,8 @@ var Policies = map[string]Policy{
 	ObjectDirectorRepayment:   {ObjectType: ObjectDirectorRepayment, Version: "founder/director_repayment@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAccount:             {ObjectType: ObjectAccount, Version: "founder/account@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
 	ObjectReconciliation:      {ObjectType: ObjectReconciliation, Version: "founder/bank_reconciliation@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
+	ObjectHolderRecord:        {ObjectType: ObjectHolderRecord, Version: "founder/holder_record@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectShareClass:          {ObjectType: ObjectShareClass, Version: "founder/share_class@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

@@ -59,17 +59,24 @@ func ownRecord(p authn.Principal, doc storage.Document) bool {
 	return whose.Claimant == p.UserID.String() || whose.Member == p.UserID.String()
 }
 
-// opens reports whether p may open a file on doc: they view its record's row without a qualifier, as an evidence search
-// lists it, or it is their own claim or bank change.
+// opens reports whether p may open a file on doc: they view its record's row without a qualifier and unmasked, as an
+// evidence search lists it, or it is their own claim or bank change. A masked right (Appendix D's M, such as the DPO's
+// on the cap table) lists a file and never opens it: a holder's identity document stays unread (FR-EQ-15).
 func opens(p authn.Principal, doc storage.Document) bool {
 	for _, act := range EvidenceActivities {
 		for _, t := range act.Types {
-			if t == doc.Type && views(p, act.Row) {
+			if t == doc.Type && views(p, act.Row) && !viewsMasked(p, act.Row) {
 				return true
 			}
 		}
 	}
 	return ownRecord(p, doc)
+}
+
+// viewsMasked reports whether p's best view of row is masked.
+func viewsMasked(p authn.Principal, row authz.Capability) bool {
+	return authz.Decide(authz.Policy{Operation: "view", Capability: row, Need: authz.View, Unqualified: true, Qualified: authz.WholeRow},
+		p.Roles, p.AI()).Right == authz.Masked
 }
 
 func registerEvidenceFile(a *API) {

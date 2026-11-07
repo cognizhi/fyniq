@@ -603,6 +603,14 @@ const (
 	// DocumentOwnerSuccession holds an Owner succession's evidence files: the board resolution or the accountant's
 	// confirmation (FR-ADM-09, rev 0.181). It is made and posted with the succession, so its files are append-only.
 	DocumentOwnerSuccession DocumentType = "owner_succession"
+	// DocumentHolderRecord is a holder's details in the equity register (FR-EQ-15, rev 0.203): kind, identifier (an
+	// individual's type and last 4 characters only), nationality, address and contact people. Drafted with its identity
+	// document as evidence and recorded on another person's approval (FM-1); a later one supersedes it.
+	DocumentHolderRecord DocumentType = "holder_record"
+	// DocumentShareClass is a share class with its rights (FR-EQ-16): drafted with the constitution and the
+	// shareholders' agreement as evidence and recorded on another person's approval; a later version of its rights is
+	// another document naming its first.
+	DocumentShareClass DocumentType = "share_class"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -835,6 +843,9 @@ const (
 	// CodeConversionStep: a conversion's ACRA steps are recorded between its approval and its effective date, and never
 	// changed (FR-EQ-09).
 	CodeConversionStep = "STORAGE-SHARE-02"
+	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
+	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
+	CodeEquityRecord = "STORAGE-SHARE-03"
 	// CodeDimension: a dimension set names its values once each, in order, at most one of each of the organisation's
 	// dimensions, and never changes once written (FR-DIM-01, FR-DIM-02).
 	CodeDimension = "STORAGE-DIM-01"
