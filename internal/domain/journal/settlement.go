@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/director"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -299,7 +300,11 @@ func (s DirectorSettlements) EffectiveIn(ctx context.Context, u storage.UnitOfWo
 	if err != nil {
 		return storage.ShareIssue{}, storage.Entry{}, err
 	}
-	issue, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: issueID, HolderID: st.ContactID, ClassAccountID: rule.Class,
+	class, err := equity.DefaultClass(ctx, u, rule.Class) // the account's first recorded class, if it has one (FR-EQ-16, FY287)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	issue, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: issueID, HolderID: st.ContactID, ClassAccountID: rule.Class, ClassID: class,
 		Shares: storage.Decimal(shares.Count.Text('f')), Price: storage.Decimal(st.Conversion.Price), Currency: settings.Base.Code,
 		Amount: storage.Decimal(rule.Equity.String()), Consideration: storage.ConsiderationDebtCapitalised, ResolutionRefs: e.ResolutionRefs,
 		LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn, SettlementID: &id, EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today})

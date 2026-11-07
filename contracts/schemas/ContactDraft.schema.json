@@ -82,6 +82,13 @@
       ],
       "type": "string"
     },
+    "investor": {
+      "description": "An investor: a SAFE, note or option holder with no shares yet (FR-EQ-15).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "legal_name": {
       "description": "Its legal name.",
       "examples": [
@@ -145,7 +152,7 @@
       "type": "string"
     },
     "vendor": {
-      "description": "A vendor; at least one of customer, vendor, director and shareholder.",
+      "description": "A vendor; at least one of customer, vendor, director, shareholder and investor.",
       "examples": [
         false
       ],

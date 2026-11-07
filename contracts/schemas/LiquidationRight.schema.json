@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cap_multiple": {
+      "description": "A participating preference's cap, as a multiple.",
+      "examples": [
+        "3"
+      ],
+      "type": "string"
+    },
+    "multiple": {
+      "description": "Times the issue price, such as 1.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "participating": {
+      "description": "Whether it also shares in what is left.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "seniority": {
+      "description": "1 is paid first; 0 when it has no preference.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 20,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "title": "LiquidationRight",
+  "type": "object"
+}

@@ -14,13 +14,13 @@ import (
 
 const insertShareIssue = `-- name: InsertShareIssue :one
 INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
-                               lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at)
+                               lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id)
 SELECT $1::uuid, $2::uuid, $3::uuid, $4::numeric, $5::numeric,
        c.code, c.minor_units, $6::numeric, $7::text, $8::text,
        $9::text, $10::date, $11::uuid, $12::uuid,
-       $13::uuid, $14::timestamptz
-FROM fyniq.currencies c WHERE c.code = $15::text
-RETURNING organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at
+       $13::uuid, $14::timestamptz, $15::uuid
+FROM fyniq.currencies c WHERE c.code = $16::text
+RETURNING organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id
 `
 
 type InsertShareIssueParams struct {
@@ -38,6 +38,7 @@ type InsertShareIssueParams struct {
 	EntryID        *uuid.UUID
 	RecordedBy     uuid.UUID
 	RecordedAt     time.Time
+	ClassID        *uuid.UUID
 	Currency       string
 }
 
@@ -58,6 +59,7 @@ func (q *Queries) InsertShareIssue(ctx context.Context, arg InsertShareIssuePara
 		arg.EntryID,
 		arg.RecordedBy,
 		arg.RecordedAt,
+		arg.ClassID,
 		arg.Currency,
 	)
 	var i FyniqShareIssue
@@ -79,12 +81,13 @@ func (q *Queries) InsertShareIssue(ctx context.Context, arg InsertShareIssuePara
 		&i.EntryID,
 		&i.RecordedBy,
 		&i.RecordedAt,
+		&i.ClassID,
 	)
 	return i, err
 }
 
 const shareIssueOfSettlement = `-- name: ShareIssueOfSettlement :many
-SELECT organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at FROM fyniq.share_issue WHERE settlement_id = $1
+SELECT organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id FROM fyniq.share_issue WHERE settlement_id = $1
 `
 
 func (q *Queries) ShareIssueOfSettlement(ctx context.Context, settlementID *uuid.UUID) ([]FyniqShareIssue, error) {
@@ -114,6 +117,7 @@ func (q *Queries) ShareIssueOfSettlement(ctx context.Context, settlementID *uuid
 			&i.EntryID,
 			&i.RecordedBy,
 			&i.RecordedAt,
+			&i.ClassID,
 		); err != nil {
 			return nil, err
 		}
@@ -126,7 +130,7 @@ func (q *Queries) ShareIssueOfSettlement(ctx context.Context, settlementID *uuid
 }
 
 const shareIssues = `-- name: ShareIssues :many
-SELECT organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at FROM fyniq.share_issue ORDER BY effective_on, id
+SELECT organisation_id, id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs, lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id FROM fyniq.share_issue ORDER BY effective_on, id
 `
 
 func (q *Queries) ShareIssues(ctx context.Context) ([]FyniqShareIssue, error) {
@@ -156,6 +160,7 @@ func (q *Queries) ShareIssues(ctx context.Context) ([]FyniqShareIssue, error) {
 			&i.EntryID,
 			&i.RecordedBy,
 			&i.RecordedAt,
+			&i.ClassID,
 		); err != nil {
 			return nil, err
 		}

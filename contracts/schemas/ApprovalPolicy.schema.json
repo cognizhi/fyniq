@@ -64,7 +64,9 @@
         "director_settlement",
         "director_repayment",
         "account",
-        "bank_reconciliation"
+        "bank_reconciliation",
+        "holder_record",
+        "share_class"
       ],
       "examples": [
         "organisation_setting"

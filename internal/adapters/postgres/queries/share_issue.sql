@@ -1,11 +1,11 @@
 -- name: InsertShareIssue :one
 -- The amount's minor units come from its currency; an unknown currency inserts nothing.
 INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
-                               lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at)
+                               lodgement_ref, effective_on, settlement_id, entry_id, recorded_by, recorded_at, class_id)
 SELECT sqlc.arg(id)::uuid, sqlc.arg(holder_id)::uuid, sqlc.arg(class_account_id)::uuid, sqlc.arg(shares)::numeric, sqlc.arg(price)::numeric,
        c.code, c.minor_units, sqlc.arg(amount)::numeric, sqlc.arg(consideration)::text, sqlc.arg(resolution_refs)::text,
        sqlc.narg(lodgement_ref)::text, sqlc.arg(effective_on)::date, sqlc.narg(settlement_id)::uuid, sqlc.narg(entry_id)::uuid,
-       sqlc.arg(recorded_by)::uuid, sqlc.arg(recorded_at)::timestamptz
+       sqlc.arg(recorded_by)::uuid, sqlc.arg(recorded_at)::timestamptz, sqlc.narg(class_id)::uuid
 FROM fyniq.currencies c WHERE c.code = sqlc.arg(currency)::text
 RETURNING *;
 

@@ -9,7 +9,7 @@ import (
 // ContactDetails are what a contact holds (FR-CT-01). Empty text is not set.
 type ContactDetails struct {
 	LegalName        string
-	Customer, Vendor bool // at least one of these and Director and Shareholder
+	Customer, Vendor bool // at least one of these and Director, Shareholder and Investor
 	UENOrTaxID       string
 	PeppolID         string
 	BillingEmail     string
@@ -33,6 +33,8 @@ type ContactDetails struct {
 	// A director or shareholder holds a director account on 2500 and 2120 (FR-EQ-01, rev 0.167): every line there names
 	// one. A contact named by a line stays one (FY249).
 	Director, Shareholder bool
+	// An investor holds a SAFE, a note or options, and no shares yet (FR-EQ-15, rev 0.203): a holder with a shareholder.
+	Investor bool
 }
 
 // Contact is a customer, a vendor, a director or shareholder, or several of these.
@@ -60,7 +62,8 @@ type Contacts interface {
 	// Update changes a contact at its version, and returns it at its next: CodeVersion when it changed since.
 	Update(ctx context.Context, id uuid.UUID, version int, d ContactDetails, active bool) (Contact, error)
 	// Page returns at most limit contacts added after the contact after (uuid.Nil for the first page),
-	// customers or vendors only when role is "customer" or "vendor", directors and shareholders when it is "director".
+	// customers or vendors only when role is "customer" or "vendor", directors and shareholders when it is "director",
+	// shareholders and investors when it is "holder" (FR-EQ-15).
 	Page(ctx context.Context, after uuid.UUID, role string, limit int) ([]Contact, error)
 	// Search returns at most limit contacts whose legal name, UEN or tax ID, or emails hold text, case aside, by name
 	// (FR-UX-02's global search, rev 0.190).

@@ -164,6 +164,9 @@ var fyCodes = map[string]string{
 	"FY282": storage.CodeVersion,        // a brand version changed or removed (000246)
 	"FY283": storage.CodeVersion,        // a brand version saved over a newer one (000246)
 	"FY284": storage.CodeImmutable,      // an operation changed or removed (000249)
+	"FY285": storage.CodeEquityRecord,   // a holder record with more than an identifier's last 4 characters, or a full NRIC (000250)
+	"FY286": storage.CodeEquityRecord,   // a share class whose account is not active share capital (000250)
+	"FY287": storage.CodeShareIssue,     // a share issue whose class is not a recorded class of its account (000250)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

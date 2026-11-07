@@ -664,6 +664,7 @@ type FyniqContact struct {
 	IsDirector       bool
 	IsShareholder    bool
 	MemberUserID     *uuid.UUID
+	IsInvestor       bool
 }
 
 type FyniqContactDocumentTemplate struct {
@@ -1775,6 +1776,7 @@ type FyniqShareIssue struct {
 	EntryID        *uuid.UUID
 	RecordedBy     uuid.UUID
 	RecordedAt     time.Time
+	ClassID        *uuid.UUID
 }
 
 type FyniqSignInMethod struct {

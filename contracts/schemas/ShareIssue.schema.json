@@ -28,6 +28,14 @@
       ],
       "type": "string"
     },
+    "class_id": {
+      "description": "Its share class (FR-EQ-16), once its account has a recorded class.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "consideration": {
       "description": "What paid for them.",
       "enum": [

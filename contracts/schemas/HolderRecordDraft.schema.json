@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The registered address.",
+      "examples": [
+        "1 Raffles Place, #20-01, Singapore 048616"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "contact_people": {
+      "description": "The people to contact at the holder.",
+      "items": {
+        "$ref": "ContactPersonView.schema.json"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "id_last4": {
+      "description": "An individual's identifier: its last 4 characters only. The full number stays in ACRA's register and the identity document (FR-EQ-15).",
+      "examples": [
+        "567A"
+      ],
+      "maxLength": 4,
+      "type": "string"
+    },
+    "id_type": {
+      "description": "An individual's NRIC, FIN or passport; an entity's UEN or foreign registration.",
+      "enum": [
+        "nric",
+        "fin",
+        "passport",
+        "uen",
+        "foreign_registration"
+      ],
+      "examples": [
+        "nric"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "An individual or an entity.",
+      "enum": [
+        "individual",
+        "entity"
+      ],
+      "examples": [
+        "individual"
+      ],
+      "type": "string"
+    },
+    "nationality": {
+      "description": "An individual's nationality, or an entity's place of incorporation.",
+      "examples": [
+        "Singapore"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Founder; subscriber at incorporation"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "registration_number": {
+      "description": "An entity's UEN or foreign registration number.",
+      "examples": [
+        "202312345K"
+      ],
+      "maxLength": 30,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "title": "HolderRecordDraft",
+  "type": "object"
+}

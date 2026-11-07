@@ -109,9 +109,9 @@ fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, 
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_account_recovery()
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
-fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
 fyniq_api       INSERT    conversion_step (kind, on_date, recorded_at, recorded_by, reference, settlement_id)
@@ -329,7 +329,7 @@ fyniq_api       EXECUTE   set_session_email()
 fyniq_api       EXECUTE   set_sign_in_method()
 fyniq_api       EXECUTE   set_user_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
-fyniq_api       INSERT    share_issue (amount, class_account_id, consideration, currency, effective_on, entry_id, holder_id, id, lodgement_ref, minor_units, price, recorded_at, recorded_by, resolution_refs, settlement_id, shares)
+fyniq_api       INSERT    share_issue (amount, class_account_id, class_id, consideration, currency, effective_on, entry_id, holder_id, id, lodgement_ref, minor_units, price, recorded_at, recorded_by, resolution_refs, settlement_id, shares)
 fyniq_api       SELECT    share_issue
 fyniq_api       EXECUTE   sign_in_counts()
 fyniq_api       EXECUTE   sign_in_essential()

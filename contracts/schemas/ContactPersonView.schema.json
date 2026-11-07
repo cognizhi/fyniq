@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "email": {
+      "examples": [
+        "jane@example.com"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Jane Lim"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "role": {
+      "examples": [
+        "Company secretary"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "ContactPersonView",
+  "type": "object"
+}

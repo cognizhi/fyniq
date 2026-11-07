@@ -89,6 +89,13 @@
       ],
       "type": "string"
     },
+    "investor": {
+      "description": "An investor: a SAFE, note or option holder (FR-EQ-15).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "legal_name": {
       "description": "Its legal name.",
       "examples": [

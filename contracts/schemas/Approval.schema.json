@@ -112,7 +112,9 @@
         "director_settlement",
         "director_repayment",
         "account",
-        "bank_reconciliation"
+        "bank_reconciliation",
+        "holder_record",
+        "share_class"
       ],
       "examples": [
         "organisation_setting"
@@ -169,7 +171,9 @@
         "director_settlement.approve",
         "director_repayment.void",
         "account.merge",
-        "bank_reconciliation.sign"
+        "bank_reconciliation.sign",
+        "holder_record.record",
+        "share_class.record"
       ],
       "examples": [
         "organisation_setting.change"

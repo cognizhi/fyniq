@@ -22,7 +22,7 @@ func toContact(r contactRow) storage.Contact {
 		LegalName: r.LegalName, Customer: r.IsCustomer, Vendor: r.IsVendor, UENOrTaxID: str(r.UenOrTaxID), PeppolID: str(r.PeppolID),
 		BillingEmail: str(r.BillingEmail), RemittanceEmail: str(r.RemittanceEmail), Phone: str(r.Phone), Address: str(r.Address),
 		Country: str(r.Country), TaxResidence: str(r.TaxResidence), Currency: str(r.Currency), DefaultAccountID: r.DefaultAccountID,
-		DefaultGSTCode: str(r.DefaultGstCode), CustomerGroupID: r.CustomerGroupID, Director: r.IsDirector, Shareholder: r.IsShareholder},
+		DefaultGSTCode: str(r.DefaultGstCode), CustomerGroupID: r.CustomerGroupID, Director: r.IsDirector, Shareholder: r.IsShareholder, Investor: r.IsInvestor},
 		MemberUserID: r.MemberUserID}
 	if r.PaymentTermsDays != nil {
 		d := int(*r.PaymentTermsDays)
@@ -76,6 +76,7 @@ func contactChanges(a, b storage.Contact) map[string][2]any {
 	diff("is_vendor", a.Vendor, b.Vendor)
 	diff("is_director", a.Director, b.Director)
 	diff("is_shareholder", a.Shareholder, b.Shareholder)
+	diff("is_investor", a.Investor, b.Investor)
 	diff("member_user_id", ptr(a.MemberUserID), ptr(b.MemberUserID))
 	diff("uen_or_tax_id", nilIfEmpty(a.UENOrTaxID), nilIfEmpty(b.UENOrTaxID))
 	diff("peppol_id", nilIfEmpty(a.PeppolID), nilIfEmpty(b.PeppolID))
@@ -109,7 +110,7 @@ func (r contacts) Create(ctx context.Context, d storage.ContactDetails) (storage
 		return storage.Contact{}, err
 	}
 	row, err := r.u.q.InsertContact(ctx, sqlcdb.InsertContactParams{LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
-		IsDirector: d.Director, IsShareholder: d.Shareholder,
+		IsDirector: d.Director, IsShareholder: d.Shareholder, IsInvestor: d.Investor,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
@@ -157,7 +158,7 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 			Message: fmt.Sprintf("the contact changed since it was read: it is at version %d, not %d", before.Version, version)}
 	}
 	row, err := r.u.q.UpdateContact(ctx, sqlcdb.UpdateContactParams{ID: id, LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
-		IsDirector: d.Director, IsShareholder: d.Shareholder,
+		IsDirector: d.Director, IsShareholder: d.Shareholder, IsInvestor: d.Investor,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,

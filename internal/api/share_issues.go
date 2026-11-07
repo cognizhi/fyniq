@@ -32,6 +32,7 @@ type ShareIssue struct {
 	HolderName     string `json:"holder_name" doc:"Their name." example:"Mei Lin Tan"`
 	ClassAccountID string `json:"class_account_id" format:"uuid" doc:"The class: its share-capital account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"`
 	ClassCode      string `json:"class_code,omitempty" doc:"The account's code: 3010 ordinary, 3020 preference." example:"3010"`
+	ClassID        string `json:"class_id,omitempty" format:"uuid" doc:"Its share class (FR-EQ-16), once its account has a recorded class." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"`
 	Shares         string `json:"shares" pattern:"^[1-9][0-9]*$" doc:"The number of shares, a whole number." example:"10000"`
 	Price          string `json:"price" doc:"The price per share, in the currency, as a decimal string." example:"1.00"`
 	Amount         Money  `json:"amount" doc:"What the shares are paid up with: shares × price for cash, RND-SHARE's converted amount for a conversion."`
@@ -49,6 +50,7 @@ type ShareIssue struct {
 type ShareIssueRequest struct {
 	HolderID       string `json:"holder_id" format:"uuid" doc:"The contact the shares were allotted to: a director or shareholder." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 	ClassAccountID string `json:"class_account_id" format:"uuid" doc:"The class: an active share-capital account (3010 ordinary or 3020 preference)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"`
+	ClassID        string `json:"class_id,omitempty" format:"uuid" doc:"The share class, a recorded class of that account (FR-EQ-16). Left out: the account's first recorded class, if it has one." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"`
 	Shares         string `json:"shares" doc:"The number of shares, a whole number above zero." example:"10000"`
 	Price          string `json:"price" doc:"The price per share in the base currency, a decimal string above zero with at most 6 decimals." example:"1.00"`
 	Consideration  string `json:"consideration" enum:"cash,debt_capitalised,services,safe_or_note" doc:"What paid for them." example:"cash"`
@@ -101,6 +103,9 @@ func shareIssueOf(s storage.ShareIssue, holder string, classCode string) ShareIs
 	}
 	if s.SettlementID != nil {
 		out.SettlementID = s.SettlementID.String()
+	}
+	if s.ClassID != nil {
+		out.ClassID = s.ClassID.String()
 	}
 	if s.EntryID != nil {
 		out.EntryID = s.EntryID.String()
@@ -180,6 +185,14 @@ func registerShareIssues(a *API) {
 			if err != nil {
 				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.effective_on", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"})
 			}
+			var classID *uuid.UUID
+			if in.Body.ClassID != "" {
+				if id, err := uuid.Parse(in.Body.ClassID); err != nil {
+					fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.class_id", Message: "is not a share class's ID", Fix: "Send a recorded class's ID, or leave it out"})
+				} else {
+					classID = &id
+				}
+			}
 			if len(fields) > 0 {
 				return nil, invalid(fields)
 			}
@@ -202,7 +215,12 @@ func registerShareIssues(a *API) {
 				if err != nil {
 					return ShareIssue{}, err
 				}
-				s, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: holder, ClassAccountID: class,
+				if classID == nil { // the account's first recorded class, if it has one (FR-EQ-16, FY287)
+					if classID, err = equity.DefaultClass(ctx, u, class); err != nil {
+						return ShareIssue{}, err
+					}
+				}
+				s, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: holder, ClassAccountID: class, ClassID: classID,
 					Shares: storage.Decimal(c.Shares.Text('f')), Price: storage.Decimal(c.Price.String()), Currency: c.Amount.Currency().Code,
 					Amount: storage.Decimal(c.Amount.String()), Consideration: c.Issue.Consideration, ResolutionRefs: c.Issue.ResolutionRefs,
 					LodgementRef: c.Issue.LodgementRef, EffectiveOn: on, RecordedBy: p.UserID, RecordedAt: a.deps.Clock.Now()})

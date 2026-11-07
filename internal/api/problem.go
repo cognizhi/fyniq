@@ -806,6 +806,7 @@ var codeFacts = map[string]struct {
 	accountantreview.CodeNotJournal:  {422, "Not a journal"},
 	accountantreview.CodeOpenQueries: {409, "A query has no answer yet"},
 	storage.CodeShareIssue:           {409, "The register of share issues does not change that way"},
+	storage.CodeEquityRecord:         {422, "The holder record or share class does not keep that"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost:  {422, "The cost before the books start does not fit"},
@@ -851,6 +852,11 @@ var codeFacts = map[string]struct {
 	storage.CodeDimensionFixed:       {409, "The dimension does not change that way"},
 	storage.CodeDimensionRequirement: {422, "The account cannot require those dimensions"},
 	equity.CodeIssue:                 {422, "The share issue does not fit"},
+	equity.CodeNotRecord:             {422, "Not the holder record or share class asked for"},
+	equity.CodeHolderRecord:          {422, "The holder record does not fit"},
+	equity.CodeShareClass:            {422, "The share class does not fit"},
+	equity.CodeRecorded:              {409, "It is recorded"},
+	equity.CodeNoEvidence:            {422, "No evidence attached"},
 	CodeOwnCost:                      {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:               {422, "The claim cannot be kept as a loan"},
 	director.CodeNotPerson:           {422, "Not a director or shareholder"},
@@ -892,6 +898,7 @@ var storageFixes = map[string]string{
 	storage.CodeAccountantReview:     "Review a closed month's latest close once; raise and answer its queries while it is in review, and sign it off once every query has its answer",
 	storage.CodeShareIssue:           "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep:       "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",
+	storage.CodeEquityRecord:         "Keep an individual's identifier to its type and last 4 characters, with no NRIC or FIN in full, and give a class an active share-capital account",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
 	storage.CodeDimensionRequirement: "Name each of the organisation's dimensions once",
@@ -1032,6 +1039,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		bke *banking.Error
 		cle *claim.Error
 		dre *director.Error
+		eqe *equity.Error
 		ase *asset.Error
 		pye *payee.Error
 		pyp payee.Problems
@@ -1094,6 +1102,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(cle.Code, sentence(cle.Message), sentence(cle.Fix))
 	case errors.As(err, &dre):
 		return problem(dre.Code, sentence(dre.Message), sentence(dre.Fix))
+	case errors.As(err, &eqe):
+		return problem(eqe.Code, sentence(eqe.Message), sentence(eqe.Fix))
 	case errors.As(err, &ase):
 		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
 	case errors.As(err, &pye):

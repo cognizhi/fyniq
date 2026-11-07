@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its share-capital account: 3010 ordinary, 3020 preference.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "class_id": {
+      "description": "The share class, once its account has a recorded class.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_name": {
+      "description": "The class's name, or its account's while it has none.",
+      "examples": [
+        "Ordinary shares"
+      ],
+      "type": "string"
+    },
+    "shares": {
+      "description": "The shares held, a whole number.",
+      "examples": [
+        "600000"
+      ],
+      "pattern": "^[0-9]+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "class_name",
+    "account_code",
+    "shares"
+  ],
+  "title": "HolderShares",
+  "type": "object"
+}
