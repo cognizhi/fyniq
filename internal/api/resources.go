@@ -249,6 +249,8 @@ type JournalLineDraft struct {
 	Origin       string `json:"origin,omitempty" enum:"lent,paid_personally,pay,fee,paid_out,other" doc:"Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)." example:"lent"`
 	// The line's dimension values (FR-DIM-02).
 	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05)."`
+	// FR-EQ-18: a line on 2700 names its SAFE or note.
+	InstrumentID string `json:"instrument_id,omitempty" format:"uuid" doc:"Only on 2700 Convertible notes / SAFE: the recorded SAFE or note (listInstruments) the amount is for, such as a note's accrued interest. Required there and refused on any other account (FR-EQ-18; LEDGER-49)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
 }
 
 // RateSourceDocument is the source of a rate typed on the document (ENG-40).
@@ -453,6 +455,7 @@ type EntryLine struct {
 	PartyID      string `json:"party_id,omitempty" format:"uuid" doc:"On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
 	// The line's dimension values (FR-DIM-02).
 	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" doc:"The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02)."`
+	InstrumentID      string              `json:"instrument_id,omitempty" format:"uuid" doc:"On 2700 only: the SAFE or convertible note the amount is for (FR-EQ-18)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
 }
 
 // Entry is a posted journal entry: append-only, corrected only by reversal.
@@ -493,7 +496,7 @@ func linesOut(lines []journal.SavedLine) []JournalLineDraft {
 		out = append(out, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
 			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description, PartyID: idOrEmpty(l.PartyID), Origin: l.Origin,
-			DimensionValueIDs: valueRefs(l.DimensionValueIDs)})
+			DimensionValueIDs: valueRefs(l.DimensionValueIDs), InstrumentID: idOrEmpty(l.InstrumentID)})
 	}
 	return out
 }
@@ -585,7 +588,7 @@ func entryOf(e storage.Entry) Entry {
 	for _, l := range e.Lines {
 		out.Lines = append(out.Lines, EntryLine{LineNo: l.LineNo, AccountID: l.AccountID.String(), Amount: moneyOf(l.Amount, l.Currency),
 			FXRate: trimDecimal(string(l.FXRate)), FXRateSource: l.FXRateSource, BaseAmount: moneyOf(l.BaseAmount, l.BaseCurrency), Description: l.Description,
-			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: valueRefs(l.DimensionValues)})
+			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: valueRefs(l.DimensionValues), InstrumentID: idOrEmpty(l.InstrumentID)})
 	}
 	return out
 }
@@ -622,6 +625,11 @@ func draftOf(in JournalDraft, base money.Currency) (journal.Draft, error) {
 			fields = append(fields, *fp)
 		}
 		line.Party = party
+		if l.InstrumentID != "" {
+			if line.Instrument, err = uuid.Parse(l.InstrumentID); err != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("instrument_id"), Message: "is not an ID", Fix: "Send the instrument's ID"})
+			}
+		}
 		values, fps := valuesOf(l.DimensionValueIDs, at("dimension_value_ids"))
 		fields = append(fields, fps...)
 		line.Values = values

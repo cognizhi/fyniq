@@ -1266,6 +1266,7 @@ type FyniqJournalLine struct {
 	RecordedAt     time.Time
 	PartyID        *uuid.UUID
 	DimensionSetID *uuid.UUID
+	InstrumentID   *uuid.UUID
 }
 
 type FyniqKpiInput struct {

@@ -322,6 +322,7 @@ type AccountLine struct {
 	Number          string
 	PartyID         *uuid.UUID  // the person of a line on a director's account (B.7), else nil
 	DimensionValues []uuid.UUID // the line's dimension values in ascending order (FR-DIM-02), nil for none
+	InstrumentID    *uuid.UUID  // the SAFE or note of a line on convertible instruments (FR-EQ-18), else nil
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -445,8 +446,9 @@ var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-
 
 // OptionalRoles are system roles the standard chart gives a new organisation that an existing one may lack without its
 // books being wrong (C.1 #7 does not ask for them): share application monies, 2040 (B.7, rev 0.203), which a cash issue
-// needs before its money arrives (FR-EQ-17).
-var OptionalRoles = []AccountRole{"share-application-monies"}
+// needs before its money arrives (FR-EQ-17); and convertible instruments, 2700, whose lines name their SAFE or note
+// (FR-EQ-18).
+var OptionalRoles = []AccountRole{"share-application-monies", "convertible-instruments"}
 
 // AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
 type AccountChange struct {
@@ -697,6 +699,9 @@ type NewLine struct {
 	// DimensionValues are the line's dimension values, at most one of each dimension (FR-DIM-02): the unit of work writes
 	// the dimension set that holds them, once per combination; none for a line with no dimension.
 	DimensionValues []uuid.UUID
+	// InstrumentID is the recorded SAFE or note of a line on convertible instruments, required there and refused
+	// elsewhere (FR-EQ-18, FY292).
+	InstrumentID *uuid.UUID
 }
 
 // Entry is a posted journal entry.
@@ -729,6 +734,7 @@ type Line struct {
 	PartyID      *uuid.UUID // the person of a line on a director's account (B.7), else nil
 	// DimensionValues are the values of the line's dimension set, in ascending order; nil for a line with none (FR-DIM-02).
 	DimensionValues []uuid.UUID
+	InstrumentID    *uuid.UUID // the SAFE or note of a line on convertible instruments (FR-EQ-18), else nil
 }
 
 // Balance is the cached total of one account, period and currency.

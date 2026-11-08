@@ -58,6 +58,9 @@ type BankTransaction struct {
 	// (FR-EQ-01, B.7), money in lent and money out paid to them; or a subscriber's, on share application monies: money in
 	// for shares not yet allotted, money out refunded (B.7, rev 0.206). uuid.Nil otherwise.
 	Party uuid.UUID
+	// Instrument is the recorded SAFE or note a part on convertible instruments is for (FR-EQ-18): money in received
+	// under it, money out repaid. uuid.Nil otherwise.
+	Instrument uuid.UUID
 	// Automatic is a categorisation a bank rule applied by itself (FR-BNK-14): a posting the system makes, so a part on
 	// an account that requires a dimension posts without a value of it, and Appendix C.2 #60 flags the amount
 	// (FR-DIM-01; rev 0.171). A person's categorisation is held to the requirement (DIM-05).
@@ -138,7 +141,7 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 	}
 	holding, hasHolding := s.byRole(holdingRole)
 	sum := money.Zero(t.Amount.Currency())
-	taxed, spread := false, false
+	taxed, spread, onInstrument := false, false, false
 	for i, p := range t.Parts {
 		f := func(name string) string { return fmt.Sprintf("parts[%d].%s", i+1, name) }
 		a, known := s.Accounts[p.AccountID]
@@ -168,6 +171,13 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			if pr := partyProblem(s, a, t.Party, "contact_id"); pr != nil {
 				probs = append(probs, *pr)
 			}
+		case a.InstrumentAccount(): // the SAFE or note the money is for (FR-EQ-18)
+			if pr := instrumentProblem(s, a, t.Instrument, "instrument_id"); pr != nil {
+				probs = append(probs, *pr)
+			}
+		}
+		if known && a.InstrumentAccount() {
+			onInstrument = true
 		}
 		if len(p.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(p.Description), MaxDescription), "Shorten it")
@@ -208,6 +218,10 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 		add(CodeBankPart, "parts", fmt.Sprintf("the parts add up to %s %s; the line is %s %s", sum, sum.Currency(), t.Amount, t.Amount.Currency()),
 			"Split the line into parts that add up to it")
 	}
+	if t.Instrument != uuid.Nil && !onInstrument {
+		add(CodeInstrument, "instrument_id", "the line names an instrument, but no part of it is on 2700 Convertible notes / SAFE",
+			"Leave the instrument out, or categorise the money to 2700")
+	}
 	if taxed && !hasGST {
 		add(CodeSystemRole, "parts", "the chart has no GST control account for the GST", "Load the standard chart's 2200 GST control, or give a liability account the role")
 	}
@@ -245,6 +259,9 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			line := Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description, Values: canonical(p.Values)}
 			if s.Accounts[to].DirectorAccount() || s.Accounts[to].SubscriberAccount() {
 				line.Party = t.Party
+			}
+			if s.Accounts[to].InstrumentAccount() {
+				line.Instrument = t.Instrument
 			}
 			lines = append(lines, line)
 		}

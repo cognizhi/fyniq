@@ -88,6 +88,10 @@ type Account struct {
 // company's journals leave them out.
 var ShareCapital = map[string]bool{"3010": true, "3020": true}
 
+// Instruments are the default chart's accounts that hold each SAFE's or note's money under its instrument: 2700
+// Convertible notes / SAFE (FR-EQ-18, FY292). The sample company records no SAFE, so its journals leave it out.
+var Instruments = map[string]bool{"2700": true}
+
 // DirectorAccounts are the default chart's director's accounts, 2500 Loan from director / shareholder and 2120 Deferred
 // remuneration payable, with their roles: every line on one names its director and where its amount came from
 // (FR-EQ-01, B.7; PRD-001 rev 0.167).
@@ -141,9 +145,11 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 	var codes []string // the accounts a manual journal may post to
 	for _, code := range sortedKeys(v.Accounts) {
 		a := Account{Code: code, Name: v.Accounts[code][0]}
-		if ShareCapital[code] {
+		switch {
+		case ShareCapital[code]:
 			a.Role = "share-capital"
-		} else {
+		case Instruments[code]: // in the chart, in no journal
+		default:
 			a.Role = DirectorAccounts[code]
 			codes = append(codes, code)
 		}

@@ -173,6 +173,7 @@ var fyCodes = map[string]string{
 	"FY289": storage.CodeHolding,        // an entry from an equity transaction that no conversion between classes names (000252)
 	"FY290": storage.CodeEquityStep,     // an equity transaction's ACRA step outside its rules (000254)
 	"FY291": storage.CodeInstrument,     // an instrument or template outside its rules, or its holder unmarked (000255)
+	"FY292": storage.CodeInstrument,     // a line on 2700 naming no recorded instrument, or another line naming one (000257)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

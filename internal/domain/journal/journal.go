@@ -75,6 +75,8 @@ type payloadLine struct {
 	Origin  string     `json:"origin,omitempty"`
 	// The line's dimension values (FR-DIM-02).
 	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
+	// The SAFE or note of a line on convertible instruments (FR-EQ-18).
+	InstrumentID *uuid.UUID `json:"instrument_id,omitempty"`
 }
 
 // Service runs the journal commands against a store.
@@ -112,6 +114,9 @@ func linesOf(lines []ledger.JournalLine) []payloadLine {
 		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin, DimensionValueIDs: l.Values}
 		if l.Party != uuid.Nil {
 			pl.PartyID = &l.Party
+		}
+		if l.Instrument != uuid.Nil {
+			pl.InstrumentID = &l.Instrument
 		}
 		if l.Rate != nil {
 			pl.FXRate, pl.FXRateSource = l.Rate.String(), l.Rate.Source
@@ -412,7 +417,32 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 	if s.Dimensions, s.Values, err = dimensions(ctx, u); err != nil {
 		return ledger.Settings{}, err
 	}
+	if s.Instruments, err = instruments(ctx, u); err != nil { // FR-EQ-18: what a line on convertible instruments may name
+		return ledger.Settings{}, err
+	}
 	return s, nil
+}
+
+// instruments are the recorded SAFEs and convertible notes, which a line on convertible instruments names (FR-EQ-18).
+func instruments(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]bool, error) {
+	out := map[uuid.UUID]bool{}
+	var afterDate string
+	var afterID *uuid.UUID
+	for {
+		docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentInstrument, AfterDate: afterDate, AfterID: afterID, Limit: 500})
+		if err != nil {
+			return nil, err
+		}
+		for _, d := range docs {
+			afterDate, afterID = d.Date, &d.ID
+			if d.Status == storage.DocumentPosted {
+				out[d.ID] = true
+			}
+		}
+		if len(docs) < 500 {
+			return out, nil
+		}
+	}
 }
 
 // dimensions are the organisation's dimensions and their values, which a line's values name (FR-DIM-01).
@@ -478,6 +508,7 @@ type SavedLine struct {
 	Origin       string     // and where its amount came from
 	// DimensionValueIDs are the line's dimension values (FR-DIM-02).
 	DimensionValueIDs []uuid.UUID
+	InstrumentID      *uuid.UUID // the SAFE or note of a line on convertible instruments (FR-EQ-18)
 }
 
 // ReadSaved reads a journal version as it was saved.
@@ -511,7 +542,7 @@ func readSaved(doc storage.Document) (Saved, error) {
 // savedLine is a stored line as it was saved.
 func savedLine(l payloadLine) SavedLine {
 	return SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate, FXRateSource: l.FXRateSource,
-		Description: l.Description, PartyID: l.PartyID, Origin: l.Origin, DimensionValueIDs: l.DimensionValueIDs}
+		Description: l.Description, PartyID: l.PartyID, Origin: l.Origin, DimensionValueIDs: l.DimensionValueIDs, InstrumentID: l.InstrumentID}
 }
 
 // decode reads a stored journal version.
@@ -544,6 +575,9 @@ func decode(doc storage.Document, base money.Currency) (ledger.Journal, error) {
 		if l.PartyID != nil {
 			line.Party = *l.PartyID
 		}
+		if l.InstrumentID != nil {
+			line.Instrument = *l.InstrumentID
+		}
 		if l.FXRate != "" {
 			r, err := money.ParseRate(l.FXRate, l.Amount.Currency(), base, l.FXRateSource)
 			if err != nil {
@@ -571,6 +605,9 @@ func toStorage(e ledger.Entry, reverses *uuid.UUID) storage.NewEntry {
 		}
 		if l.Party != uuid.Nil {
 			line.PartyID = &l.Party
+		}
+		if l.Instrument != uuid.Nil {
+			line.InstrumentID = &l.Instrument
 		}
 		out.Lines = append(out.Lines, line)
 	}
@@ -603,6 +640,9 @@ func fromStorage(e storage.Entry, base money.Currency) (ledger.Entry, error) {
 		line := ledger.Line{AccountID: l.AccountID, Amount: amount, Rate: rate, Base: baseAmount, Description: l.Description, Values: l.DimensionValues}
 		if l.PartyID != nil {
 			line.Party = *l.PartyID
+		}
+		if l.InstrumentID != nil {
+			line.Instrument = *l.InstrumentID
 		}
 		out.Lines = append(out.Lines, line)
 	}

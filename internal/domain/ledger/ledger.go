@@ -68,6 +68,9 @@ type Settings struct {
 	// Subscribers are the contacts marked shareholder or investor, who hold share application monies (B.7); nil when the
 	// caller did not read them, and the database alone refuses another contact on 2040 (FY250).
 	Subscribers map[uuid.UUID]bool
+	// Instruments are the recorded SAFEs and notes a line on convertible instruments may name (FR-EQ-18); nil when the
+	// caller did not read them, and the database alone refuses another (FY292).
+	Instruments map[uuid.UUID]bool
 	// Dimensions and Values are the organisation's dimensions and their values, which a line's values name (FR-DIM-01);
 	// nil when the caller did not read them, and then a line naming a value is refused.
 	Dimensions map[uuid.UUID]Dimension
@@ -95,6 +98,8 @@ type Line struct {
 	// Values are the line's dimension values, once each in ascending order, at most one of each dimension (FR-DIM-02);
 	// nil for a line with none.
 	Values []uuid.UUID
+	// Instrument is the SAFE or note a line on convertible instruments is for (FR-EQ-18); uuid.Nil on every other line.
+	Instrument uuid.UUID
 }
 
 // Entry is one balanced journal entry, ready to persist.
@@ -117,6 +122,7 @@ type JournalLine struct {
 	Party       uuid.UUID   // the person, on a director's account only (B.7)
 	Origin      string      // where the person's amount came from, one of EnteredOrigins, on a director's account only (FR-EQ-01)
 	Values      []uuid.UUID // the line's dimension values (FR-DIM-02), in any order
+	Instrument  uuid.UUID   // the SAFE or note, on convertible instruments only (FR-EQ-18)
 }
 
 // Journal is one version of a manual journal document.
@@ -274,6 +280,9 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			if p := originProblem(acc, l.Origin, f("origin")); p != nil {
 				probs = append(probs, *p)
 			}
+			if p := instrumentProblem(s, acc, l.Instrument, f("instrument_id")); p != nil {
+				probs = append(probs, *p)
+			}
 			probs = append(probs, dimensionProblems(s, l.Values, f("dimension_value_ids"))...)
 			if names := missing(s, acc, l.Values); r.required && len(names) > 0 {
 				untagged = append(untagged, pending{acc, names, f("dimension_value_ids")})
@@ -340,7 +349,7 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 		}
 		perCurrency[cur.Code], _ = perCurrency[cur.Code].Add(l.Amount)
 		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description, Party: l.Party,
-			Values: canonical(l.Values)})
+			Values: canonical(l.Values), Instrument: l.Instrument})
 	}
 
 	// FR-DIM-01 (rev 0.171): a line without a required value posts only in a journal that moves amounts between values
@@ -426,7 +435,7 @@ func Reverse(e Entry, date time.Time, reason string) (Entry, error) {
 	}
 	for i, l := range e.Lines {
 		out.Lines[i] = Line{AccountID: l.AccountID, Amount: l.Amount.Neg(), Rate: l.Rate, Base: l.Base.Neg(), Description: l.Description, Party: l.Party,
-			Values: l.Values}
+			Values: l.Values, Instrument: l.Instrument}
 	}
 	return out, nil
 }

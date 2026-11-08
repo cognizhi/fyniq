@@ -888,6 +888,11 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 			party = l.PartyID.String()
 		}
 		p.PartyIds = append(p.PartyIds, party)
+		instrument := ""
+		if l.InstrumentID != nil {
+			instrument = l.InstrumentID.String()
+		}
+		p.InstrumentIds = append(p.InstrumentIds, instrument)
 		set := ""
 		if len(l.DimensionValues) > 0 {
 			id, err := r.u.dimensionSet(ctx, l.DimensionValues)
@@ -930,6 +935,9 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 			"base_currency": l.BaseCurrency, "base_amount": string(l.BaseAmount), "description": l.Description}
 		if l.PartyID != nil { // a director's account's person (B.7)
 			line["party_id"] = l.PartyID.String()
+		}
+		if l.InstrumentID != nil { // a convertible instrument's SAFE or note (FR-EQ-18)
+			line["instrument_id"] = l.InstrumentID.String()
 		}
 		if len(l.DimensionValues) > 0 { // its dimension values (FR-DIM-02)
 			line["dimension_value_ids"] = idTexts(l.DimensionValues)
@@ -994,7 +1002,7 @@ func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) 
 	for _, l := range lines {
 		line := storage.Line{ID: l.ID, LineNo: int(l.LineNo), AccountID: l.AccountID, Currency: l.Currency,
 			Amount: storage.Decimal(l.Amount), FXRate: storage.Decimal(l.FxRate), FXRateSource: l.FxRateSource,
-			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID}
+			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID, InstrumentID: l.InstrumentID}
 		if l.Description != nil {
 			line.Description = *l.Description
 		}
@@ -1031,7 +1039,7 @@ func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to ti
 		out[i] = storage.AccountLine{EntryID: x.EntryID, LedgerRevision: x.LedgerRevision, PostingDate: x.PostingDate,
 			Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
 			LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
-			Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID}
+			Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID, InstrumentID: x.InstrumentID}
 		if len(x.DimensionValueIds) > 0 {
 			out[i].DimensionValues = x.DimensionValueIds
 		}

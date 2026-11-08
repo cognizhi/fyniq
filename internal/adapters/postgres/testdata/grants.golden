@@ -219,7 +219,7 @@ fyniq_api       EXECUTE   join_offer_name()
 fyniq_api       SELECT    join_request
 fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_api       SELECT    journal_entry
-fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_api       SELECT    journal_line
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
@@ -426,7 +426,7 @@ fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_executor  SELECT    journal_entry
-fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    opening_balance
@@ -711,7 +711,7 @@ fyniq_worker    SELECT    job_slots
 fyniq_worker    SELECT    join_request
 fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_worker    SELECT    journal_entry
-fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    SELECT    ledger_revision

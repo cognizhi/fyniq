@@ -63,10 +63,11 @@ type Part struct {
 
 // Draft is a categorisation: the line, the contact and the reference it names, and its parts.
 type Draft struct {
-	LineID    uuid.UUID
-	ContactID *uuid.UUID
-	Reference string
-	Parts     []Part
+	LineID       uuid.UUID
+	ContactID    *uuid.UUID
+	InstrumentID *uuid.UUID // the SAFE or note a part on 2700 is for (FR-EQ-18)
+	Reference    string
+	Parts        []Part
 	// Automatic is a categorisation a bank rule applied by itself (FR-BNK-14), which posts a part without a value its
 	// account requires (FR-DIM-01; rev 0.171).
 	Automatic bool
@@ -94,6 +95,7 @@ type Saved struct {
 	Amount         money.Money
 	Rate           *money.Rate
 	ContactID      *uuid.UUID
+	InstrumentID   *uuid.UUID
 	Reference      string
 	Memo           string
 	GSTVersion     string
@@ -121,6 +123,7 @@ type payload struct {
 	FXRate         string        `json:"fx_rate,omitempty"`
 	FXRateSource   string        `json:"fx_rate_source,omitempty"`
 	ContactID      *uuid.UUID    `json:"contact_id,omitempty"`
+	InstrumentID   *uuid.UUID    `json:"instrument_id,omitempty"`
 	Reference      string        `json:"reference,omitempty"`
 	Memo           string        `json:"memo"`
 	GSTVersion     string        `json:"gst_version"`
@@ -131,7 +134,8 @@ type payload struct {
 // Encode is a saved version as a document version stores it; the spread query reads its date and its lines' months.
 func Encode(s Saved) ([]byte, error) {
 	p := payload{LineID: s.LineID, MoneyAccountID: s.MoneyAccountID, AccountID: s.AccountID, Date: s.Date.Format(time.DateOnly), Amount: s.Amount,
-		ContactID: s.ContactID, Reference: s.Reference, Memo: s.Memo, GSTVersion: s.GSTVersion, Lines: []partPayload{}, Automatic: s.Automatic}
+		ContactID: s.ContactID, InstrumentID: s.InstrumentID, Reference: s.Reference, Memo: s.Memo, GSTVersion: s.GSTVersion, Lines: []partPayload{},
+		Automatic: s.Automatic}
 	if s.Rate != nil {
 		p.FXRate, p.FXRateSource = s.Rate.String(), s.Rate.Source
 	}
@@ -162,7 +166,7 @@ func Read(doc storage.Document, base money.Currency) (Saved, error) {
 		return Saved{}, bad(fmt.Sprintf("the date %q", p.Date))
 	}
 	s := Saved{LineID: p.LineID, MoneyAccountID: p.MoneyAccountID, AccountID: p.AccountID, Date: on, Amount: p.Amount, ContactID: p.ContactID,
-		Reference: p.Reference, Memo: p.Memo, GSTVersion: p.GSTVersion, Automatic: p.Automatic}
+		InstrumentID: p.InstrumentID, Reference: p.Reference, Memo: p.Memo, GSTVersion: p.GSTVersion, Automatic: p.Automatic}
 	if p.FXRate != "" {
 		r, err := money.ParseRate(p.FXRate, p.Amount.Currency(), base, p.FXRateSource)
 		if err != nil {
@@ -183,6 +187,9 @@ func Transaction(doc storage.Document, s Saved) ledger.BankTransaction {
 		Automatic: s.Automatic}
 	if s.ContactID != nil { // the person of a part on a director's account (FR-EQ-01); the rule names no one elsewhere
 		t.Party = *s.ContactID
+	}
+	if s.InstrumentID != nil { // the SAFE or note of a part on 2700 (FR-EQ-18)
+		t.Instrument = *s.InstrumentID
 	}
 	for _, p := range s.Parts {
 		t.Parts = append(t.Parts, ledger.BankPart{AccountID: p.AccountID, Amount: p.Amount, GSTRate: p.GSTRate, Months: p.Months, Description: p.Description,
@@ -223,7 +230,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, d Draft, s ledger.Settin
 		return Saved{}, nil, err
 	}
 	out := Saved{LineID: line.ID, MoneyAccountID: acct.ID, AccountID: acct.AccountID, Date: line.BookingDate, Amount: amount, ContactID: d.ContactID,
-		Reference: d.Reference, Memo: memo(acct, line), Automatic: d.Automatic}
+		InstrumentID: d.InstrumentID, Reference: d.Reference, Memo: memo(acct, line), Automatic: d.Automatic}
 	if len(d.Reference) > MaxReference {
 		return Saved{}, nil, &Error{CodeTooLong, fmt.Sprintf("the reference has %d characters; the most is %d", len(d.Reference), MaxReference), "Shorten it"}
 	}

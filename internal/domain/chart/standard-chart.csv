@@ -58,7 +58,7 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 2410,Customer deposits & retainers,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,customer-deposits,workbook,SYSTEM. Deposits and retainers a customer paid before an invoice (filled when a deposit is recorded; the final invoice deducts it).,no,
 2500,Loan from director / shareholder,liability,Borrowings,Borrowings,,no,NA,yes,no,director-loan,workbook,"Money lent to the company by founders or shareholders, and repayments of it.",yes,
 2600,Bank loan,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,Bank or government-assisted loans (principal only; interest goes to Interest expense).,no,
-2700,Convertible notes / SAFE,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,"Investor money received under a SAFE or convertible note, before it converts into shares.",no,
+2700,Convertible notes / SAFE,liability,Borrowings,Borrowings,,no,NA,yes,no,convertible-instruments,workbook,"Investor money received under a SAFE or convertible note, before it converts into shares (PRD-001 FR-EQ-18); a sub-ledger per instrument.",no,
 2999,Suspense - ask accountant,liability,Payables & accruals,Payables & accruals,,no,NA,no,no,suspense,workbook,"Not sure where something goes? Use this, then ask your accountant. Must be cleared before closing a month.",no,
 3010,Share capital - Ordinary,equity,Share capital,Share capital,,no,NA,no,no,share-capital,workbook,Money received from shareholders for ordinary shares.,no,
 3020,Share capital - Preference,equity,Share capital,Share capital,,no,NA,no,no,share-capital,workbook,Money received from investors for preference shares.,no,
