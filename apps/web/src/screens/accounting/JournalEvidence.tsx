@@ -41,7 +41,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement";
   id: string;
   etag: string;
 }
@@ -65,6 +65,8 @@ const kindsOf = {
   "holder-record": ["Identity document", "Certificate of incorporation", "Passport"],
   "share-class": ["Constitution", "Shareholders' agreement", "Board resolution"],
   "equity-transaction": ["Board resolution", "Shareholders' resolution", "Subscription agreement", "Instrument of transfer", "ACRA acknowledgement", "ACRA register extract"],
+  instrument: ["Signed SAFE", "Signed note", "Side letter", "Bank statement"],
+  "instrument-enablement": ["Lawyer's confirmation"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
   "owner-succession": ["board resolution", "accountant's confirmation"],
 };
@@ -86,6 +88,8 @@ const nouns = {
   "holder-record": "holder record",
   "share-class": "share class",
   "equity-transaction": "equity transaction",
+  instrument: "SAFE or note",
+  "instrument-enablement": "template's enablement",
   "director-settlement": "settlement",
   "owner-succession": "succession",
 };
@@ -124,6 +128,10 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/share-classes/{version_id}/evidence", { params: { path: { version_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "equity-transaction"
                           ? await api.GET("/v1/equity-transactions/{transaction_id}/evidence", { params: { path: { transaction_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "instrument"
+                          ? await api.GET("/v1/instruments/{instrument_id}/evidence", { params: { path: { instrument_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "instrument-enablement"
+                          ? await api.GET("/v1/instrument-template-enablements/{enablement_id}/evidence", { params: { path: { enablement_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "director-settlement"
                           ? await api.GET("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "owner-succession"
@@ -277,6 +285,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/share-classes/{version_id}/evidence", { params: { path: { version_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "equity-transaction"
                           ? api.POST("/v1/equity-transactions/{transaction_id}/evidence", { params: { path: { transaction_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "instrument"
+                          ? api.POST("/v1/instruments/{instrument_id}/evidence", { params: { path: { instrument_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "instrument-enablement"
+                          ? api.POST("/v1/instrument-template-enablements/{enablement_id}/evidence", { params: { path: { enablement_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "director-settlement"
                           ? api.POST("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "owner-succession"
@@ -324,6 +336,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? await api.GET("/v1/share-classes/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id } } })
                       : record.kind === "equity-transaction"
                         ? await api.GET("/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", { params: { path: { transaction_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "instrument"
+                        ? await api.GET("/v1/instruments/{instrument_id}/evidence/{evidence_id}", { params: { path: { instrument_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "instrument-enablement"
+                        ? await api.GET("/v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}", { params: { path: { enablement_id: record.id, evidence_id: e.id } } })
                       : record.kind === "director-settlement"
                         ? await api.GET("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id } } })
                   : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
@@ -353,6 +369,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.DELETE("/v1/share-classes/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "equity-transaction"
                         ? api.DELETE("/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", { params: { path: { transaction_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "instrument"
+                        ? api.DELETE("/v1/instruments/{instrument_id}/evidence/{evidence_id}", { params: { path: { instrument_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "instrument-enablement"
+                        ? api.DELETE("/v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}", { params: { path: { enablement_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "director-settlement"
                         ? api.DELETE("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id }, header } })
                   : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
@@ -394,6 +414,14 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
           ? draft
             ? "What the transaction rests on: the board's and shareholders' resolutions and the subscription agreement of an issue, the instrument of transfer of a transfer, the ACRA register extract that shows a reversal is right. One is needed before you ask for approval; until then a file can come off again."
             : "The documents the transaction rests on. Once approved they are kept, and never deleted, for as long as the records are."
+          : record.kind === "instrument"
+          ? draft
+            ? "The signed SAFE or note, and any side letter. One is needed before you ask for approval; until then a file can come off again."
+            : "The signed instrument it rests on. Once recorded it is kept, and never deleted, for as long as the records are."
+          : record.kind === "instrument-enablement"
+          ? draft
+            ? "The lawyer's confirmation that the template's conversion terms are right for the company. It is needed before you ask for approval; until then a file can come off again."
+            : "The lawyer's confirmation the template rests on. Once recorded it is kept, and never deleted, for as long as the records are."
           : record.kind === "share-class"
           ? draft
             ? "The constitution and the shareholders' agreement that set the class's rights. One is needed before you ask for approval; until then a file can come off again."

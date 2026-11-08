@@ -59,6 +59,10 @@
       ],
       "type": "string"
     },
+    "conversion": {
+      "$ref": "InstrumentConversionRef.schema.json",
+      "description": "Its conversion into shares, once one is drafted from a priced round and while it stands (draftInstrumentConversions)."
+    },
     "currency": {
       "description": "The amount's currency, the base currency.",
       "examples": [

@@ -85,35 +85,45 @@ func Convert(r Round, safes []Converting, enabled func(key string) bool) ([]Conv
 		return nil, &Error{CodeInstrument, "no share is held before the round, so no cap price can be worked out",
 			"Record the shares issued before the round first"}
 	}
-	share := new(apd.Decimal) // Σ amount ÷ cap over the post-money SAFEs: the part of the company they convert into
-	for _, s := range safes {
-		if s.Instrument.Form != FormPostMoneySAFE {
-			continue
-		}
-		cap, err := capOf(s.Instrument)
-		if err != nil {
-			return nil, err
-		}
-		var part apd.Decimal
-		if _, err := exact.Quo(&part, s.Instrument.Amount.Decimal(), cap); err != nil {
-			return nil, err
-		}
-		if _, err := exact.Add(share, share, &part); err != nil {
-			return nil, err
-		}
+	share, err := PostMoneyPart(safes)
+	if err != nil {
+		return nil, err
 	}
 	if share.Cmp(apd.New(1, 0)) >= 0 {
 		return nil, &Error{CodeInstrument, "the post-money SAFEs convert into all of the company or more", "Check their amounts and caps"}
 	}
 	out := make([]Conversion, 0, len(safes))
 	for _, s := range safes {
-		c, err := convertOne(r, s, share, enabled)
+		c, err := convertOne(r, s, &share, enabled)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, c)
 	}
 	return out, nil
+}
+
+// PostMoneyPart is f, the part of the company the post-money SAFEs among safes convert into: Σ amount ÷ cap, exact to 60
+// digits (design D6).
+func PostMoneyPart(safes []Converting) (apd.Decimal, error) {
+	var share apd.Decimal
+	for _, s := range safes {
+		if s.Instrument.Form != FormPostMoneySAFE {
+			continue
+		}
+		cap, err := capOf(s.Instrument)
+		if err != nil {
+			return share, err
+		}
+		var part apd.Decimal
+		if _, err := exact.Quo(&part, s.Instrument.Amount.Decimal(), cap); err != nil {
+			return share, err
+		}
+		if _, err := exact.Add(&share, &share, &part); err != nil {
+			return share, err
+		}
+	}
+	return share, nil
 }
 
 func capOf(i Instrument) (*apd.Decimal, error) {
@@ -337,8 +347,19 @@ func ConvertingAt(ctx context.Context, u storage.UnitOfWork) ([]Converting, erro
 	return out, nil
 }
 
-// converted are the instruments a conversion still standing names, by instrument.
+// converted are the instruments a conversion still standing names.
 func converted(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]bool, error) {
+	standing, err := StandingConversions(ctx, u)
+	out := map[uuid.UUID]bool{}
+	for id := range standing {
+		out[id] = true
+	}
+	return out, err
+}
+
+// StandingConversions are the conversions still standing, by the instrument each converts: a draft, an approved one, or
+// an effective one not reversed, of a round not reversed.
+func StandingConversions(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]storage.Document, error) {
 	docs, err := Transactions(ctx, u)
 	if err != nil {
 		return nil, err
@@ -347,14 +368,14 @@ func converted(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]bool, e
 	if err != nil {
 		return nil, err
 	}
-	out := map[uuid.UUID]bool{}
+	out := map[uuid.UUID]storage.Document{}
 	for _, d := range docs {
 		t, err := ReadTransaction(d)
 		if err != nil {
 			return nil, err
 		}
 		if t.Kind == KindInstrumentConversion && !reversed[d.ID] && !reversed[t.RoundID] { // a reversed round's conversions stand no more
-			out[t.InstrumentID] = true
+			out[t.InstrumentID] = d
 		}
 	}
 	return out, nil
@@ -405,11 +426,83 @@ func SharesBefore(ctx context.Context, u storage.UnitOfWork, round uuid.UUID, to
 	return t.Issued, err
 }
 
+// Preview is what a priced round converts (FR-EQ-18, design D6): the round, when it is an approved cash issue; its price
+// per share; the shares its terms count before it (C₀); f, the part of the company the post-money SAFEs take; each
+// instrument converting, and its conversion, in the same order. A preview posts and saves nothing.
+type Preview struct {
+	Round       uuid.UUID
+	Price       money.UnitPrice
+	Before      apd.Decimal
+	Part        apd.Decimal
+	Safes       []Converting
+	Conversions []Conversion
+}
+
+// RoundPreviewIn is what the approved cash issue round converts: at its price, over the shares before it.
+func RoundPreviewIn(ctx context.Context, u storage.UnitOfWork, round uuid.UUID, s ledger.Settings, today time.Time) (Preview, error) {
+	doc, err := u.Documents().Get(ctx, round)
+	if err != nil {
+		return Preview{}, err
+	}
+	r, err := ReadTransaction(doc)
+	if err != nil {
+		return Preview{}, err
+	}
+	if r.Kind != KindIssueCash || doc.Status != storage.DocumentPosted {
+		return Preview{}, &Error{CodeTransaction, "the round is not an approved issue for cash", "Draft the conversions from an approved issue for cash, the priced round"}
+	}
+	if reversed, err := Reversed(ctx, u); err != nil {
+		return Preview{}, err
+	} else if reversed[round] {
+		return Preview{}, &Error{CodeTransaction, "the round was reversed", "Convert at the round that replaces it"}
+	}
+	p := Preview{Round: round}
+	if p.Price, err = money.ParseUnitPrice(r.Price, s.Base, "price"); err != nil {
+		return Preview{}, err
+	}
+	if p.Before, err = SharesBefore(ctx, u, round, today); err != nil {
+		return Preview{}, err
+	}
+	return previewIn(ctx, u, p)
+}
+
+// PricePreviewIn is what a round at price would convert, over the shares issued and held today: a round not yet
+// recorded, as a sandbox.
+func PricePreviewIn(ctx context.Context, u storage.UnitOfWork, price money.UnitPrice, today time.Time) (Preview, error) {
+	t, err := TableIn(ctx, u, today)
+	if err != nil {
+		return Preview{}, err
+	}
+	return previewIn(ctx, u, Preview{Price: price, Before: t.Issued})
+}
+
+func previewIn(ctx context.Context, u storage.UnitOfWork, p Preview) (Preview, error) {
+	var err error
+	if p.Safes, err = ConvertingAt(ctx, u); err != nil || len(p.Safes) == 0 {
+		return p, err
+	}
+	enabled := map[string]bool{}
+	for _, t := range Templates {
+		if enabled[t.Key], err = Enabled(ctx, u, t.Key); err != nil {
+			return p, err
+		}
+	}
+	if p.Part, err = PostMoneyPart(p.Safes); err != nil {
+		return p, err
+	}
+	p.Conversions, err = Convert(Round{Price: p.Price, Before: p.Before}, p.Safes, func(k string) bool { return enabled[k] })
+	return p, err
+}
+
 // DraftConversionsIn drafts, in u, the conversion of every instrument the approved cash issue round converts
 // (FR-EQ-18: "creates the share issues as drafts for approval"): one instrument_conversion transaction each, its shares
 // and price from Convert. One that an enabled template does not cover keeps, as its review, what the accountant completes
 // (⚠). An instrument that a conversion still standing names is left out, so asking again drafts nothing twice.
 func DraftConversionsIn(ctx context.Context, u storage.UnitOfWork, round uuid.UUID, s ledger.Settings, today time.Time) ([]storage.Document, error) {
+	p, err := RoundPreviewIn(ctx, u, round, s, today)
+	if err != nil {
+		return nil, err
+	}
 	doc, err := u.Documents().Get(ctx, round)
 	if err != nil {
 		return nil, err
@@ -418,31 +511,7 @@ func DraftConversionsIn(ctx context.Context, u storage.UnitOfWork, round uuid.UU
 	if err != nil {
 		return nil, err
 	}
-	if r.Kind != KindIssueCash || doc.Status != storage.DocumentPosted {
-		return nil, &Error{CodeTransaction, "the round is not an approved issue for cash", "Draft the conversions from an approved issue for cash, the priced round"}
-	}
-	price, err := money.ParseUnitPrice(r.Price, s.Base, "price")
-	if err != nil {
-		return nil, err
-	}
-	before, err := SharesBefore(ctx, u, round, today)
-	if err != nil {
-		return nil, err
-	}
-	safes, err := ConvertingAt(ctx, u)
-	if err != nil || len(safes) == 0 {
-		return nil, err
-	}
-	enabled := map[string]bool{}
-	for _, t := range Templates {
-		if enabled[t.Key], err = Enabled(ctx, u, t.Key); err != nil {
-			return nil, err
-		}
-	}
-	conversions, err := Convert(Round{Price: price, Before: before}, safes, func(k string) bool { return enabled[k] })
-	if err != nil {
-		return nil, err
-	}
+	conversions := p.Conversions
 	out := make([]storage.Document, 0, len(conversions))
 	for _, c := range conversions {
 		t := Transaction{Kind: KindInstrumentConversion, InstrumentID: c.ID, RoundID: round, Shares: c.Shares.Text('f'), Price: c.Price.String(),

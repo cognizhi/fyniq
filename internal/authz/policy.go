@@ -1262,6 +1262,8 @@ var (
 	RemoveEquityTransactionEvidence = Policy{Operation: "removeEquityTransactionEvidence", Capability: CapTable, Need: Create}
 	// FR-EQ-18: the Accountant drafts a round's conversions; each is approved like any other transaction.
 	DraftInstrumentConversions = Policy{Operation: "draftInstrumentConversions", Capability: CapTable, Need: Create}
+	// PreviewInstrumentConversions reads what a round would convert: a cap-table read, nothing saved.
+	PreviewInstrumentConversions = Policy{Operation: "previewInstrumentConversions", Capability: CapTable, Need: View, Unqualified: true}
 )
 
 // The cap table (FR-EQ-20; p1-equity-register slice 3): computed from the register, never written. The Board reads its
@@ -1473,7 +1475,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateInstrument, ReplaceInstrument, RequestInstrumentApproval, AddInstrumentEvidence, ListInstrumentEvidence, GetInstrumentEvidence,
 	RemoveInstrumentEvidence, ListInstrumentTemplates, DraftInstrumentTemplateEnablement, RequestInstrumentTemplateApproval,
 	AddInstrumentTemplateEvidence, ListInstrumentTemplateEvidence, GetInstrumentTemplateEvidence, RemoveInstrumentTemplateEvidence,
-	DraftInstrumentConversions)
+	DraftInstrumentConversions, PreviewInstrumentConversions)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

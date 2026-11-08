@@ -248,6 +248,10 @@ var matrixInstruments = map[string]func(e *env, tok string) (response, func() bo
 		r := e.call(http.MethodDelete, "/v1/instruments/"+f.draft+"/evidence/"+f.draftFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixInstrumentState(e, f) == was }
 	},
+	"previewInstrumentConversions": func(e *env, tok string) (response, func() bool) {
+		matrixInstrument(e)
+		return e.call(http.MethodGet, "/v1/instruments/conversion-preview?price=1.00", tok, nil), nil
+	},
 	"listInstrumentTemplates": func(e *env, tok string) (response, func() bool) {
 		matrixInstrument(e)
 		return e.call(http.MethodGet, "/v1/instrument-templates", tok, nil), nil

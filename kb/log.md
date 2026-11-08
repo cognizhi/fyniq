@@ -415,3 +415,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the cap table: who owns the company at any day, compare two days, the drill-down to each movement, the export; FR-EQ-20)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (SAFE and note conversions at a priced round, slice 4b-i)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the SAFEs and notes page, recording one, templates, the conversion preview; slice 4c)

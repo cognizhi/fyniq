@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -55,19 +57,57 @@ type InstrumentDraft struct {
 // InstrumentView is an instrument as the API shows it.
 type InstrumentView struct {
 	InstrumentDraft
-	ID              string      `json:"id" format:"uuid" doc:"The instrument." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
-	Status          string      `json:"status" enum:"draft,recorded" doc:"draft: waiting for the signed instrument and approval; recorded: in the register." example:"recorded"`
-	Version         int         `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
-	HolderName      string      `json:"holder_name" doc:"Its holder's name." example:"Lion Rock Ventures Pte. Ltd."`
-	Currency        string      `json:"currency" doc:"The amount's currency, the base currency." example:"SGD"`
-	ClassCode       string      `json:"class_code" doc:"The class's account code." example:"3010"`
-	TemplateEnabled bool        `json:"template_enabled,omitempty" doc:"Its template is enabled, so it can convert by itself when every term it has is one the template covers." example:"false"`
-	Held            *Money      `json:"held,omitempty" doc:"Once recorded: what 2700 Convertible notes / SAFE holds for it today, from the ledger: the money received under it, less what converted or was repaid (FR-EQ-18). Absent while the chart has no account of role convertible-instruments."`
-	Evidence        int         `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the signed instrument." example:"1"`
-	ApprovalID      string      `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a11"`
-	RecordedBy      *Person     `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded."`
-	RecordedAt      *time.Time  `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-06-20T09:30:00Z"`
-	Checks          []BillCheck `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no evidence is attached."`
+	ID              string                   `json:"id" format:"uuid" doc:"The instrument." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
+	Status          string                   `json:"status" enum:"draft,recorded" doc:"draft: waiting for the signed instrument and approval; recorded: in the register." example:"recorded"`
+	Version         int                      `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
+	HolderName      string                   `json:"holder_name" doc:"Its holder's name." example:"Lion Rock Ventures Pte. Ltd."`
+	Currency        string                   `json:"currency" doc:"The amount's currency, the base currency." example:"SGD"`
+	ClassCode       string                   `json:"class_code" doc:"The class's account code." example:"3010"`
+	TemplateEnabled bool                     `json:"template_enabled,omitempty" doc:"Its template is enabled, so it can convert by itself when every term it has is one the template covers." example:"false"`
+	Held            *Money                   `json:"held,omitempty" doc:"Once recorded: what 2700 Convertible notes / SAFE holds for it today, from the ledger: the money received under it, less what converted or was repaid (FR-EQ-18). Absent while the chart has no account of role convertible-instruments."`
+	Evidence        int                      `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the signed instrument." example:"1"`
+	ApprovalID      string                   `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a11"`
+	RecordedBy      *Person                  `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded."`
+	RecordedAt      *time.Time               `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-06-20T09:30:00Z"`
+	Checks          []BillCheck              `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no evidence is attached."`
+	Conversion      *InstrumentConversionRef `json:"conversion,omitempty" doc:"Its conversion into shares, once one is drafted from a priced round and while it stands (draftInstrumentConversions)."`
+}
+
+// InstrumentConversionRef is an instrument's conversion: the equity transaction and where it stands.
+type InstrumentConversionRef struct {
+	TransactionID string `json:"transaction_id" format:"uuid" doc:"The instrument_conversion equity transaction." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a31"`
+	Number        string `json:"number,omitempty" doc:"Its number, EQ-, once approved." example:"EQ-0004"`
+	Status        string `json:"status" enum:"draft,approved,effective" doc:"draft: drafted for approval; approved: waiting for ACRA's date; effective: its shares were allotted." example:"effective"`
+}
+
+// ConversionPreview is what a priced round converts (FR-EQ-18, design D6), as a sandbox: nothing posts and nothing is
+// saved. Every figure comes from the engine; the working shown never re-rounds what posts.
+type ConversionPreview struct {
+	RoundID        string              `json:"round_id,omitempty" format:"uuid" doc:"The approved issue for cash it converts at, when one was named." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02"`
+	RoundPrice     string              `json:"round_price" doc:"The round's price per share in the base currency." example:"3.00"`
+	Currency       string              `json:"currency" doc:"The base currency." example:"SGD"`
+	SharesBefore   string              `json:"shares_before" doc:"C₀: the shares issued and held at the end of the day before the round (today, for a price typed in)." example:"1000000"`
+	PostMoneyPart  string              `json:"post_money_part,omitempty" doc:"f: the part of the company the post-money SAFEs convert into, Σ amount ÷ cap, as a percentage shown under RND-DISPLAY to 2 decimals; absent when none converts." example:"5.00"`
+	Capitalisation string              `json:"capitalisation,omitempty" doc:"The company's capitalisation once the post-money SAFEs convert, C₀ ÷ (1 − f), shown under RND-DISPLAY to 2 decimals; absent when none converts." example:"1052631.58"`
+	Conversions    []ConversionWorking `json:"conversions" nullable:"false" doc:"Each recorded SAFE or note that converts at the round, in the order recorded."`
+}
+
+// ConversionWorking is one instrument's conversion as a preview shows it.
+type ConversionWorking struct {
+	InstrumentID   string `json:"instrument_id" format:"uuid" doc:"The instrument." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
+	HolderName     string `json:"holder_name" doc:"Its holder." example:"Hatch Capital Pte. Ltd."`
+	Form           string `json:"form" doc:"Its form." example:"post_money_safe"`
+	Amount         Money  `json:"amount" doc:"What it converts from: the investor's money."`
+	OwnershipAtCap string `json:"ownership_at_cap,omitempty" doc:"A post-money SAFE's: amount ÷ cap, the part of the company its cap gives it, as a percentage shown under RND-DISPLAY." example:"5.00"`
+	CapPrice       string `json:"cap_price,omitempty" doc:"A capped SAFE's cap price before its precision, cut to 10 decimals: a post-money SAFE's cap × (1 − f) ÷ C₀, a pre-money one's cap ÷ C₀." example:"2.375"`
+	DiscountPrice  string `json:"discount_price,omitempty" doc:"With a discount: the round's price × (100 − discount) ÷ 100, before its precision." example:"2.4"`
+	PriceDecimals  int    `json:"price_decimals" doc:"The decimals its terms give the conversion price." example:"4"`
+	Price          string `json:"price" doc:"The conversion price: the lower of the cap price and the discounted round price (the round's price itself with neither), cut down to its decimals." example:"2.375"`
+	Shares         string `json:"shares" doc:"RND-SHARE: the most whole shares with round(shares × price) within the amount." example:"52631"`
+	Converted      Money  `json:"converted" doc:"round(shares × price): Dr 2700 · Cr the class once effective."`
+	Left           Money  `json:"left" doc:"What stays on 2700 until it is settled under the terms."`
+	Covered        bool   `json:"covered" doc:"An enabled template covers every term, so its draft is ready for approval." example:"true"`
+	Review         string `json:"review,omitempty" doc:"Otherwise what the accountant completes in its draft (⚠)." example:"the accountant completes it: it follows no template, a discount"`
 }
 
 // InstrumentPage is a page of instruments, the latest signed first.
@@ -106,7 +146,12 @@ type (
 	InstrumentPath struct {
 		InstrumentID string `path:"instrument_id" format:"uuid" doc:"The instrument." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
 	}
-	InstrumentTemplatePath struct {
+	conversionPreviewInput struct {
+		RoundID string `query:"round_id" format:"uuid" doc:"An approved issue for cash, the priced round, to convert at its price over the shares before it. Give this or price." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02"`
+		Price   string `query:"price" pattern:"^([0-9]{1,10}(\\.[0-9]{1,6})?)?$" doc:"A round's price per share in the base currency, at most 6 decimals, over the shares issued today: a round not recorded yet. Give this or round_id." example:"3.00"`
+	}
+	conversionPreviewOutput struct{ Body ConversionPreview }
+	InstrumentTemplatePath  struct {
 		TemplateKey string `path:"template_key" doc:"The template." example:"yc-sg-post-money-cap@1"`
 	}
 	EnablementPath struct {
@@ -236,6 +281,8 @@ type instrumentView struct {
 	enabled map[string]bool
 	ledger  uuid.UUID // 2700, the account of role convertible-instruments; uuid.Nil when the chart has none
 	today   time.Time
+	// The conversions standing, by instrument, read once a list or record asks for them.
+	conversions map[uuid.UUID]storage.Document
 }
 
 func (a *API) instrumentViewOf(ctx context.Context, u storage.UnitOfWork) (instrumentView, error) {
@@ -263,7 +310,8 @@ func (a *API) instrumentViewOf(ctx context.Context, u storage.UnitOfWork) (instr
 	for key, docs := range all {
 		v.enabled[key] = slices.ContainsFunc(docs, func(d storage.Document) bool { return d.Status == storage.DocumentPosted })
 	}
-	return v, nil
+	v.conversions, err = equity.StandingConversions(ctx, u)
+	return v, err
 }
 
 func (a *API) instrumentOf(ctx context.Context, u storage.UnitOfWork, v instrumentView, doc storage.Document) (InstrumentView, error) {
@@ -294,6 +342,17 @@ func (a *API) instrumentOf(ctx context.Context, u storage.UnitOfWork, v instrume
 	}
 	if out.Evidence, out.ApprovalID, out.RecordedBy, out.RecordedAt, out.Checks, err = a.recordCommon(ctx, u, doc, v.asked); err != nil {
 		return out, err
+	}
+	if c, ok := v.conversions[doc.ID]; ok {
+		ref := &InstrumentConversionRef{TransactionID: c.ID.String(), Number: c.Number, Status: "draft"}
+		if c.Status == storage.DocumentPosted {
+			moved, err := u.Holdings().OfTransaction(ctx, c.ID)
+			if err != nil {
+				return out, err
+			}
+			ref.Status = map[bool]string{true: "effective", false: "approved"}[len(moved) > 0]
+		}
+		out.Conversion = ref
 	}
 	for k := range out.Checks {
 		if out.Checks[k].Code == equity.CodeNoEvidence {
@@ -643,6 +702,60 @@ func registerInstruments(a *API) {
 			return &equityAskOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 
+	register(a, authz.PreviewInstrumentConversions, huma.Operation{
+		OperationID: "previewInstrumentConversions", Method: http.MethodGet, Path: "/v1/instruments/conversion-preview", Tags: []string{"Equity"},
+		Summary: "Preview the SAFEs' and notes' conversions at a round",
+		Description: "Works out what every recorded SAFE and note not converted yet would convert into at a priced round (FR-EQ-18, design " +
+			"D6), with the figures each conversion price comes from: at an approved issue for cash (round_id), over the shares before " +
+			"it, or at a price typed in, over the shares issued today. A post-money SAFE's cap price is its cap × (1 − f) ÷ C₀, f " +
+			"being Σ amount ÷ cap over the post-money SAFEs; a pre-money one's its cap ÷ C₀; the conversion price is the lower of the " +
+			"cap price and the discounted round price, cut down to the instrument's decimals; the shares are RND-SHARE's. Read-only; " +
+			"nothing posts and nothing is saved: draftInstrumentConversions drafts them at an approved round.",
+	}, append([]string{CodeNotFound}, append(EquityTransactionCodes, InstrumentCodes...)...), func(ctx context.Context, in *conversionPreviewInput) (*conversionPreviewOutput, error) {
+		if (in.RoundID == "") == (in.Price == "") {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "query.round_id", Message: "names neither a round nor a price, or both",
+				Fix: "Send round_id, an approved issue for cash, or price, a round's price per share"}})
+		}
+		p, _ := authn.From(ctx)
+		var out conversionPreviewOutput
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			settings, err := journal.LoadSettings(ctx, u)
+			if err != nil {
+				return err
+			}
+			today, err := orgToday(ctx, a, u)
+			if err != nil {
+				return err
+			}
+			var preview equity.Preview
+			if in.RoundID != "" {
+				id, err := parseID("round_id", in.RoundID)
+				if err != nil {
+					return err
+				}
+				if _, err := equityRecordOfType(ctx, u, storage.DocumentEquityTransaction, id); err != nil {
+					return err
+				}
+				preview, err = equity.RoundPreviewIn(ctx, u, id, settings, today)
+				if err != nil {
+					return err
+				}
+			} else {
+				price, err := money.ParseUnitPrice(in.Price, settings.Base, "price")
+				if err != nil || price.Sign() <= 0 {
+					return invalid([]FieldProblem{{Code: CodeInvalid, Field: "query.price", Message: fmt.Sprintf("%q is not a price above zero in %s", in.Price, settings.Base.Code),
+						Fix: "Send the round's price per share, such as 3.00"}})
+				}
+				if preview, err = equity.PricePreviewIn(ctx, u, price, today); err != nil {
+					return err
+				}
+			}
+			out.Body, err = a.previewOf(ctx, u, preview)
+			return err
+		})
+		return &out, err
+	})
+
 	register(a, authz.ListInstrumentTemplates, huma.Operation{
 		OperationID: "listInstrumentTemplates", Method: http.MethodGet, Path: "/v1/instrument-templates", Tags: []string{"Equity"},
 		Summary: "List the instrument templates",
@@ -745,4 +858,61 @@ func registerInstruments(a *API) {
 			}
 			return &equityAskOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
+}
+
+// previewOf is a preview as the API shows it: each conversion's working, the shared figures under RND-DISPLAY.
+func (a *API) previewOf(ctx context.Context, u storage.UnitOfWork, p equity.Preview) (ConversionPreview, error) {
+	out := ConversionPreview{RoundPrice: p.Price.String(), Currency: p.Price.Currency().Code, SharesBefore: p.Before.Text('f'),
+		Conversions: []ConversionWorking{}}
+	if p.Round != uuid.Nil {
+		out.RoundID = p.Round.String()
+	}
+	posts := false
+	for _, s := range p.Safes {
+		posts = posts || s.Instrument.Form == equity.FormPostMoneySAFE
+	}
+	if posts && p.Before.Sign() > 0 {
+		var pct, rest, capitalisation apd.Decimal
+		c := apd.BaseContext.WithPrecision(60)
+		if _, err := c.Mul(&pct, &p.Part, apd.New(100, 0)); err != nil {
+			return out, err
+		}
+		out.PostMoneyPart = rounding.Display(&pct, 2)
+		if _, err := c.Sub(&rest, apd.New(1, 0), &p.Part); err != nil {
+			return out, err
+		}
+		if rest.Sign() > 0 {
+			if _, err := c.Quo(&capitalisation, &p.Before, &rest); err != nil {
+				return out, err
+			}
+			out.Capitalisation = rounding.Display(&capitalisation, 2)
+		}
+	}
+	names := map[uuid.UUID]string{}
+	for k, conv := range p.Conversions {
+		i := p.Safes[k].Instrument
+		name, ok := names[i.HolderID]
+		if !ok {
+			c, err := u.Contacts().Get(ctx, i.HolderID)
+			if err != nil {
+				return out, err
+			}
+			name, names[i.HolderID] = c.LegalName, c.LegalName
+		}
+		w := ConversionWorking{InstrumentID: conv.ID.String(), HolderName: name, Form: i.Form, Amount: moneyOut(i.Amount), CapPrice: conv.CapPrice,
+			DiscountPrice: conv.DiscountPrice, PriceDecimals: i.PriceDecimals, Price: conv.Price.String(), Shares: conv.Shares.Text('f'),
+			Converted: moneyOut(conv.Converted), Left: moneyOut(conv.Left), Covered: conv.Covered}
+		if i.Form == equity.FormPostMoneySAFE {
+			if cap, _, err := apd.NewFromString(i.ValuationCap); err == nil && cap.Sign() > 0 {
+				if w.OwnershipAtCap, err = rounding.Ownership(i.Amount.Decimal(), cap); err != nil {
+					return out, err
+				}
+			}
+		}
+		if !conv.Covered {
+			w.Review = equity.UncoveredText(conv)
+		}
+		out.Conversions = append(out.Conversions, w)
+	}
+	return out, nil
 }

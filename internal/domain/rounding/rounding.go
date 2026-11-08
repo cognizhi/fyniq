@@ -308,6 +308,15 @@ func Ownership(part, whole *apd.Decimal) (string, error) {
 	return halfAwayFromZero(&x, 2).Text('f'), nil
 }
 
+// Display is RND-DISPLAY for a figure that is shown and never posted or stored, such as a SAFE conversion's working
+// (the company's capitalisation once the SAFEs convert, the part of it they take): round(x, places), half away from
+// zero, once, as a plain decimal string; a figure that rounds to zero shows as 0.00, never -0.00.
+func Display(x *apd.Decimal, places int) string {
+	r := halfAwayFromZero(x, places)
+	r.Negative = r.Negative && !r.IsZero()
+	return r.Text('f')
+}
+
 // GSTMethod is how RND-GST-EXCL rounds a document's GST (PRD-001 §10.4): once per GST code's subtotal, the default,
 // or once per line, an organisation setting. IRAS accepts either when it is applied consistently.
 type GSTMethod string
