@@ -329,3 +329,54 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 	r, err := subledger.Reconcile(base, asAt, totals, l.groups(), false, own)
 	return r, l, err
 }
+
+// Settlements are the invoices settled in full from from to to (FR-PLN-09; p1-planning design D7): each issued invoice
+// not voided by to whose receipts and credits, net of reversals, reached its total on a day in the range, with its
+// customer and due date. A customer's payment behaviour is read from them.
+func Settlements(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uuid.UUID, from, to time.Time) ([]subledger.Settlement, error) {
+	var out []subledger.Settlement
+	contacts := map[uuid.UUID]storage.Contact{}
+	err := subledger.Pages(ctx, u, storage.DocumentInvoice, to, func(doc storage.Document) error {
+		if doc.Status == storage.DocumentDraft {
+			return nil
+		}
+		identity := ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
+		if gone, err := subledger.VoidedBy(ctx, u, identity, to); err != nil || gone {
+			return err
+		}
+		d, err := invoice.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		e, err := u.Ledger().ByIdentity(ctx, identity)
+		if err != nil {
+			return err
+		}
+		debited, _, err := subledger.ControlLines(e, ar, d.Currency, base)
+		if err != nil {
+			return err
+		}
+		allocs, err := u.Allocations().OfDocument(ctx, doc.ID)
+		if err != nil {
+			return err
+		}
+		on, ok, err := subledger.SettledInFull(allocs, debited, to)
+		if err != nil || !ok || on.Before(from) {
+			return err
+		}
+		c, seen := contacts[d.CustomerID]
+		if !seen && d.CustomerID != uuid.Nil {
+			if c, err = u.Contacts().Get(ctx, d.CustomerID); err != nil && !errors.Is(err, ports.ErrNotFound) {
+				return err
+			}
+			contacts[d.CustomerID] = c
+		}
+		due, err := invoice.Due(ctx, u, d, c)
+		if err != nil {
+			return err
+		}
+		out = append(out, subledger.Settlement{DocumentID: doc.ID, Party: d.CustomerID, DueDate: due, On: on})
+		return nil
+	})
+	return out, err
+}

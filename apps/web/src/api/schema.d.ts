@@ -2164,6 +2164,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cash-projection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the short-term cash flow
+         * @description The money accounts' balance day by day from today for 30, 60, 90 or 180 days (FR-PLN-09), and in 13 weeks (FR-PLN-05; days=91), p1-planning design D7: today's balance valued at today's rates; each open invoice and bill on its expected day (its due date + the contact's average days late over the last 12 months, else its due date or a bill's planned payment date, and today when that has passed); each active recurring invoice's and bill's occurrences; each approved payment batch not yet released on its payment day, its bills not counted again. It gives the lowest balance and its day, the buffer line (planning.buffer_months × the average monthly net burn of the last three closed months) and the first day below it, and what it does not hold yet. Read-only; no side effects.
+         */
+        get: operations["getCashProjection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cash-projection:what-if": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a what-if of the short-term cash flow
+         * @description The projection getCashProjection gives, with movements moved to another day (delay this bill, chase that invoice) or left out (FR-PLN-09, design D7). A what-if never changes a document, a planned payment date or a batch: it saves nothing (FR-PLN-08). A move naming no movement of the projection is refused with the others. Saves nothing; no side effects.
+         */
+        post: operations["whatIfCashProjection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/checks": {
         parameters: {
             query?: never;
@@ -16820,6 +16860,134 @@ export interface components {
              */
             type: "expense_claim" | "cash_advance";
         };
+        CashBuffer: {
+            /** @description The average monthly net burn (the KPI's net_burn) of the last three closed months, fewer while there are fewer; absent while no month is closed. */
+            average_burn?: components["schemas"]["Money"];
+            /** @description months × the average burn, rounded once (RND-PLAN); absent when the company is not burning or no month is closed, which why says. */
+            line?: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description planning.buffer_months, the months of burn kept.
+             * @example 6
+             */
+            months: number;
+            /**
+             * @description Why there is no line.
+             * @example no month is closed yet
+             */
+            why?: string;
+        };
+        CashDay: {
+            /** @description The balance at its end. */
+            close: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-11-17
+             */
+            date: string;
+            /** @description Money in on it. */
+            in: components["schemas"]["Money"];
+            /** @description Money out on it, above zero. */
+            out: components["schemas"]["Money"];
+        };
+        CashExcluded: {
+            /**
+             * @description What is left out.
+             * @example Pay runs and CPF
+             */
+            what: string;
+            /**
+             * @description Why.
+             * @example they join with payroll
+             */
+            why: string;
+        };
+        CashMove: {
+            /**
+             * @description The movement's key, from getCashProjection.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            key: string;
+            /**
+             * @description Leave it out of the projection.
+             * @example false
+             */
+            leave_out?: boolean;
+            /**
+             * Format: date
+             * @description Move it to this day: delay a bill, chase an invoice.
+             * @example 2026-12-01
+             */
+            to?: string;
+        };
+        CashMovement: {
+            /** @description In the base currency: money in above zero, money out below. An open item's is its carrying amount. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description Why that day: history, the due date + the contact's average days late over the last 12 months; due, its due date (no history); planned, a bill's planned payment date (no history); overdue, expected before today, so today; scheduled, a batch's payment date; moved, a what-if moved it.
+             * @example history
+             * @enum {string}
+             */
+            basis: "history" | "due" | "planned" | "overdue" | "scheduled" | "moved";
+            /**
+             * Format: uuid
+             * @description The customer or supplier.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+             */
+            contact_id?: string;
+            /**
+             * @description Its name.
+             * @example Lumen Health Pte Ltd
+             */
+            contact_name?: string;
+            /**
+             * Format: int64
+             * @description history: the contact's average days late, rounded half away from zero.
+             * @example 7
+             */
+            days_late?: number;
+            /**
+             * Format: date
+             * @description Its due date; absent for a batch.
+             * @example 2026-11-10
+             */
+            due_date?: string;
+            /**
+             * Format: date
+             * @description The day it is expected.
+             * @example 2026-11-17
+             */
+            expected_on: string;
+            /**
+             * Format: uuid
+             * @description The document, the recurring document or the batch.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            id: string;
+            /**
+             * @description Names it in a what-if: the document's or batch's ID, or a recurring document's ID and occurrence as <id>@YYYY-MM-DD.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            key: string;
+            /**
+             * @description What it is: an open invoice or bill, a recurring invoice's or bill's occurrence, or an approved payment batch not yet released.
+             * @example invoice
+             * @enum {string}
+             */
+            kind: "invoice" | "bill" | "recurring_invoice" | "recurring_bill" | "payment_batch";
+            /**
+             * @description The document's or batch's number, or the recurring document's name.
+             * @example INV-0142
+             */
+            number?: string;
+            /**
+             * Format: date
+             * @description A recurring document's occurrence.
+             * @example 2026-12-15
+             */
+            occurrence?: string;
+        };
         CashPosition: {
             /** @description Each open money account, by currency then name. */
             accounts: components["schemas"]["CashAccount"][];
@@ -16833,6 +17001,81 @@ export interface components {
             no_rate: string[];
             /** @description The total in the base currency of those with a value. */
             total: components["schemas"]["Money"];
+        };
+        CashProjection: {
+            /**
+             * Format: date
+             * @description The first day whose balance closes below the buffer line; absent when none does, or there is no line.
+             * @example 2026-12-01
+             */
+            below_buffer_on?: string;
+            buffer: components["schemas"]["CashBuffer"];
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description Each day from today. */
+            daily: components["schemas"]["CashDay"][];
+            /**
+             * Format: int64
+             * @description How many days it runs.
+             * @example 60
+             */
+            days: number;
+            /** @description The lowest balance at a day's end, today's included. */
+            lowest: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The first day it occurs.
+             * @example 2026-12-01
+             */
+            lowest_on: string;
+            /** @description Every expected movement in the days, by day. */
+            movements: components["schemas"]["CashMovement"][];
+            /** @description What the projection does not hold yet, so its lowest point is never taken as complete: pay runs and CPF, GST returns and corporate tax until their changes, and any input it could not read. */
+            not_included: components["schemas"]["CashExcluded"][];
+            /** @description The money accounts' balance today, each valued at today's rate. */
+            opening: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The organisation's today, the projection's first day.
+             * @example 2026-11-02
+             */
+            today: string;
+            /** @description The first 13 weeks from today, when the projection runs that far (91 days or more). */
+            weekly: components["schemas"]["CashWeek"][];
+        };
+        CashWeek: {
+            /** @description The balance at its end. */
+            close: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-11-02
+             */
+            from: string;
+            /** @description Money in over it. */
+            in: components["schemas"]["Money"];
+            /** @description Money out over it, above zero. */
+            out: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-11-08
+             */
+            to: string;
+        };
+        CashWhatIf: {
+            /**
+             * Format: int64
+             * @description How many days; 60 when left out; 91 is the 13 weeks.
+             * @example 60
+             * @enum {integer}
+             */
+            days?: 30 | 60 | 90 | 180 | 91;
+            /** @description The changes, each to one movement. */
+            moves: components["schemas"]["CashMove"][];
         };
         CatalogueEntry: {
             capabilities: components["schemas"]["ConnectorCapability"][] | null;
@@ -54391,6 +54634,226 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCashProjection: {
+        parameters: {
+            query?: {
+                /** @description How many days from today: 30, 60 (the default), 90 or 180; 91 is the 13-week view. */
+                days?: 30 | 60 | 90 | 180 | 91;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashProjection"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    whatIfCashProjection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashWhatIf"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashProjection"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

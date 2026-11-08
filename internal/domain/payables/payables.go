@@ -394,3 +394,55 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 	r, err := subledger.Reconcile(base, asAt, totals, l.groups(), true, own)
 	return r, l, err
 }
+
+// Settlements are the bills settled in full from from to to (FR-PLN-09; p1-planning design D7): each posted bill not
+// voided by to whose payments and credits, net of reversals, reached what it owes the supplier (its total, less any tax
+// withheld) on a day in the range, with its supplier and due date. The company's own payment behaviour with a supplier is
+// read from them.
+func Settlements(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uuid.UUID, from, to time.Time) ([]subledger.Settlement, error) {
+	var out []subledger.Settlement
+	contacts := map[uuid.UUID]storage.Contact{}
+	err := subledger.Pages(ctx, u, storage.DocumentBill, to, func(doc storage.Document) error {
+		if doc.Status == storage.DocumentDraft {
+			return nil
+		}
+		identity := ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
+		if gone, err := subledger.VoidedBy(ctx, u, identity, to); err != nil || gone {
+			return err
+		}
+		d, err := bill.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		e, err := u.Ledger().ByIdentity(ctx, identity)
+		if err != nil {
+			return err
+		}
+		credited, _, err := subledger.ControlLines(e, ap, d.Currency, base)
+		if err != nil {
+			return err
+		}
+		allocs, err := u.Allocations().OfDocument(ctx, doc.ID)
+		if err != nil {
+			return err
+		}
+		on, ok, err := subledger.SettledInFull(allocs, credited.Neg(), to)
+		if err != nil || !ok || on.Before(from) {
+			return err
+		}
+		c, seen := contacts[d.SupplierID]
+		if !seen && d.SupplierID != uuid.Nil {
+			if c, err = u.Contacts().Get(ctx, d.SupplierID); err != nil && !errors.Is(err, ports.ErrNotFound) {
+				return err
+			}
+			contacts[d.SupplierID] = c
+		}
+		due, err := bill.Due(ctx, u, d, c)
+		if err != nil {
+			return err
+		}
+		out = append(out, subledger.Settlement{DocumentID: doc.ID, Party: d.SupplierID, DueDate: due, On: on})
+		return nil
+	})
+	return out, err
+}

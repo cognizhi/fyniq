@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "what": {
+      "description": "What is left out.",
+      "examples": [
+        "Pay runs and CPF"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "Why.",
+      "examples": [
+        "they join with payroll"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "what",
+    "why"
+  ],
+  "title": "CashExcluded",
+  "type": "object"
+}

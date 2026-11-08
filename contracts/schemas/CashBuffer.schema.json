@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "average_burn": {
+      "$ref": "Money.schema.json",
+      "description": "The average monthly net burn (the KPI's net_burn) of the last three closed months, fewer while there are fewer; absent while no month is closed."
+    },
+    "line": {
+      "$ref": "Money.schema.json",
+      "description": "months × the average burn, rounded once (RND-PLAN); absent when the company is not burning or no month is closed, which why says."
+    },
+    "months": {
+      "description": "planning.buffer_months, the months of burn kept.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "why": {
+      "description": "Why there is no line.",
+      "examples": [
+        "no month is closed yet"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "months"
+  ],
+  "title": "CashBuffer",
+  "type": "object"
+}

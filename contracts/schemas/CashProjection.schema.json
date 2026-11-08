@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "below_buffer_on": {
+      "description": "The first day whose balance closes below the buffer line; absent when none does, or there is no line.",
+      "examples": [
+        "2026-12-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "buffer": {
+      "$ref": "CashBuffer.schema.json"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "daily": {
+      "description": "Each day from today.",
+      "items": {
+        "$ref": "CashDay.schema.json"
+      },
+      "type": "array"
+    },
+    "days": {
+      "description": "How many days it runs.",
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "lowest": {
+      "$ref": "Money.schema.json",
+      "description": "The lowest balance at a day's end, today's included."
+    },
+    "lowest_on": {
+      "description": "The first day it occurs.",
+      "examples": [
+        "2026-12-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "movements": {
+      "description": "Every expected movement in the days, by day.",
+      "items": {
+        "$ref": "CashMovement.schema.json"
+      },
+      "type": "array"
+    },
+    "not_included": {
+      "description": "What the projection does not hold yet, so its lowest point is never taken as complete: pay runs and CPF, GST returns and corporate tax until their changes, and any input it could not read.",
+      "items": {
+        "$ref": "CashExcluded.schema.json"
+      },
+      "type": "array"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "The money accounts' balance today, each valued at today's rate."
+    },
+    "today": {
+      "description": "The organisation's today, the projection's first day.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "weekly": {
+      "description": "The first 13 weeks from today, when the projection runs that far (91 days or more).",
+      "items": {
+        "$ref": "CashWeek.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "today",
+    "days",
+    "currency",
+    "opening",
+    "lowest",
+    "lowest_on",
+    "buffer",
+    "movements",
+    "daily",
+    "weekly",
+    "not_included"
+  ],
+  "title": "CashProjection",
+  "type": "object"
+}

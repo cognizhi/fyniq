@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "close": {
+      "$ref": "Money.schema.json",
+      "description": "The balance at its end."
+    },
+    "date": {
+      "description": "The day.",
+      "examples": [
+        "2026-11-17"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "in": {
+      "$ref": "Money.schema.json",
+      "description": "Money in on it."
+    },
+    "out": {
+      "$ref": "Money.schema.json",
+      "description": "Money out on it, above zero."
+    }
+  },
+  "required": [
+    "date",
+    "in",
+    "out",
+    "close"
+  ],
+  "title": "CashDay",
+  "type": "object"
+}

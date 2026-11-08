@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "close": {
+      "$ref": "Money.schema.json",
+      "description": "The balance at its end."
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "in": {
+      "$ref": "Money.schema.json",
+      "description": "Money in over it."
+    },
+    "out": {
+      "$ref": "Money.schema.json",
+      "description": "Money out over it, above zero."
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-11-08"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "in",
+    "out",
+    "close"
+  ],
+  "title": "CashWeek",
+  "type": "object"
+}
