@@ -22337,6 +22337,17 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01
           format: uuid
           type: string
+        next_vests:
+          description: How many options vest that day.
+          examples:
+            - "1000"
+          type: string
+        next_vests_on:
+          description: The next day more of it vests, a month's day after today; left out when nothing more will.
+          examples:
+            - "2026-11-15"
+          format: date
+          type: string
         note:
           description: A note.
           examples:
@@ -22436,10 +22447,35 @@ components:
           examples:
             - "3010"
           type: string
+        exercisable:
+          description: "Of those, the options vested: what exercises may take."
+          examples:
+            - "40000"
+          type: string
+        exercised:
+          description: The options effective exercises turned into shares by the day, never back in the pool.
+          examples:
+            - "0"
+          type: string
+        expired:
+          description: The options their expiries let lapse by the day.
+          examples:
+            - "0"
+          type: string
+        forfeited:
+          description: The options the recorded grants' forfeitures took by the day.
+          examples:
+            - "45000"
+          type: string
         granted:
           description: The options the recorded grants granted on or before the day.
           examples:
             - "68000"
+          type: string
+        outstanding:
+          description: The recorded grants' options not exercised, forfeited or expired at the end of the day.
+          examples:
+            - "425000"
           type: string
         resolutions:
           description: Every resolution, drafts and recorded, the latest passed first.
@@ -22466,6 +22502,11 @@ components:
         - size
         - granted
         - returned
+        - forfeited
+        - expired
+        - exercised
+        - outstanding
+        - exercisable
         - unallocated
         - resolutions
       type: object

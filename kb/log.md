@@ -427,3 +427,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (a grant's forfeitures and expiries; EQUITY-18; slice 5b-i)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (an exercise of options as an issue for cash; slice 5b-ii)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (Equity › Option pool and My shares and options; slice 5c)

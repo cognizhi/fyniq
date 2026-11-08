@@ -692,6 +692,11 @@ func TestAGrantsOptionsAreExercised(t *testing.T) {
 	if g.str("exercised") != "10000" || g.str("outstanding") != "38000" || g.str("exercisable") != "2000" || g.str("vested") != "12000" {
 		t.Errorf("the grant after its exercise: %s", g.Raw)
 	}
+	// The pool's grants: 48,000 + 4,800 granted, 10,000 exercised; vested and not exercised 2,000 + 1,200 (4,800 × 12 ÷ 48).
+	if p := e.call(http.MethodGet, "/v1/option-pool?at=2026-10-15", weiling, nil); p.str("exercised") != "10000" || p.str("outstanding") != "42800" ||
+		p.str("exercisable") != "3200" || p.str("forfeited") != "0" || p.str("unallocated") != "47200" {
+		t.Errorf("the pool's grants once 10,000 are exercised: %s", p.Raw)
+	}
 	cap := e.call(http.MethodGet, "/v1/cap-table?at=2026-10-15", weiling, nil)
 	if !strings.Contains(cap.Raw, `"holder_name":"Priya Nair","class_name":"Ordinary shares","account_code":"3010","issued":"10000","votes":"10000","fully_diluted":"52800","options":"42800"`) {
 		t.Errorf("Priya's line: 10,000 shares and the 38,000 + 4,800 options outstanding: %s", cap.Raw)
@@ -709,5 +714,12 @@ func TestAGrantsOptionsAreExercised(t *testing.T) {
 	}
 	if g := e.call(http.MethodGet, "/v1/option-grants/"+grant, weiling, nil); g.str("exercised") != "0" || g.str("outstanding") != "48000" || g.str("exercisable") != "12000" {
 		t.Errorf("the grant once its exercise is reversed: %s", g.Raw)
+	}
+	if g.str("next_vests_on") != "2026-11-15" || g.str("next_vests") != "1000" {
+		t.Errorf("the grant's next vesting: %s", g.Raw)
+	}
+	if p := e.call(http.MethodGet, "/v1/option-pool?at=2026-10-15", weiling, nil); p.str("exercised") != "0" || p.str("outstanding") != "52800" ||
+		p.str("exercisable") != "13200" {
+		t.Errorf("the pool's grants once the exercise is reversed: %s", p.Raw)
 	}
 }

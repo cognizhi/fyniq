@@ -148,7 +148,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 6. The option pool and grants (slice 5)
 
-- [ ] 6.1 Migration, engine and API (D9):
+- [x] 6.1 Migration, engine and API (D9):
   - `option_pool` by resolution;
   - `option_grant` and `grant_event`, with FY258 (no grant beyond the unallocated pool);
   - vesting computed;
@@ -172,8 +172,13 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   if it is reversed; the database's FY293 on its movement; the differential's `option_exercise` and grants'
   `exercise_price` (`golden/option-exercise.json`). An exercise at a price of 0 waits for the accountant [accountant to
   confirm].)
-- [ ] 6.2 Screen OptionPool as designed, and the employee's own grants view. Help keys and guide sections. Vitest and
+- [x] 6.2 Screen OptionPool as designed, and the employee's own grants view. Help keys and guide sections. Vitest and
   axe. `// req: FR-EQ-19`, `// req: FR-EQ-27`
+  (Slice 5c: Equity › Option pool with the pool's figures from the server (granted, given back, exercised, outstanding,
+  vested and not exercised, available), every grant, what vests or expires in 30 days and the resolutions; the grant's
+  and the resolution's pages with their evidence and approval, and Forfeit or let lapse; and My shares and options for
+  an Employee, with the next vesting the engine works out (`equity.NextVesting`). The canvases' new states wait for
+  task 10.1.)
 
 ## 7. Round modelling (slice 6)
 

@@ -148,3 +148,34 @@ func TestAGrantsEventsTakeItsOptions(t *testing.T) {
 		}
 	}
 }
+
+// A grant's next vesting (FR-EQ-19), as My shares and options shows it: 48,000 over 48 months with a 12-month cliff from
+// 31 Jan 2026. Before the cliff the next is 12,000 on 31 Jan 2027; then 1,000 each month, on 28 Feb 2027 for the 31st;
+// nothing once all has vested, or once a leaver's options not vested are forfeited.
+// req: FR-EQ-19
+func TestAGrantsNextVesting(t *testing.T) {
+	day := func(s string) time.Time { d, _ := time.Parse(time.DateOnly, s); return d }
+	g := Grant{Number: "48000", GrantedOn: day("2026-01-31"), Vesting: Vesting{CliffMonths: 12, Months: 48, Acceleration: "none"}}
+	for _, c := range []struct {
+		on, next, n string
+		events      []GrantEvent
+	}{
+		{"2026-10-15", "2027-01-31", "12000", nil},
+		{"2027-01-31", "2027-02-28", "1000", nil},
+		{"2027-02-28", "2027-03-31", "1000", nil},
+		{"2030-01-31", "", "", nil},
+		{"2027-03-01", "", "", []GrantEvent{{Kind: EventForfeiture, Number: "35000", On: day("2027-03-01")}}},
+	} {
+		on, n, ok, err := NextVesting(g, c.events, nil, day(c.on))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := ""
+		if ok {
+			got = on.Format(time.DateOnly) + " " + n.Text('f')
+		}
+		if want := strings.TrimSpace(c.next + " " + c.n); got != want {
+			t.Errorf("after %s: %q, want %q", c.on, got, want)
+		}
+	}
+}
