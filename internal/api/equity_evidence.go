@@ -73,6 +73,14 @@ type (
 		EnablementPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	PoolResolutionEvidencePath struct {
+		PoolResolutionPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
+	OptionGrantEvidencePath struct {
+		OptionGrantPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -137,6 +145,38 @@ type (
 	}
 	removeInstrumentEvidenceInput struct {
 		InstrumentEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addPoolEvidenceInput struct {
+		PoolResolutionPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listPoolEvidenceInput struct {
+		PoolResolutionPath
+		PageQuery
+	}
+	removePoolEvidenceInput struct {
+		PoolResolutionEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addGrantEvidenceInput struct {
+		OptionGrantPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listGrantEvidenceInput struct {
+		OptionGrantPath
+		PageQuery
+	}
+	removeGrantEvidenceInput struct {
+		OptionGrantEvidencePath
 		IfMatchHeader
 		PreferHeader
 	}
@@ -210,7 +250,7 @@ func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, 
 	raw *EvidenceUpload) (*equityEvidenceWriteOutput, error) {
 	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
 		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
-		storage.DocumentInstrumentTemplate: "enablement_id"}[t]
+		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -522,8 +562,70 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentInstrumentTemplate, "enablement_id", in.EnablementID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
+	register(a, authz.AddPoolResolutionEvidence, huma.Operation{
+		OperationID: "addPoolResolutionEvidence", Method: http.MethodPost, Path: "/v1/option-pool/resolutions/{resolution_id}/evidence",
+		Tags: []string{"Evidence"}, DefaultStatus: http.StatusCreated, Summary: "Attach the resolution setting the option pool",
+		Description: "Attaches a file to a drafted pool resolution (FR-EQ-19, FR-DOC-05), as multipart/form-data: the signed " +
+			"resolution, and the plan's rules. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addPoolEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentOptionPool, "/v1/option-pool/resolutions", in.ResolutionID, in.IdempotencyKey, in.IfMatch,
+			in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListPoolResolutionEvidence, huma.Operation{
+		OperationID: "listPoolResolutionEvidence", Method: http.MethodGet, Path: "/v1/option-pool/resolutions/{resolution_id}/evidence",
+		Tags: []string{"Evidence"}, Summary: "List a pool resolution's files",
+		Description: "The files attached to a pool resolution, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listPoolEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentOptionPool, "resolution_id", in.ResolutionID, in.PageQuery)
+	})
+	register(a, authz.GetPoolResolutionEvidence, huma.Operation{
+		OperationID: "getPoolResolutionEvidence", Method: http.MethodGet, Path: "/v1/option-pool/resolutions/{resolution_id}/evidence/{evidence_id}",
+		Tags: []string{"Evidence"}, Summary: "Get a pool resolution's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *PoolResolutionEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentOptionPool, "resolution_id", in.ResolutionID, in.EvidenceID)
+	})
+	register(a, authz.RemovePoolResolutionEvidence, huma.Operation{
+		OperationID: "removePoolResolutionEvidence", Method: http.MethodDelete, Path: "/v1/option-pool/resolutions/{resolution_id}/evidence/{evidence_id}",
+		Tags: []string{"Evidence"}, Summary: "Remove a file from a drafted pool resolution",
+		Description: "Takes a file off a pool resolution not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removePoolEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentOptionPool, "resolution_id", in.ResolutionID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
+	register(a, authz.AddOptionGrantEvidence, huma.Operation{
+		OperationID: "addOptionGrantEvidence", Method: http.MethodPost, Path: "/v1/option-grants/{grant_id}/evidence",
+		Tags: []string{"Evidence"}, DefaultStatus: http.StatusCreated, Summary: "Attach a grant's letter",
+		Description: "Attaches a file to a drafted grant of options (FR-EQ-19, FR-DOC-05), as multipart/form-data: the grant letter " +
+			"the holder signed. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addGrantEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentOptionGrant, "/v1/option-grants", in.GrantID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListOptionGrantEvidence, huma.Operation{
+		OperationID: "listOptionGrantEvidence", Method: http.MethodGet, Path: "/v1/option-grants/{grant_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List a grant's files",
+		Description: "The files attached to a grant, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listGrantEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentOptionGrant, "grant_id", in.GrantID, in.PageQuery)
+	})
+	register(a, authz.GetOptionGrantEvidence, huma.Operation{
+		OperationID: "getOptionGrantEvidence", Method: http.MethodGet, Path: "/v1/option-grants/{grant_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get a grant's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *OptionGrantEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentOptionGrant, "grant_id", in.GrantID, in.EvidenceID)
+	})
+	register(a, authz.RemoveOptionGrantEvidence, huma.Operation{
+		OperationID: "removeOptionGrantEvidence", Method: http.MethodDelete, Path: "/v1/option-grants/{grant_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted grant",
+		Description: "Takes a file off a grant not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeGrantEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentOptionGrant, "grant_id", in.GrantID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
 	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence",
-		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence"} {
+		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence",
+		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

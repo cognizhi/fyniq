@@ -156,6 +156,12 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   - an employee reads only their own grants.
 
   Attack tests and API tests; the fully diluted cap table includes the pool. `// req: FR-EQ-19`
+  (Slice 5a-i: `option_pool` resolutions and `option_grant` documents, each drafted, evidenced and recorded on another
+  person's approval, never the grant's holder; vesting computed (whole months, rounded down [accountant to confirm]);
+  the pool covers its grants on every day from a record's date on, in the domain (EQUITY-16, EQUITY-17) and the
+  database (FY293, under a lock on the pool; FY258 was taken); `getMyOptionGrants` for an Employee's own grants, and an
+  investor may be linked to a member. Still to come: the fully diluted cap table with the pool (5a-ii), grant events and
+  exercise as an issue (5b).)
 - [ ] 6.2 Screen OptionPool as designed, and the employee's own grants view. Help keys and guide sections. Vitest and
   axe. `// req: FR-EQ-19`, `// req: FR-EQ-27`
 

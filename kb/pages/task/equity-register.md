@@ -2,9 +2,9 @@
 key: equity.register
 type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
-summary: The cap table at any day, holders (last 4 characters only), share classes, equity transactions made effective with ACRA, and SAFE conversions at a round
+summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
 sources:
-  - docs/user-guide/equity-register.md sha256:e0c27add28ada0b9f68049db072a95855c3f1fe2099be84d0a984d2b7c0bc154
+  - docs/user-guide/equity-register.md sha256:82d8009a51a03f2fad20227bdefba13b445baec41cbd8361c72074bb4584aebf
 data_class: general
 taint: trusted
 status: published
@@ -68,6 +68,16 @@ aliases:
   - SAFE template
   - categorise SAFE money
   - 2700
+  - option pool
+  - ESOP
+  - employee share options
+  - grant options
+  - option grant
+  - vesting
+  - cliff
+  - exercise price
+  - unallocated options
+  - my options
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -272,6 +282,27 @@ aliases:
 
 (src: docs/user-guide/equity-register.md#convert-safes-and-notes)
 
+## The option pool and grants
+
+- The **option pool** is the shares a resolution sets aside for options (an employee share option
+  plan): its size on a day is the latest recorded resolution passed on or before it, set again from
+  a later one's day. **Unallocated** is its size less the options granted.
+- A **grant** gives a person options: how many, the exercise price per share, the grant date, the
+  vesting (a cliff, then evenly by month), its acceleration on a change of control and the day it
+  lapses; its holder is a contact marked An investor or A shareholder, of the pool's class.
+- An Accountant drafts each, attaches the signed resolution or the grant letter and asks; another
+  Owner or the Controller records it, never the grant's own holder.
+- A grant fits only what the pool leaves on its grant date and on every later day a grant was made
+  or a resolution passed; a resolution setting aside fewer shares than the options granted by then
+  is refused.
+- **Vested** is worked out each day, never stored: none before the cliff, then the options × the
+  whole months since the grant ÷ the vesting months, rounded down to whole options; all once the
+  vesting months have passed; a month passes on the grant's day, or a shorter month's last day
+  [accountant to confirm].
+- A person whose contact is linked to their sign-in sees their own grants, and nobody else's.
+
+(src: docs/user-guide/equity-register.md#the-option-pool-and-grants)
+
 ## Correct a transaction
 
 - An approved transaction never changes: **Reverse it** drafts a reversal citing why (the ACRA
@@ -299,7 +330,8 @@ aliases:
 - EQUITY-04: the class's account is not 3010 or 3020 share capital; a cap on a non-participating
   preference.
 - EQUITY-05: recorded, so it changes no more; draft a new one. EQUITY-06: no evidence attached;
-  attach the identity document, or the constitution and the shareholders' agreement.
+  attach the identity document, the constitution and the shareholders' agreement, the resolution
+  or the grant letter.
 - Your own holder record is approved by another Owner or the Controller.
 - EQUITY-07: a conversion of the instrument stands already (change it, or reverse it first); the
   round is not an approved issue for cash. LEDGER-49: a line on 2700 names its instrument (choose
@@ -311,6 +343,11 @@ aliases:
   converts (categorise the SAFE's money to 2700, naming the instrument). EQUITY-09: no share application monies account, add 2040. EQUITY-10: a step its transaction
   does not take, or dated after today.
 - A transaction that moves your own shares is approved by another Owner or the Controller.
+- EQUITY-16: the pool's resolution does not fit (whole shares above zero, the share-capital class,
+  the resolution and its day), or sets aside fewer shares than the options granted by a day.
+  EQUITY-17: no recorded resolution sets a pool on the grant date (record it first); the pool
+  leaves fewer options than the grant on its grant date or a later day. Your own grant of options
+  is approved by another Owner or the Controller.
 - REPORT-08: the render service did not make the PDF; try again, or export to Excel.
 
 (src: docs/user-guide/equity-register.md#common-problems)

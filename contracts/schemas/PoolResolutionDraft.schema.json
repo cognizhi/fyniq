@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class_account_id": {
+      "description": "The share-capital account of the class the options are over.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "ESOP 2026"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "resolution_ref": {
+      "description": "The resolution that sets it.",
+      "examples": [
+        "Ordinary resolution 1 Oct 2026"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "resolved_on": {
+      "description": "The day the resolution was passed: the pool has this size from then until a later resolution.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "size": {
+      "description": "The shares the resolution sets aside for options, a whole number above zero.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^[0-9]{1,14}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "size",
+    "class_account_id",
+    "resolution_ref",
+    "resolved_on"
+  ],
+  "title": "PoolResolutionDraft",
+  "type": "object"
+}
