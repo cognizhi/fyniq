@@ -2577,6 +2577,33 @@ func TestAuthorisationMatrix(t *testing.T) {
 		every = append(every, r)
 	}
 	slices.Sort(every)
+	// An allowed call of an operation that reads a file or a full identifier writes its audit event (AUD-05): the trail
+	// of the matrix's organisation, read as the worker, gains the operation's action during the call.
+	trail := workerStore(t)
+	head := func() (seq int64) {
+		if err := trail.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			h, err := u.Audit().Head(ctx)
+			seq = h.Seq
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return seq
+	}
+	wrote := func(after int64, action string) (found bool) {
+		if err := trail.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			events, err := u.Audit().Events(ctx, after, 10000)
+			for _, ev := range events {
+				var b struct{ Action string }
+				_ = json.Unmarshal([]byte(ev.Body), &b)
+				found = found || b.Action == action
+			}
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return found
+	}
 	var allowed, refused int
 	for _, role := range authz.Principals() {
 		p := authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: []authz.Role{role}}
@@ -2590,7 +2617,16 @@ func TestAuthorisationMatrix(t *testing.T) {
 			// A session per operation: one would pass the rate limit of a minute (FR-INT-16) on the frozen clock.
 			tok := e.principal(p)
 			want, _ := expected(t, rows, role, policies[op])
+			action, audited := auditedReads[op]
+			var before int64
+			if want && audited {
+				before = head()
+			}
 			r, unchanged := matrixCalls[op](e, tok)
+			// A masked view (Appendix D's M) is answered masked and opens nothing, so it records no look.
+			if want && audited && r.Status >= 200 && r.Status <= 299 && !strings.Contains(r.Raw, MaskedValue) && !wrote(before, action) {
+				t.Errorf("%s × %s: answered %d without writing %s (AUD-05)", role, op, r.Status, action)
+			}
 			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired ||
 				r.problemCode() == CodeSessionRequired)
 			// The installation's operations and the approvals decide past their policy: by a code, or by the request's own policy.

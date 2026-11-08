@@ -17765,7 +17765,7 @@ Document and email templates as data: drafts, and numbered versions published un
 
 **Export templates as a bundle** (`exportDocumentTemplates`)
 
-Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Read-only; no side effects.
+Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Changes nothing; side effects: its audit event, as every export has (AUD-05).
 
 - **Permission:** View on Document templates: edit, publish (rev 0.7)
 - **Parameters:**
