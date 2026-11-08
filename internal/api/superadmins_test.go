@@ -247,14 +247,22 @@ func TestSuperAdmins(t *testing.T) {
 	// Every event of the installation's trail matches the AUD-01 schema, as the organisations' do.
 	c := jsonschema.NewCompiler()
 	c.AssertFormat()
-	schema, err := c.Compile("../../contracts/audit/audit-event.v1.schema.json")
-	if err != nil {
-		t.Fatal(err)
+	schemas := map[string]*jsonschema.Schema{}
+	for _, n := range []string{"1", "2"} { // each event matches the format its schema names (AUD-01: versioned)
+		sc, err := c.Compile("../../contracts/audit/audit-event.v" + n + ".schema.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		schemas["fyniq-audit-event@"+n] = sc
 	}
 	for line := range strings.Lines(trail.String()) {
 		v, err := jsonschema.UnmarshalJSON(strings.NewReader(line))
 		if err != nil {
 			t.Fatal(err)
+		}
+		schema := schemas[v.(map[string]any)["schema"].(string)]
+		if schema == nil {
+			t.Fatalf("an installation event names no known schema: %s", line)
 		}
 		if err := schema.Validate(v); err != nil {
 			t.Errorf("an installation event does not match the AUD-01 schema: %v\n%s", err, line)

@@ -32,10 +32,6 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	url := cmp.Or(os.Getenv("FYNIQ_DATABASE_URL"),
 		fmt.Sprintf("postgres://%s:%s@localhost:%s/fyniq?sslmode=disable", role, postgres.LocalPassword, cmp.Or(os.Getenv("FYNIQ_PG_PORT"), "55432")))
-	store, err := postgres.Connect(url, postgres.WithClock(clock)) // lazily: readiness reports a missing database
-	if err != nil {
-		return nil, err
-	}
 	tokens := local.NewHMACTokens([]byte(cmp.Or(os.Getenv("FYNIQ_TASK_TOKEN_KEY"), localKey)), clock, time.Hour)
 	worker := cmp.Or(os.Getenv("FYNIQ_WORKER_URL"), "http://localhost:8084")
 	executor := cmp.Or(os.Getenv("FYNIQ_EXECUTOR_URL"), "http://localhost:8085")
@@ -49,6 +45,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	fields, err := local.LoadOrCreateFieldKeys(filepath.Join(data, "keys", "fields.key"))
+	if err != nil {
+		return nil, err
+	}
+	// Lazily: readiness reports a missing database. The fields' key also proves sensitive values in the trail (AUD-02).
+	store, err := postgres.Connect(url, postgres.WithClock(clock), postgres.WithFingerprints(fields))
 	if err != nil {
 		return nil, err
 	}

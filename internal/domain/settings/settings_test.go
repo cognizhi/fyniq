@@ -205,3 +205,30 @@ func TestChangesAreGatedNeverBackdatedAndRetentionOnlyLengthens(t *testing.T) {
 		}
 	}
 }
+
+// The audit trail's retention ships as the owner decided on 8 Nov 2026 (PRD-001 rev 0.230): a security event's IP
+// address and device for 400 days, from 30 to 3,650, and the purge of the ledger and the trail off. Both change only
+// under dual control (FM-1), and neither shortens records' retention.
+// req: AUD-06
+// req: AUD-09
+// req: AUD-10
+func TestTheAuditTrailsRetentionShipsAsDecided(t *testing.T) {
+	for key, want := range map[string]string{"retention.security_events_days": "400", "retention.purge_after_retention": "false"} {
+		d, ok := Lookup(key)
+		if !ok || d.Recommended != want || !d.DualControl || d.Group != "Data region and retention" {
+			t.Errorf("%s: %+v", key, d)
+		}
+	}
+	d, _ := Lookup("retention.security_events_days")
+	for _, v := range []string{"29", "3651", "0"} {
+		if _, p := Normalise(d, v); p == nil {
+			t.Errorf("%s days are accepted", v)
+		}
+	}
+	if v, p := Normalise(d, "730"); p != nil || v != "730" {
+		t.Errorf("730 days: %q %v", v, p)
+	}
+	if d, _ := Lookup("retention.purge_after_retention"); d.Kind != Switch {
+		t.Errorf("the purge is a switch: %+v", d)
+	}
+}

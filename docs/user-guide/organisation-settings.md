@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
+requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10]
 status: draft
 ---
 
@@ -369,8 +369,20 @@ The founders and the accountant still choose each settlement, which another pers
 
 - **Data region**: every record is kept and processed in Google Cloud's Singapore region. The
   platform sets it, so it is shown and cannot be changed.
-- **Records kept for**: the ledger, documents, files and the audit trail are kept 7 years after
-  the end of the financial year they relate to. It can be lengthened, never shortened.
+- **Records kept for**: documents and files are kept 7 years after the end of the financial year they relate to, and
+  the ledger and the audit trail at least as long. It can be lengthened, never shortened.
+- **Purge the ledger and the audit trail after retention**: off. While it is off, the ledger and the audit trail are
+  kept for the life of the company. Switched on, a financial year is purged once **Records kept for** has passed since
+  it ended, oldest year first:
+  - its journal entries, with every balance carried forward to the next year, so each report from then on is
+    unchanged;
+  - the audit events of that time.
+
+  A signed record of what was purged comes first. A report dated before it, or as at an earlier ledger revision, can no
+  longer be run. A purge cannot be undone.
+- **Security events' IP address and device kept for**: 400 days. A sign-in, revealing a full bank number and an export
+  record the IP address and device they came from. After this many days those two details are erased; the event stays
+  in the audit trail.
 - **AI conversations kept for**: 365 days, then they are deleted. A proposal the AI made is kept
   with the audit trail.
 

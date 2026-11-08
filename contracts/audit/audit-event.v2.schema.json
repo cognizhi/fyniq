@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cognizhi/fyniq/contracts/audit/audit-event.v2.schema.json",
+  "title": "Fyniq audit event (fyniq-audit-event@2)",
+  "description": "One saved change (PRD-001 §11.5, AUD-01). The body is stored and hashed exactly as written; the database adds seq, prev_hash and hash (see README.md). Version 2 (PRD-001 rev 0.230) proves sensitive values by fingerprint (AUD-02) and lets a security event keep its request details beside the chain (AUD-06).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_id",
+    "organisation_id",
+    "occurred_at",
+    "actor",
+    "on_behalf_of",
+    "originator",
+    "approval_ids",
+    "action",
+    "object",
+    "changes",
+    "reason",
+    "request"
+  ],
+  "properties": {
+    "schema": {
+      "const": "fyniq-audit-event@2"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "organisation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "$ref": "#/$defs/actor"
+    },
+    "on_behalf_of": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/actor"
+        }
+      ]
+    },
+    "originator": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The AI proposal the change carries out"
+    },
+    "approval_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "version"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    },
+    "changes": {
+      "type": "object",
+      "description": "field → [before, after]; null means absent. A sensitive value (an identifier or a person's pay) is a proof, never the value (AUD-02); other values are masked (SEC-15).",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "reason": {
+      "type": "string"
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ip",
+        "user_agent",
+        "session"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ip": {
+          "type": "string"
+        },
+        "user_agent": {
+          "type": "string"
+        },
+        "session": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string",
+          "pattern": "^fp1:[A-Za-z0-9_-]{43}$",
+          "description": "A security event's fingerprint of its IP address and user agent, which are kept beside the chain and erased after the security-log retention (AUD-06); ip and user_agent are then empty"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "user",
+            "service",
+            "integration",
+            "scheduler",
+            "ai"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fingerprint"
+      ],
+      "description": "A sensitive value's proof: the organisation's keyed fingerprint (HMAC-SHA256, unpadded base64url) and, for an identifier, its last four characters",
+      "properties": {
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^fp1:[A-Za-z0-9_-]{43}$"
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 64
+        }
+      }
+    }
+  }
+}

@@ -6,6 +6,10 @@ package postgres
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
@@ -31,6 +35,8 @@ type Store struct {
 	clock       ports.Clock   // stamps audit events
 	actor       storage.Actor // the service identity, when a request names no actor
 	changed     storage.Changed
+	// fingerprint proves a sensitive value in an audit event (AUD-02): ports.Cipher.Fingerprint.
+	fingerprint func(ctx context.Context, scope, value []byte) ([]byte, error)
 }
 
 var _ storage.Store = (*Store)(nil)
@@ -47,6 +53,18 @@ func WithClock(c ports.Clock) Option { return func(s *Store) { s.clock = c } }
 // WithActor sets the service identity recorded when a request names no actor. The default is the
 // database role the store connects as.
 func WithActor(a storage.Actor) Option { return func(s *Store) { s.actor = a } }
+
+// WithFingerprints sets the keyed hash that proves sensitive values in audit events (AUD-02, PRD-001 rev 0.230): the
+// deployment's ports.Cipher, whose fingerprint key is held in Cloud KMS, or locally in a key file. Without it a store
+// keys its fingerprints with a random key of its own: a value is still never kept, but proofs written by two stores, or
+// by one store before and after a restart, do not compare. The wiring always sets it.
+func WithFingerprints(c ports.Cipher) Option {
+	return func(s *Store) {
+		if c != nil {
+			s.fingerprint = c.Fingerprint
+		}
+	}
+}
 
 // OnChange sets what a unit of work calls once its work is done, with the object types of the events it recorded
 // (storage.Changed): the outbox item that reruns the checks a change concerns (FR-CTL-01). Set it before the store is
@@ -87,11 +105,25 @@ func Connect(url string, opts ...Option) (*Store, error) {
 // New wraps an existing pool.
 func New(pool *pgxpool.Pool, opts ...Option) *Store {
 	s := &Store{pool: pool, lockTimeout: DefaultLockTimeout, clock: clock.System{},
-		actor: storage.Actor{Type: "service", ID: pool.Config().ConnConfig.User}}
+		actor: storage.Actor{Type: "service", ID: pool.Config().ConnConfig.User}, fingerprint: ownKey()}
 	for _, o := range opts {
 		o(s)
 	}
 	return s
+}
+
+// ownKey is a store's own fingerprint key when the wiring gives none: random, kept in memory only, laid out as
+// fieldseal's (the scope's length, the scope, the value).
+func ownKey() func(ctx context.Context, scope, value []byte) ([]byte, error) {
+	key := make([]byte, 32)
+	_, _ = rand.Read(key) // never fails (crypto/rand)
+	return func(_ context.Context, scope, value []byte) ([]byte, error) {
+		m := hmac.New(sha256.New, key)
+		m.Write(binary.BigEndian.AppendUint32(nil, uint32(len(scope)))) // #nosec G115 -- a scope is an organisation's ID
+		m.Write(scope)
+		m.Write(value)
+		return m.Sum(nil), nil
+	}
 }
 
 // Close closes the pool.

@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -110,9 +111,13 @@ func TestEveryEventMatchesTheAUD01Schema(t *testing.T) {
 
 	c := jsonschema.NewCompiler()
 	c.AssertFormat()
-	schema, err := c.Compile("../../../contracts/audit/audit-event.v1.schema.json")
-	if err != nil {
-		t.Fatal(err)
+	schemas := map[string]*jsonschema.Schema{}
+	for _, v := range []string{"1", "2"} { // each event matches the format its schema names (AUD-01: versioned)
+		sc, err := c.Compile("../../../contracts/audit/audit-event.v" + v + ".schema.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		schemas["fyniq-audit-event@"+v] = sc
 	}
 	stored := events(t, b.Org)
 	actions := map[string]int{}
@@ -120,6 +125,10 @@ func TestEveryEventMatchesTheAUD01Schema(t *testing.T) {
 		v, err := jsonschema.UnmarshalJSON(strings.NewReader(e.Body))
 		if err != nil {
 			t.Fatal(err)
+		}
+		schema := schemas[v.(map[string]any)["schema"].(string)]
+		if schema == nil {
+			t.Fatalf("event %d names no known schema: %s", e.Seq, e.Body)
 		}
 		if err := schema.Validate(v); err != nil {
 			t.Errorf("event %d does not match the AUD-01 schema: %v\n%s", e.Seq, err, e.Body)
@@ -419,5 +428,67 @@ func TestStoredEventsMaskSensitiveValues(t *testing.T) {
 		if strings.Contains(body, leaked) {
 			t.Errorf("the stored event contains %q: %s", leaked, body)
 		}
+	}
+}
+
+// AUD-02 through the store (PRD-001 rev 0.230, proof only). With the deployment's fingerprints, a bank number changed,
+// changed back and kept the same is written as proofs that compare as the values did, each the deployment's own
+// fingerprint within the organisation's audit scope. A store given no fingerprints proves under its own key: still never
+// the value. Every event matches the v2 schema.
+// req: AUD-02
+// req: SEC-15
+// asvs: V16.2.5
+func TestSensitiveValuesReachTheTrailAsProofs(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "proofs"}})
+	fields, err := local.LoadOrCreateFieldKeys(filepath.Join(t.TempDir(), "fields.key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := porttest.NewBooks(t, store(t, "fyniq_api"), "Audit proofs")
+	deployed, own := store(t, "fyniq_api", postgres.WithFingerprints(fields)), store(t, "fyniq_api")
+	record := func(s *postgres.Store, before, after any) {
+		t.Helper()
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: "payee_bank_account.changed", ObjectType: "document", ObjectID: b.Org,
+				Changes: map[string][2]any{"account_number": {before, after}, "salary": {"8500.00", "9000.00"}}})
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	record(deployed, "0123456789", "9876543210")
+	record(deployed, "9876543210", "0123456789")
+	record(own, "0123456789", "0123456789")
+	stored := events(t, b.Org)
+	if len(stored) < 3 {
+		t.Fatalf("%d events", len(stored))
+	}
+	type proofs struct{ Changes map[string][2]map[string]string }
+	var got [3]proofs
+	for i, e := range stored[len(stored)-3:] {
+		for _, clear := range []string{"0123456789", "9876543210", "8500.00", "9000.00"} {
+			if strings.Contains(e.Body, clear) {
+				t.Errorf("event %d keeps %s: %s", e.Seq, clear, e.Body)
+			}
+		}
+		if err := json.Unmarshal([]byte(e.Body), &got[i]); err != nil {
+			t.Fatalf("event %d: %v: %s", e.Seq, err, e.Body)
+		}
+	}
+	mac, err := fields.Fingerprint(ctx, []byte("audit:"+b.Org.String()), []byte("0123456789"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := audit.FingerprintPrefix + base64.RawURLEncoding.EncodeToString(mac)
+	first, back := got[0].Changes["account_number"], got[1].Changes["account_number"]
+	if first[0]["fingerprint"] != want || back[1]["fingerprint"] != want || first[1]["fingerprint"] != back[0]["fingerprint"] ||
+		first[0]["fingerprint"] == first[1]["fingerprint"] {
+		t.Errorf("proofs do not compare as the values did: %v %v (want %s)", first, back, want)
+	}
+	if first[0]["hint"] != "******6789" || got[0].Changes["salary"][0]["hint"] != "" {
+		t.Errorf("an identifier's hint is its last four characters, a salary's none: %v", got[0].Changes)
+	}
+	same := got[2].Changes["account_number"]
+	if same[0]["fingerprint"] != same[1]["fingerprint"] || same[0]["fingerprint"] == want {
+		t.Errorf("a store's own key proves the same value the same, but not as the deployment does: %v", same)
 	}
 }

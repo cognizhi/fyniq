@@ -3,7 +3,10 @@ package audit
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -152,5 +155,86 @@ func TestAnchorsCatchARewrittenChain(t *testing.T) {
 	}
 	if err := signed.Check(signer, org, map[int64][]byte{}); err == nil {
 		t.Fatal("an anchor beyond a truncated chain was accepted")
+	}
+}
+
+// fakeFingerprint is a keyed hash for tests: HMAC-SHA256 under a fixed key.
+func fakeFingerprint(_ context.Context, v []byte) ([]byte, error) {
+	m := hmac.New(sha256.New, []byte("test fingerprint key"))
+	m.Write(v)
+	return m.Sum(nil), nil
+}
+
+// AUD-02, proof only (PRD-001 rev 0.230): an identifier or a person's pay, at any depth, is replaced by its proof, the
+// organisation's keyed fingerprint with an identifier's last four characters as its hint. The same value proves the
+// same, so a change back shows; nothing of the value but the hint reaches the body. A forecast's salary_increase is a
+// rate, not pay, and other values are untouched.
+// req: AUD-02
+// req: SEC-15
+// asvs: V16.2.5
+func TestSensitiveValuesAreProvedNeverKept(t *testing.T) {
+	ctx := context.Background()
+	in := map[string]Change{
+		"account_number":      {"0123456789", "9876543210"},
+		"bank_account_number": {"9876543210", "0123456789"},
+		"salary":              {"8500.00", "8500.00"},
+		"salary_increase":     {"0.04", "0.05"},
+		"payee":               {nil, map[string]any{"name": "Northwind", "nric": "S1234567D", "accounts": []any{map[string]any{"iban": "SG12DBSS0123456789"}}}},
+		"memo":                {"", "rent"},
+	}
+	out, err := Prove(ctx, in, fakeFingerprint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proof := func(v any) map[string]any {
+		t.Helper()
+		p, ok := v.(map[string]any)
+		if !ok || !strings.HasPrefix(p["fingerprint"].(string), FingerprintPrefix) || len(p["fingerprint"].(string)) != len(FingerprintPrefix)+43 {
+			t.Fatalf("not a proof: %#v", v)
+		}
+		return p
+	}
+	a0, a1 := proof(out["account_number"][0]), proof(out["account_number"][1])
+	b0, b1 := proof(out["bank_account_number"][0]), proof(out["bank_account_number"][1])
+	if a0["fingerprint"] == a1["fingerprint"] || a0["fingerprint"] != b1["fingerprint"] || a1["fingerprint"] != b0["fingerprint"] {
+		t.Errorf("equal values must prove equal and different ones differently: %v %v %v %v", a0, a1, b0, b1)
+	}
+	if a0["hint"] != "******6789" || a1["hint"] != "******3210" {
+		t.Errorf("an identifier's hint is its last four characters: %v %v", a0, a1)
+	}
+	s0, s1 := proof(out["salary"][0]), proof(out["salary"][1])
+	if s0["fingerprint"] != s1["fingerprint"] || s0["hint"] != nil {
+		t.Errorf("an unchanged salary proves unchanged, with no hint: %v %v", s0, s1)
+	}
+	if out["salary_increase"] != in["salary_increase"] || out["memo"] != in["memo"] || out["payee"][0] != nil {
+		t.Errorf("other values are untouched: %v", out)
+	}
+	payee := out["payee"][1].(map[string]any)
+	if payee["name"] != "Northwind" || proof(payee["nric"])["hint"] != "*****567D" {
+		t.Errorf("a nested NRIC is proved: %v", payee)
+	}
+	proof(payee["accounts"].([]any)[0].(map[string]any)["iban"])
+	again, err := Prove(ctx, out, fakeFingerprint)
+	if err != nil || again["account_number"][0].(map[string]any)["fingerprint"] != a0["fingerprint"] {
+		t.Errorf("a proof is not proved again: %v %v", again["account_number"], err)
+	}
+	e, err := New(org, at, Actor{"user", "u1"}, "payee_bank_account.changed", Object{Type: "document", ID: org}, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := e.Canonical()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, clear := range []string{"0123456789", "9876543210", "8500.00", "S1234567D", "SG12DBSS0123456789"} {
+		if strings.Contains(string(body), clear) {
+			t.Errorf("the body holds %s: %s", clear, body)
+		}
+	}
+	if !strings.Contains(string(body), `"schema":"fyniq-audit-event@2"`) || !strings.Contains(string(body), a0["fingerprint"].(string)) {
+		t.Errorf("the body is v2 and keeps the proofs as written: %s", body)
+	}
+	if _, err := Prove(ctx, in, func(context.Context, []byte) ([]byte, error) { return nil, errors.New("kms down") }); err == nil {
+		t.Error("a fingerprint that fails must fail the event, never keep the value")
 	}
 }

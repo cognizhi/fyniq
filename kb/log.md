@@ -455,3 +455,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] edit | reports.statements links Budget vs Actual's page (planning.budgets)
 
 ## [2026-11-08] compile | docs/user-guide/forecast.md → planning.forecast (new; p1-planning slice 8); home.overview links it
+
+## [2026-11-09] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the purge switch and the security events' 400 days, PRD-001 rev 0.230; Records kept for corrected)

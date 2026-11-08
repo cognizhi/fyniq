@@ -23,6 +23,12 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 	for k, v := range changes {
 		c[k] = audit.Change(v)
 	}
+	// AUD-02: a sensitive value is proved by the organisation's fingerprint before masking, never kept.
+	scope := []byte("audit:" + u.org.String())
+	c, err := audit.Prove(ctx, c, func(ctx context.Context, v []byte) ([]byte, error) { return u.store.fingerprint(ctx, scope, v) })
+	if err != nil {
+		return err
+	}
 	e, err := audit.New(u.org, u.store.clock.Now(), audit.Actor(actor), action,
 		audit.Object{Type: objectType, ID: objectID, Version: version}, c)
 	if err != nil {
