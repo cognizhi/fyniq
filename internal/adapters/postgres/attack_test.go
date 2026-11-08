@@ -1159,7 +1159,8 @@ func TestAttackAnEditReversesAndPostsTogether(t *testing.T) {
 }
 
 // An organisation reads only its own members' names, and an invitation is withdrawn or accepted once, never
-// changed again; the last Owner keeps the role (FR-ADM-01, rev 0.35).
+// changed again; the last Owner keeps the role (FR-ADM-01, rev 0.35). A join finds its invitation through the registry
+// of code hashes, which no application role reaches (000236).
 // req: FR-ADM-01
 // req: SEC-02
 // asvs: V8.2.1, V8.4.1
@@ -1201,6 +1202,22 @@ func TestAttackMembersNamesInvitationsAndTheLastOwner(t *testing.T) {
 	}
 	if got := names(b.Org); slices.Contains(got, "Only in A") {
 		t.Errorf("B reads A's member: %v", got)
+	}
+
+	// The registry of code hashes (000236) names A for the code; no application role reads or writes it, and a row never
+	// changes or goes. Another organisation's join never finds A's invitation.
+	var owner uuid.UUID
+	if err := conn(t, "fyniq_migrator").QueryRow(ctx, "SELECT owner FROM fyniq.invitation_code WHERE code_hash = $1", hash).Scan(&owner); err != nil || owner != a.Org {
+		t.Errorf("the registry's organisation for the code: %v, %v", owner, err)
+	}
+	for _, x := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "read the registry", "SELECT owner FROM fyniq.invitation_code WHERE code_hash = $1", "42501"},
+		{"fyniq_worker", "write the registry", "INSERT INTO fyniq.invitation_code (code_hash, owner) VALUES ($1, '00000000-0000-0000-0000-000000000001')", "42501"},
+		{"fyniq_migrator", "change a registry row", "UPDATE fyniq.invitation_code SET owner = '00000000-0000-0000-0000-000000000001' WHERE code_hash = $1", "FY269"},
+		{"fyniq_migrator", "delete a registry row", "DELETE FROM fyniq.invitation_code WHERE code_hash = $1", "FY269"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, hash); return err })
+		wantState(t, x.what, err, x.state)
 	}
 
 	// The accepted invitation never changes again, even to be withdrawn.

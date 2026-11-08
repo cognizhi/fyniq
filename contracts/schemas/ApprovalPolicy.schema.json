@@ -80,8 +80,18 @@
       ],
       "type": "string"
     },
+    "rules": {
+      "description": "Its rules, in order: the first whose conditions all hold decides a request's steps instead of the default steps (rev 0.178). Empty for none.",
+      "items": {
+        "$ref": "ApprovalRule.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "steps": {
-      "description": "Its ordered steps: each needs its quorum before the next is signed (FR-APR-01).",
+      "description": "Its ordered default steps: each needs its quorum before the next is signed (FR-APR-01).",
       "items": {
         "$ref": "ApprovalStep.schema.json"
       },
@@ -105,7 +115,8 @@
     "number",
     "built_in",
     "fixed",
-    "steps"
+    "steps",
+    "rules"
   ],
   "title": "ApprovalPolicy",
   "type": "object"
