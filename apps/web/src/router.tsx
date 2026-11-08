@@ -88,6 +88,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "compliance-calendar": lazyRouteComponent(() => import("./screens/compliance/StatutoryCalendar"), "StatutoryCalendar"),
   "planning-cash": lazyRouteComponent(() => import("./screens/planning/CashAhead"), "CashAhead"),
   "planning-feasibility": lazyRouteComponent(() => import("./screens/planning/Feasibility"), "Feasibility"),
+  "planning-forecast": lazyRouteComponent(() => import("./screens/planning/Forecast"), "Forecast"),
   "planning-budgets": lazyRouteComponent(() => import("./screens/planning/Budgets"), "Budgets"),
   "budget-vs-actual": lazyRouteComponent(() => import("./screens/reports/BudgetVsActual"), "BudgetVsActual"),
   "compliance-gst": lazyRouteComponent(() => import("./screens/compliance/GstReturns"), "GstReturns"),

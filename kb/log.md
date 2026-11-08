@@ -453,3 +453,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/budgets.md → planning.budgets (new; p1-planning slice 8)
 
 ## [2026-11-08] edit | reports.statements links Budget vs Actual's page (planning.budgets)
+
+## [2026-11-08] compile | docs/user-guide/forecast.md → planning.forecast (new; p1-planning slice 8); home.overview links it
