@@ -22,6 +22,7 @@ import { InvoiceLines, lineKey, newLine, type Errors, type Line } from "./Invoic
 import { issuers, preparers, StateChips, total, type Invoice } from "./Invoices";
 import { Checks, EmailDialog, Sends, Totals } from "./parts";
 import { RecordReceipt } from "./Receipts";
+import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
 
 type Draft = components["schemas"]["InvoiceDraft"];
 type EntryLine = components["schemas"]["EntryLine"];
@@ -491,6 +492,7 @@ export function InvoicePage() {
         </div>
       </div>
       <ReviewBanner screen={isNew || invoice?.status === "draft" ? "invoice-editor" : "invoice-record"} />
+      {invoiceId && (invoice?.status === "posted" || invoice?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={invoiceId} />}
       {invoice?.recurring_invoice && (
         <p className="fy-small fy-muted">
           Made by the scheduler from a recurring invoice, version {invoice.recurring_invoice.version} of its content; whoever wrote that version does not approve its issue.

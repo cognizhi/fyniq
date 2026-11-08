@@ -3504,6 +3504,7 @@
    "phase": "P1",
    "roles": [
     "Owner",
+    "Administrator",
     "Accountant",
     "Controller",
     "Auditor",
@@ -3516,20 +3517,25 @@
     "AUD-07",
     "AUD-05",
     "AUD-09",
-    "AUD-02"
+    "AUD-02",
+    "AUD-03",
+    "AUD-10"
    ],
    "purpose": "Search every recorded change with before and after values, and verify the trail has not been tampered with.",
    "content": [
     "Filters: user, AI (originator), record, field, time, action, approval ID",
     "Event rows: time, actor (user / AI / service), on-behalf-of, action, object and version, reason; detail with field-level before → after (sensitive values masked)",
     "'Verify integrity' for a date range: chain recomputed against signed anchors; result pass, fail or explained gap (purge boundary, restore)",
+    "Purges and restores: each purge after retention (the trail's, the ledger's carried forward) and each restore behind the anchors, with its signed copy",
+    "A restore behind the anchors waiting: a banner, with the Owner's Acknowledge",
     "Export (logged)"
    ],
    "states": [
     "verifying",
     "verified",
     "verification failed (✖)",
-    "explained gap"
+    "explained gap",
+    "restore waiting for acknowledgement"
    ]
   },
   {

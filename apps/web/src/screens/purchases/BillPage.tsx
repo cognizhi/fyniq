@@ -24,6 +24,7 @@ import { factsOf, InputTaxCard, taxOf, usualTax, type Tax } from "./InputTax";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 import { PaymentPlanCard } from "./BillsBoard";
 import { natures, nonResident, residenceOf, WithholdingCard } from "./Withholding";
+import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
 
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
@@ -615,6 +616,7 @@ export function BillPage() {
         </div>
       </div>
       <ReviewBanner screen={isNew || bill?.status === "draft" ? "bill-editor" : "bill-record"} />
+      {billId && (bill?.status === "posted" || bill?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={billId} />}
       {needsApproval && problem && (
         <div className="fy-banner fy-banner--info" role="note">
           <Icon of={UserCheck} size={20} />

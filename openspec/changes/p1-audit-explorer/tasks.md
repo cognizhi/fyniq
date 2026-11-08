@@ -349,7 +349,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 11. The screen (slice 11)
 
-- [ ] 11.1 Compliance › Audit trail (Expert, `/compliance/audit-trail`): filters, event rows, the side peek with
+- [x] 11.1 Compliance › Audit trail (Expert, `/compliance/audit-trail`): filters, event rows, the side peek with
   before → after (sensitive values as changed and their hint, security details or their erasure date), Verify
   integrity with its three outcomes, and export.
   - The registry entry, help keys, and the guide page `audit-trail.md`, compiled into the knowledge base.
@@ -361,6 +361,31 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
     (`listAuditRecoveries`, `acknowledgeAuditRecovery`, slice 10).
 
   `// req: FR-CTL-03`, `// req: AUD-07`, `// req: AUD-03`
+
+  **What building added:**
+    - **One list for both purges:** in place of `GET /v1/ledger/boundaries`, `listAuditPurges` (`GET /v1/audit/purges`,
+      Audit trail V) lists the trail's and the ledger's purges together, oldest first. With `record_id`, it also lists
+      that record's postings from their tombstones.
+    - **Recoveries:** `AuditRecovery` gains `version` (1 waiting, 2 acknowledged), so the screen sends `If-Match` without
+      reading each one.
+    - **Verification:** `problem` also says what left an explained gap.
+    - **The screen:** `apps/web/src/screens/compliance/AuditTrail.tsx`, with these parts:
+      - a banner for each waiting recovery, with the Owner's Acknowledge;
+      - Verify integrity with its outcomes;
+      - the explorer as a list and a detail, with the proofs, the hint and the erased details;
+      - the export, which lists the person's exports and never asks again for an expired audit export from there;
+      - Purges and restores.
+    - **Where it is reached:** the Accounting page links to it, beside Evidence, and the check's items open it
+      (`audit_chain`, `audit_recovery`).
+    - **Records' pages:** a posted journal's, bill's or invoice's page says when the ledger's purge removed its
+      postings (`PurgedPostings`, for the roles that view the audit trail). The other records' pages, such as bank
+      transactions and expense claims, can add the same component.
+    - **The inventory row:** it adds the Administrator, AUD-03 and AUD-10, the purges and restores list, and the state
+      "restore waiting for acknowledgement".
+    - **The organisation settings guide:** it says where each purge is listed.
+    - **Tests:** `AuditTrail.test.tsx` and two `JournalPage` tests, with axe; `TestThePurgesAfterRetentionAreListed`
+      and the matrix row.
+    - **Not checked here:** the canvas (11.2).
 - [ ] 11.2 The fragment `AuditTrail.html` checked against the build, and the compliance canvas republished where they
   differ (Recipe C). This waits for the canvas hold to end, on 10 Nov 2026 06:00 SGT, and for access to the canvas from
   the new account. `python3 docs/design/screens/build.py check` passes.

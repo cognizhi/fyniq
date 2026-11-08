@@ -22,7 +22,10 @@ const reports: { report: Report; name: string; range: boolean }[] = [
   { report: "payables", name: "Payables in detail", range: false },
 ];
 
-const nameOf = (r: string) => reports.find((x) => x.report === r)?.name ?? r;
+// The audit trail's export is asked for on Compliance › Audit trail (requestAuditTrailExport), with its filters, so it
+// is not asked for again here.
+const nameOf = (r: string) => reports.find((x) => x.report === r)?.name ?? (r === "audit_trail" ? "Audit trail" : r);
+const askable = (r: string) => reports.some((x) => x.report === r);
 
 function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -129,7 +132,7 @@ export function MyExports({ limit, title }: { limit?: number; title?: string }) 
                 Download
               </Button>
             )}
-            {x.status === "expired" && (
+            {x.status === "expired" && askable(x.report) && (
               <Button size="sm" variant="secondary" disabled={again.isPending} onClick={() => again.mutate(x)} aria-label={`Ask again for ${nameOf(x.report)}`}>
                 <Icon of={RotateCcw} />
                 Ask again

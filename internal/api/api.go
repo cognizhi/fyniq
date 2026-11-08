@@ -336,6 +336,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAuditVerification(a)
 	registerAuditEvents(a)
 	registerAuditRecoveries(a)
+	registerAuditPurges(a)
 	registerFeasibility(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)

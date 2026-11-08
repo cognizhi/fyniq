@@ -58,6 +58,9 @@ export function itemLink(item: CheckItem): { to: string; params?: Record<string,
       return { to: "/settings/access-review" };
     case "statutory_pack":
       return { to: "/settings/statutory-packs" };
+    case "audit_chain":
+    case "audit_recovery":
+      return { to: "/compliance/audit-trail" };
     case "connector":
       return item.id ? { to: "/settings/integrations/$connector", params: { connector: item.id } } : null;
     case "connector_secret": // "<connector>/<its secret's name>"

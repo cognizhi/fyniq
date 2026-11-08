@@ -19,6 +19,7 @@ import { listAccounts, postable, type Account } from "./data";
 import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
 import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, useDimensions, valueCodes, type Errors, type Line } from "./lines";
 import { attachers, JournalEvidence } from "./JournalEvidence";
+import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
 
 export { balances, type Balance, type Errors, type Line } from "./lines";
 
@@ -682,6 +683,7 @@ export function JournalPage() {
         </div>
       )}
       {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
+      {journalId && (j?.status === "posted" || j?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={journalId} />}
       {j?.status === "draft" && !dirty && j.checks && <Checks checks={j.checks} />}
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
 

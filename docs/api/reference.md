@@ -13303,6 +13303,26 @@ Asks for the events the explorer's filters match over a range of days as CSV or 
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-EXPORT-01`
 
+### `GET /v1/audit/purges`
+
+**List the purges after retention** (`listAuditPurges`)
+
+Every purge after retention behind its signed boundary, oldest first (AUD-09, AUD-10): the audit trail's, each up to an event, and the ledger's, each a financial year carried forward to the first day of the next. With record_id, also that record's postings the ledger's purge removed, from their tombstones, so its view can say when they went. Nothing is listed while retention.purge_after_retention has never run. Changes nothing.
+
+- **Permission:** View on Audit trail
+- **Parameters:**
+  - `record_id` (query): A source document: also list its postings the ledger's purge removed.
+- **Responses:**
+  - `200` OK [`AuditPurges`](../../contracts/schemas/AuditPurges.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/audit/recoveries`
 
 **List the audit trail's recoveries from restores behind its anchors** (`listAuditRecoveries`)

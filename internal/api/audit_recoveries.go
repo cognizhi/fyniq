@@ -29,6 +29,7 @@ type AuditRecovery struct {
 	DetectedAt     string  `json:"detected_at" format:"date-time" doc:"When the recovery step found the restore." example:"2026-11-10T02:00:04Z"`
 	AnchorKey      string  `json:"anchor_key" doc:"Where its signed copy is in the anchors' write-once bucket." example:"audit-anchors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/recovery/1.json"`
 	Runbook        string  `json:"runbook" doc:"What to follow before acknowledging it." example:"docs/runbooks/audit-restore.md"`
+	Version        int     `json:"version" doc:"1 while it waits, 2 once acknowledged: its ETag is the version in quotes, for If-Match." example:"1"`
 	AcknowledgedBy *string `json:"acknowledged_by" format:"uuid" doc:"The Owner who acknowledged it; null while it waits, and the check of the audit trail (C.2 #3) fails." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"`
 	AcknowledgedAt *string `json:"acknowledged_at" format:"date-time" doc:"When; null while it waits." example:"2026-11-10T09:12:00Z"`
 }
@@ -62,21 +63,16 @@ type auditRecoveryOutput struct {
 
 func auditRecoveryOf(r storage.AuditRecovery) AuditRecovery {
 	out := AuditRecovery{ID: r.ID.String(), Epoch: r.Epoch, RestoredSeq: r.RestoredSeq, MissingFrom: r.MissingFrom, MissingTo: r.MissingTo,
-		DetectedAt: r.DetectedAt.UTC().Format(time.RFC3339), AnchorKey: r.AnchorKey, Runbook: audit.Runbook}
+		DetectedAt: r.DetectedAt.UTC().Format(time.RFC3339), AnchorKey: r.AnchorKey, Runbook: audit.Runbook, Version: 1}
 	if r.AcknowledgedBy != nil {
 		by, at := r.AcknowledgedBy.String(), r.AcknowledgedAt.UTC().Format(time.RFC3339)
-		out.AcknowledgedBy, out.AcknowledgedAt = &by, &at
+		out.AcknowledgedBy, out.AcknowledgedAt, out.Version = &by, &at, 2
 	}
 	return out
 }
 
-// recoveryETag is a recovery's state as If-Match names it: waiting, or acknowledged.
-func recoveryETag(r storage.AuditRecovery) string {
-	if r.AcknowledgedBy != nil {
-		return etag(2)
-	}
-	return etag(1)
-}
+// recoveryETag is a recovery's version as If-Match names it: 1 waiting, 2 acknowledged.
+func recoveryETag(r storage.AuditRecovery) string { return etag(auditRecoveryOf(r).Version) }
 
 func registerAuditRecoveries(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
@@ -152,11 +148,7 @@ func registerAuditRecoveries(a *API) {
 			}
 			out := &auditRecoveryOutput{Status: w.Status, Applied: applied(w), Body: w.Body}
 			if !w.Previewed {
-				state := storage.AuditRecovery{}
-				if w.Body.AcknowledgedBy != nil {
-					state.AcknowledgedBy = &id
-				}
-				out.ETag, out.Replayed = recoveryETag(state), replayedHeader(w.Replayed)
+				out.ETag, out.Replayed = etag(w.Body.Version), replayedHeader(w.Replayed)
 			}
 			return out, nil
 		})

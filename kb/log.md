@@ -457,3 +457,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/forecast.md → planning.forecast (new; p1-planning slice 8); home.overview links it
 
 ## [2026-11-09] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the purge switch and the security events' 400 days, PRD-001 rev 0.230; Records kept for corrected)
+
+## [2026-11-09] compile | docs/user-guide/audit-trail.md → compliance.audit-trail (new: Compliance › Audit trail, p1-audit-explorer slice 11)
+
+## [2026-11-09] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (each purge is listed on the audit trail; links compliance.audit-trail)

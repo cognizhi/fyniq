@@ -56,6 +56,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/audit/events` (listAuditEvents): List the audit trail's events
 - `GET /v1/audit/events/{event_id}` (getAuditEvent): Get an audit event
 - `POST /v1/audit/exports` (requestAuditTrailExport): Ask for the audit trail's export
+- `GET /v1/audit/purges` (listAuditPurges): List the purges after retention
 - `GET /v1/audit/recoveries` (listAuditRecoveries): List the audit trail's recoveries from restores behind its anchors
 - `POST /v1/audit/recoveries/{recovery_id}/acknowledge` (acknowledgeAuditRecovery): Acknowledge a recovery of the audit trail
 - `GET /v1/audit/verification` (getAuditVerification): Verify the audit trail's integrity for a range of days

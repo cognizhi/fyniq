@@ -94,7 +94,7 @@
       "type": "string"
     },
     "problem": {
-      "description": "failed: what does not agree, in words.",
+      "description": "failed: what does not agree, in words. explained: what left the gap, naming its purge or recovery.",
       "examples": [
         "event 201 was altered: its body no longer gives its stored hash"
       ],
