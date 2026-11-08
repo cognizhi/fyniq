@@ -18,3 +18,8 @@ var ResultSchema []byte
 //
 //go:embed forecast.schema.json
 var ForecastSchema []byte
+
+// FeasibilitySchema is feasibility.schema.json (fyniq-feasibility@1).
+//
+//go:embed feasibility.schema.json
+var FeasibilitySchema []byte

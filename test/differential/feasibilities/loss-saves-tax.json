@@ -1,0 +1,22 @@
+{
+ "schema": "fyniq-feasibility@1",
+ "currency": "SGD",
+ "minor_units": 2,
+ "years": 3,
+ "rate": "0.12",
+ "max_payback": "3",
+ "investment": "60000",
+ "life": 2,
+ "salvage": "6000",
+ "working_capital": "0.15",
+ "units": "100",
+ "unit_growth": "0.2",
+ "price": "500",
+ "price_growth": "0.05",
+ "variable_cost": "200",
+ "variable_cost_growth": "0.03",
+ "fixed": "40000",
+ "fixed_growth": "0.1",
+ "tax_rate": "0.17",
+ "name": "loss-saves-tax"
+}

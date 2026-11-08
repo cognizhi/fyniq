@@ -1,0 +1,22 @@
+{
+ "schema": "fyniq-feasibility@1",
+ "name": "workbook-worst-case",
+ "currency": "SGD",
+ "minor_units": 2,
+ "years": 10,
+ "rate": "0.12",
+ "max_payback": "5",
+ "investment": "150000",
+ "life": 12,
+ "salvage": "20000",
+ "working_capital": "0.1",
+ "units": "60",
+ "unit_growth": "0.5",
+ "price": "3600",
+ "price_growth": "0.03",
+ "variable_cost": "700",
+ "variable_cost_growth": "0.02",
+ "fixed": "150000",
+ "fixed_growth": "0.08",
+ "tax_rate": "0.17"
+}
