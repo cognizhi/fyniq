@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { CircleX } from "lucide-react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { formatAmount } from "../../format/amount";
-import { month as monthName } from "../../format/date";
+import { date, month as monthName } from "../../format/date";
 import { helpText } from "../../i18n";
+import { Icon } from "../../ui";
 
 type Summary = components["schemas"]["PlanningSummary"];
 type Figures = components["schemas"]["VsFigures"];
@@ -29,10 +32,11 @@ export function varianceText(f: Figures, income: boolean): string {
   return `${budget}, ${pct}% ${under ? "under" : "over"}: ${good ? "favourable" : "unfavourable"}`;
 }
 
-// PlanningTiles are Home's tiles from the plans (FR-KPI-01; p1-planning design D4, D6): revenue and costs against the
+// PlanningTiles are Home's tiles from the plans (FR-KPI-01; p1-planning design D4, D6, D7): revenue and costs against the
 // year's budget, the financial year to the KPIs' month, in Expert; and in both modes the month cash runs out in the
-// latest recorded forecast, without the funding planned, since none of it is received yet (FR-PLN-03). A tile without
-// a figure says why. They are left out when the person's roles may not read the plans (Appendix D "Budgets").
+// latest recorded forecast, without the funding planned, since none of it is received yet (FR-PLN-03), and the lowest
+// balance of the next 60 days, saying when it falls below the buffer. A tile without a figure says why. They are left
+// out when the person's roles may not read the plans (Appendix D "Budgets").
 export function PlanningTiles({ month }: { month: string }) {
   const s = useQuery({ queryKey: ["planning-summary", month], queryFn: () => readSummary(month), retry: false, staleTime: 30_000 });
   if (!s.data) return null;
@@ -66,7 +70,45 @@ export function PlanningTiles({ month }: { month: string }) {
       {tile("revenue", "home.revenue-vs-budget", true)}
       {tile("costs", "home.costs-vs-budget", false)}
       <CashOut s={s.data} />
+      <CashAheadTile />
     </>
+  );
+}
+
+// CashAheadTile is the lowest balance of the next 60 days (FR-PLN-09; design D7): Home's word that the projection falls
+// below the buffer, opening Cash ahead. It is left out when the person may not read the plans.
+function CashAheadTile() {
+  const q = useQuery({
+    queryKey: ["cash-projection", 60, {}],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/cash-projection", { params: { query: { days: 60 } } });
+      if (error) throw error;
+      return data;
+    },
+    retry: false,
+    staleTime: 60_000,
+  });
+  const p = q.data;
+  if (!p) return null;
+  const h = helpText("home.cash-ahead");
+  return (
+    <div className="fy-tile" data-planning="home.cash-ahead">
+      <span className="fy-tile__label" title={h.tooltip}>
+        {h.label}
+      </span>
+      <Link className="fy-tile__value fy-num text-foreground" to="/planning/cash">
+        {formatAmount(p.lowest.amount)} <small>{p.currency}</small>
+      </Link>
+      <span className="fy-tile__meta">
+        <span className="whitespace-normal">Lowest in the next 60 days, on {date(p.lowest_on)}</span>
+        {p.below_buffer_on && (
+          <span className="fy-chip fy-chip--critical">
+            <Icon of={CircleX} />
+            Below the buffer from {date(p.below_buffer_on)}
+          </span>
+        )}
+      </span>
+    </div>
   );
 }
 

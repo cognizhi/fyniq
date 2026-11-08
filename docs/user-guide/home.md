@@ -37,8 +37,8 @@ each module arrives; you only ever see the pages your roles allow.
   It goes once every step is done.
 
 The pulse card, the tiles and the charts appear once the books have a month and your roles let you
-read the reports. When your roles read the plans, the tiles add the month cash runs out in the
-latest forecast and, in Expert mode, revenue and costs against the budget (see
+read the reports. When your roles read the plans, the tiles add the lowest balance of the next 60 days, the
+month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget (see
 [Read the plans on Home](#read-the-plans-on-home)). Unbilled time and GST due join them with their
 modules.
 
@@ -67,6 +67,8 @@ from the workbook join the list as they arrive.
 
 ### Read the plans on Home
 
+- **Cash ahead** is the lowest bank balance of the next 60 days and its day, and says when it falls below the buffer.
+  Select it to open **Cash ahead** ([Cash ahead](cash-flow.md)).
 - **Cash runs out** is the month cash first falls below zero in the latest forecast you recorded,
   in its first scenario (usually Base). It leaves out the funding the forecast plans, because none
   of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within
