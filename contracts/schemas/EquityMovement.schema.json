@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class_code": {
+      "description": "The class's account code.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "class_id": {
+      "description": "The share class, when it names one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "effective_on": {
+      "description": "The day ACRA's register of members shows it.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Seedling Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The movement's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What moved the shares.",
+      "enum": [
+        "issue",
+        "transfer",
+        "class_conversion",
+        "reversal"
+      ],
+      "examples": [
+        "issue"
+      ],
+      "type": "string"
+    },
+    "shares": {
+      "description": "Shares in (positive) or out (negative).",
+      "examples": [
+        "52083"
+      ],
+      "pattern": "^-?[1-9][0-9]*$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "holder_id",
+    "holder_name",
+    "class_code",
+    "shares",
+    "effective_on"
+  ],
+  "title": "EquityMovement",
+  "type": "object"
+}

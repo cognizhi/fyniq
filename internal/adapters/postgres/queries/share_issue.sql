@@ -14,3 +14,17 @@ SELECT * FROM fyniq.share_issue ORDER BY effective_on, id;
 
 -- name: ShareIssueOfSettlement :many
 SELECT * FROM fyniq.share_issue WHERE settlement_id = sqlc.arg(settlement_id);
+
+-- name: InsertHoldingMovement :one
+INSERT INTO fyniq.holding_movement (id, kind, transaction_id, share_issue_id, reverses_id, holder_id, class_account_id, class_id, shares,
+                                    effective_on, recorded_by, recorded_at)
+VALUES (sqlc.arg(id)::uuid, sqlc.arg(kind)::text, sqlc.narg(transaction_id)::uuid, sqlc.narg(share_issue_id)::uuid,
+        sqlc.narg(reverses_id)::uuid, sqlc.arg(holder_id)::uuid, sqlc.arg(class_account_id)::uuid, sqlc.narg(class_id)::uuid,
+        sqlc.arg(shares)::numeric, sqlc.arg(effective_on)::date, sqlc.arg(recorded_by)::uuid, sqlc.arg(recorded_at)::timestamptz)
+RETURNING *;
+
+-- name: HoldingMovements :many
+SELECT * FROM fyniq.holding_movement ORDER BY effective_on, id;
+
+-- name: HoldingMovementsOfTransaction :many
+SELECT * FROM fyniq.holding_movement WHERE transaction_id = sqlc.arg(transaction_id) ORDER BY id;

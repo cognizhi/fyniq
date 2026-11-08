@@ -1007,6 +1007,23 @@ type FyniqHeartbeats struct {
 	Detail   *string
 }
 
+type FyniqHoldingMovement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	TransactionID  *uuid.UUID
+	ShareIssueID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	HolderID       uuid.UUID
+	ClassAccountID uuid.UUID
+	ClassID        *uuid.UUID
+	Shares         string
+	EffectiveOn    time.Time
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+	CreatedXact    int64
+}
+
 type FyniqIdempotencyKey struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

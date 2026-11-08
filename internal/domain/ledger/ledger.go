@@ -65,6 +65,9 @@ type Settings struct {
 	// People are the contacts marked director or shareholder, who hold director accounts (FR-EQ-01); nil when the
 	// caller did not read them, and the database alone refuses another contact on a director's account (FY250).
 	People map[uuid.UUID]bool
+	// Subscribers are the contacts marked shareholder or investor, who hold share application monies (B.7); nil when the
+	// caller did not read them, and the database alone refuses another contact on 2040 (FY250).
+	Subscribers map[uuid.UUID]bool
 	// Dimensions and Values are the organisation's dimensions and their values, which a line's values name (FR-DIM-01);
 	// nil when the caller did not read them, and then a line naming a value is refused.
 	Dimensions map[uuid.UUID]Dimension

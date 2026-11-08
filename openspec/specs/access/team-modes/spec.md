@@ -411,6 +411,16 @@ Source: PRD-001 §6.4
 - **THEN** the approval engine adds a step for the external accountant's recorded review automatically
 - **AND** the settlement does not post before that review is recorded
 
+#### Scenario: The Accountant signs the review step (rev 0.205)
+- **GIVEN** a request with the accountant's review step
+- **WHEN** the Accountant signs it after the other approvers
+- **THEN** their A on "Accountant review" lets them sign that step
+- **AND** it lets them sign no other step of any request
+
+#### Scenario: Equity transactions (rev 0.205)
+- **WHEN** an equity transaction moves a holder's shares, or shares to them (FR-EQ-17)
+- **THEN** the member who signs in as that holder never approves it nor records its effective date
+
 #### Scenario: Resolutions attached
 - **WHEN** the settlement of a founder's balance is approved
 - **THEN** the resolutions are attached (FR-EQ-05, FR-EQ-06)

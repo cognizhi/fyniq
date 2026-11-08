@@ -61,6 +61,10 @@ type (
 		ShareClassPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	EquityTransactionEvidencePath struct {
+		EquityTransactionPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -93,6 +97,22 @@ type (
 	}
 	removeClassEvidenceInput struct {
 		ShareClassEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addTransactionEvidenceInput struct {
+		EquityTransactionPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listTransactionEvidenceInput struct {
+		EquityTransactionPath
+		PageQuery
+	}
+	removeTransactionEvidenceInput struct {
+		EquityTransactionEvidencePath
 		IfMatchHeader
 		PreferHeader
 	}
@@ -148,10 +168,8 @@ func equityFile(ctx context.Context, u storage.UnitOfWork, t storage.DocumentTyp
 // attachEquityEvidence attaches an uploaded file to a drafted record of type t, at its ETag.
 func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, recordPath, recordID, key, ifMatch, prefer string,
 	raw *EvidenceUpload) (*equityEvidenceWriteOutput, error) {
-	field := "record_id"
-	if t == storage.DocumentShareClass {
-		field = "version_id"
-	}
+	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
+		storage.DocumentEquityTransaction: "transaction_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -371,7 +389,38 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentShareClass, "version_id", in.VersionID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
-	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence"} {
+	register(a, authz.AddEquityTransactionEvidence, huma.Operation{
+		OperationID: "addEquityTransactionEvidence", Method: http.MethodPost, Path: "/v1/equity-transactions/{transaction_id}/evidence", Tags: []string{"Evidence"},
+		DefaultStatus: http.StatusCreated, Summary: "Attach an equity transaction's documents",
+		Description: "Attaches a file to a drafted equity transaction (FR-EQ-17, FR-DOC-05, FR-DOC-06), as multipart/form-data: the " +
+			"resolutions and subscription agreement of an issue, the instrument of transfer of a transfer, or the ACRA extract that shows " +
+			"a reversal is right (FR-EQ-26). Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addTransactionEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentEquityTransaction, "/v1/equity-transactions", in.TransactionID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListEquityTransactionEvidence, huma.Operation{
+		OperationID: "listEquityTransactionEvidence", Method: http.MethodGet, Path: "/v1/equity-transactions/{transaction_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List an equity transaction's files",
+		Description: "The files attached to an equity transaction, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listTransactionEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentEquityTransaction, "transaction_id", in.TransactionID, in.PageQuery)
+	})
+	register(a, authz.GetEquityTransactionEvidence, huma.Operation{
+		OperationID: "getEquityTransactionEvidence", Method: http.MethodGet, Path: "/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get an equity transaction's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *EquityTransactionEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentEquityTransaction, "transaction_id", in.TransactionID, in.EvidenceID)
+	})
+	register(a, authz.RemoveEquityTransactionEvidence, huma.Operation{
+		OperationID: "removeEquityTransactionEvidence", Method: http.MethodDelete, Path: "/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted equity transaction",
+		Description: "Takes a file off an equity transaction not approved yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeTransactionEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentEquityTransaction, "transaction_id", in.TransactionID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
+	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

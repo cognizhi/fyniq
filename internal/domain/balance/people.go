@@ -129,3 +129,22 @@ func PersonLines(ctx context.Context, u storage.UnitOfWork, party uuid.UUID, fro
 	})
 	return out, nil
 }
+
+// ApplicationMonies are what one subscriber's share application monies hold on account through a day (B.7): the credit
+// balance of their lines, money the company holds for shares not yet allotted; zero when they have none. The lines are
+// read as People reads a director's account's.
+func ApplicationMonies(ctx context.Context, u storage.UnitOfWork, base money.Currency, account, subscriber uuid.UUID, through time.Time) (money.Money, error) {
+	held := money.Zero(base)
+	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
+		if l.PartyID == nil || *l.PartyID != subscriber {
+			return nil
+		}
+		b, err := money.ParseStored(string(l.BaseAmount), base)
+		if err != nil {
+			return err
+		}
+		held, err = held.Sub(b)
+		return err
+	})
+	return held, err
+}

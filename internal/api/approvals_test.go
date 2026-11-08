@@ -114,7 +114,7 @@ func TestTwoPersonRuleForASetting(t *testing.T) {
 	// envelope's hash signs; the AI and an Employee never reach it.
 	e.problemIs(f.decide(ahkow, id, "approve", hashOf(r)), "approveApproval", 403, approval.CodeOwnRequest)
 	e.problemIs(f.decide(f.as(f.weiling, authz.Controller, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, approval.CodeNotApprover)
-	e.problemIs(f.decide(f.as(f.weiling, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, CodeForbidden)
+	e.problemIs(f.decide(f.as(f.weiling, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, approval.CodeNotApprover) // signs a review step only
 	e.problemIs(f.decide(e.as(authz.Owner), id, "approve", hashOf(r)), "approveApproval", 403, CodeStepUpRequired)
 	e.problemIs(f.decide(weiling, id, "approve", map[string]any{"envelope_hash": strings.Repeat("ab", 32)}), "approveApproval", 409, approval.CodeChanged)
 	e.problemIs(e.call(http.MethodPost, "/v1/approvals/"+id+"/approve", weiling, hashOf(r)), "approveApproval", 428, CodeIfMatchRequired)

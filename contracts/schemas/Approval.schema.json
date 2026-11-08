@@ -118,7 +118,8 @@
         "account",
         "bank_reconciliation",
         "holder_record",
-        "share_class"
+        "share_class",
+        "equity_transaction"
       ],
       "examples": [
         "organisation_setting"
@@ -177,7 +178,8 @@
         "account.merge",
         "bank_reconciliation.sign",
         "holder_record.record",
-        "share_class.record"
+        "share_class.record",
+        "equity_transaction.approve"
       ],
       "examples": [
         "organisation_setting.change"

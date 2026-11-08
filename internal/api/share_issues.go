@@ -220,10 +220,10 @@ func registerShareIssues(a *API) {
 						return ShareIssue{}, err
 					}
 				}
-				s, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: holder, ClassAccountID: class, ClassID: classID,
+				s, err := equity.RecordIssue(ctx, u, storage.ShareIssue{ID: uuid.Must(uuid.NewV7()), HolderID: holder, ClassAccountID: class, ClassID: classID,
 					Shares: storage.Decimal(c.Shares.Text('f')), Price: storage.Decimal(c.Price.String()), Currency: c.Amount.Currency().Code,
 					Amount: storage.Decimal(c.Amount.String()), Consideration: c.Issue.Consideration, ResolutionRefs: c.Issue.ResolutionRefs,
-					LodgementRef: c.Issue.LodgementRef, EffectiveOn: on, RecordedBy: p.UserID, RecordedAt: a.deps.Clock.Now()})
+					LodgementRef: c.Issue.LodgementRef, EffectiveOn: on, RecordedBy: p.UserID, RecordedAt: a.deps.Clock.Now()}, nil)
 				if err != nil {
 					return ShareIssue{}, err
 				}

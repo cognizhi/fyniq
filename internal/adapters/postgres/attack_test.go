@@ -456,6 +456,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"share_issue.shares":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
 	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
 	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
+	"holding_movement.shares":      func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
 	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
@@ -1369,6 +1370,16 @@ func rawShareIssueValue(t *testing.T, b porttest.Books, target, value string) er
 resolution_refs, effective_on, recorded_by, recorded_at)
 VALUES ($1, $2, $3::numeric, $4::numeric, 'SGD', 2, $5::numeric, 'cash', 'Incorporation subscription', '2025-01-02', $6, now())`,
 			uuid.New(), uuid.New(), pick("shares", "100"), pick("price", "1"), pick("amount", "100.00"), uuid.New())
+		return err
+	})
+}
+
+func rawMovementShares(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.holding_movement (kind, transaction_id, holder_id, class_account_id, shares, effective_on, recorded_by,
+recorded_at) VALUES ('transfer', $1, $2, $3, $4::numeric, '2026-10-14', $5, now())`, uuid.New(), uuid.New(), uuid.New(), value, uuid.New())
 		return err
 	})
 }

@@ -270,6 +270,16 @@ Source: PRD-001 §10.7
 - **WHEN** a posting source other than the register of share issues and the opening balances is added
 - **THEN** the trigger refuses its lines to share capital without being told of it
 
+#### Scenario: A conversion between classes is a third source (rev 0.205)
+- **GIVEN** a conversion between classes whose share-capital accounts differ
+- **WHEN** it is made effective
+- **THEN** its entry posts from the equity register (source equity_transaction) with its holding movements
+- **AND** an entry from that source that no conversion's movements name is refused at commit
+
+#### Scenario: Share application monies name their subscriber (rev 0.205)
+- **WHEN** a line posts to share application monies (2040)
+- **THEN** it names its subscriber, a shareholder or investor, or it is refused
+
 #### Scenario: Per-person sub-ledgers equal 2500 and 2120
 - **WHEN** the nightly verification runs
 - **THEN** the per-person sub-ledgers equal accounts 2500 and 2120
