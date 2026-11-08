@@ -47,7 +47,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 2. Security events' details (slice 2)
 
-- [ ] 2.1 `audit.SecurityActions` (D2), and a conventions test that refuses an emitted action matching a security
+- [x] 2.1 `audit.SecurityActions` (D2), and a conventions test that refuses an emitted action matching a security
   pattern but not listed. `fyniq.audit_request_detail` is insert-only, and a trigger refuses deleting a row younger
   than the setting allows. A security event's body carries the details' fingerprint, and verification checks it while
   the row exists. Attack tests:
@@ -56,9 +56,31 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - an altered IP fails verification.
 
   `// req: AUD-06`, `// req: AUD-00`
-- [ ] 2.2 The `audit.erase` job (daily, worker role). On a clock 401 days on, it erases the details older than the
+- [x] 2.2 The `audit.erase` job (daily, worker role). On a clock 401 days on, it erases the details older than the
   setting and writes `audit.details_erased` and a signed erasure-register entry to the write-once bucket. The event
   stays and verifies. A C.2 check warns when the job's last run is more than two days old. `// req: AUD-06`
+  - As built (9 Nov 2026, rev 0.232):
+    - **Classes.** `audit.IsSecurity` names security events by prefix and suffix:
+      - sign-ins and sign-outs, identity links and passkeys, sign-in methods and recoveries;
+      - a Super admin's events;
+      - report exports, and every `.exported` and `_revealed` action.
+
+      `TestSecurityLookingActionsAreSecurityEvents` (archtest) finds every action the code writes, and refuses one
+      that `audit.LooksSecurity` matches but `IsSecurity` does not.
+    - **Sign-ins were not in the trail at all** (only in the application log). Now `signin.AuditSignIn` and
+      `signin.AuditSignOut` write `session.started` and `session.ended` (with why: signed out, or replaced by a new
+      sign-in) to the person's organisation.
+      - Their IP travels in a context value private to the sign-in package, so no other event of the sign-in keeps it
+        in its body.
+      - `registerSignIn` takes `signin.Hooks`.
+    - **The table.** `fyniq.audit_request_detail` (000285) is insert-only. `fyniq.audit_erase_details` (worker only)
+      refuses a cutoff less than 30 days ago, and a trigger refuses deleting any younger row, even for the owner (FY303).
+    - **Verification.** `audit.VerifyAll` takes the deployment's keyed hash (`Kit.Keyed`). Without one it reports the
+      details unchecked.
+    - **The job.** The register entry is written first, then the erasure, then `audit.details_erased`. C.2 #12 watches
+      `audit.erase` (stale after 50 hours) like every scheduled job, so no new check was needed.
+    - **Tests:** `TestSecurityEventsKeepTheirDetailsBesideTheChain`, `TestAttackRequestDetailsKeepTheirRules`,
+      `TestSecurityDetailsAreErasedAfterTheirRetention` and `TestSignInsAndSignOutsAreInTheTrail`.
 
 ## 3. Every sensitive read and export audited (slice 3)
 

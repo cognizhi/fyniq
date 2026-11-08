@@ -41,7 +41,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"audit.verify": func(ctx context.Context) error {
-			_, err := audit.VerifyAll(ctx, k.Store, k.Blobs, k.Signer)
+			_, err := audit.VerifyAll(ctx, k.Store, k.Blobs, k.Signer, k.Keyed())
+			return err
+		},
+		"audit.erase": func(ctx context.Context) error { // AUD-06: security events' details after their retention
+			_, err := audit.EraseAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},
 		"idempotency.purge": func(ctx context.Context) error {
@@ -312,4 +316,14 @@ func PurgeRateLimitWindows(ctx context.Context, store storage.Store, now time.Ti
 		}
 	}
 	return total, nil
+}
+
+// Keyed is the deployment's keyed hash, which proves sensitive values and security events' details in the trail
+// (AUD-02, AUD-06): the fields' fingerprint; nil where this service holds no key, and verification then reports the
+// details unchecked.
+func (k *Kit) Keyed() audit.Keyed {
+	if k.Fields == nil {
+		return nil
+	}
+	return k.Fields.Fingerprint
 }

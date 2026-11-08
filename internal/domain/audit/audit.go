@@ -37,12 +37,14 @@ type Object struct {
 	Version *int      `json:"version"`
 }
 
-// Request is where a change came from.
+// Request is where a change came from. A security event's IP address and user agent are kept beside the chain and
+// left empty here; Detail is then their fingerprint (version 2, AUD-06).
 type Request struct {
 	ID        string `json:"id"`
 	IP        string `json:"ip"`
 	UserAgent string `json:"user_agent"`
 	Session   string `json:"session"`
+	Detail    string `json:"detail,omitempty"`
 }
 
 // Change is one field's value before and after; nil means absent.

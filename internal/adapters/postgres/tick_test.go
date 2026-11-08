@@ -227,7 +227,7 @@ func TestTheTickStartsTheNightlyVerificationAsAJob(t *testing.T) {
 			_ = outbox.RunSlot(context.WithoutCancel(ctx), worker, c, job, slot, func(ctx context.Context) error {
 				// Every organisation is verified; earlier tests tampered with some trails on purpose,
 				// so this run is judged by its own organisation's report.
-				reports, _ := audit.VerifyAll(ctx, worker, blobs, signer)
+				reports, _ := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 				for _, rep := range reports {
 					if rep.Organisation == b.Org && !rep.OK() {
 						return fmt.Errorf("verification failed: %s", rep.Problem)
@@ -250,7 +250,7 @@ func TestTheTickStartsTheNightlyVerificationAsAJob(t *testing.T) {
 	if got := slotStates(t, api, "audit.verify"); !strings.Contains(got, "18:00 done") { // UTC
 		t.Fatalf("the verification slot: %q", got)
 	}
-	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer)
+	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 	if rep := reportFor(t, reports, b.Org); !rep.OK() {
 		t.Fatalf("the job verified a trail that fails: %+v", rep)
 	}

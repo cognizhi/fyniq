@@ -3,6 +3,7 @@ package audit
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -68,16 +69,23 @@ type Report struct {
 	Organisation uuid.UUID
 	Events       int
 	Anchors      int
-	Problem      string // empty when the chain and every anchor agree
+	Details      int    // security events' request details checked against their fingerprints (AUD-06)
+	Unchecked    bool   // the details could not be checked: this service holds no fingerprint key
+	Problem      string // empty when the chain, every anchor and every detail agree
 }
+
+// Keyed is the deployment's keyed hash (ports.Cipher.Fingerprint), which proved sensitive values and security events'
+// details; nil where a service holds no key.
+type Keyed func(ctx context.Context, scope, value []byte) ([]byte, error)
 
 // OK reports whether the trail verified.
 func (r Report) OK() bool { return r.Problem == "" }
 
 // VerifyAll recomputes every organisation's chain from its first event and checks it against every
-// anchor (nightly, AUD-03, INV-12), recording the outcome in each trail. It returns an error when any
-// trail fails, so the job exits non-zero and alerts.
-func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer) ([]Report, error) {
+// anchor (nightly, AUD-03, INV-12), and every security event's details still kept against the fingerprint in its body
+// (AUD-06), recording the outcome in each trail. It returns an error when any trail fails, so the job exits non-zero
+// and alerts.
+func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed) ([]Report, error) {
 	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list the organisations: %w", err)
@@ -85,7 +93,7 @@ func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 	var reports []Report
 	failed := 0
 	for _, org := range orgs {
-		r, err := verify(ctx, store, blobs, signer, org)
+		r, err := verify(ctx, store, blobs, signer, keyed, org)
 		if err != nil {
 			return reports, err
 		}
@@ -100,7 +108,7 @@ func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 	return reports, nil
 }
 
-func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, org uuid.UUID) (Report, error) {
+func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, org uuid.UUID) (Report, error) {
 	r := Report{Organisation: org}
 	err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		var events []Stored
@@ -140,12 +148,20 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 				r.Problem = err.Error()
 			}
 		}
+		if r.Problem == "" {
+			if keyed == nil {
+				r.Unchecked = true
+			} else if r.Details, r.Problem, err = checkDetails(ctx, u, org, events, keyed); err != nil {
+				return err
+			}
+		}
 		status := "passed"
 		if r.Problem != "" {
 			status = "failed"
 		}
 		return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "audit_chain", ObjectID: org,
-			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "problem": {nil, r.Problem}}})
+			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details},
+				"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}}})
 	})
 	return r, err
 }
@@ -163,4 +179,45 @@ func readAnchor(ctx context.Context, blobs ports.BlobStore, key string) (Signed,
 	var s Signed
 	err = json.Unmarshal(b, &s)
 	return s, err
+}
+
+// checkDetails checks each security event's details still kept against the fingerprint its body carries (AUD-06):
+// details changed beside the chain are caught while they exist; erased ones are not missed. It returns how many it
+// checked and the first problem.
+func checkDetails(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, events []Stored, keyed Keyed) (int, string, error) {
+	type body struct {
+		Request struct {
+			Detail string `json:"detail"`
+		} `json:"request"`
+	}
+	want := map[uuid.UUID]string{}
+	seqs := map[uuid.UUID]int64{}
+	var ids []uuid.UUID
+	for _, e := range events {
+		var b body
+		if err := json.Unmarshal([]byte(e.Body), &b); err != nil || b.Request.Detail == "" {
+			continue
+		}
+		want[e.ID], seqs[e.ID] = b.Request.Detail, e.Seq
+		ids = append(ids, e.ID)
+	}
+	scope := []byte("audit:" + org.String())
+	checked := 0
+	for i := 0; i < len(ids); i += page {
+		got, err := u.Audit().Details(ctx, ids[i:min(i+page, len(ids))])
+		if err != nil {
+			return checked, "", err
+		}
+		for id, d := range got {
+			mac, err := keyed(ctx, scope, DetailValue(d.IP, d.UserAgent))
+			if err != nil {
+				return checked, "", err
+			}
+			if FingerprintPrefix+base64.RawURLEncoding.EncodeToString(mac) != want[id] {
+				return checked, fmt.Sprintf("event %d's request details differ from the fingerprint in its body", seqs[id]), nil
+			}
+			checked++
+		}
+	}
+	return checked, "", nil
 }

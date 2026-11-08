@@ -25,7 +25,8 @@ type unitOfWork struct {
 	q           *sqlcdb.Queries
 	store       *Store
 	org         uuid.UUID
-	pending     []audit.Event // written just before commit (flush)
+	pending     []audit.Event                     // written just before commit (flush)
+	details     map[uuid.UUID]storage.AuditDetail // security events' request details, written after their events (AUD-06)
 	afterCommit []func(ctx context.Context)
 	// afterRollback run when this attempt does not commit.
 	afterRollback []func(ctx context.Context)

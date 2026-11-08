@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/signin"
 	"github.com/cognizhi/fyniq/internal/version"
 )
 
@@ -75,7 +76,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Fatal("without sign-in configured the release build accepts a credential")
 	}
 	s := httpserver.New(version.Info{Service: "api"})
-	if registerSignIn(s, c, noSessions{}, nil, nil) != nil {
+	if registerSignIn(s, c, noSessions{}, signin.Hooks{}) != nil {
 		t.Fatal("without sign-in configured the release build signs people in")
 	}
 
@@ -109,7 +110,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Error("the release build took a dev token")
 	}
 	s = httpserver.New(version.Info{Service: "api"})
-	p := registerSignIn(s, c, noSessions{}, nil, nil)
+	p := registerSignIn(s, c, noSessions{}, signin.Hooks{})
 	if p == nil || len(p.Providers()) != 1 || p.Providers()[0].ID != "zoho" {
 		t.Fatalf("the configured providers: %v", p)
 	}
