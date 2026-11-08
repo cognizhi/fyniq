@@ -34,8 +34,18 @@
       "format": "uuid",
       "type": "string"
     },
+    "rules": {
+      "description": "Its rules, in order: the first whose conditions hold decided a request's steps (rev 0.178).",
+      "items": {
+        "$ref": "ApprovalRule.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "steps": {
-      "description": "Its ordered steps.",
+      "description": "Its ordered default steps.",
       "items": {
         "$ref": "ApprovalStep.schema.json"
       },
@@ -56,6 +66,7 @@
     "version",
     "number",
     "steps",
+    "rules",
     "request_id",
     "changed_by",
     "changed_at"
