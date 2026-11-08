@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "description": "Only this action, or every action a prefix ending in . starts, such as document.",
+      "examples": [
+        "document."
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "actor": {
+      "description": "Only what this actor did: a user's, service's or integration's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "ai": {
+      "description": "Only changes an AI proposal carried out: the proposal's ID, or any.",
+      "examples": [
+        "any"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "Only changes that carried out this approval.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "field": {
+      "description": "Only events that changed this field.",
+      "examples": [
+        "status"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "record_id": {
+      "description": "Only events about this record.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "maxLength": 36,
+      "type": "string"
+    },
+    "record_type": {
+      "description": "Only events about records of this type.",
+      "examples": [
+        "document"
+      ],
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "type": "string"
+    }
+  },
+  "title": "AuditFilters",
+  "type": "object"
+}

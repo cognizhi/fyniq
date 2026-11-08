@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "description": "What happened.",
+      "examples": [
+        "document.posted"
+      ],
+      "type": "string"
+    },
+    "actor": {
+      "$ref": "AuditActor.schema.json",
+      "description": "Who acted."
+    },
+    "approval_ids": {
+      "description": "The approvals it carried out.",
+      "items": {
+        "description": "An approval's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "changes": {
+      "description": "Each field's before and after.",
+      "items": {
+        "$ref": "AuditFieldChange.schema.json"
+      },
+      "type": "array"
+    },
+    "fields": {
+      "description": "The fields it changed; getAuditEvent gives their before and after.",
+      "items": {
+        "description": "A field of the record the event changed.",
+        "examples": [
+          "status"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "hash": {
+      "description": "Its hash: SHA-256 of prev_hash and its body (INV-12).",
+      "examples": [
+        "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The event.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "occurred_at": {
+      "description": "When it happened.",
+      "examples": [
+        "2026-10-31T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "on_behalf_of": {
+      "$ref": "AuditActor.schema.json",
+      "description": "The person an AI or a service acted for."
+    },
+    "originator": {
+      "description": "The AI proposal the change carried out.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e55"
+      ],
+      "type": "string"
+    },
+    "prev_hash": {
+      "description": "The hash of the event before it, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason given.",
+      "examples": [
+        "A supplier's October invoice arrived late"
+      ],
+      "type": "string"
+    },
+    "record": {
+      "$ref": "AuditRecord.schema.json",
+      "description": "What it is about."
+    },
+    "request": {
+      "$ref": "AuditRequest.schema.json",
+      "description": "Where it came from."
+    },
+    "seq": {
+      "description": "Its place in the organisation's hash chain.",
+      "examples": [
+        342
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "approval_ids",
+    "request",
+    "changes",
+    "prev_hash",
+    "hash",
+    "id",
+    "seq",
+    "occurred_at",
+    "actor",
+    "action",
+    "record",
+    "fields"
+  ],
+  "title": "AuditEventView",
+  "type": "object"
+}

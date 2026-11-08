@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The user's, service's or integration's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "What kind of actor.",
+      "enum": [
+        "user",
+        "service",
+        "integration",
+        "scheduler",
+        "ai",
+        "system"
+      ],
+      "examples": [
+        "user"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "id"
+  ],
+  "title": "AuditActor",
+  "type": "object"
+}

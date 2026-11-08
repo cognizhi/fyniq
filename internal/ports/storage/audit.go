@@ -87,6 +87,10 @@ type Audit interface {
 	Head(ctx context.Context) (AuditHead, error)
 	// Events returns up to limit events after sequence number after, in order.
 	Events(ctx context.Context, after int64, limit int) ([]AuditEvent, error)
+	// Find returns the events q matches, newest first (the explorer, FR-CTL-03).
+	Find(ctx context.Context, q AuditQuery) ([]AuditEvent, error)
+	// Event returns one event by its ID, or ports.ErrNotFound.
+	Event(ctx context.Context, id uuid.UUID) (AuditEvent, error)
 	// Details returns the request details kept beside the chain for those of events that are security events and
 	// still have them (AUD-06), by event. The worker and the read-only role read them.
 	Details(ctx context.Context, events []uuid.UUID) (map[uuid.UUID]AuditDetail, error)
@@ -95,6 +99,20 @@ type Audit interface {
 	// EraseDetails erases the details of events that occurred before cutoff (AUD-06): the worker only, and only for a
 	// cutoff at least 30 days ago by the database's clock (CodeAudit otherwise).
 	EraseDetails(ctx context.Context, cutoff time.Time) (AuditErasure, error)
+}
+
+// AuditQuery filters the trail for the explorer (FR-CTL-03). Every filter is optional.
+type AuditQuery struct {
+	Actor      string     // the actor's ID
+	Originator string     // an AI proposal's ID, or "any" for every change an AI proposal carried out
+	ObjectType string     // the record's type
+	ObjectID   *uuid.UUID // the record
+	Field      string     // a field of the changes
+	Action     string     // an action, or every action a prefix ending in "." starts
+	ApprovalID string     // an approval the change carried out
+	From, To   *time.Time // occurred at From or later, and before To
+	Before     int64      // events before this sequence number; 0 from the newest
+	Limit      int        // at most this many, 1 to 1,000
 }
 
 // AuditDetail is a security event's request details, kept beside the chain until the security-log retention ends

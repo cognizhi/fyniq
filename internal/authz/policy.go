@@ -1444,7 +1444,11 @@ var (
 	GetCashProjection = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 	// Verify integrity of the audit trail for a range of days (AUD-03).
 	GetAuditVerification = Policy{Operation: "getAuditVerification", Capability: AuditTrail, Need: View}
-	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	// The audit trail explorer and its export (FR-CTL-03, AUD-07).
+	ListAuditEvents         = Policy{Operation: "listAuditEvents", Capability: AuditTrail, Need: View}
+	GetAuditEvent           = Policy{Operation: "getAuditEvent", Capability: AuditTrail, Need: View}
+	RequestAuditTrailExport = Policy{Operation: "requestAuditTrailExport", Capability: AuditTrail, Need: View}
+	WhatIfCashProjection    = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 )
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
@@ -1655,7 +1659,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

@@ -156,7 +156,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 6. The explorer and its export (slice 6)
 
-- [ ] 6.1 `GET /v1/audit/events` (cursor-paged, with every filter of D6) and `GET /v1/audit/events/{id}`, with the
+- [x] 6.1 `GET /v1/audit/events` (cursor-paged, with every filter of D6) and `GET /v1/audit/events/{id}`, with the
   explorer's expression indexes (created concurrently) and matrix rows. Tests:
   - each filter alone and together;
   - before → after values;
@@ -165,9 +165,22 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - the AI and the roles without V refused.
 
   `// req: FR-CTL-03`, `// req: AUD-07`, `// req: AUD-02`
-- [ ] 6.2 The `audit_trail` report export (CSV and XLSX, the list's filters), audited as an export. Test: the export's
+- [x] 6.2 The `audit_trail` report export (CSV and XLSX, the list's filters), audited as an export. Test: the export's
   rows equal the list's for the same filters, and the export writes its event. `// req: FR-CTL-03`, `// req: AUD-07`,
   `// req: AUD-05`
+  - As built (9 Nov 2026, rev 0.236):
+    - **The list.** `listAuditEvents` filters by `actor`, `ai` (a proposal or `any`), `record_type`, `record_id`,
+      `field`, `action` (or a prefix ending in `.`), `approval_id` and `from`/`to` days in the organisation's time zone.
+      It pages newest first by sequence, and 000288 indexes the actor, the record and the action concurrently.
+    - **One event.** `getAuditEvent` gives each field's before and after, a proof's `changed`, `changed_back` or
+      `unchanged` and its hint, and the request with its details `in_body`, `kept` or `erased`. It also gives the
+      chain's `prev_hash` and `hash`.
+    - **The export.** `requestAuditTrailExport` (V on "Audit trail") asks for the `audit_trail` report export (000289
+      and 000290 widen its kind check), which the worker prepares oldest first, at most 100,000 events. The generic
+      `requestReportExport` still refuses that kind, and the download is the report exports' own, by the caller only.
+    - **Tests.** `TestTheAuditTrailExplorer` covers each filter, paging, the three proofs, kept details, the export's
+      rows and its audit event, and a Bookkeeper refused. The matrix rows cover `listAuditEvents`, `getAuditEvent` and
+      `requestAuditTrailExport`, whose call the matrix checks was audited.
 
 ## 7. The trail's purge (slice 7)
 

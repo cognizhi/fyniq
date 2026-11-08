@@ -53,6 +53,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/asset-disposals/{disposal_id}` (getAssetDisposal): Get a disposal of a fixed asset
 - `POST /v1/asset-disposals/{disposal_id}/void` (voidAssetDisposal): Void a disposal of a fixed asset
 - `POST /v1/asset-disposals/{disposal_id}/void-approval` (requestAssetDisposalVoid): Ask for approval to void a disposal of a fixed asset
+- `GET /v1/audit/events` (listAuditEvents): List the audit trail's events
+- `GET /v1/audit/events/{event_id}` (getAuditEvent): Get an audit event
+- `POST /v1/audit/exports` (requestAuditTrailExport): Ask for the audit trail's export
 - `GET /v1/audit/verification` (getAuditVerification): Verify the audit trail's integrity for a range of days
 - `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
 - `POST /v1/bank-changes` (createPayeeBankChange): Prepare a change of a vendor's bank details

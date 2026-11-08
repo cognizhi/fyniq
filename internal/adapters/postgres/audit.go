@@ -189,3 +189,40 @@ func (r auditTrail) EraseDetails(ctx context.Context, cutoff time.Time) (storage
 	}
 	return out, nil
 }
+
+func (r auditTrail) Find(ctx context.Context, q storage.AuditQuery) ([]storage.AuditEvent, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if q.Limit < 1 || q.Limit > 1000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d audit events", q.Limit), Hint: "Ask for 1 to 1,000"}
+	}
+	text := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+	rows, err := r.u.q.FindAuditEvents(ctx, sqlcdb.FindAuditEventsParams{Actor: text(q.Actor), Originator: text(q.Originator),
+		ObjectType: text(q.ObjectType), ObjectID: q.ObjectID, Field: text(q.Field), Action: text(q.Action), Approval: text(q.ApprovalID),
+		FromAt: q.From, ToAt: q.To, Before: q.Before, Max: int32(q.Limit)}) // #nosec G115 -- 1 to 1,000, checked above
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AuditEvent, len(rows))
+	for i, e := range rows {
+		out[i] = storage.AuditEvent{ID: e.ID, Seq: e.Seq, Body: e.Body, PrevHash: e.PrevHash, Hash: e.Hash}
+	}
+	return out, nil
+}
+
+func (r auditTrail) Event(ctx context.Context, id uuid.UUID) (storage.AuditEvent, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AuditEvent{}, err
+	}
+	e, err := r.u.q.GetAuditEventByID(ctx, id)
+	if err != nil {
+		return storage.AuditEvent{}, mapError(err)
+	}
+	return storage.AuditEvent{ID: e.ID, Seq: e.Seq, Body: e.Body, PrevHash: e.PrevHash, Hash: e.Hash}, nil
+}

@@ -40,6 +40,112 @@ func (q *Queries) EraseAuditRequestDetails(ctx context.Context, pCutoff time.Tim
 	return i, err
 }
 
+const findAuditEvents = `-- name: FindAuditEvents :many
+SELECT e.id, e.seq, e.body, e.prev_hash, e.hash FROM fyniq.audit_event e
+WHERE ($1::text IS NULL OR e.body::jsonb -> 'actor' ->> 'id' = $1::text)
+  AND ($2::text IS NULL
+       OR ($2::text = 'any' AND e.body::jsonb ->> 'originator' IS NOT NULL)
+       OR e.body::jsonb ->> 'originator' = $2::text)
+  AND ($3::text IS NULL OR e.object_type = $3::text)
+  AND ($4::uuid IS NULL OR e.object_id = $4::uuid)
+  AND ($5::text IS NULL OR jsonb_exists(e.body::jsonb -> 'changes', $5::text))
+  AND ($6::text IS NULL OR e.action = $6::text
+       OR (right($6::text, 1) = '.' AND starts_with(e.action, $6::text)))
+  AND ($7::text IS NULL OR jsonb_exists(e.body::jsonb -> 'approval_ids', $7::text))
+  AND ($8::timestamptz IS NULL OR (e.body::jsonb ->> 'occurred_at')::timestamptz >= $8::timestamptz)
+  AND ($9::timestamptz IS NULL OR (e.body::jsonb ->> 'occurred_at')::timestamptz < $9::timestamptz)
+  AND ($10::bigint = 0 OR e.seq < $10::bigint)
+ORDER BY e.seq DESC
+LIMIT $11
+`
+
+type FindAuditEventsParams struct {
+	Actor      *string
+	Originator *string
+	ObjectType *string
+	ObjectID   *uuid.UUID
+	Field      *string
+	Action     *string
+	Approval   *string
+	FromAt     *time.Time
+	ToAt       *time.Time
+	Before     int64
+	Max        int32
+}
+
+type FindAuditEventsRow struct {
+	ID       uuid.UUID
+	Seq      int64
+	Body     string
+	PrevHash []byte
+	Hash     []byte
+}
+
+// The explorer's events (FR-CTL-03), newest first, each filter optional (000288 indexes the actor, the record and the
+// action). An action ending in "." matches every action it starts.
+func (q *Queries) FindAuditEvents(ctx context.Context, arg FindAuditEventsParams) ([]FindAuditEventsRow, error) {
+	rows, err := q.db.Query(ctx, findAuditEvents,
+		arg.Actor,
+		arg.Originator,
+		arg.ObjectType,
+		arg.ObjectID,
+		arg.Field,
+		arg.Action,
+		arg.Approval,
+		arg.FromAt,
+		arg.ToAt,
+		arg.Before,
+		arg.Max,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FindAuditEventsRow
+	for rows.Next() {
+		var i FindAuditEventsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Seq,
+			&i.Body,
+			&i.PrevHash,
+			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAuditEventByID = `-- name: GetAuditEventByID :one
+SELECT id, seq, body, prev_hash, hash FROM fyniq.audit_event WHERE id = $1
+`
+
+type GetAuditEventByIDRow struct {
+	ID       uuid.UUID
+	Seq      int64
+	Body     string
+	PrevHash []byte
+	Hash     []byte
+}
+
+func (q *Queries) GetAuditEventByID(ctx context.Context, id uuid.UUID) (GetAuditEventByIDRow, error) {
+	row := q.db.QueryRow(ctx, getAuditEventByID, id)
+	var i GetAuditEventByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Seq,
+		&i.Body,
+		&i.PrevHash,
+		&i.Hash,
+	)
+	return i, err
+}
+
 const getAuditHead = `-- name: GetAuditHead :one
 SELECT h.seq, h.head_hash, h.action FROM fyniq.audit_chain_head() h
 `
