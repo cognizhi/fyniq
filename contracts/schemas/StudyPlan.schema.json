@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "discount_rate": {
+      "description": "The discount rate, a fraction from 0 to 1.",
+      "examples": [
+        "0.18"
+      ],
+      "type": "string"
+    },
+    "fixed": {
+      "description": "The fixed costs of the first year.",
+      "examples": [
+        "180000.00"
+      ],
+      "type": "string"
+    },
+    "fixed_growth": {
+      "description": "Their yearly change, a fraction above -1.",
+      "examples": [
+        "0.08"
+      ],
+      "type": "string"
+    },
+    "investment": {
+      "description": "Spent at the start, in the base currency.",
+      "examples": [
+        "150000.00"
+      ],
+      "type": "string"
+    },
+    "life": {
+      "description": "The years it is depreciated over, straight line to its salvage value.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "maximum": 50,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_payback": {
+      "description": "The longest acceptable payback, in years, at most 50.",
+      "examples": [
+        "3"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The idea's name.",
+      "examples": [
+        "Copilot for SMEs (new product line)"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "price": {
+      "description": "The price per unit in the first year.",
+      "examples": [
+        "3600.00"
+      ],
+      "type": "string"
+    },
+    "price_growth": {
+      "description": "Its yearly change, a fraction above -1.",
+      "examples": [
+        "0.03"
+      ],
+      "type": "string"
+    },
+    "salvage": {
+      "description": "What it fetches at the end of the period, at most the investment.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "unit_growth": {
+      "description": "Their yearly change, a fraction above -1.",
+      "examples": [
+        "0.5"
+      ],
+      "type": "string"
+    },
+    "units": {
+      "description": "Units sold in the first year, at most 1 decimal.",
+      "examples": [
+        "40"
+      ],
+      "type": "string"
+    },
+    "variable_cost": {
+      "description": "The variable cost per unit in the first year.",
+      "examples": [
+        "700.00"
+      ],
+      "type": "string"
+    },
+    "variable_cost_growth": {
+      "description": "Its yearly change, a fraction above -1.",
+      "examples": [
+        "0.02"
+      ],
+      "type": "string"
+    },
+    "working_capital": {
+      "description": "Working capital kept, a fraction of each year's revenue.",
+      "examples": [
+        "0.1"
+      ],
+      "type": "string"
+    },
+    "years": {
+      "description": "The evaluation period, 1 to 10 years.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "maximum": 10,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name",
+    "years",
+    "discount_rate",
+    "max_payback",
+    "investment",
+    "life",
+    "salvage",
+    "working_capital",
+    "units",
+    "unit_growth",
+    "price",
+    "price_growth",
+    "variable_cost",
+    "variable_cost_growth",
+    "fixed",
+    "fixed_growth"
+  ],
+  "title": "StudyPlan",
+  "type": "object"
+}

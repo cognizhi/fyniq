@@ -1410,12 +1410,18 @@ var (
 // forecasts; drafted, changed, run and recorded by whoever prepares them, the Accountant, and the Owner and the
 // Controller, who hold A. They are the company's, so a department's budget holder (C dept) does not.
 var (
-	ListForecasts            = Policy{Operation: "listForecasts", Capability: Budgets, Need: View, Unqualified: true}
-	CreateForecast           = Policy{Operation: "createForecast", Capability: Budgets, Need: Create, Unqualified: true}
-	GetForecast              = Policy{Operation: "getForecast", Capability: Budgets, Need: View, Unqualified: true}
-	ReplaceForecast          = Policy{Operation: "replaceForecast", Capability: Budgets, Need: Create, Unqualified: true}
-	RecordForecast           = Policy{Operation: "recordForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "The company's plan: it posts nothing."}
-	GetForecastResults       = Policy{Operation: "getForecastResults", Capability: Budgets, Need: View, Unqualified: true}
+	ListForecasts      = Policy{Operation: "listForecasts", Capability: Budgets, Need: View, Unqualified: true}
+	CreateForecast     = Policy{Operation: "createForecast", Capability: Budgets, Need: Create, Unqualified: true}
+	GetForecast        = Policy{Operation: "getForecast", Capability: Budgets, Need: View, Unqualified: true}
+	ReplaceForecast    = Policy{Operation: "replaceForecast", Capability: Budgets, Need: Create, Unqualified: true}
+	RecordForecast     = Policy{Operation: "recordForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "The company's plan: it posts nothing."}
+	GetForecastResults = Policy{Operation: "getForecastResults", Capability: Budgets, Need: View, Unqualified: true}
+	// Feasibility studies (FR-PLN-06; p1-planning design D10): drafted and changed as forecasts are, never recorded.
+	ListFeasibilityStudies   = Policy{Operation: "listFeasibilityStudies", Capability: Budgets, Need: View, Unqualified: true}
+	CreateFeasibilityStudy   = Policy{Operation: "createFeasibilityStudy", Capability: Budgets, Need: Create, Unqualified: true}
+	GetFeasibilityStudy      = Policy{Operation: "getFeasibilityStudy", Capability: Budgets, Need: View, Unqualified: true}
+	ReplaceFeasibilityStudy  = Policy{Operation: "replaceFeasibilityStudy", Capability: Budgets, Need: Create, Unqualified: true}
+	GetFeasibilityResults    = Policy{Operation: "getFeasibilityResults", Capability: Budgets, Need: View, Unqualified: true}
 	CompareForecastScenarios = Policy{Operation: "compareForecastScenarios", Capability: Budgets, Need: View, Unqualified: true}
 	RunForecast              = Policy{Operation: "runForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "Saves nothing."}
 )
@@ -1647,7 +1653,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection)
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

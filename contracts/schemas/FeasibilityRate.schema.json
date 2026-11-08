@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "npv": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "The discount rate, a fraction.",
+      "examples": [
+        "0.12"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "rate",
+    "npv"
+  ],
+  "title": "FeasibilityRate",
+  "type": "object"
+}

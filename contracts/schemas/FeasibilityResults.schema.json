@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "break_even_revenue": {
+      "description": "Break-even units × price.",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "break_even_units": {
+      "description": "The first year's fixed costs ÷ (price − variable cost), to 1 decimal; absent when that margin is not above zero.",
+      "examples": [
+        "62.1"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "discounted_payback_years": {
+      "description": "The same with the present values.",
+      "examples": [
+        "4.6"
+      ],
+      "type": "string"
+    },
+    "irr": {
+      "description": "The internal rate of return nearest 10%, a fraction to 4 decimals; absent when there is none.",
+      "examples": [
+        "0.2690"
+      ],
+      "type": "string"
+    },
+    "margin_of_safety_percent": {
+      "description": "(units − break-even units) ÷ units, the first year's, as a percentage (RND-PERCENT).",
+      "examples": [
+        "-55.2"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What the study is.",
+      "examples": [
+        "A study never posts: nothing here changes the books (FR-PLN-08)."
+      ],
+      "type": "string"
+    },
+    "npv": {
+      "description": "The present values added up.",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "npv_at_rates": {
+      "description": "The NPV at 8%, 10%, 12%, 15%, 20%, 25%, 30% and 40%.",
+      "items": {
+        "$ref": "FeasibilityRate.schema.json"
+      },
+      "type": "array"
+    },
+    "payback_years": {
+      "description": "Years until the running total is no longer below zero, to 1 decimal; absent when it never is in the period.",
+      "examples": [
+        "4.1"
+      ],
+      "type": "string"
+    },
+    "profitability_index": {
+      "description": "1 + NPV ÷ investment, to 2 decimals; absent without an investment.",
+      "examples": [
+        "1.50"
+      ],
+      "type": "string"
+    },
+    "sensitivity": {
+      "description": "The NPV with sales volume and fixed costs each at 80% to 120%.",
+      "items": {
+        "$ref": "FeasibilitySensitivity.schema.json"
+      },
+      "type": "array"
+    },
+    "study_id": {
+      "description": "The study.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "tax_pack": {
+      "description": "The sg-cit version it came from.",
+      "examples": [
+        "sg-cpf@2026.1"
+      ],
+      "type": "string"
+    },
+    "tax_rate": {
+      "description": "sg-cit's headline rate at the study's date, fixed for its years.",
+      "examples": [
+        "0.17"
+      ],
+      "type": "string"
+    },
+    "verdict": {
+      "description": "feasible: a positive NPV and a payback within the longest acceptable; marginal: a positive NPV, but a longer payback or none; not_feasible: an NPV at or below zero; no_figures: no investment, units or price yet.",
+      "enum": [
+        "feasible",
+        "marginal",
+        "not_feasible",
+        "no_figures"
+      ],
+      "examples": [
+        "marginal"
+      ],
+      "type": "string"
+    },
+    "verdict_words": {
+      "description": "The verdict in plain words.",
+      "examples": [
+        "Marginal: a positive NPV, but the payback of 4.1 years is longer than 3"
+      ],
+      "type": "string"
+    },
+    "years": {
+      "description": "Year 0 to the end of the period.",
+      "items": {
+        "$ref": "FeasibilityYear.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "study_id",
+    "currency",
+    "tax_rate",
+    "tax_pack",
+    "years",
+    "npv",
+    "sensitivity",
+    "npv_at_rates",
+    "verdict",
+    "verdict_words",
+    "note"
+  ],
+  "title": "FeasibilityResults",
+  "type": "object"
+}

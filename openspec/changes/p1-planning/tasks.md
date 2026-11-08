@@ -151,9 +151,11 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
       the workbook's.
     - The gate is `TestTheFeasibilityCalculatorAgreesWithTheOracle`, with `feasibility` in `DIFFERENTIAL_SOURCES`.
     - Workbook parity is checked in `TestTheWorkbooksFeasibility`.
-- [ ] 7.3 The `feasibility_study` document type, its guard (FY302) and the API: list, create, get, replace and results,
+- [x] 7.3 The `feasibility_study` document type, its guard (FY302) and the API: list, create, get, replace and results,
   with the tax rate from `sg-cit`. `TestFeasibilityThroughTheAPI` and `TestAttackFeasibilityStudiesKeepTheirRules`.
   `// req: FR-PLN-06`, `// req: FR-PLN-08`
+  - As built (rev 0.225): the study keeps its date, its first version's, so the tax rate (for the YA after it) stays
+    fixed. Problems are STUDY-01 by field. The results give the verdict in plain words.
 
 ## 8. The screens (slice 8)
 

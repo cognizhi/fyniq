@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cash_flow": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "cumulative": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "cumulative_present_value": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "depreciation": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "ebit": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "fixed_costs": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "nopat": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "present_value": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "salvage": {
+      "description": "The last year: the salvage less the tax on its gain over the book value.",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "tax": {
+      "description": "At the study's tax rate; below zero when a loss saves tax.",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "units": {
+      "description": "Units sold, to 1 decimal: they stay fractional as they grow.",
+      "examples": [
+        "40.0"
+      ],
+      "type": "string"
+    },
+    "variable_costs": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "working_capital": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "working_capital_change": {
+      "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "working_capital_release": {
+      "description": "The last year: the working capital released.",
+      "examples": [
+        "75446.46"
+      ],
+      "type": "string"
+    },
+    "year": {
+      "description": "0 for the investment, then each year of the period.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "year",
+    "units",
+    "revenue",
+    "variable_costs",
+    "fixed_costs",
+    "depreciation",
+    "ebit",
+    "tax",
+    "nopat",
+    "working_capital",
+    "working_capital_change",
+    "salvage",
+    "working_capital_release",
+    "cash_flow",
+    "present_value",
+    "cumulative",
+    "cumulative_present_value"
+  ],
+  "title": "FeasibilityYear",
+  "type": "object"
+}

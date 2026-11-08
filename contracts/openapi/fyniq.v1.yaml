@@ -16638,6 +16638,308 @@ components:
         - not_revalued
         - lines
       type: object
+    FeasibilityRate:
+      additionalProperties: false
+      properties:
+        npv:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        rate:
+          description: The discount rate, a fraction.
+          examples:
+            - "0.12"
+          type: string
+      required:
+        - rate
+        - npv
+      type: object
+    FeasibilityResults:
+      additionalProperties: false
+      properties:
+        break_even_revenue:
+          description: Break-even units × price.
+          examples:
+            - "75446.46"
+          type: string
+        break_even_units:
+          description: The first year's fixed costs ÷ (price − variable cost), to 1 decimal; absent when that margin is not above zero.
+          examples:
+            - "62.1"
+          type: string
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        discounted_payback_years:
+          description: The same with the present values.
+          examples:
+            - "4.6"
+          type: string
+        irr:
+          description: The internal rate of return nearest 10%, a fraction to 4 decimals; absent when there is none.
+          examples:
+            - "0.2690"
+          type: string
+        margin_of_safety_percent:
+          description: (units − break-even units) ÷ units, the first year's, as a percentage (RND-PERCENT).
+          examples:
+            - "-55.2"
+          type: string
+        note:
+          description: What the study is.
+          examples:
+            - "A study never posts: nothing here changes the books (FR-PLN-08)."
+          type: string
+        npv:
+          description: The present values added up.
+          examples:
+            - "75446.46"
+          type: string
+        npv_at_rates:
+          description: The NPV at 8%, 10%, 12%, 15%, 20%, 25%, 30% and 40%.
+          items:
+            $ref: "#/components/schemas/FeasibilityRate"
+          type: array
+        payback_years:
+          description: Years until the running total is no longer below zero, to 1 decimal; absent when it never is in the period.
+          examples:
+            - "4.1"
+          type: string
+        profitability_index:
+          description: 1 + NPV ÷ investment, to 2 decimals; absent without an investment.
+          examples:
+            - "1.50"
+          type: string
+        sensitivity:
+          description: The NPV with sales volume and fixed costs each at 80% to 120%.
+          items:
+            $ref: "#/components/schemas/FeasibilitySensitivity"
+          type: array
+        study_id:
+          description: The study.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+          format: uuid
+          type: string
+        tax_pack:
+          description: The sg-cit version it came from.
+          examples:
+            - sg-cpf@2026.1
+          type: string
+        tax_rate:
+          description: sg-cit's headline rate at the study's date, fixed for its years.
+          examples:
+            - "0.17"
+          type: string
+        verdict:
+          description: "feasible: a positive NPV and a payback within the longest acceptable; marginal: a positive NPV, but a longer payback or none; not_feasible: an NPV at or below zero; no_figures: no investment, units or price yet."
+          enum:
+            - feasible
+            - marginal
+            - not_feasible
+            - no_figures
+          examples:
+            - marginal
+          type: string
+        verdict_words:
+          description: The verdict in plain words.
+          examples:
+            - "Marginal: a positive NPV, but the payback of 4.1 years is longer than 3"
+          type: string
+        years:
+          description: Year 0 to the end of the period.
+          items:
+            $ref: "#/components/schemas/FeasibilityYear"
+          type: array
+      required:
+        - study_id
+        - currency
+        - tax_rate
+        - tax_pack
+        - years
+        - npv
+        - sensitivity
+        - npv_at_rates
+        - verdict
+        - verdict_words
+        - note
+      type: object
+    FeasibilitySensitivity:
+      additionalProperties: false
+      properties:
+        npv_by_fixed_costs:
+          description: The NPV with fixed costs at 0.8, 0.9, 1, 1.1 and 1.2 of the study's.
+          items:
+            description: An amount in the base currency, at its minor units (RND-PLAN).
+            examples:
+              - "75446.46"
+            type: string
+          type: array
+        volume:
+          description: The sales volume as a multiple of the study's.
+          examples:
+            - "0.8"
+          type: string
+      required:
+        - volume
+        - npv_by_fixed_costs
+      type: object
+    FeasibilityStudyPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/FeasibilityStudyView"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYifQ
+          type: string
+      required:
+        - items
+      type: object
+    FeasibilityStudyView:
+      additionalProperties: false
+      properties:
+        date:
+          description: "The study's date, its first version's: the tax rate is sg-cit's headline rate then."
+          examples:
+            - "2026-11-08"
+          format: date
+          type: string
+        id:
+          description: The study's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+          format: uuid
+          type: string
+        study:
+          $ref: "#/components/schemas/StudyPlan"
+          description: Its inputs, as the workbook's sheet.
+        version:
+          description: The version of its content; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - version
+        - date
+        - study
+      type: object
+    FeasibilityYear:
+      additionalProperties: false
+      properties:
+        cash_flow:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        cumulative:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        cumulative_present_value:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        depreciation:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        ebit:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        fixed_costs:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        nopat:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        present_value:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        revenue:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        salvage:
+          description: "The last year: the salvage less the tax on its gain over the book value."
+          examples:
+            - "75446.46"
+          type: string
+        tax:
+          description: At the study's tax rate; below zero when a loss saves tax.
+          examples:
+            - "75446.46"
+          type: string
+        units:
+          description: "Units sold, to 1 decimal: they stay fractional as they grow."
+          examples:
+            - "40.0"
+          type: string
+        variable_costs:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        working_capital:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        working_capital_change:
+          description: An amount in the base currency, at its minor units (RND-PLAN).
+          examples:
+            - "75446.46"
+          type: string
+        working_capital_release:
+          description: "The last year: the working capital released."
+          examples:
+            - "75446.46"
+          type: string
+        year:
+          description: 0 for the investment, then each year of the period.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - year
+        - units
+        - revenue
+        - variable_costs
+        - fixed_costs
+        - depreciation
+        - ebit
+        - tax
+        - nopat
+        - working_capital
+        - working_capital_change
+        - salvage
+        - working_capital_release
+        - cash_flow
+        - present_value
+        - cumulative
+        - cumulative_present_value
+      type: object
     Features:
       additionalProperties: false
       properties:
@@ -35000,6 +35302,115 @@ components:
         - stepped_up_until
         - step_up_method
         - passkey_id
+      type: object
+    StudyPlan:
+      additionalProperties: false
+      properties:
+        discount_rate:
+          description: The discount rate, a fraction from 0 to 1.
+          examples:
+            - "0.18"
+          type: string
+        fixed:
+          description: The fixed costs of the first year.
+          examples:
+            - "180000.00"
+          type: string
+        fixed_growth:
+          description: Their yearly change, a fraction above -1.
+          examples:
+            - "0.08"
+          type: string
+        investment:
+          description: Spent at the start, in the base currency.
+          examples:
+            - "150000.00"
+          type: string
+        life:
+          description: The years it is depreciated over, straight line to its salvage value.
+          examples:
+            - 5
+          format: int64
+          maximum: 50
+          minimum: 1
+          type: integer
+        max_payback:
+          description: The longest acceptable payback, in years, at most 50.
+          examples:
+            - "3"
+          type: string
+        name:
+          description: The idea's name.
+          examples:
+            - Copilot for SMEs (new product line)
+          maxLength: 80
+          minLength: 1
+          type: string
+        price:
+          description: The price per unit in the first year.
+          examples:
+            - "3600.00"
+          type: string
+        price_growth:
+          description: Its yearly change, a fraction above -1.
+          examples:
+            - "0.03"
+          type: string
+        salvage:
+          description: What it fetches at the end of the period, at most the investment.
+          examples:
+            - "0.00"
+          type: string
+        unit_growth:
+          description: Their yearly change, a fraction above -1.
+          examples:
+            - "0.5"
+          type: string
+        units:
+          description: Units sold in the first year, at most 1 decimal.
+          examples:
+            - "40"
+          type: string
+        variable_cost:
+          description: The variable cost per unit in the first year.
+          examples:
+            - "700.00"
+          type: string
+        variable_cost_growth:
+          description: Its yearly change, a fraction above -1.
+          examples:
+            - "0.02"
+          type: string
+        working_capital:
+          description: Working capital kept, a fraction of each year's revenue.
+          examples:
+            - "0.1"
+          type: string
+        years:
+          description: The evaluation period, 1 to 10 years.
+          examples:
+            - 5
+          format: int64
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+        - name
+        - years
+        - discount_rate
+        - max_payback
+        - investment
+        - life
+        - salvage
+        - working_capital
+        - units
+        - unit_growth
+        - price
+        - price_growth
+        - variable_cost
+        - variable_cost_growth
+        - fixed
+        - fixed_growth
       type: object
     SuccessionListOutputBody:
       additionalProperties: false
@@ -91770,6 +92181,786 @@ paths:
       x-fyniq-permission:
         capability: Expense claims
         right: C
+  /v1/feasibility-studies:
+    get:
+      description: Every feasibility study, the latest first, a page at a time (FR-PLN-06). Read-only; no side effects.
+      operationId: listFeasibilityStudies
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityStudyPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the feasibility studies
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+    post:
+      description: "Saves one idea's inputs as the workbook's sheet has them (FR-PLN-06, design D8), dated today: its tax rate is sg-cit's headline rate then. A study is drafted, changed and kept; it never posts and is never recorded (FR-PLN-08). Its figures are getFeasibilityResults'. Side effects: the study, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createFeasibilityStudy
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyPlan"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityStudyView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityStudyView"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-PLAN-03` The feasibility study does not keep that; `STUDY-01` The feasibility study does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Draft a feasibility study
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-03
+        - STORAGE-RETRY-01
+        - STUDY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: C
+  /v1/feasibility-studies/{study_id}:
+    get:
+      description: A study's inputs and its date (FR-PLN-06). Its figures are getFeasibilityResults'. Read-only; no side effects.
+      operationId: getFeasibilityStudy
+      parameters:
+        - description: The study.
+          in: path
+          name: study_id
+          required: true
+          schema:
+            description: The study.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityStudyView"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: Its version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a feasibility study
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+    put:
+      description: "Saves a new version of a study's inputs (FR-PLN-06); its date, and so its tax rate, stays its first. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceFeasibilityStudy
+      parameters:
+        - description: The study.
+          in: path
+          name: study_id
+          required: true
+          schema:
+            description: The study.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyPlan"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityStudyView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-PLAN-03` The feasibility study does not keep that; `STUDY-01` The feasibility study does not fit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a feasibility study
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-03
+        - STORAGE-RETRY-01
+        - STUDY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: C
+  /v1/feasibility-studies/{study_id}/results:
+    get:
+      description: "A study's figures (FR-PLN-06, design D8), worked out on every read in exact decimals (RND-PLAN) at sg-cit's headline rate on the study's date: each year's cash flows and present values, the NPV, the IRR nearest 10%, the paybacks, the profitability index, break-even, the margin of safety, the 5 × 5 sensitivity grid, the NPV at eight rates, and the verdict. Read-only; no side effects."
+      operationId: getFeasibilityResults
+      parameters:
+        - description: The study.
+          in: path
+          name: study_id
+          required: true
+          schema:
+            description: The study.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeasibilityResults"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work a feasibility study out
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
   /v1/fixed-assets:
     get:
       description: "The register's assets, newest purchase first, a page at a time, narrowed by state or account (FR-FA-01): each with its category (the asset account it sits on), cost, residual value, life, start, accumulated depreciation and net book value as its depreciation has posted, and ⚠ when the bill or bank line it came from was voided or edited since. Read-only; no side effects."
