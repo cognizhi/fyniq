@@ -201,6 +201,11 @@ Source: PRD-001 §6.4
 - **WHEN** a journal whose debits are above the self-approval threshold is posted
 - **THEN** it waits for another person's approval, as in Founder mode
 
+#### Scenario: The threshold decides whether, the policy's rules decide who (rev 0.178)
+- **GIVEN** a journal policy with a rule for amounts at or above S$500.00, and the threshold is S$2,000.00
+- **WHEN** a journal whose debits are S$1,000.00 is posted, and another of S$2,500.00 is asked for
+- **THEN** the first posts without another person's approval, as at or below the threshold, and the rule applies only to the second, whose steps it decides (FR-APR-01; provisional until sign-off)
+
 ### Requirement: FM-3 Weekly review
 In Founder mode, another founder SHALL review the log of self-approved and high-risk items every week, as an Inbox task.
 
