@@ -30,6 +30,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
@@ -80,6 +81,8 @@ type Approval struct {
 	Envelope        string              `json:"envelope" doc:"The approval envelope exactly as signed: RFC 8785 canonical JSON (FR-APR-10)." example:"{\"amounts\":[]}"`
 	EnvelopeHash    string              `json:"envelope_hash" doc:"The envelope's SHA-256, in hex: send it to approve or reject exactly what you were shown." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Diff            []ApprovalDiff      `json:"diff" doc:"What it changes, before and after (FR-APR-02)."`
+	PolicyRule      int                 `json:"policy_rule,omitempty" doc:"The rule of its policy whose conditions chose its steps, from 1; absent when the policy's default steps did (FR-APR-01, rev 0.178)." example:"1"`
+	Impact          *ApprovalImpact     `json:"impact,omitempty" doc:"getApproval only, while it waits: what approving it would post now, worked out by carrying the change out and rolling it back, with the balances it moves, or what would refuse it (FR-APR-02, rev 0.177). Absent for a change that posts nothing."`
 	Signatures      []ApprovalSignature `json:"signatures" doc:"Its signed approvals and rejections, in order (FR-APR-03)."`
 	YouMayApprove   bool                `json:"you_may_approve" doc:"true when you may approve or reject it now: it is pending, you did not ask for it and you hold the approval right." example:"true"`
 	Version         int                 `json:"version" doc:"The request's version." example:"1"`
@@ -272,6 +275,9 @@ type pendingChange struct {
 	// Then are steps after the policy's own for this change only, such as finance's on an expense claim above its
 	// category's limit (FR-AP-17): the request keeps them with the policy's.
 	Then []approval.Step
+	// Facts are what the change says about itself for the policy's rules (FR-APR-01, rev 0.178): its accounts, its
+	// lines' dimension values and its vendor; its amount comes from Amounts when it has one in the base currency.
+	Facts approval.Facts
 }
 
 // stored is what a request keeps of its change.
@@ -280,6 +286,7 @@ type stored struct {
 	Diff    []ApprovalDiff    `json:"diff"`
 	Amounts []approval.Amount `json:"amounts"`
 	Content json.RawMessage   `json:"content,omitempty"`
+	Rule    int               `json:"rule,omitempty"` // the policy's rule that chose its steps, from 1; 0 for its default steps
 }
 
 // intIn is the whole number a change holds at key, as storedOf reads it.
@@ -952,13 +959,28 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	if c.Amounts == nil {
 		c.Amounts = []approval.Amount{}
 	}
-	change, err := json.Marshal(stored{Execute: c.Execute, Diff: c.Diff, Amounts: c.Amounts, Content: c.Content})
+	code, err := baseCode(ctx, u)
 	if err != nil {
 		return Approval{}, err
 	}
-	steps := policy.Steps
+	base, err := money.Lookup(code)
+	if err != nil {
+		return Approval{}, err
+	}
+	facts, err := factsOf(c, base)
+	if err != nil {
+		return Approval{}, err
+	}
+	steps, rule, err := policy.StepsFor(facts) // FR-APR-01: the first rule whose conditions hold, else the default steps
+	if err != nil {
+		return Approval{}, err
+	}
+	change, err := json.Marshal(stored{Execute: c.Execute, Diff: c.Diff, Amounts: c.Amounts, Content: c.Content, Rule: rule})
+	if err != nil {
+		return Approval{}, err
+	}
 	if len(c.Then) > 0 {
-		steps = append(slices.Clone(policy.Steps), c.Then...)
+		steps = append(slices.Clone(steps), c.Then...)
 	}
 	r, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: c.ObjectType, ObjectKey: c.ObjectKey, Operation: c.Operation,
 		Summary: c.Summary, Change: change, Envelope: string(envelope), EnvelopeHash: approval.Hash(envelope), PolicyVersion: policy.Version,
@@ -1086,7 +1108,7 @@ func (a *API) approvalOf(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 	out := Approval{ID: r.ID.String(), ObjectType: r.ObjectType, ObjectKey: r.ObjectKey, Operation: r.Operation, Summary: r.Summary,
 		Status: string(status), StatusReason: r.StatusReason, RequestedBy: r.RequestedBy.String(), RequestedByName: names[r.RequestedBy],
 		RequestedAt: r.RequestedAt.UTC(), ExpiresAt: r.ExpiresAt.UTC(), DecidedAt: r.DecidedAt, Policy: r.PolicyVersion, Envelope: r.Envelope,
-		EnvelopeHash: hex.EncodeToString(r.EnvelopeHash), Diff: s.Diff, Signatures: []ApprovalSignature{}, Version: r.Version,
+		EnvelopeHash: hex.EncodeToString(r.EnvelopeHash), Diff: s.Diff, PolicyRule: s.Rule, Signatures: []ApprovalSignature{}, Version: r.Version,
 		YouMayApprove: status == approval.Pending && mayDecide(p, r, sigs), Steps: []ApprovalProgress{},
 		CurrentStep: approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs))}
 	if out.Diff == nil {
@@ -1280,6 +1302,7 @@ func approves(roles []string, objectType string) bool {
 type policyChange struct {
 	Version int                    `json:"version"`
 	Steps   []storage.ApprovalStep `json:"steps"`
+	Rules   []storage.ApprovalRule `json:"rules"`
 }
 
 func policyChangeOf(x map[string]any) (policyChange, error) {
@@ -1500,8 +1523,18 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return err
 	}
 	fps, err := a.checkSteps(ctx, u, r.ObjectKey, domainSteps(c.Steps))
-	if err != nil || len(fps) == 0 {
+	if err != nil {
 		return err
+	}
+	for _, rule := range c.Rules { // each rule's steps, too (rev 0.178)
+		more, err := a.checkSteps(ctx, u, r.ObjectKey, domainSteps(rule.Steps))
+		if err != nil {
+			return err
+		}
+		fps = append(fps, more...)
+	}
+	if len(fps) == 0 {
+		return nil
 	}
 	return &blocked{id: r.ID, version: r.Version, status: approval.Void, reason: "the policy's steps can no longer be signed",
 		problem: problem(approval.CodeSteps, "The policy's steps can no longer be signed: "+fps[0].Message+", so nothing was changed and the request is void.",
@@ -1577,7 +1610,7 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			return err
 		}
 		_, err = u.ApprovalPolicies().Add(ctx, storage.NewApprovalPolicy{ObjectType: r.ObjectKey, Version: c.Version, Steps: c.Steps,
-			RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()})
+			Rules: c.Rules, RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()})
 		return err
 	case approval.OpPackActivate:
 		_, err := u.Packs().Activate(ctx, storage.NewPackActivation{VersionID: r.ObjectKey, ProposedBy: r.RequestedBy, ApprovedBy: signer,
@@ -2009,8 +2042,10 @@ func registerApprovals(a *API) {
 		OperationID: "getApproval", Method: http.MethodGet, Path: "/v1/approvals/{approval_id}", Tags: []string{"Approvals"},
 		Summary: "Get an approval request",
 		Description: "One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what " +
-			"it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). Shown to its requester and to whoever holds a " +
-			"right on its object. Read-only; no side effects.",
+			"it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). While it waits, also what approving it " +
+			"would post now, with the balances of the accounts it moves before and after, or what would refuse it: the change is " +
+			"carried out in a transaction that is rolled back, so nothing is kept (rev 0.177). Shown to its requester and to whoever holds " +
+			"a right on its object. Read-only; no side effects.",
 	}, []string{CodeNotFound}, func(ctx context.Context, in *approvalGetInput) (*approvalReadOutput, error) {
 		id, err := parseID("approval_id", in.ApprovalID)
 		if err != nil {
@@ -2030,6 +2065,9 @@ func registerApprovals(a *API) {
 			out.ETag = etag(out.Body.Version)
 			return err
 		})
+		if err == nil && out.Body.Status == string(approval.Pending) {
+			out.Body.Impact, err = a.impactOf(ctx, p, id)
+		}
 		return &out, err
 	})
 
