@@ -78,7 +78,7 @@ type DirectorAccountList struct {
 
 // OriginTotal is what one origin moved on a director's account in a statement's period.
 type OriginTotal struct {
-	Origin string `json:"origin" enum:"lent,paid_personally,pay,fee,paid_out,converted,waived,other" doc:"Where the amounts came from (FR-EQ-01)." example:"lent"`
+	Origin string `json:"origin" enum:"lent,paid_personally,pay,fee,paid_out,converted,waived,safe,other" doc:"Where the amounts came from (FR-EQ-01)." example:"lent"`
 	Amount Money  `json:"amount" doc:"Their sum, as the ledger holds it: negative is owed to the person."`
 }
 
@@ -97,7 +97,7 @@ type DirectorMovement struct {
 	EntryID     string `json:"entry_id" format:"uuid" doc:"The journal entry." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"`
 	Date        string `json:"date" format:"date" doc:"Its posting date." example:"2026-10-15"`
 	AccountID   string `json:"account_id" format:"uuid" doc:"The director's account it moved." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
-	Origin      string `json:"origin" enum:"lent,paid_personally,pay,fee,paid_out,converted,waived,other" doc:"Where the amount came from (FR-EQ-01): from its source, or as entered on a journal or opening balance line." example:"lent"`
+	Origin      string `json:"origin" enum:"lent,paid_personally,pay,fee,paid_out,converted,waived,safe,other" doc:"Where the amount came from (FR-EQ-01): from its source, or as entered on a journal or opening balance line." example:"lent"`
 	Amount      Money  `json:"amount" doc:"In the base currency, as the ledger holds it: negative is owed to the person."`
 	SourceType  string `json:"source_type" doc:"The document it came from." example:"bank_transaction"`
 	SourceID    string `json:"source_id" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
@@ -248,7 +248,7 @@ func directorProblem(err error) error {
 // movementOrigins are the origins as a statement's words say them.
 var movementOrigins = map[string]string{ledger.OriginLent: "Lent", ledger.OriginPaidPersonally: "Paid personally", ledger.OriginPay: "Pay deferred",
 	ledger.OriginFee: "Director's fee", ledger.OriginPaidOut: "Paid out", ledger.OriginConverted: "Converted to shares",
-	ledger.OriginWaived: "Waived", ledger.OriginOther: "Other"}
+	ledger.OriginWaived: "Waived", ledger.OriginSAFE: "Converted to a SAFE or note", ledger.OriginOther: "Other"}
 
 // directorReport is a person's statement as the render service lays it out: per account, the opening balance, the
 // movements by origin and the closing balance, signed as owed to the person (FR-EQ-01: for balance confirmations).

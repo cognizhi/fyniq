@@ -34,6 +34,7 @@ const (
 	OriginPaidOut        = "paid_out"        // money paid to the person: a repayment or an advance
 	OriginConverted      = "converted"       // converted to shares
 	OriginWaived         = "waived"          // waived
+	OriginSAFE           = "safe"            // turned into a SAFE or convertible note the person holds (FR-EQ-05)
 	OriginOther          = "other"           // anything else, explained in the line's description
 )
 

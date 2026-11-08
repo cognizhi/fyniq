@@ -15,7 +15,7 @@ export const isDirectorAccount = (a?: { role?: string }) => !!a?.role && directo
 
 // The origins a person enters on a journal or opening balance line, then the ones only a source gives.
 export const enteredOrigins = ["lent", "paid_personally", "pay", "fee", "paid_out", "other"] as const;
-export type Origin = (typeof enteredOrigins)[number] | "converted" | "waived";
+export type Origin = (typeof enteredOrigins)[number] | "converted" | "waived" | "safe";
 
 export const originWords: Record<Origin, string> = {
   lent: "Lent to the company",
@@ -25,6 +25,7 @@ export const originWords: Record<Origin, string> = {
   paid_out: "Paid out to them",
   converted: "Converted to shares",
   waived: "Waived",
+  safe: "Converted to a SAFE or note",
   other: "Other",
 };
 

@@ -263,6 +263,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return ledger.Entry{}, r.instrument(d, date) // a recorded SAFE posts no entry
 	case "safe_conversion":
 		return r.safeConversion(d, date)
+	case "director_safe":
+		return r.directorSAFE(d, date)
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}

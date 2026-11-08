@@ -417,3 +417,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (SAFE and note conversions at a priced round, slice 4b-i)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the SAFEs and notes page, recording one, templates, the conversion preview; slice 4c)
+
+## [2026-11-07] compile | docs/user-guide/director-accounts.md, docs/user-guide/equity-register.md → founders.director-accounts, founders.pay-choice (hash), equity.register (a founder's balance into a SAFE or note; C.2 #29; slice 4d)

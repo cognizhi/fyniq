@@ -29,12 +29,14 @@ const (
 )
 
 // The settlement routes (FR-EQ-05; the owner's decision of 3 Nov 2026): keep it as a loan on terms, repay it, convert it
-// to shares (D11), or waive it (FR-EQ-07). Converting to a SAFE or note comes with the equity register (FR-EQ-18).
+// to shares (D11), waive it (FR-EQ-07), or turn it into a recorded SAFE or note the person holds (FR-EQ-18, with the
+// equity register).
 const (
 	RouteKeep    = "keep"
 	RouteRepay   = "repay"
 	RouteConvert = "convert"
 	RouteWaive   = "waive"
+	RouteSAFE    = "safe"
 )
 
 // The capacities in which a person waives what the company owes them (FR-EQ-07): as a shareholder, the waiver is a
@@ -79,12 +81,24 @@ type Settlement struct {
 	Terms      *Terms
 	Waiver     *Waiver
 	Conversion *Conversion
+	// SAFE is the recorded SAFE or note the balance becomes (RouteSAFE): its money, Dr the director's account · Cr 2700.
+	SAFE *SAFE
 	// DeductedEarlier tags a waiver of amounts the company deducted as costs earlier (pay or fees on 2120), for the tax
 	// computation: the waiver may be taxable to the company [verify]. Set when it is approved.
 	DeductedEarlier bool
 	// ApprovedOn is the organisation's day a conversion was approved: no effective date is earlier, and the shareholders'
 	// approval lapses from it (D12). Set when it is approved.
 	ApprovedOn *time.Time
+}
+
+// SAFE is the recorded SAFE or convertible note a director's balance becomes (FR-EQ-05, FR-EQ-18): the person holds it,
+// and its money is the amount settled.
+type SAFE struct {
+	InstrumentID uuid.UUID
+}
+
+type safePayload struct {
+	InstrumentID uuid.UUID `json:"instrument_id"`
 }
 
 type conversionPayload struct {
@@ -119,6 +133,7 @@ type settlementPayload struct {
 	Terms           *termsPayload      `json:"terms,omitempty"`
 	Waiver          *waiverPayload     `json:"waiver,omitempty"`
 	Conversion      *conversionPayload `json:"conversion,omitempty"`
+	SAFE            *safePayload       `json:"safe,omitempty"`
 	DeductedEarlier bool               `json:"deducted_earlier,omitempty"`
 	ApprovedOn      string             `json:"approved_on,omitempty"`
 }
@@ -139,6 +154,9 @@ func EncodeSettlement(s Settlement) ([]byte, error) {
 	if c := s.Conversion; c != nil {
 		x := conversionPayload(*c)
 		p.Conversion = &x
+	}
+	if x := s.SAFE; x != nil {
+		p.SAFE = &safePayload{InstrumentID: x.InstrumentID}
 	}
 	if s.ApprovedOn != nil {
 		p.ApprovedOn = dayOf(*s.ApprovedOn)
@@ -185,6 +203,9 @@ func ReadSettlement(doc storage.Document) (Settlement, error) {
 	if c := p.Conversion; c != nil {
 		x := Conversion(*c)
 		s.Conversion = &x
+	}
+	if x := p.SAFE; x != nil {
+		s.SAFE = &SAFE{InstrumentID: x.InstrumentID}
 	}
 	if p.ApprovedOn != "" {
 		on, err := time.Parse(time.DateOnly, p.ApprovedOn)
@@ -312,8 +333,12 @@ func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2
 		}
 	case RouteConvert:
 		probs = append(probs, checkConversion(s, s2)...)
+	case RouteSAFE: // the instrument itself is checked with the equity register (journal.checkSettlement)
+		if s.SAFE == nil || s.SAFE.InstrumentID == uuid.Nil {
+			add(CodeSettlement, "safe.instrument_id", "the settlement names no SAFE or note", "Record the SAFE or note the person holds, then choose it")
+		}
 	default:
-		add(CodeSettlement, "route", fmt.Sprintf("the route %q is not one Fyniq knows", s.Route), "Choose keep, repay, convert or waive")
+		add(CodeSettlement, "route", fmt.Sprintf("the route %q is not one Fyniq knows", s.Route), "Choose keep, repay, convert, waive or safe")
 	}
 	return probs, nil
 }
@@ -326,6 +351,17 @@ func (s Settlement) Rule(doc storage.Document, postOn time.Time) ledger.Director
 	}
 	return ledger.DirectorWaiver{ID: doc.ID, Version: doc.Version, PostOn: postOn, Memo: strings.TrimSpace(doc.Number + " " + w.Reason), Party: s.ContactID,
 		Account: s.AccountID, Credit: w.CreditAccountID, Amount: s.Amount}
+}
+
+// SAFERule is an approved settlement into a SAFE or note as the rule reads it, posting on postOn: Dr the director's
+// account · Cr holding, 2700, naming the instrument.
+func (s Settlement) SAFERule(doc storage.Document, postOn time.Time, holding uuid.UUID) ledger.DirectorSAFE {
+	var instrument uuid.UUID
+	if s.SAFE != nil {
+		instrument = s.SAFE.InstrumentID
+	}
+	return ledger.DirectorSAFE{ID: doc.ID, Version: doc.Version, PostOn: postOn, Memo: strings.TrimSpace(doc.Number + " into a SAFE or note"), Party: s.ContactID,
+		Account: s.AccountID, Holding: holding, Instrument: instrument, Amount: s.Amount}
 }
 
 // The settings of the founders' money (FR-EQ-05; recommended default 15, FR-ORG-08).

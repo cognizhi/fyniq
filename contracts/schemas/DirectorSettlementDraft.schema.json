@@ -27,17 +27,22 @@
       "description": "A conversion's class, price and basis, capacity and measurement basis."
     },
     "route": {
-      "description": "keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep.",
+      "description": "keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); waive (FR-EQ-07); or safe: turn it into a recorded SAFE or convertible note the person holds, Dr the director's account · Cr 2700 on approval (FR-EQ-18). Left out, the organisation's default route (founders.default_route), keep.",
       "enum": [
         "keep",
         "repay",
         "convert",
-        "waive"
+        "waive",
+        "safe"
       ],
       "examples": [
         "keep"
       ],
       "type": "string"
+    },
+    "safe": {
+      "$ref": "SettlementSAFE.schema.json",
+      "description": "The safe route's instrument."
     },
     "terms": {
       "$ref": "SettlementTerms.schema.json",

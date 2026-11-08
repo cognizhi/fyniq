@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "instrument_id": {
+      "description": "The recorded SAFE or convertible note (listInstruments) the person holds; its money, with what 2700 holds for it already, is at most its amount.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "instrument_id"
+  ],
+  "title": "SettlementSAFE",
+  "type": "object"
+}

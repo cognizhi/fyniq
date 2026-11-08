@@ -60,7 +60,7 @@ describe("Settle a director's balance", () => {
     page();
     expect(await screen.findByRole("heading", { name: "Settle Mei Lin Tan's balance" })).toBeTruthy();
     expect((await screen.findByRole("radio", { name: /Keep as a loan/ })).getAttribute("aria-checked")).toBe("true");
-    expect((screen.getByRole("radio", { name: /Convert to a SAFE or note/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("radio", { name: /Convert to a SAFE or note/ }) as HTMLButtonElement).disabled).toBe(false);
     await noViolations(document.body);
 
     fireEvent.click(screen.getByRole("radio", { name: /Waive/ }));
@@ -83,6 +83,42 @@ describe("Settle a director's balance", () => {
     expect(await screen.findByText(/Asked for approval. Another person approves it, never Mei Lin Tan/)).toBeTruthy();
     expect(seen.find((s) => s.path === "/v1/director-settlements/ds-1/approval")?.headers.get("If-Match")).toBe('"1-draft"');
     expect(await screen.findByText("Awaiting approval")).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  // req: FR-EQ-18
+  it("turns a balance into a SAFE the person holds, choosing only theirs, and says it posts to 2700 when approved", async () => {
+    const safe = { id: "in-1", status: "recorded", version: 1, holder_name: "Mei Lin Tan", currency: "SGD", class_code: "3010", evidence: 1, checks: [],
+      form: "post_money_safe", holder_id: "c-mei", amount: "1000.00", signed_on: "2026-10-10", trigger: "priced_round", class_account_id: "acc-3010",
+      denominator: "post_money_capitalisation", price_decimals: 4 };
+    const drafted = settlement({ route: "safe", waiver: undefined, amount: sgd("600.00"), safe: { instrument_id: "in-1" },
+      ledger_impact: [
+        { line_no: 1, account_id: "acc-2500", amount: sgd("600.00"), fx_rate: "1", fx_rate_source: "base", base_amount: sgd("600.00"), party_id: "c-mei" },
+        { line_no: 2, account_id: "acc-2700", amount: sgd("-600.00"), fx_rate: "1", fx_rate_source: "base", base_amount: sgd("-600.00") },
+      ] });
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: people },
+      "GET /v1/accounts": { status: 200, body: chart },
+      "GET /v1/director-settlements": { status: 200, body: { items: [], default_route: "keep" } },
+      "GET /v1/instruments": { status: 200, body: { items: [safe, { ...safe, id: "in-2", holder_id: "c-fund", holder_name: "Lion Rock" }] } },
+      "POST /v1/director-settlements": { status: 201, body: drafted, headers: { ETag: '"1-draft"' } },
+      "GET /v1/director-settlements/ds-1/evidence": { status: 200, body: { items: [] } },
+    });
+    page();
+    fireEvent.click(await screen.findByRole("radio", { name: /Convert to a SAFE or note/ }));
+    fireEvent.change(screen.getByLabelText("Amount (SGD)"), { target: { value: "600" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    expect(await screen.findByText("Choose the SAFE or note they hold.")).toBeTruthy();
+    const pick = screen.getByLabelText("The SAFE or note") as HTMLSelectElement;
+    expect(within(pick).getAllByRole("option").map((o) => o.textContent)).toEqual(["Choose", "Post-money SAFE · 1,000.00 SGD · signed 10 Oct 2026"]);
+    fireEvent.change(pick, { target: { value: "in-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    const impact = (await screen.findByRole("heading", { name: "What it posts" })).closest("section") as HTMLElement;
+    expect(within(impact).getByText(/600.00 SGD stops being owed to Mei Lin Tan and becomes the money of their SAFE or note, on 2700/)).toBeTruthy();
+    expect(within(impact).getByText("On the day it is approved")).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/director-settlements")?.body).toEqual({
+      contact_id: "c-mei", account_id: "acc-2500", amount: sgd("600"), route: "safe", safe: { instrument_id: "in-1" },
+    });
     await noViolations(document.body);
   });
 

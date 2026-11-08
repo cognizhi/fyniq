@@ -746,7 +746,8 @@ func TestP1AccountMergesMoveWhatTheAccountHolds(t *testing.T) {
 //   - on 1 Jun at S$4.00 over 1,252,631: 15% off is 3.40, so 14,705 shares for S$49,997.00; the MFN SAFE 7,500 at
 //     4.00; the pre-money SAFE's 3,000,000 ÷ 1,252,631 = 2.394959… cut to 2.3949, so 8,351 for S$19,999.81;
 //   - two caps at S$3.00 over 1,000,000: f = 0.1, so 2.25 (55,555 for S$124,998.75) and 4.50, above the round's, so
-//     3.00 (83,333 for S$249,999.00); G.3's pre-money SAFE the lower of 2.50 and 2.40: 52,083 for S$124,999.20.
+//     3.00 (83,333 for S$249,999.00); G.3's pre-money SAFE the lower of 2.50 and 2.40: 52,083 for S$124,999.20;
+//   - a founder's S$600.00 of 2500 into the SAFE they hold: Dr 2500 · Cr 2700 naming it (director_safe@1), and six refused.
 //
 // req: FR-EQ-18
 // req: RND-SHARE
@@ -793,6 +794,13 @@ func TestP1SAFEConversion(t *testing.T) {
 	caps := run(t, load(t, "safe-conversion-caps.json"))
 	if got, want := lines(caps, "EQ-0003"), "2700 124998.75 SAFE-0001; 2700 249999.00 SAFE-0002; 2700 124999.20 SAFE-0003; 3010 -499996.95"; got != want {
 		t.Errorf("two caps and G.3's pre-money SAFE: %s, want %s", got, want)
+	}
+	founder := run(t, load(t, "safe-from-a-founder.json"))
+	if want := []string{"DS-0090", "DS-0091", "DS-0092", "DS-0093", "DS-0094", "DS-0095"}; !reflect.DeepEqual(founder.Rejected, want) {
+		t.Errorf("a founder's balance into their SAFE: rejected %v, want %v", founder.Rejected, want)
+	}
+	if got, want := lines(founder, "DS-0001"), "2500 600.00; 2700 -600.00 SAFE-0001"; got != want {
+		t.Errorf("DS-0001: %s, want %s", got, want)
 	}
 	if len(caps.Rejected) != 0 || len(caps.CapTables) != 2 ||
 		owners(caps.CapTables[1]) != "P0001 1000000 77.40, P0002 101000 7.82, P0003 55555 4.30, P0004 83333 6.45, P0005 52083 4.03" {
