@@ -13986,6 +13986,12 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01
           format: uuid
           type: string
+        grant_id:
+          description: "exercise: the recorded grant whose options are exercised; its holder, class and exercise price are the issue's, and its shares at most what is vested and not exercised (getOptionGrant's exercisable)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01
+          format: uuid
+          type: string
         holder_id:
           description: "issue_cash: the subscriber, a contact marked shareholder or investor; class_conversion: the holder whose shares convert."
           examples:
@@ -13999,13 +14005,14 @@ components:
           format: uuid
           type: string
         kind:
-          description: "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions."
+          description: "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions; exercise: a recorded grant's options exercised for cash, an issue to its holder at its exercise price (FR-EQ-19)."
           enum:
             - issue_cash
             - transfer
             - class_conversion
             - reversal
             - instrument_conversion
+            - exercise
           examples:
             - issue_cash
           type: string
@@ -22275,11 +22282,21 @@ components:
             - 1
           format: int64
           type: integer
+        exercisable:
+          description: "What is vested and not exercised at the end of today: what an exercise may take (an exercise transaction, createEquityTransaction)."
+          examples:
+            - "12000"
+          type: string
         exercise_price:
           description: The price per share paid on exercise, in the base currency, from zero.
           examples:
             - "0.10"
           pattern: ^[0-9]{1,10}(\.[0-9]{1,6})?$
+          type: string
+        exercised:
+          description: The options effective exercises turned into shares, less those a reversal undid.
+          examples:
+            - "0"
           type: string
         expired:
           description: The options its recorded expiries let lapse, back in the pool.
@@ -22384,6 +22401,8 @@ components:
         - outstanding
         - forfeited
         - expired
+        - exercised
+        - exercisable
         - events
         - evidence
         - checks
@@ -74453,6 +74472,7 @@ paths:
               - class_conversion
               - reversal
               - instrument_conversion
+              - exercise
             examples:
               - transfer
             type: string
@@ -74542,7 +74562,7 @@ paths:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
     post:
-      description: "Drafts an equity transaction (FR-EQ-17): issue_cash allots shares to one subscriber for cash at a price per share (its amount shares × price under RND-LINE); transfer moves shares from one holder to another; class_conversion moves one holder's shares into another class, with the carrying amount when the classes' accounts differ [accountant to confirm the basis]; reversal undoes an effective transaction, citing why. Attach its evidence with addEquityTransactionEvidence, then ask for approval with requestEquityTransactionApproval; once approved, recordEquityTransactionEffective records the day ACRA's register shows it. Nothing moves until then. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      description: "Drafts an equity transaction (FR-EQ-17): issue_cash allots shares to one subscriber for cash at a price per share (its amount shares × price under RND-LINE); transfer moves shares from one holder to another; class_conversion moves one holder's shares into another class, with the carrying amount when the classes' accounts differ [accountant to confirm the basis]; exercise issues a recorded grant's options to its holder at its exercise price (FR-EQ-19), at most what is vested and not exercised, from share application monies like issue_cash; reversal undoes an effective transaction, citing why. Attach its evidence with addEquityTransactionEvidence, then ask for approval with requestEquityTransactionApproval; once approved, recordEquityTransactionEffective records the day ACRA's register shows it. Nothing moves until then. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: createEquityTransaction
       parameters:
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."

@@ -48,4 +48,5 @@ RULE_SETS: dict[str, RuleSet] = {
     "option_pool": equity.option_pool,
     "option_grant": equity.option_grant,
     "option_event": equity.option_event,
+    "option_exercise": equity.option_exercise,
 }

@@ -79,6 +79,38 @@ describe("the equity transactions", () => {
     });
   });
 
+  it("drafts an exercise of a grant's vested options, the holder, class and price the grant's; axe finds nothing", async () => {
+    // req: FR-EQ-19
+    const grant = { id: "og-1", status: "recorded", holder_id: "c-priya", holder_name: "Priya Nair", number: "48000", exercise_price: "0.10", currency: "SGD",
+      granted_on: "2025-10-15", exercisable: "12000", outstanding: "48000" };
+    const drafted = { ...base, id: "eq-9", status: "draft" as const, details: { kind: "exercise" as const, grant_id: "og-1", shares: "10000" },
+      parties: [{ contact_id: "c-priya", name: "Priya Nair", role: "subscriber" as const }], amount: sgd("1000.00"), acra: { steps: [], flags: [] } };
+    const seen = answer({
+      "GET /v1/holders": { status: 200, body: { items: [mei, fund] } },
+      "GET /v1/accounts": { status: 200, body: { items: [account("acc-3010", "3010", "Ordinary share capital")] } },
+      "GET /v1/share-classes": { status: 200, body: { items: [] } },
+      "GET /v1/option-grants": { status: 200, body: { items: [grant, { ...grant, id: "og-2", exercisable: "0" }] } },
+      "POST /v1/equity-transactions": { status: 201, body: drafted },
+      "GET /v1/equity-transactions/eq-9": { status: 200, body: drafted },
+    });
+    renderPage(TransactionNew, { path: "/equity/transactions/new", session: accountant });
+    const form = await screen.findByRole("form", { name: "New equity transaction" });
+    fireEvent.change(within(form).getByLabelText("Type"), { target: { value: "exercise" } });
+    const pick = within(form).getByLabelText("Grant of options");
+    await within(pick).findByRole("option", { name: "Priya Nair, granted 2025-10-15: 12,000 exercisable at 0.10 SGD" });
+    expect(within(pick).getAllByRole("option")).toHaveLength(2); // the grant with nothing exercisable is not offered
+    fireEvent.change(pick, { target: { value: "og-1" } });
+    expect(within(form).getByText("At most the 12,000 vested and not exercised")).toBeTruthy();
+    fireEvent.change(within(form).getByLabelText("Shares"), { target: { value: "10,000" } });
+    fireEvent.change(within(form).getByLabelText("Resolutions"), { target: { value: "Board resolution 15 Oct 2026" } });
+    expect(within(form).getByRole("note").textContent).toContain("It waits until the holder's money is in share application monies");
+    await noViolations(document.body);
+    fireEvent.click(within(form).getByRole("button", { name: "Draft the transaction" }));
+    await new Promise((r) => setTimeout(r, 0));
+    const post = seen.find((s) => s.method === "POST" && s.path === "/v1/equity-transactions");
+    expect(post?.body).toEqual({ kind: "exercise", grant_id: "og-1", shares: "10000", resolution_refs: "Board resolution 15 Oct 2026" });
+  });
+
   it("asks for approval of a draft at its version", async () => {
     const draft = { ...issue, status: "draft" as const, number: undefined, approved_on: undefined, acra: undefined, paid: undefined, version: 3 };
     const seen = answer({

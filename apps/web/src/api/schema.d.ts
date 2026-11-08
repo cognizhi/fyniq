@@ -3883,7 +3883,7 @@ export interface paths {
         put?: never;
         /**
          * Draft an equity transaction
-         * @description Drafts an equity transaction (FR-EQ-17): issue_cash allots shares to one subscriber for cash at a price per share (its amount shares × price under RND-LINE); transfer moves shares from one holder to another; class_conversion moves one holder's shares into another class, with the carrying amount when the classes' accounts differ [accountant to confirm the basis]; reversal undoes an effective transaction, citing why. Attach its evidence with addEquityTransactionEvidence, then ask for approval with requestEquityTransactionApproval; once approved, recordEquityTransactionEffective records the day ACRA's register shows it. Nothing moves until then. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         * @description Drafts an equity transaction (FR-EQ-17): issue_cash allots shares to one subscriber for cash at a price per share (its amount shares × price under RND-LINE); transfer moves shares from one holder to another; class_conversion moves one holder's shares into another class, with the carrying amount when the classes' accounts differ [accountant to confirm the basis]; exercise issues a recorded grant's options to its holder at its exercise price (FR-EQ-19), at most what is vested and not exercised, from share application monies like issue_cash; reversal undoes an effective transaction, citing why. Attach its evidence with addEquityTransactionEvidence, then ask for approval with requestEquityTransactionApproval; once approved, recordEquityTransactionEffective records the day ACRA's register shows it. Nothing moves until then. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
          */
         post: operations["createEquityTransaction"];
         delete?: never;
@@ -20493,6 +20493,12 @@ export interface components {
             class_id?: string;
             /**
              * Format: uuid
+             * @description exercise: the recorded grant whose options are exercised; its holder, class and exercise price are the issue's, and its shares at most what is vested and not exercised (getOptionGrant's exercisable).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01
+             */
+            grant_id?: string;
+            /**
+             * Format: uuid
              * @description issue_cash: the subscriber, a contact marked shareholder or investor; class_conversion: the holder whose shares convert.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
              */
@@ -20504,11 +20510,11 @@ export interface components {
              */
             instrument_id?: string;
             /**
-             * @description issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions.
+             * @description issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions; exercise: a recorded grant's options exercised for cash, an issue to its holder at its exercise price (FR-EQ-19).
              * @example issue_cash
              * @enum {string}
              */
-            kind: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion";
+            kind: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion" | "exercise";
             /**
              * @description A note for the register.
              * @example Seed round, second close
@@ -26265,10 +26271,20 @@ export interface components {
              */
             evidence: number;
             /**
+             * @description What is vested and not exercised at the end of today: what an exercise may take (an exercise transaction, createEquityTransaction).
+             * @example 12000
+             */
+            exercisable: string;
+            /**
              * @description The price per share paid on exercise, in the base currency, from zero.
              * @example 0.10
              */
             exercise_price: string;
+            /**
+             * @description The options effective exercises turned into shares, less those a reversal undid.
+             * @example 0
+             */
+            exercised: string;
             /**
              * @description The options its recorded expiries let lapse, back in the pool.
              * @example 0
@@ -63820,7 +63836,7 @@ export interface operations {
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
                 /** @description Only transactions of this kind. */
-                kind?: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion";
+                kind?: "issue_cash" | "transfer" | "class_conversion" | "reversal" | "instrument_conversion" | "exercise";
             };
             header?: never;
             path?: never;

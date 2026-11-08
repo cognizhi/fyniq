@@ -270,8 +270,18 @@ for approval; another Owner or the Controller records it, never the grant's hold
   has left. Neither is dated before the grant.
 - From its day, the options leave the holder's fully diluted shares and are back in the pool to
   grant again [accountant to confirm against the plan's rules].
-- **Outstanding** is the grant's options less those forfeited and expired; **Vested** never counts
-  more than is outstanding, so a leaver keeps only what vested before they left.
+- **Outstanding** is the grant's options less those forfeited, expired and exercised; **Vested**
+  never counts more than the grant keeps, so a leaver keeps only what vested before they left.
+
+To **exercise** options, an Accountant drafts an equity transaction of type **Exercise of
+options**: they choose the grant, the number of options and the board resolution allotting the
+shares. The holder, the share class and the price per share are the grant's; it takes at most
+what is vested and not exercised (**Exercisable** on the grant). It is approved like any other
+issue, never by the holder, and made effective once the holder's money is in share application
+monies: it then posts Dr 2040 Share application monies · Cr share capital with shares × the
+exercise price, and the holder holds the shares. Exercised options never return to the pool; a
+reversal of the exercise makes them outstanding again. A grant at an exercise price of 0 is not
+exercised this way yet: ask your accountant [accountant to confirm].
 
 ## Correct a transaction
 
@@ -329,6 +339,8 @@ a director's balance add their shares when they take effect.
 | The options not vested are fewer than the forfeiture (EQUITY-18) | Forfeit only the options not vested; record those that lapse later as an expiry |
 | The grant's other events leave fewer options (EQUITY-18) | Take at most what the grant has left |
 | These are your own options, so another person approves their forfeiture or expiry | Ask another Owner or the Controller |
+| The options vested and not exercised are fewer than the exercise (EQUITY-07) | Exercise at most what the grant shows as exercisable, or make it effective once more have vested |
+| The grant's exercise price is 0 (EQUITY-07) | Ask your accountant how to record shares issued for no cash; Fyniq records an exercise for cash only |
 | The render service did not make the PDF (REPORT-08) | Try again in a moment, or export to Excel |
 
 ## Related

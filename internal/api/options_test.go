@@ -587,3 +587,127 @@ var matrixOptionEvents = map[string]func(e *env, tok string) (response, func() b
 		return r, func() bool { return matrixOptionEventState(e, f) == was }
 	},
 }
+
+// An exercise of options (FR-EQ-19, design D9; slice 5b-ii): Priya's 48,000 options at S$0.10 from 15 Oct 2025, 12,000
+// vested on 15 Oct 2026. An exercise of 12,001 is refused; one of 10,000 is an issue to her of 3010 at S$0.10, S$1,000.00,
+// approved by another person, never Mei, who signs in as her (FM-9), and made effective only once her S$1,000.00 is in
+// share application monies: then Dr 2040 · Cr 3010, her 10,000 shares, and 38,000 options outstanding, 2,000
+// exercisable; fully diluted she still counts 48,000. Its reversal makes the 10,000 outstanding again. A grant at no
+// exercise price is not exercised for cash.
+// req: FR-EQ-19
+// req: FM-9
+// asvs: V8.2.1
+func TestAGrantsOptionsAreExercised(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner, authz.Controller)
+	mei := c.as(c.mei, authz.Owner)
+	approve := func(req response, token string) response {
+		return e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", token, hashOf(req), "If-Match", `"1"`)
+	}
+	asked := func(path string, created response, kind string) response {
+		t.Helper()
+		if f := e.upload(path+"/evidence", prep, map[string]string{"evidence_type": kind}, "file.pdf", []byte("%PDF-1.7 "+kind), "If-Match", created.Header.Get("ETag")); f.Status != http.StatusCreated {
+			t.Fatalf("attaching the %s: %d %s", kind, f.Status, f.Raw)
+		}
+		return e.call(http.MethodPost, path+"/approval", prep, nil, "If-Match", created.Header.Get("ETag"))
+	}
+	priya := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Priya Nair", "investor": true}).str("id")
+	ct := e.call(http.MethodGet, "/v1/contacts/"+priya, weiling, nil)
+	if r := approve(e.call(http.MethodPut, "/v1/contacts/"+priya+"/member", kow, map[string]any{"member_user_id": c.mei}, "If-Match", ct.Header.Get("ETag")), weiling); r.Status != http.StatusOK {
+		t.Fatalf("linking Priya to Mei: %d %s", r.Status, r.Raw)
+	}
+	ordinary := e.shareCapitalIn(e.books.Org)
+	var monies string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		m, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2040", Name: "Share application monies", Type: storage.Liability, Role: "share-application-monies"})
+		monies = m.ID.String()
+		return err
+	})
+	pool := e.call(http.MethodPost, "/v1/option-pool/resolutions", prep, map[string]any{"size": "100000", "class_account_id": ordinary,
+		"resolution_ref": "Ordinary resolution 2 Jan 2025", "resolved_on": "2025-01-02"})
+	if a := approve(asked("/v1/option-pool/resolutions/"+pool.str("id"), pool, "Resolution"), mei); a.Status != http.StatusOK {
+		t.Fatalf("the pool: %d %s", a.Status, a.Raw)
+	}
+	grantOf := func(price, number string) string {
+		t.Helper()
+		g := e.call(http.MethodPost, "/v1/option-grants", prep, map[string]any{"holder_id": priya, "number": number, "exercise_price": price,
+			"granted_on": "2025-10-15", "cliff_months": 12, "vesting_months": 48, "acceleration": "none", "expires_on": "2035-10-15", "class_account_id": ordinary})
+		if a := approve(asked("/v1/option-grants/"+g.str("id"), g, "Grant letter"), kow); a.Status != http.StatusOK {
+			t.Fatalf("a grant at %s: %d %s", price, a.Status, a.Raw)
+		}
+		return g.str("id")
+	}
+	grant := grantOf("0.10", "48000")
+	free := grantOf("0", "4800")
+	exercise := func(g, shares string, extra map[string]any) response {
+		body := map[string]any{"kind": "exercise", "grant_id": g, "shares": shares, "resolution_refs": "Board resolution 15 Oct 2026"}
+		for k, v := range extra {
+			body[k] = v
+		}
+		return e.call(http.MethodPost, "/v1/equity-transactions", prep, body)
+	}
+	if r := exercise(grant, "12001", nil); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, "12000 options are vested and not exercised on 2026-10-15") {
+		t.Errorf("exercising one option not vested: %d %s", r.Status, r.Raw)
+	}
+	if r := exercise(grant, "100", map[string]any{"price": "0.20", "holder_id": c.ahkow}); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, `"field":"body.price"`) || !strings.Contains(r.Raw, `"field":"body.holder_id"`) {
+		t.Errorf("another price and holder: %d %s", r.Status, r.Raw)
+	}
+	if r := exercise(free, "100", nil); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, "exercise price is 0") {
+		t.Errorf("a grant at no price: %d %s", r.Status, r.Raw)
+	}
+	x := exercise(grant, "10000", nil)
+	if x.Status != http.StatusCreated || !strings.Contains(x.Raw, `"price":"0.10"`) || !strings.Contains(x.Raw, `"holder_id":"`+priya+`"`) ||
+		!strings.Contains(x.Raw, `"amount":"1000.00"`) {
+		t.Fatalf("the exercise drafted: %d %s", x.Status, x.Raw)
+	}
+	path := "/v1/equity-transactions/" + x.str("id")
+	req := asked(path, x, "Exercise notice")
+	if req.Status != http.StatusAccepted || !strings.Contains(req.Raw, "Issue 10000 shares to Priya Nair (subscriber) on an exercise of options") {
+		t.Fatalf("asking for the exercise: %d %s", req.Status, req.Raw)
+	}
+	if a := approve(req, mei); a.Status == http.StatusOK {
+		t.Errorf("Mei approved her own exercise: %s", a.Raw)
+	}
+	if a := approve(req, kow); a.Status != http.StatusOK {
+		t.Fatalf("approving the exercise: %d %s", a.Status, a.Raw)
+	}
+	approved := e.call(http.MethodGet, path, weiling, nil)
+	effective := func(tx response) response {
+		return e.call(http.MethodPost, "/v1/equity-transactions/"+tx.str("id")+"/effective", weiling,
+			map[string]any{"effective_on": "2026-10-15", "lodgement_ref": "AA2026101500789"}, "If-Match", tx.Header.Get("ETag"))
+	}
+	e.problemIs(effective(approved), "recordEquityTransactionEffective", 409, equity.CodeEffective) // not paid yet
+	if r := e.postFounderJournal("2026-10-14", founderLine(e.books.Bank.ID.String(), "1000.00", "", ""), founderLine(monies, "-1000.00", priya, "")); r.Status != http.StatusOK {
+		t.Fatalf("Priya's S$1,000.00 into share application monies: %d %s", r.Status, r.Raw)
+	}
+	done := effective(approved)
+	if done.Status != http.StatusOK || done.str("status") != "effective" || len(done.Body["entries"].([]any)) != 1 {
+		t.Fatalf("the exercise made effective: %d %s", done.Status, done.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/option-grants/"+grant, weiling, nil)
+	if g.str("exercised") != "10000" || g.str("outstanding") != "38000" || g.str("exercisable") != "2000" || g.str("vested") != "12000" {
+		t.Errorf("the grant after its exercise: %s", g.Raw)
+	}
+	cap := e.call(http.MethodGet, "/v1/cap-table?at=2026-10-15", weiling, nil)
+	if !strings.Contains(cap.Raw, `"holder_name":"Priya Nair","class_name":"Ordinary shares","account_code":"3010","issued":"10000","votes":"10000","fully_diluted":"52800","options":"42800"`) {
+		t.Errorf("Priya's line: 10,000 shares and the 38,000 + 4,800 options outstanding: %s", cap.Raw)
+	}
+
+	// The exercise reversed: its 10,000 options outstanding again.
+	rev := e.call(http.MethodPost, "/v1/equity-transactions", prep, map[string]any{"kind": "reversal", "reverses_id": x.str("id"),
+		"reason": "The exercise notice was withdrawn"})
+	rreq := asked("/v1/equity-transactions/"+rev.str("id"), rev, "Withdrawal")
+	if a := approve(rreq, kow); a.Status != http.StatusOK {
+		t.Fatalf("approving the reversal: %d %s", a.Status, a.Raw)
+	}
+	if r := effective(e.call(http.MethodGet, "/v1/equity-transactions/"+rev.str("id"), weiling, nil)); r.Status != http.StatusOK {
+		t.Fatalf("the reversal made effective: %d %s", r.Status, r.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/option-grants/"+grant, weiling, nil); g.str("exercised") != "0" || g.str("outstanding") != "48000" || g.str("exercisable") != "12000" {
+		t.Errorf("the grant once its exercise is reversed: %s", g.Raw)
+	}
+}

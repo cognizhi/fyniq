@@ -57,7 +57,7 @@ type EquityTransactionPath struct {
 
 // EquityTransactionDraft is an equity transaction as drafted. Which fields it takes depends on its kind.
 type EquityTransactionDraft struct {
-	Kind             string `json:"kind" enum:"issue_cash,transfer,class_conversion,reversal,instrument_conversion" doc:"issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions." example:"issue_cash"`
+	Kind             string `json:"kind" enum:"issue_cash,transfer,class_conversion,reversal,instrument_conversion,exercise" doc:"issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions; exercise: a recorded grant's options exercised for cash, an issue to its holder at its exercise price (FR-EQ-19)." example:"issue_cash"`
 	HolderID         string `json:"holder_id,omitempty" format:"uuid" doc:"issue_cash: the subscriber, a contact marked shareholder or investor; class_conversion: the holder whose shares convert." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 	SellerID         string `json:"seller_id,omitempty" format:"uuid" doc:"transfer: the holder the shares come from." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 	BuyerID          string `json:"buyer_id,omitempty" format:"uuid" doc:"transfer: the holder they go to, a contact marked shareholder or investor." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c12"`
@@ -77,6 +77,8 @@ type EquityTransactionDraft struct {
 	InstrumentID string `json:"instrument_id,omitempty" format:"uuid" doc:"instrument_conversion: the recorded SAFE or note converting, whose holder and class it takes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
 	RoundID      string `json:"round_id,omitempty" format:"uuid" doc:"instrument_conversion: the approved issue for cash, the priced round, it converts at." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02"`
 	Review       string `json:"review,omitempty" readOnly:"true" doc:"instrument_conversion: what the accountant completes in a conversion no enabled template covers (⚠), as it was drafted." example:"the accountant completes it: it follows no template, a discount"`
+	// FR-EQ-19: an exercise of options.
+	GrantID string `json:"grant_id,omitempty" format:"uuid" doc:"exercise: the recorded grant whose options are exercised; its holder, class and exercise price are the issue's, and its shares at most what is vested and not exercised (getOptionGrant's exercisable)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d01"`
 }
 
 // EquityParty is a holder a transaction moves shares of or for.
@@ -164,7 +166,7 @@ type EquityEffectiveRequest struct {
 type (
 	equityTransactionListInput struct {
 		PageQuery
-		Kind string `query:"kind" enum:"issue_cash,transfer,class_conversion,reversal,instrument_conversion" doc:"Only transactions of this kind." example:"transfer"`
+		Kind string `query:"kind" enum:"issue_cash,transfer,class_conversion,reversal,instrument_conversion,exercise" doc:"Only transactions of this kind." example:"transfer"`
 	}
 	equityTransactionListOutput  struct{ Body EquityTransactionPage }
 	equityTransactionCreateInput struct {
@@ -234,7 +236,7 @@ func transactionIn(d EquityTransactionDraft, today time.Time) equity.Transaction
 		ClassID: opt(d.ClassID), ToAccountID: id(d.ToClassAccountID), ToClassID: opt(d.ToClassID), Shares: strings.TrimSpace(d.Shares),
 		ToShares: strings.TrimSpace(d.ToShares), Price: strings.TrimSpace(d.Price), Amount: strings.TrimSpace(d.Amount),
 		ResolutionRefs: strings.TrimSpace(d.ResolutionRefs), ReversesID: id(d.ReversesID), Reason: strings.TrimSpace(d.Reason), Note: strings.TrimSpace(d.Note),
-		InstrumentID: id(d.InstrumentID), RoundID: id(d.RoundID), Date: today}
+		InstrumentID: id(d.InstrumentID), RoundID: id(d.RoundID), GrantID: id(d.GrantID), Date: today}
 }
 
 // transactionDraftOf is a transaction as the API shows what was drafted.
@@ -254,7 +256,7 @@ func transactionDraftOf(t equity.Transaction) EquityTransactionDraft {
 	return EquityTransactionDraft{Kind: t.Kind, HolderID: id(t.HolderID), SellerID: id(t.SellerID), BuyerID: id(t.BuyerID), ClassAccountID: id(t.ClassAccountID),
 		ClassID: opt(t.ClassID), ToClassAccountID: id(t.ToAccountID), ToClassID: opt(t.ToClassID), Shares: t.Shares, ToShares: t.ToShares, Price: t.Price,
 		Amount: t.Amount, ResolutionRefs: t.ResolutionRefs, ReversesID: id(t.ReversesID), Reason: t.Reason, Note: t.Note,
-		InstrumentID: id(t.InstrumentID), RoundID: id(t.RoundID), Review: t.Review}
+		InstrumentID: id(t.InstrumentID), RoundID: id(t.RoundID), Review: t.Review, GrantID: id(t.GrantID)}
 }
 
 // equityView is what showing transactions reads once: names, account codes, approvals waiting, movements by
@@ -351,7 +353,8 @@ func (a *API) equityTransactionOf(ctx context.Context, u storage.UnitOfWork, doc
 	for _, p := range []struct {
 		id   uuid.UUID
 		role string
-	}{{t.HolderID, map[bool]string{true: "subscriber", false: "holder"}[t.Kind == equity.KindIssueCash]}, {t.SellerID, "seller"}, {t.BuyerID, "buyer"}} {
+	}{{t.HolderID, map[bool]string{true: "subscriber", false: "holder"}[t.Kind == equity.KindIssueCash || t.Kind == equity.KindExercise]},
+		{t.SellerID, "seller"}, {t.BuyerID, "buyer"}} {
 		if p.id == uuid.Nil {
 			continue
 		}
@@ -420,7 +423,7 @@ func (a *API) equityTransactionOf(ctx context.Context, u storage.UnitOfWork, doc
 			}
 		}
 	case "approved":
-		if t.Kind == equity.KindIssueCash && out.Amount != nil {
+		if (t.Kind == equity.KindIssueCash || t.Kind == equity.KindExercise) && out.Amount != nil {
 			if out.Paid, err = a.paidIn(ctx, u, v, t); err != nil {
 				return out, err
 			}
@@ -462,7 +465,7 @@ func (a *API) equityACRA(ctx context.Context, u storage.UnitOfWork, doc storage.
 	}
 	steps := equity.StepsOf(all)
 	var lapses time.Time
-	if t.Kind == equity.KindIssueCash || t.Kind == equity.KindInstrumentConversion {
+	if t.Kind == equity.KindIssueCash || t.Kind == equity.KindInstrumentConversion || t.Kind == equity.KindExercise {
 		o, err := u.Organisation(ctx)
 		if err != nil {
 			return nil, err
@@ -736,7 +739,9 @@ func registerEquityTransactions(a *API) {
 		Description: "Drafts an equity transaction (FR-EQ-17): issue_cash allots shares to one subscriber for cash at a price per share (its " +
 			"amount shares × price under RND-LINE); transfer moves shares from one holder to another; class_conversion moves one holder's " +
 			"shares into another class, with the carrying amount when the classes' accounts differ [accountant to confirm the basis]; " +
-			"reversal undoes an effective transaction, citing why. Attach its evidence with addEquityTransactionEvidence, then ask for " +
+			"exercise issues a recorded grant's options to its holder at its exercise price (FR-EQ-19), at most what is vested and not " +
+			"exercised, from share application monies like issue_cash; reversal undoes an effective transaction, citing why. Attach its " +
+			"evidence with addEquityTransactionEvidence, then ask for " +
 			"approval with requestEquityTransactionApproval; once approved, recordEquityTransactionEffective records the day ACRA's register " +
 			"shows it. Nothing moves until then. Side effects: the draft, audit events. Every problem comes back together. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview saves nothing.",
@@ -954,9 +959,12 @@ func registerEquityTransactions(a *API) {
 					amounts = append(amounts, approval.Amount{Amount: shown.Amount.Amount, Currency: shown.Amount.Currency})
 				}
 				switch t.Kind {
-				case equity.KindIssueCash: // the entry it posts when effective, from share application monies (B.7)
+				case equity.KindIssueCash, equity.KindExercise: // the entry it posts when effective, from share application monies (B.7)
 					if shown.Amount == nil {
 						break
+					}
+					if t.Kind == equity.KindExercise {
+						diff = append(diff, ApprovalDiff{Field: "grant", After: t.GrantID.String()}, ApprovalDiff{Field: "exercise_price", After: t.Price})
 					}
 					diff = append(diff, ApprovalDiff{Field: "debit 2040", After: shown.Amount.Amount + " " + shown.Amount.Currency},
 						ApprovalDiff{Field: "credit " + v.codes[t.ClassAccountID], After: shown.Amount.Amount + " " + shown.Amount.Currency})
@@ -977,7 +985,8 @@ func registerEquityTransactions(a *API) {
 				}
 				summary := map[string]string{equity.KindIssueCash: "Issue %s shares for cash to %s", equity.KindTransfer: "Transfer %s shares: %s",
 					equity.KindClassConversion: "Convert %s shares of %s", equity.KindReversal: "Reverse an equity transaction%s for %s",
-					equity.KindInstrumentConversion: "Issue %s shares to %s on a SAFE's or note's conversion"}[t.Kind]
+					equity.KindInstrumentConversion: "Issue %s shares to %s on a SAFE's or note's conversion",
+					equity.KindExercise:             "Issue %s shares to %s on an exercise of options"}[t.Kind]
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectEquityTransaction, ObjectKey: doc.ID.String(),
 					Operation: approval.OpEquityTransactionApprove, Summary: fmt.Sprintf(summary, t.Shares, strings.Join(names, ", ")),
 					Execute: map[string]any{"transaction_id": doc.ID.String(), "version": strconv.Itoa(doc.Version), "kind": t.Kind},

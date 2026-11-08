@@ -17,10 +17,11 @@ export const kindWords: Record<TransactionKind, string> = {
   class_conversion: "Conversion between classes",
   reversal: "Reversal",
   instrument_conversion: "SAFE or note conversion",
+  exercise: "Exercise of options",
 };
 
-// The ACRA steps each kind records, in order, and what each is called (FR-EQ-09). A SAFE's or note's conversion is an
-// allotment, so it records an issue's steps.
+// The ACRA steps each kind records, in order, and what each is called (FR-EQ-09). A SAFE's or note's conversion, and an
+// exercise of options, are allotments, so they record an issue's steps.
 const issueSteps = [
   { kind: "resolved", label: "Shareholders' approval to issue the shares" },
   { kind: "approval_lodged", label: "Approval lodged with ACRA" },
@@ -40,6 +41,7 @@ export const stepsOf: Record<TransactionKind, { kind: string; label: string }[]>
   ],
   reversal: [],
   instrument_conversion: issueSteps,
+  exercise: issueSteps,
 };
 
 // reviewText is a conversion's review as a sentence: the API gives it as "the accountant completes it: …".

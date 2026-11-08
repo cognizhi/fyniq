@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 )
 
 // stage keeps a movement of a document being posted; the runner commits a document's movements only once it is
@@ -49,6 +50,13 @@ func (r *p1) commit() {
 		}
 		r.grants[g.doc] = g
 	}
+	if x := r.stagedUse; x != nil {
+		x.grant.exercises = append(x.grant.exercises, x.exercise)
+		gone := equity.Option{Key: x.grant.key(), On: x.exercise.On}
+		if _, _, err := gone.Number.SetString("-" + x.exercise.Number); err == nil {
+			r.options = append(r.options, gone)
+		}
+	}
 	if x := r.stagedEvent; x != nil {
 		x.grant.events = append(x.grant.events, x.event)
 		r.optionBook.Returns = append(r.optionBook.Returns, equity.Return{On: x.event.On, Number: x.event.Number})
@@ -63,13 +71,76 @@ func (r *p1) commit() {
 // unstage forgets what the document being posted staged.
 func (r *p1) unstage() {
 	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound, r.stagedPool, r.stagedGrant, r.stagedEvent = nil, nil, nil, nil, nil, nil, nil
+	r.stagedUse = nil
+}
+
+// stagedExercise is an exercise being posted, and its grant.
+type stagedExercise struct {
+	grant    *recordedGrant
+	exercise equity.Exercise
+}
+
+// optionExercise posts an exercise of a recorded grant's options, as making an exercise transaction effective does
+// (FR-EQ-19): at the grant's exercise price, above zero, within what is vested and kept on its day and later
+// (equity.FitsExercise), and from the holder's share application monies, never unpaid; then share_issue_cash@1 and the
+// shares into the holder's holding of the grant's class.
+func (r *p1) optionExercise(d Document, date time.Time) (ledger.Entry, bool) {
+	var x struct {
+		Grant  string `json:"grant"`
+		Shares string `json:"shares"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil || !wholeShares.MatchString(x.Shares) {
+		return ledger.Entry{}, false
+	}
+	g, ok := r.grants[x.Grant]
+	if !ok {
+		return ledger.Entry{}, false
+	}
+	price, err := money.ParseUnitPrice(g.terms.ExercisePrice, r.base, "exercise_price")
+	if err != nil || price.Sign() <= 0 {
+		return ledger.Entry{}, false
+	}
+	var n apd.Decimal
+	if _, _, err := n.SetString(x.Shares); err != nil {
+		return ledger.Entry{}, false
+	}
+	if fits, _, _, err := equity.FitsExercise(g.terms, g.events, g.exercises, n, date); err != nil || !fits {
+		return ledger.Entry{}, false
+	}
+	q, err := money.ParseQuantity(x.Shares, "shares")
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	amount, err := rounding.Line(q, price)
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	var monies uuid.UUID
+	for id, a := range r.settings.Accounts {
+		if a.SubscriberAccount() && a.Active && !a.Group {
+			monies = id
+		}
+	}
+	holder := r.personOf[g.terms.HolderID]
+	if monies == uuid.Nil || !r.within(amount, holder, monies, date) { // never effective unpaid
+		return ledger.Entry{}, false
+	}
+	e, err := ledger.PostCashIssue(ledger.CashIssue{ID: stableID("document", d.ID), PostOn: date, Party: g.terms.HolderID, Monies: monies,
+		Class: g.terms.ClassAccountID, Amount: amount}, r.settings)
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	r.stage(holder, r.codeOf[g.terms.ClassAccountID], n, date)
+	r.stagedUse = &stagedExercise{grant: g, exercise: equity.Exercise{On: date, Number: x.Shares}}
+	return e, true
 }
 
 // recordedGrant is a grant an option_grant document recorded: its document's ID, its terms and its recorded events.
 type recordedGrant struct {
-	doc    string
-	terms  equity.Grant
-	events []equity.GrantEvent
+	doc       string
+	terms     equity.Grant
+	events    []equity.GrantEvent
+	exercises []equity.Exercise
 }
 
 func (g *recordedGrant) key() equity.HoldingKey {
@@ -103,7 +174,7 @@ func (r *p1) optionEvent(d Document, date time.Time) bool {
 	if len(equity.CheckEvent(e, time.Time{})) > 0 {
 		return false
 	}
-	if probs, err := equity.CheckEventOf(e, g.terms, g.events); err != nil || len(probs) > 0 {
+	if probs, err := equity.CheckEventOf(e, g.terms, g.events, g.exercises); err != nil || len(probs) > 0 {
 		return false
 	}
 	r.stagedEvent = &stagedEvent{grant: g, event: e}
@@ -144,11 +215,15 @@ func (r *p1) optionGrant(d Document, date time.Time) bool {
 		Class         string `json:"class"`
 		CliffMonths   int    `json:"cliff_months"`
 		VestingMonths int    `json:"vesting_months"`
+		ExercisePrice string `json:"exercise_price"`
 	}
 	if json.Unmarshal(d.Raw, &x) != nil || !r.settings.Subscribers[stableID("party", x.Person)] {
 		return false
 	}
-	g := equity.Grant{Date: date, HolderID: stableID("party", x.Person), Number: x.Number, ExercisePrice: "0", GrantedOn: date,
+	if x.ExercisePrice == "" {
+		x.ExercisePrice = "0"
+	}
+	g := equity.Grant{Date: date, HolderID: stableID("party", x.Person), Number: x.Number, ExercisePrice: x.ExercisePrice, GrantedOn: date,
 		Vesting: equity.Vesting{CliffMonths: x.CliffMonths, Months: x.VestingMonths, Acceleration: "none"}, ExpiresOn: date.AddDate(0, 0, 1),
 		ClassAccountID: account(x.Class)}
 	if len(equity.CheckGrant(g, r.settings, time.Time{})) > 0 {

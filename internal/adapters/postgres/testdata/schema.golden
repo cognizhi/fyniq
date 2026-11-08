@@ -4716,6 +4716,7 @@ CREATE TRIGGER opening_balance_no_truncate BEFORE TRUNCATE ON fyniq.opening_bala
 CREATE TRIGGER operation_guard BEFORE DELETE OR UPDATE ON fyniq.operation FOR EACH ROW EXECUTE FUNCTION operation_guard()
 CREATE TRIGGER operation_no_truncate BEFORE TRUNCATE ON fyniq.operation FOR EACH STATEMENT EXECUTE FUNCTION operation_guard()
 CREATE TRIGGER option_event_guard AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'option_event'::text) AND (new.status = 'posted'::text) AND (old.status IS DISTINCT FROM 'posted'::text))) EXECUTE FUNCTION option_event_guard()
+CREATE TRIGGER option_exercise_guard BEFORE INSERT ON fyniq.holding_movement FOR EACH ROW WHEN (((new.kind = 'issue'::text) AND (new.transaction_id IS NOT NULL))) EXECUTE FUNCTION option_exercise_guard()
 CREATE TRIGGER option_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION option_guard()
 CREATE TRIGGER option_pool_guard AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = ANY (ARRAY['option_grant'::text, 'option_pool'::text])) AND (new.status = 'posted'::text) AND (old.status IS DISTINCT FROM 'posted'::text))) EXECUTE FUNCTION option_pool_guard()
 CREATE TRIGGER organisation_connector_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION connector_guard()
@@ -5023,7 +5024,7 @@ end_session(p_hash bytea, p_now timestamp with time zone) → void | security de
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 equity_record_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d43ce384e28f88a5ba6fc7d50c20d1ac
-equity_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 35bf4f36a2fe0387106492f9900467fc
+equity_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6176347ffeca24f4cd22b45cf2101b47
 equity_transaction_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 86ee0e0f60a4e7ae69ba04d79b397a64
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
@@ -5034,7 +5035,7 @@ fixed_asset_source_guard() → trigger | security invoker | v | search_path=pg_c
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
-holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4fbce41476afa125740252e23a4732a1
+holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 266426f94189ed122e970a39b26c5104
 holding_movement_settled() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5bc31cd33b59e7587ae2fb621cac56f2
 identity_may_sign_in(p_issuer text, p_subject text) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 14bbafbe258830341b935c34136b0ae2
 idle_timeout(p_org uuid, p_now timestamp with time zone, p_default interval) → interval | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02a235edb67b54eb3f4c0a1499190573
@@ -5089,7 +5090,8 @@ notification_event_guard() → trigger | security invoker | v | search_path=pg_c
 notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a87982bcfd592985b20b311ab99d6c53
 opening_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2ce7b1e284de3ad59fe6cb84f6a4efd
 operation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf33967b1fa7a0928b933d6b266a0ba7
-option_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0711dfdc0e09b0f1e48791b17da0d350
+option_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aeecaf4f8f1bf7ef46cbd31b0d26b8d5
+option_exercise_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 75b4c4209c2089a076dfcd3cd916a430
 option_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e0e6a7512ed134a1725c2e042677585f
 option_pool_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5242165e49f78754130069d07f26cef8
 organisation_connector_route(p_id uuid) → TABLE(organisation_id uuid, connector text, state text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5f3c5bc22d3b807ee390beb8be8df823

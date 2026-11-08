@@ -76,12 +76,26 @@
       "format": "int64",
       "type": "integer"
     },
+    "exercisable": {
+      "description": "What is vested and not exercised at the end of today: what an exercise may take (an exercise transaction, createEquityTransaction).",
+      "examples": [
+        "12000"
+      ],
+      "type": "string"
+    },
     "exercise_price": {
       "description": "The price per share paid on exercise, in the base currency, from zero.",
       "examples": [
         "0.10"
       ],
       "pattern": "^[0-9]{1,10}(\\.[0-9]{1,6})?$",
+      "type": "string"
+    },
+    "exercised": {
+      "description": "The options effective exercises turned into shares, less those a reversal undid.",
+      "examples": [
+        "0"
+      ],
       "type": "string"
     },
     "expired": {
@@ -220,6 +234,8 @@
     "outstanding",
     "forfeited",
     "expired",
+    "exercised",
+    "exercisable",
     "events",
     "evidence",
     "checks",

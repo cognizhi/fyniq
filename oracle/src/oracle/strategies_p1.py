@@ -157,14 +157,15 @@ FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-una
 # a rule, money on 2700 naming no recorded SAFE, and a conversion of a SAFE whose money never came. The option pool
 # (README, "The option pool and grants"): resolutions covering what is granted, and grants within what the pool leaves;
 # refused, a grant beyond it or before any pool, and a resolution smaller than what is granted. A grant's forfeitures
-# and expiries; refused, one of more than the grant has left, and a forfeiture of options vested.
+# and expiries; refused, one of more than the grant has left, and a forfeiture of options vested. Exercises of vested
+# options paid from the holder's monies; refused, one of options not vested.
 EQUITY_POSTING = ["equity-money-in", "equity-money-in", "equity-refund", "equity-issue", "equity-issue",
                   "equity-transfer", "equity-transfer", "equity-safe", "equity-safe-money", "equity-safe-conversion",
-                  "equity-pool", "equity-grant", "equity-grant", "equity-forfeiture", "equity-expiry"]
+                  "equity-pool", "equity-grant", "equity-grant", "equity-forfeiture", "equity-expiry", "equity-exercise"]
 EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-transfer-to-self",
                    "equity-transfer-not-share-capital", "equity-safe-bad", "equity-safe-money-unnamed",
                    "equity-safe-conversion-unfunded", "equity-grant-beyond", "equity-grant-no-pool", "equity-pool-short",
-                   "equity-event-too-many", "equity-forfeit-vested"]
+                   "equity-event-too-many", "equity-forfeit-vested", "equity-exercise-not-vested"]
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
@@ -223,7 +224,8 @@ class _Book:
         # date order; and every option granted so far, all by the latest day.
         self.pool: tuple[int, str] | None = None
         self.granted = 0  # less what events gave back
-        # grant -> [options it has left, whether they all vested on its day]: the others vest past every date drawn
+        # grant -> [options it has left, whether they all vested on its day, its exercise price, holder, class]: the
+        # others vest past every date drawn
         self.grants: dict[str, list[Any]] = {}
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
@@ -1070,13 +1072,18 @@ def _equity_document(
         kind = "equity-grant-beyond"
     if kind == "equity-pool-short" and book.granted < 2:
         kind = "equity-pool"
-    left = [g for g, (n, _) in book.grants.items() if n > 0]
+    left = [g for g, v in book.grants.items() if v[0] > 0]
     if kind in ("equity-forfeiture", "equity-expiry", "equity-event-too-many", "equity-forfeit-vested") and not left:
         kind = "equity-grant" if book.pool is not None else "equity-pool"
     if kind == "equity-forfeiture" and not any(not book.grants[g][1] for g in left):
         kind = "equity-expiry"  # every grant left vested on its day
     if kind == "equity-forfeit-vested" and not any(book.grants[g][1] for g in left):
         kind = "equity-event-too-many"
+    if kind == "equity-exercise" and not any(book.grants[g][1] and book.monies.get(book.grants[g][3], Decimal(0)) >= book.grants[g][2]
+                                             for g in left):
+        kind = "equity-money-in"
+    if kind == "equity-exercise-not-vested" and not any(not book.grants[g][1] for g in left):
+        kind = "equity-grant" if book.pool is not None else "equity-pool"
     if kind == "equity-grant" and book.pool is not None and book.pool[0] == book.granted:
         kind = "equity-grant-beyond"
     meant = REJECT if kind in REJECTED_KINDS else POST
@@ -1085,6 +1092,8 @@ def _equity_document(
         return _option(draw, base, kind, book), meant, kind
     if kind in ("equity-forfeiture", "equity-expiry", "equity-event-too-many", "equity-forfeit-vested"):
         return _option_event(draw, base, kind, book), meant, kind
+    if kind in ("equity-exercise", "equity-exercise-not-vested"):
+        return _exercise(draw, base, kind, book, day), meant, kind
     if kind in ("equity-safe", "equity-safe-bad"):
         return _safe(draw, base, kind, book), meant, kind
     if kind in ("equity-safe-money", "equity-safe-money-unnamed"):
@@ -1163,10 +1172,12 @@ def _option(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> di
     vests_now = draw(st.booleans())
     if not vests_now:  # a cliff of ten years: nothing vests by any date drawn
         doc["cliff_months"], doc["vesting_months"] = 120, 120
+    price = Decimal(draw(st.sampled_from(["0.10", "1", "2.5", "0.012345"])))
+    doc["exercise_price"] = format(price, "f")
     if kind == "equity-grant":
         number = draw(st.integers(1, min(left, 10**6)))
         book.granted += number
-        book.grants[base["id"]] = [number, vests_now]
+        book.grants[base["id"]] = [number, vests_now, price, doc["person"], doc["class"]]
     else:
         number = left + draw(st.integers(1, 1000))
     doc["number"] = str(number)
@@ -1177,7 +1188,7 @@ def _option_event(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book)
     """A forfeiture or expiry of a recorded grant (README, "The option pool and grants"): at most what it has left, a
     forfeiture only of a grant nothing of which has vested; refused, one more than it has left, or a forfeiture of a
     grant vested on its day. The documents come in date order, so every grant is dated on or before it."""
-    candidates = [g for g, (n, vests_now) in book.grants.items()
+    candidates = [g for g, (n, vests_now, *_) in book.grants.items()
                   if n > 0 and (kind != "equity-forfeiture" or not vests_now) and (kind != "equity-forfeit-vested" or vests_now)]
     grant = draw(st.sampled_from(sorted(candidates)))
     left = book.grants[grant][0]
@@ -1192,6 +1203,27 @@ def _option_event(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book)
     event_kind = "forfeiture" if kind in ("equity-forfeiture", "equity-forfeit-vested") else draw(
         st.sampled_from(["forfeiture", "expiry"]) if kind == "equity-event-too-many" else st.just("expiry"))
     return {"type": "option_event", **base, "grant": grant, "kind": event_kind, "number": str(number)}
+
+
+def _exercise(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book, day: date) -> dict[str, Any]:
+    """An exercise of a grant's options (README, "The option pool and grants"): of a grant vested on its day, within
+    what it has left and what its holder's monies pay for at its price; refused, one of a grant nothing of which has
+    vested."""
+    if kind == "equity-exercise-not-vested":
+        grant = draw(st.sampled_from(sorted(g for g, (n, vests_now, *_) in book.grants.items() if n > 0 and not vests_now)))
+        return {"type": "option_exercise", **base, "grant": grant, "shares": str(draw(st.integers(1, book.grants[grant][0])))}
+    grant = draw(st.sampled_from(sorted(g for g, (n, vests_now, price, holder, _) in book.grants.items()
+                                        if n > 0 and vests_now and book.monies.get(holder, Decimal(0)) >= price)))
+    left, _, price, holder, share_class = book.grants[grant]
+    paid = book.monies[holder]
+    shares = draw(st.integers(1, max(1, min(left, int(money.EXACT.divide_int(paid, price)), 10**6))))
+    while shares > 1 and money.rnd_line(Decimal(shares), price, 2) > paid:  # RND-LINE may round a cent above it
+        shares -= 1
+    book.grants[grant][0] -= shares
+    book.monies[holder] = money.EXACT.subtract(paid, money.rnd_line(Decimal(shares), price, 2))
+    book.shares[(holder, share_class)] = book.shares.get((holder, share_class), 0) + shares
+    book.issued.append((day, shares))
+    return {"type": "option_exercise", **base, "grant": grant, "shares": str(shares)}
 
 
 def _safe(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:

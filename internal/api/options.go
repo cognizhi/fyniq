@@ -89,6 +89,8 @@ type OptionGrantView struct {
 	Outstanding string            `json:"outstanding" doc:"The options not exercised, forfeited or expired, at the end of today." example:"48000"`
 	Forfeited   string            `json:"forfeited" doc:"The options its recorded forfeitures took, back in the pool." example:"0"`
 	Expired     string            `json:"expired" doc:"The options its recorded expiries let lapse, back in the pool." example:"0"`
+	Exercised   string            `json:"exercised" doc:"The options effective exercises turned into shares, less those a reversal undid." example:"0"`
+	Exercisable string            `json:"exercisable" doc:"What is vested and not exercised at the end of today: what an exercise may take (an exercise transaction, createEquityTransaction)." example:"12000"`
 	Events      []OptionEventView `json:"events" nullable:"false" doc:"Its forfeitures and expiries, drafts and recorded, oldest first (createOptionEvent)."`
 	Evidence    int               `json:"evidence" doc:"How many files are attached and not removed: asking for approval needs one, the grant letter." example:"1"`
 	ApprovalID  string            `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d11"`
@@ -240,6 +242,7 @@ type optionView struct {
 	grantAsked map[string]string
 	eventAsked map[string]string
 	events     map[uuid.UUID][]storage.Document // every event document, drafts and recorded, by its grant
+	exercises  map[uuid.UUID][]equity.Exercise  // every grant's effective exercises
 }
 
 func (a *API) optionViewOf(ctx context.Context, u storage.UnitOfWork) (optionView, error) {
@@ -261,6 +264,9 @@ func (a *API) optionViewOf(ctx context.Context, u storage.UnitOfWork) (optionVie
 		return v, err
 	}
 	if v.eventAsked, err = a.waiting(ctx, u, approval.ObjectOptionEvent); err != nil {
+		return v, err
+	}
+	if v.exercises, err = equity.ExercisesIn(ctx, u); err != nil {
 		return v, err
 	}
 	docs, err := equity.OptionEvents(ctx, u)
@@ -331,7 +337,7 @@ func (a *API) grantOf(ctx context.Context, u storage.UnitOfWork, v optionView, d
 			recorded = append(recorded, e)
 		}
 	}
-	standing, err := equity.StandingOf(g, recorded, v.today)
+	standing, err := equity.StandingOf(g, recorded, v.exercises[doc.ID], v.today)
 	if err != nil {
 		return OptionGrantView{}, err
 	}
@@ -340,7 +346,7 @@ func (a *API) grantOf(ctx context.Context, u storage.UnitOfWork, v optionView, d
 		ExpiresOn: g.ExpiresOn.Format(time.DateOnly), ClassAccountID: g.ClassAccountID.String(), Note: g.Note},
 		ID: doc.ID.String(), Status: "draft", Version: doc.Version, HolderName: name, Currency: base.Code, ClassCode: v.codes[g.ClassAccountID],
 		Vested: standing.Vested.Text('f'), Outstanding: standing.Outstanding.Text('f'), Forfeited: standing.Forfeited.Text('f'),
-		Expired: standing.Expired.Text('f'), Events: events}
+		Expired: standing.Expired.Text('f'), Exercised: standing.Exercised.Text('f'), Exercisable: standing.Exercisable.Text('f'), Events: events}
 	if doc.Status == storage.DocumentPosted {
 		out.Status = "recorded"
 	}
