@@ -2183,6 +2183,46 @@
     "feasibility.sensitivity": {
       "label": "Sensitivity: NPV",
       "tooltip": "The NPV with sales volume and fixed costs each at 80% to 120% of the study's."
+    },
+    "planning.budgets": {
+      "label": "Budgets",
+      "tooltip": "A financial year's budget by account and month, in versions: drafted, approved by another person and then locked."
+    },
+    "reports.budget-vs-actual": {
+      "label": "Budget vs Actual",
+      "tooltip": "Each income and expense account's actual against the year's budget, the gap and whether it is favourable."
+    },
+    "budget.new": {
+      "label": "New budget",
+      "tooltip": "Start an empty original budget for a financial year, then add its lines."
+    },
+    "budget.copy": {
+      "label": "Copy with growth",
+      "tooltip": "Copy this version into a new draft, each amount × (1 + growth): for another year, or as a revised version of this year's."
+    },
+    "budget.import": {
+      "label": "Import XLSX",
+      "tooltip": "Read a budget from a spreadsheet into a new draft; every problem comes back with its row and column."
+    },
+    "budget.save": {
+      "label": "Save",
+      "tooltip": "Save the draft's lines; the totals are worked out again."
+    },
+    "budget.add-line": {
+      "label": "Add a line",
+      "tooltip": "Another account, or account and dimension value, with an amount for each month."
+    },
+    "budget.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Another person who approves budgets decides it; approving it records and locks it as the year's budget."
+    },
+    "budget-vs-actual.by": {
+      "label": "Rows",
+      "tooltip": "By account, every dimension value added up, or by account and dimension values, matched exactly."
+    },
+    "budget-vs-actual.favourable": {
+      "label": "Favourable",
+      "tooltip": "Income at or above its budget, or costs at or below theirs."
     }
   }
 }

@@ -170,15 +170,21 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   `// req: QA-UI-05`
   - Built so far:
     - (rev 0.226) Cash ahead (`/planning/cash`, Basic, with Expert what-ifs) and Home's Cash ahead tile;
-    - (rev 0.227) Feasibility (`/planning/feasibility`, Expert), with the inputs as the workbook's sheet.
+    - (rev 0.227) Feasibility (`/planning/feasibility`, Expert), with the inputs as the workbook's sheet;
+    - (rev 0.228) Budgets (`/planning/budgets`, Expert). The paste-and-fill grid and AI-proposed versions wait.
 
-    Budgets and Forecast follow.
-- [ ] 8.2 The statements' budget and forecast columns, Budget vs Actual on Reports, and the close's budget variances in
+    Forecast follows.
+- [x] 8.2 The statements' budget and forecast columns, Budget vs Actual on Reports, and the close's budget variances in
   the web app. `// req: FR-RPT-02`, `// req: FR-RPT-03`, `// req: FR-GL-14`
+  - As built:
+    - the statements' columns with task 5.2 (rev 0.220);
+    - the close's budget variances with task 5.3 (rev 0.221);
+    - Budget vs Actual at `/reports/budget-vs-actual` (rev 0.228).
 - [ ] 8.3 The guide pages `docs/user-guide/budgets.md`, `forecast.md`, `cash-flow.md` and `feasibility.md`, with the
   workbook simplifications stated beside their figures. They are compiled into `kb/pages/`, followed by `make
   kb-index`, `make kb-lint` and a log entry.
-  - Built so far: `cash-flow.md` (`planning.cash`) and `feasibility.md` (`planning.feasibility`).
+  - Built so far: `cash-flow.md` (`planning.cash`), `feasibility.md` (`planning.feasibility`) and `budgets.md`
+    (`planning.budgets`).
 - [ ] 8.4 The four fragments checked against the build and the insight canvas republished where they differ (Recipe C).
   `python3 docs/design/screens/build.py check` passes, and the new canvas version is recorded.
 - [ ] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which

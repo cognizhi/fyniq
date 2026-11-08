@@ -449,3 +449,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/feasibility.md → planning.feasibility (new; p1-planning slice 8)
 
 ## [2026-11-08] compile | docs/user-guide/cash-flow.md → planning.cash (links the feasibility studies)
+
+## [2026-11-08] compile | docs/user-guide/budgets.md → planning.budgets (new; p1-planning slice 8)
+
+## [2026-11-08] edit | reports.statements links Budget vs Actual's page (planning.budgets)

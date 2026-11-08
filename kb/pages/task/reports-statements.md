@@ -52,7 +52,7 @@ aliases:
 ## Compare with the budget or the forecast
 
 - On the profit and loss, **Compare with** also offers **The budget** and **The forecast**.
-- **The budget**: a **Budget** column, account by account, from each month's financial-year budget once approved; its figures are the budget, not the books, so they open no ledger lines. A department's or project's profit and loss compares with the budget lines for it. If a month of the period is in a year with no approved budget, the column is left out and a note says why. The gap and whether it is favourable are in **Budget vs Actual**.
+- **The budget**: a **Budget** column, account by account, from each month's financial-year budget once approved; its figures are the budget, not the books, so they open no ledger lines. A department's or project's profit and loss compares with the budget lines for it. If a month of the period is in a year with no approved budget, the column is left out and a note says why. The gap and whether it is favourable are in **Budget vs Actual** ([[planning.budgets]]).
 - **The forecast**: a **Forecast** column from the latest recorded forecast, its first scenario with its funding. A forecast plans by drivers, not accounts, so the column has a figure only for revenue, cost of sales, gross profit, operating expenses, profit before tax and net profit. A forecast starts after the last month of actual figures, so the column appears only for months it covers, such as the months still to come this financial year.
 
 (src: docs/user-guide/financial-statements.md#compare-with-the-budget-or-the-forecast)
