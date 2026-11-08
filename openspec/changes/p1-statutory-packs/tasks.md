@@ -18,7 +18,7 @@
 
 ## 4. The first packs
 
-- [ ] 4.1 Write `sg-gst`, `sg-deadlines`, `sg-cpf`, `sg-sdl` and `sg-shg` from the official pages, each value with its source URL and a pinned test (`fyniq-sg-statutory` skill). Any value without a primary source keeps `[verify]`, and its pack stays inactive (20 Oct 2026: `sg-gst@2026.1` holds the rate history and the twelve B.6 codes with their F5 boxes, each from IRAS, and 22 pinned cases; BL corrected to "not reported", rev 0.37. **Left:** the registration threshold and the reverse-charge codes in `sg-gst`; `sg-deadlines`, `sg-cpf`, `sg-sdl` and `sg-shg`)
+- [ ] 4.1 Write `sg-gst`, `sg-deadlines`, `sg-cpf`, `sg-sdl` and `sg-shg` from the official pages, each value with its source URL and a pinned test (`fyniq-sg-statutory` skill). Any value without a primary source keeps `[verify]`, and its pack stays inactive (20 Oct 2026: `sg-gst@2026.1` holds the rate history and the twelve B.6 codes with their F5 boxes, each from IRAS, and 22 pinned cases; BL corrected to "not reported", rev 0.37. 7 Nov 2026, with `p1-gst`: `sg-gst@2026.3` adds the registration threshold, and `sg-deadlines@2026.1` is written. 8 Nov 2026, with `p1-planning`: `sg-cpf@2026.1` holds only the rates for citizens and third-year permanent residents above $750 a month, by age band, and the wage ceilings; `sg-sdl@2026.1` holds the levy. **Left:** the reverse-charge codes in `sg-gst`; in `sg-cpf`, the first- and second-year permanent residents' rates and the graduated rates up to $750, which the pay run needs; and `sg-shg`)
 
 ## 5. Home rows
 

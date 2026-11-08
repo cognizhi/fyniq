@@ -198,7 +198,8 @@ new rounding policy `RND-PLAN`, checked against the workbook's reference to the 
 `planning.buffer_months` months of burn (6); and expected payment dates from each contact's average lateness over 12
 months. It also brings what earlier changes left to it: the statements' budget and forecast columns, Budget vs Actual,
 the close's budget variances and Home's budget and cash-out tiles. Pay runs, CPF, GST and tax join the cash projection
-with their modules.
+with their modules. It was built the same day, in #490 to #504 (PRD-001 rev 0.215 to 0.229), except the republished
+insight canvas (task 8.4), which waits for the design account.
 
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 

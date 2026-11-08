@@ -194,8 +194,20 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 9. As built (slice 9)
 
-- [ ] 9.1 `make test` and `make up` pass on the last slice, and `make differential` is clean. The build plan's
+- [x] 9.1 `make test` and `make up` pass on the last slice, and `make differential` is clean. The build plan's
   p1-planning paragraph says what was built.
+  - As built (8 Nov 2026), on the last slice:
+    - `make test` passes, the full authorisation matrix included. Its one contract-lint test first found no Spectral,
+      because the worktree lacked its root dependencies; after `pnpm install --frozen-lockfile` it passes, and so do
+      the steps after it.
+    - `scripts/local-smoke.sh` passes from the local images (QA-LOCAL-01), as a compose project of its own on port
+      18080.
+    - `make differential` is clean.
+  - The build plan names #490 to #504.
+  - CI found three faults that the slices' own gates missed, each fixed on the slice that brought it:
+    - the matrix's forecast started after periods closed in 2020 and 2025;
+    - the matrix's budget fixture created accounts that earlier rows already held;
+    - gosec flagged an int32 conversion, and Semgrep a bare `P&L` in JSX text.
 
 ## Workflow follow-up
 
