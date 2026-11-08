@@ -252,6 +252,38 @@
       "label": "Register of share issues",
       "tooltip": "Every allotment of shares, with its holder, class, number, price, consideration, resolutions and ACRA reference."
     },
+    "equity.transactions": {
+      "label": "Equity transactions",
+      "tooltip": "Every issue for cash, transfer, conversion between classes and reversal, with its ACRA steps, and the register of share issues they write to."
+    },
+    "equity.transaction": {
+      "label": "Equity transaction",
+      "tooltip": "A transaction's details, evidence and approval, its ACRA steps, the day ACRA's register shows it, and the holdings it moved."
+    },
+    "equity-transaction.draft": {
+      "label": "New transaction",
+      "tooltip": "Draft an issue for cash, a transfer, a conversion between classes or a reversal. Nothing moves until it is approved and ACRA's register shows it."
+    },
+    "equity-transaction.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Another Owner or the Controller approves it, never a holder it moves shares of or for; the Accountant reviews it too when every other approver benefits."
+    },
+    "equity-transaction.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the resolutions, the subscription agreement, the instrument of transfer or the ACRA extract the transaction rests on."
+    },
+    "equity-transaction.step": {
+      "label": "Record the step",
+      "tooltip": "Record an ACRA step as it happens, such as the shareholders' approval lodged within 14 days of the resolution, or the notice of transfer."
+    },
+    "equity-transaction.effective": {
+      "label": "Record the effective date",
+      "tooltip": "The day ACRA's register of members shows it: never after today or before its approval. A cash issue waits until its subscriber's money is in."
+    },
+    "equity-transaction.reverse": {
+      "label": "Reverse it",
+      "tooltip": "Draft a reversal that undoes this transaction whole, citing why, such as the ACRA register extract."
+    },
     "equity.holders": {
       "label": "Shareholders and investors",
       "tooltip": "The equity register's holders: contacts marked shareholder or investor, with their recorded details and shares."

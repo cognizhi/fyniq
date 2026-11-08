@@ -172,12 +172,13 @@ function RecordBeforeBooks({ open, onClose, onDone }: { open: boolean; onClose: 
   );
 }
 
-export function ShareIssues() {
+// ShareIssueRegister is the register itself, a section of the equity transactions page and of its own: every allotment,
+// and the shares issued before the books start, which an Owner or the Controller records.
+export function ShareIssueRegister({ titled = false }: { titled?: boolean }) {
   const { session } = useSignedIn();
   const mayRecord = (session.roles ?? []).some((r) => recorders.includes(r));
   const [recording, setRecording] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const h = helpText("equity.share-issues");
   const q = useQuery({
     queryKey: ["share-issues"],
     queryFn: async () => {
@@ -187,26 +188,24 @@ export function ShareIssues() {
     },
   });
   return (
-    <div className="fy-page fy-enter">
-      <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
-          <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-            <Link to="/accounting/directors">Director accounts</Link>
-            <span aria-hidden="true">›</span>
-            <span>Register of share issues</span>
-          </nav>
-          <h1 className="fy-h1" title={h.tooltip}>
-            Register of share issues
-          </h1>
-          <p className="fy-secondary">Every allotment of shares. Share capital changes only with this register or the opening balances.</p>
+    <section className="fy-stack fy-stack--3" aria-labelledby={titled ? "share-issues-title" : undefined}>
+      {(titled || mayRecord) && (
+        <div className="fy-row fy-row--wrap fy-row--between gap-3">
+          {titled ? (
+            <h2 className="fy-h3" id="share-issues-title" title={helpText("equity.share-issues").tooltip}>
+              Register of share issues
+            </h2>
+          ) : (
+            <span />
+          )}
+          {mayRecord && (
+            <Button variant="secondary" onClick={() => setRecording(true)} title={helpText("share-issues.record-before-books").tooltip}>
+              <Icon of={Plus} />
+              {helpText("share-issues.record-before-books").label}
+            </Button>
+          )}
         </div>
-        {mayRecord && (
-          <Button variant="secondary" onClick={() => setRecording(true)} title={helpText("share-issues.record-before-books").tooltip}>
-            <Icon of={Plus} />
-            {helpText("share-issues.record-before-books").label}
-          </Button>
-        )}
-      </div>
+      )}
       {status && (
         <p className="fy-small" role="status">
           {status}
@@ -263,6 +262,28 @@ export function ShareIssues() {
         </table>
       )}
       <RecordBeforeBooks open={recording} onClose={() => setRecording(false)} onDone={setStatus} />
+    </section>
+  );
+}
+
+export function ShareIssues() {
+  const h = helpText("equity.share-issues");
+  return (
+    <div className="fy-page fy-enter">
+      <div className="fy-pagehead">
+        <div className="fy-pagehead__text">
+          <nav className="fy-breadcrumb" aria-label="Breadcrumb">
+            <Link to="/accounting/directors">Director accounts</Link>
+            <span aria-hidden="true">›</span>
+            <span>Register of share issues</span>
+          </nav>
+          <h1 className="fy-h1" title={h.tooltip}>
+            Register of share issues
+          </h1>
+          <p className="fy-secondary">Every allotment of shares. Share capital changes only with this register or the opening balances.</p>
+        </div>
+      </div>
+      <ShareIssueRegister />
     </div>
   );
 }
