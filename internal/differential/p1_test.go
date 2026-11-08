@@ -56,6 +56,10 @@ func TestP1FormatRules(t *testing.T) {
 		"kpis with no statements": func(s map[string]any) {
 			s["kpis"] = map[string]any{"year_start_month": 1, "counts": map[string]any{}}
 		},
+		"votes per share off share capital": func(s map[string]any) { // README, "Cap tables"
+			s["accounts"].([]any)[0].(map[string]any)["votes_per_share"] = "1"
+		},
+		"a cap table day that is not a date": func(s map[string]any) { s["cap_tables"] = []any{"2026-02-30"} },
 		"two retained-earnings accounts": func(s map[string]any) {
 			accounts := s["accounts"].([]any)
 			for _, i := range []int{8, 9} { // 2400 and 2999, made equity
@@ -344,6 +348,62 @@ func TestP1CashShareIssue(t *testing.T) {
 	}
 	if len(r.People) != 0 {
 		t.Errorf("people %v: every subscriber's monies net to nothing by 31 Mar", r.People)
+	}
+}
+
+// The cap tables of golden/cap-table.json, worked out by hand with exact fractions (README, "Cap tables"): G.3's round
+// on 12 Mar, 1,000,000, 200,000 and 52,083 of 1,252,083 shares, 79.8669…, 15.9733… and 4.1597…%; on 15 Apr, after
+// 50,000 moved from the founder to the investor and 10,000 preference shares with no votes, 950,000 of 1,262,083 is
+// 75.2724… of the shares and 75.8736… of the 1,252,083 votes, and the investor's 260,000 is 20.6009…; on 31 May the
+// SAFE holder's 52,083 are the founder's, 1,002,083: 79.3995… and 80.0332…. The transfers post nothing; seven are
+// refused, EQ-0013 because it leaves P0003 below zero from 10 May though they hold the share on 30 Apr (FY288).
+// req: FR-EQ-20
+// req: FR-EQ-17
+// req: QA-ENG-02
+func TestP1CapTable(t *testing.T) {
+	r := run(t, load(t, "cap-table.json"))
+	if want := []string{"EQ-0006", "EQ-0007", "EQ-0008", "EQ-0009", "EQ-0010", "EQ-0011", "EQ-0013"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	var docs []string
+	for _, e := range r.Entries {
+		docs = append(docs, e.Document)
+	}
+	if want := []string{"BT-0001", "EQ-0001", "BT-0002", "BT-0003", "EQ-0002", "EQ-0003", "BT-0004", "EQ-0005"}; !reflect.DeepEqual(docs, want) {
+		t.Errorf("entries %v, want %v: a transfer posts nothing", docs, want)
+	}
+	pct := func(s string) *string { return &s }
+	fig := func(issued, votes, ownership, voting string) CapFigures {
+		f := CapFigures{Issued: issued, Votes: votes, FullyDiluted: issued, Ownership: pct(ownership), Voting: pct(voting), Diluted: pct(ownership)}
+		return f
+	}
+	line := func(holder, class, issued, votes, ownership, voting string) CapLine {
+		return CapLine{Holder: holder, Class: class, CapFigures: fig(issued, votes, ownership, voting)}
+	}
+	holder := func(h, issued, votes, ownership, voting string) CapHolder {
+		return CapHolder{Holder: h, CapFigures: fig(issued, votes, ownership, voting)}
+	}
+	want := []CapTable{
+		{At: "2027-03-11", Issued: "1000000", Votes: "1000000", FullyDiluted: "1000000",
+			Lines:   []CapLine{line("P0001", "3010", "1000000", "1000000", "100.00", "100.00")},
+			Holders: []CapHolder{holder("P0001", "1000000", "1000000", "100.00", "100.00")}},
+		{At: "2027-03-12", Issued: "1252083", Votes: "1252083", FullyDiluted: "1252083",
+			Lines: []CapLine{line("P0001", "3010", "1000000", "1000000", "79.87", "79.87"), line("P0002", "3010", "200000", "200000", "15.97", "15.97"),
+				line("P0003", "3010", "52083", "52083", "4.16", "4.16")},
+			Holders: []CapHolder{holder("P0001", "1000000", "1000000", "79.87", "79.87"), holder("P0002", "200000", "200000", "15.97", "15.97"),
+				holder("P0003", "52083", "52083", "4.16", "4.16")}},
+		{At: "2027-04-15", Issued: "1262083", Votes: "1252083", FullyDiluted: "1262083",
+			Lines: []CapLine{line("P0001", "3010", "950000", "950000", "75.27", "75.87"), line("P0002", "3010", "250000", "250000", "19.81", "19.97"),
+				line("P0002", "3020", "10000", "0", "0.79", "0.00"), line("P0003", "3010", "52083", "52083", "4.13", "4.16")},
+			Holders: []CapHolder{holder("P0001", "950000", "950000", "75.27", "75.87"), holder("P0002", "260000", "250000", "20.60", "19.97"),
+				holder("P0003", "52083", "52083", "4.13", "4.16")}},
+		{At: "2027-05-31", Issued: "1262083", Votes: "1252083", FullyDiluted: "1262083",
+			Lines: []CapLine{line("P0001", "3010", "1002083", "1002083", "79.40", "80.03"), line("P0002", "3010", "250000", "250000", "19.81", "19.97"),
+				line("P0002", "3020", "10000", "0", "0.79", "0.00")},
+			Holders: []CapHolder{holder("P0001", "1002083", "1002083", "79.40", "80.03"), holder("P0002", "260000", "250000", "20.60", "19.97")}},
+	}
+	if err := sameCapTables(r.CapTables, want); err != nil {
+		t.Error(err)
 	}
 }
 

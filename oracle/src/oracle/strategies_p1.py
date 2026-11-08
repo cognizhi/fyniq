@@ -51,6 +51,14 @@ opening balances at the books' start, manual journals that may reverse by themse
 founders' documents after it may draw on. A third of those scenarios declare dimensions (README, "Dimensions"), with
 6200 and 4200 joining the chart to require them, and draw the general ledger's dimension kinds besides its others.
 
+For the equity register (README, "Cash share issues", "Share transfers" and "Cap tables"; source ``equity``): share
+application monies (2040) and the share classes, each class's votes per share drawn; the subscribers ``P0003`` and
+``P0004``, whose money comes in and is refunded (within what they paid) on bank lines naming them; cash issues within
+what each has paid; transfers of what a subscriber holds to another holder, the founders' people among them when their
+source is drawn too (only the subscribers sell, so what each holds is exact); and one to three days to state the cap
+table at, a document's day or ``as_of`` as often as any from a month before the first document. Three scenarios in four start with money in and issues,
+so the documents after them find shares to transfer.
+
 The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
 settle and what each has open, the deposits and what is left of each), so a document built to post
 really can.
@@ -68,7 +76,7 @@ from oracle import money, strategies_gl
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -139,15 +147,24 @@ FX_POSTING = ["bill-foreign", "bill-foreign", "invoice-foreign", "invoice-foreig
               "fx-pay-from-base-unapplied", "fx-wallet-in", "fx-wallet-out"]
 FX_REJECTED = ["pay-more-than-open", "receipt-more-than-open", "transfer-missing-rate", "fx-journal-unbalanced"]
 FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-unapplied", "fx-wallet-in", "fx-wallet-out"})
+# The equity register (README, "Cash share issues", "Share transfers" and "Cap tables"): money for shares in, and
+# refunded, on bank lines naming a subscriber; cash issues within what each subscriber has paid; transfers of what a
+# subscriber holds to another holder. Refused: an issue above what is paid, a transfer of more than the seller holds,
+# to themselves, or of an account that is not share capital.
+EQUITY_POSTING = ["equity-money-in", "equity-money-in", "equity-refund", "equity-issue", "equity-issue",
+                  "equity-transfer", "equity-transfer"]
+EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-transfer-to-self",
+                   "equity-transfer-not-share-capital"]
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
          "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED,
-         "general-ledger": strategies_gl.KINDS, "fx": FX_POSTING * 2 + FX_REJECTED}
+         "general-ledger": strategies_gl.KINDS, "fx": FX_POSTING * 2 + FX_REJECTED,
+         "equity": EQUITY_POSTING * 2 + EQUITY_REJECTED}
 REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED
-                           + FOUNDERS_REJECTED + FX_REJECTED)
+                           + FOUNDERS_REJECTED + FX_REJECTED + EQUITY_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 # The founders' money (README, "Settings and as_of" and the founders' sections): the directors and shareholders, a
@@ -158,6 +175,9 @@ STRANGER = "P0009"
 DIRECTOR_ACCOUNTS = {"director_loan": ("2500", "director-loan"),
                      "deferred_remuneration": ("2120", "deferred-remuneration")}
 SHARE_CLASSES = ["3010", "3020"]
+# The investors who are not among PEOPLE (README, "Cash share issues"), and share application monies.
+SUBSCRIBERS = ["P0003", "P0004"]
+MONIES = "2040"
 
 
 class _Book:
@@ -178,6 +198,9 @@ class _Book:
         self.owed: dict[tuple[str, str], Decimal] = {}
         # (person, director's account) -> at most what it owes them there: exact but for a conversion's remainder
         self.most: dict[tuple[str, str], Decimal] = {}
+        self.monies: dict[str, Decimal] = {}  # subscriber -> what their share application monies hold
+        self.shares: dict[tuple[str, str], int] = {}  # (subscriber, class) -> the shares they hold, exactly
+        self.holders: list[str] = list(SUBSCRIBERS)  # whom a transfer may move shares to
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
         """A posted credit to the person on the account: owed, at least and at most."""
@@ -970,6 +993,70 @@ def _founders_document(
     return doc, meant, kind
 
 
+def _equity_accounts(draw: st.DrawFn, accounts: list[dict[str, Any]]) -> None:
+    """Share application monies and the share classes (README, "Cap tables"), each class's votes per share drawn."""
+    accounts.append({"code": MONIES, "type": "liability", "group": False, "active": True,
+                     "role": "share-application-monies"})
+    have = {a["code"]: a for a in accounts}
+    for code in SHARE_CLASSES:
+        if code not in have:
+            have[code] = {"code": code, "type": "equity", "group": False, "active": True, "role": "share-capital"}
+            accounts.append(have[code])
+        votes = draw(st.sampled_from([None, None, "1", "0", "10", "0.5"]))
+        if votes is not None:
+            have[code]["votes_per_share"] = votes
+
+
+@st.composite
+def _equity_document(
+    draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book
+) -> tuple[dict[str, Any], str, str]:
+    """A document of the equity register, its intent and the kind it was built as (a refund or issue with nothing paid,
+    or a transfer with nothing held, becomes money in). Only the subscribers sell, so what each holds is exact."""
+    paid = sorted(p for p, left in book.monies.items() if left > 0)
+    held = sorted(k for k, n in book.shares.items() if n > 0)
+    if (kind in ("equity-refund", "equity-issue") and not paid) or \
+            (kind in ("equity-transfer", "equity-transfer-to-self") and not held):
+        kind = "equity-money-in"
+    meant = REJECT if kind in REJECTED_KINDS else POST
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind in ("equity-money-in", "equity-refund"):
+        person = draw(st.sampled_from(SUBSCRIBERS if kind == "equity-money-in" else paid))
+        amount = draw(_cents(2, 6)) if kind == "equity-money-in" else money.negate(draw(_part_of(book.monies[person])))
+        book.monies[person] = money.EXACT.add(book.monies.get(person, Decimal(0)), amount)
+        return {"type": "bank_transaction", **base, "account": "1010", "currency": "SGD", "amount": _text(amount, 2),
+                "person": person, "parts": [{"account": MONIES, "amount": _text(amount, 2), "gst_code": "NA"}]}, meant, kind
+    if kind in ("equity-issue", "equity-issue-unpaid"):
+        person = draw(st.sampled_from(paid if kind == "equity-issue" else SUBSCRIBERS))
+        share_class = draw(st.sampled_from(SHARE_CLASSES))
+        left = book.monies.get(person, Decimal(0))
+        if kind == "equity-issue-unpaid":  # at 1.00 a share, a dollar or more above what is paid
+            shares, price = int(left) + draw(st.integers(1, 1000)), Decimal("1.00")
+        else:  # n × price is at most what is paid, so its cents are too (RND-LINE)
+            price = draw(_share_price(left))
+            shares = draw(st.integers(1, min(int(money.EXACT.divide_int(left, price)), 10**7)))
+            book.monies[person] = money.EXACT.subtract(left, money.rnd_line(Decimal(shares), price, 2))
+            book.shares[(person, share_class)] = book.shares.get((person, share_class), 0) + shares
+        return {"type": "share_issue_cash", **base, "person": person, "class": share_class, "shares": str(shares),
+                "price": format(price, "f")}, meant, kind
+    if kind == "equity-transfer-too-many":
+        seller, share_class = draw(st.sampled_from(SUBSCRIBERS)), draw(st.sampled_from(SHARE_CLASSES))
+        shares = book.shares.get((seller, share_class), 0) + draw(st.integers(1, 1000))
+    else:
+        seller, share_class = draw(st.sampled_from(held)) if held else (draw(st.sampled_from(SUBSCRIBERS)), "3010")
+        shares = draw(st.integers(1, max(1, book.shares.get((seller, share_class), 0))))
+    buyer = seller if kind == "equity-transfer-to-self" else draw(st.sampled_from([h for h in book.holders if h != seller]))
+    doc = {"type": "share_transfer", **base, "seller": seller, "buyer": buyer, "class": share_class,
+           "shares": str(shares)}
+    if kind == "equity-transfer-not-share-capital":
+        doc["class"] = draw(st.sampled_from([MONIES, "1010", "4010"]))
+    if meant == POST:
+        book.shares[(seller, share_class)] -= shares
+        if buyer in SUBSCRIBERS:
+            book.shares[(buyer, share_class)] = book.shares.get((buyer, share_class), 0) + shares
+    return doc, meant, kind
+
+
 def _revalue(draw: st.DrawFn, accounts: list[dict[str, Any]], settings: dict[str, Any]) -> None:
     """Mark the revalued accounts and name the unrealised FX account (README, "Month-end revaluation")."""
     flagged = set(REVALUED)
@@ -1093,6 +1180,13 @@ def p1_scenarios_with_intent(
         accounts += _founders_accounts()
     if "fx" in sources:
         _revalue(draw, accounts, settings)
+    seeded: list[str] = []  # the equity source's first kinds: money in, then issues, so later ones find shares held
+    if "equity" in sources:
+        _equity_accounts(draw, accounts)
+        if "founders" in sources or "general-ledger" in sources:
+            book.holders += PEOPLE  # the directors and shareholders may buy shares too
+        if draw(st.integers(0, 3)) > 0:
+            seeded = ["equity-money-in", "equity-issue", "equity-money-in", "equity-issue"][:len(days) - 1]
     tracked: list[strategies_gl.Tracked] = []  # the general ledger's journals and opening balances
     dims = None  # the dimensions declared (FR-DIM-01), in a third of the general ledger's scenarios
     if ledger:
@@ -1112,7 +1206,7 @@ def p1_scenarios_with_intent(
             for person, account, owed in credits if meant == POST else []:
                 book.credit((person, account), owed)  # what the company owes them from the books' start
     for i, day in enumerate(days):
-        kind = draw(st.sampled_from(kinds))
+        kind = seeded[i] if i < len(seeded) else draw(st.sampled_from(kinds))
         doc_id = f"P1-{i + 1:04d}"
         if kind in KINDS["bank"]:
             document, meant = draw(_bank_document(doc_id, day, kind)), REJECT if kind in REJECTED_KINDS else POST
@@ -1129,6 +1223,8 @@ def p1_scenarios_with_intent(
         elif kind in strategies_gl.DOCUMENT_DIMENSION:
             assert dims is not None
             document, meant = draw(strategies_gl.dimension_document(doc_id, day, dims))
+        elif kind in KINDS["equity"]:
+            document, meant, kind = draw(_equity_document(doc_id, day, kind, book))
         elif kind in KINDS["general-ledger"] or kind in strategies_gl.DIMENSION_KINDS:
             document, meant, kind = draw(strategies_gl.journal(doc_id, day, kind, dims))
             tracked.append(strategies_gl.Tracked(doc_id, "manual_journal", meant == POST, 1, day))
@@ -1158,6 +1254,11 @@ def p1_scenarios_with_intent(
         scenario["people"] = list(PEOPLE)
     if dims is not None:
         scenario["dimensions"] = dims.declared
+    if "equity" in sources:  # README, "Cap tables": a few days, from before the first document to as_of
+        scenario["subscribers"] = list(SUBSCRIBERS)
+        when = st.one_of(st.sampled_from([*days, as_of]), st.dates(days[0] - timedelta(days=30), as_of))
+        days_asked = draw(st.lists(when, min_size=1, max_size=3, unique=True))
+        scenario["cap_tables"] = [d.isoformat() for d in days_asked]
     return scenario, Intent(intent, built, tuple(corrections))
 
 

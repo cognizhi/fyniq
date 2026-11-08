@@ -47,6 +47,8 @@ type Scenario struct {
 	// Statements and KPIs ask for the statements and the KPIs (README, "Statements" and "KPIs").
 	Statements bool            `json:"statements,omitempty"`
 	KPIs       json.RawMessage `json:"kpis,omitempty"`
+	// CapTables are the days to compute the cap table at the end of (FR-EQ-20; README, "Cap tables").
+	CapTables []string `json:"cap_tables,omitempty"`
 	// AsOf is the business date and Settings the organisation's settings, which a scenario with a P1 document has
 	// (README, "Settings and as_of").
 	AsOf      string     `json:"as_of,omitempty"`
@@ -72,6 +74,9 @@ type Account struct {
 	Revalue bool `json:"revalue,omitempty"`
 	// Requires are the dimensions, by name, a line a person enters on the account names a value of (FR-DIM-01).
 	Requires []string `json:"requires,omitempty"`
+	// VotesPerShare is a share-capital account's: the votes a share of its class carries, one when empty (FR-EQ-16;
+	// README, "Cap tables").
+	VotesPerShare string `json:"votes_per_share,omitempty"`
 }
 
 // Dimension is one of the organisation's dimensions, such as Department, with its values (FR-DIM-01).
@@ -176,6 +181,42 @@ type Result struct {
 	// and empty when nothing posted, whenever it does.
 	Statements *map[string]any `json:"statements,omitempty"`
 	KPIs       *map[string]any `json:"kpis,omitempty"`
+	// CapTables are the cap table at the end of each of the scenario's cap_tables days, in their order (FR-EQ-20).
+	CapTables []CapTable `json:"cap_tables,omitempty"`
+}
+
+// CapTable is the cap table at the end of a day (README, "Cap tables").
+type CapTable struct {
+	At           string      `json:"at"`
+	Issued       string      `json:"issued"`
+	Votes        string      `json:"votes"`
+	FullyDiluted string      `json:"fully_diluted"`
+	Lines        []CapLine   `json:"lines"`
+	Holders      []CapHolder `json:"holders"`
+}
+
+// CapFigures are a line's or a holder's shares, votes and fully diluted shares, with their percentages of the day's
+// totals (RND-DISPLAY); a percentage is null when its total is zero.
+type CapFigures struct {
+	Issued       string  `json:"issued"`
+	Votes        string  `json:"votes"`
+	FullyDiluted string  `json:"fully_diluted"`
+	Ownership    *string `json:"ownership"`
+	Voting       *string `json:"voting"`
+	Diluted      *string `json:"diluted"`
+}
+
+// CapLine is a holder's shares of one class.
+type CapLine struct {
+	Holder string `json:"holder"`
+	Class  string `json:"class"`
+	CapFigures
+}
+
+// CapHolder is a holder's lines together.
+type CapHolder struct {
+	Holder string `json:"holder"`
+	CapFigures
 }
 
 // Entry is one posted entry.
@@ -396,6 +437,7 @@ func RunEngine(s Scenario) (Result, error) {
 				res.Rejected = append(res.Rejected, d.ID)
 				continue
 			}
+			sources.commit() // its holding movements, now that it is accepted
 			if len(e.Lines) > 0 {
 				record(d.ID, "post", e, true)
 			}
@@ -517,6 +559,11 @@ func RunEngine(s Scenario) (Result, error) {
 				}
 				res.DimensionBalances[month][code][set] = total.String()
 			}
+		}
+	}
+	if len(s.CapTables) > 0 {
+		if res.CapTables, err = sources.capTables(); err != nil {
+			return Result{}, fmt.Errorf("scenario %q: the cap tables: %w", s.Name, err)
 		}
 	}
 	if s.Statements {
@@ -679,7 +726,64 @@ func Compare(engine, oracle Result) error {
 			}
 		}
 	}
+	if err := sameCapTables(engine.CapTables, oracle.CapTables); err != nil {
+		return err
+	}
 	return sameStatements(engine, oracle)
+}
+
+// sameCapTables compares two results' cap tables (README, "Cap tables"): every day, line and holder exactly, a null
+// percentage only against null. It names the first difference.
+func sameCapTables(engine, oracle []CapTable) error {
+	if len(engine) != len(oracle) {
+		return fmt.Errorf("cap tables: engine %d, oracle %d", len(engine), len(oracle))
+	}
+	text := func(p *string) string {
+		if p == nil {
+			return "null"
+		}
+		return *p
+	}
+	same := func(at string, e, o CapFigures) error {
+		if e.Issued != o.Issued || e.Votes != o.Votes || e.FullyDiluted != o.FullyDiluted || text(e.Ownership) != text(o.Ownership) ||
+			text(e.Voting) != text(o.Voting) || text(e.Diluted) != text(o.Diluted) {
+			return fmt.Errorf("%s: engine %s shares %s votes %s fully diluted (%s%%, %s%%, %s%%), oracle %s shares %s votes %s fully diluted (%s%%, %s%%, %s%%)",
+				at, e.Issued, e.Votes, e.FullyDiluted, text(e.Ownership), text(e.Voting), text(e.Diluted),
+				o.Issued, o.Votes, o.FullyDiluted, text(o.Ownership), text(o.Voting), text(o.Diluted))
+		}
+		return nil
+	}
+	for i, e := range engine {
+		o := oracle[i]
+		at := "cap table " + e.At
+		switch {
+		case e.At != o.At:
+			return fmt.Errorf("cap table %d: engine at %s, oracle at %s", i+1, e.At, o.At)
+		case e.Issued != o.Issued || e.Votes != o.Votes || e.FullyDiluted != o.FullyDiluted:
+			return fmt.Errorf("%s totals: engine %s, %s, %s; oracle %s, %s, %s", at, e.Issued, e.Votes, e.FullyDiluted, o.Issued, o.Votes, o.FullyDiluted)
+		case len(e.Lines) != len(o.Lines) || len(e.Holders) != len(o.Holders):
+			return fmt.Errorf("%s: engine %d lines and %d holders, oracle %d and %d", at, len(e.Lines), len(e.Holders), len(o.Lines), len(o.Holders))
+		}
+		for k, l := range e.Lines {
+			ol := o.Lines[k]
+			if l.Holder != ol.Holder || l.Class != ol.Class {
+				return fmt.Errorf("%s line %d: engine %s %s, oracle %s %s", at, k+1, l.Holder, l.Class, ol.Holder, ol.Class)
+			}
+			if err := same(fmt.Sprintf("%s line %s %s", at, l.Holder, l.Class), l.CapFigures, ol.CapFigures); err != nil {
+				return err
+			}
+		}
+		for k, h := range e.Holders {
+			oh := o.Holders[k]
+			if h.Holder != oh.Holder {
+				return fmt.Errorf("%s holder %d: engine %s, oracle %s", at, k+1, h.Holder, oh.Holder)
+			}
+			if err := same(at+" holder "+h.Holder, h.CapFigures, oh.CapFigures); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // sameStatements compares two results' statements and KPIs (README, "Statements" and "KPIs"): every figure exactly,

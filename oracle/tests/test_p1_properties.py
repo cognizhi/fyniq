@@ -16,7 +16,7 @@ from oracle.ledger import Ledger
 from oracle.scenario import parse_json, scenario_from_json
 from oracle.sources.settle import OpenItem
 from oracle.strategies import POST, REJECT
-from oracle.strategies_p1 import (CLAIMS_REJECTED, FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios,
+from oracle.strategies_p1 import (CLAIMS_REJECTED, EQUITY_REJECTED, FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios,
                                   p1_scenarios_with_intent)
 
 
@@ -166,8 +166,43 @@ def test_1590_holds_the_depreciation_of_the_assets_still_in_the_register(data):
 
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx")
+    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity")
     assert set(SOURCES) == set(KINDS)
+
+
+# What refuses each rejected kind of the equity source (README, "Cash share issues" and "Share transfers").
+EQUITY_REASONS = {"equity-issue-unpaid": "unpaid", "equity-transfer-too-many": "more-than-held",
+                  "equity-transfer-to-self": "same-holder", "equity-transfer-not-share-capital": "not-share-capital"}
+
+
+# req: QA-ENG-02, FR-EQ-17, FR-EQ-20
+@pytest.mark.parametrize("kind", sorted(set(KINDS["equity"])))
+def test_the_equity_source_draws_each_of_its_kinds_as_meant(kind):
+    # Each kind is drawn, posts or is refused as the generator meant, and a refused one for its own rule.
+    data, intent = find(p1_scenarios_with_intent(("equity",)), lambda pair: kind in pair[1].kinds.values(),
+                        settings=_FIND)
+    ledger = Ledger(scenario_from_json(data))
+    reasons = dict(ledger.reasons)
+    for doc_id, built in intent.kinds.items():
+        if built == kind:
+            assert (doc_id in ledger.rejected) == (intent.documents[doc_id] == REJECT), reasons
+            assert (intent.documents[doc_id] == REJECT) == (kind in EQUITY_REJECTED)
+            assert reasons.get(doc_id) == EQUITY_REASONS.get(kind), (doc_id, reasons)
+
+
+# req: QA-ENG-02, FR-EQ-20
+@given(p1_scenarios(("equity", "founders")))
+@settings(max_examples=60, deadline=None, suppress_health_check=list(HealthCheck))
+def test_a_cap_table_adds_up(data):
+    # Every line holds shares; each holder's figures are the sums of their lines', and the day's those of every line.
+    for table in Ledger(scenario_from_json(data)).result()["cap_tables"]:
+        lines = table["lines"]
+        assert all(Decimal(ln["issued"]) > 0 and ln["fully_diluted"] == ln["issued"] for ln in lines)
+        for key in ("issued", "votes", "fully_diluted"):
+            assert sum((Decimal(ln[key]) for ln in lines), Decimal(0)) == Decimal(table[key])
+            for h in table["holders"]:
+                assert sum((Decimal(ln[key]) for ln in lines if ln["holder"] == h["holder"]), Decimal(0)) == Decimal(h[key])
+        assert [h["holder"] for h in table["holders"]] == sorted({ln["holder"] for ln in lines})
 
 
 # req: QA-ENG-02, FR-EQ-03, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07

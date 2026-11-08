@@ -92,7 +92,7 @@ from datetime import date
 from decimal import Decimal, localcontext
 from typing import Any
 
-from oracle import money
+from oracle import captable, money
 from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical, dimension_set
 from oracle.revaluation import revaluations
 from oracle.rules import Rules
@@ -248,12 +248,17 @@ class Ledger:
             if account.role == "share-capital" and not opening:  # INV-13: the opening balances may reach it
                 raise Rejected("share-capital-account")
 
-        # Rule 9 (FR-EQ-01, B.7): the person and origin on a director's account, and only there.
+        # Rule 9 (FR-EQ-01, B.7): the person and origin on a director's account, the subscriber alone on share
+        # application monies (rev 0.207), and neither anywhere else.
         for line in lines:
-            director = s.accounts[line.account].role in DIRECTOR_ACCOUNTS
-            if director and (line.party not in s.people or line.origin not in ORIGINS):
-                raise Rejected("director-line-without-person")
-            if not director and (line.party is not None or line.origin is not None):
+            role = s.accounts[line.account].role
+            if role in DIRECTOR_ACCOUNTS:
+                if line.party not in s.people or line.origin not in ORIGINS:
+                    raise Rejected("director-line-without-person")
+            elif role == "share-application-monies":
+                if line.party not in s.people | s.subscribers or line.origin is not None:
+                    raise Rejected("monies-line-without-subscriber")
+            elif line.party is not None or line.origin is not None:
                 raise Rejected("person-on-another-account")
 
         # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
@@ -522,6 +527,8 @@ class Ledger:
             result["statements"] = statements(s, self.entries)
         if s.kpis is not None:
             result["kpis"] = kpis(s, result)
+        if s.cap_tables:  # README, "Cap tables" (FR-EQ-20)
+            result["cap_tables"] = [captable.table(s, self.books, day) for day in s.cap_tables]
         check_result(result)
         return result
 

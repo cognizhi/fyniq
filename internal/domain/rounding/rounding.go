@@ -34,6 +34,7 @@ const (
 	DepositName      = "RND-DEPOSIT"
 	MileageName      = "RND-MILEAGE"
 	ShareName        = "RND-SHARE"
+	OwnershipName    = "RND-DISPLAY"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -284,6 +285,27 @@ func Percent(part, whole money.Money) (string, error) {
 	r := halfAwayFromZero(&x, 1)
 	r.Negative = r.Negative && !r.IsZero() // -0.04 shows as 0.0, never -0.0
 	return r.Text('f'), nil
+}
+
+// Ownership is the cap table's percentage (FR-EQ-20, which names RND-DISPLAY for it): part as a percentage of whole =
+// round(part ÷ whole × 100, 2 decimals), half-up, once, from the exact quotient computed to 60 digits, as a plain
+// decimal string such as "79.87". Shares and votes are never negative. A table's percentages are never forced to sum to
+// 100.00 (design D7). A zero whole has no percentage.
+func Ownership(part, whole *apd.Decimal) (string, error) {
+	if part.Negative || whole.Negative {
+		return "", fmt.Errorf("%s: a percentage of %s in %s", OwnershipName, part.Text('f'), whole.Text('f'))
+	}
+	if whole.IsZero() {
+		return "", fmt.Errorf("%s: a percentage of zero", OwnershipName)
+	}
+	var x apd.Decimal
+	if _, err := work.Mul(&x, part, apd.New(100, 0)); err != nil {
+		return "", err
+	}
+	if _, err := work.Quo(&x, &x, whole); err != nil {
+		return "", err
+	}
+	return halfAwayFromZero(&x, 2).Text('f'), nil
 }
 
 // GSTMethod is how RND-GST-EXCL rounds a document's GST (PRD-001 §10.4): once per GST code's subtotal, the default,

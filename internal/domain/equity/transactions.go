@@ -462,42 +462,20 @@ type HoldingKey struct {
 
 // Holdings are every holding on day, from the holding movements alone (FR-EQ-17), with no empty one.
 func Holdings(ctx context.Context, u storage.UnitOfWork, day time.Time) (map[HoldingKey]apd.Decimal, error) {
-	moved, err := u.Holdings().List(ctx)
+	moves, err := Moves(ctx, u)
 	if err != nil {
 		return nil, err
 	}
-	defaults := map[uuid.UUID]uuid.UUID{}
 	out := map[HoldingKey]apd.Decimal{}
-	for _, m := range moved {
-		if m.EffectiveOn.After(day) {
+	for _, m := range moves {
+		if m.On.After(day) {
 			continue
 		}
-		k := HoldingKey{Holder: m.HolderID, Account: m.ClassAccountID}
-		if m.ClassID != nil {
-			k.Class = *m.ClassID
-		} else {
-			def, ok := defaults[m.ClassAccountID]
-			if !ok {
-				d, err := DefaultClass(ctx, u, m.ClassAccountID)
-				if err != nil {
-					return nil, err
-				}
-				if d != nil {
-					def = *d
-				}
-				defaults[m.ClassAccountID] = def
-			}
-			k.Class = def
-		}
-		var n apd.Decimal
-		if _, _, err := n.SetString(string(m.Shares)); err != nil {
+		sum := out[m.Key]
+		if _, err := apd.BaseContext.Add(&sum, &sum, &m.Shares); err != nil {
 			return nil, err
 		}
-		sum := out[k]
-		if _, err := apd.BaseContext.Add(&sum, &sum, &n); err != nil {
-			return nil, err
-		}
-		out[k] = sum
+		out[m.Key] = sum
 	}
 	for k, v := range out {
 		if v.IsZero() {

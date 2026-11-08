@@ -173,6 +173,9 @@ func (r *p1) directorConversion(d Document, date time.Time) (ledger.Entry, bool)
 		c.Difference = account(x.Difference)
 	}
 	e, err := ledger.PostConversion(c, r.settings)
+	if err == nil {
+		r.stage(x.Person, x.Class, shares.Count, date) // its n shares join the person's holding (README, "Cap tables")
+	}
 	return e, err == nil
 }
 
@@ -212,6 +215,11 @@ func (r *p1) shareIssueCash(d Document, date time.Time) (ledger.Entry, bool) {
 	}
 	e, err := ledger.PostCashIssue(ledger.CashIssue{ID: stableID("document", d.ID), PostOn: date, Party: stableID("party", x.Person), Monies: monies,
 		Class: account(x.Class), Amount: amount}, r.settings)
+	if err == nil {
+		var n apd.Decimal
+		n.Set(q.Decimal())
+		r.stage(x.Person, x.Class, n, date)
+	}
 	return e, err == nil
 }
 

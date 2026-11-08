@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
@@ -144,6 +145,8 @@ type p1 struct {
 	posted   []postedLine             // every line of the entries posted so far, for what an account merge moves
 	toCome   []toCome                 // what spreads release to accounts, as_of or not, for an account merge's rule 5
 	journals []reversing              // the manual journals that reverse by themselves, as posted
+	moves    []equity.Move            // the holding movements of the documents accepted so far (README, "Cap tables")
+	staged   []equity.Move            // the movements of the document being posted, until it is accepted
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -191,6 +194,7 @@ func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, erro
 // post posts document i, or reports it rejected. A document that posts nothing of its own (an asset in the register)
 // comes back accepted with an entry of no lines.
 func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
+	r.staged = nil
 	date, err := time.Parse(time.DateOnly, d.Date)
 	if err != nil {
 		return ledger.Entry{}, false
@@ -240,6 +244,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.directorConversion(d, date)
 	case "share_issue_cash":
 		return r.shareIssueCash(d, date)
+	case "share_transfer":
+		return r.shareTransfer(d, date)
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}

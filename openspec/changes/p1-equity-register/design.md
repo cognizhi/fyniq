@@ -257,6 +257,18 @@ PDF goes through the render service's report layout.
 
 The table is never written, so it cannot be edited.
 
+**Built in slice 3a** (`equity.TableAt`, `equity.TableIn`, `rounding.Ownership`):
+- Each holding's votes are its shares × the votes per share of its class's version recorded by the cap table's day, or
+  of its first recorded version for a day before that.
+- Shares of an account with no recorded class count one vote a share, flagged as assumed, until the account has a
+  class [accountant to confirm]. This follows the Companies Act 1967's default of one vote a share for equity shares
+  [verify].
+- A percentage of a zero total (no share votes) is undefined, never 0.00.
+- Fully diluted equals issued until the instruments (slice 4) and the pool (slice 5) add to it.
+- The oracle's `cap_table` reads its own register of movements. The format gains `share_transfer`, `votes_per_share`
+  and `cap_tables` (test/differential/README.md, "Cap tables"). `golden/cap-table.json` pins G.3's round, and the
+  generator's `equity` source runs in `make differential`.
+
 ### D8 Round scenarios (FR-EQ-21)
 
 **The scenario.** `round_scenario` is versioned. It holds the inputs:

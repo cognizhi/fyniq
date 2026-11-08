@@ -275,6 +275,45 @@ func TestPercentPinnedCases(t *testing.T) {
 	}
 }
 
+// The cap table's percentage: of the exact quotient, to 2 decimals, half-up, once (FR-EQ-20). The G.3 round's three
+// holdings, worked by hand: 1,000,000, 200,000 and 52,083 of 1,252,083 are 79.8669…, 15.9733… and 4.1597… per cent.
+// req: FR-EQ-20
+// req: RND-DISPLAY
+func TestOwnershipPinnedCases(t *testing.T) {
+	dec := func(s string) *apd.Decimal {
+		x, _, err := apd.NewFromString(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	for _, c := range []struct{ part, whole, want string }{
+		{"1000000", "1252083", "79.87"},
+		{"200000", "1252083", "15.97"},
+		{"52083", "1252083", "4.16"},
+		{"1", "8", "12.50"},
+		{"1", "32", "3.13"},  // 3.125: half-up
+		{"1", "800", "0.13"}, // 0.125
+		{"1", "3", "33.33"},
+		{"2", "3", "66.67"},
+		{"0.5", "1.5", "33.33"}, // votes may be fractional
+		{"0", "5", "0.00"},
+		{"5", "5", "100.00"},
+		{"1", "99999999999999", "0.00"},
+	} {
+		got, err := Ownership(dec(c.part), dec(c.whole))
+		if err != nil || got != c.want {
+			t.Errorf("Ownership(%s, %s) = %q, %v; want %q", c.part, c.whole, got, err, c.want)
+		}
+	}
+	if _, err := Ownership(dec("1"), dec("0")); err == nil {
+		t.Error("a percentage of zero")
+	}
+	if _, err := Ownership(dec("-1"), dec("5")); err == nil {
+		t.Error("a percentage of negative shares")
+	}
+}
+
 // req: RND-RATE
 // The cases are worked by hand (60-digit decimal arithmetic, then half away from zero to 10 places), never by running
 // the code under test.
