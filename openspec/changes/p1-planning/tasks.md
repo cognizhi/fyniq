@@ -130,8 +130,10 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   changes no document. `// req: FR-PLN-09`, `// req: FR-PLN-08`
   - As built: `GET /v1/cash-projection?days=` (`91` is the 13 weeks) and the what-if take moves by movement key. The
     test checks that the ledger revision and the bill's planned date did not change.
-- [ ] 6.3 The `notify.cash_buffer` job and the `cash.below_buffer` notification (D7): sent once per crossing to C and A
+- [x] 6.3 The `notify.cash_buffer` job and the `cash.below_buffer` notification (D7): sent once per crossing to C and A
   holders, again after a recovery, and in the Inbox. `TestTheCashBufferAlert` `// req: FR-PLN-09`, `// req: FR-NTF-01`
+  - As built (rev 0.223): a recovery is told too (`cash.buffer_recovered`), which is how the next crossing is known. The
+    notices link to Home until the cash-flow screen, and Home's cash tile says it with the screens (task 8.1).
 
 ## 7. The feasibility calculator (slice 7)
 

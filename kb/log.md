@@ -441,3 +441,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/financial-statements.md → reports.statements (the P&L's budget and forecast comparatives; p1-planning slice 5)
 
 ## [2026-11-08] compile | docs/user-guide/periods-and-close.md, docs/user-guide/organisation-settings.md → accounting.periods, settings.organisation, settings.change (the close's budget variances; p1-planning slice 5)
+
+## [2026-11-08] compile | docs/user-guide/notifications.md → settings.notifications (the statutory deadlines and the cash buffer alert among the notifications; p1-planning slice 6)

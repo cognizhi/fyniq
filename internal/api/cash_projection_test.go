@@ -6,11 +6,18 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
+	"github.com/cognizhi/fyniq/internal/notify/reminders"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -238,6 +245,76 @@ func TestTheCashProjectionNotBurning(t *testing.T) {
 		r.Body["buffer"].(map[string]any)["line"] != nil || r.str("buffer", "why") != "the company is not burning cash: the last closed month brought in more cash than it used" ||
 		r.str("below_buffer_on") != "" {
 		t.Errorf("not burning: %d %s", r.Status, r.Raw)
+	}
+}
+
+// The cash buffer alert (FR-PLN-09, FR-NTF-01; p1-planning design D7), on the worker's role as the daily job runs it.
+// October, closed, took in 1,000.00 and paid 30,000.00 of rent: a net burn of 29,000.00, so a line of 174,000.00, and the
+// balance, 29,000.00 below zero, is below it from today: one notice, and none on a rerun. 300,000.00 of new shares lifts
+// it above the line for the 60 days: one notice of the recovery. Spending 200,000.00 takes it below again: a second notice.
+// req: FR-PLN-09
+// req: FR-NTF-01
+func TestTheCashBufferAlert(t *testing.T) {
+	e := newEnv(t)
+	on := time.Date(2026, 11, 2, 1, 0, 0, 0, time.UTC)
+	e.clock.Set(on)
+	bank := e.cashAccount()
+	cash := bank.AccountID.String()
+	e.plannedLine(cash, e.books.Sales.ID.String(), porttest.Day(10, 1), "1000.00")
+	e.plannedLine(e.books.Rent.ID.String(), cash, porttest.Day(10, 2), "30000.00")
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Periods().Close(ctx, e.books.Oct.ID)
+		return err
+	})
+	worker := workerStore(t)
+	alert := func() int {
+		t.Helper()
+		d := outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: clock.NewFrozen(on)}
+		n, err := reminders.CashBufferIn(context.Background(), worker, d, e.books.Org)
+		if err != nil {
+			t.Fatalf("the cash buffer alert: %v", err)
+		}
+		return n
+	}
+	emitted := func(typ string) int {
+		t.Helper()
+		n := 0
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			for i := 1; i <= 3; i++ {
+				for _, k := range []string{reminders.CashBelowBuffer, reminders.CashBufferRecovered} {
+					if k != typ {
+						continue
+					}
+					key := uuid.NewSHA1(uuid.MustParse("6d0f4b3e-2a8c-4f5d-b1e7-9c3a5e7f2d41"), []byte(e.books.Org.String()+":"+k+":"+strconv.Itoa(i)))
+					done, err := u.Notifications().Emitted(ctx, k, key)
+					if err != nil {
+						return err
+					}
+					if done {
+						n++
+					}
+				}
+			}
+			return nil
+		})
+		return n
+	}
+	if n := alert(); n != 1 || emitted(reminders.CashBelowBuffer) != 1 {
+		t.Fatalf("below the buffer: %d notices", n)
+	}
+	if n := alert(); n != 0 {
+		t.Errorf("a rerun told again: %d", n)
+	}
+	e.plannedLine(cash, e.books.Sales.ID.String(), porttest.Day(11, 1), "300000.00")
+	if n := alert(); n != 1 || emitted(reminders.CashBufferRecovered) != 1 {
+		t.Errorf("back above the buffer: %d notices", n)
+	}
+	if n := alert(); n != 0 {
+		t.Errorf("a rerun of the recovery told again: %d", n)
+	}
+	e.plannedLine(e.books.Rent.ID.String(), cash, porttest.Day(11, 1), "200000.00")
+	if n := alert(); n != 1 || emitted(reminders.CashBelowBuffer) != 2 {
+		t.Errorf("below the buffer again: %d notices", n)
 	}
 }
 
