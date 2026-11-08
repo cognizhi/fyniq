@@ -717,6 +717,7 @@ Source: PRD-001 §B.5
 - **THEN** the standard chart assigns them provisionally until the CoA review: 7040 unrealised FX gain or loss, 7050 gain or loss on disposal (the workbook's 7040, moved), 1050 payment gateway as the payment-provider clearing account, and the workbook's 5040 for payment fees (rev 0.31)
 - **AND** bad debts stay to be assigned
 - **AND** share application monies pending allotment, a liability per subscriber (B.7), are 2040, in Payables & accruals with the role share-application-monies and the subscriber as its sub-ledger key (rev 0.203) [accountant to confirm the code and classification]
+- **AND** 2040 is on its own cash-flow line, Share application monies: a current liability whose cash is financing, and the allotment from it a non-cash item (rev 0.207) [accountant to confirm]
 
 #### Scenario: Bank accounts and accrued expenses
 - **WHEN** bank and money accounts and accrued expenses are set up

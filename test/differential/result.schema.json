@@ -265,7 +265,7 @@
                   "kind": {"enum": ["post", "reversal", "replacement", "release", "depreciation", "auto_reversal"]},
                   "posting_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
                   "section": {"enum": ["investing", "financing"]},
-                  "label": {"description": "What the entry was, when its document says it (FR-EQ-10): a conversion of a founder's balance, or a waiver.", "enum": ["Converted to shares", "Waived"]}
+                  "label": {"description": "What the entry was, when its document says it (FR-EQ-10): a conversion of a founder's balance, a waiver, or (rev 0.207) a cash issue allotted from share application monies.", "enum": ["Converted to shares", "Waived", "Allotted from share application monies"]}
                 }
               }
             }

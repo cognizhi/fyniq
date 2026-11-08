@@ -82,6 +82,7 @@ P1_ACCOUNTS = [
     {"code": "2120", "type": "liability", "group": False, "active": True, "role": "deferred-remuneration"},
     {"code": "2500", "type": "liability", "group": False, "active": True, "role": "director-loan"},
     {"code": "2999", "type": "liability", "group": False, "active": True},
+    {"code": "2040", "type": "liability", "group": False, "active": True, "role": "share-application-monies"},  # B.7
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
     {"code": "3300", "type": "equity", "group": False, "active": True},  # capital contribution
     {"code": "4000", "type": "revenue", "group": True, "active": True},

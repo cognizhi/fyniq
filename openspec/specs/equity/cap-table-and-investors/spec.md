@@ -128,6 +128,7 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 - **AND** on 12 Mar the register posts Dr share application monies · Cr 3010
 - **AND** the cap table changes on 12 Mar only
 - **AND** INV-13 holds
+- **AND** the engine and the oracle post it alike as the golden case equity.json, February's cash financing and March's allotment a non-cash item (rev 0.207)
 
 ### Requirement: FR-EQ-18 SAFEs and convertible notes
 The system SHALL record SAFEs and convertible notes, posted to 2700, and at a priced round SHALL compute their conversion and create the share issues as drafts for approval.

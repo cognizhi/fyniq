@@ -220,6 +220,8 @@ class Scenario:
     people: frozenset[str] = frozenset()  # the directors and shareholders a director's account may name (FR-EQ-01)
     # The organisation's dimensions by name (FR-DIM-01; README, "Dimensions"); none when the scenario declares none.
     dimensions: MappingProxyType[str, Dimension] = MappingProxyType({})
+    # The investors not among ``people``: with them, whom share application monies may name (B.7, FR-EQ-17).
+    subscribers: frozenset[str] = frozenset()
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -511,8 +513,11 @@ def scenario_from_json(data: Any) -> Scenario:
     people = frozenset(data.get("people", ()))
     for i, person in enumerate(data.get("people", ())):
         _shape(_DOCUMENT_ID, person, f"people/{i}")
+    subscribers = frozenset(data.get("subscribers", ()))
+    for i, person in enumerate(data.get("subscribers", ())):
+        _shape(_DOCUMENT_ID, person, f"subscribers/{i}")
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
-                    statements, kpis, people, dimensions)
+                    statements, kpis, people, dimensions, subscribers)
 
 
 def _dimensions(raw: list[Any], accounts: dict[str, Account]) -> MappingProxyType[str, Dimension]:

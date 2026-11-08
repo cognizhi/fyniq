@@ -2,7 +2,7 @@
 
 They wait for cmd/scenario-run to read the P1 shapes (pending/README.md); the oracle must match the
 hand-worked figures now. Every figure comes from the comment beside it (QA-ENG-01). A case keeps its
-hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets, founders, statements).
+hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets, founders, statements, equity).
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger", "fx-revaluation"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger", "fx-revaluation", "equity"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -314,6 +314,38 @@ def test_pending_founders():
     # P0001: 1,315.00 + 763.00 - 1,000.00 - 500.00 = 578.00 owed, less 99.60 and 299.60 converted: 178.80.
     # P0002: the fee's 4,000.00 left on 2120 less 1,498.90 converted; the cost's 3,000.00 on 2500 less 1,000.00.
     assert r["people"] == {"P0001": {"2500": "-178.80"}, "P0002": {"2120": "-2501.10", "2500": "-2000.00"}}
+
+
+# req: QA-ENG-02
+# req: FR-EQ-17
+def test_pending_equity():
+    """G4-043: an investor pays S$600,000.00 on 26 Feb; ACRA's register shows the allotment on 12 Mar."""
+    r = _run("equity")
+    # P0004's S$1,000.00 was refunded on 10 Mar, so on 11 Mar their monies hold nothing against 400 x 2.40 = 960.00;
+    # a person on a line with no part on 2040; a part on 2040 naming no one; P0009, no subscriber; a class on 6400.
+    assert r["rejected"] == ["EQ-0002", "BT-0004", "BT-0005", "BT-0006", "EQ-0003"]
+    # 26 Feb: Dr Bank, Cr share application monies naming the investor (not 2999, so no C.1 #30 warning).
+    assert _lines(r, "BT-0001") == [("1010", "SGD", "600000.00", "600000.00"), ("2040", "SGD", "-600000.00", "-600000.00")]
+    # 12 Mar: 250,000 x 2.40 = 600,000.00 under RND-LINE: Dr 2040 naming the investor, Cr 3010, from the register.
+    assert _lines(r, "EQ-0001") == [("2040", "SGD", "600000.00", "600000.00"), ("3010", "SGD", "-600000.00", "-600000.00")]
+    entry = next(e for e in r["entries"] if e["document"] == "EQ-0001")
+    assert [(ln["account"], ln.get("party")) for ln in entry["lines"]] == [("2040", "P0003"), ("3010", None)]
+    # February holds the money as a liability; March moves it into share capital, and P0004's in and out net to nothing.
+    assert r["trial_balance"] == {"2027-02": {"1010": "600000.00", "2040": "-600000.00"},
+                                  "2027-03": {"2040": "600000.00", "3010": "-600000.00"}}
+    assert "people" not in r  # every subscriber's monies net to nothing by 31 Mar
+    feb, mar = r["statements"]["2027-02"], r["statements"]["2027-03"]
+    # The February balance sheet shows the liability and no share capital; its cash is financing (IAS 7 para 17(a)).
+    assert feb["balance_sheet"]["current_liabilities"] == {"total": "600000.00", "groups": {"Share application monies": "600000.00"}}
+    assert feb["balance_sheet"]["equity"]["total"] == "0.00"
+    assert (feb["cash_flow"]["financing"], feb["cash_flow"]["operating"]["total"]) == ("600000.00", "0.00")
+    # March: share capital 600,000.00 issued for cash, and the allotment moved no money: a non-cash item.
+    assert mar["balance_sheet"]["equity"] == {"total": "600000.00", "groups": {"Share capital": "600000.00"}}
+    assert mar["equity_movement"]["share_capital"] == "600000.00" and mar["equity_movement"]["share_capital_non_cash"] == "0.00"
+    assert mar["cash_flow"]["financing"] == "0.00"  # 1,000.00 in and out
+    assert mar["cash_flow"]["non_cash"] == [{"document": "EQ-0001", "kind": "post", "posting_date": "2027-03-12", "section": "financing",
+                                             "label": "Allotted from share application monies"}]
+    assert all(m["checks"]["balances"] and m["checks"]["ties"] and m["checks"]["equity"] for m in (feb, mar))
 
 
 # req: QA-ENG-02

@@ -3,6 +3,7 @@ package differential
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -174,3 +175,45 @@ func (r *p1) directorConversion(d Document, date time.Time) (ledger.Entry, bool)
 	e, err := ledger.PostConversion(c, r.settings)
 	return e, err == nil
 }
+
+// shareIssueCash posts a cash issue to one subscriber made effective from share application monies (share_issue_cash@1),
+// as journal.EquityTransactions reads it (FR-EQ-17, B.7): its amount is shares × price under RND-LINE, and it is refused
+// while the subscriber's application monies at the end of its day are less (README, "Cash share issues").
+func (r *p1) shareIssueCash(d Document, date time.Time) (ledger.Entry, bool) {
+	var x struct {
+		Person string `json:"person"`
+		Class  string `json:"class"`
+		Shares string `json:"shares"`
+		Price  string `json:"price"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil || !wholeShares.MatchString(x.Shares) {
+		return ledger.Entry{}, false
+	}
+	price, err := money.ParseUnitPrice(x.Price, r.base, "price")
+	if err != nil || price.Sign() <= 0 {
+		return ledger.Entry{}, false
+	}
+	q, err := money.ParseQuantity(x.Shares, "shares")
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	amount, err := rounding.Line(q, price)
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	var monies uuid.UUID
+	for id, a := range r.settings.Accounts {
+		if a.SubscriberAccount() && a.Active && !a.Group {
+			monies = id
+		}
+	}
+	if monies == uuid.Nil || !r.within(amount, x.Person, monies, date) { // never effective unpaid
+		return ledger.Entry{}, false
+	}
+	e, err := ledger.PostCashIssue(ledger.CashIssue{ID: stableID("document", d.ID), PostOn: date, Party: stableID("party", x.Person), Monies: monies,
+		Class: account(x.Class), Amount: amount}, r.settings)
+	return e, err == nil
+}
+
+// wholeShares is a whole number of shares above zero, as an equity transaction takes it.
+var wholeShares = regexp.MustCompile(`^[1-9][0-9]{0,13}$`)

@@ -57,9 +57,10 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   - existing issues given their movements in the migration.
 
   Attack tests for each FY257 rule and for a key-less 2040 line. `// req: FR-EQ-17`, `// req: INV-13`
-- [ ] 3.2 Engine and API (slice 2a built the kinds, draft, approval, effective, reversal and the holdings; slice 2b the
+- [x] 3.2 Engine and API (slice 2a built the kinds, draft, approval, effective, reversal and the holdings; slice 2b the
   ACRA steps and money from the bank, in and refunded (the owner's decision of 7 Nov 2026: a refund is recorded from
-  the bank line, not through a payment batch); the oracle's golden case follows):
+  the bank line, not through a payment batch); and the oracle's golden case `equity.json`, with 2040 on a financing
+  cash-flow line of its own, rev 0.207):
   - the kinds issue_cash, transfer, class_conversion and reversal (issue_noncash keeps founders' money's route):
     draft, approval (FM-1, FM-9), and effective with ACRA's date and reference, never backdated and never in a closed
     period, writing the issue, its movements and its entry in one unit of work;

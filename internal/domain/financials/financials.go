@@ -118,6 +118,9 @@ var (
 	currentLiabilities = []string{"Payables & accruals", "Payroll liabilities", "Tax liabilities", "Deferred revenue"}
 	borrowingLines     = []string{"Borrowings"}
 	equityLines        = []string{"Share capital", "Dividends & other equity"}
+	// (rev 0.207) Money received for shares not yet allotted (2040, B.7): a current liability whose cash is financing,
+	// not working capital (IAS 7 para 17(a)) [accountant to confirm].
+	shareApplicationLines = []string{"Share application monies"}
 )
 
 // The blocks' keys, which the API returns.
@@ -182,7 +185,7 @@ func bsSection(a storage.Account) string {
 		return KeyCurrentAssets
 	case a.Type == storage.Asset && slices.Contains(nonCurrentAssets, line):
 		return KeyNonCurrentAssets
-	case a.Type == storage.Liability && slices.Contains(currentLiabilities, line):
+	case a.Type == storage.Liability && (slices.Contains(currentLiabilities, line) || slices.Contains(shareApplicationLines, line)):
 		return KeyCurrentLiabilities
 	case a.Type == storage.Liability && slices.Contains(borrowingLines, line):
 		return KeyBorrowings

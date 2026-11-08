@@ -50,7 +50,9 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   `report_group`, `function` and `cash_flow_line` (section "Statements"). (PRD-001 rev 0.167)
   `director-loan` (2500) and `deferred-remuneration` (2120) mark the director's accounts: each line on
   one names its `party`, one of the scenario's `people`, and its `origin` (rule 9; FR-EQ-01, B.7). The
-  generator gives half of its charts one, with the people `P0001` and `P0002`.
+  generator gives half of its charts one, with the people `P0001` and `P0002`. (PRD-001 rev 0.207)
+  `share-application-monies` (2040) marks the account holding money received for shares not yet allotted: each line
+  on it names its subscriber, one of `people` or `subscribers`, the investors not among the people (B.7, FR-EQ-17).
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 - (PRD-001 rev 0.49 to 0.66) `reversals` holds the corrections of posted journals in the order they are made: a
@@ -164,8 +166,8 @@ rejected for the reasons in section "Edits of a posted journal".
   account nets to zero (`{}`). **A comparator reads a missing account, or a missing month, as zero.**
 - (PRD-001 rev 0.167) A posted line on a director's account carries its `party`, and a reversal's line
   keeps it; the comparator compares it with the line. `people`, present only when a posted line names
-  a person, maps each person to each director's account to the base-currency total of every posted
-  line naming them there: the sub-ledger of 2500 and 2120 (FR-EQ-01). Totals of zero are left out, and
+  a person, maps each person to each account to the base-currency total of every posted line naming
+  them there: the sub-ledgers of 2500 and 2120 (FR-EQ-01) and of share application monies (rev 0.207). Totals of zero are left out, and
   a comparator reads a missing person or account as zero.
 
 ## Decided in PRD-001 rev 0.24
@@ -555,6 +557,34 @@ allots n whole shares for `amount` at `price` (83 shares here, 99.60 converted, 
 2120, a director's account) with round(n × `price`), the line naming `person`; Cr `class` (a share-capital account) with
 the same, or, when `fair_value_price` is given, with round(n × `fair_value_price`) and the difference to `difference`, an
 income or expense account (Dr a loss, Cr a gain).
+
+### Cash share issues (`share_issue_cash`, `share_issue_cash@1`) and their money from the bank
+
+From FR-EQ-17, Appendix B.7 and PRD-001 rev 0.205 to 0.207 (G4-043).
+
+```json
+{"type": "bank_transaction", "id": "BT-0101", "version": 1, "date": "2026-03-02", "account": "1010", "currency": "SGD",
+ "amount": "600000.00", "person": "P0001", "parts": [{"account": "2040", "amount": "600000.00", "gst_code": "NA"}]}
+```
+
+```json
+{"type": "share_issue_cash", "id": "EQ-0101", "version": 1, "date": "2026-03-12", "person": "P0001", "class": "3010",
+ "shares": "250000", "price": "2.40"}
+```
+
+Money for shares arrives, or is refunded, on a bank line (`bank_transaction@1`, the owner's decision of 7 Nov 2026):
+its parts on share application monies post as any part does, each naming the line's `person`, the subscriber, one of
+`people` or `subscribers`. A line with such a part and no `person`, a `person` who is neither, or a `person` on a line
+with no such part, is rejected.
+
+A cash issue to one subscriber posts on `date`, the day ACRA's register of members shows the allotment. Its amount is
+round(`shares` × `price`) under `RND-LINE`: Dr share application monies (the one active account of role
+`share-application-monies`) with the amount, the line naming `person`; Cr `class` (a share-capital account) with the
+same. It is never made effective unpaid: it is rejected when what the subscriber's monies hold at the end of `date`
+(the credit of the lines naming them there in the earlier documents, as "P1 readings" reads what is owed on a
+director's account) is less than the amount. It is rejected too when `shares` is not a whole number above zero,
+`price` not above zero with at most 6 decimals, `class` not share capital, `person` neither of `people` nor
+`subscribers`, or the chart has no share application monies.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -1033,6 +1063,7 @@ own side (rev 0.159, [accountant to confirm]):
 | Capital expenditure | An asset | Non-current assets | Makes an entry investing |
 | Depreciation & amortisation (accumulated depreciation) | An asset | Non-current assets | Added back |
 | Payables & accruals, Payroll liabilities, Tax liabilities, Deferred revenue | A liability | Current liabilities | Working capital |
+| Share application monies (rev 0.207) | A liability | Current liabilities | Makes an entry financing: money received for shares (IAS 7 para 17(a)) |
 | Borrowings | A liability | Borrowings | Makes an entry financing |
 | Share capital, Dividends & other equity | An equity account | Equity | Makes an entry financing |
 
@@ -1063,7 +1094,8 @@ with no posting (FR-EQ-11, `p1-founders-money` design D14).
 
 **Cash flow**, indirect, money in positive, on the same placement. Each of the month's entries is
 *investing* when it has a line on a capital-expenditure asset, else *financing* when it has a line on an
-account placed in borrowings or equity, else *operating*. An entry's cash is the sum of its lines on cash
+account placed in borrowings or equity, or on a liability on Share application monies (rev 0.207), else
+*operating*. An entry's cash is the sum of its lines on cash
 accounts (assets on Cash & cash equivalents).
 
 - `investing` and `financing`: their entries' cash.
@@ -1076,7 +1108,8 @@ accounts (assets on Cash & cash equivalents).
   and `total`, their sum, which always equals the operating entries' cash, so net burn is the true cash.
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
   transaction that moved no money ... is left out of investing and financing and listed apart"). A
-  `director_conversion`'s has the `label` "Converted to shares" and a `director_waiver`'s "Waived" (FR-EQ-10).
+  `director_conversion`'s has the `label` "Converted to shares", a `director_waiver`'s "Waived" (FR-EQ-10) and a
+  `share_issue_cash`'s "Allotted from share application monies" (rev 0.207).
 - `net_change` = operating + investing + financing; `opening_cash` and `closing_cash` are the cash
   accounts' balances at the month before's end and the month's.
 
@@ -1106,6 +1139,7 @@ Readings the PRD leaves open, each [accountant to confirm] with rev 0.159:
 | A month with no entry between two that have | Stated: nothing in the P&L and the cash flow, the balance sheet as the month before | FR-RPT-02 runs any period of whole months |
 | An unplaced account (D3) | `balances` stays total assets = total liabilities + equity, so it breaks; operating keeps its movement in `other_accounts`, so `ties` holds and net burn is the true cash. *Superseded:* `ties` broke too when an operating entry moved it | The owner's decision with an independent advisor (rev 0.159): the check finds the misplaced account, and the cash flow does not hide cash that moved [accountant to confirm] |
 | A cash-flow line of the other side (a liability on Share capital, an equity account on Cash & cash equivalents) | Places nothing: the account is unplaced, in no section and no cash-flow role. *Superseded:* the line placed the account whatever its type | The owner's decision with an independent advisor (rev 0.159): a line names a section of its own side of the balance sheet [accountant to confirm] |
+| Money received for shares not yet allotted (share application monies, 2040) | Its own line, Share application monies: a current liability, and its entries financing; the allotment that moves it into share capital is a non-cash item, "Allotted from share application monies" | PRD-001 rev 0.207: IAS 7 para 17(a) shows cash from issuing shares as financing, and burn and runway read operating cash; a line of its own keeps rev 0.159's rule that a line names a section of its own side [accountant to confirm] |
 | The depreciation account when no account has the role `depreciation` | The account the settings' `depreciation` key names; its report group (or the account alone) is depreciation and amortisation, whatever the function of the accounts in it. *Superseded:* no depreciation account, so the group's accounts went by their function (one with function Other to finance costs) | The settings' key and the chart's role are one system role in the product (rev 0.159) [accountant to confirm] |
 | An expense account in the depreciation account's report group whose function is COGS | Depreciation and amortisation, below EBITDA. *Superseded:* cost of sales | The owner's decision with an independent advisor (rev 0.159): EBITDA excludes depreciation and amortisation by definition [accountant to confirm] |
 

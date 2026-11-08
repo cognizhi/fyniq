@@ -44,6 +44,7 @@ const (
 	shareCapitalLine  = "Share capital"
 	otherEquityLine   = "Dividends & other equity"
 	borrowingsLine    = "Borrowings"
+	applicationLine   = "Share application monies"
 )
 
 // NonCash is an investing or financing transaction that moved no cash, listed beside the cash flow.
@@ -53,7 +54,8 @@ type NonCash struct {
 	Memo   string
 	Amount money.Money // its debits
 	// Label names what it was, when its source says it (FR-EQ-10; p1-founders-money design D14): "Converted to shares"
-	// for a founder's balance converted from the register, "Waived" for a waiver; "" otherwise.
+	// for a founder's balance converted from the register, "Waived" for a waiver, "Allotted from share application
+	// monies" for a cash issue paid in before it took effect (rev 0.207); "" otherwise.
 	Label string
 	// Entry is the entry, and Section where it would have sat had it moved cash: KeyInvesting or KeyFinancing.
 	Entry   uuid.UUID
@@ -104,8 +106,9 @@ func cashRole(a storage.Account) role {
 	// cash, a liability on a current-liability line. Any other line on the wrong side places nothing: Other accounts.
 	case a.Type == storage.Asset && slices.Contains(currentAssets[1:], line), a.Type == storage.Liability && slices.Contains(currentLiabilities, line):
 		return workingCapital
-	case a.Type == storage.Liability && line == borrowingsLine, a.Type == storage.Equity && (a.Role == storage.RoleRetainedEarnings || slices.Contains(equityLines, line)):
-		return borrowingOrEquity
+	case a.Type == storage.Liability && (line == borrowingsLine || line == applicationLine),
+		a.Type == storage.Equity && (a.Role == storage.RoleRetainedEarnings || slices.Contains(equityLines, line)):
+		return borrowingOrEquity // money received for shares not yet allotted is financing too (rev 0.207)
 	}
 	return other
 }
@@ -340,7 +343,11 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 		if act == investing {
 			section = KeyInvesting
 		}
-		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: nonCashLabels[e.Source.Type],
+		label := nonCashLabels[e.Source.Type]
+		if e.Source.Type == ledger.SourceShareIssue && !f.nonCashIssues[e.Source.ID] { // a cash issue, paid in earlier (rev 0.207)
+			label = "Allotted from share application monies"
+		}
+		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: label,
 			Entry: e.ID, Section: section})
 	case act == investing && cashOf.Sign() < 0:
 		return accrue(&f.paidOut, cashOf)
@@ -423,7 +430,8 @@ func cashFlow(fs []*flow, n int, base money.Currency) ([]Block, []Check, []NonCa
 		}
 	}
 	var financingRows []Group
-	for _, x := range [][2]string{{borrowingsLine, "Borrowings"}, {shareCapitalLine, "Shares issued"}, {otherEquityLine, "Dividends and other equity"}} {
+	for _, x := range [][2]string{{borrowingsLine, "Borrowings"}, {applicationLine, "Share application monies"}, {shareCapitalLine, "Shares issued"},
+		{otherEquityLine, "Dividends and other equity"}} {
 		g := row(x[1], n, base, func(f *flow) money.Money {
 			if m, ok := f.financed[x[0]]; ok {
 				return m

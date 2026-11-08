@@ -13,7 +13,11 @@
 * a part spread over n months (an expense on money out, revenue on money in) puts the rest on 1210
   (money out) or 2400 (money in) instead, released to the part's account monthly from the posting
   month under ``ALLOC-EVEN`` (B.1: a bank line has no service period);
-* the cent ``RND-FX`` leaves between the parts and the line goes to 7030.
+* the cent ``RND-FX`` leaves between the parts and the line goes to 7030;
+* a part on share application monies (the account of role ``share-application-monies``, B.7) names the line's
+  ``person``, its subscriber, one of the scenario's ``people`` or ``subscribers``: money in for shares not yet
+  allotted, or a refund paid out (PRD-001 rev 0.206). Such a part without one, or a ``person`` on a line with no such
+  part, is rejected.
 
 **A transfer** (``bank_transfer``) is recorded once: Dr the receiving account with what it received,
 Cr the paying account with what it paid. Across currencies each leg is at its own currency's rate for
@@ -43,6 +47,15 @@ def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     if not d["parts"]:
         raise Rejected("no-parts")
 
+    # The subscriber a part on share application monies names (B.7, rev 0.206): money in for shares, or a refund out.
+    monies = {code for code, a in r.scenario.accounts.items() if a.role == "share-application-monies"}
+    person = d.get("person")
+    on_monies = any(part["account"] in monies for part in d["parts"])
+    if person is not None and not on_monies:
+        raise Rejected("person-not-on-share-application-monies")
+    if on_monies and person not in r.scenario.people | r.scenario.subscribers:
+        raise Rejected("not-a-subscriber")
+
     parts = []
     for part in d["parts"]:
         value = r.amount(part["amount"], currency, sign=sign)  # each part has the line's direction
@@ -68,7 +81,8 @@ def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         if not gst.is_zero():
             lines.append(r.base_line(r.system("gst"), money.negate(gst)))
         if months is None:
-            lines.append(r.base_line(account, money.negate(rest)))
+            party = person if account in monies else None
+            lines.append(r.line(account, r.base, money.negate(rest), money.negate(rest), party=party))
             continue
         deferral = r.system("prepayments" if sign < 0 else "deferred_revenue")
         lines.append(r.base_line(deferral, money.negate(rest)))
