@@ -278,9 +278,12 @@ func matrixPlanForecast(e *env) planFixture {
 	return out
 }
 
+// matrixForecastBody names its last actual month: other rows close periods of 2020 and 2025, and a forecast after
+// them would start in months no CPF pack covers (PLAN-02).
 func matrixForecastBody() map[string]any {
 	p := forecastPlan()
 	p["opex"] = []any{map[string]any{"label": "Rent", "base": "3000.00", "growth": "0", "percent": "0"}}
+	p["last_actual"] = "2026-09"
 	return p
 }
 
