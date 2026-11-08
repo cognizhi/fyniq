@@ -1431,6 +1431,9 @@ var (
 	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	ImportBudget          = Policy{Operation: "importBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	RequestBudgetApproval = Policy{Operation: "requestBudgetApproval", Capability: Budgets, Need: Create, Unqualified: true, Note: "Approved by A: recorded and locked."}
+	// Budget vs Actual and Home's planning tiles show the budget's figures: read on the same row as budgets.
+	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true}
+	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
 )
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
@@ -1641,7 +1644,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval)
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

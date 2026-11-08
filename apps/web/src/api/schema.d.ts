@@ -9628,6 +9628,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/planning/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the planning summary for Home
+         * @description What Home shows of the plans for a month (FR-KPI-01): revenue and costs against the year's budget to the month's end, and the cash-out month and runway of the latest recorded forecast's first scenario without the funding planned, since none of it is received yet (FR-PLN-03), with the figures with it beside. Each is absent, with why, while there is no budget or forecast. Read-only; no side effects.
+         */
+        get: operations["getPlanningSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/pre-incorporation-costs": {
         parameters: {
             query?: never;
@@ -10520,6 +10540,26 @@ export interface paths {
          * @description The file of a ready export the caller asked for, in base64 with its SHA-256 (FR-RPT-09). The caller's rights are checked again at each download, so a role taken away stops it at once. A pending or failed export is REPORT-05; one past its 24 hours is REPORT-06; another person's is REPORT-07. Side effects: an audit event of the download, with the file's hash. Never cached.
          */
         get: operations["getReportExportFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports/budget-vs-actual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Budget vs Actual
+         * @description The year's budget against the books for months of one financial year (FR-RPT-03, design D6): each income and expense account, or account and set of dimension values, with its actual from the balance service, its budget from the year's latest recorded version, the variance and its percentage of the budget (RND-PERCENT), and whether it is favourable. Amounts are signed as the P&L shows them. Read-only; no side effects.
+         */
+        get: operations["getBudgetVsActual"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15911,6 +15951,60 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        BudgetVsActual: {
+            /**
+             * Format: uuid
+             * @description The year's budget, its latest recorded version; absent while the year has none, when every budget figure is 0.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01
+             */
+            budget_id?: string;
+            /**
+             * @description Its name.
+             * @example FY2027 budget
+             */
+            budget_name?: string;
+            /**
+             * @description account: each account, its dimension sets added up; dimension: each account and set of dimension values.
+             * @example account
+             * @enum {string}
+             */
+            by: "account" | "dimension";
+            /** @description The expense rows' totals. */
+            costs: components["schemas"]["VsFigures"];
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The financial year's first day.
+             * @example 2027-01-01
+             */
+            financial_year: string;
+            /**
+             * @description The first month (YYYY-MM).
+             * @example 2027-01
+             */
+            from: string;
+            /** @description The income rows' totals. */
+            income: components["schemas"]["VsFigures"];
+            /**
+             * Format: int64
+             * @description The ledger revision the actuals were read at (ENG-46).
+             * @example 42
+             */
+            ledger_revision: number;
+            /** @description Income less costs. */
+            net: components["schemas"]["VsFigures"];
+            /** @description Each account, or account and set, with an actual or a budget, by code. */
+            rows: components["schemas"]["VsRowView"][];
+            /**
+             * @description The last month (YYYY-MM).
+             * @example 2027-03
+             */
+            to: string;
         };
         BulkResult: {
             /**
@@ -30656,6 +30750,103 @@ export interface components {
             /** @description What they come to in the base currency, each at its rate. */
             total: components["schemas"]["Money"];
         };
+        PlanningBudgetTile: {
+            /**
+             * Format: uuid
+             * @description The year's budget.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01
+             */
+            budget_id: string;
+            /** @description Costs against their budget, the year to date. */
+            costs: components["schemas"]["VsFigures"];
+            /**
+             * @description The financial year's first month (YYYY-MM).
+             * @example 2027-01
+             */
+            from: string;
+            /**
+             * @description Its name.
+             * @example FY2027 budget
+             */
+            name: string;
+            /** @description Income against its budget, the year to date. */
+            revenue: components["schemas"]["VsFigures"];
+        };
+        PlanningForecastTile: {
+            /**
+             * @description Without the funding planned: the first month cash closes below zero (YYYY-MM); absent when not within the horizon.
+             * @example 2027-07
+             */
+            cash_out_month?: string;
+            /**
+             * @description The same with the funding planned.
+             * @example 2028-02
+             */
+            cash_out_month_with_funding?: string;
+            /**
+             * Format: uuid
+             * @description The forecast.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+             */
+            forecast_id: string;
+            /**
+             * @description Its name.
+             * @example FY2027 plan
+             */
+            name: string;
+            /**
+             * @description What the figure leaves out.
+             * @example Without the funding planned: none of it is received yet
+             */
+            note: string;
+            /**
+             * @description true: no cash-out month within the horizon.
+             * @example false
+             */
+            runway_beyond: boolean;
+            /**
+             * @description With the funding planned: no cash-out month within the horizon.
+             * @example true
+             */
+            runway_beyond_with_funding: boolean;
+            /**
+             * Format: int64
+             * @description Without the funding planned: the months before it, or the horizon.
+             * @example 7
+             */
+            runway_months: number;
+            /**
+             * @description The scenario read: its first.
+             * @example Base
+             */
+            scenario: string;
+        };
+        PlanningSummary: {
+            /** @description Revenue and costs against budget for the financial year to the month's end; absent while the year has no approved budget, which budget_missing says. */
+            budget?: components["schemas"]["PlanningBudgetTile"];
+            /**
+             * @description Why there is no budget figure.
+             * @example No approved budget for the year from 1 Jan 2027
+             */
+            budget_missing?: string;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description The cash-out month of the latest recorded forecast; absent while none is recorded, which forecast_missing says. */
+            forecast?: components["schemas"]["PlanningForecastTile"];
+            /**
+             * @description Why there is no forecast figure.
+             * @example No forecast is recorded yet
+             */
+            forecast_missing?: string;
+            /**
+             * @description The month asked for (YYYY-MM).
+             * @example 2027-03
+             */
+            month: string;
+        };
         PoolResolutionDraft: {
             /**
              * Format: uuid
@@ -36682,6 +36873,78 @@ export interface components {
              * @example 1
              */
             unexplained: number;
+        };
+        VsFigures: {
+            /**
+             * @description The books' figure, signed as the P&L shows it.
+             * @example 12500.00
+             */
+            actual: string;
+            /**
+             * @description The budget's figure for the same months.
+             * @example 12500.00
+             */
+            budget: string;
+            /**
+             * @description Actual less budget.
+             * @example 12500.00
+             */
+            variance: string;
+            /**
+             * @description The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.
+             * @example -12.5
+             */
+            variance_percent?: string;
+        };
+        VsRowView: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b20
+             */
+            account_id: string;
+            /**
+             * @description The books' figure, signed as the P&L shows it.
+             * @example 12500.00
+             */
+            actual: string;
+            /**
+             * @description The budget's figure for the same months.
+             * @example 12500.00
+             */
+            budget: string;
+            /**
+             * @description Its code.
+             * @example 6110
+             */
+            code: string;
+            /** @description by=dimension: the row's dimension values; none for the lines with no value. */
+            dimension_value_ids?: string[] | null;
+            /**
+             * @description Income at or above its budget, or costs at or below theirs.
+             * @example true
+             */
+            favourable: boolean;
+            /**
+             * @description true for an income account, false for an expense account.
+             * @example false
+             */
+            income: boolean;
+            /**
+             * @description Its name.
+             * @example Advertising
+             */
+            name: string;
+            /**
+             * @description Actual less budget.
+             * @example 12500.00
+             */
+            variance: string;
+            /**
+             * @description The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.
+             * @example -12.5
+             */
+            variance_percent?: string;
         };
         WithdrawFXRateRequest: {
             /**
@@ -114059,6 +114322,102 @@ export interface operations {
             };
         };
     };
+    getPlanningSummary: {
+        parameters: {
+            query?: {
+                /** @description The month (YYYY-MM); left out, the last month that has ended. */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanningSummary"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listPreIncorporationCosts: {
         parameters: {
             query?: {
@@ -121080,6 +121439,106 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBudgetVsActual: {
+        parameters: {
+            query?: {
+                /** @description The first month (YYYY-MM); left out, the financial year's first month. */
+                from?: string;
+                /** @description The last month (YYYY-MM); left out, the last month that has ended. */
+                to?: string;
+                /** @description account (the default) or dimension. */
+                by?: "account" | "dimension";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetVsActual"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `BUDGET-10` The budget does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

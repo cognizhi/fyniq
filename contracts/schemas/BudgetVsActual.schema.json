@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budget_id": {
+      "description": "The year's budget, its latest recorded version; absent while the year has none, when every budget figure is 0.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "budget_name": {
+      "description": "Its name.",
+      "examples": [
+        "FY2027 budget"
+      ],
+      "type": "string"
+    },
+    "by": {
+      "description": "account: each account, its dimension sets added up; dimension: each account and set of dimension values.",
+      "enum": [
+        "account",
+        "dimension"
+      ],
+      "examples": [
+        "account"
+      ],
+      "type": "string"
+    },
+    "costs": {
+      "$ref": "VsFigures.schema.json",
+      "description": "The expense rows' totals."
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "financial_year": {
+      "description": "The financial year's first day.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "from": {
+      "description": "The first month (YYYY-MM).",
+      "examples": [
+        "2027-01"
+      ],
+      "type": "string"
+    },
+    "income": {
+      "$ref": "VsFigures.schema.json",
+      "description": "The income rows' totals."
+    },
+    "ledger_revision": {
+      "description": "The ledger revision the actuals were read at (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "net": {
+      "$ref": "VsFigures.schema.json",
+      "description": "Income less costs."
+    },
+    "rows": {
+      "description": "Each account, or account and set, with an actual or a budget, by code.",
+      "items": {
+        "$ref": "VsRowView.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The last month (YYYY-MM).",
+      "examples": [
+        "2027-03"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "financial_year",
+    "from",
+    "to",
+    "by",
+    "rows",
+    "income",
+    "costs",
+    "net",
+    "ledger_revision"
+  ],
+  "title": "BudgetVsActual",
+  "type": "object"
+}

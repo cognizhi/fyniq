@@ -2111,6 +2111,18 @@
     "gst-forecast.attach-evidence": {
       "label": "Attach what it rests on",
       "tooltip": "Attach the signed contracts, confirmed orders or letters of award the forecast rests on, as IRAS asks."
+    },
+    "home.revenue-vs-budget": {
+      "label": "Revenue against budget",
+      "tooltip": "Revenue for the financial year so far beside the approved budget for the same months, and how far apart they are."
+    },
+    "home.costs-vs-budget": {
+      "label": "Costs against budget",
+      "tooltip": "Costs for the financial year so far beside the approved budget for the same months: below the budget is favourable."
+    },
+    "home.forecast-cash-out": {
+      "label": "Cash runs out",
+      "tooltip": "The month cash runs out in the latest recorded forecast, without the funding planned, since none of it is received yet."
     }
   }
 }

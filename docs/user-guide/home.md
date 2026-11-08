@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03]
+requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -37,8 +37,10 @@ each module arrives; you only ever see the pages your roles allow.
   It goes once every step is done.
 
 The pulse card, the tiles and the charts appear once the books have a month and your roles let you
-read the reports. Revenue and costs against the budget, unbilled time and GST due join them with
-their modules.
+read the reports. When your roles read the plans, the tiles add the month cash runs out in the
+latest forecast and, in Expert mode, revenue and costs against the budget (see
+[Read the plans on Home](#read-the-plans-on-home)). Unbilled time and GST due join them with their
+modules.
 
 ## Before you start
 
@@ -62,6 +64,22 @@ Work down the list. Each step opens the page where you do it:
 
 A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
 from the workbook join the list as they arrive.
+
+### Read the plans on Home
+
+- **Cash runs out** is the month cash first falls below zero in the latest forecast you recorded,
+  in its first scenario (usually Base). It leaves out the funding the forecast plans, because none
+  of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within
+  the forecast** means cash lasts for all the months the forecast covers.
+- **Revenue against budget** and **Costs against budget** (Expert mode) compare the financial year
+  so far, to the end of the month the tiles show, with the year's approved budget for the same
+  months. Each says how far apart they are as a percentage of the budget, and whether that is
+  **favourable**: revenue above its budget, or costs below theirs.
+- A tile without a figure shows **—** and says why, such as "No approved budget for the year from
+  1 Jan 2027" or "No forecast is recorded yet".
+
+The figures are the books' and the plans' as they stand when you open Home. A budget counts once it
+is approved; a forecast once it is recorded.
 
 ### Find anything with search
 

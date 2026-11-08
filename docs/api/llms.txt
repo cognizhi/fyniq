@@ -603,6 +603,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/planning/summary` (getPlanningSummary): Get the planning summary for Home
 - `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
 - `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
@@ -660,6 +661,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/report-exports` (requestReportExport): Ask for an accountant export
 - `GET /v1/report-exports/{export_id}` (getReportExport): Get one of my exports
 - `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
+- `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
 - `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item

@@ -10402,6 +10402,28 @@ The file of a ready export the caller asked for, in base64 with its SHA-256 (FR-
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-05`, `REPORT-06`, `REPORT-07`
 
+### `GET /v1/reports/budget-vs-actual`
+
+**Get Budget vs Actual** (`getBudgetVsActual`)
+
+The year's budget against the books for months of one financial year (FR-RPT-03, design D6): each income and expense account, or account and set of dimension values, with its actual from the balance service, its budget from the year's latest recorded version, the variance and its percentage of the budget (RND-PERCENT), and whether it is favourable. Amounts are signed as the P&L shows them. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `from` (query): The first month (YYYY-MM); left out, the financial year's first month.
+  - `to` (query): The last month (YYYY-MM); left out, the last month that has ended.
+  - `by` (query): account (the default) or dimension.
+- **Responses:**
+  - `200` OK [`BudgetVsActual`](../../contracts/schemas/BudgetVsActual.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `BUDGET-10` The budget does not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `BUDGET-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/reports/general-ledger`
 
 **Get the general ledger report** (`getGeneralLedger`)
@@ -13017,6 +13039,26 @@ Works a plan out as getForecastResults does, from the books and the packs, witho
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/planning/summary`
+
+**Get the planning summary for Home** (`getPlanningSummary`)
+
+What Home shows of the plans for a month (FR-KPI-01): revenue and costs against the year's budget to the month's end, and the cash-out month and runway of the latest recorded forecast's first scenario without the funding planned, since none of it is received yet (FR-PLN-03), with the figures with it beside. Each is absent, with why, while there is no budget or forecast. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `month` (query): The month (YYYY-MM); left out, the last month that has ended.
+- **Responses:**
+  - `200` OK [`PlanningSummary`](../../contracts/schemas/PlanningSummary.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
 
 ## Checks
 

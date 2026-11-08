@@ -2,16 +2,16 @@
 key: home.overview
 type: task
 title: The Home page, search and commands, Settings, and signing out
-summary: What Home shows (pulse card, tiles, charts, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
+summary: What Home shows (pulse card, tiles, charts, the plans, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:21a488205c93b75533caaa8c86d758a2152254b05c545894c23068d8783d6822
+  - docs/user-guide/home.md sha256:72da0614ab295ba7fc42ea98d151fbeeebf9f86f4c26b68675a1c18ddb8454ba
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-08
 aliases:
   - copy amounts to excel
   - paste an amount
@@ -28,6 +28,9 @@ aliases:
   - how much cash do we have
   - runway
   - burn
+  - when do we run out of cash
+  - budget vs actual on home
+  - cash out month
 ---
 
 # The Home page, search and commands, Settings, and signing out
@@ -50,9 +53,19 @@ aliases:
 - **The tiles**: what customers owe the company and what it owes, and this month's net burn when books health is on the pulse card. Expert mode adds the month's revenue, the gross margin and the net profit for the financial year so far.
 - Expert mode also draws three charts: revenue, costs and profit by month; cash by month; and costs by function, this month beside the last.
 - **ⓘ** beside a figure says how it is worked out, the dates it reads, its source and its definition's version; selecting the figure opens the report behind it. A figure the books cannot give shows **—** with the reason, never 0.
-- **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Revenue and costs against the budget, unbilled time and GST due join with their modules.
+- **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Unbilled time and GST due join with their modules.
+- For someone whose roles read the plans, the tiles add the month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget; see the next section.
 
 (src: docs/user-guide/home.md#what-it-is)
+
+## The plans on Home
+
+- **Cash runs out**: the month cash first falls below zero in the latest recorded forecast, in its first scenario (usually Base). It leaves out the funding the forecast plans, because none of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within the forecast** means cash lasts for all the months the forecast covers.
+- **Revenue against budget** and **Costs against budget** (Expert mode): the financial year so far, to the end of the month the tiles show, against the year's approved budget for the same months, with the gap as a percentage of the budget and whether it is **favourable** (revenue above its budget, or costs below theirs).
+- A tile without a figure shows **—** and says why, such as "No approved budget for the year from 1 Jan 2027" or "No forecast is recorded yet".
+- The figures are the books' and the plans' as they stand when Home opens; a budget counts once approved, a forecast once recorded.
+
+(src: docs/user-guide/home.md#what-it-is) (src: docs/user-guide/home.md#read-the-plans-on-home)
 
 ## Set up the company
 

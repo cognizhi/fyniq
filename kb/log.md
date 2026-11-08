@@ -435,3 +435,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)
 
 ## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)
+
+## [2026-11-08] compile | docs/user-guide/home.md → home.overview (Home's tiles from the plans: cash runs out, revenue and costs against budget; p1-planning slice 5)

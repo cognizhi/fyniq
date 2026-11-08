@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budget": {
+      "$ref": "PlanningBudgetTile.schema.json",
+      "description": "Revenue and costs against budget for the financial year to the month's end; absent while the year has no approved budget, which budget_missing says."
+    },
+    "budget_missing": {
+      "description": "Why there is no budget figure.",
+      "examples": [
+        "No approved budget for the year from 1 Jan 2027"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "forecast": {
+      "$ref": "PlanningForecastTile.schema.json",
+      "description": "The cash-out month of the latest recorded forecast; absent while none is recorded, which forecast_missing says."
+    },
+    "forecast_missing": {
+      "description": "Why there is no forecast figure.",
+      "examples": [
+        "No forecast is recorded yet"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month asked for (YYYY-MM).",
+      "examples": [
+        "2027-03"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "currency"
+  ],
+  "title": "PlanningSummary",
+  "type": "object"
+}
