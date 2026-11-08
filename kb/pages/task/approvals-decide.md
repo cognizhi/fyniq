@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:e0e08554f80dff5542296a7b76d20ce9d3eef948b54177e8e5117d2ee2c98bd2
+  - docs/user-guide/approvals.md sha256:f4eb86d190b46b4a1bc94bc6d2435f4a19e413d373aaa3676a952b7d14974861
 data_class: general
 taint: trusted
 status: published
@@ -54,6 +54,7 @@ aliases:
 ## Approve or reject
 
 - **Inbox → To approve**, choose the request and check each value before and after.
+- For a change that posts to the books, **What approving it would post** shows the entry as debits and credits and each account's balance before and after, worked out when the request is opened and never kept; if approving now would be refused, for example because its month has closed since, it says so instead.
 - **Approve…** or **Reject…** opens the confirmation: exactly what is signed, the step, and the request's fingerprint; a rejection needs a reason.
 - **Approve with passkey** (or **Reject with passkey**) and confirm on the device; without a passkey, **Approve** or **Reject** and confirm it's you when asked.
 - The Inbox never approves by itself: every decision goes through the confirmation.
