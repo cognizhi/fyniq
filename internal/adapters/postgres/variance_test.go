@@ -51,6 +51,20 @@ func TestAttackVarianceExplanationsAreAppendOnlyAndOnlyInAnOpenPeriod(t *testing
 	if n := count(t, b.Org, "period_variance_explanation"); n != 2 {
 		t.Errorf("%d explanations kept, want both", n)
 	}
+	// (p1-planning) An explanation of the budget variance is the account's latest of its kind, beside the month's.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Closes().ExplainVariance(ctx, storage.NewVarianceExplanation{PeriodID: b.Nov.ID, AccountID: b.Rent.ID, Kind: storage.VarianceBudget,
+			Current: "8000.00", Previous: "6000.00", Explanation: "The new office costs more than budgeted."}); err != nil {
+			return err
+		}
+		xs, err := u.Closes().VarianceExplanations(ctx, b.Nov.ID)
+		if err == nil && (len(xs) != 2 || xs[0].Kind != storage.VarianceBudget || xs[0].Previous != "6000.0000" || xs[1].Kind != storage.VarianceMonth || xs[1].ID != second.ID) {
+			t.Errorf("the latest explanation of each kind: %+v", xs)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	// A balance-sheet account's variance is not explained; nor is a variance in a closed period.
 	if _, err := explain(b.Nov, b.Bank, "Cash moved."); !refusedAs(err, storage.CodeVariance) {
@@ -85,6 +99,12 @@ func TestAttackVarianceExplanationsAreAppendOnlyAndOnlyInAnOpenPeriod(t *testing
 			"VALUES ('" + b.Oct.ID.String() + "', '" + b.Rent.ID.String() + "', 1, 0, 'x', 'user:a', now())", "FY162"},
 		{"fyniq_api", "INSERT INTO fyniq.period_variance_explanation (period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at) " +
 			"VALUES ('" + b.Nov.ID.String() + "', '" + b.Bank.ID.String() + "', 1, 0, 'x', 'user:a', now())", "FY162"},
+		// (p1-planning) An explanation is of the previous month or of the budget, nothing else; a budget one is guarded alike.
+		{"fyniq_api", "INSERT INTO fyniq.period_variance_explanation (period_id, account_id, kind, current_amount, previous_amount, explanation, written_by, written_at) " +
+			"VALUES ('" + b.Nov.ID.String() + "', '" + b.Rent.ID.String() + "', 'forecast', 1, 0, 'x', 'user:a', now())", "23514"},
+		{"fyniq_api", "INSERT INTO fyniq.period_variance_explanation (period_id, account_id, kind, current_amount, previous_amount, explanation, written_by, written_at) " +
+			"VALUES ('" + b.Oct.ID.String() + "', '" + b.Rent.ID.String() + "', 'budget', 1, 0, 'x', 'user:a', now())", "FY162"},
+		{"fyniq_migrator", "UPDATE fyniq.period_variance_explanation SET kind = 'budget'", "FY163"},
 	} {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
 		wantState(t, c.role+": "+c.stmt, err, c.state)

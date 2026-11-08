@@ -277,6 +277,7 @@ export function PeriodClose() {
               {!open && <p className="fy-card__body fy-secondary">The period is closed: nothing posts in it, by any path.</p>}
             </section>
             <Variances periodId={periodId} month={month} open={open} mayExplain={mayCheck} onExplained={setStatus} />
+            <Variances periodId={periodId} month={month} open={open} mayExplain={mayCheck} onExplained={setStatus} against="budget" />
           </div>
 
           <aside className="fy-stack fy-stack--6" aria-label="Attestation and year end">

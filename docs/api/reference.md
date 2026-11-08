@@ -9921,13 +9921,14 @@ Asks to reopen the latest closed period, with a reason (FR-GL-08, FM-1; PRD-001 
 
 **List a period's variances** (`listPeriodVariances`)
 
-Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances arrive with budgets. Read-only; no side effects.
+Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires. With against=budget, each account's total against the month's budget for it instead, at the same thresholds, once the month's financial year has a recorded budget (budgeted says whether it has; p1-planning design D6), explained apart. Read-only; no side effects.
 
 - **Permission:** View on Period close / reopen
 - **Parameters:**
   - `period_id` (path, required): The period's ID.
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `against` (query): previous (the default): against the previous month; budget: against the month's budget, when its financial year has a recorded budget.
 - **Responses:**
   - `200` OK [`VariancePage`](../../contracts/schemas/VariancePage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
@@ -9942,7 +9943,7 @@ Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each inco
 
 **Explain a variance** (`explainVariance`)
 
-Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional), or, with against=budget, against the month's budget (p1-planning design D6). The request names the two figures as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation of the same comparison for the period; explanations are never changed or removed, and once either figure changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
 
 - **Permission:** Create on Period close / reopen
 - **Parameters:**

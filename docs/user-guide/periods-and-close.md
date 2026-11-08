@@ -83,9 +83,10 @@ closes the month.
      A journal line you enter cannot leave one, so Fyniq posted it by itself, from an invoice or a
      bank line for example: move each amount to its value with a journal whose lines on the account
      net to zero (see [Dimensions](chart-of-accounts.md#dimensions));
-   - income and expense accounts that moved against the previous month by more than both
-     thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
-     explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));
+   - income and expense accounts that moved against the previous month, or differ from the month's
+     budget once the financial year has an approved one, by more than both thresholds in
+     **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their
+     figures as they are now (✖; see [Explain the variances](#explain-the-variances));
    - the month's close checklist: every task done, or skipped for the month with a reason (✖; see
      [Work through the checklist](#work-through-the-checklist));
    - in the month the books start, the opening balances are posted (⚠).
@@ -146,6 +147,20 @@ previous month's total is zero, the amount alone decides.
   thresholds.
 - Totals are shown as in the trial balance, so income is negative.
 - The first month of the books has no earlier month, so nothing is compared.
+
+### Against the budget
+
+Once the month's financial year has an approved budget, the close also compares each income and
+expense account's total for the month with the month's budget for it, at the same thresholds. When
+the budget for an account is zero, the amount alone decides.
+
+- **Variances against the budget** lists them apart, with the month's budget, its total and the
+  change. Explain them the same way: an explanation against the budget is of the budget and the
+  total shown, and is kept apart from the explanation against the previous month, so an account can
+  need both.
+- The checks refuse the close while a variance of either kind above the thresholds has no
+  explanation of its figures as they are now.
+- A month whose financial year has no approved budget shows no budget variances.
 
 ## Year end
 

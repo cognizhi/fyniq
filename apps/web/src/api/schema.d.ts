@@ -9557,7 +9557,7 @@ export interface paths {
         };
         /**
          * List a period's variances
-         * @description Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances arrive with budgets. Read-only; no side effects.
+         * @description Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires. With against=budget, each account's total against the month's budget for it instead, at the same thresholds, once the month's financial year has a recorded budget (budgeted says whether it has; p1-planning design D6), explained apart. Read-only; no side effects.
          */
         get: operations["listPeriodVariances"];
         put?: never;
@@ -9579,7 +9579,7 @@ export interface paths {
         put?: never;
         /**
          * Explain a variance
-         * @description Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+         * @description Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional), or, with against=budget, against the month's budget (p1-planning design D6). The request names the two figures as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation of the same comparison for the period; explanations are never changed or removed, and once either figure changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
          */
         post: operations["explainVariance"];
         delete?: never;
@@ -22941,6 +22941,12 @@ export interface components {
             comment: string;
         };
         ExplainVarianceRequest: {
+            /**
+             * @description Which comparison it explains: previous (the default), against the previous month, or budget, against the month's budget.
+             * @example previous
+             * @enum {string}
+             */
+            against?: "previous" | "budget";
             /** @description The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10). */
             current: components["schemas"]["Money"];
             /**
@@ -22948,7 +22954,7 @@ export interface components {
              * @example The annual design-tool licence renewed in November.
              */
             explanation: string;
-            /** @description Its total for the previous period as listPeriodVariances showed it. */
+            /** @description Its total for the previous period as listPeriodVariances showed it; against=budget, the month's budget as it showed it. */
             previous: components["schemas"]["Money"];
         };
         FXRate: {
@@ -36847,7 +36853,7 @@ export interface components {
              * @example true
              */
             needs_explanation: boolean;
-            /** @description Its total for the previous period. */
+            /** @description Its total for the previous period; against=budget, the month's budget for it, signed as the ledger signs it (income negative). */
             previous: components["schemas"]["Money"];
             /**
              * @description revenue (income) or expense: balance-sheet accounts rely on the support the close requires.
@@ -36870,7 +36876,7 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4de0
              */
             id: string;
-            /** @description The account's total for the previous period it explained. */
+            /** @description The account's total for the previous period it explained; against the budget, the month's budget it explained. */
             previous: components["schemas"]["Money"];
             /**
              * Format: date-time
@@ -36882,7 +36888,18 @@ export interface components {
             written_by?: components["schemas"]["Person"];
         };
         VariancePage: {
-            /** @description Each income or expense account with a total in either period. */
+            /**
+             * @description previous: against the previous month; budget: against the month's budget (p1-planning design D6).
+             * @example previous
+             * @enum {string}
+             */
+            against: "previous" | "budget";
+            /**
+             * @description The month's financial year has a recorded budget, so the close also compares with it.
+             * @example true
+             */
+            budgeted: boolean;
+            /** @description Each income or expense account with a total in either period; against=budget, with a total or a budget for the month. */
             items: components["schemas"]["Variance"][];
             /**
              * @description Pass it as cursor for the next page; absent on the last page.
@@ -36901,7 +36918,7 @@ export interface components {
             threshold_percent: string;
             /**
              * Format: int64
-             * @description How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any.
+             * @description How many variances of this comparison, on every page, need an explanation and have no current one: the close checks refuse the close while there are any, of either comparison.
              * @example 1
              */
             unexplained: number;
@@ -113881,6 +113898,8 @@ export interface operations {
                 page_size?: number;
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
+                /** @description previous (the default): against the previous month; budget: against the month's budget, when its financial year has a recorded budget. */
+                against?: "previous" | "budget";
             };
             header?: never;
             path: {

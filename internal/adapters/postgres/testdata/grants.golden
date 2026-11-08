@@ -285,7 +285,7 @@ fyniq_api       INSERT    period_close_check (checked_at, checked_by, clean, led
 fyniq_api       SELECT    period_close_check
 fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id, before_hash, close_id, period_id, reason, reopened_at, reopened_by, reopened_revision)
 fyniq_api       SELECT    period_reopen
-fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, period_id, previous_amount, written_at, written_by)
+fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, kind, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)

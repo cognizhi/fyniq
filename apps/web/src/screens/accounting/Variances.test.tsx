@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
 import { answer, ownerSession, problem, seen } from "../../test/api";
@@ -93,6 +93,46 @@ describe("the close's variances", () => {
     expect(await screen.findByText("1 variance needs an explanation before the close.")).toBeTruthy();
     expect(screen.getByText(/The office moved. · Grace Ho/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Explain 6100 Rent" })).toBeNull();
+  });
+
+  it("lists the variances against the month's budget apart, and explains one against it; axe finds nothing", async () => {
+    const subs: Variance = {
+      account_id: "a4010", code: "4010", name: "Subscriptions", type: "revenue",
+      current: sgd("-6000.00"), previous: sgd("-10000.00"), change: sgd("4000.00"), change_percent: "40.0",
+      needs_explanation: true, explained: false,
+    };
+    answer({
+      ...close,
+      "GET /v1/periods/p11/variances": (_body, req) =>
+        new URL(req.url).searchParams.get("against") === "budget"
+          ? { status: 200, body: { ...page([subs], 1), against: "budget", budgeted: true } }
+          : { status: 200, body: { ...page([], 0), against: "previous", budgeted: true } },
+      "POST /v1/periods/p11/variances/a4010/explanation": { status: 200, body: { ...subs, explained: true } },
+    });
+    renderPage(PeriodClose, { ...at, session: accountant });
+    const card = (await screen.findByRole("heading", { name: "Variances against the budget" })).closest("section")!;
+    expect(await within(card).findByText("1 variance against the budget needs an explanation before the close.")).toBeTruthy();
+    expect(within(card).getByText("More than SGD 1,000.00 and 10% against November 2026's budget")).toBeTruthy();
+    expect(within(card).getByRole("columnheader", { name: "November 2026 budget" })).toBeTruthy();
+    expect(within(card).getByText("+40.0%")).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(within(card).getByRole("button", { name: "Explain 4010 Subscriptions" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/November 2026 budget: −10,000.00; November 2026: −6,000.00 SGD/)).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Why it moved"), { target: { value: "A large customer moved its renewal to January." } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Explain" }));
+    await vi.waitFor(() => expect(seen.some((x) => x.method === "POST")).toBe(true));
+    expect(seen.find((x) => x.method === "POST")!.body).toEqual({
+      current: sgd("-6000.00"), previous: sgd("-10000.00"), explanation: "A large customer moved its renewal to January.", against: "budget",
+    });
+  });
+
+  it("leaves the budget's card out while the month's year has no budget", async () => {
+    answer({ ...close, "GET /v1/periods/p11/variances": { status: 200, body: { ...page([rent], 1), budgeted: false } } });
+    renderPage(PeriodClose, { ...at, session: accountant });
+    await screen.findByText("1 variance needs an explanation before the close.");
+    expect(seen.some((x) => x.path === "/v1/periods/p11/variances" && x.query.includes("against=budget"))).toBe(true);
+    expect(screen.queryByRole("heading", { name: "Variances against the budget" })).toBeNull();
   });
 
   it("shows the refusal when the totals moved since the page read them", async () => {

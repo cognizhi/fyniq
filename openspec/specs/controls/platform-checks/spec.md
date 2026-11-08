@@ -917,7 +917,7 @@ Source: PRD-001 §C.2
 - **THEN** the check passes
 
 ### Requirement: C.2 #57 Variances without an explanation
-The system SHALL refuse the close (✖) while an income or expense account's total for the period differs from its total for the previous period by more than both the variance amount and the variance percentage of the organisation's settings (the amount alone when the previous total is zero), and has no explanation of the two totals as they are (FR-GL-14).
+The system SHALL refuse the close (✖) while an income or expense account's total for the period differs from its total for the previous period, or (rev 0.221) from the period's budget for it once its financial year has a recorded budget, by more than both the variance amount and the variance percentage of the organisation's settings (the amount alone when the other figure is zero), and has no explanation of the two figures as they are (FR-GL-14).
 
 Source: PRD-001 §C.2
 
@@ -931,8 +931,13 @@ Source: PRD-001 §C.2
 - **WHEN** the period's close checks run
 - **THEN** the check refuses the close (✖) until a new explanation is written
 
+#### Scenario: A budget variance without an explanation (rev 0.221)
+- **GIVEN** a period whose financial year has a recorded budget, and an income or expense account whose total differs from the period's budget for it by more than both thresholds
+- **WHEN** the period's close checks run and no explanation against the budget of its two figures as they are exists
+- **THEN** the check refuses the close (✖), even when its month-on-month variance is explained
+
 #### Scenario: Every variance explained, or nothing to compare
-- **WHEN** every variance above both thresholds has an explanation of its totals as they are, or the period has no previous period
+- **WHEN** every variance above both thresholds, of either kind, has an explanation of its figures as they are, or the period has no previous period and no budget
 - **THEN** the check passes
 
 ### Requirement: C.2 #55 Model route needs attention

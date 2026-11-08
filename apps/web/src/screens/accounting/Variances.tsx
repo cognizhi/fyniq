@@ -16,16 +16,19 @@ import { monthOf } from "./Periods";
 type Page = components["schemas"]["VariancePage"];
 type Variance = components["schemas"]["Variance"];
 
+type Against = "previous" | "budget";
+
 // percentOf shows the change's percentage as the API rounded it (RND-PERCENT), with its sign: "+60.0%", "−40.0%".
-function percentOf(v: Variance): string {
-  if (v.change_percent === undefined) return "new";
+function percentOf(v: Variance, against: Against): string {
+  if (v.change_percent === undefined) return against === "budget" ? "not budgeted" : "new";
   const p = v.change_percent;
   return p.startsWith("-") ? `−${p.slice(1)}%` : p === "0.0" ? "0.0%" : `+${p}%`;
 }
 
-// Explain asks why an account moved, for the two totals the page shows: the API refuses them once either changed
-// (CLOSE-10), and a recorded explanation goes stale when they change (FR-GL-14).
-function Explain({ v, periodId, months, onClose, onDone }: { v: Variance; periodId: string; months: [string, string]; onClose: () => void; onDone: () => void }) {
+// Explain asks why an account moved, for the two figures the page shows: the API refuses them once either changed
+// (CLOSE-10), and a recorded explanation goes stale when they change (FR-GL-14). Against the budget, the first figure is
+// the month's budget.
+function Explain({ v, periodId, months, against, onClose, onDone }: { v: Variance; periodId: string; months: [string, string]; against: Against; onClose: () => void; onDone: () => void }) {
   const confirm = useConfirm();
   const id = useId();
   const [words, setWords] = useState(v.explanation && !v.explained ? v.explanation.explanation : "");
@@ -41,7 +44,7 @@ function Explain({ v, periodId, months, onClose, onDone }: { v: Variance; period
     const out = await guarded(confirm, () =>
       api.POST("/v1/periods/{period_id}/variances/{account_id}/explanation", {
         params: { path: { period_id: periodId, account_id: v.account_id }, header: { "Idempotency-Key": key } },
-        body: { current: v.current, previous: v.previous, explanation: words.trim() },
+        body: { current: v.current, previous: v.previous, explanation: words.trim(), ...(against === "budget" ? { against } : {}) },
       }),
     );
     setBusy(false);
@@ -54,7 +57,7 @@ function Explain({ v, periodId, months, onClose, onDone }: { v: Variance; period
       onOpenChange={(o) => !o && onClose()}
       dismissible={!busy}
       title={`Explain ${v.code} ${v.name}`}
-      description={`${months[0]}: ${formatAmount(v.previous.amount)}; ${months[1]}: ${formatAmount(v.current.amount)} ${v.current.currency}. The explanation is of these totals: if either changes, the close asks for a new one.`}
+      description={`${months[0]}: ${formatAmount(v.previous.amount)}; ${months[1]}: ${formatAmount(v.current.amount)} ${v.current.currency}. The explanation is of these figures: if either changes, the close asks for a new one.`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
@@ -134,49 +137,69 @@ function Status({ v }: { v: Variance }) {
 }
 
 // Variances is the close's flux analysis (FR-GL-14, Appendix C.2 #57; docs/design/screens PeriodClose): each income or
-// expense account against the previous month, those above both thresholds first in importance, each with its latest
-// explanation. The members who run the checks explain them while the month is open; the checks then see them once run
-// again. The AI's draft arrives with the AI catalogue, budget variances with budgets.
-export function Variances({ periodId, month, open, mayExplain, onExplained }: { periodId: string; month: string; open: boolean; mayExplain: boolean; onExplained: (message: string) => void }) {
+// expense account against the previous month, or with against="budget" against the month's budget once its financial
+// year has an approved one (p1-planning design D6), those above both thresholds first in importance, each with its
+// latest explanation of that comparison. The members who run the checks explain them while the month is open; the
+// checks then see them once run again. The budget's card is left out while the year has no budget. The AI's draft
+// arrives with the AI catalogue.
+export function Variances({
+  periodId,
+  month,
+  open,
+  mayExplain,
+  onExplained,
+  against = "previous",
+}: {
+  periodId: string;
+  month: string;
+  open: boolean;
+  mayExplain: boolean;
+  onExplained: (message: string) => void;
+  against?: Against;
+}) {
   const queries = useQueryClient();
   const id = useId();
   const [all, setAll] = useState(false);
   const [explaining, setExplaining] = useState<Variance | null>(null);
   const q = useQuery({
-    queryKey: ["period-variances", periodId],
+    queryKey: ["period-variances", periodId, against],
     queryFn: async () => {
-      const r = await api.GET("/v1/periods/{period_id}/variances", { params: { path: { period_id: periodId }, query: { page_size: 500 } } });
+      const r = await api.GET("/v1/periods/{period_id}/variances", { params: { path: { period_id: periodId }, query: { page_size: 500, against } } });
       if (r.error) throw r.error;
       return r.data;
     },
   });
   const p: Page | undefined = q.data;
-  const before = p?.previous_period ? monthOf(p.previous_period) : "";
+  const budget = against === "budget";
+  const before = budget ? `${month} budget` : p?.previous_period ? monthOf(p.previous_period) : "";
+  // ready: there is something to compare with, the previous month or the budget.
+  const ready = budget ? !!p?.budgeted : !!p?.previous_period;
   const listed = (p?.items ?? []).filter((v) => all || v.needs_explanation || v.explanation);
   const hidden = (p?.items.length ?? 0) - listed.length;
   const percent = p ? `${p.threshold_percent}%` : "";
+  if (budget && p && !p.budgeted) return null;
   return (
     <section className="fy-card" aria-labelledby={`${id}-variances`}>
       <div className="fy-card__head" style={{ flexWrap: "wrap" }}>
         <h2 className="fy-h3" id={`${id}-variances`}>
-          Variances to explain
+          {budget ? "Variances against the budget" : "Variances to explain"}
         </h2>
-        {p?.previous_period && (
+        {p && ready && (
           <span className="fy-small fy-muted">
-            More than {p.threshold_amount.currency} {formatAmount(p.threshold_amount.amount)} and {percent} against {before}
+            More than {p.threshold_amount.currency} {formatAmount(p.threshold_amount.amount)} and {percent} against {budget ? `${month}'s budget` : before}
           </span>
         )}
       </div>
       {q.isError && <Refusal problem={problemOf(q.error)} title="The variances could not be shown" />}
-      {p && !p.previous_period && <p className="fy-card__body fy-secondary">No earlier month to compare: {month} has no variances to explain.</p>}
-      {p?.previous_period && (
+      {p && !ready && <p className="fy-card__body fy-secondary">No earlier month to compare: {month} has no variances to explain.</p>}
+      {p && ready && (
         <>
           <p className="fy-card__body fy-small">
             {p.unexplained === 0
               ? "Every variance above the thresholds is explained."
               : p.unexplained === 1
-                ? "1 variance needs an explanation before the close."
-                : `${p.unexplained} variances need an explanation before the close.`}
+                ? `1 variance${budget ? " against the budget" : ""} needs an explanation before the close.`
+                : `${p.unexplained} variances${budget ? " against the budget" : ""} need an explanation before the close.`}
           </p>
           {listed.length > 0 && (
             <div className="fy-tablewrap" style={{ border: 0, borderRadius: 0 }}>
@@ -213,7 +236,7 @@ export function Variances({ periodId, month, open, mayExplain, onExplained }: { 
                         {formatAmount(v.current.amount)}
                       </td>
                       <td data-card="amount" className="fy-num">
-                        {formatAmount(v.change.amount)} <span className="fy-small fy-muted">{percentOf(v)}</span>
+                        {formatAmount(v.change.amount)} <span className="fy-small fy-muted">{percentOf(v, against)}</span>
                       </td>
                       <td data-card="meta">
                         <Status v={v} />
@@ -248,11 +271,12 @@ export function Variances({ periodId, month, open, mayExplain, onExplained }: { 
           {p.next_cursor && <p className="fy-card__body fy-small fy-muted">Showing the first 500 accounts by code.</p>}
         </>
       )}
-      {explaining && p?.previous_period && (
+      {explaining && ready && (
         <Explain
           v={explaining}
           periodId={periodId}
           months={[before, month]}
+          against={against}
           onClose={() => setExplaining(null)}
           onDone={async () => {
             setExplaining(null);

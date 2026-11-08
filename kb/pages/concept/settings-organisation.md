@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e361386234b66917fa98eabd69d4dccf18cf751bb21d7c5cad6142a48c5674b8
+  - docs/user-guide/organisation-settings.md sha256:7f9418aaf83e02b67a5b58bdeb70ec581b21b3a47537975f58c891e80120d969
 data_class: general
 taint: trusted
 status: draft
@@ -293,6 +293,7 @@ The calendar itself: [[compliance.calendar]].
 
 - Before a month closes, each income and expense account's total for the month is compared with the previous month's.
 - A change needs a short explanation when it is more than **both** S$1,000 and 10% of the previous month's total; when the previous month's total is zero, the amount alone decides.
+- The same thresholds apply to the comparison with the month's budget, once its financial year has an approved one.
 - Changing either needs a second approver. Explaining them at the close: [[accounting.periods]].
 
 (src: docs/user-guide/organisation-settings.md#variances-at-the-close)
