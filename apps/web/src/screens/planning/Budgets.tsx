@@ -329,7 +329,7 @@ export function Budgets() {
                 <Icon of={Plus} />
                 {action("budget.add-line").label}
               </Button>
-              <span className="fy-small fy-muted">The totals are worked out when you save. Amounts are signed as the P&L shows them: income and costs above zero.</span>
+              <span className="fy-small fy-muted">The totals are worked out when you save. Amounts are signed as the P&amp;L shows them: income and costs above zero.</span>
             </div>
           )}
         </section>
