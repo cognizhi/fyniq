@@ -36,8 +36,8 @@
           "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
           "active": {"type": "boolean"},
           "role": {
-            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
-            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration", "share-application-monies"]
+            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167). \"share-application-monies\" (2040) holds money for shares not yet allotted, each line naming its subscriber; \"convertible-instruments\" (2700) holds each SAFE's money, each line naming its instrument (FR-EQ-17, FR-EQ-18).",
+            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration", "share-application-monies", "convertible-instruments"]
           },
           "votes_per_share": {
             "description": "Optional, on a share-capital account only (README, \"Cap tables\"): the votes each share of its class carries, a plain number of zero or more with at most 8 decimals, as a share class records it (FR-EQ-16). Left out, one.",
@@ -234,7 +234,7 @@
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
                                          "director_conversion", "account_merge", "share_issue_cash",
-                                         "share_transfer"]}},
+                                         "share_transfer", "instrument", "safe_conversion"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -258,7 +258,9 @@
         {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}},
         {"if": {"properties": {"type": {"const": "account_merge"}}}, "then": {"$ref": "#/$defs/accountMerge"}},
         {"if": {"properties": {"type": {"const": "share_issue_cash"}}}, "then": {"$ref": "#/$defs/shareIssueCash"}},
-        {"if": {"properties": {"type": {"const": "share_transfer"}}}, "then": {"$ref": "#/$defs/shareTransfer"}}
+        {"if": {"properties": {"type": {"const": "share_transfer"}}}, "then": {"$ref": "#/$defs/shareTransfer"}},
+        {"if": {"properties": {"type": {"const": "instrument"}}}, "then": {"$ref": "#/$defs/instrument"}},
+        {"if": {"properties": {"type": {"const": "safe_conversion"}}}, "then": {"$ref": "#/$defs/safeConversion"}}
       ]
     },
     "settings": {
@@ -656,6 +658,38 @@
         "shares": {"description": "The number of shares, a whole number above zero.", "type": "string"}
       }
     },
+    "instrument": {
+      "description": "A SAFE recorded on the day it was signed (FR-EQ-18; README, \"SAFEs and their conversion\"): it posts no entry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "form", "amount", "class", "price_decimals"],
+      "properties": {
+        "type": {"const": "instrument"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it was signed.", "$ref": "#/$defs/date"},
+        "person": {"description": "Its holder, one of people or subscribers.", "$ref": "#/$defs/documentId"},
+        "form": {"description": "post_money_safe, pre_money_safe, discount_safe or mfn_safe.", "type": "string"},
+        "amount": {"description": "What the investor paid, in the base currency, above zero.", "$ref": "#/$defs/money"},
+        "valuation_cap": {"description": "A post-money or pre-money SAFE's cap, a plain decimal above zero with at most 12 integer digits and 8 decimals.", "type": "string"},
+        "discount": {"description": "The percentage off the round's price, above 0 and below 100, at most 8 decimals.", "type": "string"},
+        "class": {"description": "The share-capital account of the class it converts into (3010 or 3020).", "type": "string"},
+        "price_decimals": {"description": "The decimals of its conversion price, 0 to 6.", "type": "integer"}
+      }
+    },
+    "safeConversion": {
+      "description": "The conversion of every recorded SAFE not converted yet at a priced round (instrument_conversion@1, FR-EQ-18, RND-SHARE, G4-044; README, \"SAFEs and their conversion\").",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "round"],
+      "properties": {
+        "type": {"const": "safe_conversion"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day ACRA's register of members shows the allotments, which it posts on.", "$ref": "#/$defs/date"},
+        "round": {"description": "The priced round: an earlier share_issue_cash document, not rejected, dated on or before date.", "$ref": "#/$defs/documentId"}
+      }
+    },
     "accountMerge": {
       "description": "The merge of an account into another (account_merge@1, FR-COA-04, Appendix B.8; README, Account merges).",
       "type": "object",
@@ -772,6 +806,7 @@
         "fx_rate": {"$ref": "#/$defs/rate"},
         "fx_rate_source": {"$ref": "#/$defs/rateSource"},
         "person": {"description": "The subscriber a part on share application monies names, one of people or subscribers (B.7; rev 0.206): money in for shares, or a refund out.", "$ref": "#/$defs/documentId"},
+        "instrument": {"description": "The recorded SAFE a part on the instruments account (role convertible-instruments) names: the ID of an earlier instrument document (FR-EQ-18; README, \"SAFEs and their conversion\").", "$ref": "#/$defs/documentId"},
         "parts": {
           "type": "array",
           "items": {

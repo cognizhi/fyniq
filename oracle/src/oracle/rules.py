@@ -223,8 +223,8 @@ class Rules:
 
     # ---------------------------------------------------------------- lines
     def line(self, account: str, currency: str, amount: Decimal, base_amount: Decimal,
-             party: str | None = None) -> PostedLine:
-        return PostedLine(account, currency, amount, base_amount, party)
+             party: str | None = None, instrument: str | None = None) -> PostedLine:
+        return PostedLine(account, currency, amount, base_amount, party, instrument=instrument)
 
     def base_line(self, account: str, base_amount: Decimal) -> PostedLine:
         """A line in the base currency: its amount is its base amount."""

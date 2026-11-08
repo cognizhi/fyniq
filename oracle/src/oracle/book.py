@@ -23,6 +23,7 @@ class PostedLine:
     party: str | None = None  # a director's account's person (FR-EQ-01, B.7); a P1 source's lines name none yet
     # The line's dimension values, (dimension, code) in name order (FR-DIM-02); a P1 source's lines carry none yet.
     dimensions: tuple[tuple[str, str], ...] = ()
+    instrument: str | None = None  # a line on the instruments account's SAFE, its instrument document (FR-EQ-18)
 
 
 def dimension_set(dimensions: tuple[tuple[str, str], ...]) -> str:
@@ -71,22 +72,24 @@ class Rejected(Exception):
 
 
 def canonical(lines: Iterable[PostedLine]) -> tuple[PostedLine, ...]:
-    """A P1 entry's lines netted per (account, currency, person, dimension set), sorted, with zero lines left out.
+    """A P1 entry's lines netted per (account, currency, person, instrument, dimension set), sorted, with zero lines left
+    out.
 
     test/differential/README.md, "P1 entries": two implementations may split a leg into several
     lines (a residual line beside its control line, one 7030 line or two); the canonical form is
     what the entry does to each account in each currency, so the comparison does not hinge on it. A
-    director's account's lines stay apart by person (FR-EQ-01), and every account's by its set of dimension values
-    (FR-DIM-02 rev 0.171), sorted after the person as :func:`dimension_set` writes it (none first).
+    director's account's lines stay apart by person (FR-EQ-01), the instruments account's by instrument (FR-EQ-18),
+    and every account's by its set of dimension values (FR-DIM-02 rev 0.171), sorted after the person and the
+    instrument (none first) as :func:`dimension_set` writes it (none first).
     """
-    totals: dict[tuple[str, str, str, str], tuple[Decimal, Decimal, tuple[tuple[str, str], ...]]] = {}
+    totals: dict[tuple[str, str, str, str, str], tuple[Decimal, Decimal, tuple[tuple[str, str], ...]]] = {}
     for ln in lines:
         values = tuple(sorted(ln.dimensions))
-        key = (ln.account, ln.currency, ln.party or "", dimension_set(values))
+        key = (ln.account, ln.currency, ln.party or "", ln.instrument or "", dimension_set(values))
         amount, base, _ = totals.get(key, (money.ZERO, money.ZERO, values))
         totals[key] = (money.EXACT.add(amount, ln.amount), money.EXACT.add(base, ln.base_amount), values)
     return tuple(
-        PostedLine(account, currency, amount, base, party or None, values)
-        for (account, currency, party, _), (amount, base, values) in sorted(totals.items())
+        PostedLine(account, currency, amount, base, party or None, values, instrument or None)
+        for (account, currency, party, instrument, _), (amount, base, values) in sorted(totals.items())
         if not (amount.is_zero() and base.is_zero())
     )

@@ -17,7 +17,10 @@
 * a part on share application monies (the account of role ``share-application-monies``, B.7) names the line's
   ``person``, its subscriber, one of the scenario's ``people`` or ``subscribers``: money in for shares not yet
   allotted, or a refund paid out (PRD-001 rev 0.206). Such a part without one, or a ``person`` on a line with no such
-  part, is rejected.
+  part, is rejected;
+* a part on the instruments account (role ``convertible-instruments``, 2700) names the line's ``instrument``, a SAFE an
+  earlier document recorded: its money in, or a repayment out (FR-EQ-18). Such a part without one, an ``instrument``
+  not recorded, or an ``instrument`` on a line with no such part, is rejected.
 
 **A transfer** (``bank_transfer``) is recorded once: Dr the receiving account with what it received,
 Cr the paying account with what it paid. Across currencies each leg is at its own currency's rate for
@@ -35,6 +38,7 @@ from oracle import money
 from oracle.book import Posting, Rejected
 from oracle.rules import Rules, month_start
 from oracle.scenario import Source
+from oracle.sources.equity import INSTRUMENTS, recorded
 
 
 def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
@@ -55,6 +59,14 @@ def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         raise Rejected("person-not-on-share-application-monies")
     if on_monies and person not in r.scenario.people | r.scenario.subscribers:
         raise Rejected("not-a-subscriber")
+    # The SAFE a part on the instruments account names (FR-EQ-18): its money in, or a repayment out.
+    holding = {code for code, a in r.scenario.accounts.items() if a.role == INSTRUMENTS}
+    safe = d.get("instrument")
+    on_holding = any(part["account"] in holding for part in d["parts"])
+    if safe is not None and not on_holding:
+        raise Rejected("instrument-not-on-its-account")
+    if on_holding and safe not in recorded(books):
+        raise Rejected("not-a-recorded-safe")
 
     parts = []
     for part in d["parts"]:
@@ -82,7 +94,8 @@ def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
             lines.append(r.base_line(r.system("gst"), money.negate(gst)))
         if months is None:
             party = person if account in monies else None
-            lines.append(r.line(account, r.base, money.negate(rest), money.negate(rest), party=party))
+            lines.append(r.line(account, r.base, money.negate(rest), money.negate(rest), party=party,
+                                instrument=safe if account in holding else None))
             continue
         deferral = r.system("prepayments" if sign < 0 else "deferred_revenue")
         lines.append(r.base_line(deferral, money.negate(rest)))

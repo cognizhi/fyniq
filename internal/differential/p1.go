@@ -147,6 +147,14 @@ type p1 struct {
 	journals []reversing              // the manual journals that reverse by themselves, as posted
 	moves    []equity.Move            // the holding movements of the documents accepted so far (README, "Cap tables")
 	staged   []equity.Move            // the movements of the document being posted, until it is accepted
+	// The SAFEs recorded (in the order recorded), those converted, and the priced rounds the cash issues set, each kept
+	// by the document being posted until it is accepted (README, "SAFEs and their conversion").
+	safes           []recordedSAFE
+	converted       map[uuid.UUID]bool
+	rounds          map[string]round
+	stagedSAFE      *recordedSAFE
+	stagedConverted []uuid.UUID
+	stagedRound     *namedRound
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -163,12 +171,17 @@ type scheduled struct {
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
 		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
-		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}, held: map[string]*held{}}
+		assets: map[string]*registered{}, converted: map[uuid.UUID]bool{}, rounds: map[string]round{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}, held: map[string]*held{}}
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
 	}
 	for _, p := range append(slices.Clone(s.People), s.Subscribers...) {
 		r.personOf[stableID("party", p)] = p
+	}
+	for _, d := range s.Documents { // each instrument by its document's ID, as the canonical form sorts it (FR-EQ-18)
+		if d.Type == "instrument" {
+			r.personOf[stableID("instrument", d.ID)] = d.ID
+		}
 	}
 	r.valueOf = dimensionNames(settings)
 	if s.AsOf != "" {
@@ -194,7 +207,7 @@ func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, erro
 // post posts document i, or reports it rejected. A document that posts nothing of its own (an asset in the register)
 // comes back accepted with an entry of no lines.
 func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
-	r.staged = nil
+	r.unstage()
 	date, err := time.Parse(time.DateOnly, d.Date)
 	if err != nil {
 		return ledger.Entry{}, false
@@ -246,6 +259,10 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.shareIssueCash(d, date)
 	case "share_transfer":
 		return r.shareTransfer(d, date)
+	case "instrument":
+		return ledger.Entry{}, r.instrument(d, date) // a recorded SAFE posts no entry
+	case "safe_conversion":
+		return r.safeConversion(d, date)
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}
@@ -458,6 +475,14 @@ func (r *p1) fits(e ledger.Entry) bool {
 	if len(e.Lines) == 0 {
 		return true
 	}
+	// The database refuses a line on the instruments account that names no recorded SAFE, and an instrument on any
+	// other line (FY292), whichever rule posted it (README, P1 rule 3).
+	for _, l := range e.Lines {
+		on := r.settings.Accounts[l.AccountID].InstrumentAccount()
+		if on != (l.Instrument != uuid.Nil) || on && !r.settings.Instruments[l.Instrument] {
+			return false
+		}
+	}
 	// The database also refuses an entry all in one currency that does not balance in it (INV-01), as when every
 	// base-currency leg rounds to nothing: a USD invoice of 0.10 at 0.1 whose GST is S$0.00 leaves USD 0.11 against 0.10.
 	cur, sum := e.Lines[0].Amount.Currency(), money.Zero(e.Lines[0].Amount.Currency())
@@ -482,18 +507,20 @@ func fitsColumns(lines []ledger.Line) bool {
 	return true
 }
 
-// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account, currency, person and
-// dimension set with the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by
-// account, then currency, then person (a line naming none first), then set (the lines with none first).
+// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account, currency, person,
+// instrument and dimension set with the sums of its amounts and base amounts, the lines whose sums are both zero left
+// out, sorted by account, then currency, then person (a line naming none first), then instrument (none first; personOf
+// names each instrument too), then set (the lines with none first).
 func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, valueOf valueNames, base money.Currency) []ledger.Line {
-	type key struct{ code, cur, person, set string }
+	type key struct{ code, cur, person, instrument, set string }
 	sums := map[key]*ledger.Line{}
 	var keys []key
 	for _, l := range lines {
-		k := key{codeOf[l.AccountID], l.Amount.Currency().Code, personOf[l.Party], valueOf.set(l.Values)}
+		k := key{codeOf[l.AccountID], l.Amount.Currency().Code, personOf[l.Party], personOf[l.Instrument], valueOf.set(l.Values)}
 		s, ok := sums[k]
 		if !ok {
-			s = &ledger.Line{AccountID: l.AccountID, Amount: money.Zero(l.Amount.Currency()), Base: money.Zero(base), Party: l.Party, Values: l.Values}
+			s = &ledger.Line{AccountID: l.AccountID, Amount: money.Zero(l.Amount.Currency()), Base: money.Zero(base), Party: l.Party, Values: l.Values,
+				Instrument: l.Instrument}
 			sums[k] = s
 			keys = append(keys, k)
 		}
@@ -501,7 +528,8 @@ func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, value
 		s.Base, _ = s.Base.Add(l.Base)
 	}
 	slices.SortFunc(keys, func(a, b key) int {
-		return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur), cmp.Compare(a.person, b.person), cmp.Compare(a.set, b.set))
+		return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur), cmp.Compare(a.person, b.person), cmp.Compare(a.instrument, b.instrument),
+			cmp.Compare(a.set, b.set))
 	})
 	out := make([]ledger.Line, 0, len(keys))
 	for _, k := range keys {
@@ -518,7 +546,8 @@ type bankTransactionDoc struct {
 	Amount       string `json:"amount"`
 	FXRate       string `json:"fx_rate"`
 	FXRateSource string `json:"fx_rate_source"`
-	Person       string `json:"person"` // the subscriber a part on share application monies names (B.7)
+	Person       string `json:"person"`     // the subscriber a part on share application monies names (B.7)
+	Instrument   string `json:"instrument"` // the SAFE a part on the instruments account names (FR-EQ-18)
 	Parts        []struct {
 		Account      string `json:"account"`
 		Amount       string `json:"amount"`
@@ -551,6 +580,9 @@ func (r *p1) bankTransaction(i int, d Document, date time.Time) (ledger.Entry, b
 			return ledger.Entry{}, false
 		}
 		t.Party = stableID("party", x.Person)
+	}
+	if x.Instrument != "" { // the bank rule refuses it on a line with no part on the instruments account (LEDGER-49)
+		t.Instrument = stableID("instrument", x.Instrument)
 	}
 	for _, p := range x.Parts {
 		a, ok := r.amount(p.Amount, x.Currency)

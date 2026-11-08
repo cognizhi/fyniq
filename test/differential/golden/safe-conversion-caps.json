@@ -1,0 +1,34 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "equity-safe-conversion-caps",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "as_of": "2027-06-30",
+ "settings": {"accounts": {"gst": "2200"}, "money_accounts": {"1010": "SGD"}, "books_start": "2027-01-01", "gst": {"registered_from": "2027-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}},
+ "people": ["P0001"],
+ "subscribers": ["P0002", "P0003", "P0004", "P0005"],
+ "cap_tables": ["2027-03-12", "2027-03-15"],
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "2040", "type": "liability", "group": false, "active": true, "role": "share-application-monies"},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "2700", "type": "liability", "group": false, "active": true, "role": "convertible-instruments"},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital"}
+ ],
+ "documents": [
+  {"type": "bank_transaction", "id": "BT-0001", "version": 1, "date": "2027-01-05", "account": "1010", "currency": "SGD", "amount": "10000.00", "person": "P0001", "parts": [{"account": "2040", "amount": "10000.00", "gst_code": "NA"}]},
+  {"type": "share_issue_cash", "id": "EQ-0001", "version": 1, "date": "2027-01-05", "person": "P0001", "class": "3010", "shares": "1000000", "price": "0.01"},
+  {"type": "instrument", "id": "SAFE-0001", "version": 1, "date": "2027-02-01", "person": "P0003", "form": "post_money_safe", "amount": "125000.00", "valuation_cap": "2500000", "class": "3010", "price_decimals": 4},
+  {"type": "instrument", "id": "SAFE-0002", "version": 1, "date": "2027-02-01", "person": "P0004", "form": "post_money_safe", "amount": "250000.00", "valuation_cap": "5000000", "class": "3010", "price_decimals": 4},
+  {"type": "instrument", "id": "SAFE-0003", "version": 1, "date": "2027-02-01", "person": "P0005", "form": "pre_money_safe", "amount": "125000.00", "valuation_cap": "2500000", "discount": "20", "class": "3010", "price_decimals": 4},
+  {"type": "bank_transaction", "id": "BT-0002", "version": 1, "date": "2027-02-03", "account": "1010", "currency": "SGD", "amount": "125000.00", "instrument": "SAFE-0001", "parts": [{"account": "2700", "amount": "125000.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0003", "version": 1, "date": "2027-02-03", "account": "1010", "currency": "SGD", "amount": "250000.00", "instrument": "SAFE-0002", "parts": [{"account": "2700", "amount": "250000.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0004", "version": 1, "date": "2027-02-03", "account": "1010", "currency": "SGD", "amount": "125000.00", "instrument": "SAFE-0003", "parts": [{"account": "2700", "amount": "125000.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0005", "version": 1, "date": "2027-02-26", "account": "1010", "currency": "SGD", "amount": "300000.00", "person": "P0002", "parts": [{"account": "2040", "amount": "300000.00", "gst_code": "NA"}]},
+  {"type": "share_issue_cash", "id": "EQ-0002", "version": 1, "date": "2027-03-12", "person": "P0002", "class": "3010", "shares": "100000", "price": "3.00"},
+  {"type": "bank_transaction", "id": "BT-0006", "version": 1, "date": "2027-03-13", "account": "1010", "currency": "SGD", "amount": "3000.00", "person": "P0002", "parts": [{"account": "2040", "amount": "3000.00", "gst_code": "NA"}]},
+  {"type": "share_issue_cash", "id": "EQ-0004", "version": 1, "date": "2027-03-13", "person": "P0002", "class": "3010", "shares": "1000", "price": "3.00"},
+  {"type": "safe_conversion", "id": "EQ-0003", "version": 1, "date": "2027-03-15", "round": "EQ-0002"}
+ ],
+ "reversals": []
+}
