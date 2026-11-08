@@ -56,6 +56,8 @@ const operations: Record<Approval["operation"], string> = {
   "director_repayment.void": "Void a repayment to a director or shareholder",
   "account.merge": "Merge an account into another",
   "bank_reconciliation.sign": "Sign off a reconciliation under an override of SOD-5",
+  "holder_record.record": "Record a holder's details in the equity register",
+  "share_class.record": "Record a share class and its rights",
 };
 
 export function operationLabel(op: string): string {
@@ -102,6 +104,8 @@ const objects: Record<string, string> = {
   director_repayment: "Repayment to a director",
   account: "Account",
   bank_reconciliation: "Bank reconciliation",
+  holder_record: "Holder record",
+  share_class: "Share class",
 };
 
 export function objectLabel(t: string): string {

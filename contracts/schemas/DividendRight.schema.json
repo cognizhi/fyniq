@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "The dividend right.",
+      "enum": [
+        "none",
+        "non_cumulative",
+        "cumulative"
+      ],
+      "examples": [
+        "none"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "A percentage a year.",
+      "examples": [
+        "8"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "title": "DividendRight",
+  "type": "object"
+}

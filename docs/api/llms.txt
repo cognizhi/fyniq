@@ -281,6 +281,16 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/fx/rates/{rate_id}` (getFxRate): Get an exchange rate
 - `POST /v1/fx/rates/{rate_id}/withdraw` (withdrawFxRate): Withdraw an exchange rate
 - `POST /v1/fx/rates:bulk` (bulkCreateFxRates): Enter up to 250 exchange rates
+- `POST /v1/holder-records` (createHolderRecord): Draft a holder record
+- `GET /v1/holder-records/{record_id}` (getHolderRecord): Get a holder record
+- `PUT /v1/holder-records/{record_id}` (replaceHolderRecord): Change a drafted holder record
+- `POST /v1/holder-records/{record_id}/approval` (requestHolderRecordApproval): Ask for approval to record a holder record
+- `GET /v1/holder-records/{record_id}/evidence` (listHolderRecordEvidence): List a holder record's files
+- `POST /v1/holder-records/{record_id}/evidence` (addHolderRecordEvidence): Attach a holder's identity document
+- `GET /v1/holder-records/{record_id}/evidence/{evidence_id}` (getHolderRecordEvidence): Get a holder record's file
+- `DELETE /v1/holder-records/{record_id}/evidence/{evidence_id}` (removeHolderRecordEvidence): Remove a file from a drafted holder record
+- `GET /v1/holders` (listHolders): List the holders
+- `GET /v1/holders/{contact_id}` (getHolder): Get a holder
 - `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
 - `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
 - `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone
@@ -562,6 +572,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/session/step-up/challenge` (startStepUp): Start confirming it's you with a passkey
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
+- `GET /v1/share-classes` (listShareClasses): List the share classes
+- `POST /v1/share-classes` (createShareClass): Draft a share class
+- `GET /v1/share-classes/{version_id}` (getShareClass): Get a share class version
+- `PUT /v1/share-classes/{version_id}` (replaceShareClass): Change a drafted share class version
+- `POST /v1/share-classes/{version_id}/approval` (requestShareClassApproval): Ask for approval to record a share class
+- `GET /v1/share-classes/{version_id}/evidence` (listShareClassEvidence): List a share class version's files
+- `POST /v1/share-classes/{version_id}/evidence` (addShareClassEvidence): Attach a share class's documents
+- `GET /v1/share-classes/{version_id}/evidence/{evidence_id}` (getShareClassEvidence): Get a share class version's file
+- `DELETE /v1/share-classes/{version_id}/evidence/{evidence_id}` (removeShareClassEvidence): Remove a file from a drafted share class version
 - `GET /v1/share-issues` (listShareIssues): List the register of share issues
 - `POST /v1/share-issues` (recordShareIssueBeforeBooks): Record shares issued before the books start
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers

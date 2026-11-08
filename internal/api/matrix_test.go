@@ -2512,9 +2512,10 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		}
 		for _, c := range authz.ApprovalRows {
 			cell := authztest.ParseCell(rows[string(c)][authz.Column(role)])
-			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts) && cell.Qualifier != "" {
+			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts || c == authz.CapTable) && cell.Qualifier != "" {
 				continue // an Employee's own claims are reached from the claim, not the approvals (design D10); nor is "C (salaries)",
-				// nor a qualified view of director accounts (own, deferred pay, share issues, repayments)
+				// nor a qualified view of director accounts (own, deferred pay, share issues, repayments), nor an Employee's own
+				// grants or the Board's own holding on the cap table
 			}
 			if ok, _ := authztest.Allows(cell, p.Need); ok {
 				return true, false
@@ -2560,7 +2561,7 @@ func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
-	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixDimensions, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals, matrixPayee, matrixClaimantBank, matrixPaymentBatches, matrixPaymentBatchRelease, matrixBreakGlass, matrixSuccession, matrixAccountantReview, matrixDirectors, matrixPreCosts, matrixPayChoices, matrixFees, matrixExemptStatuses, matrixConfirmations, matrixSettlements, matrixRepayments, matrixShareIssues, matrixConversions, matrixJoin, matrixBrand, matrixOperations} {
+	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixDimensions, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals, matrixPayee, matrixClaimantBank, matrixPaymentBatches, matrixPaymentBatchRelease, matrixBreakGlass, matrixSuccession, matrixAccountantReview, matrixDirectors, matrixPreCosts, matrixPayChoices, matrixFees, matrixExemptStatuses, matrixConfirmations, matrixSettlements, matrixRepayments, matrixShareIssues, matrixConversions, matrixJoin, matrixBrand, matrixOperations, matrixEquityRecords} {
 		for op, call := range rows {
 			matrixCalls[op] = call
 		}

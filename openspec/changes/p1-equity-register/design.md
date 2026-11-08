@@ -58,53 +58,61 @@ question 33 (YC's Singapore post-money SAFE as the only automatic template, once
 
 ## Decisions
 
-### D1 Holders: the contact, with a versioned holder record (FR-EQ-15)
+### D1 Holders: the contact, with a holder record document (FR-EQ-15)
 
 **The marks.** A holder is a contact marked shareholder, or marked **investor** (a new mark for SAFE, note and option
-holders who hold no shares yet). The `contact` table gains `investor`, and CT-02 accepts it.
+holders who hold no shares yet). The `contact` table gains `is_investor`, and CT-02 accepts it.
 
-**The holder record.** `holder_record` keeps a contact's holder details as versions: an insert-only row per version,
-with FY-guarded numbering at the version read (`If-Match`), the brand's pattern. Each version holds:
+**The holder record.** A holder's details are a `holder_record` document:
 - `kind`: individual or entity;
 - the identifier:
-  - for an individual: `id_type` (NRIC, FIN, passport) and `id_last4` only, as the owner decided. A check refuses
-    more than 4 characters;
+  - for an individual: `id_type` (NRIC, FIN, passport) and `id_last4` only, as the owner decided;
   - for an entity: its UEN or foreign registration number in full, since it is not personal data;
 - nationality or place of incorporation;
 - the registered address;
 - the contact people.
 
-**Approval.** A new version is an approval object `holder_record` (FM-1). It takes effect when approved, and
-`contact.version` is untouched.
+A document was chosen over a table because evidence attaches only to documents, and the document pipeline brings
+drafts, versions, ETags and the approval engine with it. This is the exempt status's pattern (000208).
 
-**Evidence.** The ID document attaches to the holder record as evidence of type "identity document", with the
-personal-data class (FR-DOC-05).
+**The database's rules** on every version (FY285, through a trigger on `document_version`):
+- the payload holds only its own keys;
+- an individual's identifier has 1 to 4 letters or digits;
+- an entity's has none of them;
+- no text in it shows an NRIC or FIN in full.
 
-The alternative was columns on `contact`. They were rejected because contacts change often (emails, terms) and
-their changes are not approved, while a holder's identity must be.
+**Approval.** A draft is recorded only on the approval object `holder_record.record` (FM-1). Another person who holds A
+on the cap table approves, never the member linked to the holder. A later recorded record supersedes the earlier,
+which stays in the history.
 
-### D2 Share classes (FR-EQ-16)
+**Evidence.** The identity document attaches as evidence of the class `identity`. The app opens no identity-class file
+until FR-DOC-09's permissions for it exist. A masked reader (Appendix D's M, the DPO) never opens any file, and reads the
+record without its identifier, address, contact people or note.
 
-**The table.** `share_class` is versioned the same way. Each version holds:
+### D2 Share classes as documents (FR-EQ-16)
+
+**The class.** A share class version is a `share_class` document. It holds:
 - the class's name;
-- its kind: ordinary, or preference with a series (A, B…);
-- its share-capital account: 3010 for ordinary, 3020 for preference, by role `share-capital`;
+- its kind: ordinary, or preference with a series;
+- its share-capital account: 3010 or 3020, by role `share-capital`;
 - the structured rights:
-  - votes per share (an exact decimal);
-  - liquidation preference: multiple, participating or not, cap and seniority;
-  - dividend rights: none, non-cumulative or cumulative, with the rate;
+  - votes per share;
+  - liquidation preference: multiple, participating, cap and seniority;
+  - dividend rights;
   - conversion ratio;
-  - anti-dilution: none, broad-based weighted average or full ratchet;
+  - anti-dilution: none, broad-based or full ratchet;
   - pro-rata and redemption;
 - the constitution and the shareholders' agreement as evidence.
 
-**The default class.** One `Ordinary` class is created from 3010 the first time the register is used, so every
-existing `share_issue` has a class.
+**Versions.** A later version of a recorded class's rights is another document whose `class_id` names the class: the
+first version's document. It keeps the account. The database refuses a class whose account is not active share capital
+(FY286).
 
-**The link to issues.** `share_issue` gains `class_id`, backfilled to that class. The existing `class_account_id`
-stays and must equal the class's account (FY255 widened).
+**The link to issues.** `share_issue` gains `class_id`. Once an account has a recorded class, an issue of it must name
+one of its own classes (FY287). An issue that names none takes the account's first recorded class: the register's API
+and the founders' conversion both do so. Issues recorded before any class stay class-less and count under that class.
 
-**Changes.** A change to a class's rights is a new version, approved under FM-1. The rights are only recorded. Votes
+**Changes.** A class is recorded on the approval object `share_class.record` (FM-1). The rights are only recorded. Votes
 per share is the only right the engine reads (voting percentages).
 
 ### D3 One movement table behind every holding
@@ -119,7 +127,7 @@ date. Every equity transaction writes its movements in its own unit of work:
 | Conversion between classes | − holder, old class; + holder, new class | Dr 3020 · Cr 3010 (or the reverse) at the carrying amount, when the classes' accounts differ |
 | Reversal | the opposite of the transaction it reverses | the reversal of its entry |
 
-**The backstop (FY257):**
+**The backstop (the next free FY code):**
 - a movement names a recorded equity transaction;
 - an issue's movement equals its `share_issue` row in holder, class and shares;
 - a transfer's two movements net to zero and leave the seller with no negative holding;
@@ -267,7 +275,7 @@ double, recorded) and the expiry.
 is an issue (D4) whose movements add shares and whose event reduces the grant.
 
 **The pool's balance** is its size minus outstanding grants and exercises. The database refuses a grant beyond the
-unallocated pool (FY258).
+unallocated pool.
 
 **Access.** An employee reads only grants whose holder is the contact linked to them (Appendix D "V own grants").
 

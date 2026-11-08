@@ -113,9 +113,10 @@ const (
 // (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
-// shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174).
+// shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
+// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -1215,6 +1216,33 @@ var (
 	SetBrandAccent  = Policy{Operation: "setBrandAccent", Capability: OrganisationProfile, Need: Create}
 )
 
+// The equity register's holders and share classes (FR-EQ-15, FR-EQ-16; p1-equity-register slice 1). An Owner or the
+// Controller holds A, the Accountant prepares (C/P), the Auditor and Tax agent read, the DPO reads masked; an
+// Employee's own grants and the Board's own holding come with the cap table, so every read here is Unqualified.
+const equityRecordNote = "Recorded only on another person's approval (FM-1): a person who holds A on the cap table, never the holder."
+
+var (
+	ListHolders                 = Policy{Operation: "listHolders", Capability: CapTable, Need: View, Unqualified: true}
+	GetHolder                   = Policy{Operation: "getHolder", Capability: CapTable, Need: View, Unqualified: true}
+	CreateHolderRecord          = Policy{Operation: "createHolderRecord", Capability: CapTable, Need: Create}
+	GetHolderRecord             = Policy{Operation: "getHolderRecord", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceHolderRecord         = Policy{Operation: "replaceHolderRecord", Capability: CapTable, Need: Create}
+	RequestHolderRecordApproval = Policy{Operation: "requestHolderRecordApproval", Capability: CapTable, Need: Create, Note: equityRecordNote}
+	AddHolderRecordEvidence     = Policy{Operation: "addHolderRecordEvidence", Capability: CapTable, Need: Create}
+	ListHolderRecordEvidence    = Policy{Operation: "listHolderRecordEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetHolderRecordEvidence     = Policy{Operation: "getHolderRecordEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveHolderRecordEvidence  = Policy{Operation: "removeHolderRecordEvidence", Capability: CapTable, Need: Create}
+	ListShareClasses            = Policy{Operation: "listShareClasses", Capability: CapTable, Need: View, Unqualified: true}
+	GetShareClass               = Policy{Operation: "getShareClass", Capability: CapTable, Need: View, Unqualified: true}
+	CreateShareClass            = Policy{Operation: "createShareClass", Capability: CapTable, Need: Create}
+	ReplaceShareClass           = Policy{Operation: "replaceShareClass", Capability: CapTable, Need: Create}
+	RequestShareClassApproval   = Policy{Operation: "requestShareClassApproval", Capability: CapTable, Need: Create, Note: equityRecordNote}
+	AddShareClassEvidence       = Policy{Operation: "addShareClassEvidence", Capability: CapTable, Need: Create}
+	ListShareClassEvidence      = Policy{Operation: "listShareClassEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetShareClassEvidence       = Policy{Operation: "getShareClassEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveShareClassEvidence    = Policy{Operation: "removeShareClassEvidence", Capability: CapTable, Need: Create}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1381,6 +1409,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
 	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation,
+	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,
+	ListHolderRecordEvidence, GetHolderRecordEvidence, RemoveHolderRecordEvidence, ListShareClasses, GetShareClass, CreateShareClass,
+	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
 	RemoveBrandFile, SetBrandAccent)
 
 func index(ps ...Policy) map[string]Policy {
@@ -1427,8 +1458,8 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the
 			// claim (design D10), and never the approvals or the review log; nor is the Payroll administrator's "C
 			// (salaries)" on payment batches, nor a qualified view of director accounts (own, deferred pay, share issues,
-			// repayments).
-			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts
+			// repayments), nor an Employee's own grants or the Board's own holding on the cap table.
+			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts || row == CapTable
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

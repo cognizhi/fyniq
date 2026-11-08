@@ -97,6 +97,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "investor": {
+      "description": "An investor: they hold a SAFE, a note or options, and no shares yet (FR-EQ-15). Shareholders and investors are the equity register's holders.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "legal_name": {
       "description": "Its legal name.",
       "examples": [
@@ -195,6 +202,7 @@
     "vendor",
     "director",
     "shareholder",
+    "investor",
     "active",
     "version",
     "possible_duplicates"

@@ -24,6 +24,7 @@ type ShareIssue struct {
 	ID             uuid.UUID
 	HolderID       uuid.UUID
 	ClassAccountID uuid.UUID
+	ClassID        *uuid.UUID // its share class (FR-EQ-16): the class's first version's document; nil before the account has one
 	Shares         Decimal
 	Price          Decimal
 	Currency       string

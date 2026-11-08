@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its account's code.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "Its share-capital account: 3010 ordinary or 3020 preference. A class keeps its account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "anti_dilution": {
+      "description": "The anti-dilution right: none, broad-based weighted average or full ratchet.",
+      "enum": [
+        "none",
+        "broad_based",
+        "full_ratchet"
+      ],
+      "examples": [
+        "none"
+      ],
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "The approval request waiting, if one is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's status: ✖ while no evidence is attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "class_id": {
+      "description": "A recorded class whose rights this version supersedes; left out for a new class.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "conversion_ratio": {
+      "description": "Into ordinary shares, such as 1.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "dividend": {
+      "$ref": "DividendRight.schema.json",
+      "description": "The dividend right."
+    },
+    "evidence": {
+      "description": "How many files are attached and not removed: asking for approval needs one, such as the constitution.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The class: its first version's ID, which share issues name.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Ordinary or preference.",
+      "enum": [
+        "ordinary",
+        "preference"
+      ],
+      "examples": [
+        "ordinary"
+      ],
+      "type": "string"
+    },
+    "liquidation": {
+      "$ref": "LiquidationRight.schema.json",
+      "description": "The liquidation preference."
+    },
+    "name": {
+      "description": "The class's name, as the constitution gives it.",
+      "examples": [
+        "Ordinary shares"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "As adopted at incorporation"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "pro_rata": {
+      "description": "A pro-rata right in later rounds.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-11-07T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it, as it was recorded."
+    },
+    "redemption": {
+      "description": "The redemption terms, summarised.",
+      "examples": [
+        "None"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "series": {
+      "description": "A preference series, such as A.",
+      "examples": [
+        "A"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    },
+    "status": {
+      "description": "draft: waiting for its documents and approval; recorded: in force; superseded: a later version is in force.",
+      "enum": [
+        "draft",
+        "recorded",
+        "superseded"
+      ],
+      "examples": [
+        "recorded"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "version_id": {
+      "description": "This version of its rights.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "votes_per_share": {
+      "description": "The votes each share carries, a number of zero or more.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version_id",
+    "status",
+    "version",
+    "account_code",
+    "evidence",
+    "checks",
+    "name",
+    "kind",
+    "account_id",
+    "votes_per_share",
+    "liquidation",
+    "dividend",
+    "anti_dilution"
+  ],
+  "title": "ShareClassView",
+  "type": "object"
+}

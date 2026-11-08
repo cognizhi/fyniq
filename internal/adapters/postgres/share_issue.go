@@ -18,7 +18,7 @@ type shareIssues struct{ u *unitOfWork }
 func toShareIssue(r sqlcdb.FyniqShareIssue) storage.ShareIssue {
 	out := storage.ShareIssue{ID: r.ID, HolderID: r.HolderID, ClassAccountID: r.ClassAccountID, Shares: storage.Decimal(r.Shares), Price: storage.Decimal(r.Price),
 		Currency: r.Currency, Amount: storage.Decimal(r.Amount), Consideration: r.Consideration, ResolutionRefs: r.ResolutionRefs, EffectiveOn: r.EffectiveOn,
-		SettlementID: r.SettlementID, EntryID: r.EntryID, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}
+		SettlementID: r.SettlementID, EntryID: r.EntryID, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt, ClassID: r.ClassID}
 	if r.LodgementRef != nil {
 		out.LodgementRef = *r.LodgementRef
 	}
@@ -35,7 +35,8 @@ func (r shareIssues) Record(ctx context.Context, x storage.ShareIssue) (storage.
 	}
 	row, err := r.u.q.InsertShareIssue(ctx, sqlcdb.InsertShareIssueParams{ID: x.ID, HolderID: x.HolderID, ClassAccountID: x.ClassAccountID, Shares: string(x.Shares),
 		Price: string(x.Price), Amount: string(x.Amount), Consideration: x.Consideration, ResolutionRefs: x.ResolutionRefs, LodgementRef: lodgement,
-		EffectiveOn: x.EffectiveOn, SettlementID: x.SettlementID, EntryID: x.EntryID, RecordedBy: x.RecordedBy, RecordedAt: x.RecordedAt, Currency: x.Currency})
+		EffectiveOn: x.EffectiveOn, SettlementID: x.SettlementID, EntryID: x.EntryID, RecordedBy: x.RecordedBy, RecordedAt: x.RecordedAt, Currency: x.Currency,
+		ClassID: x.ClassID})
 	if err != nil {
 		return storage.ShareIssue{}, mapError(err)
 	}
@@ -45,6 +46,9 @@ func (r shareIssues) Record(ctx context.Context, x storage.ShareIssue) (storage.
 		"resolution_refs": out.ResolutionRefs, "lodgement_ref": out.LodgementRef, "effective_on": out.EffectiveOn.Format("2006-01-02")}
 	if out.SettlementID != nil {
 		issue["settlement_id"] = out.SettlementID.String()
+	}
+	if out.ClassID != nil {
+		issue["class_id"] = out.ClassID.String()
 	}
 	if out.EntryID != nil {
 		issue["entry_id"] = out.EntryID.String()

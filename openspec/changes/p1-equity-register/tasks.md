@@ -14,7 +14,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 2. Holders and classes (slice 1)
 
-- [ ] 2.1 Migration and storage (D1, D2):
+- [x] 2.1 Migration and storage (D1, D2):
   - `contact.investor`, with CT-02 widened;
   - `holder_record` and `share_class`, insert-only versions numbered at the version read;
   - an individual's identifier refused beyond 4 characters (FY-guarded);
@@ -23,7 +23,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
   Attack tests: no update or delete; no 5-character identifier; an issue whose class and account disagree.
   `// req: FR-EQ-15`, `// req: FR-EQ-16`, `// req: CMP-PD-07`
-- [ ] 2.2 API (D1, D2, D12):
+  (7 Nov 2026, PRD-001 rev 0.204: built as documents, D1 and D2 revised. Migrations 000250 and 000251 add
+  `contact.is_investor`, the document types `holder_record` and `share_class`, the approval objects, FY285 to FY287 and
+  `share_issue.class_id`. Tests `TestAttackEquityRecordsKeepTheirRules`, `TestAHolderRecordKeepsTheLast4Only`,
+  `TestAShareClassRecordsItsRights`.)
+- [x] 2.2 API (D1, D2, D12):
   - holders (contacts marked shareholder or investor, with their holdings, instruments, grants and rights so far);
   - the holder record's versions, as the approval object `holder_record`;
   - the identity document as evidence with the personal-data class;
@@ -31,6 +35,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   - Appendix D's scopes (Board and Employee row-scoped).
 
   Matrix rows for each operation; contract and Spectral. `// req: FR-EQ-15`, `// req: FR-EQ-16`
+  (7 Nov 2026: `listHolders`, `getHolder`; `createHolderRecord` (`POST /v1/holder-records`), `getHolderRecord`,
+  `replaceHolderRecord`, `requestHolderRecordApproval`; `listShareClasses`, `createShareClass`, `getShareClass`,
+  `replaceShareClass`, `requestShareClassApproval`; each record's evidence (add, list, get, remove); `class_id` on share
+  issues; the contact mark `investor` and the contacts filter `holder`. Drafts are the Accountant's (C/P), approvals an
+  Owner's or the Controller's (A). Test `TestHoldersAndShareClasses` and the matrix rows.)
 - [ ] 2.3 Screens Holders, HolderRecord and ShareClasses as designed (Expert), with help keys, guide sections in
   `docs/user-guide/equity-register.md` (the founders' guide's register section moves there) and their knowledge-base
   page. Vitest and axe. `// req: FR-EQ-15`, `// req: FR-EQ-16`, `// req: FR-EQ-27`
