@@ -289,19 +289,17 @@ func tidy(b Budget) Budget {
 	return b
 }
 
-// canonical writes every amount at the currency's minor units, as Check allows them: 10000 is 10000.00.
+// canonical writes every amount at the currency's minor units, as Check allows them: 10000 is 10000.00. An amount
+// with more decimals stays as written; it never rounds.
 func canonical(b Budget, cur money.Currency) Budget {
-	c := apd.BaseContext.WithPrecision(60)
 	for i := range b.Lines {
 		for k, a := range b.Lines[i].Amounts {
 			x, _, err := apd.NewFromString(a)
 			if err != nil {
 				continue
 			}
-			var q apd.Decimal
-			if _, err := c.Quantize(&q, x, -int32(cur.MinorUnits)); err == nil {
-				q.Negative = q.Negative && !q.IsZero()
-				b.Lines[i].Amounts[k] = q.Text('f')
+			if m, err := money.FromRounded(x, cur); err == nil {
+				b.Lines[i].Amounts[k] = m.String()
 			}
 		}
 	}
