@@ -403,3 +403,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/logo-and-brand.md → settings.brand (the logo drawn for documents, the brand in force when a document was issued, BRAND-04; rev 0.201)
 
 ## [2026-11-07] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (GST registration and document numbering on Settings › Organisation; FR-ORG-03, FR-ORG-04)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (new: Equity › Holders and Classes, FR-EQ-15/16); docs/user-guide/contacts-and-items.md → contacts.manage (the investor mark)
+
+## [2026-11-07] compile | docs/user-guide/director-accounts.md, equity-register.md → founders.director-accounts, founders.pay-choice, equity.register (the register of share issues moves to the equity register)

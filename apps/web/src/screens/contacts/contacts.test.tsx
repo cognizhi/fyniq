@@ -61,7 +61,7 @@ describe("Contacts", () => {
     const customer = await within(dialog).findByRole("checkbox", { name: "A customer" });
     fireEvent.click(customer);
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the contact" }));
-    expect(await within(dialog).findByText(/Mark it as a customer, a vendor, a director or a shareholder/)).toBeTruthy();
+    expect(await within(dialog).findByText(/Mark it as a customer, a vendor, a director, a shareholder or an investor/)).toBeTruthy();
     fireEvent.click(customer);
     fireEvent.change(within(dialog).getByLabelText("Payment terms (days)"), { target: { value: "" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the contact" }));

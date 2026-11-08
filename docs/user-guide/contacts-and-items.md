@@ -23,7 +23,9 @@ keep its history.
 
 1. Open **Contacts** and select **New contact**.
 2. Tick **A customer**, **A vendor** or both, and enter the legal name. Add what you know: UEN or
-   tax ID, billing and remittance emails, payment terms, currency, Peppol ID and address.
+   tax ID, billing and remittance emails, payment terms, currency, Peppol ID and address. Tick **A
+   director**, **A shareholder** or **An investor** for the company's founders and holders: their
+   director accounts and their details in the equity register follow from it.
 3. Select **Add the contact**.
 
 Leave the payment terms empty to use the organisation's default.
@@ -133,7 +135,7 @@ item with no sales this year shows **None sold**.
 | Message | What to do |
 |---|---|
 | The legal name is blank or too long (CT-01) | Enter the name as registered |
-| Neither a customer nor a vendor (CT-02) | Tick A customer, A vendor or both |
+| Neither a customer, a vendor, a director, a shareholder nor an investor (CT-02) | Tick at least one |
 | Not an email address (CT-03) | Check the billing or remittance email |
 | Not a country code (CT-04) | Use two letters for the country or the tax residence, such as SG |
 | The early-payment discount terms are not right (CT-11) | Enter both a percentage above 0 and below 100 and 1 to 365 days, or neither |

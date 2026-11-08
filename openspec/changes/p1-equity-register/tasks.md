@@ -40,7 +40,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   `replaceShareClass`, `requestShareClassApproval`; each record's evidence (add, list, get, remove); `class_id` on share
   issues; the contact mark `investor` and the contacts filter `holder`. Drafts are the Accountant's (C/P), approvals an
   Owner's or the Controller's (A). Test `TestHoldersAndShareClasses` and the matrix rows.)
-- [ ] 2.3 Screens Holders, HolderRecord and ShareClasses as designed (Expert), with help keys, guide sections in
+- [x] 2.3 Screens Holders, HolderRecord and ShareClasses as designed (Expert), with help keys, guide sections in
   `docs/user-guide/equity-register.md` (the founders' guide's register section moves there) and their knowledge-base
   page. Vitest and axe. `// req: FR-EQ-15`, `// req: FR-EQ-16`, `// req: FR-EQ-27`
 

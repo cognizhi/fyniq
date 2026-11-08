@@ -252,6 +252,46 @@
       "label": "Register of share issues",
       "tooltip": "Every allotment of shares, with its holder, class, number, price, consideration, resolutions and ACRA reference."
     },
+    "equity.holders": {
+      "label": "Shareholders and investors",
+      "tooltip": "The equity register's holders: contacts marked shareholder or investor, with their recorded details and shares."
+    },
+    "equity.holder": {
+      "label": "Holder",
+      "tooltip": "A holder's details in force, a draft waiting for approval, their earlier records and their share issues."
+    },
+    "equity.classes": {
+      "label": "Share classes and rights",
+      "tooltip": "Each share class with its rights as the constitution gives them, recorded on another person's approval."
+    },
+    "equity.add-holder": {
+      "label": "Add a holder",
+      "tooltip": "Holders are contacts: mark a contact as a shareholder or an investor in Contacts."
+    },
+    "holder-record.draft": {
+      "label": "Draft the details",
+      "tooltip": "Draft the holder's kind, identifier (its last 4 characters only), nationality, address and people to contact."
+    },
+    "holder-record.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Another Owner or the Controller approves the record once its identity document is attached."
+    },
+    "holder-record.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the holder's identity document, certificate of incorporation or passport. It is kept as identity evidence and never opened in the app."
+    },
+    "share-class.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the constitution, the shareholders' agreement or the board resolution that gives the class its rights."
+    },
+    "share-class.draft": {
+      "label": "Draft a class",
+      "tooltip": "Draft a share class with its rights: votes, liquidation preference, dividends, conversion, anti-dilution and pro-rata."
+    },
+    "share-class.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Another Owner or the Controller approves the class once the constitution is attached."
+    },
     "share-issues.record-before-books": {
       "label": "Record shares issued before the books start",
       "tooltip": "Record the incorporation subscription and any other shares issued before the books start; no entry posts, as the opening balances hold their share capital."
@@ -447,6 +487,10 @@
     "review.awaiting-verification": {
       "label": "Needs additional verification",
       "tooltip": "Some rules this page uses await a specialist's review. Check the figures before you rely on them or file them."
+    },
+    "nav.equity": {
+      "label": "Equity",
+      "tooltip": "The equity register: shareholders and investors, share classes and the register of share issues."
     },
     "nav.accounting": {
       "label": "Accounting",
