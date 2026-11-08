@@ -106,6 +106,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-access-review": lazyRouteComponent(() => import("./screens/settings/AccessReview"), "AccessReview"),
   "director-accounts": lazyRouteComponent(() => import("./screens/founders/DirectorAccounts"), "DirectorAccounts"),
   "director-settlement": lazyRouteComponent(() => import("./screens/founders/DirectorSettlement"), "DirectorSettlement"),
+  "cap-table": lazyRouteComponent(() => import("./screens/equity/CapTable"), "CapTable"),
   "share-issues": lazyRouteComponent(() => import("./screens/equity/Transactions"), "EquityTransactions"),
   "equity-transaction-new": lazyRouteComponent(() => import("./screens/equity/TransactionNew"), "TransactionNew"),
   "equity-transaction": lazyRouteComponent(() => import("./screens/equity/TransactionPage"), "TransactionPage"),

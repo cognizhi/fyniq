@@ -411,3 +411,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (the standard chart has 89 accounts: 2040 Share application monies, rev 0.205)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (equity transactions: drafting, ACRA steps, the effective date, reversals, money for shares from the bank; FR-EQ-17)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the cap table: who owns the company at any day, compare two days, the drill-down to each movement, the export; FR-EQ-20)

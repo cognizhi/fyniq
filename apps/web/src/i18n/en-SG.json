@@ -252,6 +252,34 @@
       "label": "Register of share issues",
       "tooltip": "Every allotment of shares, with its holder, class, number, price, consideration, resolutions and ACRA reference."
     },
+    "equity.cap-table": {
+      "label": "Who owns the company",
+      "tooltip": "The cap table at any day, from the equity register: each holder's shares and their percentage, never edited by hand."
+    },
+    "cap-table.ownership": {
+      "label": "Ownership",
+      "tooltip": "Each holder's percentage of every share issued, computed exactly and shown to 2 decimals; they are not forced to add up to 100.00."
+    },
+    "cap-table.mine": {
+      "label": "My holding",
+      "tooltip": "The shares of the shareholder you sign in as, and their percentage of every share issued."
+    },
+    "cap-table.export": {
+      "label": "Export",
+      "tooltip": "Download the cap table at this day as an Excel workbook or a PDF to print; each export is recorded."
+    },
+    "cap-table.compare": {
+      "label": "Compare with",
+      "tooltip": "A second day, to see how the shares issued and each holder's percentage changed since."
+    },
+    "cap-table.by-class": {
+      "label": "By holder and class",
+      "tooltip": "Each holder's shares by class: issued, voting and fully diluted, with each figure's transactions and evidence."
+    },
+    "cap-table.votes-assumed": {
+      "label": "Votes assumed",
+      "tooltip": "These shares count one vote each because their class is not recorded yet: record the class and its rights."
+    },
     "equity.transactions": {
       "label": "Equity transactions",
       "tooltip": "Every issue for cash, transfer, conversion between classes and reversal, with its ACRA steps, and the register of share issues they write to."
@@ -522,7 +550,7 @@
     },
     "nav.equity": {
       "label": "Equity",
-      "tooltip": "The equity register: shareholders and investors, share classes and the register of share issues."
+      "tooltip": "Who owns the company, and the equity register behind it: shareholders and investors, share classes and the equity transactions."
     },
     "nav.accounting": {
       "label": "Accounting",

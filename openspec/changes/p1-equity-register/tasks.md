@@ -96,9 +96,12 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   `// req: FR-EQ-20`
   (Slice 3b: `getCapTable`, `exportCapTable` (CSV, XLSX, PDF; synchronous and audited, as D7 now says) and
   `getMyHolding` for the Board viewer's own holding. An Employee's own grants come with 6.1.)
-- [ ] 4.3 Screen CapTable: Basic "Who owns the company" (an ownership chart with its table view, my holding, the latest
+- [x] 4.3 Screen CapTable: Basic "Who owns the company" (an ownership chart with its table view, my holding, the latest
   round) and Expert's fully diluted columns, compare and drill-down (dataviz checks, `fyniq-design-system`). Help keys
   and guide sections. Vitest and axe. `// req: FR-EQ-20`, `// req: FR-EQ-27`
+  (Slice 3c: Equity opens on the cap table at `/equity`, in Basic too. The ownership bar comes from the kit's chart
+  classes, with a legend and a table view. The Board viewer sees only My holding. The checks card (FR-EQ-25, FR-EQ-26)
+  and the SAFE and pool rows wait for their slices.)
 
 ## 5. SAFEs and convertible notes (slice 4)
 
