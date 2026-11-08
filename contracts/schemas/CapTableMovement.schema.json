@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_on": {
+      "description": "The day ACRA's register of members shows it.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The movement.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What moved the shares.",
+      "enum": [
+        "issue",
+        "transfer",
+        "class_conversion",
+        "reversal"
+      ],
+      "examples": [
+        "issue"
+      ],
+      "type": "string"
+    },
+    "share_issue_id": {
+      "description": "The share issue an issue records, in the register of share issues (listShareIssues).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "shares": {
+      "description": "Shares in (positive) or out (negative).",
+      "examples": [
+        "200000"
+      ],
+      "pattern": "^-?[1-9][0-9]*$",
+      "type": "string"
+    },
+    "transaction_id": {
+      "description": "The equity transaction it made effective, whose page has its evidence (getEquityTransaction); none for shares recorded before the books start or from founders' money.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "transaction_number": {
+      "description": "That transaction's number.",
+      "examples": [
+        "EQ-0002"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "shares",
+    "effective_on"
+  ],
+  "title": "CapTableMovement",
+  "type": "object"
+}

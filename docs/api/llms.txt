@@ -110,6 +110,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/break-glass/{break_glass_id}` (getBreakGlass): Get a break-glass
 - `POST /v1/break-glass/{break_glass_id}/end` (endBreakGlass): End break-glass now
 - `POST /v1/break-glass/{break_glass_id}/review` (reviewBreakGlass): Review a break-glass
+- `GET /v1/cap-table` (getCapTable): Get the cap table
+- `GET /v1/cap-table/export` (exportCapTable): Export the cap table
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
 - `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
 - `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card
@@ -369,6 +371,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/me/bank-details` (getMyBankDetails): Get your bank account for reimbursements
 - `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
 - `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
+- `GET /v1/me/holding` (getMyHolding): Get my holding
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations

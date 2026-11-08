@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "The day, at its end.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "compared": {
+      "$ref": "CapTableAt.schema.json",
+      "description": "The cap table at compare, to show beside it."
+    },
+    "fully_diluted": {
+      "description": "Every share fully diluted.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "holders": {
+      "description": "Every holder with shares, by name.",
+      "items": {
+        "$ref": "CapTableHolder.schema.json"
+      },
+      "type": "array"
+    },
+    "issued": {
+      "description": "Every share issued and held.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "lines": {
+      "description": "Every holding with shares, by holder's name, then class.",
+      "items": {
+        "$ref": "CapTableLine.schema.json"
+      },
+      "type": "array"
+    },
+    "votes": {
+      "description": "Every vote.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "at",
+    "issued",
+    "votes",
+    "fully_diluted",
+    "lines",
+    "holders"
+  ],
+  "title": "CapTableView",
+  "type": "object"
+}

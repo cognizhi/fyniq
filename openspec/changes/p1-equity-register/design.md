@@ -252,8 +252,18 @@ sum to 100.00. G.3's figures happen to.
 **Compare and drill-down.** Two dates compare side by side. Each figure lists its movements with their transactions
 and evidence.
 
-**Export.** XLSX goes through report exports: a new kind `cap_table`, which answers 202 with its operation (FR-INT-11).
-PDF goes through the render service's report layout.
+**Export.** *Superseded in slice 3b:* XLSX goes through report exports: a new kind `cap_table`, which answers 202 with
+its operation (FR-INT-11). PDF goes through the render service's report layout.
+
+*Built instead:* `exportCapTable` exports the cap table at a day directly, as `exportFinancialStatement` does: CSV, XLSX
+or PDF from the render service, audited with its hash. A cap table is one row per holding, so it is no long-running work
+for FR-INT-11's 202. Nor does it need a background kind that the Reports capability would let a Bookkeeper ask for.
+
+**API (slice 3b).**
+- `getCapTable` takes `at` and `compare`. Each line lists its movements with the transaction (and its evidence) or the
+  share issue.
+- `getMyHolding` serves the Board viewer's "own holding". The whole table "if granted", and an Employee's own grants,
+  arrive with the pool.
 
 The table is never written, so it cannot be edited.
 

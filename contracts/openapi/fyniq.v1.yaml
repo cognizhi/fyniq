@@ -5756,6 +5756,301 @@ components:
         - content
         - content_hash
       type: object
+    CapTableAt:
+      additionalProperties: false
+      properties:
+        at:
+          description: The day, at its end.
+          examples:
+            - "2027-03-12"
+          format: date
+          type: string
+        fully_diluted:
+          description: Every share fully diluted.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        holders:
+          description: Every holder with shares, by name.
+          items:
+            $ref: "#/components/schemas/CapTableHolder"
+          type: array
+        issued:
+          description: Every share issued and held.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        lines:
+          description: Every holding with shares, by holder's name, then class.
+          items:
+            $ref: "#/components/schemas/CapTableLine"
+          type: array
+        votes:
+          description: Every vote.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+          type: string
+      required:
+        - at
+        - issued
+        - votes
+        - fully_diluted
+        - lines
+        - holders
+      type: object
+    CapTableHolder:
+      additionalProperties: false
+      properties:
+        diluted:
+          description: The percentage of every share fully diluted; left out when none is.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        fully_diluted:
+          description: Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        holder_id:
+          description: The holder.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        holder_name:
+          description: Their name.
+          examples:
+            - Seedling Ventures Pte. Ltd.
+          type: string
+        issued:
+          description: Shares issued and held, a whole number.
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        mine:
+          description: "The caller's own holding: the holder they sign in as (linkContactMember)."
+          examples:
+            - false
+          type: boolean
+        ownership:
+          description: The percentage of every share issued; left out when none is.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        votes:
+          description: "Their votes: the shares times their class's votes per share, exact."
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+          type: string
+        voting:
+          description: The percentage of every vote; left out when no share votes.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+      required:
+        - holder_id
+        - holder_name
+        - issued
+        - votes
+        - fully_diluted
+      type: object
+    CapTableLine:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: The class's share-capital account.
+          examples:
+            - "3010"
+          type: string
+        class_id:
+          description: The share class the shares count in (getShareClass); none while their account has no recorded class.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01
+          format: uuid
+          type: string
+        class_name:
+          description: The class's name.
+          examples:
+            - Ordinary shares
+          type: string
+        diluted:
+          description: The percentage of every share fully diluted; left out when none is.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        fully_diluted:
+          description: Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        holder_id:
+          description: The holder (getHolder).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        holder_name:
+          description: Their name.
+          examples:
+            - Seedling Ventures Pte. Ltd.
+          type: string
+        issued:
+          description: Shares issued and held, a whole number.
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        movements:
+          description: The movements up to the day, oldest first.
+          items:
+            $ref: "#/components/schemas/CapTableMovement"
+          type: array
+        ownership:
+          description: The percentage of every share issued; left out when none is.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        votes:
+          description: "Their votes: the shares times their class's votes per share, exact."
+          examples:
+            - "1000000"
+          pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+          type: string
+        votes_assumed:
+          description: "The votes count one a share because the account has no recorded class yet: record the class and its rights (FR-EQ-16)."
+          examples:
+            - false
+          type: boolean
+        voting:
+          description: The percentage of every vote; left out when no share votes.
+          examples:
+            - "79.87"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+      required:
+        - holder_id
+        - holder_name
+        - class_name
+        - account_code
+        - movements
+        - issued
+        - votes
+        - fully_diluted
+      type: object
+    CapTableMovement:
+      additionalProperties: false
+      properties:
+        effective_on:
+          description: The day ACRA's register of members shows it.
+          examples:
+            - "2027-03-12"
+          format: date
+          type: string
+        id:
+          description: The movement.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b01
+          format: uuid
+          type: string
+        kind:
+          description: What moved the shares.
+          enum:
+            - issue
+            - transfer
+            - class_conversion
+            - reversal
+          examples:
+            - issue
+          type: string
+        share_issue_id:
+          description: The share issue an issue records, in the register of share issues (listShareIssues).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+          format: uuid
+          type: string
+        shares:
+          description: Shares in (positive) or out (negative).
+          examples:
+            - "200000"
+          pattern: ^-?[1-9][0-9]*$
+          type: string
+        transaction_id:
+          description: The equity transaction it made effective, whose page has its evidence (getEquityTransaction); none for shares recorded before the books start or from founders' money.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01
+          format: uuid
+          type: string
+        transaction_number:
+          description: That transaction's number.
+          examples:
+            - EQ-0002
+          type: string
+      required:
+        - id
+        - kind
+        - shares
+        - effective_on
+      type: object
+    CapTableView:
+      additionalProperties: false
+      properties:
+        at:
+          description: The day, at its end.
+          examples:
+            - "2027-03-12"
+          format: date
+          type: string
+        compared:
+          $ref: "#/components/schemas/CapTableAt"
+          description: The cap table at compare, to show beside it.
+        fully_diluted:
+          description: Every share fully diluted.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        holders:
+          description: Every holder with shares, by name.
+          items:
+            $ref: "#/components/schemas/CapTableHolder"
+          type: array
+        issued:
+          description: Every share issued and held.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        lines:
+          description: Every holding with shares, by holder's name, then class.
+          items:
+            $ref: "#/components/schemas/CapTableLine"
+          type: array
+        votes:
+          description: Every vote.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+          type: string
+      required:
+        - at
+        - issued
+        - votes
+        - fully_diluted
+        - lines
+        - holders
+      type: object
     CaptureAddress:
       additionalProperties: false
       properties:
@@ -20267,6 +20562,54 @@ components:
           type: boolean
       required:
         - linked
+      type: object
+    MyHolding:
+      additionalProperties: false
+      properties:
+        at:
+          description: The day, at its end.
+          examples:
+            - "2027-03-12"
+          format: date
+          type: string
+        fully_diluted:
+          description: Every share fully diluted.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        holder:
+          $ref: "#/components/schemas/CapTableHolder"
+          description: Their holding, when they hold shares.
+        issued:
+          description: Every share the company has issued, which the percentages are of.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        lines:
+          description: Their holdings by class.
+          items:
+            $ref: "#/components/schemas/CapTableLine"
+          type: array
+        linked:
+          description: Whether the caller signs in as a holder (linkContactMember). When false, nothing is held.
+          examples:
+            - true
+          type: boolean
+        votes:
+          description: Every vote.
+          examples:
+            - "1252083"
+          pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+          type: string
+      required:
+        - at
+        - linked
+        - lines
+        - issued
+        - votes
+        - fully_diluted
       type: object
     MyRecoveryCodes:
       additionalProperties: false
@@ -49220,6 +49563,257 @@ paths:
       x-fyniq-permission:
         capability: (approvals)
         note: "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Once it has ended: another Owner, or the Accountant from its review's due date, 7 days after it ended; never the Owner who used it, and never the AI (FM-8)."
+        right: V
+  /v1/cap-table:
+    get:
+      description: "The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects."
+      operationId: getCapTable
+      parameters:
+        - description: The day the cap table is at the end of; left out, the organisation's today.
+          explode: false
+          in: query
+          name: at
+          schema:
+            description: The day the cap table is at the end of; left out, the organisation's today.
+            examples:
+              - "2027-03-12"
+            format: date
+            type: string
+        - description: A second day, whose cap table is shown beside it in compared.
+          explode: false
+          in: query
+          name: compare
+          schema:
+            description: A second day, whose cap table is shown beside it in compared.
+            examples:
+              - "2027-01-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapTableView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the cap table
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
+        right: V
+  /v1/cap-table/export:
+    get:
+      description: "The cap table getCapTable gives at the same day, as a file (FR-EQ-20). CSV gives a row per holding, with plain decimals. XLSX gives a workbook of the holdings and the holders with their totals, figures as number cells. PDF gives the cap table to print from the render service, archival and accessible. No text in any becomes a formula. The file is returned in base64 with its SHA-256 and the ledger revision at the time. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export, with the day, the format, the rows and the hash. Never cached."
+      operationId: exportCapTable
+      parameters:
+        - description: The day the cap table is at the end of; left out, the organisation's today.
+          explode: false
+          in: query
+          name: at
+          schema:
+            description: The day the cap table is at the end of; left out, the organisation's today.
+            examples:
+              - "2027-03-12"
+            format: date
+            type: string
+        - description: "csv: a row per holding, plain decimals; xlsx: a workbook of the holdings and the holders, figures as number cells; pdf: the cap table to print, archival (PDF/A-2a) and accessible (PDF/UA-1)."
+          explode: false
+          in: query
+          name: format
+          schema:
+            default: xlsx
+            description: "csv: a row per holding, plain decimals; xlsx: a workbook of the holdings and the holders, figures as number cells; pdf: the cap table to print, archival (PDF/A-2a) and accessible (PDF/UA-1)."
+            enum:
+              - csv
+              - xlsx
+              - pdf
+            examples:
+              - xlsx
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again."
+      summary: Export the cap table
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-08
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
   /v1/card-lines:
     get:
@@ -95617,6 +96211,119 @@ paths:
       x-fyniq-permission:
         capability: Director accounts, settlements, share issues (rev 0.3)
         note: Only the member linked to the director or shareholder, stepped up with a passkey.
+        right: V
+  /v1/me/holding:
+    get:
+      description: "The caller's own holding at the end of a day: the shares of the holder they sign in as (linkContactMember), by class, with their votes and their percentages of the company's totals, as getCapTable gives them (FR-EQ-20). The Board reads its own holding this way (Appendix D). A caller who signs in as no holder gets linked false, with nothing held. Read-only; no side effects."
+      operationId: getMyHolding
+      parameters:
+        - description: The day, at its end; left out, the organisation's today.
+          explode: false
+          in: query
+          name: at
+          schema:
+            description: The day, at its end; left out, the organisation's today.
+            examples:
+              - "2027-03-12"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyHolding"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get my holding
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
   /v1/members:
     get:
