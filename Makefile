@@ -25,7 +25,7 @@ MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs"), and the forecasts
 # and feasibility studies ("Forecasts", "Feasibility studies", each drawn by its own test).
-DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,statements,kpis,forecast,feasibility
+DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,statements,kpis,forecast,feasibility,purge
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
 # linux/amd64 or linux/arm64 (NFR-IMG-08)

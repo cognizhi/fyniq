@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fyniq-purge@1",
+  "description": "A ledger and a boundary that the Go engine (cmd/scenario-run, internal/domain/retention) and the Python oracle (oracle/src/oracle/purge.py) both purge and carry forward (AUD-10, QA-ENG-02; p1-audit-explorer design D7b): its accounts, its posted entries and the first day of the year after the one purged. README.md beside this file, \"Purges\", states the rule and the result. Patterns are RE2- and ECMA-262-compatible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name", "base_currency", "currencies", "fy_start_month", "boundary", "retained_earnings", "suspense", "accounts", "entries"],
+  "properties": {
+    "schema": {"const": "fyniq-purge@1"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
+    "base_currency": {"$ref": "#/$defs/currency"},
+    "currencies": {
+      "description": "Each currency the ledger uses, the base currency among them, with its minor units.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/currency"},
+      "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 4}
+    },
+    "fy_start_month": {"description": "The month the financial year starts, 1 to 12.", "type": "integer", "minimum": 1, "maximum": 12},
+    "boundary": {"description": "The first day of a financial year: entries dated before it are purged, unless kept.", "$ref": "#/$defs/date"},
+    "retained_earnings": {"description": "The retained earnings account's code.", "$ref": "#/$defs/code"},
+    "suspense": {"description": "The suspense account's code.", "$ref": "#/$defs/code"},
+    "accounts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "type"],
+        "properties": {
+          "code": {"$ref": "#/$defs/code"},
+          "type": {"enum": ["asset", "liability", "equity", "revenue", "expense"]},
+          "role": {"description": "A system role (FR-COA-03), if any.", "type": "string", "pattern": "^[a-z][a-z-]{0,39}$"},
+          "control": {"description": "The account has a sub-ledger (is_control).", "type": "boolean"}
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "posting_date", "lines"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "source": {
+            "description": "The source document: its type and ID.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "id"],
+            "properties": {
+              "type": {"type": "string", "pattern": "^[a-z][a-z_]{0,39}$"},
+              "id": {"$ref": "#/$defs/id"}
+            }
+          },
+          "posting_date": {"$ref": "#/$defs/date"},
+          "reverses": {"description": "The entry this one reverses.", "$ref": "#/$defs/id"},
+          "named": {"description": "A permanent register or a reconciliation of the bank names the entry, so it is kept.", "type": "boolean"},
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["account", "dimension_set", "currency", "amount", "base_amount"],
+              "properties": {
+                "account": {"$ref": "#/$defs/code"},
+                "dimension_set": {"description": "The line's dimension set; empty for none.", "type": "string", "pattern": "^([a-z][a-z0-9=,_-]{0,79})?$"},
+                "currency": {"$ref": "#/$defs/currency"},
+                "party": {"description": "The person the line belongs to, on a director's account or share application monies.", "$ref": "#/$defs/id"},
+                "instrument": {"description": "The SAFE or convertible note the line belongs to.", "$ref": "#/$defs/id"},
+                "amount": {"$ref": "#/$defs/amount"},
+                "base_amount": {"$ref": "#/$defs/amount"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "code": {"type": "string", "pattern": "^[0-9]{3,6}$"},
+    "id": {"type": "string", "pattern": "^[A-Z][A-Za-z0-9-]{0,39}$"},
+    "date": {"type": "string", "format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "amount": {"description": "A signed decimal with at most 4 decimals, debit positive.", "type": "string", "pattern": "^-?(0|[1-9][0-9]{0,13})(\\.[0-9]{1,4})?$"}
+  }
+}

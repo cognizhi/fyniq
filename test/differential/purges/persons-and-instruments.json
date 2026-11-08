@@ -1,0 +1,172 @@
+{
+ "schema": "fyniq-purge@1",
+ "name": "persons-and-instruments",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2
+ },
+ "fy_start_month": 7,
+ "boundary": "2022-07-01",
+ "retained_earnings": "3100",
+ "suspense": "2999",
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset"
+  },
+  {
+   "code": "1020",
+   "type": "asset"
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "role": "accounts-receivable"
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "role": "accounts-payable"
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "role": "gst-control"
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "role": "director-loan",
+   "control": true
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "role": "suspense"
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "role": "share-capital"
+  },
+  {
+   "code": "3100",
+   "type": "equity",
+   "role": "retained-earnings"
+  },
+  {
+   "code": "4010",
+   "type": "revenue"
+  },
+  {
+   "code": "6010",
+   "type": "expense"
+  },
+  {
+   "code": "2700",
+   "type": "liability",
+   "role": "convertible-instruments"
+  }
+ ],
+ "entries": [
+  {
+   "id": "E1",
+   "source": {
+    "type": "journal",
+    "id": "LOAN-2"
+   },
+   "posting_date": "2021-08-01",
+   "lines": [
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "500.00",
+     "base_amount": "500.00"
+    },
+    {
+     "account": "2500",
+     "dimension_set": "",
+     "currency": "SGD",
+     "party": "P-1",
+     "amount": "-300.00",
+     "base_amount": "-300.00"
+    },
+    {
+     "account": "2500",
+     "dimension_set": "",
+     "currency": "SGD",
+     "party": "P-2",
+     "amount": "-200.00",
+     "base_amount": "-200.00"
+    }
+   ]
+  },
+  {
+   "id": "E2",
+   "source": {
+    "type": "journal",
+    "id": "SAFE-1"
+   },
+   "posting_date": "2021-09-01",
+   "lines": [
+    {
+     "account": "1020",
+     "dimension_set": "",
+     "currency": "USD",
+     "amount": "100.00",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "50.00",
+     "base_amount": "50.00"
+    },
+    {
+     "account": "2700",
+     "dimension_set": "",
+     "currency": "USD",
+     "instrument": "S-1",
+     "amount": "-100.00",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "2700",
+     "dimension_set": "",
+     "currency": "SGD",
+     "instrument": "S-2",
+     "amount": "-50.00",
+     "base_amount": "-50.00"
+    }
+   ]
+  },
+  {
+   "id": "E3",
+   "source": {
+    "type": "journal",
+    "id": "REPAY-1"
+   },
+   "posting_date": "2022-08-01",
+   "lines": [
+    {
+     "account": "2500",
+     "dimension_set": "",
+     "currency": "SGD",
+     "party": "P-1",
+     "amount": "300.00",
+     "base_amount": "300.00"
+    },
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "-300.00",
+     "base_amount": "-300.00"
+    }
+   ]
+  }
+ ]
+}

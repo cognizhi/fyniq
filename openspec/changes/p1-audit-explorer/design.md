@@ -226,24 +226,48 @@
   - no record dated in Y is on legal hold.
 
   The boundary B is the first day of year Y+1.
-- **What is purged.** Every entry dated before B, except:
+- **What is purged.** Every entry dated before B, except (rev 0.238):
   - entries a permanent register points at (`share_issue`: the register of members is kept for life, INV-13);
-  - entries that kept entries reverse, or are reversed by.
-
-  Their `bank_match` and `bank_transfer` rows go with them: those are the expired years' reconciliation records.
+  - entries a reconciliation of the bank names (its `bank_match` and `bank_transfer` rows), so no statement line kept
+    reads as unreconciled;
+  - entries that kept entries reverse, or are reversed by, followed until nothing changes, so no reversal names an
+    entry that is gone.
 - **The carry-forward** (posting rule `purge-carry-forward@1`, in `internal/domain/retention`, a pure function of the
-  lines being purged):
-  - **Balance-sheet accounts:** one entry, source `ledger_boundary`, with a line per account, dimension set and
-    currency. The line holds the sum of the purged amounts and the sum of their base amounts. A base residual the FX
-    rule cannot express (INV-05) is a base-only line, as the FX revaluation writes.
-  - **Control accounts:** one entry per source document with a purged control balance other than zero. The entry
-    carries the document's own source type and ID, so `balance.ControlBySource` and the sub-ledgers still see each open
-    item (INV-07). A settled item nets to zero and carries nothing.
-  - **Revenue and expense:** the purged amounts go into the retained earnings account, by dimension set and currency,
-    because year-end folds them there (FR-GL-10). Read at any date from B on, the fold gives the same figures.
+  lines being purged; rev 0.238). Each purged line is summed, amount and base amount apart, under a key:
+  - **Revenue and expense:** the retained earnings account, its dimension set and the base currency, the amount being
+    the base amount, because year-end folds them there (FR-GL-10). Read at any date from B on, the fold gives the same
+    figures.
+  - **Control accounts** (flagged as having a sub-ledger, or holding the receivables' or payables' role): the line's
+    source document, its account, dimension set and currency, so each document's part of the control account stays
+    with it and the sub-ledgers still agree (INV-07). A document whose control lines net to zero (an item reversed or
+    credited under its own document) carries nothing; an invoice and the separate receipt that settled it each carry
+    their own line, which net to zero on the account. Slice 9 sets each carried line's party from its document.
+  - **Every other account:** its account, dimension set and currency.
 
-  By construction, the carry-forward lines sum to exactly what is purged, so every balance from B on is unchanged and
-  every entry still balances (INV-01).
+  Every key but revenue and expense's also holds the line's person and instrument, so each director's account, each
+  shareholder's application monies and each SAFE still read their own (FR-EQ-01, FR-EQ-18, INV-13); the database
+  requires them on those accounts and refuses them elsewhere.
+
+  A key whose amount and base amount are both zero carries nothing. Each other key carries as lines:
+  - in the base currency, one line of its sum;
+  - in another currency with an amount of zero, one base-only line (amount 0, rate 1) of its base;
+  - otherwise one line of its amount at the rate base ÷ amount rounded half away from zero to 10 decimals (1 when that
+    is not above zero, or does not fit a rate's 10 integer digits), whose base is the FX rule's (RND-FX), then a
+    base-only line of what is left of the base, if anything (INV-05), as the FX revaluation writes.
+
+  The entries, all dated B:
+  - one per source document with a control key, with the document's own source type and ID, its lines and, unless
+    they already balance, a last line on the suspense account in the base currency that balances it;
+  - one with source `ledger_boundary`, if it has any line, holding every other key's lines, then, unless it is zero, a
+    last line on the suspense account that takes back what the documents' entries put there, so suspense nets to zero
+    across the carry-forward.
+
+  The retained earnings and suspense accounts are neither control accounts nor revenue or expense; the purge refuses
+  a chart where they are.
+
+  The boundary's entry comes first, then the documents' by source type and ID; within an entry, keys run by account
+  code, dimension set, currency, person and instrument. By construction, the carry-forward lines sum to exactly what is purged, so every
+  balance from B on is unchanged and every entry still balances (INV-01).
 - **The order:**
   1. The **ledger boundary record** goes to `fyniq.ledger_boundary` and is signed to
      `audit-anchors/<org>/ledger/<B>.json`. It holds B, the counts, the carry-forward entries' IDs, the SHA-256 of the

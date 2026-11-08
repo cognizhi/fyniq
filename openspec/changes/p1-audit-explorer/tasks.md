@@ -210,20 +210,52 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 8. The ledger's carry-forward (slice 8)
 
-- [ ] 8.1 `internal/domain/retention` (D7b): the year plan (the oldest year past its retention, every period locked,
+- [x] 8.1 `internal/domain/retention` (D7b): the year plan (the oldest year past its retention, every period locked,
   no legal hold) and the pure carry-forward rule `purge-carry-forward@1`. Hand-worked tests:
   - balance-sheet accounts by dimension set and currency;
   - an open invoice and an open bill carried per document;
-  - a settled invoice carrying nothing;
+  - an invoice reversed under its own document carrying nothing, and a settled one carrying its line and its
+    receipt's;
   - revenue and expense into retained earnings;
   - a foreign-currency base residual as a base-only line;
   - a share issue's entry kept.
 
   The package joins archtest's money packages. `// req: AUD-10`, `// req: INV-01`, `// req: INV-07`
-- [ ] 8.2 The oracle's purge, written from AUD-10, and the differential source `purge`. Hypothesis generates ledgers
+- [x] 8.2 The oracle's purge, written from AUD-10, and the differential source `purge`. Hypothesis generates ledgers
   with open items, foreign currency, dimensions and reversals, and the engine and the oracle agree to the cent with
   the unpurged ledger at every date from the boundary on. It has golden cases, and the full `make differential` is
   clean. `// req: AUD-10`, `// req: QA-ENG-02`
+  - As built (9 Nov 2026, rev 0.238):
+    - **The rule made precise first.** AUD-10 (rev 0.238) and design D7b now say which entries are kept (also those a
+      reconciliation of the bank names, and both ends of every reversal touching a kept entry), how revenue and expense
+      carry (into retained earnings by dimension set, in the base currency), how each document's entry balances
+      (through suspense, which nets to zero), the rate of a carried foreign balance (base ÷ amount to 10 decimals, 1
+      when that is not above zero or has more than 10 integer digits) and the order of the entries and their lines.
+    - **The year plan** (`NextYear`) takes the books' first kept line, the periods, the held records' dates and the
+      retention (at least 7 years). Records cannot be held yet, so slice 9 passes none. `Kept` is the kept set.
+    - **The rule** (`CarryForward`) refuses unbalanced purged lines, a line on no account, a base in another currency,
+      and a retained earnings or suspense account that is a control account, revenue or expense.
+      `retention` joins archtest's money packages.
+    - **The oracle** (`oracle/src/oracle/purge.py`) is written from D7b and the README's "Purges". It computes the
+      positions at every date from the boundary on (the boundary, each later posting date and each year's first
+      day), with the year-end fold and the open items by document, for the purged and the unpurged ledger.
+    - **The format** is `fyniq-purge@1` and `fyniq-purge-result@1` (`purge.schema.json`, README "Purges"). Both
+      sides refuse the same inputs (`TestParsePurgeRefusesWhatTheOracleRefuses`, `test_what_the_oracle_refuses`).
+    - **Persons and instruments.** Building it showed that a line on a director's account or share application monies
+      names its person, and one on convertible instruments its SAFE; the database requires them there and refuses them
+      elsewhere. So every key but revenue and expense's also holds the line's person and instrument (AUD-10 and D7b
+      say so), or the sub-ledgers by person (INV-13) and by instrument (FR-EQ-18) would merge.
+    - **The goldens** in `test/differential/purges/`:
+      - `hand-worked-year`: the year of `TestTheCarryForwardOfAYearByHand`, a named share issue, and a reversal
+        across the boundary;
+      - `foreign-residuals`: each rate fallback;
+      - `persons-and-instruments`: two directors' loans in one document, and two SAFEs;
+      - `shrunk-cdb82bff61`: the first full run's find, a chain of reversals reaching a year after the boundary,
+        whose first day the engine's side skipped (a harness bug, fixed).
+    - **The gate.** `TestThePurgeAgreesWithTheOracle` runs the goldens and 40 generated ledgers in `make test`, and
+      requires every position unchanged. Hypothesis generates ledgers with control accounts, foreign and base-only
+      lines, dimension sets, shared documents, reversal chains and named entries. `make differential` draws them
+      (`purge` in `DIFFERENTIAL_SOURCES`).
 
 ## 9. The ledger's purge (slice 9)
 

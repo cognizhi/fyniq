@@ -1,0 +1,524 @@
+{
+ "schema": "fyniq-purge@1",
+ "name": "shrunk-cdb82bff61",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2,
+  "JPY": 0,
+  "EUR": 2
+ },
+ "fy_start_month": 1,
+ "boundary": "2021-01-01",
+ "retained_earnings": "3100",
+ "suspense": "2999",
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "control": false
+  },
+  {
+   "code": "1020",
+   "type": "asset"
+  },
+  {
+   "code": "1030",
+   "type": "asset"
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "role": "accounts-receivable"
+  },
+  {
+   "code": "1210",
+   "type": "asset",
+   "role": "prepayments"
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "role": "accounts-payable"
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "role": "gst-control"
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "role": "director-loan",
+   "control": true
+  },
+  {
+   "code": "2600",
+   "type": "liability",
+   "control": true
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "role": "suspense"
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "role": "share-capital"
+  },
+  {
+   "code": "3100",
+   "type": "equity",
+   "role": "retained-earnings"
+  },
+  {
+   "code": "4010",
+   "type": "revenue"
+  },
+  {
+   "code": "4020",
+   "type": "revenue"
+  },
+  {
+   "code": "6010",
+   "type": "expense"
+  },
+  {
+   "code": "6020",
+   "type": "expense"
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "role": "fx-rounding"
+  }
+ ],
+ "entries": [
+  {
+   "id": "E1",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ],
+   "named": true
+  },
+  {
+   "id": "E2",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E1",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E3",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E2",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E4",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E3",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E5",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E4",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E6",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E5",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E7",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E6",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E8",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E7",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E9",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E8",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E10",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E9",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E11",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E10",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E12",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E11",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E13",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-19",
+   "reverses": "E12",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  },
+  {
+   "id": "E14",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2020-06-06",
+   "lines": [
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "0.01",
+     "base_amount": "0.01"
+    },
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "-0.01",
+     "base_amount": "-0.01"
+    }
+   ],
+   "named": true
+  },
+  {
+   "id": "E15",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2022-01-02",
+   "lines": [
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "0.01",
+     "base_amount": "0.01"
+    },
+    {
+     "account": "1010",
+     "dimension_set": "",
+     "currency": "SGD",
+     "amount": "-0.01",
+     "base_amount": "-0.01"
+    }
+   ],
+   "named": true
+  },
+  {
+   "id": "E16",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2021-06-24",
+   "reverses": "E13",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "-0.13",
+     "base_amount": "-135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "135.00",
+     "base_amount": "135.00"
+    }
+   ]
+  },
+  {
+   "id": "E17",
+   "source": {
+    "type": "invoice",
+    "id": "INV-1"
+   },
+   "posting_date": "2021-06-24",
+   "reverses": "E16",
+   "lines": [
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "EUR",
+     "amount": "0.13",
+     "base_amount": "135.00"
+    },
+    {
+     "account": "7030",
+     "dimension_set": "dept=eng,proj=apollo",
+     "currency": "SGD",
+     "amount": "-135.00",
+     "base_amount": "-135.00"
+    }
+   ]
+  }
+ ]
+}
