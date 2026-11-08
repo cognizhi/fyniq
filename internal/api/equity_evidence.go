@@ -81,6 +81,10 @@ type (
 		OptionGrantPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	OptionEventEvidencePath struct {
+		OptionEventPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -180,6 +184,22 @@ type (
 		IfMatchHeader
 		PreferHeader
 	}
+	addEventEvidenceInput struct {
+		OptionEventPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listEventEvidenceInput struct {
+		OptionEventPath
+		PageQuery
+	}
+	removeEventEvidenceInput struct {
+		OptionEventEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
 	addEnablementEvidenceInput struct {
 		EnablementPath
 		KeyHeader
@@ -250,7 +270,8 @@ func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, 
 	raw *EvidenceUpload) (*equityEvidenceWriteOutput, error) {
 	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
 		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
-		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id"}[t]
+		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id",
+		storage.DocumentOptionEvent: "event_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -623,9 +644,39 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentOptionGrant, "grant_id", in.GrantID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
+	register(a, authz.AddOptionEventEvidence, huma.Operation{
+		OperationID: "addOptionEventEvidence", Method: http.MethodPost, Path: "/v1/option-events/{event_id}/evidence",
+		Tags: []string{"Evidence"}, DefaultStatus: http.StatusCreated, Summary: "Attach a forfeiture's or expiry's notice",
+		Description: "Attaches a file to a drafted grant event (FR-EQ-19, FR-DOC-05), as multipart/form-data: the leaver's letter, the " +
+			"board's minute or the plan's notice of lapse. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addEventEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentOptionEvent, "/v1/option-events", in.EventID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListOptionEventEvidence, huma.Operation{
+		OperationID: "listOptionEventEvidence", Method: http.MethodGet, Path: "/v1/option-events/{event_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List a grant event's files",
+		Description: "The files attached to a forfeiture or expiry, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listEventEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentOptionEvent, "event_id", in.EventID, in.PageQuery)
+	})
+	register(a, authz.GetOptionEventEvidence, huma.Operation{
+		OperationID: "getOptionEventEvidence", Method: http.MethodGet, Path: "/v1/option-events/{event_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get a grant event's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *OptionEventEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentOptionEvent, "event_id", in.EventID, in.EvidenceID)
+	})
+	register(a, authz.RemoveOptionEventEvidence, huma.Operation{
+		OperationID: "removeOptionEventEvidence", Method: http.MethodDelete, Path: "/v1/option-events/{event_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted grant event",
+		Description: "Takes a file off a forfeiture or expiry not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeEventEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentOptionEvent, "event_id", in.EventID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
 	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence",
 		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence",
-		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence"} {
+		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence", "/v1/option-events/{event_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

@@ -59,7 +59,8 @@ type CapTable struct {
 	Options, Unallocated apd.Decimal
 }
 
-// Option is a grant's options as the cap table counts them: the holding they would be shares of, from the grant date.
+// Option is a grant's options as the cap table counts them: the holding they would be shares of, from the grant date,
+// or negative from the day an event forfeited them or let them expire.
 type Option struct {
 	Key    HoldingKey
 	Number apd.Decimal
@@ -250,15 +251,27 @@ func Moves(ctx context.Context, u storage.UnitOfWork) ([]Move, error) {
 }
 
 // DilutionIn is what dilutes the cap table in u (FR-EQ-19): each recorded grant's options under the holding they would
-// be shares of (its class account's first recorded class, as Moves counts shares naming none), and the pool.
+// be shares of (its class account's first recorded class, as Moves counts shares naming none), less those its recorded
+// events forfeited or let expire from their day, and the pool.
 func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
 	var d Dilution
-	b, _, err := recordedOptions(ctx, u)
+	b, _, events, err := recordedOptions(ctx, u)
+	if err != nil {
+		return d, err
+	}
+	grants, err := all(ctx, u, storage.DocumentOptionGrant)
 	if err != nil {
 		return d, err
 	}
 	defaults := map[uuid.UUID]uuid.UUID{}
-	for _, g := range b.Grants {
+	for _, doc := range grants {
+		if doc.Status != storage.DocumentPosted {
+			continue
+		}
+		g, err := ReadGrant(doc)
+		if err != nil {
+			return d, err
+		}
 		def, ok := defaults[g.ClassAccountID]
 		if !ok {
 			c, err := DefaultClass(ctx, u, g.ClassAccountID)
@@ -270,11 +283,19 @@ func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
 			}
 			defaults[g.ClassAccountID] = def
 		}
-		o := Option{Key: HoldingKey{Holder: g.HolderID, Account: g.ClassAccountID, Class: def}, On: g.GrantedOn}
+		key := HoldingKey{Holder: g.HolderID, Account: g.ClassAccountID, Class: def}
+		o := Option{Key: key, On: g.GrantedOn}
 		if _, _, err := o.Number.SetString(g.Number); err != nil {
 			return d, err
 		}
 		d.Options = append(d.Options, o)
+		for _, e := range events[doc.ID] {
+			gone := Option{Key: key, On: e.On}
+			if _, _, err := gone.Number.SetString("-" + e.Number); err != nil {
+				return d, err
+			}
+			d.Options = append(d.Options, gone)
+		}
 	}
 	if len(b.Pools) > 0 {
 		d.Pool = func(day time.Time) (apd.Decimal, error) {

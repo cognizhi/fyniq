@@ -269,8 +269,9 @@ type Pool struct {
 	Size        apd.Decimal
 	ClassID     uuid.UUID // the class account of the resolution in force; uuid.Nil when none is
 	Resolution  *storage.Document
-	Granted     apd.Decimal
-	Unallocated apd.Decimal
+	Granted     apd.Decimal // every option the grants made by the day granted
+	Returned    apd.Decimal // and those forfeited or expired since, back in the pool
+	Unallocated apd.Decimal // size − granted + returned
 }
 
 // OptionBook is the recorded pool resolutions and grants, each in the order recorded: what the pool reads (FR-EQ-19,
@@ -278,6 +279,15 @@ type Pool struct {
 type OptionBook struct {
 	Pools  []PoolResolution
 	Grants []Grant
+	// Returns are the options recorded forfeitures and expiries gave back to the pool, each from its day (FR-EQ-19:
+	// "forfeitures and expiries update the pool") [accountant to confirm against the plan's rules].
+	Returns []Return
+}
+
+// Return is options given back to the pool on a day.
+type Return struct {
+	On     time.Time
+	Number string
 }
 
 // At is the pool at the end of day: the size of the latest resolution passed on or before it (of two passed on one day,
@@ -309,7 +319,22 @@ func (b OptionBook) At(day time.Time) (Pool, int, error) {
 			return out, in, err
 		}
 	}
-	_, err := exact.Sub(&out.Unallocated, &out.Size, &out.Granted)
+	for _, r := range b.Returns {
+		if r.On.After(day) {
+			continue
+		}
+		var n apd.Decimal
+		if _, _, err := n.SetString(r.Number); err != nil {
+			return out, in, err
+		}
+		if _, err := exact.Add(&out.Returned, &out.Returned, &n); err != nil {
+			return out, in, err
+		}
+	}
+	if _, err := exact.Sub(&out.Unallocated, &out.Size, &out.Granted); err != nil {
+		return out, in, err
+	}
+	_, err := exact.Add(&out.Unallocated, &out.Unallocated, &out.Returned)
 	return out, in, err
 }
 
@@ -342,12 +367,13 @@ func (b OptionBook) ShortFrom(since time.Time) (*Pool, error) {
 	return nil, nil
 }
 
-// recordedOptions is the option book in u, and the documents of its pool resolutions in the same order.
-func recordedOptions(ctx context.Context, u storage.UnitOfWork) (OptionBook, []storage.Document, error) {
+// recordedOptions is the option book in u, with the documents of its pool resolutions and grants in the same order,
+// and the recorded events of each grant by its document's ID.
+func recordedOptions(ctx context.Context, u storage.UnitOfWork) (OptionBook, []storage.Document, map[uuid.UUID][]GrantEvent, error) {
 	var b OptionBook
 	pools, err := all(ctx, u, storage.DocumentOptionPool)
 	if err != nil {
-		return b, nil, err
+		return b, nil, nil, err
 	}
 	var docs []storage.Document
 	for _, d := range pools {
@@ -356,13 +382,13 @@ func recordedOptions(ctx context.Context, u storage.UnitOfWork) (OptionBook, []s
 		}
 		p, err := ReadPool(d)
 		if err != nil {
-			return b, nil, err
+			return b, nil, nil, err
 		}
 		b.Pools, docs = append(b.Pools, p), append(docs, d)
 	}
 	grants, err := all(ctx, u, storage.DocumentOptionGrant)
 	if err != nil {
-		return b, nil, err
+		return b, nil, nil, err
 	}
 	for _, d := range grants {
 		if d.Status != storage.DocumentPosted {
@@ -370,16 +396,25 @@ func recordedOptions(ctx context.Context, u storage.UnitOfWork) (OptionBook, []s
 		}
 		g, err := ReadGrant(d)
 		if err != nil {
-			return b, nil, err
+			return b, nil, nil, err
 		}
 		b.Grants = append(b.Grants, g)
 	}
-	return b, docs, nil
+	events, err := recordedEvents(ctx, u)
+	if err != nil {
+		return b, nil, nil, err
+	}
+	for _, es := range events {
+		for _, e := range es {
+			b.Returns = append(b.Returns, Return{On: e.On, Number: e.Number})
+		}
+	}
+	return b, docs, events, nil
 }
 
 // PoolOn is the pool at the end of day, read from the recorded resolutions and grants.
 func PoolOn(ctx context.Context, u storage.UnitOfWork, day time.Time) (Pool, error) {
-	b, docs, err := recordedOptions(ctx, u)
+	b, docs, _, err := recordedOptions(ctx, u)
 	if err != nil {
 		return Pool{Day: day}, err
 	}
@@ -448,7 +483,7 @@ func checkedGrant(ctx context.Context, u storage.UnitOfWork, g Grant, s ledger.S
 // shortFrom is the pool on the first day from since on that is short (OptionBook.ShortFrom), with a grant of extra on
 // since and the resolution res counted as the latest recorded when they are not nil.
 func shortFrom(ctx context.Context, u storage.UnitOfWork, since time.Time, extra *apd.Decimal, res *PoolResolution) (*Pool, error) {
-	b, _, err := recordedOptions(ctx, u)
+	b, _, _, err := recordedOptions(ctx, u)
 	if err != nil {
 		return nil, err
 	}

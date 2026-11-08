@@ -85,7 +85,8 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
         d["id"] for d in P1_EXAMPLES
-        if d["type"] not in ("fixed_asset", "account_merge", "share_transfer", "instrument", "option_pool", "option_grant")]
+        if d["type"] not in ("fixed_asset", "account_merge", "share_transfer", "instrument", "option_pool", "option_grant",
+                             "option_event")]
     # The SAFE converts at the round's S$3.00, below its cap price of 2,375,000 ÷ 250,083 = 9.4968… over the earlier
     # examples' 250,083 shares: 41,666 × 3 = 124,998.00 (41,667 would be 125,001.00).
     converted = next(e for e in result["entries"] if e["document"] == "EQ-0105")

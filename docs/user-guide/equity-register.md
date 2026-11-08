@@ -260,6 +260,19 @@ never the grant's own holder.
   shorter month's last day [accountant to confirm].
 - A person whose contact is linked to their sign-in sees their own grants, and nobody else's.
 
+When a holder leaves, their options not vested are **forfeited**; those vested and not exercised
+**expire** when their window to exercise closes, as they do at the grant's expiry date. On the
+grant, an Accountant drafts a **Forfeiture** or an **Expiry** with its number of options and its
+day, attaches the notice (the leaver's letter, the board's minute or the notice of lapse), and asks
+for approval; another Owner or the Controller records it, never the grant's holder.
+
+- A forfeiture takes at most the options not vested on its day; an expiry, at most what the grant
+  has left. Neither is dated before the grant.
+- From its day, the options leave the holder's fully diluted shares and are back in the pool to
+  grant again [accountant to confirm against the plan's rules].
+- **Outstanding** is the grant's options less those forfeited and expired; **Vested** never counts
+  more than is outstanding, so a leaver keeps only what vested before they left.
+
 ## Correct a transaction
 
 An approved transaction never changes. To correct an effective one, select **Reverse it** and
@@ -312,6 +325,10 @@ a director's balance add their shares when they take effect.
 | No recorded resolution sets an option pool on the grant date (EQUITY-17) | Record the pool's resolution first |
 | The pool leaves fewer options than the grant, on its grant date or a later day (EQUITY-17) | Grant at most what the pool leaves, or record a resolution that enlarges it first |
 | This is your own grant of options, so another person approves it | Ask another Owner or the Controller |
+| The grant is not recorded (EQUITY-18) | Record the grant first: only a recorded grant's options are forfeited or expire |
+| The options not vested are fewer than the forfeiture (EQUITY-18) | Forfeit only the options not vested; record those that lapse later as an expiry |
+| The grant's other events leave fewer options (EQUITY-18) | Take at most what the grant has left |
+| These are your own options, so another person approves their forfeiture or expiry | Ask another Owner or the Controller |
 | The render service did not make the PDF (REPORT-08) | Try again in a moment, or export to Excel |
 
 ## Related

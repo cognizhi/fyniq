@@ -163,7 +163,10 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   investor may be linked to a member. Slice 5a-ii: the fully diluted cap table counts each grant's options in its
   holder's line and the unallocated pool in the total (`equity.DilutedAt`, the API's `options`, `unallocated_pool` and
   `pool_diluted`, the exports' pool row and the screen's), and the differential format has `option_pool` and
-  `option_grant` (`golden/option-pool.json`). Still to come: grant events and exercise as an issue (5b).)
+  `option_grant` (`golden/option-pool.json`). Slice 5b-i: a grant's forfeitures and expiries (`option_event`, recorded
+  on another person's approval with the notice, never the holder's), a forfeiture at most what is not vested; recorded,
+  never more than the grant gave (FY293), and the options back in the pool from the event's day; the differential's
+  `option_event` and grants' vesting (`golden/option-events.json`). Still to come: an exercise as an issue (5b-ii).)
 - [ ] 6.2 Screen OptionPool as designed, and the employee's own grants view. Help keys and guide sections. Vitest and
   axe. `// req: FR-EQ-19`, `// req: FR-EQ-27`
 

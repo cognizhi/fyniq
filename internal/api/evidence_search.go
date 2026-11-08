@@ -41,7 +41,8 @@ var EvidenceActivities = []EvidenceActivity{
 		storage.DocumentDirectorFee, storage.DocumentExemptStatus, storage.DocumentDirectorSettlement}},
 	{"owner_succession", "Owner successions", authz.UsersAndRoles, []storage.DocumentType{storage.DocumentOwnerSuccession}},
 	{"equity", "The equity register", authz.CapTable, []storage.DocumentType{storage.DocumentHolderRecord, storage.DocumentShareClass, storage.DocumentEquityTransaction,
-		storage.DocumentInstrument, storage.DocumentInstrumentTemplate, storage.DocumentOptionPool, storage.DocumentOptionGrant}},
+		storage.DocumentInstrument, storage.DocumentInstrumentTemplate, storage.DocumentOptionPool, storage.DocumentOptionGrant,
+		storage.DocumentOptionEvent}},
 }
 
 // ActivityKey names a kind of record an evidence search covers.
