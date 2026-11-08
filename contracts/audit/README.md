@@ -82,3 +82,27 @@ Before each erasure the job writes one signed entry, once, to `audit-erasures/<o
 The signature covers the compact JSON of `erasure` as written, with the anchors' key. Every detail of an event that
 occurred before `cutoff` is erased. A database restored from a backup taken before an entry re-applies the register
 before it opens (AUD-09, G4-070), so an erased address never comes back.
+
+## Close anchors
+
+A period's close records a **snapshot** of the books at the period end (AUD-04), and a reopening records one after.
+From PRD-001 rev 0.234 the snapshot is `fyniq-close-snapshot@2`: canonical JSON (RFC 8785) holding:
+- the trial balance;
+- every control account's subledger totals, by source type and currency;
+- the audit chain's head (`chain.seq`, `chain.hash`).
+
+All three are read under the ledger lock at the close's ledger revision. Its SHA-256 is stored with it.
+
+Every hour the anchoring job signs each close and reopening not yet anchored, and writes it once to
+`audit-close-anchors/<organisation>/<close|reopen>-<record id>.json`:
+
+```json
+{"anchor": {"schema": "fyniq-close-anchor@1", "organisation_id": "…", "kind": "close", "record_id": "…",
+            "period_id": "…", "ledger_revision": 42, "snapshot_sha256": "<hex>", "chain_seq": 118,
+            "chain_hash": "<hex>", "anchored_at": "<RFC 3339>", "key_id": "…"},
+ "signature": "<base64>"}
+```
+
+The signature covers the compact JSON of `anchor`, with the chain anchors' key. Verification checks each close
+anchor's signature, that the stored snapshot still hashes to `snapshot_sha256` at its revision, and that the chain's
+event `chain_seq` still has `chain_hash`.

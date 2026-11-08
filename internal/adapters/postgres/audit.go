@@ -118,7 +118,14 @@ func (r auditTrail) Head(ctx context.Context) (storage.AuditHead, error) {
 	if err != nil {
 		return storage.AuditHead{}, mapError(err)
 	}
-	return storage.AuditHead{Seq: row.Seq, Hash: row.HeadHash, Action: row.Action}, nil
+	out := storage.AuditHead{Hash: row.HeadHash}
+	if row.Seq != nil {
+		out.Seq = *row.Seq
+	}
+	if row.Action != nil {
+		out.Action = *row.Action
+	}
+	return out, nil
 }
 
 func (r auditTrail) Events(ctx context.Context, after int64, limit int) ([]storage.AuditEvent, error) {

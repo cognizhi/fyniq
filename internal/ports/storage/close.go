@@ -26,6 +26,9 @@ type Closes interface {
 	RecordReopen(ctx context.Context, r NewReopen) (PeriodReopen, error)
 	// LatestReopen is the period's latest reopening, or ports.ErrNotFound.
 	LatestReopen(ctx context.Context, period uuid.UUID) (PeriodReopen, error)
+	// Snapshots are every close's and reopening's snapshot, oldest first: what the anchoring job signs and verification
+	// checks (AUD-04).
+	Snapshots(ctx context.Context) ([]CloseSnapshot, error)
 	// ChangedSince reports whether an entry dated on or before through has a revision later than revision: the checks
 	// that saw revision are then stale (FR-GL-07, G4-053).
 	ChangedSince(ctx context.Context, through time.Time, revision int64) (bool, error)
@@ -137,6 +140,18 @@ type PeriodClose struct {
 	ID         uuid.UUID
 	AttestedBy string
 	AttestedAt time.Time
+}
+
+// CloseSnapshot is a close's snapshot, or a reopening's snapshot after (AUD-04): canonical JSON and its SHA-256, as the
+// database keeps them.
+type CloseSnapshot struct {
+	Kind     string // "close" or "reopen"
+	ID       uuid.UUID
+	PeriodID uuid.UUID
+	Revision int64 // the ledger revision it was taken at
+	Snapshot []byte
+	Hash     []byte
+	At       time.Time
 }
 
 // NewReopen is a reopening: the close it undoes, the approval, the reason and the snapshots before and after.

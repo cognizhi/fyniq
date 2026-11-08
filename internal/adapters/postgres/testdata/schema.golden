@@ -4961,6 +4961,7 @@ approval_void_pending(p_type text, p_key text, p_reason text) → void | securit
 approval_void_pending_all(p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 741722484193d313eb1d8961a41dbf46
 approval_void_pending_type(p_type text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f8b69e58a60cc252f3e4b22a2cc98989
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
+audit_chain_head(OUT seq bigint, OUT head_hash bytea, OUT action text) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | ceccce4fd90b996a86d2290faab7f69e
 audit_erase_details(p_cutoff timestamp with time zone, OUT erased bigint, OUT first_seq bigint, OUT last_seq bigint) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 53b4cf12dc39db139466d3f45919b2fe
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970

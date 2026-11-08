@@ -41,17 +41,16 @@ func (q *Queries) EraseAuditRequestDetails(ctx context.Context, pCutoff time.Tim
 }
 
 const getAuditHead = `-- name: GetAuditHead :one
-SELECT c.seq, c.head_hash,
-       coalesce((SELECT e.action FROM fyniq.audit_event e WHERE e.seq = c.seq), '')::text AS action
-FROM fyniq.audit_chain c
+SELECT h.seq, h.head_hash, h.action FROM fyniq.audit_chain_head() h
 `
 
 type GetAuditHeadRow struct {
-	Seq      int64
+	Seq      *int64
 	HeadHash []byte
-	Action   string
+	Action   *string
 }
 
+// Through audit_chain_head (000286), which every service may call: the API reads the head for a close's snapshot.
 func (q *Queries) GetAuditHead(ctx context.Context) (GetAuditHeadRow, error) {
 	row := q.db.QueryRow(ctx, getAuditHead)
 	var i GetAuditHeadRow
