@@ -106,3 +106,25 @@ Every hour the anchoring job signs each close and reopening not yet anchored, an
 The signature covers the compact JSON of `anchor`, with the chain anchors' key. Verification checks each close
 anchor's signature, that the stored snapshot still hashes to `snapshot_sha256` at its revision, and that the chain's
 event `chain_seq` still has `chain_hash`.
+
+## Purge boundaries
+
+An organisation may switch on the purge after retention (`retention.purge_after_retention`, off by default, dual
+control; open question 38). The purge then removes the trail's leading run of events whose records' retention has
+passed: the end of each event's financial year plus `retention.records_years`, and never less than 7 years by the
+database's clock.
+
+Before any event goes, a **boundary** is signed and written once to `audit-boundaries/<organisation>/<seq, 20
+digits>.json`, and recorded in `fyniq.audit_boundary`:
+
+```json
+{"boundary": {"schema": "fyniq-audit-boundary@1", "organisation_id": "…", "last_seq": 8, "last_hash": "<hex>",
+              "last_occurred_at": "<RFC 3339>", "approval": "retention.purge_after_retention v1",
+              "counts": {"events": 8, "security_events": 1}, "written_at": "<RFC 3339>", "key_id": "…"},
+ "signature": "<base64>"}
+```
+
+To verify a purged trail, start from the latest boundary rather than from 32 zero bytes. The first remaining event's
+`prev_hash` must equal the boundary's `last_hash`, and its `seq` must be `last_seq + 1`. Anchors at or behind
+`last_seq` name purged events and are not checked. A check of a range that reaches back into the purged days is
+**explained** by the boundary: never clean, never failed.

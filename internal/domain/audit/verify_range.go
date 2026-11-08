@@ -99,18 +99,42 @@ func VerifyRange(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStor
 			b = i
 		}
 	}
+	fail := func(seq int64, problem string) (RangeReport, error) {
+		r.Outcome, r.FailedSeq, r.Problem = Failed, seq, problem
+		return r, record(ctx, u, org, r)
+	}
+	// A purged trail starts at its latest boundary (AUD-09): a range reaching back into the purged days is explained by
+	// it, never clean and never failed.
+	bprev, bfirst, bproblem, err := fromBoundary(ctx, u, blobs, signer, org)
+	if err != nil {
+		return r, err
+	}
+	if bproblem != "" {
+		return fail(bfirst-1, bproblem)
+	}
+	explained := ""
+	if bfirst > 1 {
+		bounds, err := u.Audit().Boundaries(ctx)
+		if err != nil {
+			return r, err
+		}
+		latest := bounds[len(bounds)-1]
+		if !latest.LastOccurredAt.Before(start) {
+			explained = fmt.Sprintf("the events up to %d, which occurred until %s, were purged after their retention behind the boundary written on %s (%s)",
+				latest.LastSeq, latest.LastOccurredAt.UTC().Format(time.DateOnly), latest.WrittenAt.UTC().Format(time.DateOnly), latest.AnchorKey)
+		}
+	}
 	if a < 0 {
+		if explained != "" {
+			r.Outcome, r.Problem = Explained, explained
+		}
 		return r, record(ctx, u, org, r)
 	}
 	r.FirstSeq, r.LastSeq, r.Events = events[a].Seq, events[b].Seq, b-a+1
 	r.AnchoredThrough = r.FirstSeq - 1
-	prev := Genesis
+	prev := bprev
 	if a > 0 {
 		prev = events[a-1].Hash
-	}
-	fail := func(seq int64, problem string) (RangeReport, error) {
-		r.Outcome, r.FailedSeq, r.Problem = Failed, seq, problem
-		return r, record(ctx, u, org, r)
 	}
 	hashes, at, err := ChainAfter(prev, r.FirstSeq, events[a:b+1])
 	if err != nil {
@@ -155,6 +179,9 @@ func VerifyRange(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStor
 		return fail(0, problem)
 	}
 	r.Closes = n
+	if explained != "" {
+		r.Outcome, r.Problem = Explained, explained
+	}
 	return r, record(ctx, u, org, r)
 }
 

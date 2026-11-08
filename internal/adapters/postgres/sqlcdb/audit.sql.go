@@ -164,6 +164,58 @@ func (q *Queries) GetAuditHead(ctx context.Context) (GetAuditHeadRow, error) {
 	return i, err
 }
 
+const insertAuditBoundary = `-- name: InsertAuditBoundary :one
+INSERT INTO fyniq.audit_boundary (last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at
+`
+
+type InsertAuditBoundaryParams struct {
+	LastSeq        int64
+	LastHash       []byte
+	LastOccurredAt time.Time
+	Approval       string
+	Counts         []byte
+	AnchorKey      string
+	WrittenAt      time.Time
+}
+
+type InsertAuditBoundaryRow struct {
+	ID             uuid.UUID
+	LastSeq        int64
+	LastHash       []byte
+	LastOccurredAt time.Time
+	Approval       string
+	Counts         []byte
+	AnchorKey      string
+	WrittenAt      time.Time
+}
+
+// A purge boundary, written before the purge it bounds (AUD-09, 000291).
+func (q *Queries) InsertAuditBoundary(ctx context.Context, arg InsertAuditBoundaryParams) (InsertAuditBoundaryRow, error) {
+	row := q.db.QueryRow(ctx, insertAuditBoundary,
+		arg.LastSeq,
+		arg.LastHash,
+		arg.LastOccurredAt,
+		arg.Approval,
+		arg.Counts,
+		arg.AnchorKey,
+		arg.WrittenAt,
+	)
+	var i InsertAuditBoundaryRow
+	err := row.Scan(
+		&i.ID,
+		&i.LastSeq,
+		&i.LastHash,
+		&i.LastOccurredAt,
+		&i.Approval,
+		&i.Counts,
+		&i.AnchorKey,
+		&i.WrittenAt,
+	)
+	return i, err
+}
+
 const insertAuditEvent = `-- name: InsertAuditEvent :exec
 INSERT INTO fyniq.audit_event (id, body) VALUES ($1, $2)
 `
@@ -199,6 +251,50 @@ func (q *Queries) InsertAuditRequestDetail(ctx context.Context, arg InsertAuditR
 		arg.UserAgent,
 	)
 	return err
+}
+
+const listAuditBoundaries = `-- name: ListAuditBoundaries :many
+SELECT id, last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at FROM fyniq.audit_boundary ORDER BY last_seq
+`
+
+type ListAuditBoundariesRow struct {
+	ID             uuid.UUID
+	LastSeq        int64
+	LastHash       []byte
+	LastOccurredAt time.Time
+	Approval       string
+	Counts         []byte
+	AnchorKey      string
+	WrittenAt      time.Time
+}
+
+func (q *Queries) ListAuditBoundaries(ctx context.Context) ([]ListAuditBoundariesRow, error) {
+	rows, err := q.db.Query(ctx, listAuditBoundaries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAuditBoundariesRow
+	for rows.Next() {
+		var i ListAuditBoundariesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LastSeq,
+			&i.LastHash,
+			&i.LastOccurredAt,
+			&i.Approval,
+			&i.Counts,
+			&i.AnchorKey,
+			&i.WrittenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listAuditEvents = `-- name: ListAuditEvents :many
@@ -303,4 +399,15 @@ func (q *Queries) ListTenants(ctx context.Context) ([]uuid.UUID, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const purgeAudit = `-- name: PurgeAudit :one
+SELECT fyniq.audit_purge($1)::bigint AS purged
+`
+
+func (q *Queries) PurgeAudit(ctx context.Context, pLastSeq int64) (int64, error) {
+	row := q.db.QueryRow(ctx, purgeAudit, pLastSeq)
+	var purged int64
+	err := row.Scan(&purged)
+	return purged, err
 }

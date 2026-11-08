@@ -131,19 +131,28 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 			after = batch[len(batch)-1].Seq
 		}
 		r.Events = len(events)
-		hashes, err := Chain(events)
+		// From the latest purge boundary, whose signed copy agrees, when the trail was purged (AUD-09).
+		prev, first, problem, err := fromBoundary(ctx, u, blobs, signer, org)
 		if err != nil {
+			return err
+		}
+		r.Problem = problem
+		hashes, _, err := ChainAfter(prev, first, events)
+		if err != nil && r.Problem == "" {
 			r.Problem = err.Error()
 		}
 		keys, err := blobs.List(ctx, AnchorPrefix(org))
 		if err != nil {
 			return err
 		}
-		r.Anchors = len(keys)
 		for _, k := range keys {
 			if r.Problem != "" {
 				break
 			}
+			if seq, err := anchorSeq(k); err == nil && seq < first {
+				continue // behind the boundary: its events were purged
+			}
+			r.Anchors++
 			signed, err := readAnchor(ctx, blobs, k)
 			if err != nil {
 				r.Problem = fmt.Sprintf("anchor %s cannot be read: %v", k, err)

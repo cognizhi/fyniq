@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -225,4 +226,58 @@ func (r auditTrail) Event(ctx context.Context, id uuid.UUID) (storage.AuditEvent
 		return storage.AuditEvent{}, mapError(err)
 	}
 	return storage.AuditEvent{ID: e.ID, Seq: e.Seq, Body: e.Body, PrevHash: e.PrevHash, Hash: e.Hash}, nil
+}
+
+func (r auditTrail) Boundaries(ctx context.Context) ([]storage.AuditBoundary, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListAuditBoundaries(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AuditBoundary, 0, len(rows))
+	for _, b := range rows {
+		x, err := boundaryOf(b.ID, b.LastSeq, b.LastHash, b.LastOccurredAt, b.Approval, b.Counts, b.AnchorKey, b.WrittenAt)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, nil
+}
+
+func (r auditTrail) RecordBoundary(ctx context.Context, b storage.NewAuditBoundary) (storage.AuditBoundary, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AuditBoundary{}, err
+	}
+	counts, err := json.Marshal(b.Counts)
+	if err != nil {
+		return storage.AuditBoundary{}, err
+	}
+	row, err := r.u.q.InsertAuditBoundary(ctx, sqlcdb.InsertAuditBoundaryParams{LastSeq: b.LastSeq, LastHash: b.LastHash, LastOccurredAt: b.LastOccurredAt,
+		Approval: b.Approval, Counts: counts, AnchorKey: b.AnchorKey, WrittenAt: b.WrittenAt})
+	if err != nil {
+		return storage.AuditBoundary{}, mapError(err)
+	}
+	out, err := boundaryOf(row.ID, row.LastSeq, row.LastHash, row.LastOccurredAt, row.Approval, row.Counts, row.AnchorKey, row.WrittenAt)
+	if err != nil {
+		return out, err
+	}
+	return out, r.u.event(ctx, "audit.boundary_written", "audit_chain", r.u.org, nil, map[string][2]any{"last_seq": {nil, b.LastSeq},
+		"approval": {nil, b.Approval}, "counts": {nil, b.Counts}, "anchor_key": {nil, b.AnchorKey}})
+}
+
+func (r auditTrail) Purge(ctx context.Context, lastSeq int64) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.PurgeAudit(ctx, lastSeq)
+	return n, mapError(err)
+}
+
+func boundaryOf(id uuid.UUID, seq int64, hash []byte, at time.Time, approval string, counts []byte, key string, written time.Time) (storage.AuditBoundary, error) {
+	out := storage.AuditBoundary{ID: id, NewAuditBoundary: storage.NewAuditBoundary{LastSeq: seq, LastHash: hash, LastOccurredAt: at, Approval: approval,
+		AnchorKey: key, WrittenAt: written}}
+	return out, json.Unmarshal(counts, &out.Counts)
 }
