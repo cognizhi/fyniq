@@ -10677,6 +10677,37 @@ Saves a new version of an equity transaction not approved yet (FR-EQ-17). An app
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-02`, `EQUITY-05`, `EQUITY-06`, `EQUITY-07`, `EQUITY-08`, `EQUITY-09`, `LEDGER-01`, `LEDGER-16`, `LEDGER-41`, `LEDGER-48`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-01`, `STORAGE-SHARE-04`
 
+### `POST /v1/equity-transactions/{transaction_id}/acra-steps`
+
+**Record an ACRA step of an equity transaction** (`recordEquityStep`)
+
+Records one ACRA step of an approved equity transaction not yet effective (FR-EQ-09, FR-EQ-17): a cash issue's day the shareholders resolved, the day their approval was lodged (due within 14 days of the resolution, s161(5), s186; ⏰ until it is), the date by which the next AGM must be held when it differs from the one worked out [verify], and the day the return of allotment was lodged; a transfer's day the instrument of transfer was signed and the day the notice of transfer was lodged (s126; ACRA's guidance expects it within 14 days [verify]); a conversion between classes' day the shareholders resolved and the day it was lodged. Attach ACRA's acknowledgement as evidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the transaction's ETag. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Cap table, holders, investors, equity transactions (rev 0.3). The caller must have stepped up in the last 5 minutes.
+- **Parameters:**
+  - `transaction_id` (path, required): The equity transaction's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`EquityStepRequest`](../../contracts/schemas/EquityStepRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityTransaction`](../../contracts/schemas/EquityTransaction.schema.json)
+  - `201` Created [`EquityTransaction`](../../contracts/schemas/EquityTransaction.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-08` The transaction cannot be effective then; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-05` The equity transaction's ACRA steps do not change that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-10` The ACRA step does not fit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-08`, `EQUITY-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-05`
+
 ### `POST /v1/equity-transactions/{transaction_id}/approval`
 
 **Ask for approval of an equity transaction** (`requestEquityTransactionApproval`)

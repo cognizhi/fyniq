@@ -12953,6 +12953,29 @@ components:
         - fx_rate_source
         - base_amount
       type: object
+    EquityACRA:
+      additionalProperties: false
+      properties:
+        agm_due_on:
+          description: "A cash issue: the date by which the next AGM must be held, when its shareholders' approval lapses: as recorded, or worked out from the financial years [verify]."
+          examples:
+            - "2027-06-30"
+          format: date
+          type: string
+        flags:
+          description: "What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective."
+          items:
+            $ref: "#/components/schemas/ConversionFlag"
+          type: array
+        steps:
+          description: "Every step recorded, earliest first: a later one of a kind supersedes the earlier."
+          items:
+            $ref: "#/components/schemas/EquityStepView"
+          type: array
+      required:
+        - steps
+        - flags
+      type: object
     EquityEffectiveRequest:
       additionalProperties: false
       properties:
@@ -13222,9 +13245,89 @@ components:
         - name
         - role
       type: object
+    EquityStepRequest:
+      additionalProperties: false
+      properties:
+        kind:
+          description: Which step, of those the transaction's kind takes.
+          enum:
+            - resolved
+            - approval_lodged
+            - agm_due
+            - allotment_lodged
+            - instrument_signed
+            - transfer_lodged
+            - conversion_lodged
+          examples:
+            - approval_lodged
+          type: string
+        "on":
+          description: "Its day: no later than today, except the AGM date."
+          examples:
+            - "2027-03-08"
+          format: date
+          type: string
+        reference:
+          description: ACRA's transaction number, or what it rests on.
+          examples:
+            - T27ACRA00456
+          maxLength: 200
+          type: string
+      required:
+        - kind
+        - "on"
+      type: object
+    EquityStepView:
+      additionalProperties: false
+      properties:
+        id:
+          description: The step's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f41
+          format: uuid
+          type: string
+        kind:
+          description: "Which step: a cash issue's resolved, approval_lodged, agm_due and allotment_lodged; a transfer's instrument_signed and transfer_lodged; a conversion's resolved and conversion_lodged."
+          enum:
+            - resolved
+            - approval_lodged
+            - agm_due
+            - allotment_lodged
+            - instrument_signed
+            - transfer_lodged
+            - conversion_lodged
+          examples:
+            - approval_lodged
+          type: string
+        "on":
+          description: Its day.
+          examples:
+            - "2027-03-08"
+          format: date
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2027-03-08T09:30:00Z"
+          format: date-time
+          type: string
+        reference:
+          description: ACRA's transaction number, or what it rests on.
+          examples:
+            - T27ACRA00456
+          type: string
+      required:
+        - id
+        - kind
+        - "on"
+        - recorded_at
+      type: object
     EquityTransaction:
       additionalProperties: false
       properties:
+        acra:
+          $ref: "#/components/schemas/EquityACRA"
+          description: Its ACRA steps and what they raise, once approved; a reversal has none (FR-EQ-09).
         amount:
           $ref: "#/components/schemas/Money"
           description: A cash issue's amount, or a conversion's carrying amount.
@@ -72978,6 +73081,241 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: C
+  /v1/equity-transactions/{transaction_id}/acra-steps:
+    post:
+      description: "Records one ACRA step of an approved equity transaction not yet effective (FR-EQ-09, FR-EQ-17): a cash issue's day the shareholders resolved, the day their approval was lodged (due within 14 days of the resolution, s161(5), s186; ⏰ until it is), the date by which the next AGM must be held when it differs from the one worked out [verify], and the day the return of allotment was lodged; a transfer's day the instrument of transfer was signed and the day the notice of transfer was lodged (s126; ACRA's guidance expects it within 14 days [verify]); a conversion between classes' day the shareholders resolved and the day it was lodged. Attach ACRA's acknowledgement as evidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the transaction's ETag. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: recordEquityStep
+      parameters:
+        - description: The equity transaction's ID.
+          in: path
+          name: transaction_id
+          required: true
+          schema:
+            description: The equity transaction's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquityStepRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityTransaction"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityTransaction"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-08` The transaction cannot be effective then; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-05` The equity transaction's ACRA steps do not change that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-10` The ACRA step does not fit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record an ACRA step of an equity transaction
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - EQUITY-08
+        - EQUITY-10
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SHARE-05
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
+        note: The caller must have stepped up in the last 5 minutes.
+        right: A
   /v1/equity-transactions/{transaction_id}/approval:
     post:
       description: "Asks another person to approve a drafted equity transaction at the version read (FR-EQ-17, FM-1): it needs its evidence attached (EQUITY-06) and passes its checks again. The answer is 202 with an approval request, which a person who holds A on \"Cap table, holders, investors, equity transactions\" approves, stepped up: never the one who asked, nor a holder it moves shares of or for (FM-9); when every available approver has an equity transaction of their own waiting or approved in the last 30 days, a final step the Accountant signs records their review [accountant to confirm]. On the approval it is numbered EQ- and waits for its effective date; nothing moves yet. The request holds the transaction's version, status and holders, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."

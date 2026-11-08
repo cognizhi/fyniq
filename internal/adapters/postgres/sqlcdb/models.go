@@ -906,6 +906,17 @@ type FyniqEmailSuppression struct {
 	ReleasedBy     *string
 }
 
+type FyniqEquityStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TransactionID  uuid.UUID
+	Kind           string
+	OnDate         time.Time
+	Reference      *string
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+}
+
 type FyniqEvidence struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

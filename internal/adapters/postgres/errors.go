@@ -171,6 +171,7 @@ var fyCodes = map[string]string{
 	"FY287": storage.CodeShareIssue,     // a share issue whose class is not a recorded class of its account (000250)
 	"FY288": storage.CodeHolding,        // a holding movement outside its rules, or a share issue with none (000252)
 	"FY289": storage.CodeHolding,        // an entry from an equity transaction that no conversion between classes names (000252)
+	"FY290": storage.CodeEquityStep,     // an equity transaction's ACRA step outside its rules (000254)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

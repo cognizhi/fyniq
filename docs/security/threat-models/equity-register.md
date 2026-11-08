@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The equity register's holders and share classes: FR-EQ-15, FR-EQ-16, CMP-PD-07 (PRD-001 rev 0.203, rev 0.204); `p1-equity-register` slice 1. Equity transactions: FR-EQ-17, INV-13, FM-9 (rev 0.205), slice 2a. Later slices (the ACRA steps and bank matching, the cap table, instruments, options, rounds, controllers, the ACRA reconciliation) extend this model. |
+| Feature and requirement IDs | The equity register's holders and share classes: FR-EQ-15, FR-EQ-16, CMP-PD-07 (PRD-001 rev 0.203, rev 0.204); `p1-equity-register` slice 1. Equity transactions: FR-EQ-17, INV-13, FM-9 (rev 0.205), slice 2a; their ACRA steps and money from the bank (rev 0.206), slice 2b. Later slices (the ACRA steps and bank matching, the cap table, instruments, options, rounds, controllers, the ACRA reconciliation) extend this model. |
 | Author, reviewer, date | Claude Code for the founders, 7 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Holders' identity: an individual's identifier type and last 4 characters, nationality, address and contact people (personal data); identity documents (data class identity); share classes and their rights (confidential); the register of share issues |
 | Who acts | The Accountant drafts (C/P); an Owner or the Controller approves (A); the Auditor and Tax agent read; the DPO reads masked; Employees and the Board viewer list no holders until their own holding and grants arrive with the cap table |
@@ -31,6 +31,8 @@ recorded the same way. Trust boundaries:
 | E8 | transactions | Tampering: shares appear in a holding with no approved transaction, a transfer creates shares, or a holder gives away shares they do not hold | The cap table no longer matches the law | Low |
 | E9 | transactions | Tampering: a cash issue is made effective before it is paid, or share capital moves outside the register | Capital stated that was never paid | Low |
 | E10 | approvals | Elevation: the Accountant's new reach into the approvals lets them approve what they should only review | The review becomes a second approval by the wrong person | Low |
+| E11 | ACRA steps | Repudiation: a lodgement date is changed after the fact, or recorded for a transaction it does not belong to | A missed statutory deadline is hidden | Low |
+| E12 | bank → 2040 | Tampering: money in or a refund out is put on 2040 against no one, or against a customer, so a cash issue looks paid | Shares allotted against another person's money | Medium |
 
 ## 3. What we do about it
 
@@ -45,6 +47,8 @@ recorded the same way. Trust boundaries:
 | E7 | No member who signs in as a holder a transaction is for approves it (equity_transaction.approve's executable check) or records its effective date (403 APR-15); the Accountant reviews it when every other approver benefits (FM-9) | `TestEquityTransactions` |
 | E8 | Every holding is the sum of its holding movements; the database refuses a movement outside an approved transaction made effective once or a share issue, a transfer that does not net to zero, a holding below zero on any day, and any change (FY288) | `TestAttackHoldingsMoveOnlyWithTheirTransactions`, `TestEquityTransactions` |
 | E9 | A cash issue waits until its subscriber's share application monies cover it; share capital takes postings from the register, the opening balances or a conversion's movements only (FY007, FY289); 2040 names its subscriber on every line (FY250) | `TestEquityTransactions`, `TestAttackHoldingsMoveOnlyWithTheirTransactions` |
+| E11 | A step is of its transaction's kind, names an approved transaction not yet effective, and never changes (FY290); a later one supersedes it and both stay | `TestAttackEquityStepsKeepTheirRules`, `TestEquityTransactions` |
+| E12 | A bank line on 2040 names its subscriber, a shareholder or investor (LEDGER-41, FY250); a cash issue counts only its own subscriber's monies on its day | `TestShareApplicationMoniesFromTheBank`, `TestEquityTransactions` |
 | E10 | The Accountant signs a step only when it names the accountant's review; a policy cannot name a role without A on the object's row (CheckSteps), so only the engine's FM-9 step does; FR-APR-10's recheck holds them to it | `TestEquityTransactions`, `TestTwoPersonRuleForASetting` (APR-05 for any other step), the authorisation matrix |
 
 ## 4. What remains

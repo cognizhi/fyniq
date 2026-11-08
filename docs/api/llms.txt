@@ -245,6 +245,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/equity-transactions` (createEquityTransaction): Draft an equity transaction
 - `GET /v1/equity-transactions/{transaction_id}` (getEquityTransaction): Get an equity transaction
 - `PUT /v1/equity-transactions/{transaction_id}` (replaceEquityTransaction): Change a drafted equity transaction
+- `POST /v1/equity-transactions/{transaction_id}/acra-steps` (recordEquityStep): Record an ACRA step of an equity transaction
 - `POST /v1/equity-transactions/{transaction_id}/approval` (requestEquityTransactionApproval): Ask for approval of an equity transaction
 - `POST /v1/equity-transactions/{transaction_id}/effective` (recordEquityTransactionEffective): Record the day an equity transaction takes effect
 - `GET /v1/equity-transactions/{transaction_id}/evidence` (listEquityTransactionEvidence): List an equity transaction's files

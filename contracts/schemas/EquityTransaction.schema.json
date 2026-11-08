@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "acra": {
+      "$ref": "EquityACRA.schema.json",
+      "description": "Its ACRA steps and what they raise, once approved; a reversal has none (FR-EQ-09)."
+    },
     "amount": {
       "$ref": "Money.schema.json",
       "description": "A cash issue's amount, or a conversion's carrying amount."
