@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { PlanningTabs } from "./tabs";
 
 type Projection = components["schemas"]["CashProjection"];
 type Movement = components["schemas"]["CashMovement"];
@@ -123,6 +124,7 @@ export function CashAhead() {
           </div>
         </div>
       </div>
+      <PlanningTabs current="/planning/cash" />
 
       {q.isError && <Refusal problem={problemOf(q.error)} title="The cash projection could not be shown" />}
       {q.isFetching && !p && <p className="fy-secondary">Reading the books…</p>}

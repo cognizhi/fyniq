@@ -4,7 +4,7 @@ type: task
 title: Cash ahead, the short-term cash flow
 summary: The bank balance day by day for 30 to 180 days or 13 weeks, its lowest point, the buffer line, what is not included yet, and what-ifs
 sources:
-  - docs/user-guide/cash-flow.md sha256:ac5124ccb7e4b9f1f1fc95e67b962d8efecda15bd33712701a9e6ca4912e2810
+  - docs/user-guide/cash-flow.md sha256:3644d26b6c6b0da69ad80c2ae46b64c94c400d744986e4660f5c84991c096023
 data_class: general
 taint: trusted
 status: draft
@@ -60,5 +60,6 @@ aliases:
 
 - In Expert mode each line of **What moves it** has **Move to** (delay a bill, chase an invoice) and **Leave out**; the projection, the lowest balance and the buffer are worked out again with the change, and **Reset** drops every change.
 - A projection and its what-ifs never change the books, a document, a planned payment date or a batch: the page says **Sandbox: nothing here posts**. To change when a bill is paid, plan it on the bill ([[purchases.bills]]).
+- Whether an idea is worth it is a feasibility study ([[planning.feasibility]]).
 
-(src: docs/user-guide/cash-flow.md#try-a-what-if) (src: docs/user-guide/cash-flow.md#nothing-here-posts)
+(src: docs/user-guide/cash-flow.md#try-a-what-if) (src: docs/user-guide/cash-flow.md#nothing-here-posts) (src: docs/user-guide/cash-flow.md#related)

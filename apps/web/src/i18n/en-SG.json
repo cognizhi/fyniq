@@ -2167,6 +2167,22 @@
     "home.cash-ahead": {
       "label": "Cash ahead",
       "tooltip": "The lowest bank balance in the next 60 days, and whether it falls below the buffer."
+    },
+    "planning.feasibility": {
+      "label": "Feasibility",
+      "tooltip": "Whether an idea is worth it: its yearly cash flows, NPV, IRR, payback and break-even, as the workbook's sheet works them out."
+    },
+    "feasibility.new": {
+      "label": "New study",
+      "tooltip": "Start a study with the inputs empty: five years at 12%."
+    },
+    "feasibility.save": {
+      "label": "Save",
+      "tooltip": "Save the study's inputs and work them out. A study never posts."
+    },
+    "feasibility.sensitivity": {
+      "label": "Sensitivity: NPV",
+      "tooltip": "The NPV with sales volume and fixed costs each at 80% to 120% of the study's."
     }
   }
 }

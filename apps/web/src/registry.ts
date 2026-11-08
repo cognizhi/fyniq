@@ -148,6 +148,7 @@ export const routes = [
   { kind: "route", id: "compliance-calendar", path: "/compliance/calendar", mode: "basic", signedIn: true, help: "compliance.calendar", guide: "compliance.calendar" },
   // Planning (FR-PLN-09; p1-planning design D12): the short-term cash flow is Basic, its what-ifs Expert.
   { kind: "route", id: "planning-cash", path: "/planning/cash", mode: "basic", signedIn: true, help: "planning.cash", guide: "planning.cash" },
+  { kind: "route", id: "planning-feasibility", path: "/planning/feasibility", mode: "expert", signedIn: true, help: "planning.feasibility", guide: "planning.feasibility" },
   { kind: "route", id: "compliance-gst", path: "/compliance/gst", mode: "expert", signedIn: true, help: "compliance.gst", guide: "compliance.gst" },
   { kind: "route", id: "evidence-search", path: "/compliance/evidence", mode: "expert", signedIn: true, help: "compliance.evidence", guide: "compliance.evidence" },
   { kind: "route", id: "accountant-review", path: "/accounting/reviews/$reviewId", mode: "expert", signedIn: true, help: "accounting.review", guide: "accounting.reviews#raise-and-answer-queries" },
@@ -203,6 +204,9 @@ export const actions = [
   { kind: "action", id: "cash.move", mode: "expert", help: "cash.move", guide: "planning.cash#try-a-what-if" },
   { kind: "action", id: "cash.leave-out", mode: "expert", help: "cash.leave-out", guide: "planning.cash#try-a-what-if" },
   { kind: "action", id: "cash.reset", mode: "expert", help: "cash.reset", guide: "planning.cash#try-a-what-if" },
+  { kind: "action", id: "feasibility.new", mode: "expert", help: "feasibility.new", guide: "planning.feasibility#start-a-study" },
+  { kind: "action", id: "feasibility.save", mode: "expert", help: "feasibility.save", guide: "planning.feasibility#start-a-study" },
+  { kind: "action", id: "feasibility.sensitivity", mode: "expert", help: "feasibility.sensitivity", guide: "planning.feasibility#read-the-results" },
   { kind: "action", id: "approval.approve", mode: "basic", help: "approval.approve", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "approval.reject", mode: "basic", help: "approval.reject", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "approval.withdraw", mode: "basic", help: "approval.withdraw", guide: "approvals.decide#withdraw-your-request" },

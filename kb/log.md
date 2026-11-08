@@ -445,3 +445,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-08] compile | docs/user-guide/notifications.md → settings.notifications (the statutory deadlines and the cash buffer alert among the notifications; p1-planning slice 6)
 
 ## [2026-11-08] compile | docs/user-guide/cash-flow.md, docs/user-guide/home.md → planning.cash (new), home.overview (Cash ahead and its Home tile; p1-planning slice 8)
+
+## [2026-11-08] compile | docs/user-guide/feasibility.md → planning.feasibility (new; p1-planning slice 8)
+
+## [2026-11-08] compile | docs/user-guide/cash-flow.md → planning.cash (links the feasibility studies)

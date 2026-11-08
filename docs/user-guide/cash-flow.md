@@ -81,3 +81,4 @@ A projection and its what-ifs never change the books, a document, a planned paym
 - [The Home page and finding your way around](home.md)
 - [Bills](bills.md)
 - [Organisation settings](organisation-settings.md)
+- [Feasibility studies](feasibility.md)
