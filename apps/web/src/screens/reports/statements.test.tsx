@@ -205,6 +205,73 @@ describe("a financial statement", () => {
   });
 });
 
+// The P&L beside its budget, a column by account that is no ledger figure, and beside the recorded forecast, a figure per
+// section (p1-planning design D6).
+const budgeted: Statement = {
+  ...pl,
+  columns: [...columns, { key: "budget", label: "Budget", from: "2026-10-01", to: "2026-10-31" }],
+  blocks: pl.blocks.map((b) => ({
+    ...b,
+    totals: [...b.totals, m(b.key === "revenue" ? "6000.00" : b.key === "gross_profit" ? "4800.00" : "3500.00")],
+    percents: [...b.percents, "100.0"],
+    groups: b.groups.map((g) => ({ ...g, totals: [...g.totals, m("6000.00")], percents: [...g.percents, "100.0"], lines: g.lines.map((l) => ({ ...l, amounts: [...l.amounts, m("6000.00")], percents: [...l.percents, "100.0"] })) })),
+  })),
+};
+const forecasted: Statement = {
+  ...pl,
+  forecast: {
+    forecast_id: "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01",
+    name: "FY2027 plan",
+    scenario: "Base",
+    sections: [
+      { key: "revenue", amount: m("5500.00") },
+      { key: "gross_profit", amount: m("4400.00") },
+      { key: "net_profit", amount: m("-1200.00") },
+    ],
+  },
+};
+
+// req: FR-RPT-02
+describe("a P&L beside its plans", () => {
+  it("adds the budget column, whose figures open no ledger, and the forecast's figure for each section it has; axe finds nothing", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/reports/statements/pl": (_body, req) => {
+        const compare = new URL(req.url).searchParams.get("compare");
+        return { status: 200, body: compare === "budget" ? budgeted : compare === "forecast" ? forecasted : pl };
+      },
+    });
+    renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant, mode: "expert" });
+    await screen.findByRole("table");
+    fireEvent.change(screen.getByLabelText("Compare with"), { target: { value: "budget" } });
+    const table = await screen.findByRole("table");
+    await within(table).findByRole("columnheader", { name: "Budget" });
+    expect(within(table).getAllByText("6,000.00", { selector: "td" }).length).toBeGreaterThan(0);
+    expect(within(table).queryByRole("link", { name: "6,000.00" })).toBeNull();
+    expect(within(table).getAllByRole("link", { name: "5,000.00" }).length).toBeGreaterThan(0);
+    await noViolations(document.body);
+
+    fireEvent.change(screen.getByLabelText("Compare with"), { target: { value: "forecast" } });
+    const header = await screen.findByRole("columnheader", { name: "Forecast" });
+    expect(header.getAttribute("title")).toContain("Base scenario of FY2027 plan");
+    const row = (name: string) => screen.getByRole("rowheader", { name }).closest("tr")!;
+    expect(within(row("Gross profit")).getByText("4,400.00")).toBeTruthy();
+    expect(within(row("Net profit")).getByText("−1,200.00")).toBeTruthy();
+    expect(within(row("Total revenue")).getByText("5,500.00")).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("says when the budget or the forecast does not cover the months", async () => {
+    answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/statements/pl": { status: 200, body: pl } });
+    renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant, mode: "expert" });
+    await screen.findByRole("table");
+    fireEvent.change(screen.getByLabelText("Compare with"), { target: { value: "budget" } });
+    expect(await screen.findByText(/No budget column: a month of this period is in a financial year with no approved budget/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Compare with"), { target: { value: "forecast" } });
+    expect(await screen.findByText(/No forecast column: no recorded forecast covers every month of this period/)).toBeTruthy();
+  });
+});
+
 // req: FR-RPT-05
 // req: FR-RPT-09
 describe("exporting a statement", () => {

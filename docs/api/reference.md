@@ -10536,7 +10536,7 @@ The profit and loss, the balance sheet, the cash flow or the trial balance (FR-R
   - `kind` (path, required): pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance.
   - `from` (query): The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
-  - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning.
+  - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months. A P&L's only: budget, a column from each month's financial-year budget, its latest recorded version, by account, left out when a month's year has none; forecast, the latest recorded forecast's figures by section in forecast, left out when it does not cover every month (p1-planning design D6). A P&L of some dimension values compares with their budget lines and no forecast.
   - `columns` (query): total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative.
   - `dimension_id` (query): With columns=dimension: the dimension whose values make the columns (listDimensions).
   - `dimension_value_id` (query): A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none.
@@ -10545,10 +10545,11 @@ The profit and loss, the balance sheet, the cash flow or the trial balance (FR-R
   - `200` OK [`FinancialStatement`](../../contracts/schemas/FinancialStatement.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
-  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `409` Conflict: `PLAN-11` The forecast is recorded.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger; `STORAGE-PLAN-01` The forecast does not keep that.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `REPORT-03`, `REPORT-04`, `STORAGE-PLAN-01`
 
 ### `GET /v1/reports/statements/{kind}/export`
 
@@ -10561,7 +10562,7 @@ The statement getFinancialStatement gives for the same parameters, as a file (FR
   - `kind` (path, required): pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance.
   - `from` (query): The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
-  - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning.
+  - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months; a P&L's budget, as getFinancialStatement gives it. The forecast comparative is on screen only for now.
   - `columns` (query): total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02).
   - `dimension_id` (query): With columns=dimension: the dimension whose values make the columns (listDimensions).
   - `dimension_value_id` (query): A P&L of the lines that carry each of these values only (listDimensionValues); each as its own dimension_value_id parameter.

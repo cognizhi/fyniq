@@ -37,7 +37,6 @@ func TestBudgetVsActualAndHome(t *testing.T) {
 	e.clock.Set(time.Date(2026, 12, 5, 9, 0, 0, 0, time.UTC))
 	c := e.budgetChart()
 	accountant := f.as(f.ahkow, authz.Accountant)
-	owner := f.as(f.weiling, authz.Owner)
 
 	// Home before any budget or forecast.
 	h := e.call(http.MethodGet, "/v1/planning/summary", accountant, nil)
@@ -46,41 +45,8 @@ func TestBudgetVsActualAndHome(t *testing.T) {
 		t.Fatalf("Home with nothing planned: %d %s", h.Status, h.Raw)
 	}
 
-	b := e.call(http.MethodPost, "/v1/budgets", accountant, map[string]any{"name": "FY2026 budget", "kind": "original", "financial_year": "2026-10-01",
-		"lines": []any{
-			map[string]any{"account_id": c.revenue, "amounts": []string{"10000.00", "10000.00", "10000.00"}},
-			map[string]any{"account_id": c.ads, "dimension_value_ids": []string{c.sales}, "amounts": []string{"2000.00", "2000.00", "2000.00"}},
-			map[string]any{"account_id": c.rent, "amounts": []string{"3000.00", "3000.00", "3000.00"}},
-		}})
-	asked := e.call(http.MethodPost, "/v1/budgets/"+b.str("id")+"/approval", accountant, nil, "If-Match", b.Header.Get("ETag"))
-	if r := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); r.Status != http.StatusOK {
-		t.Fatalf("approving: %d %s", r.Status, r.Raw)
-	}
-	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
-	post := func(month, day int, dr, cr, amount string, values ...string) {
-		t.Helper()
-		id := uuid.NewString()
-		var dims []uuid.UUID
-		for _, v := range values {
-			dims = append(dims, uuid.MustParse(v))
-		}
-		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-			_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(time.Month(month), day), PostingIdentity: ledger.SourceManualJournal + ":" + id + ":v1:test@1",
-				RuleVersion: "test@1", Source: storage.Source{Type: ledger.SourceManualJournal, ID: id, Version: 1}, Lines: []storage.NewLine{
-					{AccountID: uuid.MustParse(dr), Currency: "SGD", Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount), DimensionValues: dims},
-					{AccountID: uuid.MustParse(cr), Currency: "SGD", Amount: storage.Decimal("-" + amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal("-" + amount)},
-				}})
-			return err
-		}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	post(10, 5, c.cash, c.revenue, "12000.00")
-	post(10, 10, c.ads, c.cash, "1500.00", c.sales)
-	post(10, 20, c.rent, c.cash, "3000.00")
-	post(11, 5, c.cash, c.revenue, "6000.00")
-	post(11, 10, c.ads, c.cash, "2500.00", c.sales)
-	post(11, 20, c.rent, c.cash, "3500.00")
+	b := f.approvedBudget(c)
+	e.plannedBooks(c)
 
 	read := func(path string) BudgetVsActual {
 		t.Helper()
@@ -146,6 +112,55 @@ func TestBudgetVsActualAndHome(t *testing.T) {
 	if h.str("forecast", "cash_out_month") != "2026-12" || h.Body["forecast"].(map[string]any)["runway_months"] != float64(0) {
 		t.Errorf("the cash-out month without funding: %s", h.Raw)
 	}
+}
+
+// approvedBudget drafts the first financial year's budget, October to December 2026, and has it approved: subscriptions
+// of 10,000.00 a month, advertising of 2,000.00 for Sales and rent of 3,000.00.
+func (f founders) approvedBudget(c budgetChart) response {
+	e := f.e
+	e.t.Helper()
+	accountant := f.as(f.ahkow, authz.Accountant)
+	b := e.call(http.MethodPost, "/v1/budgets", accountant, map[string]any{"name": "FY2026 budget", "kind": "original", "financial_year": "2026-10-01",
+		"lines": []any{
+			map[string]any{"account_id": c.revenue, "amounts": []string{"10000.00", "10000.00", "10000.00"}},
+			map[string]any{"account_id": c.ads, "dimension_value_ids": []string{c.sales}, "amounts": []string{"2000.00", "2000.00", "2000.00"}},
+			map[string]any{"account_id": c.rent, "amounts": []string{"3000.00", "3000.00", "3000.00"}},
+		}})
+	asked := e.call(http.MethodPost, "/v1/budgets/"+b.str("id")+"/approval", accountant, nil, "If-Match", b.Header.Get("ETag"))
+	if r := f.decide(f.as(f.weiling, authz.Owner), asked.str("id"), "approve", hashOf(asked)); r.Status != http.StatusOK {
+		e.t.Fatalf("approving: %d %s", r.Status, r.Raw)
+	}
+	return b
+}
+
+// plannedBooks posts October's and November's books: subscriptions of 12,000.00 and 6,000.00, advertising for Sales of
+// 1,500.00 and 2,500.00, and rent of 3,000.00 and 3,500.00, all through the bank.
+func (e *env) plannedBooks(c budgetChart) {
+	e.t.Helper()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	post := func(month, day int, dr, cr, amount string, values ...string) {
+		id := uuid.NewString()
+		var dims []uuid.UUID
+		for _, v := range values {
+			dims = append(dims, uuid.MustParse(v))
+		}
+		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(time.Month(month), day), PostingIdentity: ledger.SourceManualJournal + ":" + id + ":v1:test@1",
+				RuleVersion: "test@1", Source: storage.Source{Type: ledger.SourceManualJournal, ID: id, Version: 1}, Lines: []storage.NewLine{
+					{AccountID: uuid.MustParse(dr), Currency: "SGD", Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount), DimensionValues: dims},
+					{AccountID: uuid.MustParse(cr), Currency: "SGD", Amount: storage.Decimal("-" + amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal("-" + amount)},
+				}})
+			return err
+		}); err != nil {
+			e.t.Fatal(err)
+		}
+	}
+	post(10, 5, c.cash, c.revenue, "12000.00")
+	post(10, 10, c.ads, c.cash, "1500.00", c.sales)
+	post(10, 20, c.rent, c.cash, "3000.00")
+	post(11, 5, c.cash, c.revenue, "6000.00")
+	post(11, 10, c.ads, c.cash, "2500.00", c.sales)
+	post(11, 20, c.rent, c.cash, "3500.00")
 }
 
 // matrixBudgetReports are the authorisation matrix's rows for Budget vs Actual and the planning summary.

@@ -144,7 +144,7 @@ func registerBudgetReports(a *API) {
 				return err
 			}
 			to := monthOr(in.To, today)
-			from := cal.Year(max(cal.Number(to), 1)).StartsOn
+			from := cal.Year(max(cal.Number(to.AddDate(0, 1, -1)), 1)).StartsOn
 			if in.From != "" {
 				from = monthOr(in.From, today)
 			}
@@ -207,7 +207,7 @@ func registerBudgetReports(a *API) {
 			if cal, err := period.CalendarOf(o.Profile); err != nil {
 				out.Body.Missing = "The financial year is not set"
 			} else {
-				y := cal.Year(max(cal.Number(month), 1))
+				y := cal.Year(max(cal.Number(month.AddDate(0, 1, -1)), 1))
 				r, err := budget.Report(ctx, u, base, cal, y.StartsOn, month, budget.ByAccount)
 				switch {
 				case err != nil:

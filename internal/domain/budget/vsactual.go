@@ -76,8 +76,8 @@ func Report(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal 
 	if by != ByAccount && by != ByDimension {
 		return out, &Error{CodeBudget, fmt.Sprintf("%q is neither account nor dimension", by), "Group by account or by dimension"}
 	}
-	n := cal.Number(from)
-	if n < 1 || to.Before(from) || cal.Number(to) != n {
+	n := cal.Number(from.AddDate(0, 1, -1)) // a month's last day: the books may start within it
+	if n < 1 || to.Before(from) || cal.Number(to.AddDate(0, 1, -1)) != n {
 		return out, &Error{CodeBudget, "the months are not in one financial year, in order", "Ask for months of one financial year, the first before the last"}
 	}
 	out.Year = cal.Year(n)
@@ -157,7 +157,7 @@ func Report(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal 
 	if ok {
 		first := 0
 		for i, m := range out.Year.Months {
-			if m.StartsOn.Equal(from) {
+			if firstOf(m.StartsOn).Equal(from) {
 				first = i
 			}
 		}

@@ -3,7 +3,7 @@ key: reports.statements
 title: Read the financial statements
 mode: basic
 roles: [owner, administrator, controller, accountant, bookkeeper, auditor, tax_agent, dpo]
-requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-08, INV-10, INV-11]
+requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-08, INV-10, INV-11]
 status: draft            # written with the statements (P1); the layout waits for the accountant's confirmation
 ---
 
@@ -35,6 +35,22 @@ mode, **Trial balance**.
   and **CSV** download it.
 
 While the last month is not closed, a note says its figures can still change.
+
+### Compare with the budget or the forecast
+
+On the profit and loss, **Compare with** also offers:
+
+- **The budget**: a **Budget** column, account by account, from each month's financial-year budget
+  once it is approved. It is the budget, not the books, so its figures open no ledger lines. A
+  department's or project's profit and loss compares with the budget lines for it. If a month of
+  the period is in a year with no approved budget, the column is left out and a note says why. For
+  the gap and whether it is favourable, open **Budget vs Actual**.
+- **The forecast**: a **Forecast** column from the latest forecast you recorded, in its first
+  scenario with its funding. A forecast plans by drivers, such as customers and salaries, not by
+  account, so the column has a figure only for revenue, cost of sales, gross profit, operating
+  expenses, profit before tax and net profit. A forecast starts after the last month of actual
+  figures, so the column appears only for months the forecast covers, such as the months still to
+  come in this financial year.
 
 ## What each statement shows
 
@@ -85,7 +101,8 @@ Select **Export** and choose the format:
 - **CSV**: the statement's rows, as plain numbers.
 
 The export is the statement as on screen: its period, comparison and columns, with its figures
-read at the same ledger revision as the screen's. Amounts are numbers, not text, and nothing in the
+read at the same ledger revision as the screen's. A comparison with the forecast is on screen
+only for now: the export leaves it out. Amounts are numbers, not text, and nothing in the
 file becomes a formula. Each export is recorded in the audit trail, with what was exported and its
 filters. If the PDF cannot be made just then, the dialog says so: try again in a moment, or export
 to Excel or CSV.
