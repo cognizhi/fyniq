@@ -26,6 +26,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -55,6 +56,12 @@ type Deps struct {
 	// Evidence is the retention-locked store committed files are read from (FR-DOC-01, FR-DOC-13; rev 0.188): the API
 	// only reads it. Nil: a committed file cannot be opened.
 	Evidence ports.BlobStore
+	// Anchors is the write-once bucket of the audit trail's anchors, Signer the key that signed them, and Keyed the keyed
+	// hash of security events' details: what Verify integrity checks (AUD-03). Nil anchors or signer: it answers that it
+	// cannot verify here.
+	Anchors ports.BlobStore
+	Signer  ports.Signer
+	Keyed   audit.Keyed
 	// Fields seals the most sensitive fields (SEC-11): vendors' bank account numbers. Nil: no bank details can be kept.
 	Fields ports.Cipher
 	// Renderer is the private render service (§12.3, rev 0.96): previews, and a publication's test documents (FR-TPL-03).
@@ -178,6 +185,7 @@ func Config(version string) huma.Config {
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
+		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): Verify integrity for a range of days (AUD-03) and, as they arrive, the explorer and its export (FR-CTL-03, AUD-07). Every saved change, sign-in, sensitive read and export is in it."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
@@ -325,6 +333,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBudgets(a)
 	registerBudgetReports(a)
 	registerCashProjection(a)
+	registerAuditVerification(a)
 	registerFeasibility(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)

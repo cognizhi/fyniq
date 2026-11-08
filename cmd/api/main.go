@@ -85,6 +85,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		return nil
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
+	// Verify integrity reads the anchors with the key that signed them (AUD-03) [live-verify: the api account reads the
+	// anchors' bucket and the signing key's public key].
+	d.Anchors, d.Signer, d.Keyed = kit.Blobs, kit.Signer, kit.Keyed()
 	d.Staging, d.Scanner = kit.Staging, kit.Scanner // nil until configured: then no file can be attached
 	d.Evidence = kit.Evidence                       // read only: committed files open from it
 	d.Fields = kit.Fields                           // nil until configured: then no bank details can be kept (SEC-11)

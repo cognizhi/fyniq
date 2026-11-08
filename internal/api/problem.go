@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
@@ -28,7 +29,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/budget"
-	"github.com/cognizhi/fyniq/internal/domain/feasibility"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -42,6 +42,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/feasibility"
 	"github.com/cognizhi/fyniq/internal/domain/forecasts"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
@@ -173,6 +174,7 @@ var codeFacts = map[string]struct {
 	CodeIdempotencyOld:            {422, "The Idempotency-Key expired"},
 	CodeFailure:                   {500, "Something went wrong"},
 	CodeUnavailable:               {503, "Not available here"},
+	audit.CodeRange:               {422, "The range cannot be verified at once"},
 	CodeSessionRequired:           {403, "A person must be signed in"},
 	CodeSetupRefused:              {409, "Setup refused"},
 	CodeStepUpRequired:            {403, "Step-up required"},
