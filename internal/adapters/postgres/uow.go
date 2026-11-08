@@ -1020,10 +1020,51 @@ func (r ledger) ByIdentity(ctx context.Context, postingIdentity string) (storage
 		return storage.Entry{}, err
 	}
 	id, err := r.u.q.GetEntryIDByIdentity(ctx, postingIdentity)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if t, err := r.u.q.PurgedEntryByIdentity(ctx, postingIdentity); err == nil {
+			return r.carried(ctx, purgedPosting(sqlcdb.PurgedOfSourceRow(t)))
+		}
+	}
 	if err != nil {
 		return storage.Entry{}, mapError(err)
 	}
 	return r.Entry(ctx, id)
+}
+
+// carried is what a purged posting left (AUD-10): its document's latest carry-forward, or an empty entry dated the day
+// before its boundary when its postings left nothing.
+func (r ledger) carried(ctx context.Context, t storage.PurgedPosting) (storage.Entry, error) {
+	id, err := r.u.q.CarriedEntryOfSource(ctx, sqlcdb.CarriedEntryOfSourceParams{SourceType: t.Source.Type, SourceID: t.Source.ID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.Entry{PostingIdentity: t.PostingIdentity, PostingDate: t.Boundary.AddDate(0, 0, -1), Source: t.Source,
+			RuleVersion: "purge-carry-forward@1", Carries: &t}, nil
+	}
+	if err != nil {
+		return storage.Entry{}, mapError(err)
+	}
+	e, err := r.Entry(ctx, id)
+	e.Carries = &t
+	return e, err
+}
+
+func (r ledger) PurgedOfSource(ctx context.Context, sourceID uuid.UUID) ([]storage.PurgedPosting, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PurgedOfSource(ctx, sourceID.String())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PurgedPosting, len(rows))
+	for i, t := range rows {
+		out[i] = purgedPosting(t)
+	}
+	return out, nil
+}
+
+func purgedPosting(t sqlcdb.PurgedOfSourceRow) storage.PurgedPosting {
+	return storage.PurgedPosting{EntryID: t.ID, PostingIdentity: t.PostingIdentity, Source: storage.Source{Type: t.SourceType, ID: t.SourceID},
+		PostingDate: t.PostingDate, LedgerRevision: t.LedgerRevision, ReversesEntryID: t.ReversesEntryID, Boundary: t.Boundary}
 }
 
 func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]storage.AccountLine, error) {

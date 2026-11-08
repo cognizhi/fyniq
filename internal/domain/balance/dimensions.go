@@ -23,6 +23,11 @@ type SetRow struct {
 // then set, the lines with no dimension first (FR-DIM-02). Appendix C.2 #60 reads it for the amounts with no value of a
 // dimension an account requires.
 func BySet(ctx context.Context, u storage.UnitOfWork, base money.Currency, period uuid.UUID) ([]SetRow, error) {
+	if p, err := u.Periods().Get(ctx, period); err != nil {
+		return nil, err
+	} else if err := CheckDay(ctx, u, p.EndsOn); err != nil {
+		return nil, err
+	}
 	rows, err := u.Balances().ForPeriodBySet(ctx, period)
 	if err != nil {
 		return nil, err

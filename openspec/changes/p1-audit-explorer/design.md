@@ -227,26 +227,26 @@
 
   The boundary B is the first day of year Y+1.
 - **What is purged.** Every entry dated before B, except (rev 0.238):
-  - entries a permanent register points at (`share_issue`: the register of members is kept for life, INV-13);
+  - entries a permanent register points at (`share_issue`: the register of members is kept for life, INV-13), the
+    equity register's (`equity_transaction`), any with a line on share capital, and the asset register's depreciation
+    and disposals, which it reads month by month for as long as an asset is held;
   - entries a reconciliation of the bank names (its `bank_match` and `bank_transfer` rows), so no statement line kept
     reads as unreconciled;
   - entries that kept entries reverse, or are reversed by, followed until nothing changes, so no reversal names an
     entry that is gone.
 - **The carry-forward** (posting rule `purge-carry-forward@1`, in `internal/domain/retention`, a pure function of the
-  lines being purged; rev 0.238). Each purged line is summed, amount and base amount apart, under a key:
+  lines being purged; rev 0.238). Each purged line is summed, amount and base amount apart, under a key of its source
+  document and:
   - **Revenue and expense:** the retained earnings account, its dimension set and the base currency, the amount being
     the base amount, because year-end folds them there (FR-GL-10). Read at any date from B on, the fold gives the same
     figures.
-  - **Control accounts** (flagged as having a sub-ledger, or holding the receivables' or payables' role): the line's
-    source document, its account, dimension set and currency, so each document's part of the control account stays
-    with it and the sub-ledgers still agree (INV-07). A document whose control lines net to zero (an item reversed or
-    credited under its own document) carries nothing; an invoice and the separate receipt that settled it each carry
-    their own line, which net to zero on the account. Slice 9 sets each carried line's party from its document.
-  - **Every other account:** its account, dimension set and currency.
-
-  Every key but revenue and expense's also holds the line's person and instrument, so each director's account, each
-  shareholder's application monies and each SAFE still read their own (FR-EQ-01, FR-EQ-18, INV-13); the database
-  requires them on those accounts and refuses them elsewhere.
+  - **Every other account:** its account, dimension set, currency, person and instrument. Every sub-ledger reads its
+    account by document, and the reconciliations of an account with its sub-ledger (`balance.Control`,
+    `subledger.Reconcile`) read it by source type: receivables and payables, deposits, the spreads' holding accounts,
+    the asset register. So each document's part stays with it (INV-07), and each director's account, shareholder's
+    application monies and SAFE still read their own (FR-EQ-01, FR-EQ-18, INV-13). A document whose lines net to zero
+    on an account (an item reversed or credited under its own document) carries nothing there; an invoice and the
+    separate receipt that settled it each carry their own line, which net to zero on the account.
 
   A key whose amount and base amount are both zero carries nothing. Each other key carries as lines:
   - in the base currency, one line of its sum;
@@ -255,36 +255,45 @@
     is not above zero, or does not fit a rate's 10 integer digits), whose base is the FX rule's (RND-FX), then a
     base-only line of what is left of the base, if anything (INV-05), as the FX revaluation writes.
 
-  The entries, all dated B:
-  - one per source document with a control key, with the document's own source type and ID, its lines and, unless
-    they already balance, a last line on the suspense account in the base currency that balances it;
-  - one with source `ledger_boundary`, if it has any line, holding every other key's lines, then, unless it is zero, a
-    last line on the suspense account that takes back what the documents' entries put there, so suspense nets to zero
-    across the carry-forward.
-
-  The retained earnings and suspense accounts are neither control accounts nor revenue or expense; the purge refuses
-  a chart where they are.
-
-  The boundary's entry comes first, then the documents' by source type and ID; within an entry, keys run by account
-  code, dimension set, currency, person and instrument. By construction, the carry-forward lines sum to exactly what is purged, so every
-  balance from B on is unchanged and every entry still balances (INV-01).
-- **The order:**
-  1. The **ledger boundary record** goes to `fyniq.ledger_boundary` and is signed to
-     `audit-anchors/<org>/ledger/<B>.json`. It holds B, the counts, the carry-forward entries' IDs, the SHA-256 of the
-     purged lines in canonical form (an attestation of exactly what went) and the switch's approval.
-  2. `fyniq.ledger_purge(B)` (SECURITY DEFINER, the migrator's, executable only by `fyniq_worker`) posts the
-     carry-forward entries into B's locked period. Then, in one statement each, it deletes the purged lines, entries,
-     balance rows and reconciliation rows.
-     - It does so only when the boundary record exists and the switch is on.
-     - It lifts INV-02's and INV-03's triggers by a transaction-local flag that only it sets.
-     - It marks each purged period `purged_on`.
-  3. It writes the audit event `ledger.purged`.
-- **What readers do.** The balance service refuses:
-  - a date before the latest boundary;
-  - an "as at" revision earlier than the purge's (ENG-46), because history before it no longer exists to reproduce.
-
-  Both give `BALANCE-PURGED` with the boundary and its date. A document whose postings were purged says so, with
-  the date. Nightly verification (INV-08) recomputes from the carry-forward lines on.
+  The entries: one per source document with a balance left, under the document's own source type and ID, dated the
+  day before B in the purged year's last period, so every report from B on reads them as its opening balance and none
+  as a movement. Each purged entry balances, so each document's carry-forward does: its revenue and expense in retained
+  earnings balance what its balance-sheet lines carry, and no suspense line is needed. Documents come by source type
+  and ID; within an entry, keys run by account code, dimension set, currency, person and instrument. By construction,
+  the carry-forward lines sum to exactly what is purged, so every balance from B on is unchanged and every entry still
+  balances (INV-01). The retained earnings account is not revenue or expense; the purge refuses a chart where it is.
+- **The order**, in one transaction of the worker's (as built, slice 9):
+  1. The **ledger boundary record** is signed and written to `ledger-boundaries/<org>/<B>-<hash>.json` in the anchors'
+     bucket, then recorded in `fyniq.ledger_boundary`: B, the counts, the SHA-256 of the purged lines in canonical form
+     (an attestation of exactly what went) and of the carry-forward, and the switch's approval. Its guard checks the
+     switch, the organisation's financial years, that B is a year's first day at least 7 years past, that the year is
+     the oldest still on the books, and that every period before B is closed; it stamps the transaction.
+  2. The job posts the carry-forward entries (rule `purge-carry-forward@1`, dated B − 1) through the posting service
+     (`journal.CarryForward`, the one path to the ledger). Only an entry of the transaction that recorded a boundary
+     at the next day may carry that rule or the source `ledger_boundary`; it may
+     post into the closed period, its lines may name an account, a person or an instrument that changed since, a base
+     residual may be base-only, and a document's release or depreciation rules do not apply to it.
+  3. `fyniq.ledger_purge(B, entries)` (SECURITY DEFINER, the migrator's, executable only by `fyniq_worker`) checks that
+     each entry is dated before B, refuses one a register or the bank's reconciliation needs and a reversal split from
+     what it reverses, keeps a **tombstone** of each in `fyniq.ledger_purged_entry` (its posting identity, source and
+     dates), deletes the lines and entries under its own flag (INV-02 is lifted for those statements only, and only
+     behind a boundary of the same transaction), rebuilds the balances cache, marks the purged periods `purged_on` and
+     records the boundary's carried revision. A boundary commits only with its purge done.
+     Before it deletes, it checks that the carry-forward this transaction posted replaces the purged lines exactly, by
+     account, dimension set, currency, person, instrument and source (revenue and expense folded into retained
+     earnings, which counts whole): FY305 otherwise, so not even the table's owner purges without it.
+  4. The job compares the balances cache with the lines (INV-08) and commits. It writes `ledger.purged` and each
+     period's `period.purged`.
+- **What readers do.**
+  - The balance service refuses a day before the latest boundary, a period that ends before it, and an "as at"
+    revision earlier than the purge's (ENG-46), because history before it no longer exists to reproduce: all give
+    `BALANCE-PURGED` with the boundary. A position, a general ledger or a year's result from B on reads the purged
+    periods' balances (the carry-forward) as its opening.
+  - `Ledger.ByIdentity` asked for a purged posting returns its document's latest carry-forward (or an empty entry when
+    it left nothing), marked `Carries`: every sub-ledger that reads a document's posting by identity (receivables,
+    payables, deposits, claims, voids) reads the balance it left. `Ledger.PurgedOfSource` lists a document's purged
+    postings, which says that they were purged and when; each document's own view shows it with the screen (slice 11).
+  - A purged period never reopens. Nightly verification (INV-08) recomputes from the carry-forward lines on.
 - **Two implementations agree.** The oracle's own purge, written from AUD-10 and not from the Go code, carries a
   generated ledger forward at a boundary. The differential source `purge` compares the engine's and the oracle's trial
   balances and sub-ledgers at dates from B on, and both against the unpurged ledger's. Hypothesis searches for a

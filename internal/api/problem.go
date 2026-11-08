@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -209,6 +210,7 @@ var codeFacts = map[string]struct {
 	closing.CodeNotOpen:           {409, "The period is not open"},
 	balance.CodeTooManyLines:      {422, "Too many lines for one report"},
 	balance.CodeCrossesYear:       {422, "The range crosses a financial year"},
+	balance.CodePurged:            {409, "The ledger before that was purged after retention"},
 	CodeNoPeriod:                  {422, "No period for the month"},
 	CodeLaterRevision:             {422, "A revision later than the ledger"},
 	CodeExportNotReady:            {409, "The export is not ready"},
@@ -1123,10 +1125,19 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		fe  *fx.Error
 		me  *money.Error
 		ste *storage.Error
+		bpg *balance.Purged
 	)
 	switch {
 	case errors.As(err, &p):
 		return p
+	case errors.As(err, &bpg): // AUD-10: the books before the boundary were carried forward and purged
+		if bpg.Revision > 0 {
+			return problem(balance.CodePurged, fmt.Sprintf("The ledger as at revision %d is not kept: the books before %s were purged after retention, at revision %d.",
+				bpg.Revision, bpg.Boundary.Format(time.DateOnly), bpg.Carried), fmt.Sprintf("Read it as at revision %d or later", bpg.Carried))
+		}
+		return problem(balance.CodePurged, fmt.Sprintf("The books before %s were purged after retention, so %s cannot be read.",
+			bpg.Boundary.Format(time.DateOnly), bpg.Day.Format(time.DateOnly)),
+			fmt.Sprintf("Choose a date on or after %s: every report from then on is as it was", bpg.Boundary.Format(time.DateOnly)))
 	case errors.As(err, &lp) && len(lp) > 0:
 		fields := make([]FieldProblem, 0, len(lp))
 		for _, x := range lp {

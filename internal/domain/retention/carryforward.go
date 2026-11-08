@@ -14,30 +14,27 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
 )
 
-// RuleVersion names the carry-forward rule its entries record.
+// RuleVersion names the carry-forward rule its entries record (journal.RuleCarryForward posts them).
 const RuleVersion = "purge-carry-forward@1"
 
 // RateSource is the FX rate source of a carried foreign-currency line.
 const RateSource = "carry-forward"
 
-// BoundarySource is the source type of the boundary's carry-forward entry; its ID is the boundary's date.
+// BoundarySource prefixes a carry-forward entry's posting identity; no entry but the purge's may claim it as a source.
 const BoundarySource = "ledger_boundary"
 
 // Account types and roles the rule reads (storage's names).
 const (
 	Revenue          = "revenue"
 	Expense          = "expense"
-	AccountsRec      = "accounts-receivable"
-	AccountsPay      = "accounts-payable"
 	RetainedEarnings = "retained-earnings"
 )
 
 // Account is what the rule needs of an account.
 type Account struct {
-	Code    string
-	Type    string // asset, liability, equity, revenue, expense
-	Role    string
-	Control bool // it has a sub-ledger
+	Code string
+	Type string // asset, liability, equity, revenue, expense
+	Role string
 }
 
 // Source is where an entry comes from: a document's type and ID.
@@ -63,8 +60,6 @@ type Input struct {
 	Base             money.Currency
 	Accounts         map[string]Account
 	RetainedEarnings string // the retained-earnings account's key
-	Suspense         string // the suspense account's key, which balances each source's entry
-	Boundary         Source // the source of the entry of every balance not a control's
 	Lines            []Line
 }
 
@@ -79,7 +74,8 @@ type CarriedLine struct {
 	Base         money.Money
 }
 
-// Entry is a carry-forward entry dated the boundary.
+// Entry is a carry-forward entry; the ledger dates it the day before the boundary, as every report from the boundary on
+// reads it as its opening balance.
 type Entry struct {
 	Source Source
 	Lines  []CarriedLine
@@ -87,7 +83,7 @@ type Entry struct {
 
 // key is what a balance is carried by.
 type key struct {
-	source     Source // the source document of a control account's line; zero otherwise
+	source     Source // the line's source document
 	account    string
 	set        string
 	currency   string
@@ -97,25 +93,20 @@ type key struct {
 
 type sum struct{ amount, base money.Money }
 
-// IsControl says whether an account has a sub-ledger: flagged so, or the receivables' or payables' by role.
-func IsControl(a Account) bool { return a.Control || a.Role == AccountsRec || a.Role == AccountsPay }
-
 // IsProfitOrLoss says whether an account is revenue or expense, which year-end folds into retained earnings.
 func IsProfitOrLoss(a Account) bool { return a.Type == Revenue || a.Type == Expense }
 
-// CarryForward is the rule purge-carry-forward@1 (AUD-10): the entries that replace in carried's lines.
+// CarryForward is the rule purge-carry-forward@1 (AUD-10): the entries that replace the purged lines, one per source
+// document, under that document's source.
+//   - A balance-sheet line carries by account, dimension set, currency, person and instrument, so every sub-ledger,
+//     every reconciliation of an account by source and each director's account and SAFE still read their own (INV-07,
+//     FR-EQ-01, FR-EQ-18, INV-13).
 //   - A revenue or expense line carries into retained earnings, by dimension set, in the base currency (FR-GL-10).
-//   - A control account's line carries per its source document, by account, dimension set and currency, in an entry of
-//     that source; each such entry balances through the suspense account.
-//   - Every other line carries by account, dimension set and currency, in the boundary's entry, which also takes the
-//     suspense account's offset of every source's entry, so the suspense account nets to zero.
-//   - A balance not revenue or expense keeps its line's person and instrument, so each director's account and each
-//     SAFE still reads its own (FR-EQ-01, FR-EQ-18, INV-13).
 //
-// A carried foreign-currency balance is one line at the rate its base and amount give, rounded to 10 decimals (1 when
-// that is not a rate), plus a base-only line for any residual the FX rule cannot express (INV-05). A balance of zero in both is not carried. The
-// entries come in a fixed order: the boundary's first, then each source's by type and ID; lines by account code,
-// dimension set, currency, person and instrument, each entry's suspense line last.
+// Each purged entry balances, so each document's carry-forward does (INV-01). A carried foreign-currency balance is one
+// line at the rate its base and amount give, rounded to 10 decimals (1 when that is not a rate), plus a base-only line
+// for any residual the FX rule cannot express (INV-05). A balance of zero in both is not carried. The entries come by
+// source type and ID; their lines by account code, dimension set, currency, person and instrument.
 func CarryForward(in Input) ([]Entry, error) {
 	sums := map[key]*sum{}
 	add := func(k key, amount, base money.Money) error {
@@ -131,14 +122,12 @@ func CarryForward(in Input) ([]Entry, error) {
 		s.base, err = s.base.Add(base)
 		return err
 	}
-	for what, key := range map[string]string{"retained-earnings": in.RetainedEarnings, "suspense": in.Suspense} {
-		a, ok := in.Accounts[key]
-		if !ok {
-			return nil, fmt.Errorf("retention: no %s account %q", what, key)
-		}
-		if IsControl(a) || IsProfitOrLoss(a) {
-			return nil, fmt.Errorf("retention: the %s account %s is a control account, revenue or expense", what, a.Code)
-		}
+	re, ok := in.Accounts[in.RetainedEarnings]
+	if !ok {
+		return nil, fmt.Errorf("retention: no retained-earnings account %q", in.RetainedEarnings)
+	}
+	if IsProfitOrLoss(re) {
+		return nil, fmt.Errorf("retention: the retained-earnings account %s is revenue or expense", re.Code)
 	}
 	for _, l := range in.Lines {
 		a, ok := in.Accounts[l.Account]
@@ -149,15 +138,11 @@ func CarryForward(in Input) ([]Entry, error) {
 			return nil, fmt.Errorf("retention: a line of %s %s has its base in %s", l.Source.Type, l.Source.ID, l.Base.Currency())
 		}
 		var err error
-		switch {
-		case IsProfitOrLoss(a):
-			err = add(key{account: in.RetainedEarnings, set: l.DimensionSet, currency: in.Base.Code}, l.Base, l.Base)
-		case IsControl(a):
+		if IsProfitOrLoss(a) {
+			err = add(key{source: l.Source, account: in.RetainedEarnings, set: l.DimensionSet, currency: in.Base.Code}, l.Base, l.Base)
+		} else {
 			err = add(key{source: l.Source, account: l.Account, set: l.DimensionSet, currency: l.Amount.Currency().Code, party: l.Party,
 				instrument: l.Instrument}, l.Amount, l.Base)
-		default:
-			err = add(key{account: l.Account, set: l.DimensionSet, currency: l.Amount.Currency().Code, party: l.Party, instrument: l.Instrument},
-				l.Amount, l.Base)
 		}
 		if err != nil {
 			return nil, err
@@ -174,49 +159,18 @@ func CarryForward(in Input) ([]Entry, error) {
 			strings.Compare(in.Accounts[x.account].Code, in.Accounts[y.account].Code), strings.Compare(x.set, y.set),
 			strings.Compare(x.currency, y.currency), strings.Compare(x.party, y.party), strings.Compare(x.instrument, y.instrument))
 	})
-	main := Entry{Source: in.Boundary}
-	offsets := money.Zero(in.Base) // what the sources' entries put on suspense, which the boundary's takes back
-	var sources []Entry
+	out := []Entry{}
 	for _, k := range keys {
 		lines, err := carried(in.Base, k, sums[k])
 		if err != nil {
 			return nil, err
 		}
-		if k.source == (Source{}) {
-			main.Lines = append(main.Lines, lines...)
-			continue
+		if len(out) == 0 || out[len(out)-1].Source != k.source {
+			out = append(out, Entry{Source: k.source})
 		}
-		if len(sources) == 0 || sources[len(sources)-1].Source != k.source {
-			sources = append(sources, Entry{Source: k.source})
-		}
-		e := &sources[len(sources)-1]
+		e := &out[len(out)-1]
 		e.Lines = append(e.Lines, lines...)
 	}
-	for i := range sources {
-		total := money.Zero(in.Base)
-		for _, l := range sources[i].Lines {
-			var err error
-			if total, err = total.Add(l.Base); err != nil {
-				return nil, err
-			}
-		}
-		if total.IsZero() {
-			continue
-		}
-		sources[i].Lines = append(sources[i].Lines, baseLine(in.Base, in.Suspense, "", total.Neg()))
-		var err error
-		if offsets, err = offsets.Add(total); err != nil {
-			return nil, err
-		}
-	}
-	if !offsets.IsZero() {
-		main.Lines = append(main.Lines, baseLine(in.Base, in.Suspense, "", offsets))
-	}
-	out := []Entry{}
-	if len(main.Lines) > 0 {
-		out = append(out, main)
-	}
-	out = append(out, sources...)
 	for _, e := range out {
 		if err := balanced(in.Base, e); err != nil {
 			return nil, err

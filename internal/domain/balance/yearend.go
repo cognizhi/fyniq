@@ -94,6 +94,12 @@ func Position(ctx context.Context, u storage.UnitOfWork, base money.Currency, al
 
 // PositionAt is Position read through a snapshot.
 func PositionAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, all []storage.Period, through storage.Period) (TrialBalance, error) {
+	if err := s.check(ctx, u); err != nil {
+		return TrialBalance{}, err
+	}
+	if err := CheckDay(ctx, u, through.EndsOn); err != nil {
+		return TrialBalance{}, err
+	}
 	y, err := yearEndOf(ctx, u)
 	if err != nil {
 		return TrialBalance{}, err
@@ -109,14 +115,14 @@ func PositionAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, 
 			current = append(current, p.ID)
 		}
 	}
-	tb, err := TrialAt(ctx, u, base, s, current...)
+	tb, err := trialAt(ctx, u, base, s, current...)
 	if err != nil {
 		return TrialBalance{}, err
 	}
 	if len(past) == 0 {
 		return tb, nil
 	}
-	before, err := TrialAt(ctx, u, base, s, past...)
+	before, err := trialAt(ctx, u, base, s, past...)
 	if err != nil {
 		return TrialBalance{}, err
 	}
@@ -212,7 +218,7 @@ func Year(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 	if !ye.ok {
 		return out, nil
 	}
-	earlier, err := Trial(ctx, u, base, before...)
+	earlier, err := trialAt(ctx, u, base, Current, before...) // the years before, purged ones carried forward (AUD-10)
 	if err != nil {
 		return YearResult{}, err
 	}

@@ -1296,6 +1296,31 @@ type FyniqKpiInput struct {
 	Version         int32
 }
 
+type FyniqLedgerBoundary struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Boundary        time.Time
+	Approval        string
+	Counts          []byte
+	PurgedHash      []byte
+	AnchorKey       string
+	WrittenAt       time.Time
+	Xact            int64
+	CarriedRevision *int64
+}
+
+type FyniqLedgerPurgedEntry struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	PostingDate     time.Time
+	LedgerRevision  int64
+	ReversesEntryID *uuid.UUID
+	Boundary        time.Time
+}
+
 type FyniqLedgerRevision struct {
 	OrganisationID uuid.UUID
 	Revision       int64
@@ -1573,6 +1598,7 @@ type FyniqPeriod struct {
 	ClosedRevision *int64
 	Version        int32
 	CreatedAt      time.Time
+	PurgedOn       pgtype.Date
 }
 
 type FyniqPeriodClose struct {

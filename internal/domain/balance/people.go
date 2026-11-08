@@ -55,6 +55,9 @@ type PersonLine struct {
 // order their first line posted. The person is not in the cached balances, so the lines are read a period at a time,
 // as Control reads a control account's, under the same limit (TooMany).
 func People(ctx context.Context, u storage.UnitOfWork, base money.Currency, through time.Time) ([]PersonBalance, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return nil, err
+	}
 	accounts, err := DirectorAccounts(ctx, u)
 	if err != nil {
 		return nil, err
@@ -101,6 +104,9 @@ func People(ctx context.Context, u storage.UnitOfWork, base money.Currency, thro
 // PersonLines are one person's lines on the director's accounts dated from..to, in posting order (date, then
 // revision, then line): the movements of their statement (FR-EQ-01).
 func PersonLines(ctx context.Context, u storage.UnitOfWork, party uuid.UUID, from, to time.Time) ([]PersonLine, error) {
+	if err := CheckDay(ctx, u, from); err != nil {
+		return nil, err
+	}
 	accounts, err := DirectorAccounts(ctx, u)
 	if err != nil {
 		return nil, err
@@ -134,6 +140,9 @@ func PersonLines(ctx context.Context, u storage.UnitOfWork, party uuid.UUID, fro
 // balance of their lines, money the company holds for shares not yet allotted; zero when they have none. The lines are
 // read as People reads a director's account's.
 func ApplicationMonies(ctx context.Context, u storage.UnitOfWork, base money.Currency, account, subscriber uuid.UUID, through time.Time) (money.Money, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return money.Money{}, err
+	}
 	held := money.Zero(base)
 	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
 		if l.PartyID == nil || *l.PartyID != subscriber {
@@ -153,6 +162,9 @@ func ApplicationMonies(ctx context.Context, u storage.UnitOfWork, base money.Cur
 // lines on convertible instruments, money the company received under it and has not converted or repaid; zero when it
 // has none. The lines are read as ApplicationMonies reads a subscriber's.
 func Instrument(ctx context.Context, u storage.UnitOfWork, base money.Currency, account, instrument uuid.UUID, through time.Time) (money.Money, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return money.Money{}, err
+	}
 	held := money.Zero(base)
 	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
 		if l.InstrumentID == nil || *l.InstrumentID != instrument {

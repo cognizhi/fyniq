@@ -298,7 +298,7 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 
 #### Scenario: Carry-forward entries keep every balance
 - **WHEN** a year's lines are purged
-- **THEN** they are replaced by carry-forward entries dated the boundary: balance-sheet accounts by account, dimension set and currency, control accounts per source document, and revenue and expense into retained earnings by dimension set (FR-GL-10)
+- **THEN** they are replaced by carry-forward entries dated the last day before the boundary, which every report from the boundary on reads as its opening balance: balance-sheet accounts per source document, by account, dimension set and currency, and revenue and expense into retained earnings by dimension set (FR-GL-10)
 - **AND** the trial balance at every date from the boundary on is unchanged, and every sub-ledger still agrees with its control account (INV-07)
 
 #### Scenario: Permanent registers keep their entries
@@ -309,7 +309,7 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 #### Scenario: How the carry-forward balances
 - **WHEN** the carry-forward entries are made
 - **THEN** revenue and expense carry into retained earnings by dimension set, in the base currency
-- **AND** each source document's entry balances through the suspense account, which nets to zero across the carry-forward
+- **AND** each source document's entry balances by its own revenue and expense, carried into retained earnings in it
 - **AND** every carried balance keeps its person or instrument, so each director's account and each SAFE still reads its own (FR-EQ-01, FR-EQ-18)
 - **AND** a foreign-currency residual the FX rule cannot express is a base-only line (INV-05)
 

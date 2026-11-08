@@ -1601,22 +1601,19 @@ accounts and posted entries, its financial year's first month and a **boundary**
 `cmd/scenario-run` purges it through the engine's rule (`internal/domain/retention`), and `python -m oracle purge`
 through the oracle's own (`oracle/src/oracle/purge.py`), each writing `fyniq-purge-result@1`.
 
-- **Invalid** (status 2): two accounts or two entries sharing a code or an ID; a line, the retained earnings or the
-  suspense account naming no account; a currency, the base among them, missing from `currencies`; an amount or a base
+- **Invalid** (status 2): two accounts or two entries sharing a code or an ID; a line or the retained earnings
+  account naming no account; a currency, the base among them, missing from `currencies`; an amount or a base
   amount with more decimals than its currency (the base amount's is the base currency); a line in the base currency
   whose amount is not its base amount; an entry whose base amounts do not sum to zero; `reverses` naming no entry; a
-  boundary that is not the first day of `fy_start_month`; a retained earnings or suspense account that is a control
-  account, revenue or expense.
+  boundary that is not the first day of `fy_start_month`; a retained earnings account that is revenue or expense.
 - **Kept**: every entry dated on or after the boundary, every entry `named` (by a permanent register or a
   reconciliation of the bank), and, until nothing changes, every entry a kept entry `reverses` or is reversed by. The
   rest are purged.
-- **The carry-forward** is design D7b's rule `purge-carry-forward@1`, word for word, over the purged entries' lines; a
-  control account is one with `control`, or the role `accounts-receivable` or `accounts-payable`. A line's `party` and
-  `instrument` (none when absent) join every key but revenue and expense's. Its boundary entry's
-  source is `ledger_boundary` with the boundary's date as its ID.
+- **The carry-forward** is design D7b's rule `purge-carry-forward@1`, word for word, over the purged entries' lines. A
+  line's `party` and `instrument` (none when absent) join every key but revenue and expense's.
 - **Positions.** The position at a date d is every line dated on or before d, summed, amount and base amount apart, by
-  account, dimension set, currency, person, instrument and, for a control account, the line's entry's source (`null`
-  for any other). A
+  account, dimension set, currency, person, instrument and the line's entry's source (`null` for the retained earnings
+  account, which the carry-forward's fold writes and which counts whole). A
   revenue or expense line dated before the start of d's financial year counts under the retained earnings account,
   its dimension set and the base currency, its base amount as its amount (the year-end fold, FR-GL-10). A position
   zero in both is left out. The dates are the boundary, every posting date of a kept entry after it, and the first day
@@ -1627,9 +1624,9 @@ through the oracle's own (`oracle/src/oracle/purge.py`), each writing `fyniq-pur
   - `entries`: the carry-forward entries in the rule's order, each with its `source` and its `lines` (`account`,
     `dimension_set`, `currency`, `party`, `instrument`, `amount`, `rate`, `base_amount`; `null` for no person or
     instrument);
-  - `positions`: the purged ledger's (the kept entries and the carry-forward, dated the boundary), one per date, each
-    with its `balances` in order of account code, dimension set, currency, person, instrument, then source type and
-    ID (none first);
+  - `positions`: the purged ledger's (the kept entries and the carry-forward, which counts from the boundary on), one
+    per date, each with its `balances` in order of account code, dimension set, currency, person, instrument, then
+    source type and ID (none first);
   - `unchanged`: whether the purged ledger's positions are the unpurged ledger's at every one of those dates.
 - **The gate.** `TestThePurgeAgreesWithTheOracle` runs `purges/` and 40 generated ledgers in `make test` and
   requires `unchanged`. `make differential` draws them with Hypothesis (`purge` in `DIFFERENTIAL_SOURCES`) and saves a

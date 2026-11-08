@@ -34,7 +34,6 @@ func TestParsePurgeRefusesWhatTheOracleRefuses(t *testing.T) {
 		"not an entry":           func(d doc) { entry(d, 9)["reverses"] = "E99" },
 		"not the first day":      func(d doc) { d["boundary"] = "2019-02-01" },
 		"base currency":          func(d doc) { d["base_currency"] = "EUR" },
-		"control account":        func(d doc) { d["suspense"] = "1100" },
 		"revenue or expense":     func(d doc) { d["retained_earnings"] = "4010" },
 		"is not an account":      func(d doc) { d["retained_earnings"] = "9999" },
 		"date":                   func(d doc) { entry(d, 0)["posting_date"] = "2018-02-30" },

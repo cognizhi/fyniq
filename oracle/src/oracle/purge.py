@@ -6,23 +6,21 @@ Written from the rule, not from the Go engine (``internal/domain/retention``):
   entries, and a boundary, the first day of a financial year.
 * Kept: every entry dated on or after the boundary, every entry a permanent register or a reconciliation of the bank
   names, and, until nothing changes, every entry a kept entry reverses or is reversed by. The rest are purged.
-* The carry-forward, rule ``purge-carry-forward@1``, sums the purged lines, amount and base apart, under a key: revenue
-  and expense under the retained earnings account, their dimension set and the base currency, their base as their
-  amount (the year-end fold, FR-GL-10); a control account's under its source document, account, dimension set,
-  currency, person and instrument (INV-07); every other account's under its account, dimension set, currency, person
-  and instrument (a director's account and a SAFE read their own, INV-13). A key zero in both carries nothing. A key in
-  the base currency carries one line; in another currency with no amount, one base-only line; else one line at the
-  rate base ÷ amount, rounded half away from zero to 10 decimals (1 when that is not above zero or does not fit 10
-  integer digits), whose base is ``RND-FX``'s, and a base-only line of what is left (INV-05).
-* Each source document's control keys make an entry with that document as its source, balanced if need be by a last
-  line on suspense; the boundary's entry (source ``ledger_boundary``) holds the other keys and, last, takes back on
-  suspense what the documents' entries put there. Boundary's entry first, then documents by type and ID; keys by
-  account code, dimension set, currency, person and instrument.
+* The carry-forward, rule ``purge-carry-forward@1``, sums the purged lines, amount and base apart, under a key of the
+  line's source document and: for revenue and expense, the retained earnings account, their dimension set and the base
+  currency, their base as their amount (the year-end fold, FR-GL-10); for every other line, its account, dimension set,
+  currency, person and instrument, so every sub-ledger and every reconciliation by source still reads its own
+  (INV-07, INV-13). A key zero in both carries nothing. A key in the base currency carries one line; in another currency with no
+  amount, one base-only line; else one line at the rate base ÷ amount, rounded half away from zero to 10 decimals (1
+  when that is not above zero or does not fit 10 integer digits), whose base is ``RND-FX``'s, and a base-only line of
+  what is left (INV-05).
+* Each source document's keys make an entry with that document as its source, which balances as the document's
+  purged entries did. Documents by type and ID; keys by account code, dimension set, currency, person and instrument.
 * The positions at each date from the boundary on (the boundary, each later posting date of a kept entry, each
   financial year's first day up to the last of those) sum every line dated up to it by account, dimension set,
-  currency, person, instrument and, for a control account, its entry's source; revenue and expense from before the
-  date's financial year fold into retained earnings in the base currency. The purge must leave every one of them
-  unchanged.
+  currency, person, instrument and its entry's source, but for retained earnings, which the rule's fold writes and which
+  counts whole; revenue and expense from before the date's financial year fold into retained earnings in the base
+  currency. The purge must leave every one of them unchanged.
 """
 
 from __future__ import annotations
@@ -31,12 +29,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, NamedTuple
 
-from .money import EXACT, ZERO, FormatError, fmt, negate, parse_amount, rnd_fx, round_quotient, total
+from .money import EXACT, ZERO, FormatError, fmt, parse_amount, rnd_fx, round_quotient
 from .scenario import ScenarioError, schema_error
 
 SCHEMA = "fyniq-purge@1"
 RESULT = "fyniq-purge-result@1"
-BOUNDARY_SOURCE = "ledger_boundary"
 ONE = Decimal(1)
 RATE_CEILING = Decimal(10) ** 10  # a rate has at most 10 integer digits: NUMERIC(20,10)
 
@@ -93,12 +90,10 @@ class _Ledger:
                 raise PurgeError(f"two accounts have the code {account['code']}")
             self.accounts[account["code"]] = account
         self.retained: str = doc["retained_earnings"]
-        self.suspense: str = doc["suspense"]
-        for what, code in (("retained earnings", self.retained), ("suspense", self.suspense)):
-            if code not in self.accounts:
-                raise PurgeError(f"the {what} account {code} is not an account")
-            if self.control(code) or self.profit_or_loss(code):
-                raise PurgeError(f"the {what} account {code} is a control account, revenue or expense")
+        if self.retained not in self.accounts:
+            raise PurgeError(f"the retained earnings account {self.retained} is not an account")
+        if self.profit_or_loss(self.retained):
+            raise PurgeError(f"the retained earnings account {self.retained} is revenue or expense")
         self.boundary = _day(doc["boundary"], "boundary")
         if self.boundary.day != 1 or self.boundary.month != self.fy_month:
             raise PurgeError(f"the boundary {doc['boundary']} is not the first day of a financial year")
@@ -137,10 +132,6 @@ class _Ledger:
         if balance != ZERO:
             raise PurgeError(f"{entry['id']} does not balance in the base currency: {balance}")
         return out
-
-    def control(self, code: str) -> bool:
-        account = self.accounts[code]
-        return bool(account.get("control")) or account.get("role") in ("accounts-receivable", "accounts-payable")
 
     def profit_or_loss(self, code: str) -> bool:
         return self.accounts[code]["type"] in ("revenue", "expense")
@@ -188,38 +179,22 @@ def _carried_lines(ledger: _Ledger, at: tuple[str, str, str, str, str], amount: 
 
 
 def carry_forward(ledger: _Ledger, purged: list[str]) -> list[tuple[Source, list[Carried]]]:
-    """The carry-forward entries of the purged entries' lines, in the rule's order."""
-    sums: dict[tuple[Source | None, tuple[str, str, str, str, str]], list[Decimal]] = {}
+    """The carry-forward entries of the purged entries' lines, one per source document, in the rule's order."""
+    sums: dict[tuple[Source, tuple[str, str, str, str, str]], list[Decimal]] = {}
     for key in purged:
         for line in ledger.lines[key]:
             if ledger.profit_or_loss(line.account):
-                where, at, value = None, (ledger.retained, line.dset, ledger.base, "", ""), line.base
+                at, value = (ledger.retained, line.dset, ledger.base, "", ""), line.base
             else:
-                where = line.source if ledger.control(line.account) else None
                 at, value = (line.account, line.dset, line.currency, line.party, line.instrument), line.amount
-            pair = sums.setdefault((where, at), [ZERO, ZERO])
+            pair = sums.setdefault((line.source, at), [ZERO, ZERO])
             pair[0], pair[1] = EXACT.add(pair[0], value), EXACT.add(pair[1], line.base)
-    boundary: list[Carried] = []
     documents: dict[Source, list[Carried]] = {}
-    for (where, at), (amount, base) in sorted(sums.items(), key=lambda kv: kv[0][1]):
+    for (source, at), (amount, base) in sorted(sums.items(), key=lambda kv: kv[0][1]):
         if amount == ZERO and base == ZERO:
             continue
-        lines = _carried_lines(ledger, at, amount, base)
-        (boundary if where is None else documents.setdefault(where, [])).extend(lines)
-    taken = ZERO
-    entries = []
-    for source in sorted(documents):
-        lines = documents[source]
-        owed = total([line.base for line in lines])
-        if owed != ZERO:
-            lines.append(Carried(ledger.suspense, "", ledger.base, "", "", negate(owed), ONE, negate(owed)))
-            taken = EXACT.add(taken, owed)
-        entries.append((source, lines))
-    if taken != ZERO:
-        boundary.append(Carried(ledger.suspense, "", ledger.base, "", "", taken, ONE, taken))
-    if boundary:
-        entries.insert(0, ((BOUNDARY_SOURCE, ledger.boundary.isoformat()), boundary))
-    return entries
+        documents.setdefault(source, []).extend(_carried_lines(ledger, at, amount, base))
+    return [(source, documents[source]) for source in sorted(documents)]
 
 
 PositionKey = tuple[str, str, str, str, str, Source | None]
@@ -238,8 +213,8 @@ def _positions(ledger: _Ledger, lines: list[Posted], dates: list[date]) -> dict[
                 at: PositionKey = (ledger.retained, line.dset, ledger.base, "", "", None)
                 amount = line.base
             else:
-                at = (line.account, line.dset, line.currency, line.party, line.instrument,
-                      line.source if ledger.control(line.account) else None)
+                own = line.account != ledger.retained  # the rule's fold counts whole
+                at = (line.account, line.dset, line.currency, line.party, line.instrument, line.source if own else None)
             a, b = sums.get(at, (ZERO, ZERO))
             sums[at] = (EXACT.add(a, amount), EXACT.add(b, line.base))
         out[day] = {at: ab for at, ab in sums.items() if ab != (ZERO, ZERO)}

@@ -24,6 +24,9 @@ type ForeignRow struct {
 // from year to year. The month-end revaluation reads its open amounts and carrying values here (FR-GL-04). An account
 // and currency whose amount and base value are both zero are left out; rows are by account, then currency.
 func Foreign(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []storage.Period, through storage.Period) ([]ForeignRow, error) {
+	if err := CheckDay(ctx, u, through.EndsOn); err != nil {
+		return nil, err
+	}
 	type key struct {
 		account  uuid.UUID
 		currency string
@@ -97,6 +100,9 @@ type ForeignPerson struct {
 // on it names whose it is (FY250). The person is not in the cached balances, so the lines are read as People reads them.
 // A person whose amount and base value are both zero is left out; each currency's people are in the order of their IDs.
 func ForeignByPerson(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, through time.Time) (map[string][]ForeignPerson, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return nil, err
+	}
 	type key struct {
 		party    uuid.UUID
 		currency string

@@ -232,6 +232,8 @@ fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_cus
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
 fyniq_api       EXECUTE   latest_job_slot()
+fyniq_api       SELECT    ledger_boundary
+fyniq_api       SELECT    ledger_purged_entry
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   link_identity()
 fyniq_api       EXECUTE   lock_ledger()
@@ -437,6 +439,8 @@ fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_executor  SELECT    journal_entry
 fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_executor  SELECT    journal_line
+fyniq_executor  SELECT    ledger_boundary
+fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
@@ -552,6 +556,8 @@ fyniq_readonly  SELECT    join_request
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    kpi_input
+fyniq_readonly  SELECT    ledger_boundary
+fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    money_account
@@ -735,6 +741,10 @@ fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    kpi_input
+fyniq_worker    INSERT    ledger_boundary (anchor_key, approval, boundary, counts, purged_hash, written_at)
+fyniq_worker    SELECT    ledger_boundary
+fyniq_worker    EXECUTE   ledger_purge()
+fyniq_worker    SELECT    ledger_purged_entry
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    EXECUTE   member_emails()

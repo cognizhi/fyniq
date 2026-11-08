@@ -259,13 +259,13 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 9. The ledger's purge (slice 9)
 
-- [ ] 9.1 `fyniq.ledger_boundary`, `period.purged_on` and `fyniq.ledger_purge` (D7b). Attack tests:
+- [x] 9.1 `fyniq.ledger_boundary`, `period.purged_on` and `fyniq.ledger_purge` (D7b). Attack tests:
   - an update or delete of a posting (INV-02);
   - a posting into a locked period (INV-03);
   - a purge without a boundary, with the switch off, as `fyniq_api`, out of year order, or with the flag set by hand.
 
   Each is refused. `// req: AUD-10`, `// req: INV-02`, `// req: INV-03`
-- [ ] 9.2 The ledger's part of `retention.purge` and its readers:
+- [x] 9.2 The ledger's part of `retention.purge` and its readers:
   - the job compares the trial balance and sub-ledgers at the boundary before and after, in its own transaction, and
     refuses to commit on a difference;
   - the balance service refuses earlier dates and revisions with `BALANCE-PURGED`;
@@ -274,6 +274,38 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
   Tests: a company purged in 2099, whose every report from the boundary on is unchanged and earlier ones refused.
   `// req: AUD-10`, `// req: INV-08`, `// req: ENG-46`
+  - As built (9 Nov 2026, rev 0.238):
+    - **The rule, refined while building** (AUD-10 and D7b say so):
+      - every line carries under its own document, not only a control account's: the reconciliations of an account with
+        its sub-ledger read it by source type (deposits, the spreads' holding accounts, the asset register as well as
+        receivables and payables), and a carried total under `ledger_boundary` would count twice. A document's revenue
+        and expense carry into retained earnings in its own entry, which so balances as its entries did: no suspense
+        line, and no boundary entry (a suspense account netting to zero would still show in the trial balance);
+      - the carry-forward is dated the day before the boundary, in the purged year's last period, so every report from
+        the boundary on reads it as its opening balance and none as a movement;
+      - the asset register's depreciation and disposals and the equity register's entries are kept, as share issues
+        are: the register reads an asset's months for as long as it is held;
+      - the boundary is a year's first day of the financial-year calendar (its first year may be longer or shorter),
+        and the purge waits until the organisation's financial years are set, as year-end folds nothing without them.
+    - **The database (000292).** `fyniq.ledger_boundary` (guarded, stamped with its transaction, committed only with its
+      purge), `fyniq.ledger_purged_entry` (a tombstone per purged entry, never changed), `period.purged_on`,
+      `fyniq.ledger_purge(boundary, entries)` and FY305. `journal_entry_assign`, `journal_line_check`,
+      `journal_line_base_only`, the release and depreciation triggers, `journal_immutable` and `period_guard` admit the
+      purge's statements and nothing else. Tests: `TestTheLedgerIsPurgedAndEveryReportFromTheBoundaryKept` (two
+      successive years, every position and general ledger unchanged, opening balances included) and
+      `TestAttackTheLedgerPurgeKeepsItsRules`.
+    - **The check of the carry-forward is the database's**: `ledger_purge` refuses to delete unless the carry-forward
+      its transaction posted replaces the purged lines exactly, by account, set, currency, person, instrument and
+      source (revenue and expense folded into retained earnings). No adapter query sums journal lines (ENG-04).
+    - **The job** (`retention.PurgeLedger`, run by `retention.purge` before the trail's): one transaction per
+      organisation; it posts through the posting service (`journal.CarryForward`) and compares the balances cache with
+      the lines.
+    - **The readers.** `BALANCE-PURGED` (409) from every dated reading of the balance service before the boundary, a
+      purged period's trial balance and an "as at" revision before the purge; `Ledger.ByIdentity` falls back to the
+      document's carry-forward; `Ledger.PurgedOfSource`. `TestTheReadersAfterTheLedgerPurge`: receivables with
+      invoices of 2010 (one in USD, one voided) reconcile as at 30 June 2011 exactly as before, and the nightly
+      verification passes. The screen's list of boundaries and each document's note wait for slice 11 (task 11.1).
+    - **Not checked here:** the anchors' bucket and its signing key in the cloud (`[live-verify]`, as slice 7's).
 
 ## 10. Restore behind the anchors (slice 10)
 
@@ -297,6 +329,8 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - The registry entry, help keys, and the guide page `audit-trail.md`, compiled into the knowledge base.
   - The inventory row's roles follow Appendix D.
   - A component test with axe covers each state of the inventory: verifying, verified, failed and explained gap.
+  - The ledger's boundaries listed for it (`GET /v1/ledger/boundaries`), and each document's view saying when its
+    postings were purged after retention (`Ledger.PurgedOfSource`, slice 9).
 
   `// req: FR-CTL-03`, `// req: AUD-07`, `// req: AUD-03`
 - [ ] 11.2 The fragment `AuditTrail.html` checked against the build, and the compliance canvas republished where they
