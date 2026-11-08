@@ -177,7 +177,7 @@ export function BudgetVsActual() {
       )}
       {r && (
         <p className="fy-small fy-muted">
-          Read at ledger revision {r.ledger_revision}. Amounts are signed as the P&L shows them. The actuals are the books'; the budget is the year's latest
+          Read at ledger revision {r.ledger_revision}. Amounts are signed as the P&amp;L shows them. The actuals are the books'; the budget is the year's latest
           recorded version.
         </p>
       )}
