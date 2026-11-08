@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
-	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
@@ -41,12 +40,7 @@ func (alertMail) Attachment(context.Context, string, ports.InboundAttachment, in
 // worker is the worker's store, for what only the worker records, such as a signal.
 func (e *env) worker() storage.Store {
 	e.t.Helper()
-	w, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	e.t.Cleanup(w.Close)
-	return w
+	return workerStore(e.t)
 }
 
 // signal is a pending signal of S$12.34 on a new money account, pointing to no invoice, as the worker records an alert.

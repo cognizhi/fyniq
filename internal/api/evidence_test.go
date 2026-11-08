@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,13 +31,31 @@ import (
 
 func workerStore(t *testing.T) *postgres.Store {
 	t.Helper()
+	workers.Lock()
+	defer workers.Unlock()
+	if s, ok := workers.by[t]; ok {
+		return s
+	}
 	s, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(s.Close)
+	workers.by[t] = s
+	t.Cleanup(func() {
+		workers.Lock()
+		delete(workers.by, t)
+		workers.Unlock()
+		s.Close()
+	})
 	return s
 }
+
+// workers are the worker's stores open, one per test: the authorisation matrix asks for one once per role and
+// operation, and a pool for each, closed only when the matrix ends, exhausts the test database's connections.
+var workers = struct {
+	sync.Mutex
+	by map[*testing.T]*postgres.Store
+}{by: map[*testing.T]*postgres.Store{}}
 
 func parseUUID(t *testing.T, s string) uuid.UUID {
 	t.Helper()
