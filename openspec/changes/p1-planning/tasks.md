@@ -186,9 +186,11 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
     (`planning.budgets`) and `forecast.md` (`planning.forecast`), each compiled into `kb/pages/task/`.
 - [ ] 8.4 The four fragments checked against the build and the insight canvas republished where they differ (Recipe C).
   `python3 docs/design/screens/build.py check` passes, and the new canvas version is recorded.
-- [ ] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which
+- [x] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which
   reads every open item. It covers what-ifs that save nothing, the alert's audience, budget approval and the absence
   of any AI or MCP tool.
+  - As built: ten threats over three boundaries, each with its control and the test that proves it. The Board's view
+    of the cash projection's contacts is left to revisit with the board pack.
 
 ## 9. As built (slice 9)
 
