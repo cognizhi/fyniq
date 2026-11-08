@@ -13793,13 +13793,20 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
           format: uuid
           type: string
+        instrument_id:
+          description: "instrument_conversion: the recorded SAFE or note converting, whose holder and class it takes."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+          format: uuid
+          type: string
         kind:
-          description: "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction."
+          description: "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions."
           enum:
             - issue_cash
             - transfer
             - class_conversion
             - reversal
+            - instrument_conversion
           examples:
             - issue_cash
           type: string
@@ -13830,6 +13837,18 @@ components:
           description: "reversal: the effective transaction it undoes."
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+          format: uuid
+          type: string
+        review:
+          description: "instrument_conversion: what the accountant completes in a conversion no enabled template covers (⚠), as it was drafted."
+          examples:
+            - "the accountant completes it: it follows no template, a discount"
+          readOnly: true
+          type: string
+        round_id:
+          description: "instrument_conversion: the approved issue for cash, the priced round, it converts at."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02
           format: uuid
           type: string
         seller_id:
@@ -17426,7 +17445,7 @@ components:
           examples:
             - 4
           format: int64
-          maximum: 8
+          maximum: 6
           minimum: 0
           type: integer
         pro_rata:
@@ -17715,7 +17734,7 @@ components:
           examples:
             - 4
           format: int64
-          maximum: 8
+          maximum: 6
           minimum: 0
           type: integer
         pro_rata:
@@ -73572,6 +73591,7 @@ paths:
               - transfer
               - class_conversion
               - reversal
+              - instrument_conversion
             examples:
               - transfer
             type: string
@@ -74689,6 +74709,235 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         note: Another person approves it, never a holder it moves shares of or for; the Accountant too when every available approver benefits.
+        right: C
+  /v1/equity-transactions/{transaction_id}/conversions:
+    post:
+      description: "At an approved issue for cash, the priced round, drafts the conversion of every recorded SAFE and note its next priced round converts (FR-EQ-18, design D6): one instrument_conversion transaction each, for approval. Each one's conversion price is the lower of its cap price and the discounted round price, cut to its decimals; a post-money SAFE's cap price is its cap × (1 − Σ amount ÷ cap over the post-money SAFEs converting) ÷ the shares before the round, a pre-money one's its cap ÷ those shares. Its shares come from RND-SHARE; what is left stays on 2700. A conversion that an enabled template does not cover, every term, carries its review for the accountant (⚠). An instrument that a conversion still standing names is left out, so asking again drafts nothing twice. Side effects: the drafts, audit events. Needs If-Match with the round's ETag: the drafts are at the round as read. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: draftInstrumentConversions
+      parameters:
+        - description: The equity transaction's ID.
+          in: path
+          name: transaction_id
+          required: true
+          schema:
+            description: The equity transaction's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityTransactionPage"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityTransactionPage"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Draft the SAFEs' and notes' conversions at a round
+      tags:
+        - Equity
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - EQUITY-02
+        - EQUITY-05
+        - EQUITY-06
+        - EQUITY-07
+        - EQUITY-08
+        - EQUITY-09
+        - LEDGER-01
+        - LEDGER-16
+        - LEDGER-41
+        - LEDGER-48
+        - STORAGE-INV-03
+        - STORAGE-LOCK-01
+        - STORAGE-PARTY-01
+        - STORAGE-RETRY-01
+        - STORAGE-SHARE-01
+        - STORAGE-SHARE-04
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: C
   /v1/equity-transactions/{transaction_id}/effective:
     post:

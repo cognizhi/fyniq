@@ -412,3 +412,109 @@ VALUES ($1, 1, $2, 'SGD', 125000, 1, 'attack', 125000, $3), ($1, 2, $4, 'SGD', -
 		t.Fatalf("the SAFE's money on 2700: %v", err)
 	}
 }
+
+// A SAFE or note converts once (FR-EQ-18; FY288, FY290): an issue's movement under an approved instrument_conversion is
+// recorded; a second conversion of the same instrument is refused while the first stands, and taken once a reversal
+// undoes it. A conversion records an issue's ACRA steps and no transfer's.
+// req: FR-EQ-18
+// req: INV-13
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackAnInstrumentConvertsOnce(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack conversions Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	instrument := uuid.New()
+	transaction := func(payload string) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentEquityTransaction, Payload: []byte(payload)})
+			id = doc.ID
+			if err != nil {
+				return err
+			}
+			return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	conversion := func() uuid.UUID {
+		return transaction(fmt.Sprintf(`{"kind":"instrument_conversion","instrument_id":%q}`, instrument))
+	}
+	// convert records the conversion's share issue, its entry and its movement, as making it effective does; it returns the
+	// movement.
+	convert := func(tx uuid.UUID) (uuid.UUID, error) {
+		movement := uuid.Must(uuid.NewV7())
+		return movement, asOrg(ctx, conn(t, "fyniq_api"), d.org, func(x pgx.Tx) error {
+			issue := uuid.Must(uuid.NewV7())
+			var entryID uuid.UUID
+			if err := x.QueryRow(ctx, `
+INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version)
+VALUES ('2026-10-14', $1, 'share_issue', $1, 1, 'instrument_conversion@1') RETURNING id`, issue.String()).Scan(&entryID); err != nil {
+				return err
+			}
+			if err := auditRaw(ctx, x, "journal_entry.posted", "journal_entry", entryID); err != nil {
+				return err
+			}
+			if _, err := x.Exec(ctx, `
+INSERT INTO fyniq.journal_line (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount)
+VALUES ($1, 1, $2, 'SGD', 99.75, 1, 'attack', 99.75), ($1, 2, $3, 'SGD', -99.75, 1, 'attack', -99.75)`, entryID, d.bank, class); err != nil {
+				return err
+			}
+			if _, err := x.Exec(ctx, `
+INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
+                               effective_on, entry_id, recorded_by, recorded_at)
+VALUES ($1, $2, $3, 42, 2.375, 'SGD', 2, 99.75, 'safe_or_note', 'Board resolution 14 Oct 2026', '2026-10-14', $4, $5, now())`,
+				issue, d.director.ID, class, entryID, d.member); err != nil {
+				return err
+			}
+			if err := auditRaw(ctx, x, "share_issue.recorded", "share_issue", issue); err != nil {
+				return err
+			}
+			if _, err := x.Exec(ctx, `
+INSERT INTO fyniq.holding_movement (id, kind, transaction_id, share_issue_id, holder_id, class_account_id, shares, effective_on, recorded_by, recorded_at)
+VALUES ($1, 'issue', $2, $3, $4, $5, 42, '2026-10-14', $6, now())`, movement, tx, issue, d.director.ID, class, d.member); err != nil {
+				return err
+			}
+			return auditRaw(ctx, x, "holding.moved", "holding_movement", movement)
+		})
+	}
+	first := conversion()
+	moved, err := convert(first)
+	if err != nil {
+		t.Fatalf("the SAFE's conversion: %v", err)
+	}
+	_, err = convert(conversion())
+	wantState(t, "a second conversion of the SAFE while the first stands", err, "FY288")
+
+	undo := transaction(fmt.Sprintf(`{"kind":"reversal","reverses_id":%q}`, first))
+	if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Holdings().Move(ctx, storage.HoldingMovement{ID: uuid.Must(uuid.NewV7()), Kind: storage.MovementReversal, TransactionID: &undo,
+			ReversesID: &moved, HolderID: d.director.ID, ClassAccountID: class, Shares: "-42", EffectiveOn: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC),
+			RecordedBy: d.member, RecordedAt: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)})
+		return err
+	}); err != nil {
+		t.Fatalf("reversing the conversion: %v", err)
+	}
+	if _, err := convert(conversion()); err != nil {
+		t.Errorf("converting again once the first is reversed: %v", err)
+	}
+
+	step := func(tx uuid.UUID, kind string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.EquitySteps().Record(ctx, storage.EquityStep{TransactionID: tx, Kind: kind, On: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC),
+				RecordedBy: d.member, RecordedAt: time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)})
+			return err
+		})
+	}
+	waiting := conversion()
+	if err := step(waiting, storage.StepInstrumentSigned); storage.CodeOf(err) != storage.CodeEquityStep {
+		t.Errorf("a conversion's instrument of transfer signed: %v", err)
+	}
+	if err := step(waiting, storage.StepResolved); err != nil {
+		t.Errorf("a conversion's resolution: %v", err)
+	}
+}

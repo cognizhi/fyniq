@@ -55,7 +55,7 @@ func TestAnInstrumentKeepsItsTerms(t *testing.T) {
 		"another currency and nothing": {func(i *Instrument) { i.Amount = amount("0.00", usd) }, "amount"},
 		"a class on sales":             {func(i *Instrument) { i.ClassAccountID = sales }, "class_account_id"},
 		"the terms' count undescribed": {func(i *Instrument) { i.Denominator = "as_terms" }, "denominator_note"},
-		"a precision of 9 decimals":    {func(i *Instrument) { i.PriceDecimals = 9 }, "price_decimals"},
+		"a precision of 7 decimals":    {func(i *Instrument) { i.PriceDecimals = 7 }, "price_decimals"},
 		"a template of another form":   {func(i *Instrument) { i.Form, i.ValuationCap = FormPreMoneySAFE, "2500000" }, "template"},
 		"an unknown template":          {func(i *Instrument) { i.Template = "seed-note@1" }, "template"},
 		"nothing at all": {func(i *Instrument) { *i = Instrument{} },

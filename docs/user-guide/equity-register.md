@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -164,6 +164,26 @@ monies**: categorise the bank line of their payment to 2040, naming them. It the
 Cr share capital. If an issue does not go ahead, pay the refund from your bank and categorise that
 bank line to 2040 the same way.
 
+## Convert SAFEs and notes
+
+At a priced round, each recorded SAFE or convertible note converts into shares. On the round's
+issue for cash, once it is approved, an Accountant selects **Draft the SAFE conversions**. Fyniq
+drafts one **SAFE or note conversion** for each instrument the round converts, with its shares and
+its conversion price:
+
+- the price is the lower of its cap price and the round's price less its discount, cut down to
+  the decimals its terms give. A post-money SAFE's cap price counts the shares every converting
+  post-money SAFE takes; a pre-money SAFE's is its cap divided by the shares before the round;
+- the shares are its money divided by that price, rounded down to whole shares. What is left of
+  its money stays on **2700 Convertible notes / SAFE** until it is settled under its terms.
+
+A conversion that an enabled template covers in every term is ready for approval. Any other shows
+**The accountant completes it** with what to check, such as a discount, an MFN clause or a round
+below its cap price: check the shares and the price against the terms before asking. The holder
+and the class are the instrument's. Attach the resolutions and ask for approval like any other
+transaction; an instrument converts once while its conversion stands. It becomes effective on or
+after its round, while 2700 holds its money, and then posts Dr 2700 · Cr share capital.
+
 ## Correct a transaction
 
 An approved transaction never changes. To correct an effective one, select **Reverse it** and
@@ -200,6 +220,11 @@ a director's balance add their shares when they take effect.
 | Only an approved transaction becomes effective, or the effective date is before the approval (EQUITY-08) | Ask for its approval, then record the day ACRA's register shows it |
 | The subscriber's money is not all in share application monies (EQUITY-08) | Categorise the bank line of their payment to 2040, naming them, then record the effective date |
 | The holder holds fewer of these shares on the day (EQUITY-08) | Check the register: a holder moves only shares they hold |
+| A conversion of the instrument stands already (EQUITY-07) | Change that conversion, or reverse it first |
+| The round is not an approved issue for cash (EQUITY-07) | Draft the conversions from the round's issue once it is approved |
+| Its round is not effective on or before the day (EQUITY-08) | Make the round effective first: the SAFEs convert with it, on its day or after |
+| Its round was reversed (EQUITY-08) | Draft the conversions again from the round that replaces it |
+| 2700 holds less for the instrument than it converts (EQUITY-08) | Categorise the bank line of the SAFE's money to 2700, naming the instrument |
 | The chart has no share application monies account (EQUITY-09) | Add 2040 Share application monies to the chart of accounts |
 | A step its transaction does not take, or dated after today (EQUITY-10) | Choose one of the steps shown, on the day it happened |
 | The transaction moves your own shares, so another person approves it | Ask another Owner or the Controller |

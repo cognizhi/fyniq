@@ -41,13 +41,22 @@
       "format": "uuid",
       "type": "string"
     },
+    "instrument_id": {
+      "description": "instrument_conversion: the recorded SAFE or note converting, whose holder and class it takes.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "kind": {
-      "description": "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction.",
+      "description": "issue_cash: shares allotted to one subscriber for cash; transfer: shares from one holder to another; class_conversion: one holder's shares into another class; reversal: undoes an effective transaction; instrument_conversion: a SAFE or note converting into shares at a priced round, drafted from the round with draftInstrumentConversions.",
       "enum": [
         "issue_cash",
         "transfer",
         "class_conversion",
-        "reversal"
+        "reversal",
+        "instrument_conversion"
       ],
       "examples": [
         "issue_cash"
@@ -89,6 +98,22 @@
       "description": "reversal: the effective transaction it undoes.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "review": {
+      "description": "instrument_conversion: what the accountant completes in a conversion no enabled template covers (⚠), as it was drafted.",
+      "examples": [
+        "the accountant completes it: it follows no template, a discount"
+      ],
+      "readOnly": true,
+      "type": "string"
+    },
+    "round_id": {
+      "description": "instrument_conversion: the approved issue for cash, the priced round, it converts at.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a02"
       ],
       "format": "uuid",
       "type": "string"

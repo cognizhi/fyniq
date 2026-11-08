@@ -10780,6 +10780,36 @@ Asks another person to approve a drafted equity transaction at the version read 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-02`, `EQUITY-05`, `EQUITY-06`, `EQUITY-07`, `EQUITY-08`, `EQUITY-09`, `LEDGER-01`, `LEDGER-16`, `LEDGER-41`, `LEDGER-48`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-01`, `STORAGE-SHARE-04`
 
+### `POST /v1/equity-transactions/{transaction_id}/conversions`
+
+**Draft the SAFEs' and notes' conversions at a round** (`draftInstrumentConversions`)
+
+At an approved issue for cash, the priced round, drafts the conversion of every recorded SAFE and note its next priced round converts (FR-EQ-18, design D6): one instrument_conversion transaction each, for approval. Each one's conversion price is the lower of its cap price and the discounted round price, cut to its decimals; a post-money SAFE's cap price is its cap × (1 − Σ amount ÷ cap over the post-money SAFEs converting) ÷ the shares before the round, a pre-money one's its cap ÷ those shares. Its shares come from RND-SHARE; what is left stays on 2700. A conversion that an enabled template does not cover, every term, carries its review for the accountant (⚠). An instrument that a conversion still standing names is left out, so asking again drafts nothing twice. Side effects: the drafts, audit events. Needs If-Match with the round's ETag: the drafts are at the round as read. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `transaction_id` (path, required): The equity transaction's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityTransactionPage`](../../contracts/schemas/EquityTransactionPage.schema.json)
+  - `201` Created [`EquityTransactionPage`](../../contracts/schemas/EquityTransactionPage.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `EQUITY-08` The transaction cannot be effective then; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-SHARE-01` The register of share issues does not change that way; `STORAGE-SHARE-04` The holding does not move that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-02`, `EQUITY-05`, `EQUITY-06`, `EQUITY-07`, `EQUITY-08`, `EQUITY-09`, `LEDGER-01`, `LEDGER-16`, `LEDGER-41`, `LEDGER-48`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-01`, `STORAGE-SHARE-04`
+
 ### `POST /v1/equity-transactions/{transaction_id}/effective`
 
 **Record the day an equity transaction takes effect** (`recordEquityTransactionEffective`)

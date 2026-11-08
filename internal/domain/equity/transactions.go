@@ -34,10 +34,13 @@ const (
 	KindTransfer        = "transfer"
 	KindClassConversion = "class_conversion"
 	KindReversal        = "reversal"
+	// KindInstrumentConversion is a SAFE's or note's conversion into shares at a priced round (FR-EQ-18, design D6),
+	// drafted from its round: an issue to the instrument's holder, Dr 2700 · Cr the class with what it converts.
+	KindInstrumentConversion = "instrument_conversion"
 )
 
 // TransactionKinds are the kinds a transaction may be.
-var TransactionKinds = []string{KindIssueCash, KindTransfer, KindClassConversion, KindReversal}
+var TransactionKinds = []string{KindIssueCash, KindTransfer, KindClassConversion, KindReversal, KindInstrumentConversion}
 
 // The codes of equity transactions (ENG-23).
 const (
@@ -56,7 +59,9 @@ const MaxReason = 500
 //     parties' matter);
 //   - class_conversion: the holder, the class converted from and to, the shares out and in, the resolutions, and the
 //     carrying amount moved between the classes' accounts when they differ [accountant to confirm the basis];
-//   - reversal: the transaction it reverses and why.
+//   - reversal: the transaction it reverses and why;
+//   - instrument_conversion: the instrument (its holder and class), the round it converts at, the shares and the
+//     conversion price; its amount is shares × price under RND-LINE, which RND-SHARE kept within the instrument's amount.
 type Transaction struct {
 	Kind           string
 	HolderID       uuid.UUID
@@ -74,6 +79,9 @@ type Transaction struct {
 	ReversesID     uuid.UUID
 	Reason         string
 	Note           string
+	InstrumentID   uuid.UUID  // an instrument conversion's SAFE or note
+	RoundID        uuid.UUID  // and the cash issue, the priced round, it converts at
+	Review         string     // what the accountant completes in a conversion no enabled template covers (⚠), as drafted
 	Date           time.Time  // the day it was drafted
 	ApprovedOn     *time.Time // the day it was approved; it is never effective earlier
 }
@@ -94,6 +102,9 @@ type transactionPayload struct {
 	Amount         string `json:"amount,omitempty"`
 	ResolutionRefs string `json:"resolution_refs,omitempty"`
 	ReversesID     string `json:"reverses_id,omitempty"`
+	InstrumentID   string `json:"instrument_id,omitempty"`
+	RoundID        string `json:"round_id,omitempty"`
+	Review         string `json:"review,omitempty"`
 	Reason         string `json:"reason,omitempty"`
 	Note           string `json:"note,omitempty"`
 	ApprovedOn     string `json:"approved_on,omitempty"`
@@ -118,7 +129,8 @@ func EncodeTransaction(t Transaction) ([]byte, error) {
 	p := transactionPayload{Date: t.Date.Format(time.DateOnly), Kind: t.Kind, HolderID: idText(t.HolderID), SellerID: idText(t.SellerID),
 		BuyerID: idText(t.BuyerID), ClassAccountID: idText(t.ClassAccountID), ClassID: optText(t.ClassID), ToAccountID: idText(t.ToAccountID),
 		ToClassID: optText(t.ToClassID), Shares: t.Shares, ToShares: t.ToShares, Price: t.Price, Amount: t.Amount, ResolutionRefs: t.ResolutionRefs,
-		ReversesID: idText(t.ReversesID), Reason: t.Reason, Note: t.Note}
+		ReversesID: idText(t.ReversesID), Reason: t.Reason, Note: t.Note, InstrumentID: idText(t.InstrumentID), RoundID: idText(t.RoundID),
+		Review: t.Review}
 	if t.ApprovedOn != nil {
 		p.ApprovedOn = t.ApprovedOn.Format(time.DateOnly)
 	}
@@ -146,7 +158,8 @@ func ReadTransaction(doc storage.Document) (Transaction, error) {
 	}
 	t := Transaction{Kind: p.Kind, HolderID: id(p.HolderID), SellerID: id(p.SellerID), BuyerID: id(p.BuyerID), ClassAccountID: id(p.ClassAccountID),
 		ClassID: opt(p.ClassID), ToAccountID: id(p.ToAccountID), ToClassID: opt(p.ToClassID), Shares: p.Shares, ToShares: p.ToShares, Price: p.Price,
-		Amount: p.Amount, ResolutionRefs: p.ResolutionRefs, ReversesID: id(p.ReversesID), Reason: p.Reason, Note: p.Note}
+		Amount: p.Amount, ResolutionRefs: p.ResolutionRefs, ReversesID: id(p.ReversesID), Reason: p.Reason, Note: p.Note,
+		InstrumentID: id(p.InstrumentID), RoundID: id(p.RoundID), Review: p.Review}
 	t.Date, _ = time.Parse(time.DateOnly, p.Date)
 	if on, err := time.Parse(time.DateOnly, p.ApprovedOn); err == nil {
 		t.ApprovedOn = &on
@@ -317,8 +330,21 @@ func CheckTransaction(ctx context.Context, u storage.UnitOfWork, t Transaction, 
 			{"price", t.Price != ""}, {"amount", t.Amount != ""}} {
 			unused(f.field, f.set)
 		}
+	case KindInstrumentConversion:
+		if err := checkConversion(ctx, u, &t, s, add); err != nil {
+			return t, err
+		}
+		refs(false)
+		unused("seller_id", t.SellerID != uuid.Nil)
+		unused("buyer_id", t.BuyerID != uuid.Nil)
+		unused("to_class_account_id", t.ToAccountID != uuid.Nil)
+		unused("reverses_id", t.ReversesID != uuid.Nil)
 	default:
 		add("kind", fmt.Sprintf("%q is not a kind of equity transaction Fyniq records", t.Kind), "Choose issue_cash, transfer, class_conversion or reversal")
+	}
+	if t.Kind != KindInstrumentConversion {
+		unused("instrument_id", t.InstrumentID != uuid.Nil)
+		unused("round_id", t.RoundID != uuid.Nil)
 	}
 	if len(probs) > 0 {
 		return t, probs
@@ -373,6 +399,16 @@ func DraftTransactionIn(ctx context.Context, u storage.UnitOfWork, t Transaction
 	if err != nil {
 		return storage.Document{}, t, err
 	}
+	if t.Kind == KindInstrumentConversion { // an instrument converts once (FR-EQ-18)
+		taken, err := converted(ctx, u)
+		if err != nil {
+			return storage.Document{}, t, err
+		}
+		if taken[t.InstrumentID] {
+			return storage.Document{}, t, ledger.Problems{{Code: CodeTransaction, Field: "instrument_id", Message: "a conversion of the instrument stands already",
+				Fix: "Change that conversion, or reverse it first"}}
+		}
+	}
 	t.ApprovedOn = nil
 	b, err := EncodeTransaction(t)
 	if err != nil {
@@ -404,6 +440,9 @@ func ReviseTransactionIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 		return doc, t, err
 	}
 	t.Date = was.Date
+	if t.Kind == KindInstrumentConversion && was.Kind == KindInstrumentConversion {
+		t.Review = was.Review // what the accountant completes stays with the draft until it is approved
+	}
 	if t, err = CheckTransaction(ctx, u, t, s); err != nil {
 		return doc, t, err
 	}
