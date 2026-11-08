@@ -5,7 +5,9 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/sheet"
@@ -259,6 +262,55 @@ func TestBudgetsThroughTheAPI(t *testing.T) {
 	wantStatus(t, e.checked("planning.budget"), "ok")
 }
 
+// matrixBudgetChart is the budget's accounts and Sales for the matrix's organisation, whose earlier rows may hold them
+// already: it takes what is there and creates the rest.
+func (e *env) matrixBudgetChart() budgetChart {
+	e.t.Helper()
+	var c budgetChart
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, a := range []struct {
+			into *string
+			n    storage.NewAccount
+		}{
+			{&c.revenue, storage.NewAccount{Code: "4010", Name: "Subscriptions", Type: storage.Revenue, AccountAttributes: storage.AccountAttributes{ReportGroup: "Subscription revenue"}}},
+			{&c.ads, storage.NewAccount{Code: "6110", Name: "Advertising", Type: storage.Expense, AccountAttributes: storage.AccountAttributes{ReportGroup: "Sales & marketing", Function: "S&M"}}},
+			{&c.rent, storage.NewAccount{Code: "6200", Name: "Office rent", Type: storage.Expense, AccountAttributes: storage.AccountAttributes{ReportGroup: "Premises & office", Function: "G&A"}}},
+		} {
+			x, err := u.Accounts().ByCode(ctx, a.n.Code)
+			if errors.Is(err, ports.ErrNotFound) {
+				x, err = u.Accounts().Create(ctx, a.n)
+			}
+			if err != nil {
+				return err
+			}
+			*a.into = x.ID.String()
+		}
+		ds, err := u.Dimensions().List(ctx)
+		if err != nil {
+			return err
+		}
+		i := slices.IndexFunc(ds, func(d storage.Dimension) bool { return d.Kind == storage.DimensionDepartment })
+		var dept storage.Dimension
+		if i >= 0 {
+			dept = ds[i]
+		} else if dept, err = u.Dimensions().Create(ctx, storage.NewDimension{Kind: storage.DimensionDepartment, Name: "Department"}); err != nil {
+			return err
+		}
+		vs, err := u.Dimensions().Values(ctx, &dept.ID)
+		if err != nil {
+			return err
+		}
+		if j := slices.IndexFunc(vs, func(v storage.DimensionValue) bool { return v.Code == "SALES" }); j >= 0 {
+			c.sales = vs[j].ID.String()
+			return nil
+		}
+		s, err := u.Dimensions().CreateValue(ctx, storage.NewDimensionValue{DimensionID: dept.ID, Code: "SALES", Name: "Sales"})
+		c.sales = s.ID.String()
+		return err
+	})
+	return c
+}
+
 type budgetFixture struct{ budget string }
 
 var matrixBudgetOf = map[*env]budgetFixture{}
@@ -269,7 +321,7 @@ func matrixBudget(e *env) budgetFixture {
 		return f
 	}
 	e.booksFrom()
-	c := e.budgetChart()
+	c := e.matrixBudgetChart()
 	d := e.call(http.MethodPost, "/v1/budgets", e.as(authz.Accountant), budgetBody(c))
 	if d.Status != http.StatusCreated {
 		e.t.Fatalf("the matrix's budget: %d %s", d.Status, d.Raw)
