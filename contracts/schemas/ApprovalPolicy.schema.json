@@ -67,7 +67,9 @@
         "bank_reconciliation",
         "holder_record",
         "share_class",
-        "equity_transaction"
+        "equity_transaction",
+        "instrument",
+        "instrument_template"
       ],
       "examples": [
         "organisation_setting"

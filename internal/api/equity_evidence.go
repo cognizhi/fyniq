@@ -65,6 +65,14 @@ type (
 		EquityTransactionPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	InstrumentEvidencePath struct {
+		InstrumentPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
+	EnablementEvidencePath struct {
+		EnablementPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -113,6 +121,38 @@ type (
 	}
 	removeTransactionEvidenceInput struct {
 		EquityTransactionEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addInstrumentEvidenceInput struct {
+		InstrumentPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listInstrumentEvidenceInput struct {
+		InstrumentPath
+		PageQuery
+	}
+	removeInstrumentEvidenceInput struct {
+		InstrumentEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addEnablementEvidenceInput struct {
+		EnablementPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listEnablementEvidenceInput struct {
+		EnablementPath
+		PageQuery
+	}
+	removeEnablementEvidenceInput struct {
+		EnablementEvidencePath
 		IfMatchHeader
 		PreferHeader
 	}
@@ -169,7 +209,8 @@ func equityFile(ctx context.Context, u storage.UnitOfWork, t storage.DocumentTyp
 func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, recordPath, recordID, key, ifMatch, prefer string,
 	raw *EvidenceUpload) (*equityEvidenceWriteOutput, error) {
 	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
-		storage.DocumentEquityTransaction: "transaction_id"}[t]
+		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
+		storage.DocumentInstrumentTemplate: "enablement_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -420,7 +461,69 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentEquityTransaction, "transaction_id", in.TransactionID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
-	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence"} {
+	register(a, authz.AddInstrumentEvidence, huma.Operation{
+		OperationID: "addInstrumentEvidence", Method: http.MethodPost, Path: "/v1/instruments/{instrument_id}/evidence", Tags: []string{"Evidence"},
+		DefaultStatus: http.StatusCreated, Summary: "Attach a SAFE's or note's documents",
+		Description: "Attaches a file to a drafted SAFE or convertible note (FR-EQ-18, FR-DOC-05), as multipart/form-data: the signed " +
+			"instrument, and any side letter. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addInstrumentEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentInstrument, "/v1/instruments", in.InstrumentID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListInstrumentEvidence, huma.Operation{
+		OperationID: "listInstrumentEvidence", Method: http.MethodGet, Path: "/v1/instruments/{instrument_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List a SAFE's or note's files",
+		Description: "The files attached to an instrument, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listInstrumentEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentInstrument, "instrument_id", in.InstrumentID, in.PageQuery)
+	})
+	register(a, authz.GetInstrumentEvidence, huma.Operation{
+		OperationID: "getInstrumentEvidence", Method: http.MethodGet, Path: "/v1/instruments/{instrument_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get a SAFE's or note's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *InstrumentEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentInstrument, "instrument_id", in.InstrumentID, in.EvidenceID)
+	})
+	register(a, authz.RemoveInstrumentEvidence, huma.Operation{
+		OperationID: "removeInstrumentEvidence", Method: http.MethodDelete, Path: "/v1/instruments/{instrument_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted SAFE or note",
+		Description: "Takes a file off an instrument not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeInstrumentEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentInstrument, "instrument_id", in.InstrumentID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
+	register(a, authz.AddInstrumentTemplateEvidence, huma.Operation{
+		OperationID: "addInstrumentTemplateEvidence", Method: http.MethodPost, Path: "/v1/instrument-template-enablements/{enablement_id}/evidence",
+		Tags: []string{"Evidence"}, DefaultStatus: http.StatusCreated, Summary: "Attach a template's lawyer's confirmation",
+		Description: "Attaches a file to a drafted template enablement (FR-EQ-18, question 33), as multipart/form-data: the lawyer's " +
+			"confirmation that the template's terms convert as Fyniq converts them. Asking for approval needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addEnablementEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentInstrumentTemplate, "/v1/instrument-template-enablements", in.EnablementID, in.IdempotencyKey,
+			in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListInstrumentTemplateEvidence, huma.Operation{
+		OperationID: "listInstrumentTemplateEvidence", Method: http.MethodGet, Path: "/v1/instrument-template-enablements/{enablement_id}/evidence",
+		Tags: []string{"Evidence"}, Summary: "List a template enablement's files",
+		Description: "The files attached to a template's enablement, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listEnablementEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentInstrumentTemplate, "enablement_id", in.EnablementID, in.PageQuery)
+	})
+	register(a, authz.GetInstrumentTemplateEvidence, huma.Operation{
+		OperationID: "getInstrumentTemplateEvidence", Method: http.MethodGet, Path: "/v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}",
+		Tags: []string{"Evidence"}, Summary: "Get a template enablement's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *EnablementEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentInstrumentTemplate, "enablement_id", in.EnablementID, in.EvidenceID)
+	})
+	register(a, authz.RemoveInstrumentTemplateEvidence, huma.Operation{
+		OperationID: "removeInstrumentTemplateEvidence", Method: http.MethodDelete, Path: "/v1/instrument-template-enablements/{enablement_id}/evidence/{evidence_id}",
+		Tags: []string{"Evidence"}, Summary: "Remove a file from a drafted template enablement",
+		Description: "Takes a file off a template enablement not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeEnablementEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentInstrumentTemplate, "enablement_id", in.EnablementID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
+	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence",
+		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

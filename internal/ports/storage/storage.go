@@ -624,6 +624,12 @@ const (
 	// conversion between classes or the reversal of one, drafted with its evidence, numbered EQ- on its approval and made
 	// effective with ACRA's date, which writes its holding movements (p1-equity-register design D4).
 	DocumentEquityTransaction DocumentType = "equity_transaction"
+	// DocumentInstrument is a SAFE or convertible note (FR-EQ-18): its holder, amount, terms and the class it converts
+	// into, drafted with the signed instrument and recorded on another person's approval.
+	DocumentInstrument DocumentType = "instrument"
+	// DocumentInstrumentTemplate enables a form the engine may convert by itself, recorded with its lawyer's
+	// confirmation on another person's approval (FR-EQ-18, question 33).
+	DocumentInstrumentTemplate DocumentType = "instrument_template"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -863,6 +869,9 @@ const (
 	// CodeEquityStep: an equity transaction's ACRA steps are of its kind, recorded between its approval and its effective
 	// date, and never changed (FR-EQ-09; FY290).
 	CodeEquityStep = "STORAGE-SHARE-05"
+	// CodeInstrument: an instrument keeps its own keys, a known form, a holder marked shareholder or investor, an amount
+	// above zero and a share-capital class; a template names a known one; its holder stays marked (FR-EQ-18; FY291).
+	CodeInstrument = "STORAGE-SHARE-06"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"
