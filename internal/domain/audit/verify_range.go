@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -140,14 +137,25 @@ func VerifyRange(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStor
 	if err != nil {
 		return fail(at, err.Error())
 	}
-	keys, err := blobs.List(ctx, AnchorPrefix(org))
+	recs, err := u.Audit().Recoveries(ctx)
 	if err != nil {
 		return r, err
 	}
-	for _, k := range keys {
-		seq, err := strconv.ParseInt(strings.TrimSuffix(path.Base(k), ".json"), 10, 64)
-		if err != nil || seq < r.FirstSeq || seq > r.LastSeq {
-			continue // another kind of object, or an anchor outside the range
+	// A restore behind the anchors (design D8): the anchored events it no longer proves are explained by its recovery.
+	for _, x := range recs {
+		if x.MissingFrom <= r.LastSeq && x.MissingTo >= r.FirstSeq && explained == "" {
+			explained = fmt.Sprintf("a restore found on %s landed behind the anchors: the events %d to %d they signed are no longer proven, "+
+				"and the chain continues from event %d (%s)", x.DetectedAt.UTC().Format(time.DateOnly), x.MissingFrom, x.MissingTo, x.RestoredSeq, x.AnchorKey)
+		}
+	}
+	anchors, _, err := liveAnchors(ctx, blobs, org, recs)
+	if err != nil {
+		return r, err
+	}
+	for _, an := range anchors {
+		seq, k := an.seq, an.key
+		if seq < r.FirstSeq || seq > r.LastSeq {
+			continue // an anchor outside the range
 		}
 		signed, err := readAnchor(ctx, blobs, k)
 		if err != nil {

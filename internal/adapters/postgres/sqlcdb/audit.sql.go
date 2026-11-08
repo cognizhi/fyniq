@@ -12,6 +12,27 @@ import (
 	"github.com/google/uuid"
 )
 
+const acknowledgeAuditRecovery = `-- name: AcknowledgeAuditRecovery :one
+INSERT INTO fyniq.audit_recovery_acknowledgement (recovery_id, acknowledged_by, acknowledged_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (organisation_id, recovery_id) DO NOTHING
+RETURNING id
+`
+
+type AcknowledgeAuditRecoveryParams struct {
+	RecoveryID     uuid.UUID
+	AcknowledgedBy uuid.UUID
+	AcknowledgedAt time.Time
+}
+
+// A recovery acknowledged, once (000293): no row when it was already.
+func (q *Queries) AcknowledgeAuditRecovery(ctx context.Context, arg AcknowledgeAuditRecoveryParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, acknowledgeAuditRecovery, arg.RecoveryID, arg.AcknowledgedBy, arg.AcknowledgedAt)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const countAuditRequestDetailsBefore = `-- name: CountAuditRequestDetailsBefore :one
 SELECT count(*) FROM fyniq.audit_request_detail WHERE occurred_at < $1
 `
@@ -231,6 +252,59 @@ func (q *Queries) InsertAuditEvent(ctx context.Context, arg InsertAuditEventPara
 	return err
 }
 
+const insertAuditRecovery = `-- name: InsertAuditRecovery :one
+INSERT INTO fyniq.audit_recovery (epoch, restored_seq, restored_hash, missing_from, missing_to, detected_at, anchor_key)
+VALUES ($1, $2, $3, $4, $5,
+        $6, $7)
+RETURNING id, epoch, restored_seq, restored_hash, missing_from, missing_to, detected_at, anchor_key
+`
+
+type InsertAuditRecoveryParams struct {
+	Epoch        int32
+	RestoredSeq  int64
+	RestoredHash []byte
+	MissingFrom  int64
+	MissingTo    int64
+	DetectedAt   time.Time
+	AnchorKey    string
+}
+
+type InsertAuditRecoveryRow struct {
+	ID           uuid.UUID
+	Epoch        int32
+	RestoredSeq  int64
+	RestoredHash []byte
+	MissingFrom  int64
+	MissingTo    int64
+	DetectedAt   time.Time
+	AnchorKey    string
+}
+
+// A recovery, which starts the next anchor epoch: the worker only (000293).
+func (q *Queries) InsertAuditRecovery(ctx context.Context, arg InsertAuditRecoveryParams) (InsertAuditRecoveryRow, error) {
+	row := q.db.QueryRow(ctx, insertAuditRecovery,
+		arg.Epoch,
+		arg.RestoredSeq,
+		arg.RestoredHash,
+		arg.MissingFrom,
+		arg.MissingTo,
+		arg.DetectedAt,
+		arg.AnchorKey,
+	)
+	var i InsertAuditRecoveryRow
+	err := row.Scan(
+		&i.ID,
+		&i.Epoch,
+		&i.RestoredSeq,
+		&i.RestoredHash,
+		&i.MissingFrom,
+		&i.MissingTo,
+		&i.DetectedAt,
+		&i.AnchorKey,
+	)
+	return i, err
+}
+
 const insertAuditRequestDetail = `-- name: InsertAuditRequestDetail :exec
 INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent) VALUES ($1, $2, $3, $4)
 `
@@ -330,6 +404,59 @@ func (q *Queries) ListAuditEvents(ctx context.Context, arg ListAuditEventsParams
 			&i.Body,
 			&i.PrevHash,
 			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditRecoveries = `-- name: ListAuditRecoveries :many
+SELECT r.id, r.epoch, r.restored_seq, r.restored_hash, r.missing_from, r.missing_to, r.detected_at, r.anchor_key,
+       a.acknowledged_by, a.acknowledged_at
+FROM fyniq.audit_recovery r
+LEFT JOIN fyniq.audit_recovery_acknowledgement a ON a.organisation_id = r.organisation_id AND a.recovery_id = r.id
+ORDER BY r.epoch
+`
+
+type ListAuditRecoveriesRow struct {
+	ID             uuid.UUID
+	Epoch          int32
+	RestoredSeq    int64
+	RestoredHash   []byte
+	MissingFrom    int64
+	MissingTo      int64
+	DetectedAt     time.Time
+	AnchorKey      string
+	AcknowledgedBy *uuid.UUID
+	AcknowledgedAt *time.Time
+}
+
+// The trail's recoveries from restores behind its anchors, oldest first, with their acknowledgements (AUD-09, design D8).
+func (q *Queries) ListAuditRecoveries(ctx context.Context) ([]ListAuditRecoveriesRow, error) {
+	rows, err := q.db.Query(ctx, listAuditRecoveries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAuditRecoveriesRow
+	for rows.Next() {
+		var i ListAuditRecoveriesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Epoch,
+			&i.RestoredSeq,
+			&i.RestoredHash,
+			&i.MissingFrom,
+			&i.MissingTo,
+			&i.DetectedAt,
+			&i.AnchorKey,
+			&i.AcknowledgedBy,
+			&i.AcknowledgedAt,
 		); err != nil {
 			return nil, err
 		}

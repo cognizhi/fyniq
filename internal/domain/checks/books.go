@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
@@ -87,7 +88,7 @@ var booksChecks = []Definition{
 	{Key: "audit.chain-intact", Ref: "C.2 #3", Area: "Audit", Worst: Error, Title: "The audit trail is intact and anchored",
 		Explain: "Each night the audit trail's hash chain is checked from its first event, and against the signed anchors kept " +
 			"outside the database. A break means an event was changed or removed.",
-		Rules: "INV-12, AUD-03", Owner: "owner", View: viewAudit, Triggers: []string{"audit_chain"}, Run: auditChainIntact},
+		Rules: "INV-12, AUD-03, AUD-09", Owner: "owner", View: viewAudit, Triggers: []string{"audit_chain", "audit_recovery", "audit_recovery_acknowledgement"}, Run: auditChainIntact},
 }
 
 // statement is a month's statement of kind, laid out once per run however many checks read it (design D3).
@@ -341,9 +342,38 @@ func balancesMatchLines(ctx context.Context, u storage.UnitOfWork, _ *Env) (Resu
 const actionVerified = audit.ActionVerified
 
 // auditChainIntact reads the latest outcome of the nightly verification of the audit trail (C.2 #3, design D6): it does
-// not verify the chain itself.
-func auditChainIntact(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error) {
+// not verify the chain itself. A recovery from a restore behind the anchors fails it until the Owner acknowledges it
+// (design D8).
+func auditChainIntact(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	recs, err := u.Audit().Recoveries(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	var waiting []Item
+	for _, r := range recs {
+		if r.AcknowledgedBy == nil {
+			waiting = append(waiting, Item{Kind: "audit_recovery", ID: r.ID.String(), Label: fmt.Sprintf("Restore recovered on %s", r.DetectedAt.UTC().Format(time.DateOnly)),
+				Detail: fmt.Sprintf("A restore landed behind the anchors: the events %d to %d they signed are no longer proven; the chain continues from event %d",
+					r.MissingFrom, r.MissingTo, r.RestoredSeq)})
+		}
+	}
+	if len(waiting) > 0 {
+		return Found(Error, waiting, fmt.Sprintf("%d recovery(ies) of the audit trail wait for the Owner's acknowledgement", len(waiting)),
+			"Follow docs/runbooks/audit-restore.md, then acknowledge the recovery in Compliance › Audit trail"), nil
+	}
 	ev, ok := e.Latest[actionVerified]
+	if !ok { // no verification since the last run: the trail's latest, as a recovery acknowledged since may have held it failed
+		found, err := u.Audit().Find(ctx, storage.AuditQuery{Action: actionVerified, Limit: 1})
+		if err != nil {
+			return Result{}, err
+		}
+		if len(found) == 1 {
+			if ev, err = readEvent(found[0].Seq, found[0].Body); err != nil {
+				return Result{}, err
+			}
+			ok = true
+		}
+	}
 	if !ok {
 		if _, ran := e.Prior["audit.chain-intact"]; ran {
 			return Result{Status: Unchanged}, nil

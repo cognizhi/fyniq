@@ -320,7 +320,7 @@
   differs, it:
   1. Writes a signed **recovery event**: the restored head (the last sequence whose hash matches every anchor), the
      restore time, and the anchored range now missing. It goes to `fyniq.audit_recovery`, to
-     `audit-anchors/<org>/recovery/<n>.json`, and into the chain as `audit.recovered`.
+     `audit-anchors/<org>/recovery/<n>.json`, and into the chain as `audit.restored`.
   2. Starts epoch *n*+1.
   3. Raises the ops alert, the ✖ check (C.2 #3) until the Owner acknowledges it, and the Owner's and DPO's
      notification.
@@ -340,7 +340,7 @@
 - **New audit events:**
   - `audit.verified_by_member`;
   - `audit.details_erased`;
-  - `audit.purged`, `ledger.purged`, `audit.recovered` and `audit.close_anchored`;
+  - `audit.purged`, `ledger.purged`, `audit.restored` and `audit.close_anchored`;
   - every export or read the hook records.
 
   The setting changes are the settings' own events.

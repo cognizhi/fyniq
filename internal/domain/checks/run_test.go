@@ -394,6 +394,46 @@ func TestTheAuditChainCheckReadsTheNightlyVerification(t *testing.T) {
 	want(t, b.states(t), "audit.chain-intact", checks.OK)
 }
 
+// A recovery of the audit trail from a restore behind its anchors fails its check, naming the range no longer proven,
+// whatever the verification found, until the Owner acknowledges it (AUD-09, design D8).
+// req: C.2 #3
+// req: AUD-09
+func TestARecoveryFailsTheAuditCheckUntilAcknowledged(t *testing.T) {
+	b := newBooks(t, true)
+	if err := b.worker.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Audit().Record(ctx, storage.AuditRecord{Action: audit.ActionVerified, ObjectType: "audit_chain", ObjectID: b.org,
+			Changes: map[string][2]any{"status": {nil, "passed"}, "problem": {nil, ""}}})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var rec storage.AuditRecovery
+	if err := b.worker.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		rec, err = u.Audit().RecordRecovery(ctx, storage.NewAuditRecovery{Epoch: 1, RestoredSeq: 4, RestoredHash: make([]byte, 32), MissingFrom: 5,
+			MissingTo: 9, DetectedAt: time.Date(2026, 11, 10, 2, 0, 0, 0, time.UTC), AnchorKey: "audit-anchors/x/recovery/1.json"})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.runner().Refresh(ctx, b.org); err != nil {
+		t.Fatal(err)
+	}
+	s := want(t, b.states(t), "audit.chain-intact", checks.Error)
+	if items := itemsOf(t, s); len(items) != 1 || items[0].Kind != "audit_recovery" || items[0].ID != rec.ID.String() ||
+		!strings.Contains(items[0].Detail, "5 to 9") {
+		t.Errorf("the recovery waiting: %+v", items)
+	}
+	if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Audit().AcknowledgeRecovery(ctx, rec.ID, uuid.New(), time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.runner().Refresh(ctx, b.org); err != nil {
+		t.Fatal(err)
+	}
+	want(t, b.states(t), "audit.chain-intact", checks.OK)
+}
+
 // Books with no open month that has started leave the month checks not assessed, naming what they need.
 // req: FR-CTL-01
 func TestAMonthCheckWithoutAMonthIsNotAssessed(t *testing.T) {

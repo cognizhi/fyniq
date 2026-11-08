@@ -2,7 +2,11 @@
 // production, started by the tick; a one-off command locally.
 //
 //	jobs audit-anchor            sign and write every organisation's audit chain head (CTL-AUD-02)
-//	jobs audit-verify            recompute every chain against its anchors (AUD-03); fails on any mismatch
+//	jobs audit-verify            the recovery step, then every chain recomputed against its anchors (AUD-03); fails on
+//	                             any mismatch, and on a restore behind the anchors, which it recovers (design D8)
+//	jobs audit-recover           after a database restore: the recovery step alone, before the copy opens
+//	                             (docs/runbooks/audit-restore.md): a recovery per trail restored behind its anchors,
+//	                             the erasure register re-applied
 //	jobs run-slot <job> <slot>   run a platform job's slot (RFC 3339) and report it to its slot and heartbeat
 //	jobs heartbeat-check         fail when the tick or a platform job has stopped beating (the absence alert)
 //	jobs outbox-after-restore    after a database restore: every unfinished outbox row waits for reconciliation
@@ -26,12 +30,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-const usage = "usage: jobs audit-anchor | audit-verify | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | controls"
+const usage = "usage: jobs audit-anchor | audit-verify | audit-recover | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | controls"
 
 func main() {
 	os.Exit(app.Run("jobs", func(ctx context.Context, deps app.Deps, args []string) error {
 		if len(args) == 0 {
-			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, run-slot, heartbeat-check, outbox-after-restore, controls")
+			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, audit-recover, run-slot, heartbeat-check, outbox-after-restore, controls")
 			return nil
 		}
 		if args[0] == "controls" { // the runner's dry run: every check of the registry, no database needed
@@ -53,8 +57,18 @@ func main() {
 			n, err := audit.AnchorAll(ctx, kit.Store, kit.Blobs, kit.Signer, deps.Clock)
 			fmt.Fprintf(os.Stderr, "jobs: wrote %d audit anchor(s)\n", n)
 			return err
+		case "audit-recover":
+			recs, err := audit.RecoverAll(ctx, kit.Store, kit.Blobs, kit.Signer, kit.TellRecovery(deps.Clock), deps.Clock)
+			for _, r := range recs {
+				fmt.Fprintf(os.Stderr, "jobs: recovered a restore behind the anchors: epoch %d, events %d to %d no longer proven (%s)\n",
+					r.Epoch, r.MissingFrom, r.MissingTo, r.AnchorKey)
+			}
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "jobs: %d trail(s) recovered; the erasure registers re-applied\n", len(recs))
+			}
+			return err
 		case "audit-verify":
-			reports, err := audit.VerifyAll(ctx, kit.Store, kit.Blobs, kit.Signer, kit.Keyed())
+			_, reports, err := audit.Nightly(ctx, kit.Store, kit.Blobs, kit.Signer, kit.Keyed(), kit.TellRecovery(deps.Clock), deps.Clock)
 			for _, r := range reports {
 				status := "ok"
 				if !r.OK() {
