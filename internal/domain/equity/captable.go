@@ -54,30 +54,81 @@ type CapTable struct {
 	Lines                       []CapLine   // by holder, account and class
 	Holders                     []CapHolder // by holder
 	Issued, Votes, FullyDiluted apd.Decimal
+	// Options are the options the recorded grants made on or before the day granted, and Unallocated what the option
+	// pool in force leaves to grant (FR-EQ-19); both count in FullyDiluted.
+	Options, Unallocated apd.Decimal
+}
+
+// Option is a grant's options as the cap table counts them: the holding they would be shares of, from the grant date.
+type Option struct {
+	Key    HoldingKey
+	Number apd.Decimal
+	On     time.Time
+}
+
+// Dilution is what the cap table counts fully diluted besides the shares held (FR-EQ-19, design D9): the options of
+// each recorded grant and the pool's unallocated options. The instruments (FR-EQ-18) count only once converted.
+type Dilution struct {
+	Options []Option
+	Pool    func(day time.Time) (unallocated apd.Decimal, err error) // nil while no pool is recorded
 }
 
 // TableAt is the cap table at the end of day, from moves alone (FR-EQ-20, design D7): every holding with shares, its
-// votes (shares × the class's votes per share) and its fully diluted shares, which equal the issued ones until the
-// instruments (FR-EQ-18) and the option pool (FR-EQ-19) add to them; and each one's percentages of the totals, exact
-// and shown to 2 decimals half-up, never forced to sum to 100.00. It is never written, so it cannot be edited.
+// votes (shares × the class's votes per share) and its fully diluted shares; and each one's percentages of the
+// totals, exact and shown to 2 decimals half-up, never forced to sum to 100.00. It is never written, so it cannot be
+// edited.
 func TableAt(day time.Time, moves []Move, votes VotesOf) (CapTable, error) {
+	return DilutedAt(day, moves, votes, Dilution{})
+}
+
+// DilutedAt is the cap table at the end of day with what dilutes it (FR-EQ-19, FR-EQ-20): each holding's fully diluted
+// shares are its shares and the options granted over them by then, a holder with options and no shares has a line of
+// its own, and the day's fully diluted total adds what the pool leaves to grant.
+func DilutedAt(day time.Time, moves []Move, votes VotesOf, d Dilution) (CapTable, error) {
 	out := CapTable{At: day}
 	byKey := map[HoldingKey]*CapLine{}
 	var keys []HoldingKey
+	line := func(k HoldingKey) *CapLine {
+		l, ok := byKey[k]
+		if !ok {
+			l = &CapLine{Key: k}
+			byKey[k] = l
+			keys = append(keys, k)
+		}
+		return l
+	}
 	for _, m := range moves {
 		if m.On.After(day) {
 			continue
 		}
-		l, ok := byKey[m.Key]
-		if !ok {
-			l = &CapLine{Key: m.Key}
-			byKey[m.Key] = l
-			keys = append(keys, m.Key)
-		}
+		l := line(m.Key)
 		if _, err := apd.BaseContext.Add(&l.Issued, &l.Issued, &m.Shares); err != nil {
 			return out, err
 		}
 		l.Moves = append(l.Moves, m)
+	}
+	optioned := map[HoldingKey]*apd.Decimal{}
+	for _, o := range d.Options {
+		if o.On.After(day) {
+			continue
+		}
+		line(o.Key)
+		n, ok := optioned[o.Key]
+		if !ok {
+			n = new(apd.Decimal)
+			optioned[o.Key] = n
+		}
+		for _, sum := range []*apd.Decimal{n, &out.Options} {
+			if _, err := apd.BaseContext.Add(sum, sum, &o.Number); err != nil {
+				return out, err
+			}
+		}
+	}
+	if d.Pool != nil {
+		var err error
+		if out.Unallocated, err = d.Pool(day); err != nil {
+			return out, err
+		}
 	}
 	slices.SortFunc(keys, func(a, b HoldingKey) int {
 		return strings.Compare(a.Holder.String()+a.Account.String()+a.Class.String(), b.Holder.String()+b.Account.String()+b.Class.String())
@@ -85,7 +136,8 @@ func TableAt(day time.Time, moves []Move, votes VotesOf) (CapTable, error) {
 	holders := map[uuid.UUID]*CapHolder{}
 	for _, k := range keys {
 		l := byKey[k]
-		if l.Issued.IsZero() {
+		n := optioned[k]
+		if l.Issued.IsZero() && (n == nil || n.IsZero()) {
 			continue
 		}
 		v, assumed, err := votes(k)
@@ -97,6 +149,11 @@ func TableAt(day time.Time, moves []Move, votes VotesOf) (CapTable, error) {
 			return out, err
 		}
 		l.FullyDiluted.Set(&l.Issued)
+		if n != nil {
+			if _, err := apd.BaseContext.Add(&l.FullyDiluted, &l.FullyDiluted, n); err != nil {
+				return out, err
+			}
+		}
 		slices.SortStableFunc(l.Moves, func(a, b Move) int { return a.On.Compare(b.On) })
 		h, ok := holders[k.Holder]
 		if !ok {
@@ -110,6 +167,9 @@ func TableAt(day time.Time, moves []Move, votes VotesOf) (CapTable, error) {
 			}
 		}
 		out.Lines = append(out.Lines, *l)
+	}
+	if _, err := apd.BaseContext.Add(&out.FullyDiluted, &out.FullyDiluted, &out.Unallocated); err != nil {
+		return out, err
 	}
 	share := func(part, whole *apd.Decimal) (string, error) {
 		if whole.IsZero() {
@@ -189,10 +249,51 @@ func Moves(ctx context.Context, u storage.UnitOfWork) ([]Move, error) {
 	return out, nil
 }
 
-// TableIn is the cap table at the end of day, from the register's movements, each class counting the votes per share
-// of the version of its rights recorded by that day, or its first recorded version for a day before it.
+// DilutionIn is what dilutes the cap table in u (FR-EQ-19): each recorded grant's options under the holding they would
+// be shares of (its class account's first recorded class, as Moves counts shares naming none), and the pool.
+func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
+	var d Dilution
+	b, _, err := recordedOptions(ctx, u)
+	if err != nil {
+		return d, err
+	}
+	defaults := map[uuid.UUID]uuid.UUID{}
+	for _, g := range b.Grants {
+		def, ok := defaults[g.ClassAccountID]
+		if !ok {
+			c, err := DefaultClass(ctx, u, g.ClassAccountID)
+			if err != nil {
+				return d, err
+			}
+			if c != nil {
+				def = *c
+			}
+			defaults[g.ClassAccountID] = def
+		}
+		o := Option{Key: HoldingKey{Holder: g.HolderID, Account: g.ClassAccountID, Class: def}, On: g.GrantedOn}
+		if _, _, err := o.Number.SetString(g.Number); err != nil {
+			return d, err
+		}
+		d.Options = append(d.Options, o)
+	}
+	if len(b.Pools) > 0 {
+		d.Pool = func(day time.Time) (apd.Decimal, error) {
+			p, _, err := b.At(day)
+			return p.Unallocated, err
+		}
+	}
+	return d, nil
+}
+
+// TableIn is the cap table at the end of day, from the register's movements and the option pool, each class counting
+// the votes per share of the version of its rights recorded by that day, or its first recorded version for a day
+// before it.
 func TableIn(ctx context.Context, u storage.UnitOfWork, day time.Time) (CapTable, error) {
 	moves, err := Moves(ctx, u)
+	if err != nil {
+		return CapTable{}, err
+	}
+	dilution, err := DilutionIn(ctx, u)
 	if err != nil {
 		return CapTable{}, err
 	}
@@ -200,7 +301,7 @@ func TableIn(ctx context.Context, u storage.UnitOfWork, day time.Time) (CapTable
 	if err != nil {
 		return CapTable{}, err
 	}
-	return TableAt(day, moves, func(k HoldingKey) (apd.Decimal, bool, error) {
+	return DilutedAt(day, moves, func(k HoldingKey) (apd.Decimal, bool, error) {
 		var v apd.Decimal
 		if k.Class == uuid.Nil {
 			v.SetInt64(1)
@@ -221,5 +322,5 @@ func TableIn(ctx context.Context, u storage.UnitOfWork, day time.Time) (CapTable
 		}
 		_, _, err := v.SetString(in.VotesPerShare)
 		return v, false, err
-	})
+	}, dilution)
 }

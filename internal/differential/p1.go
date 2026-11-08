@@ -155,6 +155,12 @@ type p1 struct {
 	stagedSAFE      *recordedSAFE
 	stagedConverted []uuid.UUID
 	stagedRound     *namedRound
+	// The option pool's recorded resolutions and grants, and the grants' options as the cap table counts them, each
+	// kept by the document being posted until it is accepted (README, "The option pool and grants").
+	optionBook  equity.OptionBook
+	options     []equity.Option
+	stagedPool  *equity.PoolResolution
+	stagedGrant *equity.Grant
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -265,6 +271,10 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.safeConversion(d, date)
 	case "director_safe":
 		return r.directorSAFE(d, date)
+	case "option_pool":
+		return ledger.Entry{}, r.optionPool(d, date) // a resolution posts no entry
+	case "option_grant":
+		return ledger.Entry{}, r.optionGrant(d, date) // nor does a grant
 	case ledger.SourceAccountMerge:
 		return r.accountMerge(d, date)
 	}

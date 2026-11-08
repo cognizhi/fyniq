@@ -1681,7 +1681,7 @@ export interface paths {
         };
         /**
          * Get the cap table
-         * @description The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects.
+         * @description The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Fully diluted counts each holder's shares and the options their recorded grants gave over the class (FR-EQ-19), and the day's total adds what the option pool in force leaves to grant (unallocated_pool, with its percentage pool_diluted); a holder with options and no shares has a line of options only. SAFEs and notes count once they convert. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects.
          */
         get: operations["getCapTable"];
         put?: never;
@@ -14616,19 +14616,34 @@ export interface components {
              */
             at: string;
             /**
-             * @description Every share fully diluted.
+             * @description Every share fully diluted: the shares issued, the options granted and what the option pool leaves to grant.
              * @example 1252083
              */
             fully_diluted: string;
-            /** @description Every holder with shares, by name. */
+            /** @description Every holder with shares or options, by name. */
             holders: components["schemas"]["CapTableHolder"][];
             /**
              * @description Every share issued and held.
              * @example 1252083
              */
             issued: string;
-            /** @description Every holding with shares, by holder's name, then class. */
+            /** @description Every holding with shares or options, by holder's name, then class. */
             lines: components["schemas"]["CapTableLine"][];
+            /**
+             * @description The options the recorded grants made by the day granted, each counted in its holder's line (FR-EQ-19).
+             * @example 48000
+             */
+            options: string;
+            /**
+             * @description The unallocated pool's percentage of every share fully diluted; left out when the pool leaves nothing.
+             * @example 4.15
+             */
+            pool_diluted?: string;
+            /**
+             * @description What the option pool in force leaves to grant (FR-EQ-19): its size less the options granted, counted in fully_diluted.
+             * @example 52000
+             */
+            unallocated_pool: string;
             /**
              * @description Every vote.
              * @example 1252083
@@ -14642,7 +14657,7 @@ export interface components {
              */
             diluted?: string;
             /**
-             * @description Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+             * @description Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18).
              * @example 1000000
              */
             fully_diluted: string;
@@ -14667,6 +14682,11 @@ export interface components {
              * @example false
              */
             mine?: boolean;
+            /**
+             * @description The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none.
+             * @example 48000
+             */
+            options?: string;
             /**
              * @description The percentage of every share issued; left out when none is.
              * @example 79.87
@@ -14706,7 +14726,7 @@ export interface components {
              */
             diluted?: string;
             /**
-             * @description Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+             * @description Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18).
              * @example 1000000
              */
             fully_diluted: string;
@@ -14728,6 +14748,11 @@ export interface components {
             issued: string;
             /** @description The movements up to the day, oldest first. */
             movements: components["schemas"]["CapTableMovement"][];
+            /**
+             * @description The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none.
+             * @example 48000
+             */
+            options?: string;
             /**
              * @description The percentage of every share issued; left out when none is.
              * @example 79.87
@@ -14801,19 +14826,34 @@ export interface components {
             /** @description The cap table at compare, to show beside it. */
             compared?: components["schemas"]["CapTableAt"];
             /**
-             * @description Every share fully diluted.
+             * @description Every share fully diluted: the shares issued, the options granted and what the option pool leaves to grant.
              * @example 1252083
              */
             fully_diluted: string;
-            /** @description Every holder with shares, by name. */
+            /** @description Every holder with shares or options, by name. */
             holders: components["schemas"]["CapTableHolder"][];
             /**
              * @description Every share issued and held.
              * @example 1252083
              */
             issued: string;
-            /** @description Every holding with shares, by holder's name, then class. */
+            /** @description Every holding with shares or options, by holder's name, then class. */
             lines: components["schemas"]["CapTableLine"][];
+            /**
+             * @description The options the recorded grants made by the day granted, each counted in its holder's line (FR-EQ-19).
+             * @example 48000
+             */
+            options: string;
+            /**
+             * @description The unallocated pool's percentage of every share fully diluted; left out when the pool leaves nothing.
+             * @example 4.15
+             */
+            pool_diluted?: string;
+            /**
+             * @description What the option pool in force leaves to grant (FR-EQ-19): its size less the options granted, counted in fully_diluted.
+             * @example 52000
+             */
+            unallocated_pool: string;
             /**
              * @description Every vote.
              * @example 1252083

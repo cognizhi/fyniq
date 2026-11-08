@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -33,7 +34,8 @@ import (
 type CapFigures struct {
 	Issued       string `json:"issued" pattern:"^(0|[1-9][0-9]*)$" doc:"Shares issued and held, a whole number." example:"1000000"`
 	Votes        string `json:"votes" pattern:"^(0|[1-9][0-9]*)(\\.[0-9]+)?$" doc:"Their votes: the shares times their class's votes per share, exact." example:"1000000"`
-	FullyDiluted string `json:"fully_diluted" pattern:"^(0|[1-9][0-9]*)$" doc:"Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them." example:"1000000"`
+	FullyDiluted string `json:"fully_diluted" pattern:"^(0|[1-9][0-9]*)$" doc:"Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18)." example:"1000000"`
+	Options      string `json:"options,omitempty" pattern:"^[1-9][0-9]*$" doc:"The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none." example:"48000"`
 	Ownership    string `json:"ownership,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"The percentage of every share issued; left out when none is." example:"79.87"`
 	Voting       string `json:"voting,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"The percentage of every vote; left out when no share votes." example:"79.87"`
 	Diluted      string `json:"diluted,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"The percentage of every share fully diluted; left out when none is." example:"79.87"`
@@ -75,9 +77,12 @@ type CapTableAt struct {
 	At           string           `json:"at" format:"date" doc:"The day, at its end." example:"2027-03-12"`
 	Issued       string           `json:"issued" pattern:"^(0|[1-9][0-9]*)$" doc:"Every share issued and held." example:"1252083"`
 	Votes        string           `json:"votes" pattern:"^(0|[1-9][0-9]*)(\\.[0-9]+)?$" doc:"Every vote." example:"1252083"`
-	FullyDiluted string           `json:"fully_diluted" pattern:"^(0|[1-9][0-9]*)$" doc:"Every share fully diluted." example:"1252083"`
-	Lines        []CapTableLine   `json:"lines" nullable:"false" doc:"Every holding with shares, by holder's name, then class."`
-	Holders      []CapTableHolder `json:"holders" nullable:"false" doc:"Every holder with shares, by name."`
+	FullyDiluted string           `json:"fully_diluted" pattern:"^(0|[1-9][0-9]*)$" doc:"Every share fully diluted: the shares issued, the options granted and what the option pool leaves to grant." example:"1252083"`
+	Options      string           `json:"options" pattern:"^(0|[1-9][0-9]*)$" doc:"The options the recorded grants made by the day granted, each counted in its holder's line (FR-EQ-19)." example:"48000"`
+	Unallocated  string           `json:"unallocated_pool" pattern:"^-?(0|[1-9][0-9]*)$" doc:"What the option pool in force leaves to grant (FR-EQ-19): its size less the options granted, counted in fully_diluted." example:"52000"`
+	PoolDiluted  string           `json:"pool_diluted,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"The unallocated pool's percentage of every share fully diluted; left out when the pool leaves nothing." example:"4.15"`
+	Lines        []CapTableLine   `json:"lines" nullable:"false" doc:"Every holding with shares or options, by holder's name, then class."`
+	Holders      []CapTableHolder `json:"holders" nullable:"false" doc:"Every holder with shares or options, by name."`
 }
 
 // CapTableView is the cap table at a day, and at a second one to compare.
@@ -189,8 +194,13 @@ func whole(d apd.Decimal) string {
 }
 
 func figures(issued, votes, diluted apd.Decimal, ownership, voting, dilutedShare string) CapFigures {
-	return CapFigures{Issued: whole(issued), Votes: whole(votes), FullyDiluted: whole(diluted), Ownership: ownership, Voting: voting,
+	out := CapFigures{Issued: whole(issued), Votes: whole(votes), FullyDiluted: whole(diluted), Ownership: ownership, Voting: voting,
 		Diluted: dilutedShare}
+	var options apd.Decimal
+	if _, err := apd.BaseContext.Sub(&options, &diluted, &issued); err == nil && options.Sign() > 0 { // fully diluted is shares and options
+		out.Options = whole(options)
+	}
+	return out
 }
 
 // capTableAt is the cap table at the end of day as the API shows it (equity.TableIn), names and classes resolved.
@@ -200,7 +210,12 @@ func (a *API) capTableAt(ctx context.Context, u storage.UnitOfWork, v capView, d
 		return CapTableAt{}, err
 	}
 	out := CapTableAt{At: day.Format(time.DateOnly), Issued: whole(t.Issued), Votes: whole(t.Votes), FullyDiluted: whole(t.FullyDiluted),
-		Lines: []CapTableLine{}, Holders: []CapTableHolder{}}
+		Options: whole(t.Options), Unallocated: whole(t.Unallocated), Lines: []CapTableLine{}, Holders: []CapTableHolder{}}
+	if t.Unallocated.Sign() > 0 {
+		if out.PoolDiluted, err = rounding.Ownership(&t.Unallocated, &t.FullyDiluted); err != nil {
+			return CapTableAt{}, err
+		}
+	}
 	for _, l := range t.Lines {
 		name, err := v.name(ctx, u, l.Key.Holder)
 		if err != nil {
@@ -278,6 +293,32 @@ func percentText(p string) string {
 	return p + "%"
 }
 
+// capTotal is the cap table's total row: every figure, at 100.00% of itself.
+func capTotal(t CapTableAt) CapFigures {
+	total := CapFigures{Issued: t.Issued, Votes: t.Votes, FullyDiluted: t.FullyDiluted}
+	if t.Options != "0" {
+		total.Options = t.Options
+	}
+	if t.Issued != "0" {
+		total.Ownership = "100.00"
+	}
+	if t.FullyDiluted != "0" {
+		total.Diluted = "100.00"
+	}
+	if t.Votes != "0" {
+		total.Voting = "100.00"
+	}
+	return total
+}
+
+// poolFigures is the unallocated option pool's row: no shares and no votes, only what it leaves to grant fully diluted.
+func poolFigures(t CapTableAt) (CapFigures, bool) {
+	if t.PoolDiluted == "" {
+		return CapFigures{}, false
+	}
+	return CapFigures{Issued: "0", Votes: "0", FullyDiluted: t.Unallocated, Diluted: t.PoolDiluted}, true
+}
+
 // capSheets are the cap table's workbook: a row per holding, then a row per holder, each with a total.
 func capSheets(t CapTableAt) ([]sheet.Sheet, int) {
 	decimals := func(s string) int {
@@ -296,23 +337,24 @@ func capSheets(t CapTableAt) ([]sheet.Sheet, int) {
 		return []sheet.Cell{sheet.Number(f.Issued, 0), pct(f.Ownership), sheet.Number(f.Votes, decimals(f.Votes)), pct(f.Voting),
 			sheet.Number(f.FullyDiluted, 0), pct(f.Diluted)}
 	}
-	total := CapFigures{Issued: t.Issued, Votes: t.Votes, FullyDiluted: t.FullyDiluted}
-	if t.Issued != "0" {
-		total.Ownership, total.Diluted = "100.00", "100.00"
-	}
-	if t.Votes != "0" {
-		total.Voting = "100.00"
-	}
+	total := capTotal(t)
 	figureHeads := []string{"Shares issued", "% of shares", "Votes", "% of votes", "Fully diluted", "% fully diluted"}
 	lines := sheet.Sheet{Name: "Cap table", Header: append([]string{"Holder", "Class", "Account"}, figureHeads...)}
 	for _, l := range t.Lines {
 		lines.Rows = append(lines.Rows, sheet.Row{Cells: append([]sheet.Cell{sheet.Text(l.HolderName), sheet.Text(l.ClassName), sheet.Text(l.AccountCode)},
 			fig(l.CapFigures)...)})
 	}
+	pool, hasPool := poolFigures(t)
+	if hasPool {
+		lines.Rows = append(lines.Rows, sheet.Row{Cells: append([]sheet.Cell{sheet.Text("Unallocated option pool"), sheet.Text(""), sheet.Text("")}, fig(pool)...)})
+	}
 	lines.Rows = append(lines.Rows, sheet.Row{Strong: true, Cells: append([]sheet.Cell{sheet.Text("Total"), sheet.Text(""), sheet.Text("")}, fig(total)...)})
 	holders := sheet.Sheet{Name: "Holders", Header: append([]string{"Holder"}, figureHeads...)}
 	for _, h := range t.Holders {
 		holders.Rows = append(holders.Rows, sheet.Row{Cells: append([]sheet.Cell{sheet.Text(h.HolderName)}, fig(h.CapFigures)...)})
+	}
+	if hasPool {
+		holders.Rows = append(holders.Rows, sheet.Row{Cells: append([]sheet.Cell{sheet.Text("Unallocated option pool")}, fig(pool)...)})
 	}
 	holders.Rows = append(holders.Rows, sheet.Row{Strong: true, Cells: append([]sheet.Cell{sheet.Text("Total")}, fig(total)...)})
 	return []sheet.Sheet{lines, holders}, len(t.Lines)
@@ -345,17 +387,14 @@ func capReport(t CapTableAt, author, version string, revision int64) render.Repo
 		}
 		r.Rows = append(r.Rows, render.ReportRow{Kind: render.RowSubtotal, Label: h.HolderName + ", every class", Cells: cells(h.CapFigures)})
 	}
-	total := CapFigures{Issued: t.Issued, Votes: t.Votes, FullyDiluted: t.FullyDiluted}
-	if t.Issued != "0" {
-		total.Ownership, total.Diluted = "100.00", "100.00"
-	}
-	if t.Votes != "0" {
-		total.Voting = "100.00"
+	total := capTotal(t)
+	if pool, ok := poolFigures(t); ok {
+		r.Rows = append(r.Rows, render.ReportRow{Kind: render.RowLine, Label: "Unallocated option pool", Cells: cells(pool)})
 	}
 	r.Rows = append(r.Rows, render.ReportRow{Kind: render.RowTotal, Label: "Total", Cells: cells(total)})
 	r.Notes = []render.ReportNote{{Title: "How it is read", Items: []string{
 		"Each percentage is of the day's total, computed exactly and shown to 2 decimals; they are not forced to sum to 100.00.",
-		"Fully diluted equals issued until SAFEs, notes and the option pool are recorded."}}}
+		"Fully diluted counts the shares issued, the options granted and what the option pool leaves to grant; SAFEs and notes count once they convert."}}}
 	return r
 }
 
@@ -367,7 +406,9 @@ func registerCapTable(a *API) {
 		Summary: "Get the cap table",
 		Description: "The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and " +
 			"class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. " +
-			"Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures " +
+			"Fully diluted counts each holder's shares and the options their recorded grants gave over the class (FR-EQ-19), and the " +
+			"day's total adds what the option pool in force leaves to grant (unallocated_pool, with its percentage pool_diluted); a " +
+			"holder with options and no shares has a line of options only. SAFEs and notes count once they convert. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures " +
 			"are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its " +
 			"evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, " +
 			"so no operation edits it: shares move only through equity transactions. Read-only; no side effects.",

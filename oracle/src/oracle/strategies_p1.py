@@ -154,12 +154,15 @@ FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-una
 # refunded, on bank lines naming a subscriber; cash issues within what each subscriber has paid; transfers of what a
 # subscriber holds to another holder; SAFEs, their money and their conversion. Refused: an issue above what is paid, a
 # transfer of more than the seller holds, to themselves, or of an account that is not share capital; a SAFE that breaks
-# a rule, money on 2700 naming no recorded SAFE, and a conversion of a SAFE whose money never came.
+# a rule, money on 2700 naming no recorded SAFE, and a conversion of a SAFE whose money never came. The option pool
+# (README, "The option pool and grants"): resolutions covering what is granted, and grants within what the pool leaves;
+# refused, a grant beyond it or before any pool, and a resolution smaller than what is granted.
 EQUITY_POSTING = ["equity-money-in", "equity-money-in", "equity-refund", "equity-issue", "equity-issue",
-                  "equity-transfer", "equity-transfer", "equity-safe", "equity-safe-money", "equity-safe-conversion"]
+                  "equity-transfer", "equity-transfer", "equity-safe", "equity-safe-money", "equity-safe-conversion",
+                  "equity-pool", "equity-grant", "equity-grant"]
 EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-transfer-to-self",
                    "equity-transfer-not-share-capital", "equity-safe-bad", "equity-safe-money-unnamed",
-                   "equity-safe-conversion-unfunded"]
+                   "equity-safe-conversion-unfunded", "equity-grant-beyond", "equity-grant-no-pool", "equity-pool-short"]
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
@@ -214,6 +217,10 @@ class _Book:
         self.safes: dict[str, dict[str, Any]] = {}  # SAFE -> its terms, in the order recorded
         self.funded: set[str] = set()  # the SAFEs whose whole amount is on 2700
         self.converted: set[str] = set()
+        # The option pool: the resolution in force (its size and class), the last recorded, as the documents come in
+        # date order; and every option granted so far, all by the latest day.
+        self.pool: tuple[int, str] | None = None
+        self.granted = 0
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
         """A posted credit to the person on the account: owed, at least and at most."""
@@ -1051,8 +1058,18 @@ def _equity_document(
     if (kind in ("equity-refund", "equity-issue") and not paid) or \
             (kind in ("equity-transfer", "equity-transfer-to-self") and not held):
         kind = "equity-money-in"
+    if kind in ("equity-grant", "equity-grant-beyond") and book.pool is None:
+        kind = "equity-pool"
+    if kind == "equity-grant" and book.pool is not None and book.pool[0] == book.granted:
+        kind = "equity-grant-beyond"  # nothing left to grant
+    if kind == "equity-grant-no-pool" and book.pool is not None:
+        kind = "equity-grant-beyond"
+    if kind == "equity-pool-short" and book.granted < 2:
+        kind = "equity-pool"
     meant = REJECT if kind in REJECTED_KINDS else POST
     base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind.startswith(("equity-pool", "equity-grant")):
+        return _option(draw, base, kind, book), meant, kind
     if kind in ("equity-safe", "equity-safe-bad"):
         return _safe(draw, base, kind, book), meant, kind
     if kind in ("equity-safe-money", "equity-safe-money-unnamed"):
@@ -1113,6 +1130,26 @@ def _equity_document(
         if buyer in SUBSCRIBERS:
             book.shares[(buyer, share_class)] = book.shares.get((buyer, share_class), 0) + shares
     return doc, meant, kind
+
+
+def _option(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:
+    """A pool resolution or a grant (README, "The option pool and grants"). The documents come in date order, so every
+    earlier grant is made by the day: a resolution covers them all, or is short; a grant fits what the pool leaves, or
+    passes it."""
+    if kind in ("equity-pool", "equity-pool-short"):
+        size = book.granted + draw(st.integers(1, 10**6)) if kind == "equity-pool" else draw(st.integers(1, book.granted - 1))
+        share_class = draw(st.sampled_from(SHARE_CLASSES)) if book.granted == 0 else book.pool[1]  # type: ignore[index]
+        if kind == "equity-pool":
+            book.pool = (size, share_class)
+        return {"type": "option_pool", **base, "size": str(size), "class": share_class}
+    left = book.pool[0] - book.granted if book.pool else 0
+    if kind == "equity-grant":
+        number = draw(st.integers(1, min(left, 10**6)))
+        book.granted += number
+    else:
+        number = left + draw(st.integers(1, 1000))
+    return {"type": "option_grant", **base, "person": draw(st.sampled_from(SUBSCRIBERS)), "number": str(number),
+            "class": book.pool[1] if book.pool else draw(st.sampled_from(SHARE_CLASSES))}
 
 
 def _safe(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:

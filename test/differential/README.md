@@ -719,10 +719,45 @@ Readings the PRD leaves open, each [accountant to confirm]:
 
 | Shape | Oracle | Why |
 |---|---|---|
-| The shares the terms count before the round (C₀) | The shares issued at the end of the day before the round's date | D6's C₀ counts "shares, options and the pool, as the template says"; the format has no option pool yet [verify the terms with question 33's lawyer] |
+| The shares the terms count before the round (C₀) | The shares issued at the end of the day before the round's date, without the options or the pool | D6's C₀ counts "shares, options and the pool, as the template says"; the product drafts conversions over the shares issued until the rounds (D7, D8) count the pool [verify the terms with question 33's lawyer] |
 | A capped SAFE whose cap price is above the round's | It converts at the round's price, the lower | FR-EQ-18: "the lower of the cap price and the discounted round price"; the product asks the accountant to check a post-money SAFE's capitalisation then |
 | The conversion price's precision | Cut down, never rounded up | So the shares never cost more than the terms allow (D6) |
 | One entry for the round's conversions | One entry per `safe_conversion`, a line pair per instrument | The product posts one entry per instrument (`instrument_conversion@1`); in canonical form their sums are the same |
+
+### The option pool and grants (`option_pool`, `option_grant`)
+
+From FR-EQ-19 and the equity register's design D9 (`p1-equity-register`).
+
+```json
+{"type": "option_pool", "id": "OP-0001", "version": 1, "date": "2026-04-20", "size": "20000", "class": "3010"}
+```
+
+```json
+{"type": "option_grant", "id": "OG-0001", "version": 1, "date": "2026-05-04", "person": "P0002", "number": "12000",
+ "class": "3010"}
+```
+
+A pool resolution records that `size` shares of `class` are set aside for options from `date`, the day it was passed;
+a grant gives `person`, one of `people` or `subscribers`, `number` options over `class` on `date`, the grant date.
+Neither posts an entry: the result has no entry for either, and one that is not rejected is not in `rejected` either.
+`size` and `number` are whole numbers above zero, at most 14 digits, and `class` is a share-capital account (active,
+not a group); a document is rejected when any of these fails.
+
+The pool on a day is the latest pool resolution an earlier document recorded, dated on or before the day (of two dated
+the same day, the later in the scenario): its `size` and its `class`, and no pool before the first. The options granted
+by a day are the `number` of every grant dated on or before it. A grant is rejected when no pool is in force on its
+date or the pool's `class` is not its own. A grant or a pool resolution is rejected when, with it, on its `date` or on
+any later day that an earlier document's grant or resolution is dated, the options granted by then are more than the
+pool's `size` then: so an earlier-dated grant cannot take options a later one has, nor a smaller resolution leave the
+grants uncovered (the database's FY293).
+
+The format leaves out what nothing it computes reads: a grant's exercise price, vesting and expiry, and the
+resolution's reference. Exercises, forfeitures and expiries are not in the format yet. The cap table counts each
+grant's options in its holder's line fully diluted, and the pool's unallocated options in the day's total (section "Cap
+tables").
+
+In the examples above, the pool of 20,000 sets aside shares of 3010 from 20 Apr 2026, and P0002's grant of 12,000 on 4
+May leaves 8,000 unallocated.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -1360,22 +1395,26 @@ founder's balance (`director_conversion`) moves the n whole shares `RND-SHARE` a
 `class`; a cash issue (`share_issue_cash`) moves `shares` into `person`'s holding of `class`; a transfer
 (`share_transfer`) moves `shares` out of the seller's holding and into the buyer's; a SAFE conversion
 (`safe_conversion`) moves each instrument's n shares into its holder's holding of its class. Opening balances on share
-capital name no holder, so they move no holding. A class is its share-capital account.
+capital name no holder, so they move no holding. A class is its share-capital account. Options come only from grants
+(`option_grant`), each on its date once it is not rejected: its `number` options over `class` for `person`; the pool
+from pool resolutions (`option_pool`; section "The option pool and grants").
 
-At the end of a day, each holding with shares above zero is a line, by holder, then class (in code-point order of
-their IDs):
+At the end of a day, each holding with shares or options above zero is a line, by holder, then class (in code-point
+order of their IDs):
 
 - `issued`: the shares held, a whole number;
 - `votes`: `issued` × the class's `votes_per_share` (an attribute of the share-capital account, one when left out),
   exact, as a plain decimal with no trailing zeros ("1.5", "0");
-- `fully_diluted`: the shares held as the format has them: the same as `issued`, since it counts no instrument
-  before it converts (FR-EQ-18) and has no option pool (FR-EQ-19) yet;
+- `fully_diluted`: the shares held and the options the holder's grants over the class gave by then; an instrument
+  counts only once it converts (FR-EQ-18);
 - `ownership`, `voting` and `diluted`: the line's `issued`, `votes` and `fully_diluted` as a percentage of the day's
   totals, round(part ÷ total × 100, 2 decimals) half-up from the exact quotient, once (FR-EQ-20, which names
   `RND-DISPLAY` for it); `null` when that total is zero. They are never forced to sum to 100.00.
 
 `holders` sums each holder's lines (`issued`, `votes`, `fully_diluted`) and takes the percentages of those exact sums,
-not the sum of the rounded ones. The day's `issued`, `votes` and `fully_diluted` are the totals of every line.
+not the sum of the rounded ones. The day's `issued` and `votes` are the totals of every line; its `options` are the
+options granted by then and its `unallocated` the pool's `size` then less them ("0" with no pool); its
+`fully_diluted` is the lines' total and `unallocated`.
 
 G.3's round (`golden/cap-table.json`): 1,000,000 founder shares, the investor's 200,000 and 52,083 more, of 1,252,083,
 are 79.87%, 15.97% and 4.16% (sum 100.00). Its 52,083 shares come from a third subscriber's cash issue at S$2.40
@@ -1387,6 +1426,8 @@ Readings the PRD leaves open, each [accountant to confirm]:
 |---|---|---|
 | Votes of shares in an account with no recorded class | One vote a share (`votes_per_share` left out) | The format names classes by account; in the product such shares count under their account's first recorded class, and one vote a share while it has none (design D7) |
 | Voting percentages when no share votes | `null`, as any percentage of a zero total | A percentage of nothing is undefined, never 0.00 |
+| A holder with options and no shares | A line of their own, `issued` 0 and `ownership` 0.00 while any share is issued | Fully diluted counts the options (FR-EQ-19); the product shows the holder with their options (design D9) |
+| Two pool resolutions dated the same day | The later in the scenario is in force | The product takes the later recorded (FY293) |
 
 ## Commands
 

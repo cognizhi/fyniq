@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"strings"
 	"testing"
@@ -21,8 +22,10 @@ import (
 // resolution attached on another person's approval. Priya Nair's grant of 48,000 options at S$0.10 on 15 Oct 2025, a
 // 12-month cliff and 48 months' vesting, is recorded the same way, never by Priya, who signs in as Mei: on 15 Oct 2026
 // 12,000 have vested. A grant beyond what the pool leaves on its grant date is refused when drafted, and again when
-// approved if another grant took the room meanwhile. Mei, as an Employee, reads her own grants and nobody else's.
+// approved if another grant took the room meanwhile. The cap table counts the grants and the pool fully diluted. Mei, as
+// an Employee, reads her own grants and nobody else's.
 // req: FR-EQ-19
+// req: FR-EQ-20
 // req: FM-1
 // asvs: V8.2.1
 func TestTheOptionPool(t *testing.T) {
@@ -169,6 +172,19 @@ func TestTheOptionPool(t *testing.T) {
 	}
 	if l := e.call(http.MethodGet, "/v1/option-grants", weiling, nil); l.Status != http.StatusOK || len(l.Body["items"].([]any)) != 3 {
 		t.Errorf("the grants: %d %s", l.Status, l.Raw)
+	}
+
+	// The cap table fully diluted (slice 5a-ii): no share is issued yet, so the 78,000 options granted and the 22,000
+	// the pool leaves are the whole company fully diluted; Priya's line has her 48,000 options and no shares.
+	ct = e.call(http.MethodGet, "/v1/cap-table?at=2026-10-15", weiling, nil)
+	if ct.Status != http.StatusOK || ct.str("issued") != "0" || ct.str("options") != "78000" || ct.str("unallocated_pool") != "22000" ||
+		ct.str("fully_diluted") != "100000" || ct.str("pool_diluted") != "22.00" ||
+		!strings.Contains(ct.Raw, `"holder_name":"Priya Nair","class_name":"Ordinary shares","account_code":"3010","issued":"0","votes":"0","fully_diluted":"48000","options":"48000","diluted":"48.00"`) {
+		t.Errorf("the cap table with the pool: %d %s", ct.Status, ct.Raw)
+	}
+	csv := e.call(http.MethodGet, "/v1/cap-table/export?at=2026-10-15&format=csv", weiling, nil)
+	if rows, _ := base64.StdEncoding.DecodeString(csv.str("content_base64")); !strings.Contains(string(rows), `"Unallocated option pool","","",0,"",0,"",22000,22.00`) {
+		t.Errorf("the cap table's CSV has no pool row: %s", rows)
 	}
 
 	// Mei as an Employee: her own grants, and nobody else's; a caller who signs in as no holder holds none.

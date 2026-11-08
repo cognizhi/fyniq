@@ -45,4 +45,6 @@ RULE_SETS: dict[str, RuleSet] = {
     "instrument": equity.instrument,
     "safe_conversion": equity.safe_conversion,
     "director_safe": equity.director_safe,
+    "option_pool": equity.option_pool,
+    "option_grant": equity.option_grant,
 }

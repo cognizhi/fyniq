@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
 sources:
-  - docs/user-guide/equity-register.md sha256:82d8009a51a03f2fad20227bdefba13b445baec41cbd8361c72074bb4584aebf
+  - docs/user-guide/equity-register.md sha256:d09ef99391cc9113375c91d2d438831508240fd949c9e9d120228511117098c3
 data_class: general
 taint: trusted
 status: published
@@ -108,9 +108,10 @@ aliases:
   ([[founders.director-accounts]]); **Latest round** the most recent issue for cash; a note lists
   transactions approved and waiting for ACRA, whose shares count only once registered.
 - Basic lists each shareholder, type of share, shares and what they own. Expert's **By holder and
-  class** shows issued, the percentage of shares and of votes, and fully diluted (the same as issued
-  until SAFEs, notes or an option pool are recorded). **Votes assumed**: the class is not recorded
-  yet, so its shares count one vote each.
+  class** shows issued, the percentage of shares and of votes, and fully diluted: each holder's shares
+  and the options granted to them, the total adding the **Unallocated option pool** on a row of its
+  own; a holder with options and no shares has a line of options only; SAFEs and notes count once
+  they convert. **Votes assumed**: the class is not recorded yet, so its shares count one vote each.
 - A Board viewer sees only their own holding.
 
 (src: docs/user-guide/equity-register.md#the-cap-table)

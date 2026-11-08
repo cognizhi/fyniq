@@ -1,0 +1,226 @@
+{
+  "schema": "fyniq-scenario@1",
+  "base_currency": "SGD",
+  "currencies": {
+    "SGD": 2
+  },
+  "settings": {
+    "accounts": {
+      "gst": "2200"
+    },
+    "money_accounts": {
+      "1010": "SGD"
+    },
+    "books_start": "2027-01-01",
+    "gst": {
+      "registered_from": "2027-01-01",
+      "rates": [
+        {
+          "from": "2024-01-01",
+          "percent": "9"
+        }
+      ]
+    }
+  },
+  "name": "equity-option-pool",
+  "as_of": "2027-03-31",
+  "accounts": [
+    {
+      "code": "1010",
+      "type": "asset",
+      "group": false,
+      "active": true
+    },
+    {
+      "code": "2040",
+      "type": "liability",
+      "group": false,
+      "active": true,
+      "role": "share-application-monies"
+    },
+    {
+      "code": "2200",
+      "type": "liability",
+      "group": false,
+      "active": true
+    },
+    {
+      "code": "3010",
+      "type": "equity",
+      "group": false,
+      "active": true,
+      "role": "share-capital"
+    },
+    {
+      "code": "3020",
+      "type": "equity",
+      "group": false,
+      "active": true,
+      "role": "share-capital",
+      "votes_per_share": "0"
+    }
+  ],
+  "people": [
+    "P0001"
+  ],
+  "subscribers": [
+    "P0003",
+    "P0004"
+  ],
+  "cap_tables": [
+    "2027-01-09",
+    "2027-02-01",
+    "2027-03-02"
+  ],
+  "documents": [
+    {
+      "type": "bank_transaction",
+      "id": "BT-0001",
+      "version": 1,
+      "date": "2027-01-05",
+      "account": "1010",
+      "currency": "SGD",
+      "amount": "10000.00",
+      "person": "P0001",
+      "parts": [
+        {
+          "account": "2040",
+          "amount": "10000.00",
+          "gst_code": "NA"
+        }
+      ]
+    },
+    {
+      "type": "share_issue_cash",
+      "id": "EQ-0001",
+      "version": 1,
+      "date": "2027-01-05",
+      "person": "P0001",
+      "class": "3010",
+      "shares": "1000000",
+      "price": "0.01"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0001",
+      "version": 1,
+      "date": "2027-01-08",
+      "person": "P0003",
+      "number": "10",
+      "class": "3010"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0001",
+      "version": 1,
+      "date": "2027-01-10",
+      "size": "100000",
+      "class": "3010"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0002",
+      "version": 1,
+      "date": "2027-01-10",
+      "size": "0",
+      "class": "3010"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0003",
+      "version": 1,
+      "date": "2027-01-10",
+      "size": "100000",
+      "class": "2040"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0002",
+      "version": 1,
+      "date": "2027-02-01",
+      "person": "P0003",
+      "number": "48000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0003",
+      "version": 1,
+      "date": "2027-02-01",
+      "person": "P0004",
+      "number": "60000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0004",
+      "version": 1,
+      "date": "2027-01-20",
+      "person": "P0004",
+      "number": "60000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0005",
+      "version": 1,
+      "date": "2027-02-02",
+      "person": "P0004",
+      "number": "10",
+      "class": "3020"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0006",
+      "version": 1,
+      "date": "2027-02-02",
+      "person": "P0009",
+      "number": "10",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0007",
+      "version": 1,
+      "date": "2027-02-02",
+      "person": "P0004",
+      "number": "1.5",
+      "class": "3010"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0004",
+      "version": 1,
+      "date": "2027-01-15",
+      "size": "40000",
+      "class": "3010"
+    },
+    {
+      "type": "option_pool",
+      "id": "OP-0005",
+      "version": 1,
+      "date": "2027-03-01",
+      "size": "150000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0008",
+      "version": 1,
+      "date": "2027-03-02",
+      "person": "P0004",
+      "number": "102000",
+      "class": "3010"
+    },
+    {
+      "type": "option_grant",
+      "id": "OG-0009",
+      "version": 1,
+      "date": "2027-03-03",
+      "person": "P0004",
+      "number": "1",
+      "class": "3010"
+    }
+  ],
+  "reversals": []
+}

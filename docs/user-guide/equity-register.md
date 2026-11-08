@@ -40,7 +40,10 @@ it cannot be edited. To change a holding, draft an equity transaction.
 In Basic mode the table lists each shareholder, their type of share, their shares and what they
 own. In Expert mode the table **By holder and class** shows each holder's shares in each class:
 issued, the percentage of every share issued, the percentage of every vote, and fully diluted.
-Fully diluted is the same as issued until SAFEs, notes or an option pool are recorded. **Votes
+Fully diluted counts each holder's shares and the options granted to them, and the total adds what
+the option pool leaves to grant, on a row of its own, **Unallocated option pool**; a holder with
+options and no shares has a line with their options only. SAFEs and notes count once they
+convert. With no options and no pool, fully diluted is the same as issued. **Votes
 assumed** on a line means its class is not recorded yet, so its shares count one vote each until
 you record the class and its rights.
 

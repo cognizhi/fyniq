@@ -4,6 +4,10 @@ design D3 and D7 and Appendix G.3, as test/differential/README.md, "Cap tables" 
 The register is every movement of a holding: a holder's shares of a class, into the holding when positive and out of
 it when negative, on a day. A document adds its movements once it posts (:attr:`oracle.book.Posting.effects`), so a
 rejected one moves nothing. The cap table reads the register alone: it is never written, so it cannot be edited.
+
+The option pool (FR-EQ-19, design D9; README, "The option pool and grants") is two more registers: the resolutions,
+each a size of a class from a day, and the grants, each a holder's options of a class from a day. Fully diluted, a
+holding counts its holder's options too, and the day's total what the pool leaves to grant.
 """
 
 from __future__ import annotations
@@ -17,8 +21,10 @@ from typing import Any
 from oracle import money
 from oracle.scenario import Scenario
 
-# The register's key in ``books``, which no document ID can take: an ID never has a "/".
+# The registers' keys in ``books``, which no document ID can take: an ID never has a "/".
 REGISTER = "register/holdings"
+POOLS = "register/pools"
+GRANTS = "register/grants"
 
 
 @dataclass(frozen=True)
@@ -27,6 +33,55 @@ class Movement:
     share_class: str  # the share-capital account: the format's class
     shares: int
     day: date
+
+
+@dataclass(frozen=True)
+class Resolution:
+    """A pool resolution as recorded: the shares set aside, of a class, from a day."""
+
+    size: int
+    share_class: str
+    day: date
+
+
+@dataclass(frozen=True)
+class Grant:
+    holder: str
+    share_class: str
+    number: int
+    day: date
+
+
+def pools(books: dict[str, Any]) -> list[Resolution]:
+    return books.setdefault(POOLS, [])
+
+
+def grants(books: dict[str, Any]) -> list[Grant]:
+    return books.setdefault(GRANTS, [])
+
+
+def pool_on(resolutions: list[Resolution], day: date) -> Resolution | None:
+    """The resolution in force at the end of ``day``: the latest dated on or before it, of two on one day the later."""
+    found = None
+    for r in resolutions:
+        if r.day <= day and (found is None or r.day >= found.day):
+            found = r
+    return found
+
+
+def granted(given: list[Grant], day: date) -> int:
+    return sum(g.number for g in given if g.day <= day)
+
+
+def short_from(resolutions: list[Resolution], given: list[Grant], since: date) -> bool:
+    """Whether, on ``since`` or a later day a resolution or grant is dated, the options granted by then are more than
+    the pool's size then (FY293)."""
+    days = {since} | {r.day for r in resolutions if r.day >= since} | {g.day for g in given if g.day >= since}
+    for d in sorted(days):
+        pool = pool_on(resolutions, d)
+        if granted(given, d) > (pool.size if pool else 0):
+            return True
+    return False
 
 
 def movements(books: dict[str, Any]) -> list[Movement]:
@@ -74,20 +129,31 @@ def _figures(issued: Decimal, votes: Decimal, diluted: Decimal, totals: tuple[De
 
 
 def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any]:
-    """The cap table at the end of ``day``: each holding with shares, by holder then class, and each holder's."""
+    """The cap table at the end of ``day``: each holding with shares or options, by holder then class, and each
+    holder's; fully diluted, each holding counts its holder's options of the class, and the day's total what the pool
+    leaves to grant."""
     held: dict[tuple[str, str], int] = {}
+    options: dict[tuple[str, str], int] = {}
     for m in movements(books):
         if m.day <= day:
             held[(m.holder, m.share_class)] = held.get((m.holder, m.share_class), 0) + m.shares
+    for g in grants(books):
+        if g.day <= day:
+            options[(g.holder, g.share_class)] = options.get((g.holder, g.share_class), 0) + g.number
     lines = []
-    for (holder, share_class), shares in sorted(held.items()):
-        if shares == 0:
+    for key in sorted(held.keys() | options.keys()):
+        shares, optioned = held.get(key, 0), options.get(key, 0)
+        if shares == 0 and optioned == 0:
             continue
+        holder, share_class = key
         issued = Decimal(shares)
         votes = money.EXACT.multiply(issued, scenario.accounts[share_class].votes_per_share)
-        lines.append((holder, share_class, issued, votes, issued))  # fully diluted: the format has nothing dilutive
+        lines.append((holder, share_class, issued, votes, Decimal(shares + optioned)))
+    pool = pool_on(pools(books), day)
+    all_options = granted(grants(books), day)
+    unallocated = Decimal((pool.size if pool else 0) - all_options)
     totals = (money.total([ln[2] for ln in lines]), money.total([ln[3] for ln in lines]),
-              money.total([ln[4] for ln in lines]))
+              money.EXACT.add(money.total([ln[4] for ln in lines]), unallocated))
     by_holder: dict[str, list[Decimal]] = {}
     for holder, _, issued, votes, diluted in lines:
         sums = by_holder.setdefault(holder, [Decimal(0), Decimal(0), Decimal(0)])
@@ -97,6 +163,8 @@ def table(scenario: Scenario, books: dict[str, Any], day: date) -> dict[str, Any
         "at": day.isoformat(),
         "issued": _plain(totals[0]),
         "votes": _plain(totals[1]),
+        "options": _plain(Decimal(all_options)),
+        "unallocated": _plain(unallocated),
         "fully_diluted": _plain(totals[2]),
         "lines": [{"holder": holder, "class": share_class, **_figures(issued, votes, diluted, totals)}
                   for holder, share_class, issued, votes, diluted in lines],

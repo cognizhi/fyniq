@@ -88,6 +88,32 @@ describe("who owns the company", () => {
     expect(within(dialog).getByRole("link", { name: "EQ-0002" }).getAttribute("href")).toBe("/equity/transactions/eq-2");
   });
 
+  it("counts the options and the option pool fully diluted; axe finds nothing", async () => {
+    // req: FR-EQ-19
+    setMode("expert");
+    const pooled = {
+      at: "2027-02-01", issued: "1000000", votes: "1000000", options: "48000", unallocated_pool: "52000", pool_diluted: "4.73", fully_diluted: "1100000",
+      lines: [{ ...line("c-kow", "Ah Kow", "1000000", "100.00", [move("m1", "1000000", "2025-01-02")]), diluted: "90.91" },
+        { ...line("c-priya", "Priya Nair", "0", "0.00", []), votes: "0", fully_diluted: "48000", options: "48000", diluted: "4.36" }],
+      holders: [{ ...holder("c-kow", "Ah Kow", "1000000", "100.00", true), diluted: "90.91" },
+        { ...holder("c-priya", "Priya Nair", "0", "0.00"), votes: "0", fully_diluted: "48000", options: "48000", diluted: "4.36" }],
+    };
+    answer({
+      "GET /v1/cap-table": { status: 200, body: pooled },
+      "GET /v1/me/holding": { status: 200, body: { ...mine, at: "2027-02-01", issued: "1000000", votes: "1000000", fully_diluted: "1100000" } },
+      "GET /v1/equity-transactions": { status: 200, body: { items: [] } },
+    });
+    renderPage(CapTable, { path: "/equity" });
+    const table = await screen.findByRole("table", { name: "By holder and class" });
+    expect(within(table).getByText("incl. 48,000 options")).toBeTruthy();
+    const pool = within(table).getByText("Unallocated option pool").closest("tr") as HTMLElement;
+    expect(within(pool).getByText("52,000")).toBeTruthy();
+    expect(within(pool).getByText("4.73")).toBeTruthy();
+    expect(screen.getByText("Fully diluted · 1,100,000 shares, with 48,000 options granted and 52,000 left in the option pool")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "1,000,000 shares issued. Ah Kow 100.00%." })).toBeTruthy(); // Priya holds no shares, so owns none
+    await noViolations(document.body);
+  });
+
   it("exports the cap table at its day", async () => {
     setMode("basic");
     const seen = answer({

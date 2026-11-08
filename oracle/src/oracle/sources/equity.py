@@ -20,6 +20,10 @@ instruments account (2700, role ``convertible-instruments``). At a priced round,
 converts every SAFE recorded and not converted yet, from FR-EQ-18, ``RND-SHARE``, Appendix G.3 (G4-044) and the equity
 register's design D6, as README "SAFEs and their conversion" states them: the conversion price is the lower of the
 cap price and the discounted round price, cut down to the SAFE's decimals, worked exactly in fractions.
+
+A pool resolution (:func:`option_pool`) and a grant of options (:func:`option_grant`) post nothing either; from FR-EQ-19
+and the equity register's design D9, as README "The option pool and grants" states them, the pool covers the options
+granted on every day from a document's date on.
 """
 
 from __future__ import annotations
@@ -258,3 +262,36 @@ def safe_conversion(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         effects.append(captable.move(books, safe.holder, safe.share_class, shares, doc.date))
     effects.append(lambda: _converted(books).update(sid for sid, _ in converting))
     return Posting(lines, effects=effects)
+
+
+def option_pool(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A resolution setting aside ``size`` shares of ``class`` for options from ``date`` (FR-EQ-19). It posts nothing,
+    and is refused when, with it, the options granted by its date or a later grant's or resolution's are more than the
+    pool then."""
+    d = doc.data
+    if not _WHOLE_SHARES.fullmatch(d["size"]):
+        raise Rejected("bad-shares")
+    resolution = captable.Resolution(int(d["size"]), _share_class(r, d["class"]), doc.date)
+    if captable.short_from([*captable.pools(books), resolution], captable.grants(books), doc.date):
+        raise Rejected("pool-short")
+    return Posting([], effects=[lambda: captable.pools(books).append(resolution)])
+
+
+def option_grant(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """``number`` options over ``class`` granted to ``person`` on ``date`` (FR-EQ-19). It posts nothing, and is refused
+    with no pool of its class in force on its date, or when, with it, the options granted by its date or a later
+    grant's or resolution's are more than the pool then."""
+    d = doc.data
+    if d["person"] not in r.scenario.people | r.scenario.subscribers:
+        raise Rejected("not-a-holder")
+    if not _WHOLE_SHARES.fullmatch(d["number"]):
+        raise Rejected("bad-shares")
+    grant = captable.Grant(d["person"], _share_class(r, d["class"]), int(d["number"]), doc.date)
+    pool = captable.pool_on(captable.pools(books), doc.date)
+    if pool is None:
+        raise Rejected("no-pool")
+    if pool.share_class != grant.share_class:
+        raise Rejected("not-the-pools-class")
+    if captable.short_from(captable.pools(books), [*captable.grants(books), grant], doc.date):
+        raise Rejected("pool-short")
+    return Posting([], effects=[lambda: captable.grants(books).append(grant)])

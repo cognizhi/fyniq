@@ -5788,13 +5788,13 @@ components:
           format: date
           type: string
         fully_diluted:
-          description: Every share fully diluted.
+          description: "Every share fully diluted: the shares issued, the options granted and what the option pool leaves to grant."
           examples:
             - "1252083"
           pattern: ^(0|[1-9][0-9]*)$
           type: string
         holders:
-          description: Every holder with shares, by name.
+          description: Every holder with shares or options, by name.
           items:
             $ref: "#/components/schemas/CapTableHolder"
           type: array
@@ -5805,10 +5805,28 @@ components:
           pattern: ^(0|[1-9][0-9]*)$
           type: string
         lines:
-          description: Every holding with shares, by holder's name, then class.
+          description: Every holding with shares or options, by holder's name, then class.
           items:
             $ref: "#/components/schemas/CapTableLine"
           type: array
+        options:
+          description: The options the recorded grants made by the day granted, each counted in its holder's line (FR-EQ-19).
+          examples:
+            - "48000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        pool_diluted:
+          description: The unallocated pool's percentage of every share fully diluted; left out when the pool leaves nothing.
+          examples:
+            - "4.15"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        unallocated_pool:
+          description: "What the option pool in force leaves to grant (FR-EQ-19): its size less the options granted, counted in fully_diluted."
+          examples:
+            - "52000"
+          pattern: ^-?(0|[1-9][0-9]*)$
+          type: string
         votes:
           description: Every vote.
           examples:
@@ -5820,6 +5838,8 @@ components:
         - issued
         - votes
         - fully_diluted
+        - options
+        - unallocated_pool
         - lines
         - holders
       type: object
@@ -5833,7 +5853,7 @@ components:
           pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
           type: string
         fully_diluted:
-          description: Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+          description: "Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18)."
           examples:
             - "1000000"
           pattern: ^(0|[1-9][0-9]*)$
@@ -5860,6 +5880,12 @@ components:
           examples:
             - false
           type: boolean
+        options:
+          description: The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none.
+          examples:
+            - "48000"
+          pattern: ^[1-9][0-9]*$
+          type: string
         ownership:
           description: The percentage of every share issued; left out when none is.
           examples:
@@ -5911,7 +5937,7 @@ components:
           pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
           type: string
         fully_diluted:
-          description: Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+          description: "Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18)."
           examples:
             - "1000000"
           pattern: ^(0|[1-9][0-9]*)$
@@ -5938,6 +5964,12 @@ components:
           items:
             $ref: "#/components/schemas/CapTableMovement"
           type: array
+        options:
+          description: The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none.
+          examples:
+            - "48000"
+          pattern: ^[1-9][0-9]*$
+          type: string
         ownership:
           description: The percentage of every share issued; left out when none is.
           examples:
@@ -6038,13 +6070,13 @@ components:
           $ref: "#/components/schemas/CapTableAt"
           description: The cap table at compare, to show beside it.
         fully_diluted:
-          description: Every share fully diluted.
+          description: "Every share fully diluted: the shares issued, the options granted and what the option pool leaves to grant."
           examples:
             - "1252083"
           pattern: ^(0|[1-9][0-9]*)$
           type: string
         holders:
-          description: Every holder with shares, by name.
+          description: Every holder with shares or options, by name.
           items:
             $ref: "#/components/schemas/CapTableHolder"
           type: array
@@ -6055,10 +6087,28 @@ components:
           pattern: ^(0|[1-9][0-9]*)$
           type: string
         lines:
-          description: Every holding with shares, by holder's name, then class.
+          description: Every holding with shares or options, by holder's name, then class.
           items:
             $ref: "#/components/schemas/CapTableLine"
           type: array
+        options:
+          description: The options the recorded grants made by the day granted, each counted in its holder's line (FR-EQ-19).
+          examples:
+            - "48000"
+          pattern: ^(0|[1-9][0-9]*)$
+          type: string
+        pool_diluted:
+          description: The unallocated pool's percentage of every share fully diluted; left out when the pool leaves nothing.
+          examples:
+            - "4.15"
+          pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+          type: string
+        unallocated_pool:
+          description: "What the option pool in force leaves to grant (FR-EQ-19): its size less the options granted, counted in fully_diluted."
+          examples:
+            - "52000"
+          pattern: ^-?(0|[1-9][0-9]*)$
+          type: string
         votes:
           description: Every vote.
           examples:
@@ -6070,6 +6120,8 @@ components:
         - issued
         - votes
         - fully_diluted
+        - options
+        - unallocated_pool
         - lines
         - holders
       type: object
@@ -50759,7 +50811,7 @@ paths:
         right: V
   /v1/cap-table:
     get:
-      description: "The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects."
+      description: "The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Fully diluted counts each holder's shares and the options their recorded grants gave over the class (FR-EQ-19), and the day's total adds what the option pool in force leaves to grant (unallocated_pool, with its percentage pool_diluted); a holder with options and no shares has a line of options only. SAFEs and notes count once they convert. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects."
       operationId: getCapTable
       parameters:
         - description: The day the cap table is at the end of; left out, the organisation's today.
