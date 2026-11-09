@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 )
@@ -83,16 +84,57 @@ var matrixInventory = map[string]func(e *env, tok string) (response, func() bool
 		return r, func() bool { return matrixInventoryState(e) == was }
 	},
 	"reviseDataInventoryEntry": func(e *env, tok string) (response, func() bool) {
+		id := matrixInventoryEntry(e)
 		was := matrixInventoryState(e)
-		r := e.call(http.MethodPut, "/v1/compliance/data-inventory/entries/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10", tok, map[string]any{"what": "x",
+		r := e.call(http.MethodPut, "/v1/compliance/data-inventory/entries/"+id, tok, map[string]any{"what": "x",
 			"why": "y", "where": "z", "who": "w", "retention": "r", "transfers": "None", "needs_dpia": false}, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixInventoryState(e) == was }
 	},
+	// A quarter waits for its review once one has ended since the first member joined: the organisation gains a member
+	// once, the clock moves to 2100, as for the access review, and the row reviews the quarter the inventory names.
 	"reviewDataInventory": func(e *env, tok string) (response, func() bool) {
-		was := matrixInventoryState(e)
-		r := e.call(http.MethodPost, "/v1/compliance/data-inventory/reviews", tok, map[string]any{"quarter": "2026-07-01"}, "Prefer", "return=preview")
-		return r, func() bool { return matrixInventoryState(e) == was }
+		if !matrixInventoryMember[e] {
+			e.joined("Matrix member", "employee")
+			matrixInventoryMember[e] = true
+		}
+		in2100 := func(f func()) {
+			was := e.clock.Now()
+			defer e.clock.Set(was)
+			e.clock.Set(time.Date(2100, 1, 5, 9, 0, 0, 0, time.UTC))
+			f()
+		}
+		var r response
+		var was string
+		in2100(func() {
+			was = matrixInventoryState(e)
+			q, _ := e.call(http.MethodGet, "/v1/compliance/data-inventory", e.as(authz.DPO), nil).Body["review"].(map[string]any)["quarter"].(string)
+			r = e.call(http.MethodPost, "/v1/compliance/data-inventory/reviews", tok, map[string]any{"quarter": q}, "Prefer", "return=preview")
+		})
+		return r, func() (same bool) {
+			in2100(func() { same = matrixInventoryState(e) == was })
+			return same
+		}
 	},
+}
+
+var (
+	matrixInventoryEntryOf = map[*env]string{}
+	matrixInventoryMember  = map[*env]bool{}
+)
+
+// matrixInventoryEntry is an entry of the company's own, so the matrix revises one that exists.
+func matrixInventoryEntry(e *env) string {
+	e.t.Helper()
+	if id, ok := matrixInventoryEntryOf[e]; ok {
+		return id
+	}
+	r := e.call(http.MethodPost, "/v1/compliance/data-inventory/entries", e.as(authz.DPO), map[string]any{"what": "Matrix", "why": "y", "where": "z",
+		"who": "w", "retention": "r", "transfers": "None", "needs_dpia": false}, "Idempotency-Key", "matrix-inventory-entry")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's inventory entry: %d %s", r.Status, r.Raw)
+	}
+	matrixInventoryEntryOf[e] = r.str("entry_id")
+	return r.str("entry_id")
 }
 
 func matrixInventoryState(e *env) string {
