@@ -98,8 +98,9 @@ var matrixBreaches = map[string]func(e *env, tok string) (response, func() bool)
 		return r, func() bool { return matrixBreachState(e) == was }
 	},
 	"stepBreach": func(e *env, tok string) (response, func() bool) {
+		id := matrixBreach(e)
 		was := matrixBreachState(e)
-		r := e.call(http.MethodPost, "/v1/compliance/breaches/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/steps", tok, map[string]any{"step": "assessed"},
+		r := e.call(http.MethodPost, "/v1/compliance/breaches/"+id+"/steps", tok, map[string]any{"step": "assessed"},
 			"If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixBreachState(e) == was }
 	},
@@ -109,6 +110,23 @@ var matrixBreaches = map[string]func(e *env, tok string) (response, func() bool)
 			"Prefer", "return=preview")
 		return r, func() bool { return matrixBreachState(e) == was }
 	},
+}
+
+var matrixBreachOf = map[*env]string{}
+
+// matrixBreach is a breach recorded once, so the matrix steps one that exists.
+func matrixBreach(e *env) string {
+	e.t.Helper()
+	if id, ok := matrixBreachOf[e]; ok {
+		return id
+	}
+	r := e.call(http.MethodPost, "/v1/compliance/breaches", e.as(authz.DPO), map[string]any{"title": "Matrix", "description": "y", "individuals": 1,
+		"classes": []string{"other"}}, "Idempotency-Key", "matrix-breach")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's breach: %d %s", r.Status, r.Raw)
+	}
+	matrixBreachOf[e] = r.str("id")
+	return r.str("id")
 }
 
 func matrixBreachState(e *env) string {

@@ -85,7 +85,7 @@ func TestAttackTheBreachRegisterKeepsItsRules(t *testing.T) {
 		{"an assessment's day not 30 days on", "fyniq_api", `INSERT INTO fyniq.pd_breach (title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at)
 		  VALUES ('x', 'y', now(), current_date + 60, 1, ARRAY['other'], false, 'user:x', now())`, nil, []string{"23514"}},
 		{"500 people decided not notifiable", "fyniq_api", step, []any{many.ID, "decided", false, nil, nil}, []string{"FY315"}},
-		{"a PDPC day not 3 days on", "fyniq_api", step, []any{mild.ID, "decided", true, time.Now().AddDate(0, 0, 10), nil}, []string{"23514"}},
+		{"a PDPC day not 3 days on", "fyniq_api", step, []any{mild.ID, "decided", true, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), nil}, []string{"23514"}},
 		{"the PDPC notified of a breach not decided", "fyniq_api", step, []any{mild.ID, "pdpc_notified", nil, nil, "DBN-1"}, []string{"FY315"}},
 		{"closing a notifiable breach before the report", "fyniq_api", step, []any{pay.ID, "closed", nil, nil, nil}, []string{"FY315"}},
 		{"assessing twice", "fyniq_api", step, []any{pay.ID, "assessed", nil, nil, nil}, []string{"FY315"}},
