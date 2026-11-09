@@ -49,6 +49,12 @@ func TestAHolderRecordKeepsTheLast4Only(t *testing.T) {
 			t.Errorf("%s: problems on %q, want %s", name, got, c.want)
 		}
 	}
+	// An NRIC's shape inside a longer word, as in an ID, is no NRIC in full (FY285, migration 000276).
+	inWord := ok
+	inWord.Note = "Ref 01928f6e-f1234567ab-c"
+	if p := CheckHolderRecord(inWord); len(p) > 0 {
+		t.Errorf("an NRIC's shape inside a longer word: %v", p)
+	}
 	entity := HolderRecord{ContactID: uuid.New(), Kind: "entity", IDType: "uen", Registration: "202312345K"}
 	if p := CheckHolderRecord(entity); len(p) > 0 {
 		t.Errorf("an entity with its UEN: %v", p)
