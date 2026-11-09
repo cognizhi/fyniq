@@ -18,7 +18,7 @@ import (
 
 // ComplianceReview is a recurring review people sign off, as it stands for the organisation (CMP-03, design D6).
 type ComplianceReview struct {
-	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests,breach,breach-tabletop" doc:"The review." example:"access-review"`
+	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests,breach,breach-tabletop,transfers" doc:"The review." example:"access-review"`
 	Title       string             `json:"title" doc:"What it is, in a sentence." example:"An Owner attests the access review (each quarter)"`
 	Owner       string             `json:"owner" enum:"owner,controller,accountant,dpo,member" doc:"The role that signs it off; member when each member signs for themselves." example:"owner"`
 	Cadence     string             `json:"cadence" enum:"weekly,quarterly,monthly,each use,each version,by review date,each processing,each request,each breach,twice a year" doc:"How often it falls due." example:"quarterly"`
@@ -66,7 +66,7 @@ func registerComplianceReviews(a *API) {
 			"assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each " +
 			"comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, " +
 			"its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.",
-	}, "cursor", "The recurring reviews, twelve of them, read whole: one summary per kind, each worked out from its own records."),
+	}, "cursor", "The recurring reviews, thirteen of them, read whole: one summary per kind, each worked out from its own records."),
 		[]string{storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, _ *struct{}) (*complianceReviewsOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()

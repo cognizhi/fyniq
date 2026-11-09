@@ -3468,6 +3468,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the overseas transfers of personal data
+         * @description The transfer register (CMP-PD-06): Fyniq's flows of personal data to providers, from its catalogue, each that leaves Singapore with the open transfer that assesses it; and the organisation's transfers, each with its recipient, countries, data, purpose, basis, assessment, evidence and next review. Read-only; no side effects.
+         */
+        get: operations["getTransfers"];
+        put?: never;
+        /**
+         * Record an overseas transfer's assessment
+         * @description Records an overseas transfer of personal data and its assessment (CMP-PD-06), at version 1: for one of Fyniq's flows, or one of the company's own. Side effects: the transfer, the audit event transfer.saved. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/transfers/{transfer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change an overseas transfer
+         * @description Saves the transfer's next version (CMP-PD-06): a review with its new next review day, or its retirement when the transfer stops. It keeps the flow it covers. Earlier versions are kept. Side effects: the version, the audit event transfer.saved. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["reviseTransfer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connector-catalogue": {
         parameters: {
             query?: never;
@@ -19704,7 +19748,7 @@ export interface components {
              * @example access-review
              * @enum {string}
              */
-            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop";
+            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop" | "transfers";
             /** @description The latest sign-off; none before the first. */
             last_sign_off?: components["schemas"]["ComplianceSignOff"];
             /**
@@ -40112,6 +40156,202 @@ export interface components {
              * @example A test notification you sent at 10:05 Singapore time
              */
             title: string;
+        };
+        TransferFlowView: {
+            /** @description The inventory's classes it carries. */
+            classes: string[];
+            /**
+             * Format: uuid
+             * @description The open transfer that assesses it; absent when none does.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            covered_by?: string;
+            /**
+             * @description true when it leaves Singapore, so it needs a transfer assessment.
+             * @example true
+             */
+            cross_border: boolean;
+            /**
+             * @description The personal data it carries.
+             * @example Recipients' names and email addresses, and the messages
+             */
+            data: string;
+            /**
+             * @description The flow.
+             * @example email
+             */
+            key: string;
+            /**
+             * @description Where it goes, and what is still to verify.
+             * @example The email providers keep mail outside Singapore (FR-INT-21)
+             */
+            note: string;
+            /**
+             * @description What the flow is.
+             * @example Email sent through the deployment's email providers: Zoho ZeptoMail or Resend
+             */
+            what: string;
+        };
+        TransferInput: {
+            /**
+             * @description Who assessed it.
+             * @example Ann Lim, Data Protection Officer
+             */
+            assessed_by: string;
+            /**
+             * Format: date
+             * @description When it was assessed.
+             * @example 2026-11-09
+             */
+            assessed_on: string;
+            /**
+             * @description What protects the data abroad.
+             * @example contract
+             * @enum {string}
+             */
+            basis: "contract" | "binding_corporate_rules" | "other_instrument" | "certification" | "consent";
+            /**
+             * @description Where the recipient processes it.
+             * @example United States, India
+             */
+            countries: string;
+            /**
+             * @description The personal data transferred.
+             * @example Recipients' names and email addresses, and the messages
+             */
+            data: string;
+            /**
+             * @description Where the contract, rules or certificate are kept.
+             * @example The provider's data processing addendum, in the shared drive
+             */
+            evidence: string;
+            /**
+             * @description The catalogue flow it covers, from getTransfers' flows; leave it out for one of the company's own. A revision keeps the flow.
+             * @example email
+             */
+            flow?: string;
+            /**
+             * Format: date
+             * @description When it is reviewed next: after the assessment.
+             * @example 2027-11-09
+             */
+            next_review_on: string;
+            /**
+             * @description Why.
+             * @example To deliver the company's email
+             */
+            purpose: string;
+            /**
+             * @description Who receives the data.
+             * @example Zoho Corporation (ZeptoMail)
+             */
+            recipient: string;
+            /**
+             * @description open, the default, or retired once the transfer stops.
+             * @example open
+             * @enum {string}
+             */
+            state?: "open" | "retired";
+        };
+        TransferRegister: {
+            /** @description Fyniq's flows of personal data to providers, from its catalogue: the same for every organisation. */
+            flows: components["schemas"]["TransferFlowView"][];
+            /** @description The organisation's transfers at their latest versions, oldest first. */
+            transfers: components["schemas"]["TransferView"][];
+        };
+        TransferView: {
+            /**
+             * @description Who assessed it.
+             * @example Ann Lim, Data Protection Officer
+             */
+            assessed_by: string;
+            /**
+             * Format: date
+             * @description When it was assessed.
+             * @example 2026-11-09
+             */
+            assessed_on: string;
+            /**
+             * @description What protects the data abroad.
+             * @example contract
+             * @enum {string}
+             */
+            basis: "contract" | "binding_corporate_rules" | "other_instrument" | "certification" | "consent";
+            /**
+             * @description Where the recipient processes it.
+             * @example United States, India
+             */
+            countries: string;
+            /**
+             * @description The personal data transferred.
+             * @example Recipients' names and email addresses, and the messages
+             */
+            data: string;
+            /**
+             * @description Where the contract, rules or certificate are kept.
+             * @example The provider's data processing addendum, in the shared drive
+             */
+            evidence: string;
+            /**
+             * @description The catalogue flow it covers; absent for one of the company's own.
+             * @example email
+             */
+            flow?: string;
+            /**
+             * Format: date
+             * @description When it is reviewed next.
+             * @example 2027-11-09
+             */
+            next_review_on: string;
+            /**
+             * @description true once the next review has passed, while open.
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * @description Why.
+             * @example To deliver the company's email
+             */
+            purpose: string;
+            /**
+             * @description Who receives the data.
+             * @example Zoho Corporation (ZeptoMail)
+             */
+            recipient: string;
+            /**
+             * @description true from 30 days before the next review, while open.
+             * @example false
+             */
+            review_due: boolean;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-09T02:00:00Z
+             */
+            saved_at: string;
+            /**
+             * @description Who saved this version, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            saved_by: string;
+            /**
+             * @description open while the transfer goes on; retired once it stops.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "retired";
+            /**
+             * Format: uuid
+             * @description The transfer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            transfer_id: string;
+            /**
+             * Format: int64
+             * @description Its version; the ETag carries it for If-Match.
+             * @example 1
+             */
+            version: number;
         };
         TransfersOutputBody: {
             /** @description The transfers in transit, latest first. */
@@ -67347,6 +67587,397 @@ export interface operations {
                 };
             };
             /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RISK-01` A risk's versions and reviews are kept as they were. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTransfers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferRegister"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TRANSFER-01` A transfer's versions follow each other and keep the flow they cover. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reviseTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The transfer. */
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TRANSFER-01` A transfer's versions follow each other and keep the flow they cover. */
             409: {
                 headers: {
                     [name: string]: unknown;

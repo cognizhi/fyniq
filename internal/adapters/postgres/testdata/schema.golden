@@ -1369,6 +1369,23 @@ pd_request_step | by_actor | text | not null |
 pd_request_step | note | text | null | 
 pd_request_step | new_due_on | date | null | 
 pd_request_step | outcome | text | null | 
+pd_transfer | organisation_id | uuid | not null | current_org()
+pd_transfer | id | uuid | not null | uuidv7()
+pd_transfer | transfer_id | uuid | not null | 
+pd_transfer | version | integer | not null | 
+pd_transfer | flow | text | null | 
+pd_transfer | recipient | text | not null | 
+pd_transfer | countries | text | not null | 
+pd_transfer | data | text | not null | 
+pd_transfer | purpose | text | not null | 
+pd_transfer | basis | text | not null | 
+pd_transfer | assessed_on | date | not null | 
+pd_transfer | assessed_by | text | not null | 
+pd_transfer | evidence | text | not null | 
+pd_transfer | next_review_on | date | not null | 
+pd_transfer | state | text | not null | 
+pd_transfer | saved_by | text | not null | 
+pd_transfer | saved_at | timestamp with time zone | not null | 
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -3999,6 +4016,33 @@ pd_request_step | pd_request_step_request_fkey | FOREIGN KEY (organisation_id, r
 pd_request_step | pd_request_step_request_id_not_null | NOT NULL request_id
 pd_request_step | pd_request_step_step_not_null | NOT NULL step
 pd_request_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_transfer | pd_transfer_assessed_by_not_null | NOT NULL assessed_by
+pd_transfer | pd_transfer_assessed_on_not_null | NOT NULL assessed_on
+pd_transfer | pd_transfer_basis_known | CHECK ((basis = ANY (ARRAY['contract'::text, 'binding_corporate_rules'::text, 'other_instrument'::text, 'certification'::text, 'consent'::text])))
+pd_transfer | pd_transfer_basis_not_null | NOT NULL basis
+pd_transfer | pd_transfer_countries_not_null | NOT NULL countries
+pd_transfer | pd_transfer_data_not_null | NOT NULL data
+pd_transfer | pd_transfer_evidence_not_null | NOT NULL evidence
+pd_transfer | pd_transfer_flow_format | CHECK ((flow ~ '^[a-z][a-z0-9-]{0,39}$'::text))
+pd_transfer | pd_transfer_id_not_null | NOT NULL id
+pd_transfer | pd_transfer_next_review_on_not_null | NOT NULL next_review_on
+pd_transfer | pd_transfer_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_transfer | pd_transfer_organisation_id_not_null | NOT NULL organisation_id
+pd_transfer | pd_transfer_pkey | PRIMARY KEY (organisation_id, id)
+pd_transfer | pd_transfer_purpose_not_null | NOT NULL purpose
+pd_transfer | pd_transfer_recipient_not_null | NOT NULL recipient
+pd_transfer | pd_transfer_review_after | CHECK ((next_review_on > assessed_on))
+pd_transfer | pd_transfer_saved_at_not_null | NOT NULL saved_at
+pd_transfer | pd_transfer_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_transfer | pd_transfer_saved_by_not_null | NOT NULL saved_by
+pd_transfer | pd_transfer_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'retired'::text])))
+pd_transfer | pd_transfer_state_not_null | NOT NULL state
+pd_transfer | pd_transfer_texts | CHECK ((((length(btrim(recipient)) >= 1) AND (length(btrim(recipient)) <= 300)) AND ((length(btrim(countries)) >= 1) AND (length(btrim(countries)) <= 300)) AND ((length(btrim(data)) >= 1) AND (length(btrim(data)) <= 500)) AND ((length(btrim(purpose)) >= 1) AND (length(btrim(purpose)) <= 1000)) AND ((length(btrim(assessed_by)) >= 1) AND (length(btrim(assessed_by)) <= 300)) AND ((length(btrim(evidence)) >= 1) AND (length(btrim(evidence)) <= 1000))))
+pd_transfer | pd_transfer_transfer_id_not_null | NOT NULL transfer_id
+pd_transfer | pd_transfer_version_not_null | NOT NULL version
+pd_transfer | pd_transfer_version_once | UNIQUE (organisation_id, transfer_id, version)
+pd_transfer | pd_transfer_version_positive | CHECK ((version > 0))
+pd_transfer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period | period_closed_revision | CHECK (((status = 'closed'::text) = (closed_revision IS NOT NULL)))
 period | period_closed_revision_not_negative | CHECK ((closed_revision >= 0))
 period | period_created_at_not_null | NOT NULL created_at
@@ -5012,6 +5056,8 @@ CREATE UNIQUE INDEX pd_breach_pkey ON fyniq.pd_breach USING btree (organisation_
 CREATE UNIQUE INDEX pd_breach_step_pkey ON fyniq.pd_breach_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_pkey ON fyniq.pd_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_step_pkey ON fyniq.pd_request_step USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_transfer_pkey ON fyniq.pd_transfer USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (organisation_id, transfer_id, version)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
@@ -5152,6 +5198,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_exercise
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'breach_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'request_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_transfer', 'transfer_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
@@ -5474,6 +5521,8 @@ CREATE TRIGGER pd_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_re
 CREATE TRIGGER pd_request_no_truncate BEFORE TRUNCATE ON fyniq.pd_request FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_request_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request_step FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
 CREATE TRIGGER pd_request_step_no_truncate BEFORE TRUNCATE ON fyniq.pd_request_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_transfer FOR EACH ROW EXECUTE FUNCTION pd_transfer_guard()
+CREATE TRIGGER pd_transfer_no_truncate BEFORE TRUNCATE ON fyniq.pd_transfer FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close FOR EACH ROW EXECUTE FUNCTION period_close_guard()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
@@ -5650,6 +5699,7 @@ pd_breach_exercise | tenant_isolation | * | (organisation_id = current_org()) | 
 pd_breach_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5810,6 +5860,7 @@ pd_breach_exercise | enabled | forced
 pd_breach_step | enabled | forced
 pd_request | enabled | forced
 pd_request_step | enabled | forced
+pd_transfer | enabled | forced
 period | enabled | forced
 period_close | enabled | forced
 period_close_check | enabled | forced
@@ -6080,6 +6131,7 @@ payment_batch_payment_guard() → trigger | security invoker | v | search_path=p
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
+pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470

@@ -33,10 +33,22 @@ type NotHeld struct {
 	Why  string `yaml:"why"`
 }
 
+// Flow is a way Fyniq's personal data leaves it for a provider, and whether it leaves Singapore (CMP-PD-06, design D7):
+// one that does needs a current transfer assessment in the organisation's register.
+type Flow struct {
+	Key         string   `yaml:"key"`
+	What        string   `yaml:"what"`
+	Data        string   `yaml:"data"`
+	Classes     []string `yaml:"classes"`
+	CrossBorder bool     `yaml:"cross_border"`
+	Note        string   `yaml:"note"`
+}
+
 // Inventory is Fyniq's personal-data inventory, data-inventory.yaml.
 type Inventory struct {
 	Schema      string        `yaml:"schema"`
 	Classes     []DataClass   `yaml:"classes"`
+	Flows       []Flow        `yaml:"flows"`
 	NotPersonal []NotPersonal `yaml:"not_personal"`
 	NotHeld     []NotHeld     `yaml:"not_held"`
 }

@@ -13,3 +13,7 @@ checks:
     status: cloud
     how: "tofu org-policy/the_policies_of_section_12_4"
     evidence: "the organisation policy restricts resource locations to Singapore; read in the cloud [live-verify]"
+  - frequency: D
+    status: running
+    how: "attestation transfers"
+    evidence: "the documented transfers: each of Fyniq's flows that leaves Singapore, and each of the company's own, with its recipient, countries, basis, assessment, evidence and next review; on Compliance › Data protection and Reviews and attestations"

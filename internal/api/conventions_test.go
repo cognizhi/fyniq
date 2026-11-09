@@ -62,6 +62,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "getDataInventory cursor")                                                                              // the inventory (CMP-PD-02)
 	want = append(want, "listDPIAs cursor", "getDPIA cursor")                                                                   // the impact assessments (CMP-PD-08)
 	want = append(want, "listPersonalDataRequests cursor", "getPersonalDataReport cursor", "listMyPersonalDataRequests cursor") // CMP-PD-04
+	want = append(want, "getTransfers cursor")                                                                                  // CMP-PD-06
 	want = append(want, "listBreaches cursor", "listBreachExercises cursor")                                                    // CMP-PD-05, CTL-DP-06
 	slices.Sort(want)
 	var got []string

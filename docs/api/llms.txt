@@ -219,6 +219,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/risks` (createRisk): Add a risk to the register
 - `PUT /v1/compliance/risks/{risk_id}` (reviseRisk): Change a risk
 - `POST /v1/compliance/risks/{risk_id}/reviews` (reviewRisk): Review a risk
+- `GET /v1/compliance/transfers` (getTransfers): Get the overseas transfers of personal data
+- `POST /v1/compliance/transfers` (createTransfer): Record an overseas transfer's assessment
+- `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact

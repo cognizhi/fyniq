@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classes": {
+      "description": "The inventory's classes it carries.",
+      "items": {
+        "description": "A class of getDataInventory's classes.",
+        "examples": [
+          "members"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "covered_by": {
+      "description": "The open transfer that assesses it; absent when none does.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "cross_border": {
+      "description": "true when it leaves Singapore, so it needs a transfer assessment.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "data": {
+      "description": "The personal data it carries.",
+      "examples": [
+        "Recipients' names and email addresses, and the messages"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The flow.",
+      "examples": [
+        "email"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Where it goes, and what is still to verify.",
+      "examples": [
+        "The email providers keep mail outside Singapore (FR-INT-21)"
+      ],
+      "type": "string"
+    },
+    "what": {
+      "description": "What the flow is.",
+      "examples": [
+        "Email sent through the deployment's email providers: Zoho ZeptoMail or Resend"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "what",
+    "data",
+    "classes",
+    "cross_border",
+    "note"
+  ],
+  "title": "TransferFlowView",
+  "type": "object"
+}

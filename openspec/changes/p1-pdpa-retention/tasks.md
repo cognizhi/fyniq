@@ -323,9 +323,43 @@ event format.
 
 ## 8. Overseas transfers (slice 8)
 
-- [ ] 8.1 `pd_transfer` (D7), versioned. A catalogue flow marked cross-border without a current entry reads as due.
+- [x] 8.1 `pd_transfer` (D7), versioned. A catalogue flow marked cross-border without a current entry reads as due.
   Attack tests and matrix rows. `// req: CMP-PD-06`
-- [ ] 8.2 The Transfers tab, with its help keys and guide section. `// req: CMP-PD-06`
+
+  **What building added:**
+    - **Table.** Migration 000307 adds `pd_transfer`: versions that are insert-only (FY316) and audited
+      (`transfer.saved`).
+    - **The database's rules:**
+      - a version follows the transfer's last and keeps the flow it covers;
+      - the basis is one of the transfer limitation obligation's: a contract, binding corporate rules, another law or
+        binding instrument, a certification such as APEC CBPR, or consent;
+      - the next review comes after the assessment.
+    - **The catalogue.** `compliance/data-inventory.yaml` gains `flows`: `sign-in` (Google, Zoho or another OpenID
+      Connect provider; Zoho's runs in the United States) and `email` (ZeptoMail or Resend, outside Singapore per
+      FR-INT-21). Both are cross-border, and where each provider processes is marked [live-verify].
+      - The AI connections outside Singapore join the flows when `p1-ai-providers` declares them (AI-75).
+      - P1 keeps backups and the DR export in Singapore (SEC-13), so there is no DR flow yet.
+      - `TestTheDataInventory` checks that the flows name real classes.
+    - **The API:** `getTransfers` returns the flows, each with the open transfer covering it, and the transfers.
+      `createTransfer` and `reviseTransfer` (If-Match `"v<n>"`) are for the DPO under "Data protection (PDPA)".
+      Names that would clash with the bank transfers carry `PD`.
+    - **The review `transfers`.** A flow abroad without an open transfer waits, with no day. A transfer waits from
+      30 days before its next review and is overdue after it. CTL-DP-07 gains the daily check `attestation transfers`
+      for its "documented transfers".
+    - **Not decided here: who records an AI connection's assessment.** AI-75 says the Owner records it. Appendix D
+      gives the DPO C and the Owner V on "Data protection (PDPA)", so `p1-ai-providers` decides whether the Owner also
+      records it.
+    - **Tests:** `TestTheTransferRegister`, `TestAttackTheTransfersKeepTheirHistory`, the transfers case of
+      `TestEachReviewReadsItsOwnSource`, and matrix rows.
+
+- [x] 8.2 The Transfers tab, with its help keys and guide section. `// req: CMP-PD-06`
+
+  **What building added:**
+    - **The tab.** It lists Fyniq's flows abroad, each **Assessed** or **Needs an assessment**, with **Record the
+      assessment**. Below are the transfers, with their basis, next review and **Review due** or **Review overdue**
+      chips, **Change**, **Retire it** and **Record a transfer** for the company's own.
+    - **Help.** The help key is `data-protection.transfers`. The guide gains the section "Overseas transfers" and a
+      row of the reviews table, compiled into `compliance.data-protection` and `compliance.reviews`.
 
 ## 9. Person keys and the event format (slice 9)
 
