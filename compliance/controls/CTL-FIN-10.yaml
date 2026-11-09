@@ -13,3 +13,7 @@ checks:
     status: running
     how: "check controls.accountant-review-overdue"
     evidence: "the external accountant reviews the books, their journals and unusual entries; in Founder mode FM-7 sets it each quarter, overdue 60 days after the quarter ends (C.2 #61); the check's latest result for each organisation, on Checks"
+  - frequency: M
+    status: running
+    how: "attestation accountant-review"
+    evidence: "the accountant's signed-off reviews, who signed and when; on Compliance › Reviews and attestations, each review on Accountant reviews"

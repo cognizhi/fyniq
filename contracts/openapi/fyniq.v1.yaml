@@ -9918,6 +9918,158 @@ components:
       required:
         - line_id
       type: object
+    ComplianceReview:
+      additionalProperties: false
+      properties:
+        cadence:
+          description: How often it falls due.
+          enum:
+            - weekly
+            - quarterly
+            - monthly
+            - each use
+            - each version
+            - by review date
+          examples:
+            - quarterly
+          type: string
+        controls:
+          description: The controls whose attestation check reads it.
+          items:
+            description: A control's ID, as listControls names it.
+            examples:
+              - CTL-IAM-02
+            pattern: ^CTL-[A-Z]+-[0-9]{2}$
+            type: string
+          type: array
+        detail:
+          description: What waits, or that nothing does, in a sentence.
+          examples:
+            - The access review of Q3 2026 waits for an Owner's attestation, due by 14 Oct 2026.
+          type: string
+        due_on:
+          description: When the earliest waiting item falls due; for the risk reviews, the next review date.
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        evidence:
+          description: What each sign-off keeps.
+          examples:
+            - Each quarter's attestation, with the report attested and its SHA-256, and a CSV of it
+          type: string
+        kind:
+          description: The review.
+          enum:
+            - review-log
+            - access-review
+            - accountant-review
+            - close-signoff
+            - break-glass-review
+            - policy-acknowledgement
+            - risk-review
+          examples:
+            - access-review
+          type: string
+        last_sign_off:
+          $ref: "#/components/schemas/ComplianceSignOff"
+          description: The latest sign-off; none before the first.
+        overdue:
+          description: How many of them are past their time.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        owner:
+          description: The role that signs it off; member when each member signs for themselves.
+          enum:
+            - owner
+            - controller
+            - accountant
+            - dpo
+            - member
+          examples:
+            - owner
+          type: string
+        period:
+          description: The period that waits, as people say it.
+          examples:
+            - Q3 2026
+          type: string
+        status:
+          description: "overdue: something waits past its time; due: something waits within it; signed: nothing waits and it was signed off before; nothing_due: nothing waits and nothing was ever signed off; not_applicable: the team mode does not call for it."
+          enum:
+            - signed
+            - due
+            - overdue
+            - nothing_due
+            - not_applicable
+          examples:
+            - due
+          type: string
+        title:
+          description: What it is, in a sentence.
+          examples:
+            - An Owner attests the access review (each quarter)
+          type: string
+        waiting:
+          description: How many items wait for their sign-off.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        where:
+          description: The web app's page where it is signed off.
+          examples:
+            - /settings/access-review
+          type: string
+      required:
+        - kind
+        - title
+        - owner
+        - cadence
+        - status
+        - waiting
+        - overdue
+        - detail
+        - where
+        - evidence
+        - controls
+      type: object
+    ComplianceReviews:
+      additionalProperties: false
+      properties:
+        items:
+          description: The seven reviews, in the Compliance Center's order.
+          items:
+            $ref: "#/components/schemas/ComplianceReview"
+          type: array
+      required:
+        - items
+      type: object
+    ComplianceSignOff:
+      additionalProperties: false
+      properties:
+        at:
+          description: When.
+          examples:
+            - "2026-10-03T02:00:00Z"
+          format: date-time
+          type: string
+        by:
+          description: Who signed off, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        by_name:
+          description: Their name, while they are a member.
+          examples:
+            - Ada Tan
+          type: string
+      required:
+        - by
+        - at
+      type: object
     ConfigureConnectorRequest:
       additionalProperties: false
       properties:
@@ -70535,6 +70687,110 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
+        right: V
+  /v1/compliance/reviews:
+    get:
+      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements and the risk reviews. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
+      operationId: listComplianceReviews
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReviews"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the recurring reviews and attestations
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The seven recurring reviews, read whole: one summary per kind, each worked out from its own records."
+      x-fyniq-permission:
+        capability: Compliance Center
         right: V
   /v1/compliance/risks:
     get:

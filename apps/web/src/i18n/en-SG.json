@@ -2016,6 +2016,10 @@
       "label": "Controls",
       "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."
     },
+    "compliance.attestations": {
+      "label": "Reviews and attestations",
+      "tooltip": "The recurring reviews people sign off: what is due, what is overdue and when each was last signed off, with where to sign it."
+    },
     "compliance.risks": {
       "label": "Risks and policies",
       "tooltip": "The risk register, each risk with its owner, rating, mitigation and review date; and the policy library, each policy in force with who acknowledged it."
@@ -2027,6 +2031,10 @@
     "risk.review": {
       "label": "Review a risk",
       "tooltip": "Record that the risk was reviewed; its next review falls its review interval after today."
+    },
+    "inbox.reviews": {
+      "label": "Reviews to sign off",
+      "tooltip": "The recurring reviews your roles sign off that are due or overdue, such as the access review or the close."
     },
     "policy.acknowledge": {
       "label": "Acknowledge policy",

@@ -4,7 +4,7 @@ type: task
 title: Read, acknowledge and publish the policies
 summary: The policy library - the eight company policies, acknowledging the version in force within 30 days, and drafting and publishing a new version
 sources:
-  - docs/user-guide/compliance-policies.md sha256:0ac6da8562a55b3078881a29efdeb55eb6951c003de6aeda637dec0e70261775
+  - docs/user-guide/compliance-policies.md sha256:4e4e3f56820d2cd7515f2b38d33058fbf87fba1d311a09b9129fd9b96358de88
 data_class: general
 taint: trusted
 status: published
@@ -37,6 +37,7 @@ aliases:
 - Every member acknowledges a published policy, or a new version of it, within 30 days: 30 days after it was published, or after they joined if that was later.
 - The **Acknowledge policy** card on **Home** and in the **Inbox** lists the policies waiting, each with its due day; it shows **Overdue** once that day has passed.
 - Select **Read**, read the version in force, then **I have read and accept it**; **Later** closes it without recording anything.
+- The same list is at the top of **Compliance** › **Reviews and attestations**, beside the other recurring reviews ([[compliance.reviews]]).
 - Each version is acknowledged once, signed in as yourself; an integration or the AI assistant cannot acknowledge for you. A new version asks again.
 
 (src: docs/user-guide/compliance-policies.md#acknowledge-a-policy)

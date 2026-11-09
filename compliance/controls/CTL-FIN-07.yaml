@@ -21,3 +21,11 @@ checks:
     status: running
     how: "check controls.review-log-overdue"
     evidence: "in Founder mode another founder reviews each logged action within 14 days (FM-3, C.2 #4); the check's latest result for each organisation, on Checks"
+  - frequency: W
+    status: running
+    how: "attestation review-log"
+    evidence: "who reviewed the logged actions and when, with what waits and is overdue; on Compliance › Reviews and attestations"
+  - frequency: W
+    status: running
+    how: "attestation break-glass-review"
+    evidence: "each break-glass's post-review, with who reviewed it and when; on Compliance › Reviews and attestations"

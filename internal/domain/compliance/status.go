@@ -10,13 +10,14 @@ import (
 )
 
 // Inputs are what a control's status is worked out from, for one organisation (design D1): the release the platform
-// runs, the platform jobs' slots, the organisation's catalogue checks and its verifications' latest runs.
+// runs, the platform jobs' slots, the organisation's catalogue checks, its verifications' latest runs and its reviews.
 type Inputs struct {
 	Release Release
 	Assets  registry.ReleaseAssets
 	Jobs    map[string][]storage.JobSlot  // by job
 	Checks  map[string]storage.CheckState // by key
 	Runs    map[string]storage.ControlRun // by RunKey
+	Reviews map[string]Review             // by kind
 	Now     time.Time
 }
 
@@ -119,7 +120,16 @@ func checkResult(c registry.Control, ch registry.Check, in Inputs) Result {
 		}
 		return Result{Status: Pass, Detail: r.Detail}
 	case registry.KindAttestation:
-		return Result{Status: NotAssessed, Detail: "Reviews and attestations arrive with this change's slice 8."}
+		rv, ok := in.Reviews[name]
+		switch {
+		case !ok:
+			return Result{Status: NotAssessed, Detail: "The review has not been read for this organisation yet."}
+		case rv.Status == ReviewOverdue:
+			return Result{Status: Overdue, Detail: rv.Detail}
+		case rv.Status == ReviewNotApplicable:
+			return Result{Status: NotApplicable, Detail: rv.Detail}
+		}
+		return Result{Status: Pass, Detail: rv.Detail}
 	}
 	return Result{Status: NotAssessed, Detail: "Nothing checks it here."}
 }

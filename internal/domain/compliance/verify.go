@@ -285,6 +285,14 @@ func (r Runner) Statuses(ctx context.Context, org uuid.UUID, rep *Report) error 
 		for _, run := range runs {
 			in.Runs[RunKey(run.Control, run.Frequency, run.Check)] = run
 		}
+		reviews, err := Reviews(ctx, u, in.Now)
+		if err != nil {
+			return err
+		}
+		in.Reviews = map[string]Review{}
+		for _, rv := range reviews {
+			in.Reviews[rv.Kind] = rv
+		}
 		states, err := u.Compliance().States(ctx)
 		if err != nil {
 			return err
