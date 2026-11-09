@@ -227,6 +227,12 @@ The facts, read in the same unit of work:
 
 ### D6. Recording a filing
 
+(Revised as built, PRD-001 rev 0.211: FR-DOC-06's table requires the submission or payment acknowledgement for GST F5,
+Form C-S/C, ECI and AIS filings and CPF payments, so a filed record is drafted, given its acknowledgement and recorded,
+as the ACRA extract is; the setting `evidence.statutory_filing` is required by default, and under a recommended rule
+C.2 #30 lists a filed record without its file. A withdrawal is a record of its own beside the reversed one, with its
+reason, and the live-record rule is a lock on the item's key in the posting trigger, not an index.)
+
 A **`statutory_filing`** document records an item's outcome:
 - `key`;
 - `outcome`: `filed` or `not_required`;
@@ -271,8 +277,9 @@ The authorisation matrix test grows by its operations:
 | Operation | Capability / need |
 |---|---|
 | `getStatutoryCalendar` `GET /v1/compliance/calendar?from&to` | Statutory calendar V |
-| `recordStatutoryFiling` `POST /v1/compliance/filings` | Statutory calendar C |
+| `createStatutoryFiling` `POST /v1/compliance/filings`, `replaceStatutoryFiling`, `recordStatutoryFiling` `POST …/{filing_id}/record` | Statutory calendar C (If-Match) |
 | `withdrawStatutoryFiling` `POST /v1/compliance/filings/{filing_id}/withdraw` | Statutory calendar C (If-Match) |
+| `getStatutoryFiling`, `listStatutoryFilings` (by item key) | Statutory calendar V |
 | the filing's evidence (add, list, get, remove) | Statutory calendar C / V |
 | `getGSTMonitor` `GET /v1/compliance/gst-monitor` | GST returns V |
 | `createGSTForecast`, `replaceGSTForecast`, `recordGSTForecast`, `getGSTForecast`, `listGSTForecasts` | GST returns C (record) / V |
@@ -324,7 +331,7 @@ with the calendar.
 | `calendar.pays_staff` | Switch | false | The owner's decision; turned on from the first month with staff, effective-dated |
 | `corporate.agm_route` | Choice: hold, send_statements, dispensed | hold | The Companies Act's default for a private company. The others need what ACRA names: statements sent within five months, or a resolution of all members |
 | `corporate.overseas_branch_register` | Switch | false | ACRA's eight months apply only with an overseas branch register |
-| `evidence.statutory_filing` | Choice | recommended | The acknowledgement is often a later email |
+| `evidence.statutory_filing` | Choice | required | FR-DOC-06's table: the submission or payment acknowledgement (as built; first planned as recommended) |
 
 ### D12. Screens
 

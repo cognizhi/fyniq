@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filed_on": {
+      "description": "For filed: the day it was filed or paid, today or earlier.",
+      "examples": [
+        "2027-03-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "key": {
+      "description": "The item, as the calendar gives its key.",
+      "examples": [
+        "eci:2026-12-31"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Filed by the tax agent"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "outcome": {
+      "description": "filed, with its day and reference; or not_required, with the reason.",
+      "enum": [
+        "filed",
+        "not_required"
+      ],
+      "examples": [
+        "filed"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "For not_required: why, such as the ECI waiver's conditions.",
+      "examples": [
+        "Revenue under S$5 million and ECI nil: waived (IRAS)"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "reference": {
+      "description": "For filed: the acknowledgement or transaction number.",
+      "examples": [
+        "ECI-2027-000123"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "outcome"
+  ],
+  "title": "StatutoryFilingDraft",
+  "type": "object"
+}

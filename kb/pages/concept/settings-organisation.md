@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST registration and monitor, numbering, features, terms, GST, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:9000893c876add788791724ecaf2a6f5cd06bd2c2062b734af70d1649f58a97e
+  - docs/user-guide/organisation-settings.md sha256:abe3fd45311490587f597820f5a850ec6e4013cc8911553ec97328e8858d644a
 data_class: general
 taint: trusted
 status: draft
@@ -17,6 +17,10 @@ aliases:
   - GST registration number
   - GST registration threshold
   - must I register for GST
+  - statutory calendar
+  - pays staff
+  - AGM
+  - branch register
   - deregistered
   - document numbering
   - invoice number prefix
@@ -84,6 +88,15 @@ aliases:
 - Taxable supplies are the standard-rated and zero-rated sales; exempt and out-of-scope sales, and sales of the company's own assets, are left out.
 
 (src: docs/user-guide/organisation-settings.md#gst-registration-monitor)
+
+## Statutory calendar
+
+- **Compliance › Calendar** lists every filing and payment deadline from the company's financial years and GST return periods; three settings decide what it holds.
+- **Pays staff**: from the first month the company pays anyone, the calendar adds each month's CPF contributions, due by the 14th of the next month, and each year's employment income for IR8A and the Auto-Inclusion Scheme, due by 1 March; off unless turned on.
+- **Annual general meeting**: **hold** an AGM within six months after the year's end (the default), **send the financial statements** to every member within five months so no AGM is held, or **dispensed** when all members resolved to dispense with AGMs; a member may still ask for an AGM.
+- **Keeps a branch register outside Singapore**: the annual return is due eight months after the year's end instead of seven; off unless turned on.
+
+(src: docs/user-guide/organisation-settings.md#statutory-calendar)
 
 ## Document numbering
 
@@ -239,6 +252,7 @@ aliases:
 
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a supporting calculation or document attached; **Evidence for manual journals above** sets the amount.
+- **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return, CPF Board's of a payment, or an AGM's minutes.
 - Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
 - Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]); **Accounting › Evidence** lists the records still missing theirs ([[compliance.evidence]]).
 

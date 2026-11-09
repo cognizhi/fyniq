@@ -332,7 +332,8 @@ func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, 
 		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
 		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id",
 		storage.DocumentOptionEvent: "event_id", storage.DocumentInvestorRights: "rights_id", storage.DocumentControllerEntry: "entry_id",
-		storage.DocumentAcraExtract: "extract_id", storage.DocumentGSTForecast: "forecast_id"}[t]
+		storage.DocumentAcraExtract: "extract_id", storage.DocumentGSTForecast: "forecast_id",
+		storage.DocumentStatutoryFiling: "filing_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err

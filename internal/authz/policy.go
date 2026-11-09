@@ -62,6 +62,7 @@ const (
 	Budgets             Capability = "Budgets, forecasts"
 	AuditTrail          Capability = "Audit trail"
 	ComplianceCenter    Capability = "Compliance Center"
+	StatutoryCalendar   Capability = "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
 	ChecksHealth        Capability = "Checks and books health (rev 0.163)"
 	TenantExport        Capability = "Tenant export"
 	AIProviders         Capability = "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
@@ -76,7 +77,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, StatutoryCalendar, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -238,6 +239,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	ComplianceCenter: {
 		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
+	},
+	StatutoryCalendar: {
+		"Owner": {"C", ""}, "Admin": {"V", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {},
 	},
 	ChecksHealth: {
 		"Owner": {"CA", ""}, "Admin": {"V", ""}, "Controller": {"CA", ""}, "Accountant": {"A", ""}, "Bookkeeper": {"A", ""}, "AR": {"V", "sales"}, "AP": {"V", "purchases"}, "Payroll": {"V", "payroll"}, "Releaser": {"V", ""}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
@@ -1401,6 +1405,23 @@ var (
 	RemoveGSTForecastEvidence = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
 )
 
+// The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
+// filed or not required, and a record withdrawn, by the Owner, the Controller, the Accountant and the Tax agent (the
+// owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row).
+var (
+	GetStatutoryCalendar          = Policy{Operation: "getStatutoryCalendar", Capability: StatutoryCalendar, Need: View}
+	ListStatutoryFilings          = Policy{Operation: "listStatutoryFilings", Capability: StatutoryCalendar, Need: View}
+	CreateStatutoryFiling         = Policy{Operation: "createStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
+	GetStatutoryFiling            = Policy{Operation: "getStatutoryFiling", Capability: StatutoryCalendar, Need: View}
+	ReplaceStatutoryFiling        = Policy{Operation: "replaceStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
+	RecordStatutoryFiling         = Policy{Operation: "recordStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing."}
+	WithdrawStatutoryFiling       = Policy{Operation: "withdrawStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
+	AddStatutoryFilingEvidence    = Policy{Operation: "addStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+	ListStatutoryFilingEvidence   = Policy{Operation: "listStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
+	GetStatutoryFilingEvidence    = Policy{Operation: "getStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
+	RemoveStatutoryFilingEvidence = Policy{Operation: "removeStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1588,7 +1609,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
-	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence)
+	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
+	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
+	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

@@ -660,6 +660,10 @@ const (
 	// its value in Singapore dollars and its basis, recorded with its evidence (signed contracts or confirmed orders, as
 	// IRAS asks) by whoever prepares GST returns; the latest recorded is the prospective test's.
 	DocumentGSTForecast DocumentType = "gst_forecast"
+	// DocumentStatutoryFiling is what a person recorded of an item of the statutory calendar (FR-TAX-07, p1-gst design
+	// D6): filed on a day with its reference and the acknowledgement attached, or not required with the reason; or the
+	// withdrawal of an earlier record, which is reversed beside it. An item has at most one live record (FY299).
+	DocumentStatutoryFiling DocumentType = "statutory_filing"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -924,6 +928,9 @@ const (
 	// CodeGSTForecast: a GST forecast keeps its own keys, its day and a value in Singapore dollars above zero with cents,
 	// and a basis of at most 1,000 characters (FY298).
 	CodeGSTForecast = "STORAGE-GST-01"
+	// CodeStatutoryFiling: a filing record keeps its own keys, an item's key and its outcome's fields; a withdrawal names
+	// a reversed record of its item, once; an item has at most one live record (FY299).
+	CodeStatutoryFiling = "STORAGE-CALENDAR-01"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

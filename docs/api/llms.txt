@@ -157,6 +157,17 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/compliance/calendar` (getStatutoryCalendar): Get the statutory calendar
+- `GET /v1/compliance/filings` (listStatutoryFilings): List the filing records
+- `POST /v1/compliance/filings` (createStatutoryFiling): Draft a filing record
+- `GET /v1/compliance/filings/{filing_id}` (getStatutoryFiling): Get a filing record
+- `PUT /v1/compliance/filings/{filing_id}` (replaceStatutoryFiling): Change a drafted filing record
+- `GET /v1/compliance/filings/{filing_id}/evidence` (listStatutoryFilingEvidence): List a filing record's files
+- `POST /v1/compliance/filings/{filing_id}/evidence` (addStatutoryFilingEvidence): Attach a filing's acknowledgement
+- `GET /v1/compliance/filings/{filing_id}/evidence/{evidence_id}` (getStatutoryFilingEvidence): Get a filing record's file
+- `DELETE /v1/compliance/filings/{filing_id}/evidence/{evidence_id}` (removeStatutoryFilingEvidence): Remove a file from a drafted filing record
+- `POST /v1/compliance/filings/{filing_id}/record` (recordStatutoryFiling): Record a filing record
+- `POST /v1/compliance/filings/{filing_id}/withdraw` (withdrawStatutoryFiling): Withdraw a filing record
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts

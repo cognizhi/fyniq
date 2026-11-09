@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "description": "A draft's status: ✖ while a filed record's required acknowledgement is not attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "evidence": {
+      "description": "How many files are attached and not removed.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "filed_on": {
+      "description": "The day it was filed.",
+      "examples": [
+        "2027-03-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The record's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "key": {
+      "description": "The item.",
+      "examples": [
+        "eci:2026-12-31"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Filed by the tax agent"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "What was recorded.",
+      "enum": [
+        "filed",
+        "not_required",
+        "withdrawn"
+      ],
+      "examples": [
+        "filed"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is not required, or why it was withdrawn.",
+      "examples": [
+        "Revenue under S$5 million and ECI nil: waived (IRAS)"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2027-03-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it."
+    },
+    "reference": {
+      "description": "Its acknowledgement or transaction number.",
+      "examples": [
+        "ECI-2027-000123"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "draft: waiting for its evidence and to be recorded; recorded: live; withdrawn: a later withdrawal took it back; withdrawal: the record of taking one back.",
+      "enum": [
+        "draft",
+        "recorded",
+        "withdrawn",
+        "withdrawal"
+      ],
+      "examples": [
+        "recorded"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "withdraws": {
+      "description": "A withdrawal's record.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "key",
+    "outcome",
+    "evidence",
+    "checks"
+  ],
+  "title": "StatutoryFilingView",
+  "type": "object"
+}
