@@ -62,6 +62,7 @@ const (
 	Budgets             Capability = "Budgets, forecasts"
 	AuditTrail          Capability = "Audit trail"
 	ComplianceCenter    Capability = "Compliance Center"
+	PolicyLibrary       Capability = "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
 	StatutoryCalendar   Capability = "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
 	ChecksHealth        Capability = "Checks and books health (rev 0.163)"
 	TenantExport        Capability = "Tenant export"
@@ -77,7 +78,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, StatutoryCalendar, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, StatutoryCalendar, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -240,6 +241,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	ComplianceCenter: {
 		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
+	},
+	PolicyLibrary: {
+		"Owner": {"CA", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {"V", ""}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"CA", ""}, "AI": {},
 	},
 	StatutoryCalendar: {
 		"Owner": {"C", ""}, "Admin": {"V", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {},
