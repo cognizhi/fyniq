@@ -25,8 +25,10 @@ import (
 	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/version"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
@@ -51,6 +53,7 @@ func main() {
 		if err != nil {
 			return err
 		}
+		kit.Release = controls.Release{Tag: version.Release, Repository: version.Repository} // CMP-01: the CI checks' release
 		defer kit.Store.Close()
 		switch args[0] {
 		case "audit-anchor":

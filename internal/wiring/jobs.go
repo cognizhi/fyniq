@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -122,7 +123,12 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			if err != nil {
 				return err
 			}
-			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry}.Nightly(ctx)
+			assets, err := compliance.LoadReleaseAssets()
+			if err != nil {
+				return err
+			}
+			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry, Platform: k.Store, Release: k.Release, Assets: assets,
+				Tell: k.TellControl(clock)}.Nightly(ctx)
 			return err
 		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released
@@ -263,6 +269,33 @@ func (k *Kit) TellRecovery(clock ports.Clock) audit.Tell {
 		_, err = notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AuditRecoveredType, RecordType: "audit_recovery", RecordID: &r.ID,
 			Title: fmt.Sprintf("A restore landed behind the audit trail's anchors: events %d to %d are no longer proven. Follow the restore runbook, then acknowledge it",
 				r.MissingFrom, r.MissingTo), Link: "/compliance/audit-trail", Audience: notify.Audience{Users: users}, At: clock.Now()})
+		return err
+	}
+}
+
+// TellControl tells the members holding a control's owner role that it newly failed or fell overdue (CMP-01, design D5):
+// critical, emailed at once, once per failure.
+func (k *Kit) TellControl(clock ports.Clock) controls.Tell {
+	d := k.dispatcher(clock)
+	return func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, c compliance.Control, s storage.ControlState) error {
+		members, err := u.Members().List(ctx, clock.Now())
+		if err != nil {
+			return err
+		}
+		role := strings.ToLower(c.Owner) // the registry's owners are the roles of §7.1: Owner, Controller, DPO…
+		var users []uuid.UUID
+		for _, m := range members {
+			if slices.ContainsFunc(m.Roles, func(a storage.RoleAssignment) bool { return a.Role == role }) {
+				users = append(users, m.UserID)
+			}
+		}
+		word := "failed"
+		if s.Status == string(controls.Overdue) {
+			word = "is overdue"
+		}
+		_, err = notify.Emit(ctx, d, u, org, notify.Event{Type: notify.ControlFailedType, RecordType: "control_state", RecordID: &s.ID,
+			Title: fmt.Sprintf("%s %s: %s. See it on Compliance › Controls", c.ID, word, strings.TrimSuffix(s.Detail, ".")),
+			Link:  "/compliance/controls?control=" + c.ID, Audience: notify.Audience{Users: users}, At: clock.Now()})
 		return err
 	}
 }

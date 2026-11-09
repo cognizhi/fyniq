@@ -7,6 +7,7 @@ package wiring
 import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/connector"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -14,12 +15,15 @@ import (
 
 // Kit is the background-work wiring of one service.
 type Kit struct {
-	Store  *postgres.Store
-	Tokens ports.TaskTokens
-	Queue  ports.Queue
-	Jobs   ports.JobRunner
-	Blobs  ports.BlobStore
-	Signer ports.Signer
+	Store *postgres.Store
+	// Release is the release this build is, which the Compliance Center's CI checks read (CMP-01): the commands set it
+	// from version.Release. Zero: a development build.
+	Release controls.Release
+	Tokens  ports.TaskTokens
+	Queue   ports.Queue
+	Jobs    ports.JobRunner
+	Blobs   ports.BlobStore
+	Signer  ports.Signer
 	// Fields seals the most sensitive fields (SEC-11): vendor bank account numbers. Nil: none can be kept.
 	Fields ports.Cipher
 	// Staging keeps uploads until their record is final; Evidence is the retention-locked store they are

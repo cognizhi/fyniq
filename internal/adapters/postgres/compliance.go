@@ -2,7 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -109,4 +112,81 @@ func (c compliance) UnreconciledReads(ctx context.Context, since time.Time, acti
 		out[i] = storage.UnreconciledRead{Kind: r.Kind, ObjectKey: r.ObjectKey, At: r.At, Reason: r.Reason}
 	}
 	return out, nil
+}
+
+func toControlState(r sqlcdb.FyniqControlState) storage.ControlState {
+	return storage.ControlState{ID: r.ID, Control: r.Control, Status: r.Status, Detail: r.Detail, Checks: r.Checks, FailingSince: r.FailingSince,
+		RunAt: r.RunAt, ChangedAt: r.ChangedAt, Version: int(r.Version)}
+}
+
+func (c compliance) States(ctx context.Context) ([]storage.ControlState, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListControlStates(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ControlState, len(rows))
+	for i, r := range rows {
+		out[i] = toControlState(r)
+	}
+	return out, nil
+}
+
+// failing reports whether a status is fail or overdue.
+func failing(status string) bool { return status == "fail" || status == "overdue" }
+
+func (c compliance) SaveState(ctx context.Context, s storage.ControlState, version int) (storage.ControlState, error) {
+	if err := c.u.check(); err != nil {
+		return storage.ControlState{}, err
+	}
+	checks := s.Checks
+	if len(checks) == 0 {
+		checks = []byte("[]")
+	}
+	if version == 0 {
+		row, err := c.u.q.InsertControlState(ctx, sqlcdb.InsertControlStateParams{Control: s.Control, Status: s.Status, Detail: s.Detail,
+			Checks: checks, FailingSince: s.FailingSince, RunAt: s.RunAt, ChangedAt: s.ChangedAt})
+		if err != nil {
+			return storage.ControlState{}, mapError(err) // a state written meanwhile is CodeVersion (control_state_one)
+		}
+		out := toControlState(row)
+		v := out.Version
+		action := "control.status_changed"
+		if failing(s.Status) {
+			action = "control.failed"
+		}
+		return out, c.u.event(ctx, action, "control_state", out.ID, &v, map[string][2]any{"control": {nil, s.Control},
+			"status": {nil, s.Status}})
+	}
+	before, err := c.u.q.GetControlState(ctx, s.Control)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ControlState{}, &storage.Error{Code: storage.CodeVersion, Message: "the control has no state at that version"}
+	}
+	if err != nil {
+		return storage.ControlState{}, mapError(err)
+	}
+	row, err := c.u.q.UpdateControlState(ctx, sqlcdb.UpdateControlStateParams{Control: s.Control, Version: int32(min(max(version, 1), 1<<30)), // #nosec G115 -- bounded
+		Status: s.Status, Detail: s.Detail, Checks: checks, FailingSince: s.FailingSince, RunAt: s.RunAt, ChangedAt: s.ChangedAt})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ControlState{}, &storage.Error{Code: storage.CodeVersion, Message: "the control's state changed since it was read"}
+	}
+	if err != nil {
+		return storage.ControlState{}, mapError(err)
+	}
+	out := toControlState(row)
+	if before.Status == s.Status {
+		return out, nil // the same status: when it ran moved, and the trail has nothing to add
+	}
+	action := "control.status_changed"
+	switch {
+	case failing(s.Status) && !failing(before.Status):
+		action = "control.failed"
+	case !failing(s.Status) && failing(before.Status):
+		action = "control.recovered"
+	}
+	v := out.Version
+	return out, c.u.event(ctx, action, "control_state", out.ID, &v, map[string][2]any{"control": {s.Control, s.Control},
+		"status": {before.Status, s.Status}})
 }

@@ -141,17 +141,31 @@ func capitalised(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-// Runner makes each organisation's verifications and records their runs.
+// Runner makes each organisation's verifications and records their runs, then works out every control's status, saves
+// it, and tells a control's owners when it newly fails (design D1, D4, D5).
 type Runner struct {
 	Store    storage.Store
 	Clock    ports.Clock
 	Controls []registry.Control
+	// Platform is where the platform jobs' slots are; Release the release this build is; Assets where a release keeps
+	// its CI evidence.
+	Platform storage.Platform
+	Release  Release
+	Assets   registry.ReleaseAssets
+	// Tell sends the notice that a control newly failed or fell overdue, in the unit of work that saved its state; nil
+	// sends none.
+	Tell Tell
 }
 
-// Report is what a run of one organisation's verifications recorded.
+// Tell tells a control's owners that it newly failed or fell overdue (design D5).
+type Tell func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, c registry.Control, s storage.ControlState) error
+
+// Report is what a run of one organisation's verifications and statuses recorded.
 type Report struct {
 	Organisation uuid.UUID
 	Runs         []storage.ControlRun
+	States       []storage.ControlState
+	Told         []string // the controls whose owners were told
 }
 
 // Nightly makes every organisation's verifications.
@@ -164,6 +178,9 @@ func (r Runner) Nightly(ctx context.Context) ([]Report, error) {
 	var failed []error
 	for _, org := range orgs {
 		rep, err := r.Verify(ctx, org)
+		if serr := r.Statuses(ctx, org, &rep); serr != nil {
+			err = errors.Join(err, serr)
+		}
 		out = append(out, rep)
 		if err != nil {
 			failed = append(failed, fmt.Errorf("organisation %s: %w", org, err))
@@ -230,4 +247,105 @@ func runOf(control string, ch registry.Check, found []Finding, read string, now 
 		run.Detail = run.Detail[:1997] + "..."
 	}
 	return run, nil
+}
+
+// Statuses works out every control's status for the organisation from its checks' latest results, saves it, and tells
+// the owners of each control that newly failed or fell overdue through a detective check (design D1, D5). A status that
+// did not change keeps when it changed; a failure keeps when it began, so it is told once.
+func (r Runner) Statuses(ctx context.Context, org uuid.UUID, rep *Report) error {
+	in := Inputs{Release: r.Release, Assets: r.Assets, Jobs: map[string][]storage.JobSlot{}, Now: r.Clock.Now()}
+	for _, c := range r.Controls {
+		for _, ch := range c.Checks {
+			if kind, name := ch.Kind(); kind == registry.KindJob && ch.Status == "running" && r.Platform != nil {
+				if _, ok := in.Jobs[name]; ok {
+					continue
+				}
+				slots, err := r.Platform.Slots(ctx, name)
+				if err != nil {
+					return err
+				}
+				in.Jobs[name] = slots
+			}
+		}
+	}
+	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		checks, err := u.Checks().States(ctx)
+		if err != nil {
+			return err
+		}
+		in.Checks = map[string]storage.CheckState{}
+		for _, c := range checks {
+			in.Checks[c.Key] = c
+		}
+		runs, err := u.Compliance().LatestRuns(ctx)
+		if err != nil {
+			return err
+		}
+		in.Runs = map[string]storage.ControlRun{}
+		for _, run := range runs {
+			in.Runs[RunKey(run.Control, run.Frequency, run.Check)] = run
+		}
+		states, err := u.Compliance().States(ctx)
+		if err != nil {
+			return err
+		}
+		before := map[string]storage.ControlState{}
+		for _, s := range states {
+			before[s.Control] = s
+		}
+		for _, c := range r.Controls {
+			st := StatusOf(c, in)
+			prior, had := before[c.ID]
+			next, err := stateOf(st, prior, had, in.Now)
+			if err != nil {
+				return err
+			}
+			saved, err := u.Compliance().SaveState(ctx, next, prior.Version)
+			if err != nil {
+				return err
+			}
+			rep.States = append(rep.States, saved)
+			if Notify(Status(prior.Status), st) && r.Tell != nil {
+				if err := r.Tell(ctx, u, org, c, saved); err != nil {
+					return err
+				}
+				rep.Told = append(rep.Told, c.ID)
+			}
+		}
+		return nil
+	})
+}
+
+// stateOf is the state to save for a control's status, from its prior state.
+func stateOf(st ControlStatus, prior storage.ControlState, had bool, now time.Time) (storage.ControlState, error) {
+	type check struct {
+		Frequency string `json:"frequency"`
+		How       string `json:"how"`
+		Status    Status `json:"status"`
+		Detail    string `json:"detail"`
+		Evidence  string `json:"evidence,omitempty"`
+	}
+	checks := make([]check, len(st.Checks))
+	for i, c := range st.Checks {
+		checks[i] = check{Frequency: c.Frequency, How: c.How, Status: c.Status, Detail: c.Detail, Evidence: c.Evidence}
+	}
+	b, err := json.Marshal(checks)
+	if err != nil {
+		return storage.ControlState{}, err
+	}
+	next := storage.ControlState{Control: st.Control, Status: string(st.Status), Detail: st.Detail, Checks: b, RunAt: now, ChangedAt: now}
+	if len(next.Detail) > 2000 {
+		next.Detail = next.Detail[:1997] + "..."
+	}
+	if had && prior.Status == next.Status {
+		next.ChangedAt = prior.ChangedAt
+	}
+	if Failing(st.Status) {
+		since := now
+		if had && Failing(Status(prior.Status)) && prior.FailingSince != nil {
+			since = *prior.FailingSince
+		}
+		next.FailingSince = &since
+	}
+	return next, nil
 }

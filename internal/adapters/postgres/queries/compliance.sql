@@ -80,3 +80,22 @@ SELECT x.action, x.id::text, x.at, 'recorded without the request it came from'
    AND NOT EXISTS (SELECT 1 FROM fyniq.audit_request_detail d WHERE d.organisation_id = x.organisation_id AND d.id = x.id)
  ORDER BY 3, 2
  LIMIT 1000;
+
+-- name: ListControlStates :many
+SELECT * FROM fyniq.control_state ORDER BY control;
+
+-- name: GetControlState :one
+SELECT * FROM fyniq.control_state WHERE control = sqlc.arg(control);
+
+-- name: InsertControlState :one
+INSERT INTO fyniq.control_state (control, status, detail, checks, failing_since, run_at, changed_at)
+VALUES (sqlc.arg(control), sqlc.arg(status), sqlc.arg(detail), sqlc.arg(checks), sqlc.narg(failing_since), sqlc.arg(run_at),
+        sqlc.arg(changed_at))
+RETURNING *;
+
+-- name: UpdateControlState :one
+UPDATE fyniq.control_state
+   SET status = sqlc.arg(status), detail = sqlc.arg(detail), checks = sqlc.arg(checks), failing_since = sqlc.narg(failing_since),
+       run_at = sqlc.arg(run_at), changed_at = sqlc.arg(changed_at), version = version + 1
+ WHERE control = sqlc.arg(control) AND version = sqlc.arg(version)
+RETURNING *;
