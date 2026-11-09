@@ -460,6 +460,7 @@ var personalColumn = regexp.MustCompile(`^(display_name|legal_name|email|[a-z_]+
 // says what, why, where, who, how long, how it is protected and where it goes abroad. NRIC and card data are not held.
 // req: CMP-PD-02
 // req: SEC-14
+// asvs: V14.1.1
 func TestTheDataInventory(t *testing.T) {
 	inv, err := LoadInventory()
 	if err != nil {
