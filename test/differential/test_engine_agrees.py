@@ -37,7 +37,7 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast"))
     base = scenarios("differential")
     if p1:
         base = st.one_of(base, p1_scenarios(p1, "differential"))
@@ -162,3 +162,66 @@ def test_the_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02
     path.write_text(json.dumps(bad, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     raise AssertionError(f"the engine and the oracle disagree: {difference(engine(bad), oracle(bad))}\n"
                          f"the smallest such scenario is saved as {path}; commit it as a golden case")
+
+
+FORECASTS = Path(__file__).parent / "forecasts"
+
+
+def forecast_difference(e: object, o: object, where: str = "") -> str | None:
+    """Two fyniq-forecast-result@1 results (README, "Forecasts"): numbers exactly as decimals, the rest as written."""
+    if isinstance(e, dict) and isinstance(o, dict):
+        if set(e) != set(o):
+            return f"{where}: keys engine {sorted(set(e) - set(o))}, oracle {sorted(set(o) - set(e))}"
+        for key in sorted(e):
+            found = forecast_difference(e[key], o[key], f"{where}.{key}")
+            if found is not None:
+                return found
+        return None
+    if isinstance(e, list) and isinstance(o, list):
+        if len(e) != len(o):
+            return f"{where}: engine {len(e)} items, oracle {len(o)}"
+        for i, (a, b) in enumerate(zip(e, o)):
+            found = forecast_difference(a, b, f"{where}[{i}]")
+            if found is not None:
+                return found
+        return None
+    if isinstance(e, str) and isinstance(o, str):
+        try:
+            return None if Decimal(e) == Decimal(o) else f"{where}: engine {e}, oracle {o}"
+        except ArithmeticError:
+            return None if e == o else f"{where}: engine {e!r}, oracle {o!r}"
+    return None if e == o and type(e) is type(o) else f"{where}: engine {e!r}, oracle {o!r}"
+
+
+def forecast_oracle(doc: dict) -> dict:
+    from oracle.planning import ForecastError, forecast
+
+    try:
+        return forecast(doc)
+    except ForecastError as exc:
+        return {"invalid": str(exc)}
+
+
+def test_the_forecast_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02, FR-PLN-02
+    if "forecast" not in SOURCES:
+        return
+    from oracle.strategies_planning import forecasts
+
+    def differs(doc: dict) -> bool:
+        e, o = engine(doc), forecast_oracle(doc)
+        if ("invalid" in e) != ("invalid" in o):
+            return True
+        return "invalid" not in e and forecast_difference(e, o) is not None
+
+    try:
+        bad = find(forecasts(), differs, settings=settings(max_examples=EXAMPLES, deadline=None, database=None,
+                                                          suppress_health_check=list(HealthCheck)))
+    except NoSuchExample:
+        return
+    digest = hashlib.sha256(json.dumps(bad, sort_keys=True).encode()).hexdigest()[:10]
+    bad["name"] = f"shrunk-{digest}"
+    path = FORECASTS / f"{bad['name']}.json"
+    path.write_text(json.dumps(bad, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    e, o = engine(bad), forecast_oracle(bad)
+    raise AssertionError(f"the forecast engine and the oracle disagree: {forecast_difference(e, o) or (e, o)}\n"
+                         f"the smallest such forecast is saved as {path}; commit it as a golden case")

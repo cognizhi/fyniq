@@ -1198,3 +1198,52 @@ func TestShareProperties(t *testing.T) {
 		}
 	})
 }
+
+// req: RND-PLAN
+// A forecast's amount rounds once, half away from zero, at any number of digits; a ratio, a rate, a payback and a count
+// at their own decimals; a quotient is rounded from its exact value, a true tie away from zero.
+func TestPlanPinnedCases(t *testing.T) {
+	d := func(s string) *apd.Decimal {
+		x, _, err := apd.NewFromString(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	long := "1234.564999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+	for _, c := range []struct{ in, want string }{
+		{"10.005", "10.01"}, {"-10.005", "-10.01"}, {"10.0049", "10.00"}, {"-0.004", "0.00"}, {"0", "0.00"},
+		{long, "1234.56"}, {"1234.565" + strings.Repeat("0", 120), "1234.57"},
+	} {
+		if got := Plan(d(c.in), sgd).Text('f'); got != c.want {
+			t.Errorf("Plan(%s): got %s, want %s", c.in[:min(len(c.in), 20)], got, c.want)
+		}
+	}
+	if got := Plan(d("1234.5"), jpy).Text('f'); got != "1235" {
+		t.Errorf("Plan in JPY: got %s, want 1235", got)
+	}
+	for _, c := range []struct {
+		f    func(*apd.Decimal) string
+		in   string
+		want string
+	}{
+		{PlanRatio, "3.14159", "3.14"}, {PlanRatio, "-0.005", "-0.01"}, {PlanRate, "0.123450", "0.1235"},
+		{PlanRate, "-0.00004", "0.0000"}, {PlanYears, "2.25", "2.3"}, {PlanCount, "104.94999", "104.9"},
+	} {
+		if got := c.f(d(c.in)); got != c.want {
+			t.Errorf("%s: got %s, want %s", c.in, got, c.want)
+		}
+	}
+	for _, c := range []struct{ num, den, want string }{
+		{"3000.00", "36", "83.33"}, {"1000.00", "8", "125.00"}, {"0.05", "2", "0.03"}, {"-0.05", "2", "-0.03"},
+		{"1", "3", "0.33"}, {"2", "3", "0.67"}, {"100", "-8", "-12.50"},
+	} {
+		got, err := PlanQuotient(d(c.num), d(c.den), 2)
+		if err != nil || got.Text('f') != c.want {
+			t.Errorf("%s ÷ %s: got %v, %v; want %s", c.num, c.den, got, err, c.want)
+		}
+	}
+	if _, err := PlanQuotient(d("1"), d("0"), 2); err == nil {
+		t.Error("a quotient of zero was given")
+	}
+}

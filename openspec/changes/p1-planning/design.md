@@ -362,16 +362,23 @@ year y = ⌈n/12⌉.
 - **The differential.** Hypothesis generates drivers, plans and levers within the guard's limits. Every figure of every
   scenario must agree to the cent and to the digit (QA-ENG-02). A fixed-seed sample runs in `make test`, the full run
   in `make differential`, and shrunk disagreements become golden cases.
-- **The workbook's sample.** A golden fixture, `test/planning/workbook-sample.json`, holds the sample's inputs, its
-  starting figures from the workbook's reference ledger, and the reference model's outputs. It is generated once from
-  zh-sheet-accounting at a pinned commit, by a script that records that commit. The parity test asks:
-  - each driver line in each month equals the reference's value rounded to the cent, unless the exact value is a
-    half-cent tie (the oracle identifies these exactly);
-  - each total, cash flow and balance is within half a cent per rounded line it adds, since the reference sums
-    unrounded values;
-  - the key results, the yearly summary and the feasibility results agree after their own rounding.
+- **The workbook's sample.** A golden fixture, `test/planning/workbook-sample.json`, holds two data sets: the sample
+  and the workbook's second data set (`worst_case_data`: Worst, delays, a cash-out, losses, two start-up years, a
+  one-off rebate). For each it has the inputs, the starting figures from the workbook's reference ledger and the
+  reference model's outputs. `scripts/workbook_planning_fixture.py` generates it from zh-sheet-accounting at a pinned
+  commit and records the commit. The parity test asks:
+  - each driver line in each month is within a cent of the reference's figure. A line is off by one only where it
+    is a percentage of a line already rounded, or adds the register's cents: measured on 8 Nov 2026, every other
+    line equals the reference rounded to the cent;
+  - each total, cash flow and balance is within a cent per rounded line it adds, cumulatively for cash, since the
+    reference sums unrounded values;
+  - customers and ARPA agree but for the reference's binary floating point;
+  - the cash-out month, runway, minimum month and break-even agree exactly, and the key amounts are within their
+    lines' allowance.
 
-  It is run on the CPF, SDL and tax figures the sample used, which are the 2026 values.
+  It runs on the CPF, SDL and tax figures the sample used, the 2026 values, with the workbook's one-off rebate as a
+  rebate for the first year's YA. (Superseded, 8 Nov 2026: "each driver line equals the reference rounded to the
+  cent", which a percentage of a rounded line cannot promise.)
 
 ### D10. Access and the API
 

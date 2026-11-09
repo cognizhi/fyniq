@@ -5,6 +5,9 @@
 // never in an image. Like the oracle, it exits with status 2 for an invalid scenario.
 //
 //	scenario-run <scenario.json>     the result on standard output
+//
+// A fyniq-forecast@1 document (test/differential/README.md, "Forecasts") runs through the forecast engine instead and
+// writes fyniq-forecast-result@1.
 package main
 
 import (
@@ -32,6 +35,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "scenario-run:", err)
 		return 1
 	}
+	var head struct {
+		Schema string `json:"schema"`
+	}
+	_ = json.Unmarshal(b, &head)
+	if head.Schema == differential.ForecastSchema {
+		return forecast(b, stdout, stderr)
+	}
 	s, err := differential.ParseScenario(b)
 	var invalid *differential.InvalidError
 	if errors.As(err, &invalid) {
@@ -43,6 +53,32 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	res, err := differential.RunEngine(s)
+	if err != nil {
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
+	}
+	out := json.NewEncoder(stdout)
+	out.SetIndent("", " ")
+	if err := out.Encode(res); err != nil {
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
+	}
+	return 0
+}
+
+// forecast runs a forecast document through the forecast engine.
+func forecast(b []byte, stdout, stderr io.Writer) int {
+	f, err := differential.ParseForecast(b)
+	var invalid *differential.InvalidError
+	if errors.As(err, &invalid) {
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 2
+	}
+	res, err := differential.RunForecast(f)
+	if errors.As(err, &invalid) {
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 2
+	}
 	if err != nil {
 		fmt.Fprintln(stderr, "scenario-run:", err)
 		return 1

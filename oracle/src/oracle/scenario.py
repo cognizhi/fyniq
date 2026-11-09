@@ -252,6 +252,11 @@ def _schema_error(file_name: str, instance: Any) -> str | None:
     return f"{file_name}: {where}: {error.message}"
 
 
+def schema_error(file_name: str, instance: Any) -> str | None:
+    """Why ``instance`` breaks the schema ``file_name`` beside the scenario schema, or None (the forecast's too)."""
+    return _schema_error(file_name, instance)
+
+
 def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:

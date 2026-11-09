@@ -13,3 +13,8 @@ var ScenarioSchema []byte
 //
 //go:embed result.schema.json
 var ResultSchema []byte
+
+// ForecastSchema is forecast.schema.json (fyniq-forecast@1).
+//
+//go:embed forecast.schema.json
+var ForecastSchema []byte
