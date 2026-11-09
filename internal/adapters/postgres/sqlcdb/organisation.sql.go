@@ -24,7 +24,7 @@ func (q *Queries) CheckDeferred(ctx context.Context) error {
 }
 
 const getOrganisation = `-- name: GetOrganisation :one
-SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone FROM fyniq.organisation
+SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone, dpo_user_id, dpo_name, dpo_email FROM fyniq.organisation
 `
 
 type GetOrganisationRow struct {
@@ -49,6 +49,9 @@ type GetOrganisationRow struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+	DpoUserID         *uuid.UUID
+	DpoName           *string
+	DpoEmail          *string
 }
 
 func (q *Queries) GetOrganisation(ctx context.Context) (GetOrganisationRow, error) {
@@ -76,6 +79,9 @@ func (q *Queries) GetOrganisation(ctx context.Context) (GetOrganisationRow, erro
 		&i.BooksStart,
 		&i.FirstYearEnd,
 		&i.TimeZone,
+		&i.DpoUserID,
+		&i.DpoName,
+		&i.DpoEmail,
 	)
 	return i, err
 }
@@ -113,7 +119,7 @@ func (q *Queries) InsertOrganisation(ctx context.Context, arg InsertOrganisation
 }
 
 const lockOrganisation = `-- name: LockOrganisation :one
-SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone FROM fyniq.organisation FOR UPDATE
+SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone, dpo_user_id, dpo_name, dpo_email FROM fyniq.organisation FOR UPDATE
 `
 
 type LockOrganisationRow struct {
@@ -138,6 +144,9 @@ type LockOrganisationRow struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+	DpoUserID         *uuid.UUID
+	DpoName           *string
+	DpoEmail          *string
 }
 
 // The organisation's row, locked for a change of its profile (FR-INT-09: the version is compared under the lock).
@@ -166,6 +175,9 @@ func (q *Queries) LockOrganisation(ctx context.Context) (LockOrganisationRow, er
 		&i.BooksStart,
 		&i.FirstYearEnd,
 		&i.TimeZone,
+		&i.DpoUserID,
+		&i.DpoName,
+		&i.DpoEmail,
 	)
 	return i, err
 }
@@ -204,8 +216,9 @@ UPDATE fyniq.organisation SET legal_name = $1, uen = $2,
   bank_account_name = $9, bank_account_number = $10,
   paynow_uen = $11, document_footer = $12, fy_start_month = $13,
   books_start = $14, first_year_end = $15, time_zone = $16,
+  dpo_user_id = $17, dpo_name = $18, dpo_email = $19,
   version = version + 1
-RETURNING organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone
+RETURNING organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone, dpo_user_id, dpo_name, dpo_email
 `
 
 type UpdateOrganisationProfileParams struct {
@@ -225,6 +238,9 @@ type UpdateOrganisationProfileParams struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+	DpoUserID         *uuid.UUID
+	DpoName           *string
+	DpoEmail          *string
 }
 
 type UpdateOrganisationProfileRow struct {
@@ -249,6 +265,9 @@ type UpdateOrganisationProfileRow struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+	DpoUserID         *uuid.UUID
+	DpoName           *string
+	DpoEmail          *string
 }
 
 func (q *Queries) UpdateOrganisationProfile(ctx context.Context, arg UpdateOrganisationProfileParams) (UpdateOrganisationProfileRow, error) {
@@ -269,6 +288,9 @@ func (q *Queries) UpdateOrganisationProfile(ctx context.Context, arg UpdateOrgan
 		arg.BooksStart,
 		arg.FirstYearEnd,
 		arg.TimeZone,
+		arg.DpoUserID,
+		arg.DpoName,
+		arg.DpoEmail,
 	)
 	var i UpdateOrganisationProfileRow
 	err := row.Scan(
@@ -293,6 +315,9 @@ func (q *Queries) UpdateOrganisationProfile(ctx context.Context, arg UpdateOrgan
 		&i.BooksStart,
 		&i.FirstYearEnd,
 		&i.TimeZone,
+		&i.DpoUserID,
+		&i.DpoName,
+		&i.DpoEmail,
 	)
 	return i, err
 }

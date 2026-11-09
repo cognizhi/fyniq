@@ -41,6 +41,29 @@
       "maxLength": 1000,
       "type": "string"
     },
+    "dpo_email": {
+      "description": "The DPO's business email address; \"\" clears it.",
+      "examples": [
+        "dpo@northwind.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "dpo_name": {
+      "description": "The DPO's name, as the company publishes it; \"\" clears it.",
+      "examples": [
+        "Ada Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "dpo_user_id": {
+      "description": "The member to name the Data Protection Officer, by user ID; \"\" names none, as for an outsourced DPO.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
     "email": {
       "description": "The address documents give; \"\" clears it.",
       "examples": [

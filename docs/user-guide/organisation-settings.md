@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10]
+requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10]
 status: draft
 ---
 
@@ -34,6 +34,22 @@ the month the year starts in and the end of the first year no longer change.
 1. Select **Edit the profile**.
 2. Change the fields. A field left empty is cleared.
 3. Select **Save the profile**. If someone else saved it meanwhile, Fyniq asks you to reload first.
+
+## Data Protection Officer
+
+Under the PDPA the company names a Data Protection Officer (DPO) and makes their business contact public. In **Edit
+the profile**, choose the member who is the DPO, normally the one who holds the Compliance officer role, and enter the
+name and business email address the company publishes for them. If the DPO is an outside firm, choose no member and
+enter its name and email.
+
+Once the contact is saved:
+- every email Fyniq sends ends with it;
+- documents give it in their footer when their template is the default one, or a version published after it was saved;
+  documents already issued stay as they were;
+- the **Data Protection Officer** card shows the text to publish on the company's website, with **Copy the text**.
+
+A member named as the DPO needs the name and email too. If they do not hold the Compliance officer role, the card warns
+you: they can be the DPO, but they cannot keep the data protection registers until they hold it.
 
 ## GST registration
 

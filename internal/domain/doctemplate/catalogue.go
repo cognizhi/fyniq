@@ -129,6 +129,8 @@ var (
 		{"organisation.address", TypeText, "Your address"},
 		{"organisation.email", TypeText, "Your email address"},
 		{"organisation.phone", TypeText, "Your phone number"},
+		{"organisation.dpo_name", TypeText, "Your Data Protection Officer's name"},
+		{"organisation.dpo_email", TypeText, "Your Data Protection Officer's business email address"},
 	}
 	documentFields = []Field{
 		{"document.number", TypeText, "Document number"},

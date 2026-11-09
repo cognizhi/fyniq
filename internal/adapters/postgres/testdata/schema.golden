@@ -1166,6 +1166,9 @@ organisation | fy_start_month | smallint | not null | 1
 organisation | books_start | date | null | 
 organisation | first_year_end | date | null | 
 organisation | time_zone | text | not null | 'Asia/Singapore'::text
+organisation | dpo_user_id | uuid | null | 
+organisation | dpo_name | text | null | 
+organisation | dpo_email | text | null | 
 organisation_connector | organisation_id | uuid | not null | current_org()
 organisation_connector | id | uuid | not null | uuidv7()
 organisation_connector | connector | text | not null | 
@@ -3533,6 +3536,7 @@ organisation | organisation_base_currency_fkey | FOREIGN KEY (base_currency, bas
 organisation | organisation_base_currency_not_null | NOT NULL base_currency
 organisation | organisation_base_minor_units_not_null | NOT NULL base_minor_units
 organisation | organisation_created_at_not_null | NOT NULL created_at
+organisation | organisation_dpo_contact | CHECK ((((length(dpo_name) >= 1) AND (length(dpo_name) <= 200)) AND ((length(dpo_email) >= 3) AND (length(dpo_email) <= 254)) AND ((dpo_user_id IS NULL) OR ((dpo_name IS NOT NULL) AND (dpo_email IS NOT NULL)))))
 organisation | organisation_first_year | CHECK (((first_year_end > books_start) AND (EXTRACT(day FROM (first_year_end + 1)) = (1)::numeric) AND (EXTRACT(month FROM (first_year_end + 1)) = (fy_start_month)::numeric)))
 organisation | organisation_fy_start_month_not_null | NOT NULL fy_start_month
 organisation | organisation_fy_start_month_range | CHECK (((fy_start_month >= 1) AND (fy_start_month <= 12)))

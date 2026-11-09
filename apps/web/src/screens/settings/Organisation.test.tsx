@@ -117,6 +117,41 @@ describe("Organisation settings", () => {
   });
 });
 
+// req: CMP-PD-01
+describe("The Data Protection Officer", () => {
+  const members = { items: [{ id: "m-1", user_id: "u-grace", display_name: "Grace Lim", roles: [], since: "2026-10-01T00:00:00Z", version: 1 }, { id: "m-2", user_id: "u-hal", display_name: "Hal Ng", roles: [], since: "2026-10-01T00:00:00Z", version: 1 }] };
+
+  it("shows the contact to publish, and warns when the member named does not hold the role; axe finds nothing", async () => {
+    page({
+      "GET /v1/organisation/profile": { status: 200, body: { ...profile, dpo_user_id: "u-hal", dpo_name: "Hal Ng", dpo_email: "dpo@cognizhi.example", dpo_holds_role: false }, headers: { ETag: '"5"' } },
+      "GET /v1/members": { status: 200, body: members },
+    });
+    renderPage(Organisation, { path: "/settings/organisation" });
+    const card = await screen.findByRole("region", { name: "Data Protection Officer" });
+    expect(within(card).getByText(/Data Protection Officer: Hal Ng, dpo@cognizhi.example\. Questions about how Cognizhi Pte Ltd handles personal data/)).toBeTruthy();
+    expect(within(card).getByText("The DPO does not hold the Compliance officer role")).toBeTruthy();
+    expect(within(card).getByRole("button", { name: "Copy the text" })).toBeTruthy();
+    expect(await screen.findByText("Hal Ng", { selector: "dd" })).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("says none is named, and names a member with the contact", async () => {
+    const seen = page({ "GET /v1/members": { status: 200, body: members }, "PATCH /v1/organisation/profile": { status: 200, body: { ...profile, version: 6 } } });
+    renderPage(Organisation, { path: "/settings/organisation" });
+    const card = await screen.findByRole("region", { name: "Data Protection Officer" });
+    expect(within(card).getByText(/No Data Protection Officer is named/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Edit the profile" }));
+    const dialog = await screen.findByRole("dialog");
+    await within(dialog).findByRole("option", { name: "Grace Lim" });
+    fireEvent.change(within(dialog).getByLabelText("Data Protection Officer"), { target: { value: "u-grace" } });
+    fireEvent.change(within(dialog).getByLabelText("DPO's name, as published"), { target: { value: "Grace Lim" } });
+    fireEvent.change(within(dialog).getByLabelText("DPO's business email"), { target: { value: "dpo@cognizhi.example" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the profile" }));
+    await waitFor(() => expect(calls()).toContain("PATCH /v1/organisation/profile"));
+    expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ dpo_user_id: "u-grace", dpo_name: "Grace Lim", dpo_email: "dpo@cognizhi.example" });
+  });
+});
+
 // req: FR-ORG-03
 // req: FR-ORG-04
 describe("GST registration and document numbering", () => {

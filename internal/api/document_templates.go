@@ -464,7 +464,8 @@ func (a *API) sampleOf(ctx context.Context, u storage.UnitOfWork, documentType s
 	p := o.Profile
 	for path, v := range map[string]string{
 		"organisation.name": cmpOr(p.LegalName, o.Name), "organisation.uen": p.UEN, "organisation.address": p.RegisteredAddress,
-		"organisation.email": p.Email, "organisation.phone": p.Phone, "payment.bank_name": p.BankName,
+		"organisation.email": p.Email, "organisation.phone": p.Phone, "organisation.dpo_name": p.DPOName,
+		"organisation.dpo_email": p.DPOEmail, "payment.bank_name": p.BankName,
 		"payment.account_name": p.BankAccountName, "payment.account_number": p.BankAccountNumber, "payment.paynow": p.PayNowUEN,
 	} {
 		if strings.TrimSpace(v) == "" {

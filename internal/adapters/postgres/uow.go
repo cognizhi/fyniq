@@ -61,7 +61,8 @@ func organisationOf(r sqlcdb.LockOrganisationRow) storage.Organisation {
 			MailingAddress: str(r.MailingAddress), Email: str(r.Email), Phone: str(r.Phone), Website: str(r.Website),
 			BankName: str(r.BankName), BankAccountName: str(r.BankAccountName), BankAccountNumber: str(r.BankAccountNumber),
 			PayNowUEN: str(r.PaynowUen), DocumentFooter: str(r.DocumentFooter), FYStartMonth: int(r.FyStartMonth),
-			BooksStart: nullDate(r.BooksStart), FirstYearEnd: nullDate(r.FirstYearEnd), TimeZone: r.TimeZone}}
+			BooksStart: nullDate(r.BooksStart), FirstYearEnd: nullDate(r.FirstYearEnd), TimeZone: r.TimeZone,
+			DPOUserID: r.DpoUserID, DPOName: str(r.DpoName), DPOEmail: str(r.DpoEmail)}}
 }
 
 // UpdateOrganisation implements storage.UnitOfWork: under the row's lock, the version must still be the
@@ -88,7 +89,8 @@ func (u *unitOfWork) UpdateOrganisation(ctx context.Context, version int, p stor
 		RegisteredAddress: opt(p.RegisteredAddress), MailingAddress: opt(p.MailingAddress), Email: opt(p.Email), Phone: opt(p.Phone),
 		Website: opt(p.Website), BankName: opt(p.BankName), BankAccountName: opt(p.BankAccountName),
 		BankAccountNumber: opt(p.BankAccountNumber), PaynowUen: opt(p.PayNowUEN), DocumentFooter: opt(p.DocumentFooter),
-		FyStartMonth: month, BooksStart: pgDate(p.BooksStart), FirstYearEnd: pgDate(p.FirstYearEnd), TimeZone: p.TimeZone})
+		FyStartMonth: month, BooksStart: pgDate(p.BooksStart), FirstYearEnd: pgDate(p.FirstYearEnd), TimeZone: p.TimeZone,
+		DpoUserID: p.DPOUserID, DpoName: opt(p.DPOName), DpoEmail: opt(p.DPOEmail)})
 	if err != nil {
 		return storage.Organisation{}, mapError(err)
 	}
@@ -101,6 +103,14 @@ func (u *unitOfWork) UpdateOrganisation(ctx context.Context, version int, p stor
 		return storage.Organisation{}, err
 	}
 	return after, nil
+}
+
+// userOf is a member's user ID as text, or "" for none.
+func userOf(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
 }
 
 // profileChanges are the fields that differ, by column name; the audit trail masks the bank and PayNow
@@ -127,6 +137,9 @@ func profileChanges(a, b storage.OrganisationProfile) map[string][2]any {
 	text("time_zone", a.TimeZone, b.TimeZone)
 	text("books_start", dayOf(a.BooksStart), dayOf(b.BooksStart))
 	text("first_year_end", dayOf(a.FirstYearEnd), dayOf(b.FirstYearEnd))
+	text("dpo_user_id", userOf(a.DPOUserID), userOf(b.DPOUserID))
+	text("dpo_name", a.DPOName, b.DPOName)
+	text("dpo_email", a.DPOEmail, b.DPOEmail)
 	if a.FYStartMonth != b.FYStartMonth {
 		out["fy_start_month"] = [2]any{a.FYStartMonth, b.FYStartMonth}
 	}

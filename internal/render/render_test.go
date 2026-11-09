@@ -55,6 +55,7 @@ func find(l Layout, kind string) *Block {
 
 // req: FR-TPL-01
 // req: FR-TPL-03
+// req: CMP-PD-01
 func TestTheLayoutFollowsTheTemplate(t *testing.T) {
 	c := doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice)
 	for i := range c.Blocks {
@@ -119,14 +120,21 @@ func TestTheLayoutFollowsTheTemplate(t *testing.T) {
 	}
 
 	// The footer leaves out a part whose fields are all empty: an organisation with no UEN shows its name alone, not a
-	// dangling "· UEN"; text without a field always stays.
+	// dangling "· UEN"; text without a field always stays. (rev 0.244) It gives the DPO's contact once one is named
+	// (CMP-PD-01).
 	d = Sample(doctemplate.Invoice)
-	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd · UEN 202400001A" {
+	dpo := "Personal data: Data Protection Officer, dpo@example.com"
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd · UEN 202400001A · "+dpo {
 		t.Errorf("the footer with a UEN: %q", find(l, "footer").Body)
 	}
 	delete(d.Fields, "organisation.uen")
-	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd" {
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd · "+dpo {
 		t.Errorf("the footer without a UEN: %q", find(l, "footer").Body)
+	}
+	delete(d.Fields, "organisation.dpo_name")
+	delete(d.Fields, "organisation.dpo_email")
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd" {
+		t.Errorf("the footer without a UEN or a DPO: %q", find(l, "footer").Body)
 	}
 	thanks := doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice)
 	for i := range thanks.Blocks {

@@ -2012,6 +2012,10 @@
       "label": "Compliance",
       "tooltip": "The statutory deadlines, the controls, the GST position, the evidence and the audit trail."
     },
+    "organisation.dpo": {
+      "label": "Data Protection Officer",
+      "tooltip": "Who answers for personal data at the company, and the business contact it publishes; every email Fyniq sends gives it."
+    },
     "compliance.controls": {
       "label": "Controls",
       "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."

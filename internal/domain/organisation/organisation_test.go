@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -104,5 +106,36 @@ func TestEveryBrokenRuleIsReportedAtOnce(t *testing.T) {
 	p.LegalName = string(long)
 	if got := codes(Check(p)); !slices.Equal(got, []string{"ORG-01 legal_name"}) {
 		t.Errorf("a legal name of 201 characters: %v", got)
+	}
+}
+
+// The Data Protection Officer (CMP-PD-01, rev 0.244): a member named as the DPO needs the business contact the company
+// publishes for them; an outsourced DPO has the contact and no member; the email footer gives the contact once there
+// is one.
+// req: CMP-PD-01
+func TestTheDPOsContact(t *testing.T) {
+	member := uuid.New()
+	p := profile()
+	p.DPOUserID, p.DPOName, p.DPOEmail = &member, "Ada Tan", "dpo@northwind.example"
+	if got := Check(p); got != nil {
+		t.Errorf("a member named with the contact: %v", got)
+	}
+	if got := PrivacyFooter(p); got != "Questions about your personal data: Ada Tan, Data Protection Officer, dpo@northwind.example" {
+		t.Errorf("the footer: %q", got)
+	}
+	p.DPOUserID = nil
+	if got := Check(p); got != nil {
+		t.Errorf("an outsourced DPO: %v", got)
+	}
+	p.DPOUserID, p.DPOEmail = &member, ""
+	if got := codes(Check(p)); !slices.Equal(got, []string{"ORG-11 dpo_email"}) {
+		t.Errorf("a member named without the contact: %v", got)
+	}
+	if got := PrivacyFooter(p); got != "" {
+		t.Errorf("a footer without the email: %q", got)
+	}
+	p.DPOEmail = "not an address"
+	if got := codes(Check(p)); !slices.Equal(got, []string{"ORG-03 dpo_email"}) {
+		t.Errorf("a DPO email that is not one: %v", got)
 	}
 }

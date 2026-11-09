@@ -38,6 +38,35 @@
       ],
       "type": "string"
     },
+    "dpo_email": {
+      "description": "The DPO's business email address, as the company publishes it (PDPA s11(5)); every email Fyniq sends gives it.",
+      "examples": [
+        "dpo@northwind.example"
+      ],
+      "type": "string"
+    },
+    "dpo_holds_role": {
+      "description": "With a member named the DPO: whether they hold the Compliance officer role. false is a warning, not a refusal: a company of two may name the Owner.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "dpo_name": {
+      "description": "The DPO's name, as the company publishes it.",
+      "examples": [
+        "Ada Tan"
+      ],
+      "type": "string"
+    },
+    "dpo_user_id": {
+      "description": "The member named the Data Protection Officer (CMP-PD-01); absent for an outsourced DPO, or before one is named.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "email": {
       "description": "The address documents give for questions.",
       "examples": [

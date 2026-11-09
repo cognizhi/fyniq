@@ -31042,6 +31042,27 @@ export interface components {
              */
             document_footer?: string;
             /**
+             * @description The DPO's business email address, as the company publishes it (PDPA s11(5)); every email Fyniq sends gives it.
+             * @example dpo@northwind.example
+             */
+            dpo_email?: string;
+            /**
+             * @description With a member named the DPO: whether they hold the Compliance officer role. false is a warning, not a refusal: a company of two may name the Owner.
+             * @example true
+             */
+            dpo_holds_role?: boolean;
+            /**
+             * @description The DPO's name, as the company publishes it.
+             * @example Ada Tan
+             */
+            dpo_name?: string;
+            /**
+             * Format: uuid
+             * @description The member named the Data Protection Officer (CMP-PD-01); absent for an outsourced DPO, or before one is named.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            dpo_user_id?: string;
+            /**
              * @description The address documents give for questions.
              * @example accounts@northwind.example
              */
@@ -33164,6 +33185,21 @@ export interface components {
              * @example Thank you for your business.
              */
             document_footer?: string;
+            /**
+             * @description The DPO's business email address; "" clears it.
+             * @example dpo@northwind.example
+             */
+            dpo_email?: string;
+            /**
+             * @description The DPO's name, as the company publishes it; "" clears it.
+             * @example Ada Tan
+             */
+            dpo_name?: string;
+            /**
+             * @description The member to name the Data Protection Officer, by user ID; "" names none, as for an outsourced DPO.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            dpo_user_id?: string;
             /**
              * @description The address documents give; "" clears it.
              * @example accounts@northwind.example
@@ -114595,7 +114631,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `STORAGE-ORG-01` The organisation's details are not valid. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `ORG-11` The DPO has no published contact; `STORAGE-ORG-01` The organisation's details are not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
