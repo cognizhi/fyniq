@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "holdings": {
+      "description": "Each holder's shares of each class, typed in from the business profile.",
+      "items": {
+        "$ref": "AcraHoldingDraft.schema.json"
+      },
+      "maxItems": 500,
+      "type": "array"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "Business profile bought on 1 Oct 2026"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "profile_on": {
+      "description": "The day the business profile was generated, as printed on it.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "profile_on",
+    "holdings"
+  ],
+  "title": "AcraExtractDraft",
+  "type": "object"
+}

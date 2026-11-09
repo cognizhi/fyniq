@@ -34,6 +34,11 @@ var equityChecks = []Definition{
 			"entity, ends exempt-private-company status. When the register says otherwise than the status recorded, record the new " +
 			"status from the ACRA business profile and re-check the directors' accounts in debit (FR-EQ-11).",
 		Rules: "FR-EQ-25, FR-EQ-11", Owner: "accountant", View: viewEquity, Triggers: []string{"document", "share_issue", "holding_movement"}, Run: exemptStatusHolds},
+	{Key: "equity.acra-register", Ref: "C.2 #26", Area: "Equity", Worst: Warning, Title: "The register agrees with ACRA's register of members",
+		Explain: "The register of members is compared with the latest ACRA business profile typed in, at the profile's day, holder by " +
+			"holder and class by class. A difference is either the register's, fixed by a reversal citing the extract, or the " +
+			"typing's, fixed by typing the profile in again. With holders and no extract recorded, it is not assessed.",
+		Rules: "FR-EQ-26", Owner: "accountant", View: viewEquity, Triggers: []string{"document", "share_issue", "holding_movement"}, Run: acraRegisterAgrees},
 }
 
 // C.2 #29: each recorded instrument no conversion still stands for, whose maturity has passed, or which converts at a
@@ -241,6 +246,61 @@ func exemptStatusHolds(ctx context.Context, u storage.UnitOfWork, e *Env) (Resul
 		Detail:  fmt.Sprintf("Recorded as %s from %s, but %s", recorded, day(x.Recorded.Status.From), why)}},
 		"The register no longer agrees with the exempt status recorded",
 		"Check the ACRA business profile and record the status it shows, then re-check the directors' accounts in debit (FR-EQ-11)"), nil
+}
+
+// C.2 #26: each holding where the register on the latest ACRA extract's day differs from the extract (⚠); not assessed
+// while the register holds shares and no extract is recorded.
+func acraRegisterAgrees(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	latest, diffs, err := equity.ReconcileIn(ctx, u)
+	if err != nil {
+		return Result{}, err
+	}
+	if latest == nil {
+		t, err := equity.TableIn(ctx, u, e.Today)
+		if err != nil {
+			return Result{}, err
+		}
+		if t.Issued.Sign() == 0 {
+			return Fine("No shares are recorded, so there is nothing to compare with ACRA yet"), nil
+		}
+		return Missing("the latest ACRA business profile, its holdings typed in with the PDF attached", "Equity › ACRA reconciliation"), nil
+	}
+	if len(diffs) == 0 {
+		return Fine(fmt.Sprintf("The register agrees with ACRA's business profile of %s", day(latest.Value.ProfileOn))), nil
+	}
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	codes := map[uuid.UUID]string{}
+	for _, a := range accounts {
+		codes[a.ID] = a.Code
+	}
+	var items []Item
+	for _, d := range diffs {
+		c, err := u.Contacts().Get(ctx, d.HolderID)
+		if err != nil {
+			return Result{}, err
+		}
+		items = append(items, Item{Kind: "contact", ID: d.HolderID.String() + "/" + codes[d.AccountID], Label: c.LegalName + ", " + codes[d.AccountID],
+			Version: latest.Doc.ID.String() + "/" + d.Register + "/" + d.Acra,
+			Detail: fmt.Sprintf("The register holds %s shares and ACRA's business profile of %s lists %s. Fix the register by a reversal citing the "+
+				"extract, or type the profile in again", grouped(d.Register), day(latest.Value.ProfileOn), grouped(d.Acra))})
+	}
+	return Found(Warning, items, fmt.Sprintf("%d holding(s) differ from ACRA's register of members", len(items)),
+		"Find which is right: correct the register by a reversal citing the extract, or type the business profile in again"), nil
+}
+
+// grouped writes a whole number of shares with thousands separators: "300000" is "300,000".
+func grouped(n string) string {
+	var b strings.Builder
+	for i, r := range n {
+		if i > 0 && (len(n)-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 // formName is an instrument's form in a check's words.

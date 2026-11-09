@@ -93,6 +93,10 @@ type (
 		ControllerEntryPath
 		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	}
+	AcraExtractEvidencePath struct {
+		AcraExtractPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
 )
 
 type (
@@ -189,6 +193,22 @@ type (
 	}
 	removeGrantEvidenceInput struct {
 		OptionGrantEvidencePath
+		IfMatchHeader
+		PreferHeader
+	}
+	addAcraEvidenceInput struct {
+		AcraExtractPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listAcraEvidenceInput struct {
+		AcraExtractPath
+		PageQuery
+	}
+	removeAcraEvidenceInput struct {
+		AcraExtractEvidencePath
 		IfMatchHeader
 		PreferHeader
 	}
@@ -311,7 +331,8 @@ func (a *API) attachEquityEvidence(ctx context.Context, t storage.DocumentType, 
 	field := map[storage.DocumentType]string{storage.DocumentHolderRecord: "record_id", storage.DocumentShareClass: "version_id",
 		storage.DocumentEquityTransaction: "transaction_id", storage.DocumentInstrument: "instrument_id",
 		storage.DocumentInstrumentTemplate: "enablement_id", storage.DocumentOptionPool: "resolution_id", storage.DocumentOptionGrant: "grant_id",
-		storage.DocumentOptionEvent: "event_id", storage.DocumentInvestorRights: "rights_id", storage.DocumentControllerEntry: "entry_id"}[t]
+		storage.DocumentOptionEvent: "event_id", storage.DocumentInvestorRights: "rights_id", storage.DocumentControllerEntry: "entry_id",
+		storage.DocumentAcraExtract: "extract_id"}[t]
 	id, err := parseID(field, recordID)
 	if err != nil {
 		return nil, err
@@ -775,10 +796,40 @@ func registerEquityEvidence(a *API) {
 		return a.removeEquityEvidence(ctx, storage.DocumentControllerEntry, "entry_id", in.EntryID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 
+	register(a, authz.AddAcraExtractEvidence, huma.Operation{
+		OperationID: "addAcraExtractEvidence", Method: http.MethodPost, Path: "/v1/acra-extracts/{extract_id}/evidence", Tags: []string{"Evidence"},
+		DefaultStatus: http.StatusCreated, Summary: "Attach the business profile an ACRA extract was typed from",
+		Description: "Attaches a file to a drafted ACRA extract (FR-EQ-26, FR-DOC-05), as multipart/form-data: the business profile's PDF. " +
+			"Recording needs one." + addNote,
+	}, addCodes, func(ctx context.Context, in *addAcraEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentAcraExtract, "/v1/acra-extracts", in.ExtractID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListAcraExtractEvidence, huma.Operation{
+		OperationID: "listAcraExtractEvidence", Method: http.MethodGet, Path: "/v1/acra-extracts/{extract_id}/evidence", Tags: []string{"Evidence"},
+		Summary:     "List an ACRA extract's files",
+		Description: "The files attached to an ACRA extract, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listAcraEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentAcraExtract, "extract_id", in.ExtractID, in.PageQuery)
+	})
+	register(a, authz.GetAcraExtractEvidence, huma.Operation{
+		OperationID: "getAcraExtractEvidence", Method: http.MethodGet, Path: "/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Get an ACRA extract's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *AcraExtractEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentAcraExtract, "extract_id", in.ExtractID, in.EvidenceID)
+	})
+	register(a, authz.RemoveAcraExtractEvidence, huma.Operation{
+		OperationID: "removeAcraExtractEvidence", Method: http.MethodDelete, Path: "/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", Tags: []string{"Evidence"},
+		Summary:     "Remove a file from a drafted ACRA extract",
+		Description: "Takes a file off an ACRA extract not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeAcraEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentAcraExtract, "extract_id", in.ExtractID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+
 	for _, path := range []string{"/v1/holder-records/{record_id}/evidence", "/v1/share-classes/{version_id}/evidence", "/v1/equity-transactions/{transaction_id}/evidence",
 		"/v1/instruments/{instrument_id}/evidence", "/v1/instrument-template-enablements/{enablement_id}/evidence",
 		"/v1/option-pool/resolutions/{resolution_id}/evidence", "/v1/option-grants/{grant_id}/evidence", "/v1/option-events/{event_id}/evidence",
-		"/v1/investor-rights/{rights_id}/evidence", "/v1/controller-entries/{entry_id}/evidence"} {
+		"/v1/investor-rights/{rights_id}/evidence", "/v1/controller-entries/{entry_id}/evidence", "/v1/acra-extracts/{extract_id}/evidence"} {
 		if op := a.OpenAPI().Paths[path].Post; op != nil && op.RequestBody != nil {
 			if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
 				mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}

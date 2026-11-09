@@ -28,6 +28,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/accounts/{account_id}` (updateAccount): Change an account
 - `POST /v1/accounts/{account_id}/merge-approval` (requestAccountMerge): Ask for approval to merge an account into another
 - `POST /v1/accounts:load-standard-chart` (loadStandardChart): Load the standard chart of accounts
+- `GET /v1/acra-extracts` (listAcraExtracts): List the ACRA register extracts
+- `POST /v1/acra-extracts` (createAcraExtract): Type in an ACRA register extract
+- `GET /v1/acra-extracts/{extract_id}` (getAcraExtract): Get an ACRA register extract
+- `PUT /v1/acra-extracts/{extract_id}` (replaceAcraExtract): Change a drafted ACRA register extract
+- `GET /v1/acra-extracts/{extract_id}/evidence` (listAcraExtractEvidence): List an ACRA extract's files
+- `POST /v1/acra-extracts/{extract_id}/evidence` (addAcraExtractEvidence): Attach the business profile an ACRA extract was typed from
+- `GET /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (getAcraExtractEvidence): Get an ACRA extract's file
+- `DELETE /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (removeAcraExtractEvidence): Remove a file from a drafted ACRA extract
+- `POST /v1/acra-extracts/{extract_id}/record` (recordAcraExtract): Record an ACRA register extract
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
@@ -111,6 +120,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/break-glass/{break_glass_id}/end` (endBreakGlass): End break-glass now
 - `POST /v1/break-glass/{break_glass_id}/review` (reviewBreakGlass): Review a break-glass
 - `GET /v1/cap-table` (getCapTable): Get the cap table
+- `GET /v1/cap-table/acra-reconciliation` (getAcraReconciliation): Get the register against ACRA's
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table
 - `GET /v1/cap-table/statutory-tests` (getStatutoryTests): Get the cap table's statutory tests
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
