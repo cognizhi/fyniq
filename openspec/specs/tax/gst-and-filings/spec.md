@@ -126,6 +126,19 @@ Source: PRD-001 §8.11 · Priority M · Phase P1
 - **WHEN** the registration monitor runs
 - **THEN** it tests the forecast taxable supplies of the next 12 months against the threshold
 
+#### Scenario: Warning before the threshold (rev 0.208)
+- **GIVEN** the organisation setting of the percentage, 80 by default
+- **WHEN** the calendar year's taxable supplies reach that percentage of the threshold in the `sg-gst` pack
+- **THEN** the monitor warns (⚠, C.1 #37)
+
+#### Scenario: What counts as taxable supplies (rev 0.208)
+- **WHEN** the retrospective test adds up the calendar year
+- **THEN** it counts the standard-rated and zero-rated supplies and leaves out exempt and out-of-scope supplies and sales of capital assets
+
+#### Scenario: A forecast with its evidence (rev 0.208)
+- **WHEN** the prospective test runs
+- **THEN** it reads a forecast of the next 12 months that a person recorded with its evidence, such as signed contracts or confirmed orders
+
 ### Requirement: FR-TAX-10 InvoiceNow submission population
 When the InvoiceNow requirement applies (FR-AR-12), every document that feeds the GST return SHALL map to a submission, or to a recorded exclusion with its reason.
 
@@ -278,6 +291,14 @@ Source: PRD-001 §8.11 · Priority M · Phase P1
 #### Scenario: Overdue items on Checks
 - **WHEN** an obligation passes its date unmet
 - **THEN** it shows as overdue on Checks (CMP-02)
+
+#### Scenario: Recording a filing (rev 0.208)
+- **WHEN** a person records an obligation as filed with its acknowledgement as evidence, or as not required with the reason (such as the ECI waiver)
+- **THEN** they hold C on the Statutory calendar row of Appendix D: the Owner, the Finance controller, the Accountant or the Tax agent
+
+#### Scenario: CPF and IR8A/AIS before the payroll link (rev 0.208)
+- **WHEN** the calendar is built before `p1-payroll-link`
+- **THEN** CPF and IR8A/AIS follow the effective-dated organisation setting Pays staff from, and while no date is set the calendar shows neither
 
 ### Requirement: FR-TAX-08 ACRA filing pack
 The system SHALL prepare an ACRA filing pack: a filing-category classifier, a BizFinx data pack, then XBRL (Taxonomy 2026) validated with Arelle (§14.2).
