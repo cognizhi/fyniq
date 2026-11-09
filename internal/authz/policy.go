@@ -1337,6 +1337,16 @@ var (
 	RemoveOptionEventEvidence  = Policy{Operation: "removeOptionEventEvidence", Capability: CapTable, Need: Create}
 )
 
+// Round scenarios (FR-EQ-21; p1-equity-register slice 6, design D8): modelled by the Accountant (C/P), read by whoever
+// reads the cap table, approved by an Owner or the Controller, which drafts the round's issues. Nothing posts.
+var (
+	ListRoundScenarios           = Policy{Operation: "listRoundScenarios", Capability: CapTable, Need: View, Unqualified: true}
+	CreateRoundScenario          = Policy{Operation: "createRoundScenario", Capability: CapTable, Need: Create}
+	GetRoundScenario             = Policy{Operation: "getRoundScenario", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceRoundScenario         = Policy{Operation: "replaceRoundScenario", Capability: CapTable, Need: Create}
+	RequestRoundScenarioApproval = Policy{Operation: "requestRoundScenarioApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up."}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1517,7 +1527,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	RemovePoolResolutionEvidence, ListOptionGrants, CreateOptionGrant, GetOptionGrant, ReplaceOptionGrant, RequestOptionGrantApproval,
 	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants,
 	CreateOptionEvent, GetOptionEvent, ReplaceOptionEvent, RequestOptionEventApproval, AddOptionEventEvidence, ListOptionEventEvidence,
-	GetOptionEventEvidence, RemoveOptionEventEvidence)
+	GetOptionEventEvidence, RemoveOptionEventEvidence, ListRoundScenarios, CreateRoundScenario, GetRoundScenario, ReplaceRoundScenario,
+	RequestRoundScenarioApproval)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

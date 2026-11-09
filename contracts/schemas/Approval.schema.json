@@ -124,7 +124,8 @@
         "instrument_template",
         "option_pool",
         "option_grant",
-        "option_event"
+        "option_event",
+        "round_scenario"
       ],
       "examples": [
         "organisation_setting"
@@ -189,7 +190,8 @@
         "instrument_template.enable",
         "option_pool.record",
         "option_grant.record",
-        "option_event.record"
+        "option_event.record",
+        "round_scenario.approve"
       ],
       "examples": [
         "organisation_setting.change"

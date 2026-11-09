@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "The money they put in, in the base currency.",
+      "examples": [
+        "600000.00"
+      ],
+      "pattern": "^[0-9]{1,14}(\\.[0-9]{1,2})?$",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The investor: a contact marked investor or shareholder; an existing holder taking up their pro-rata right too.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "amount"
+  ],
+  "title": "RoundInvestorDraft",
+  "type": "object"
+}

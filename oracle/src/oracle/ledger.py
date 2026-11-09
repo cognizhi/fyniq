@@ -92,7 +92,7 @@ from datetime import date
 from decimal import Decimal, localcontext
 from typing import Any
 
-from oracle import captable, money
+from oracle import captable, money, rounds
 from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical, dimension_set
 from oracle.revaluation import revaluations
 from oracle.rules import Rules
@@ -542,6 +542,8 @@ class Ledger:
             result["kpis"] = kpis(s, result)
         if s.cap_tables:  # README, "Cap tables" (FR-EQ-20)
             result["cap_tables"] = [captable.table(s, self.books, day) for day in s.cap_tables]
+        if s.rounds:  # README, "Rounds" (FR-EQ-21)
+            result["rounds"] = [rounds.model(s, self.books, spec) for spec in s.rounds]
         check_result(result)
         return result
 

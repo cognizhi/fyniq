@@ -49,6 +49,8 @@ type Scenario struct {
 	KPIs       json.RawMessage `json:"kpis,omitempty"`
 	// CapTables are the days to compute the cap table at the end of (FR-EQ-20; README, "Cap tables").
 	CapTables []string `json:"cap_tables,omitempty"`
+	// Rounds are the priced rounds to model against the books once every document is posted (FR-EQ-21; README, "Rounds").
+	Rounds []RoundSpec `json:"rounds,omitempty"`
 	// AsOf is the business date and Settings the organisation's settings, which a scenario with a P1 document has
 	// (README, "Settings and as_of").
 	AsOf      string     `json:"as_of,omitempty"`
@@ -183,6 +185,8 @@ type Result struct {
 	KPIs       *map[string]any `json:"kpis,omitempty"`
 	// CapTables are the cap table at the end of each of the scenario's cap_tables days, in their order (FR-EQ-20).
 	CapTables []CapTable `json:"cap_tables,omitempty"`
+	// Rounds are each of the scenario's rounds modelled, nil where it cannot be worked out (FR-EQ-21).
+	Rounds []*RoundResult `json:"rounds,omitempty"`
 }
 
 // CapTable is the cap table at the end of a day (README, "Cap tables").
@@ -195,6 +199,81 @@ type CapTable struct {
 	FullyDiluted string      `json:"fully_diluted"`
 	Lines        []CapLine   `json:"lines"`
 	Holders      []CapHolder `json:"holders"`
+}
+
+// RoundSpec is a round to model (README, "Rounds").
+type RoundSpec struct {
+	On            string `json:"on"`
+	Price         string `json:"price"`
+	PreMoney      string `json:"pre_money"`
+	PriceDecimals int    `json:"price_decimals"`
+	Investors     []struct {
+		Person string `json:"person"`
+		Amount string `json:"amount"`
+	} `json:"investors"`
+	Instruments []string `json:"instruments"`
+	TopUp       *struct {
+		Shares string `json:"shares"`
+		Before bool   `json:"before"`
+	} `json:"top_up"`
+}
+
+// RoundResult is a round's outcome (README, "Rounds"), every figure as the result writes it.
+type RoundResult struct {
+	Price             string                  `json:"price"`
+	PreMoney          string                  `json:"pre_money"`
+	PostMoney         string                  `json:"post_money"`
+	Issues            []RoundIssueResult      `json:"issues"`
+	Conversions       []RoundConversionResult `json:"conversions"`
+	Holders           []RoundHolderResult     `json:"holders"`
+	IssuedBefore      string                  `json:"issued_before"`
+	IssuedAfter       string                  `json:"issued_after"`
+	DilutedBefore     string                  `json:"fully_diluted_before"`
+	DilutedAfter      string                  `json:"fully_diluted_after"`
+	UnallocatedBefore string                  `json:"unallocated_before"`
+	UnallocatedAfter  string                  `json:"unallocated_after"`
+	NewShares         string                  `json:"new_shares"`
+}
+
+// RoundIssueResult is an investor's allotment in a modelled round.
+type RoundIssueResult struct {
+	Person string `json:"person"`
+	Shares string `json:"shares"`
+	Amount string `json:"amount"`
+	Left   string `json:"left"`
+}
+
+// RoundConversionResult is an instrument's conversion in a modelled round.
+type RoundConversionResult struct {
+	Instrument string `json:"instrument"`
+	Price      string `json:"price"`
+	Shares     string `json:"shares"`
+	Converted  string `json:"converted"`
+	Left       string `json:"left"`
+}
+
+// RoundHolderResult is a holder before and after a modelled round.
+type RoundHolderResult struct {
+	Holder             string  `json:"holder"`
+	IssuedBefore       string  `json:"issued_before"`
+	IssuedAfter        string  `json:"issued_after"`
+	DilutedBefore      string  `json:"fully_diluted_before"`
+	DilutedAfter       string  `json:"fully_diluted_after"`
+	OwnershipBefore    *string `json:"ownership_before"`
+	OwnershipAfter     *string `json:"ownership_after"`
+	DilutedShareBefore *string `json:"diluted_before"`
+	DilutedShareAfter  *string `json:"diluted_after"`
+	Dilution           *string `json:"dilution"`
+	ProRata            string  `json:"pro_rata"`
+}
+
+// mustJSON is v as JSON, for comparing two results' parts exactly.
+func mustJSON(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
 }
 
 // CapFigures are a line's or a holder's shares, votes and fully diluted shares, with their percentages of the day's
@@ -580,6 +659,11 @@ func RunEngine(s Scenario) (Result, error) {
 			return Result{}, fmt.Errorf("scenario %q: the cap tables: %w", s.Name, err)
 		}
 	}
+	if len(s.Rounds) > 0 {
+		if res.Rounds, err = sources.modelled(); err != nil {
+			return Result{}, fmt.Errorf("scenario %q: the rounds: %w", s.Name, err)
+		}
+	}
 	if s.Statements {
 		st, kpis, err := state(s, settings, base, book)
 		if err != nil {
@@ -744,6 +828,9 @@ func Compare(engine, oracle Result) error {
 	if err := sameCapTables(engine.CapTables, oracle.CapTables); err != nil {
 		return err
 	}
+	if e, o := mustJSON(engine.Rounds), mustJSON(oracle.Rounds); e != o { // README, "Rounds": every figure exactly
+		return fmt.Errorf("rounds: engine %s\noracle %s", e, o)
+	}
 	return sameStatements(engine, oracle)
 }
 
@@ -774,6 +861,8 @@ func sameCapTables(engine, oracle []CapTable) error {
 		switch {
 		case e.At != o.At:
 			return fmt.Errorf("cap table %d: engine at %s, oracle at %s", i+1, e.At, o.At)
+		case e.Options != o.Options || e.Unallocated != o.Unallocated:
+			return fmt.Errorf("%s: engine %s options and %s unallocated, oracle %s and %s", at, e.Options, e.Unallocated, o.Options, o.Unallocated)
 		case e.Issued != o.Issued || e.Votes != o.Votes || e.FullyDiluted != o.FullyDiluted:
 			return fmt.Errorf("%s totals: engine %s, %s, %s; oracle %s, %s, %s", at, e.Issued, e.Votes, e.FullyDiluted, o.Issued, o.Votes, o.FullyDiluted)
 		case len(e.Lines) != len(o.Lines) || len(e.Holders) != len(o.Holders):

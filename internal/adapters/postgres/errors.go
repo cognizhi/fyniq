@@ -174,7 +174,8 @@ var fyCodes = map[string]string{
 	"FY290": storage.CodeEquityStep,     // an equity transaction's ACRA step outside its rules (000254)
 	"FY291": storage.CodeInstrument,     // an instrument or template outside its rules, or its holder unmarked (000255)
 	"FY292": storage.CodeInstrument,     // a line on 2700 naming no recorded instrument, or another line naming one (000257)
-	"FY293": storage.CodeOption,         // a pool resolution or grant outside its rules, or a grant beyond the pool (000261)
+	"FY293": storage.CodeOption,
+	"FY294": storage.CodeRoundScenario, // a pool resolution or grant outside its rules, or a grant beyond the pool (000261)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

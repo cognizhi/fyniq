@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "converted": {
+      "$ref": "Money.schema.json",
+      "description": "What converts: round(shares × price)."
+    },
+    "holder_name": {
+      "description": "Its holder.",
+      "examples": [
+        "Hatch Capital Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "instrument_id": {
+      "description": "The SAFE or note.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "left": {
+      "$ref": "Money.schema.json",
+      "description": "What stays on 2700 until it is settled under its terms."
+    },
+    "price": {
+      "description": "Its conversion price, the lower of its cap price and the discounted round price, cut down to its decimals.",
+      "examples": [
+        "2.40"
+      ],
+      "type": "string"
+    },
+    "review": {
+      "description": "What the accountant completes in its draft, when no enabled template covers it (⚠).",
+      "examples": [
+        "the accountant completes it: it follows no template, a discount"
+      ],
+      "type": "string"
+    },
+    "shares": {
+      "description": "The whole shares it converts into (RND-SHARE).",
+      "examples": [
+        "52083"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "instrument_id",
+    "holder_name",
+    "price",
+    "shares",
+    "converted",
+    "left"
+  ],
+  "title": "RoundConversionView",
+  "type": "object"
+}

@@ -82,7 +82,8 @@
         "instrument_template",
         "option_pool",
         "option_grant",
-        "option_event"
+        "option_event",
+        "round_scenario"
       ],
       "examples": [
         "organisation_setting"

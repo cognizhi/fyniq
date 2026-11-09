@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "diluted_after": {
+      "description": "Percentage fully diluted after.",
+      "examples": [
+        "79.87"
+      ],
+      "type": "string"
+    },
+    "diluted_before": {
+      "description": "Percentage fully diluted before.",
+      "examples": [
+        "100.00"
+      ],
+      "type": "string"
+    },
+    "dilution": {
+      "description": "Percentage points fully diluted lost: before less after, exact, shown to 2 decimals; negative for a gain.",
+      "examples": [
+        "20.13"
+      ],
+      "type": "string"
+    },
+    "fully_diluted_after": {
+      "description": "Fully diluted after.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "fully_diluted_before": {
+      "description": "Shares and options fully diluted before.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Ah Kow"
+      ],
+      "type": "string"
+    },
+    "issued_after": {
+      "description": "Shares held after it.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "issued_before": {
+      "description": "Shares held the day before the round.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "ownership_after": {
+      "description": "Percentage of the shares issued after.",
+      "examples": [
+        "79.87"
+      ],
+      "type": "string"
+    },
+    "ownership_before": {
+      "description": "Percentage of the shares issued before (RND-DISPLAY); left out when none is.",
+      "examples": [
+        "100.00"
+      ],
+      "type": "string"
+    },
+    "pro_rata": {
+      "description": "What their pro-rata right entitles them to of the round's new shares: the new shares × their part fully diluted before, rounded down [accountant to confirm against the side letter].",
+      "examples": [
+        "252083"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "holder_name",
+    "issued_before",
+    "issued_after",
+    "fully_diluted_before",
+    "fully_diluted_after",
+    "pro_rata"
+  ],
+  "title": "RoundHolderView",
+  "type": "object"
+}

@@ -219,6 +219,24 @@ def test_a_cap_table_adds_up(data):
         assert [h["holder"] for h in table["holders"]] == sorted({ln["holder"] for ln in lines})
 
 
+# req: QA-ENG-02, FR-EQ-21
+@given(p1_scenarios(("equity",)))
+@settings(max_examples=60, deadline=None, suppress_health_check=list(HealthCheck))
+def test_a_round_adds_up(data):
+    # Every share a round issues is an investor's or a conversion's; each holder's shares after are before and theirs;
+    # the totals after are the holders' sums, fully diluted with the options before and the top-up (README, "Rounds").
+    for r in Ledger(scenario_from_json(data)).result().get("rounds", []):
+        if r is None:
+            continue
+        new = sum(int(i["shares"]) for i in r["issues"]) + sum(int(c["shares"]) for c in r["conversions"])
+        assert new == int(r["new_shares"])
+        assert sum(int(h["issued_after"]) for h in r["holders"]) == int(r["issued_after"]) == int(r["issued_before"]) + new
+        gained = sum(int(h["fully_diluted_after"]) - int(h["fully_diluted_before"]) for h in r["holders"])
+        assert gained == new
+        top_up = int(r["unallocated_after"]) - int(r["unallocated_before"])
+        assert int(r["fully_diluted_after"]) == int(r["fully_diluted_before"]) + new + top_up
+
+
 # req: QA-ENG-02, FR-EQ-03, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07
 @pytest.mark.parametrize("kind", sorted(set(KINDS["founders"])))
 def test_the_founders_source_draws_each_of_its_kinds_as_meant(kind):
