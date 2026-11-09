@@ -500,8 +500,15 @@ event format.
       the real buckets are `[live-verify]`.
     - **Not built here: the monthly snapshot kept one year.** It is DR-04's monthly export, which `p1-operations-dr`
       builds with its bucket.
-- [ ] 11.3 AI conversations' retention (Open Questions): decided when this slice is reached. Either a PRD revision moves
+- [x] 11.3 AI conversations' retention (Open Questions): decided when this slice is reached. Either a PRD revision moves
   it to `p1-ai-assistant`, or the setting is built here. The unnumbered "Retention of AI conversations".
+
+  **Decided (the owner, 10 Nov 2026; PRD-001 rev 0.245):**
+    - **Moved.** The purge job is built with `p1-ai-assistant`, which keeps the conversations and can test the purge
+      on them. The plan maps the requirement there (`scripts/roadmap.py`).
+    - **What stays here.** The setting `retention.ai_conversations_days` (365), which this change built, and its row
+      in the retention schedule.
+    - **Not chosen:** a placeholder job here, or leaving the task open until the assistant lands.
 
 ## 12. Canvas, threat model and as built (slice 12)
 

@@ -258,6 +258,7 @@ TITLE = [
     ("ledger/posting-rules", r"Share issue|allotment|SAFE", "p1-equity-register"),
     ("ledger/posting-rules", r"Payment-provider", "p1-payment-providers"),
     ("ledger/posting-rules", r"GST codes", "p1-gst"),
+    ("data/backup-and-recovery", r"^Retention of AI conversations", "p1-ai-assistant"),  # rev 0.245: built with the conversations
     ("data/backup-and-recovery", r"^Retention|Personal data in immutable|Shredded keys", "p1-pdpa-retention"),
     ("data/migration", r"Parallel run|Go-live and workbook", "p1-go-live"),
     ("data/audit-trail", r"Database and platform logs", "p1-operations-dr"),
