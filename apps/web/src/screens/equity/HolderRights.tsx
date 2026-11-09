@@ -287,7 +287,7 @@ export function RightsCard({ h, mayDraft, onStatus }: { h: Detail; mayDraft: boo
           )}
         </div>
       </div>
-      <div className="fy-card__body fy-stack fy-stack--4">
+      <div className="fy-card__body fy-stack fy-stack--3">
         {problem && <Refusal problem={problem} title="The approval was not asked for" />}
         {h.rights ? (
           <RightsList r={h.rights.rights} />
@@ -612,7 +612,7 @@ export function ControllerCard({ h, tests, mayDraft, onStatus }: { h: Detail; te
           )}
         </div>
       </div>
-      <div className="fy-card__body fy-stack fy-stack--4">
+      <div className="fy-card__body fy-stack fy-stack--3">
         {problem && <Refusal problem={problem} title="The approval was not asked for" />}
         <p className="fy-small">{testWords(t)}</p>
         {lapsed && (

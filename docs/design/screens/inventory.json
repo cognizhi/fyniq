@@ -4978,7 +4978,6 @@
    "requirements": [
     "FR-EQ-20",
     "FR-EQ-27",
-    "FR-EQ-26",
     "FR-EQ-25"
    ],
    "purpose": "Know at any date who owns what, issued and fully diluted, computed from the equity transactions.",
@@ -4986,12 +4985,11 @@
     "Basic 'Who owns the company': ownership chart with table view, my holding, the latest round",
     "Expert: by holder and class, issued and fully diluted (granted options, unallocated pool, SAFEs and notes as converted at a stated price), ownership and voting %, shown to 2 decimals",
     "As-at date picker and comparison of two dates; drill to each transaction and its evidence",
-    "Reconciliation tab: paid-up capital vs 3010 + 3020 in the ledger; register vs uploaded ACRA register-of-members extract with differences",
-    "Controller threshold (> 25%) flags; exempt-private-company status",
+    "Reconciliation: its own page, Equity › Reconciliation (AcraReconciliation)",
+    "Controller threshold (> 25%) and the exempt-private-company status: on the holder's page and the checks (C.2 #27, #28)",
     "Export XLSX and PDF; restricted data (fyniq.read.equity never granted to AI by default)"
    ],
    "states": [
-    "differs from ACRA extract (⚠)",
     "ledger differs from register (✖)",
     "no holders yet",
     "feature off"
@@ -5047,20 +5045,23 @@
    "requirements": [
     "FR-EQ-15",
     "FR-EQ-22",
+    "FR-EQ-25",
     "FR-EQ-28",
     "FR-EQ-24"
    ],
    "purpose": "One holder's investments, rights, documents and obligations.",
    "content": [
-    "Investments: round, instrument, amount, price, date",
-    "Rights from agreements: board seat, observer, information rights, pro-rata, consent matters",
-    "Documents as evidence (subscription agreement, shareholders' agreement, side letters, identity documents with personal-data class)",
-    "Versioned changes with approval",
+    "Details in force (individual or entity, identifier as type and last 4 characters only), a draft with its identity document and approval, earlier records",
+    "Investments: each share issue (date, class, shares, price, amount) and each SAFE or note held",
+    "Rights from the agreements: board seats, observer, board majority, information rights, pro-rata, consent matters, the agreements; 'Could confer control' (⚠); versioned, approved, never the holder",
+    "Registrable controller: the cap table's test in words (> 25% of shares or votes since a day), the standing (enter by, update ACRA's register by, in both registers, not assessed, not a controller), the entry with its yearly notices, recorded with the company secretary's confirmation",
     "P2: obligation tasks (e.g. quarterly accounts within 45 days) and investor access settings"
    ],
    "states": [
     "change awaiting approval",
-    "obligation due ⏰"
+    "controller to enter (⏰)",
+    "not assessed (⚠)",
+    "obligation due ⏰ (P2)"
    ]
   },
   {
@@ -5240,7 +5241,7 @@
    "roles": [
     "Owner",
     "Controller",
-    "Board viewer"
+    "Accountant"
    ],
    "mode": "both",
    "requirements": [
@@ -5249,15 +5250,51 @@
    ],
    "purpose": "Model a funding round and see the dilution for every holder, without posting anything.",
    "content": [
-    "Inputs: pre-money valuation or price per share, new money per investor, option-pool top-up before or after, SAFE and note conversions, pro-rata take-up",
-    "Outputs: price per share, shares per investor, pro-forma cap table, ownership before and after, dilution in percentage points, post-money valuation",
-    "Side-by-side scenarios; 'Create draft share issues' from an approved scenario",
-    "Basic: a few inputs and a simple before/after chart; AI may run scenarios",
-    "Sandbox label"
+    "Sandbox label: nothing is posted or recorded; anyone who reads the whole cap table tries rounds (modelRound)",
+    "Basic: how much you raise and from which investor (a contact), the value before the money, more options for employees; who would own what now and after; what you would own; what the new money buys; anything Expert edits under 'Has advanced details'",
+    "Expert: the round's day and class, price from a pre-money valuation (with its decimals) or a price per share, the top-up before or after the money, each investor's money with their pro-rata right, the SAFEs and notes converting",
+    "Outputs: price per share, post-money valuation, new shares, the option pool to grant, the pro-forma cap table fully diluted with each holder's points and the pool's row",
+    "Side-by-side saved scenarios; the Accountant saves a scenario and sends it for approval; approving drafts the round's share issues and a top-up's pool resolution",
+    "AI may run scenarios later (the read lane waits for p1-ai-assistant)"
    ],
    "states": [
     "sandbox",
-    "draft issues created"
+    "problems listed without moving focus",
+    "waiting for approval",
+    "approved (issues drafted)"
+   ]
+  },
+  {
+   "id": "acra-reconciliation",
+   "file": "AcraReconciliation",
+   "title": "Reconciliation",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/reconciliation",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-26",
+    "FR-EQ-27"
+   ],
+   "purpose": "See whether the register of members agrees with ACRA's, as the latest business profile shows it, and paid-up capital with the ledger.",
+   "content": [
+    "Against ACRA's register of members: the business profile in force (day, who recorded it), each holding that differs (holder, class, register, ACRA) and what to do",
+    "Paid-up capital against the ledger (C.2 #25)",
+    "Type in a business profile: its day and each holder's shares of each class, rows for the register's holdings with the shares left empty; the PDF attached; Record",
+    "Earlier business profiles, superseded"
+   ],
+   "states": [
+    "agrees (✔)",
+    "differs (⚠)",
+    "no business profile yet",
+    "draft with no PDF (✖)"
    ]
   },
   {

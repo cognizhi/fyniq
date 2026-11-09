@@ -508,6 +508,10 @@
       "label": "Rights from the agreements",
       "tooltip": "The holder's board seats, observer, board majority, information rights, pro-rata and consent matters, as the agreements give them."
     },
+    "holder.investments": {
+      "label": "Investments",
+      "tooltip": "What the holder put in: each share issue with its shares, price and amount, and each SAFE or note they hold."
+    },
     "holder.controller": {
       "label": "Registrable controller",
       "tooltip": "Whether the holder is a registrable controller: more than 25% of the shares or votes, or rights that confer control."

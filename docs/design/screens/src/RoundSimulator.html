@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "equity", "title": "Round simulator", "mode": "basic", "heights": {"compact": 3250, "medium": 2550, "expanded": 1750}} -->
+<!-- fyniq-screen {"nav": "equity", "title": "Round simulator", "mode": "basic", "heights": {"compact": 2500, "medium": 1750, "expanded": 1250}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
@@ -7,7 +7,7 @@
       <p class="fy-secondary">Try a funding round and see what everyone would own. Based on the cap table at 13 Oct 2026.</p>
     </div>
     <div class="fy-pagehead__actions fy-from-medium">
-      <button class="fy-btn fy-btn--secondary fy-expert-only" type="button" aria-disabled="true"><i data-icon="file-plus"></i>Create draft issues</button>
+      <button class="fy-btn fy-btn--secondary fy-expert-only" type="button"><i data-icon="save"></i>Save scenario</button>
       <button class="fy-btn fy-btn--primary fy-basic-only" type="button"><i data-icon="save"></i>Save scenario</button>
       <button class="fy-btn fy-btn--primary fy-expert-only" type="button"><i data-icon="send"></i>Send for approval</button>
     </div>
@@ -17,7 +17,7 @@
     <i data-icon="flask-conical" class="fy-i--20"></i>
     <div class="fy-banner__text">
       <span class="fy-strong">Sandbox: nothing here is posted or recorded</span>
-      <span class="fy-small">Scenarios never change the cap table or the books. <span class="fy-expert-only">Once both founders approve a scenario, it can create draft share issues, which then need their own approval and ACRA steps.</span><span class="fy-basic-only">A real round is recorded later as share issues, with approvals and ACRA steps.</span></span>
+      <span class="fy-small">Scenarios never change the cap table or the books. <span class="fy-expert-only">Once another Owner or the Controller approves a scenario, it drafts its share issues, which then need their own approval and ACRA steps.</span><span class="fy-basic-only">A real round is recorded later as share issues, with approvals and ACRA steps.</span></span>
     </div>
   </div>
 
@@ -37,9 +37,13 @@
           <div class="fy-form fy-form--2">
             <div class="fy-field">
               <label class="fy-label" for="rs-b-raise">How much you raise</label>
-              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-b-raise" value="1,650,000" readonly="readonly"></div>
-              <span class="fy-help">S$1,500,000 from a new lead and S$150,000 from Lion Rock Ventures</span>
-            </div>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-b-raise" value="1,500,000" readonly="readonly"></div>
+              </div>
+              <div class="fy-field">
+              <label class="fy-label" for="rs-b-from">From</label>
+              <select class="fy-select" id="rs-b-from"><option>Seedling Ventures Pte Ltd</option><option>Lion Rock Ventures</option></select>
+              <span class="fy-help">A contact marked investor; add a new one in Contacts first</span>
+              </div>
             <div class="fy-field">
               <label class="fy-label" for="rs-b-val">Value of the company before the money<button class="fy-info" type="button" aria-label="About the value before the money" aria-expanded="false"><i data-icon="info"></i></button></label>
               <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-b-val" value="10,000,000" readonly="readonly"></div>
@@ -47,9 +51,10 @@
             <div class="fy-field">
               <label class="fy-label" for="rs-b-pool">More options for employees</label>
               <input class="fy-input fy-num" id="rs-b-pool" value="0" readonly="readonly">
-              <span class="fy-help">Investors often ask for a bigger pool before they invest</span>
-            </div>
-          </div>
+              <span class="fy-help">Investors often ask for a bigger pool before they invest; leave it empty for none</span>
+              </div>
+              </div>
+              <p class="fy-small fy-secondary">Has advanced details (1): Lion Rock Ventures puts in S$150,000.00. <a href="#equity/rounds?mode=expert">Open in Expert mode</a></p>
         </div>
       </section>
 
@@ -83,11 +88,11 @@
             <legend>New money per investor</legend>
             <div class="fy-form fy-form--2">
               <div class="fy-field">
-                <label class="fy-label" for="rs-e-lead">Seed lead, not yet named</label>
+                <label class="fy-label" for="rs-e-lead">Investor 1: Seedling Ventures Pte Ltd</label>
                 <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-e-lead" value="1,500,000.00" readonly="readonly"></div>
               </div>
               <div class="fy-field">
-                <label class="fy-label" for="rs-e-lrv">Lion Rock Ventures, pro-rata take-up</label>
+                <label class="fy-label" for="rs-e-lrv">Investor 2: Lion Rock Ventures, taking up its pro-rata right</label>
                 <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-e-lrv" value="150,000.00" readonly="readonly"></div>
               </div>
             </div>
@@ -119,7 +124,7 @@
             <rect class="fy-bar fy-c5" x="937.5" y="0" width="62.5" height="10"></rect>
           </svg>
           <p class="fy-small fy-muted">After the round · 12,426,666 shares</p>
-          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="After: Mei Lin Tan and Arjun Rao 36.21% each, option pool 8.05%, Lion Rock Ventures 6.65%, seed lead 12.88%.">
+          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="After: Mei Lin Tan and Arjun Rao 36.21% each, option pool 8.05%, Lion Rock Ventures 6.65%, Seedling Ventures Pte Ltd 12.88%.">
             <rect class="fy-bar fy-c1" x="0" y="0" width="359.124" height="10"></rect>
             <rect class="fy-bar fy-c2" x="362.124" y="0" width="359.124" height="10"></rect>
             <rect class="fy-bar fy-c3" x="724.248" y="0" width="77.472" height="10"></rect>
@@ -131,7 +136,7 @@
             <span><i class="fy-legend__key fy-swatch-2"></i>Arjun Rao <span class="fy-num fy-strong">42.19 → 36.21%</span></span>
             <span><i class="fy-legend__key fy-swatch-3"></i>Option pool <span class="fy-num fy-strong">9.38 → 8.05%</span></span>
             <span><i class="fy-legend__key fy-swatch-5"></i>Lion Rock Ventures <span class="fy-num fy-strong">6.25 → 6.65%</span></span>
-            <span><i class="fy-legend__key fy-swatch-6"></i>Seed lead <span class="fy-num fy-strong">12.88%</span></span>
+            <span><i class="fy-legend__key fy-swatch-6"></i>Seedling Ventures Pte Ltd <span class="fy-num fy-strong">12.88%</span></span>
           </div>
         </div>
       </section>
@@ -141,12 +146,12 @@
           <span class="fy-tile__label"><i data-icon="user-round"></i>You would own</span>
           <span class="fy-tile__value fy-num">36.21<small>%</small></span>
           <span class="fy-tile__meta"><span class="fy-delta fy-delta--down"><i data-icon="arrow-down-right"></i>−5.98 points</span>from 42.19% today</span>
-          <span class="fy-tile__meta">Still 4,500,000 shares, worth S$4,218,750.00 on paper at the round price</span>
+          <span class="fy-tile__meta">Still 4,500,000 shares and options, fully diluted</span>
         </div>
         <div class="fy-tile">
-          <span class="fy-tile__label"><i data-icon="handshake"></i>What the new investor gets</span>
+          <span class="fy-tile__label"><i data-icon="handshake"></i>What the new money buys</span>
           <span class="fy-tile__value fy-num">1,600,000</span>
-          <span class="fy-tile__meta">shares at S$0.9375 each for S$1,500,000</span>
+          <span class="fy-tile__meta">shares for Seedling Ventures Pte Ltd at S$0.9375 each for S$1,500,000.00</span>
           <span class="fy-tile__meta">Lion Rock Ventures' SAFE becomes 666,666 shares at S$0.75, its cap price, which is lower</span>
         </div>
       </div>
@@ -156,7 +161,7 @@
           <div class="fy-tile"><span class="fy-tile__label">Price per share</span><span class="fy-tile__value fy-num">0.9375<small>SGD</small></span><span class="fy-tile__meta">10,000,000 ÷ 10,666,666, to 4 decimals</span></div>
           <div class="fy-tile"><span class="fy-tile__label">Post-money valuation</span><span class="fy-tile__value fy-num">11,650,000<small>SGD</small></span><span class="fy-tile__meta">Pre-money + S$1,650,000 new money</span></div>
           <div class="fy-tile"><span class="fy-tile__label">New shares</span><span class="fy-tile__value fy-num">2,426,666</span><span class="fy-tile__meta">1,760,000 for cash · 666,666 from the SAFE</span></div>
-          <div class="fy-tile"><span class="fy-tile__label">Controller changes</span><span class="fy-tile__value" style="font-size: var(--fs-lg)">None</span><span class="fy-tile__meta">Exempt status would end: companies join</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">Option pool to grant</span><span class="fy-tile__value fy-num">575,000</span><span class="fy-tile__meta">Unchanged: no top-up in this scenario</span></div>
         </div>
         <h2 class="fy-h3" id="rs-pf-title">Pro-forma cap table, fully diluted</h2>
         <div class="fy-tablewrap">
@@ -167,9 +172,9 @@
             <tbody>
               <tr><td>Mei Lin Tan</td><td class="fy-num">4,500,000</td><td class="fy-num">42.19</td><td class="fy-num">4,500,000</td><td class="fy-num">36.21</td><td class="fy-num">−5.98</td><td class="fy-num fy-muted">–</td></tr>
               <tr><td>Arjun Rao</td><td class="fy-num">4,500,000</td><td class="fy-num">42.19</td><td class="fy-num">4,500,000</td><td class="fy-num">36.21</td><td class="fy-num">−5.98</td><td class="fy-num fy-muted">–</td></tr>
-              <tr><td style="white-space: nowrap">Option pool</td><td class="fy-num">1,000,000</td><td class="fy-num">9.38</td><td class="fy-num">1,000,000</td><td class="fy-num">8.05</td><td class="fy-num">−1.33</td><td class="fy-num fy-muted">–</td></tr>
+              <tr><td style="white-space: nowrap">Option pool<div class="fy-small fy-muted" style="font-weight: 400">425,000 granted, 575,000 not granted</div></td><td class="fy-num">1,000,000</td><td class="fy-num">9.38</td><td class="fy-num">1,000,000</td><td class="fy-num">8.05</td><td class="fy-num">−1.33</td><td class="fy-num fy-muted">–</td></tr>
               <tr><td style="white-space: nowrap">Lion Rock Ventures</td><td class="fy-num">666,666</td><td class="fy-num">6.25</td><td class="fy-num">826,666</td><td class="fy-num">6.65</td><td class="fy-num">+0.40</td><td class="fy-num">150,000.00</td></tr>
-              <tr><td style="white-space: nowrap">Seed lead</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num">1,600,000</td><td class="fy-num">12.88</td><td class="fy-num">+12.88</td><td class="fy-num">1,500,000.00</td></tr>
+              <tr><td style="white-space: nowrap">Seedling Ventures Pte Ltd</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num">1,600,000</td><td class="fy-num">12.88</td><td class="fy-num">+12.88</td><td class="fy-num">1,500,000.00</td></tr>
             </tbody>
             <tfoot>
               <tr><td>Total</td><td class="fy-num">10,666,666</td><td class="fy-num">100.00</td><td class="fy-num">12,426,666</td><td class="fy-num">100.00</td><td class="fy-num"></td><td class="fy-num">1,650,000.00</td></tr>
@@ -194,17 +199,12 @@
             <tr><td>Arjun Rao</td><td class="fy-num">36.21%</td><td class="fy-num">34.41%</td></tr>
             <tr><td>Option pool</td><td class="fy-num">8.05%</td><td class="fy-num">11.47%</td></tr>
             <tr><td>Lion Rock Ventures</td><td class="fy-num">6.65%</td><td class="fy-num">6.12%</td></tr>
-            <tr><td>Seed lead</td><td class="fy-num">12.88%</td><td class="fy-num">13.59%</td></tr>
+            <tr><td>Seedling Ventures Pte Ltd</td><td class="fy-num">12.88%</td><td class="fy-num">13.59%</td></tr>
           </tbody>
         </table>
         <div class="fy-card__foot"><p class="fy-small fy-muted">B raises S$500,000 more and leaves each founder 1.80 points lower, mostly because of the bigger pool.</p></div>
       </section>
 
-      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="rs-ai-title">
-        <div class="fy-row"><i data-icon="lock" class="fy-muted"></i><h2 class="fy-h3" id="rs-ai-title">Ask the assistant</h2></div>
-        <p class="fy-small fy-secondary">The assistant can try scenarios for you, but it can't see equity data until an Owner allows it. It is off for Cognizhi.</p>
-        <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai" style="align-self: flex-start">AI settings</a>
-      </section>
     </aside>
   </div>
 

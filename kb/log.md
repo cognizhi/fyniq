@@ -435,3 +435,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (investor rights, registrable controllers and the exempt status re-test)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (reconcile the register to ACRA's business profile)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (a holder's investments)
