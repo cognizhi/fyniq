@@ -265,6 +265,27 @@ minimisation, and crypto-shredding of the audit trail's personal values. By the 
 
 Counsel confirms before payroll data is loaded (open question 39).
 
+It was built on 9 and 10 Nov 2026, in #529 and the pull requests stacked on it, one per slice. The parts:
+- the DPO's contact on every email and document;
+- privacy notices drafted for adoption and acknowledged by members, and consent where a purpose needs it;
+- the data inventory with its retention schedule and quarterly review;
+- DPIAs drafted for payroll and the AI assistant;
+- access and correction requests, including a member's own;
+- the breach register with its PDPA timers, and tabletop exercises;
+- overseas transfers, with Fyniq's flows abroad;
+- the audit trail's personal values sealed under per-person, per-year keys (`fyniq-audit-event@3`);
+- shredding at the end of retention, approved by the DPO, register first and re-applied on restore;
+- anonymisation of contacts;
+- an architecture test against NRIC and card data;
+- HSTS, with log and backup retention in `infra/`;
+- the threat model `docs/security/threat-models/pdpa-retention.md`.
+
+Four things wait:
+- the republished canvases (task 12.1), for the design account;
+- the AI conversations' purge (task 11.3), for the owner's decision;
+- `[live-verify]` of the providers' locations and of the log and backup retention;
+- counsel's review of the marked clauses.
+
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 
 **Wave 7 · Hardening, migration and readiness.**

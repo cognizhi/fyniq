@@ -508,8 +508,18 @@ event format.
 - [ ] 12.1 The fragments `DataProtection.html` and `PrivacyNotices.html` are checked against the build, and the
   canvases are republished where they differ. This waits for the design account. `python3 docs/design/screens/build.py
   check` passes.
-- [ ] 12.2 The threat model `docs/security/threat-models/pdpa-retention.md`. It covers the registers, the timers,
+- [x] 12.2 The threat model `docs/security/threat-models/pdpa-retention.md`. It covers the registers, the timers,
   personal keys, shredding, the register, the restore, anonymisation, notices and consent, and who may see what.
+
+  **What building added:** fifteen threats across six boundaries, each mapped to its control and the tests that prove
+  it. "What remains" lists:
+    - counsel;
+    - events about other objects keeping their values;
+    - the worker trusted with the restore;
+    - a restore within the hour of an anchor;
+    - `[live-verify]`;
+    - the AI connections abroad;
+    - documents after an anonymisation.
 - [ ] 12.3 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
 
 ## Workflow follow-up
