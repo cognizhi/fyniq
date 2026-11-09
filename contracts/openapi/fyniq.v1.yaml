@@ -70205,7 +70205,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-exempt:
-        cursor: One assessment, not a list.
+        cursor: "One impact assessment, not a list: its versions are read with it."
       x-fyniq-permission:
         capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
         right: V

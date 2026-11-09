@@ -218,7 +218,7 @@ func registerDPIAs(a *API) {
 		OperationID: "getDPIA", Method: http.MethodGet, Path: "/v1/compliance/dpias/{key}", Tags: []string{"Compliance"},
 		Summary:     "Get a data protection impact assessment",
 		Description: "One assessment as listDPIAs shows it, with the text of its latest version or Fyniq's draft and the official sources the draft was written from. Read-only; no side effects.",
-	}, "cursor", "One assessment, not a list."), append([]string{CodeNotFound}, locks...),
+	}, "cursor", "One impact assessment, not a list: its versions are read with it."), append([]string{CodeNotFound}, locks...),
 		func(ctx context.Context, in *DPIAPath) (*dpiaOutput, error) {
 			p, _ := authn.From(ctx)
 			var v DPIAView
