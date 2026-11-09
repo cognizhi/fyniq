@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -477,4 +479,83 @@ func (c compliance) RecordConsent(ctx context.Context, rec storage.ConsentRecord
 	}
 	return storage.ConsentRecord{ID: r.ID, PurposeID: r.PurposeID, Person: r.Person, Event: r.Event, At: r.At, RecordedBy: r.RecordedBy,
 		Note: str(r.Note)}, nil
+}
+
+func (c compliance) InventoryEntries(ctx context.Context) ([]storage.InventoryEntry, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListDataInventoryEntries(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	var out []storage.InventoryEntry
+	for _, r := range rows { // by entry, then version: the last of each entry is its latest
+		e := storage.InventoryEntry{EntryID: r.EntryID, Version: int(r.Version), What: r.What, Why: r.Why, Where: r.WhereHeld, Who: r.Who,
+			Retention: r.Retention, Transfers: r.Transfers, NeedsDPIA: r.NeedsDpia, State: r.State, SavedBy: r.SavedBy, SavedAt: r.SavedAt}
+		if n := len(out); n > 0 && out[n-1].EntryID == e.EntryID {
+			out[n-1] = e
+			continue
+		}
+		out = append(out, e)
+	}
+	slices.SortStableFunc(out, func(a, b storage.InventoryEntry) int { return strings.Compare(a.EntryID.String(), b.EntryID.String()) }) // v7: by time
+	return out, nil
+}
+
+func (c compliance) SaveInventoryEntry(ctx context.Context, e storage.InventoryEntry) (storage.InventoryEntry, error) {
+	if err := c.u.check(); err != nil {
+		return storage.InventoryEntry{}, err
+	}
+	if e.EntryID == uuid.Nil {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return storage.InventoryEntry{}, err
+		}
+		e.EntryID = id
+	}
+	if err := c.u.q.InsertDataInventoryEntry(ctx, sqlcdb.InsertDataInventoryEntryParams{EntryID: e.EntryID,
+		Version: int32(min(max(e.Version, 1), 1<<30)), What: e.What, // #nosec G115 -- bounded
+		Why: e.Why, WhereHeld: e.Where, Who: e.Who, Retention: e.Retention, Transfers: e.Transfers, NeedsDpia: e.NeedsDPIA, State: e.State,
+		SavedBy: e.SavedBy, SavedAt: e.SavedAt}); err != nil {
+		return storage.InventoryEntry{}, mapError(err)
+	}
+	v := e.Version
+	if err := c.u.event(ctx, "data_inventory_entry.saved", "data_inventory_entry", e.EntryID, &v, map[string][2]any{"what": {nil, e.What},
+		"why": {nil, e.Why}, "where": {nil, e.Where}, "retention": {nil, e.Retention}, "transfers": {nil, e.Transfers},
+		"needs_dpia": {nil, e.NeedsDPIA}, "state": {nil, e.State}}); err != nil {
+		return storage.InventoryEntry{}, err
+	}
+	return e, nil
+}
+
+func (c compliance) InventoryReviews(ctx context.Context) ([]storage.InventoryReview, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListDataInventoryReviews(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.InventoryReview, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.InventoryReview{ID: r.ID, Quarter: r.Quarter, ReviewedBy: r.ReviewedBy, ReviewedAt: r.ReviewedAt, Note: str(r.Note)})
+	}
+	return out, nil
+}
+
+func (c compliance) ReviewInventory(ctx context.Context, r storage.InventoryReview) (storage.InventoryReview, error) {
+	if err := c.u.check(); err != nil {
+		return storage.InventoryReview{}, err
+	}
+	row, err := c.u.q.InsertDataInventoryReview(ctx, sqlcdb.InsertDataInventoryReviewParams{Quarter: r.Quarter,
+		ReviewedBy: r.ReviewedBy, ReviewedAt: r.ReviewedAt, Note: opt(r.Note)})
+	if err != nil {
+		return storage.InventoryReview{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "data_inventory.reviewed", "data_inventory_review", row.ID, nil, map[string][2]any{
+		"quarter": {nil, row.Quarter.Format(time.DateOnly)}, "note": {nil, nilIfEmpty(r.Note)}}); err != nil {
+		return storage.InventoryReview{}, err
+	}
+	return storage.InventoryReview{ID: row.ID, Quarter: row.Quarter, ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt, Note: str(row.Note)}, nil
 }

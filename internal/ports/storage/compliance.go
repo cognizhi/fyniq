@@ -195,6 +195,36 @@ type ConsentRecord struct {
 	Note       string
 }
 
+// CodeInventory is the database's refusal of an inventory entry's version out of order, a second review of a quarter, or
+// any change or deletion of the inventory (FY312).
+const CodeInventory = "STORAGE-INVENTORY-01"
+
+// InventoryEntry is a version of an entry the organisation added to the personal-data inventory, for what it processes
+// outside Fyniq (CMP-PD-02, design D3).
+type InventoryEntry struct {
+	EntryID   uuid.UUID
+	Version   int
+	What      string
+	Why       string
+	Where     string
+	Who       string
+	Retention string
+	Transfers string
+	NeedsDPIA bool
+	State     string // open or retired
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+// InventoryReview is the Compliance officer's review of the whole inventory for a quarter (CTL-DP-05).
+type InventoryReview struct {
+	ID         uuid.UUID
+	Quarter    time.Time // its first day
+	ReviewedBy string
+	ReviewedAt time.Time
+	Note       string
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -205,6 +235,16 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// InventoryEntries are the latest versions of the organisation's inventory entries, oldest entry first (CMP-PD-02).
+	InventoryEntries(ctx context.Context) ([]InventoryEntry, error)
+	// SaveInventoryEntry saves an entry at e.Version (1 for a new one), audited as data_inventory_entry.saved;
+	// CodeInventory when it does not follow the entry's last.
+	SaveInventoryEntry(ctx context.Context, e InventoryEntry) (InventoryEntry, error)
+	// InventoryReviews are the inventory's quarterly reviews, oldest first.
+	InventoryReviews(ctx context.Context) ([]InventoryReview, error)
+	// ReviewInventory records the review of a quarter, audited as data_inventory.reviewed; CodeInventory for a quarter
+	// reviewed already.
+	ReviewInventory(ctx context.Context, r InventoryReview) (InventoryReview, error)
 	// ConsentPurposes are the organisation's consent purposes, oldest first (CMP-PD-03).
 	ConsentPurposes(ctx context.Context) ([]ConsentPurpose, error)
 	// CreateConsentPurpose adds a purpose, audited as consent_purpose.created.

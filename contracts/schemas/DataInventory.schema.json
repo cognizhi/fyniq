@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classes": {
+      "description": "What Fyniq itself holds, from its catalogue: the same for every organisation.",
+      "items": {
+        "$ref": "DataClassView.schema.json"
+      },
+      "type": "array"
+    },
+    "entries": {
+      "description": "What the organisation added, for its processing outside Fyniq, at their latest versions.",
+      "items": {
+        "$ref": "InventoryEntryView.schema.json"
+      },
+      "type": "array"
+    },
+    "not_held": {
+      "description": "What Fyniq never holds.",
+      "items": {
+        "$ref": "NotHeldView.schema.json"
+      },
+      "type": "array"
+    },
+    "review": {
+      "$ref": "InventoryReviewState.schema.json",
+      "description": "The quarterly review."
+    },
+    "schedule": {
+      "description": "The retention schedule, from the settings in force today.",
+      "items": {
+        "$ref": "RetentionRow.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "classes",
+    "not_held",
+    "entries",
+    "schedule",
+    "review"
+  ],
+  "title": "DataInventory",
+  "type": "object"
+}

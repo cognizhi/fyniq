@@ -3,7 +3,7 @@ key: compliance.reviews
 title: Sign off the recurring reviews
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-03, FR-CTL-06, SEC-06, FM-3]
+requirements: [CMP-03, FR-CTL-06, SEC-06, FM-3, CTL-DP-05]
 ---
 
 # Sign off the recurring reviews
@@ -28,6 +28,7 @@ The Owner, the Administrator, the Controller, the Accountant, the Auditor and th
 | Break-glass review | Another Owner, or the Accountant from its due date | 7 days after the break-glass ends | Break-glass |
 | Policy acknowledgement | Every member, for themselves | 30 days after the version is published, or after they joined | This page |
 | Risk review | The Compliance officer | After the risk's review date | Compliance › Risks and policies |
+| Data inventory review | The Compliance officer | 14 days after the quarter ends | Compliance › Data protection |
 
 A review that waits within its time is **Due**; once its time has passed it is **Overdue**, and more than 14 days past
 its due date it is also marked **Over 14 days**. **Signed off** means nothing waits. **Nothing due** means nothing has

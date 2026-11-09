@@ -619,6 +619,26 @@ customer_group | reminder_days | integer[] | not null |
 customer_group | active | boolean | not null | true
 customer_group | version | integer | not null | 1
 customer_group | created_at | timestamp with time zone | not null | now()
+data_inventory_entry | organisation_id | uuid | not null | current_org()
+data_inventory_entry | id | uuid | not null | uuidv7()
+data_inventory_entry | entry_id | uuid | not null | 
+data_inventory_entry | version | integer | not null | 
+data_inventory_entry | what | text | not null | 
+data_inventory_entry | why | text | not null | 
+data_inventory_entry | where_held | text | not null | 
+data_inventory_entry | who | text | not null | 
+data_inventory_entry | retention | text | not null | 
+data_inventory_entry | transfers | text | not null | 
+data_inventory_entry | needs_dpia | boolean | not null | 
+data_inventory_entry | state | text | not null | 
+data_inventory_entry | saved_by | text | not null | 
+data_inventory_entry | saved_at | timestamp with time zone | not null | 
+data_inventory_review | organisation_id | uuid | not null | current_org()
+data_inventory_review | id | uuid | not null | uuidv7()
+data_inventory_review | quarter | date | not null | 
+data_inventory_review | reviewed_by | text | not null | 
+data_inventory_review | reviewed_at | timestamp with time zone | not null | 
+data_inventory_review | note | text | null | 
 dimension | organisation_id | uuid | not null | current_org()
 dimension | id | uuid | not null | uuidv7()
 dimension | kind | text | not null | 
@@ -2719,6 +2739,40 @@ customer_group | customer_group_reminder_days_not_null | NOT NULL reminder_days
 customer_group | customer_group_version_not_null | NOT NULL version
 customer_group | customer_group_version_positive | CHECK ((version > 0))
 customer_group | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+data_inventory_entry | data_inventory_entry_entry_id_not_null | NOT NULL entry_id
+data_inventory_entry | data_inventory_entry_id_not_null | NOT NULL id
+data_inventory_entry | data_inventory_entry_needs_dpia_not_null | NOT NULL needs_dpia
+data_inventory_entry | data_inventory_entry_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+data_inventory_entry | data_inventory_entry_organisation_id_not_null | NOT NULL organisation_id
+data_inventory_entry | data_inventory_entry_pkey | PRIMARY KEY (organisation_id, id)
+data_inventory_entry | data_inventory_entry_retention_not_null | NOT NULL retention
+data_inventory_entry | data_inventory_entry_saved_at_not_null | NOT NULL saved_at
+data_inventory_entry | data_inventory_entry_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+data_inventory_entry | data_inventory_entry_saved_by_not_null | NOT NULL saved_by
+data_inventory_entry | data_inventory_entry_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'retired'::text])))
+data_inventory_entry | data_inventory_entry_state_not_null | NOT NULL state
+data_inventory_entry | data_inventory_entry_texts | CHECK ((((length(btrim(what)) >= 1) AND (length(btrim(what)) <= 500)) AND ((length(btrim(why)) >= 1) AND (length(btrim(why)) <= 1000)) AND ((length(btrim(where_held)) >= 1) AND (length(btrim(where_held)) <= 500)) AND ((length(btrim(who)) >= 1) AND (length(btrim(who)) <= 500)) AND ((length(btrim(retention)) >= 1) AND (length(btrim(retention)) <= 500)) AND ((length(btrim(transfers)) >= 1) AND (length(btrim(transfers)) <= 500))))
+data_inventory_entry | data_inventory_entry_transfers_not_null | NOT NULL transfers
+data_inventory_entry | data_inventory_entry_version_not_null | NOT NULL version
+data_inventory_entry | data_inventory_entry_version_once | UNIQUE (organisation_id, entry_id, version)
+data_inventory_entry | data_inventory_entry_version_positive | CHECK ((version > 0))
+data_inventory_entry | data_inventory_entry_what_not_null | NOT NULL what
+data_inventory_entry | data_inventory_entry_where_held_not_null | NOT NULL where_held
+data_inventory_entry | data_inventory_entry_who_not_null | NOT NULL who
+data_inventory_entry | data_inventory_entry_why_not_null | NOT NULL why
+data_inventory_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+data_inventory_review | data_inventory_review_by_format | CHECK ((reviewed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+data_inventory_review | data_inventory_review_id_not_null | NOT NULL id
+data_inventory_review | data_inventory_review_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 2000)))
+data_inventory_review | data_inventory_review_once | UNIQUE (organisation_id, quarter)
+data_inventory_review | data_inventory_review_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+data_inventory_review | data_inventory_review_organisation_id_not_null | NOT NULL organisation_id
+data_inventory_review | data_inventory_review_pkey | PRIMARY KEY (organisation_id, id)
+data_inventory_review | data_inventory_review_quarter_not_null | NOT NULL quarter
+data_inventory_review | data_inventory_review_quarter_start | CHECK (((EXTRACT(day FROM quarter) = (1)::numeric) AND (EXTRACT(month FROM quarter) = ANY (ARRAY[(1)::numeric, (4)::numeric, (7)::numeric, (10)::numeric]))))
+data_inventory_review | data_inventory_review_reviewed_at_not_null | NOT NULL reviewed_at
+data_inventory_review | data_inventory_review_reviewed_by_not_null | NOT NULL reviewed_by
+data_inventory_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 dimension | dimension_created_at_not_null | NOT NULL created_at
 dimension | dimension_id_not_null | NOT NULL id
 dimension | dimension_is_active_not_null | NOT NULL is_active
@@ -4656,6 +4710,10 @@ CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree 
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX customer_group_name_key ON fyniq.customer_group USING btree (organisation_id, lower(btrim(name)))
 CREATE UNIQUE INDEX customer_group_pkey ON fyniq.customer_group USING btree (organisation_id, id)
+CREATE UNIQUE INDEX data_inventory_entry_pkey ON fyniq.data_inventory_entry USING btree (organisation_id, id)
+CREATE UNIQUE INDEX data_inventory_entry_version_once ON fyniq.data_inventory_entry USING btree (organisation_id, entry_id, version)
+CREATE UNIQUE INDEX data_inventory_review_once ON fyniq.data_inventory_review USING btree (organisation_id, quarter)
+CREATE UNIQUE INDEX data_inventory_review_pkey ON fyniq.data_inventory_review USING btree (organisation_id, id)
 CREATE UNIQUE INDEX dimension_name_key ON fyniq.dimension USING btree (organisation_id, name)
 CREATE UNIQUE INDEX dimension_pkey ON fyniq.dimension USING btree (organisation_id, id)
 CREATE UNIQUE INDEX dimension_set_pkey ON fyniq.dimension_set USING btree (organisation_id, id)
@@ -4879,6 +4937,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consent_record DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.conversion_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'settlement_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.data_inventory_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('data_inventory_entry', 'entry_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.data_inventory_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('data_inventory_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_send DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_send', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
@@ -5074,6 +5134,10 @@ CREATE TRIGGER control_state_no_truncate BEFORE TRUNCATE ON fyniq.control_state 
 CREATE TRIGGER controller_entry_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION controller_entry_guard()
 CREATE TRIGGER conversion_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.conversion_step FOR EACH ROW EXECUTE FUNCTION conversion_step_guard()
 CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_step FOR EACH STATEMENT EXECUTE FUNCTION conversion_step_guard()
+CREATE TRIGGER data_inventory_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.data_inventory_entry FOR EACH ROW EXECUTE FUNCTION data_inventory_guard()
+CREATE TRIGGER data_inventory_entry_no_truncate BEFORE TRUNCATE ON fyniq.data_inventory_entry FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER data_inventory_review_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.data_inventory_review FOR EACH ROW EXECUTE FUNCTION data_inventory_guard()
+CREATE TRIGGER data_inventory_review_no_truncate BEFORE TRUNCATE ON fyniq.data_inventory_review FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER dimension_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dimension FOR EACH ROW EXECUTE FUNCTION dimension_guard()
 CREATE TRIGGER dimension_set_check BEFORE INSERT ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_check()
 CREATE TRIGGER dimension_set_immutable BEFORE DELETE OR UPDATE ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_immutable()
@@ -5317,6 +5381,8 @@ control_run | tenant_isolation | * | (organisation_id = current_org()) | (organi
 control_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 conversion_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+data_inventory_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+data_inventory_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension_set | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension_value | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5458,6 +5524,8 @@ control_state | enabled | forced
 conversion_step | enabled | forced
 currency | disabled | not forced
 customer_group | enabled | forced
+data_inventory_entry | enabled | forced
+data_inventory_review | enabled | forced
 dimension | enabled | forced
 dimension_set | enabled | forced
 dimension_value | enabled | forced
@@ -5659,6 +5727,7 @@ create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security 
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
+data_inventory_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1dc593065673ca2a9bed7ad2e347d0a5
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 decide_join_request(p_by uuid, p_id uuid, p_approve boolean, p_now timestamp with time zone, OUT user_id uuid, OUT membership_id uuid, OUT role_assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7989699e7aeef23a35e52dbc46bc826a
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c

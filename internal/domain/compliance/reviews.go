@@ -41,7 +41,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review"}
+	"policy-acknowledgement", "risk-review", "data-inventory"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -144,6 +144,10 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	inventory, err := u.Compliance().InventoryReviews(ctx)
+	if err != nil {
+		return nil, err
+	}
 	closeOf := func(p storage.Period) (*storage.PeriodClose, error) {
 		c, err := u.Closes().Latest(ctx, p.ID)
 		if errors.Is(err, ports.ErrNotFound) {
@@ -163,6 +167,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		breakGlassReview(glass, entries, now),
 		policyAcknowledgements(lib, members, now),
 		riskReviews(risks, today),
+		inventoryReview(members, inventory, today),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -171,7 +176,8 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 }
 
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
-	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date"}
+	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
+	"data-inventory": "quarterly"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -410,5 +416,35 @@ func riskReviews(risks []storage.Risk, today time.Time) Review {
 		none = "The risk register is empty."
 	}
 	r.settle(none)
+	return r
+}
+
+// The personal-data inventory's review (CMP-PD-02, CTL-DP-05; rev 0.244): the Compliance officer reviews it once each
+// calendar quarter ends, overdue 14 days after, as the access review is.
+func inventoryReview(members []storage.Member, reviews []storage.InventoryReview, today time.Time) Review {
+	r := Review{Kind: "data-inventory", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each quarter's review, with who reviewed the inventory, when and their note"}
+	since := today
+	for _, m := range members {
+		if d := m.Since.UTC().Truncate(24 * time.Hour); d.Before(since) {
+			since = d
+		}
+	}
+	var quarters []time.Time
+	for _, x := range reviews {
+		quarters = append(quarters, x.Quarter)
+		r.signed(x.ReviewedBy, x.ReviewedAt)
+	}
+	if q, ok := accessreview.Due(today, since); ok && !accessreview.Covered(q, quarters) {
+		r.wait(accessreview.DueBy(q), true)
+		r.Period = accessreview.Label(q)
+	} else if q, ok := accessreview.ToAttest(today, since); ok && !accessreview.Covered(q, quarters) {
+		r.wait(accessreview.DueBy(q), false)
+		r.Period = accessreview.Label(q)
+	}
+	if r.Waiting > 0 {
+		r.Detail = fmt.Sprintf("The personal-data inventory's review of %s waits for the Compliance officer, due by %s.", r.Period, dayOf(*r.DueOn))
+	}
+	r.settle("No quarter's inventory review waits.")
 	return r
 }

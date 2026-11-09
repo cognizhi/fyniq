@@ -147,6 +147,18 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 		reviewIs(t, "nothing published", policyAcknowledgements(storage.PolicyLibrary{}, members, now), ReviewNothingDue, 0, 0, "No policy is published yet.")
 	})
 
+	t.Run("the inventory's review", func(t *testing.T) {
+		members := []storage.Member{{UserID: alice, Since: time.Date(2099, 1, 10, 0, 0, 0, 0, time.UTC)}}
+		q2 := storage.InventoryReview{Quarter: time.Date(2099, 4, 1, 0, 0, 0, 0, time.UTC), ReviewedBy: "user:" + alice.String(), ReviewedAt: time.Date(2099, 7, 3, 0, 0, 0, 0, time.UTC)}
+		r := inventoryReview(members, []storage.InventoryReview{q2}, today)
+		reviewIs(t, "Q3 past 14 October", r, ReviewOverdue, 1, 1, "Q3 2099")
+		if r.LastBy != q2.ReviewedBy || r.Owner != "dpo" {
+			t.Errorf("the inventory's sign-off: %+v", r)
+		}
+		q3 := storage.InventoryReview{Quarter: time.Date(2099, 7, 1, 0, 0, 0, 0, time.UTC), ReviewedBy: "user:" + alice.String(), ReviewedAt: time.Date(2099, 10, 2, 0, 0, 0, 0, time.UTC)}
+		reviewIs(t, "Q3 reviewed", inventoryReview(members, []storage.InventoryReview{q2, q3}, today), ReviewSigned, 0, 0, "No quarter")
+	})
+
 	t.Run("the risk reviews", func(t *testing.T) {
 		risk := func(ref, state string, next time.Time, reviewed *time.Time) storage.Risk {
 			r := storage.Risk{Ref: ref, RiskFields: storage.RiskFields{State: state, NextReviewOn: next}}

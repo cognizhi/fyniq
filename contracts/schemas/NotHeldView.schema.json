@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "What is not held.",
+      "examples": [
+        "nric"
+      ],
+      "type": "string"
+    },
+    "what": {
+      "description": "In words.",
+      "examples": [
+        "NRIC and FIN numbers"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "Why it is not held.",
+      "examples": [
+        "Payroll's live in Nemura"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "what",
+    "why"
+  ],
+  "title": "NotHeldView",
+  "type": "object"
+}

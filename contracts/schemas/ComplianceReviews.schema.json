@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "items": {
-      "description": "The seven reviews, in the Compliance Center's order.",
+      "description": "The recurring reviews, in the Compliance Center's order.",
       "items": {
         "$ref": "ComplianceReview.schema.json"
       },

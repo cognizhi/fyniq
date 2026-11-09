@@ -18,7 +18,7 @@ import (
 
 // ComplianceReview is a recurring review people sign off, as it stands for the organisation (CMP-03, design D6).
 type ComplianceReview struct {
-	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review" doc:"The review." example:"access-review"`
+	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory" doc:"The review." example:"access-review"`
 	Title       string             `json:"title" doc:"What it is, in a sentence." example:"An Owner attests the access review (each quarter)"`
 	Owner       string             `json:"owner" enum:"owner,controller,accountant,dpo,member" doc:"The role that signs it off; member when each member signs for themselves." example:"owner"`
 	Cadence     string             `json:"cadence" enum:"weekly,quarterly,monthly,each use,each version,by review date" doc:"How often it falls due." example:"quarterly"`
@@ -51,7 +51,7 @@ type ComplianceSignOff struct {
 
 // ComplianceReviews are the organisation's recurring reviews.
 type ComplianceReviews struct {
-	Items []ComplianceReview `json:"items" nullable:"false" doc:"The seven reviews, in the Compliance Center's order."`
+	Items []ComplianceReview `json:"items" nullable:"false" doc:"The recurring reviews, in the Compliance Center's order."`
 }
 
 type complianceReviewsOutput struct{ Body ComplianceReviews }
@@ -62,10 +62,10 @@ func registerComplianceReviews(a *API) {
 		Summary: "List the recurring reviews and attestations",
 		Description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each " +
 			"quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's " +
-			"post-review, the policy acknowledgements and the risk reviews. Each comes with its owner role, what waits and when it " +
-			"falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, " +
-			"and the controls whose attestation check reads it. Read-only; no side effects.",
-	}, "cursor", "The seven recurring reviews, read whole: one summary per kind, each worked out from its own records."),
+			"post-review, the policy acknowledgements, the risk reviews and the personal-data inventory's quarterly review. Each " +
+			"comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, " +
+			"its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.",
+	}, "cursor", "The recurring reviews, eight of them, read whole: one summary per kind, each worked out from its own records."),
 		[]string{storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, _ *struct{}) (*complianceReviewsOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "description": "The data.",
+      "examples": [
+        "Security events' IP address and browser"
+      ],
+      "type": "string"
+    },
+    "deletion": {
+      "description": "How it is deleted.",
+      "examples": [
+        "Erased daily, with a signed register entry"
+      ],
+      "type": "string"
+    },
+    "retention": {
+      "description": "How long it is kept, with the setting that says so.",
+      "examples": [
+        "400 days (retention.security_events_days)"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "data",
+    "retention",
+    "deletion"
+  ],
+  "title": "RetentionRow",
+  "type": "object"
+}

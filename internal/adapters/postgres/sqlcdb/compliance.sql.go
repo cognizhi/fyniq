@@ -401,6 +401,84 @@ func (q *Queries) InsertControlState(ctx context.Context, arg InsertControlState
 	return i, err
 }
 
+const insertDataInventoryEntry = `-- name: InsertDataInventoryEntry :exec
+INSERT INTO fyniq.data_inventory_entry (entry_id, version, what, why, where_held, who, retention, transfers, needs_dpia, state, saved_by, saved_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+  $8, $9, $10, $11, $12)
+`
+
+type InsertDataInventoryEntryParams struct {
+	EntryID   uuid.UUID
+	Version   int32
+	What      string
+	Why       string
+	WhereHeld string
+	Who       string
+	Retention string
+	Transfers string
+	NeedsDpia bool
+	State     string
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+func (q *Queries) InsertDataInventoryEntry(ctx context.Context, arg InsertDataInventoryEntryParams) error {
+	_, err := q.db.Exec(ctx, insertDataInventoryEntry,
+		arg.EntryID,
+		arg.Version,
+		arg.What,
+		arg.Why,
+		arg.WhereHeld,
+		arg.Who,
+		arg.Retention,
+		arg.Transfers,
+		arg.NeedsDpia,
+		arg.State,
+		arg.SavedBy,
+		arg.SavedAt,
+	)
+	return err
+}
+
+const insertDataInventoryReview = `-- name: InsertDataInventoryReview :one
+INSERT INTO fyniq.data_inventory_review (quarter, reviewed_by, reviewed_at, note)
+VALUES ($1, $2, $3, $4)
+RETURNING id, quarter, reviewed_by, reviewed_at, note
+`
+
+type InsertDataInventoryReviewParams struct {
+	Quarter    time.Time
+	ReviewedBy string
+	ReviewedAt time.Time
+	Note       *string
+}
+
+type InsertDataInventoryReviewRow struct {
+	ID         uuid.UUID
+	Quarter    time.Time
+	ReviewedBy string
+	ReviewedAt time.Time
+	Note       *string
+}
+
+func (q *Queries) InsertDataInventoryReview(ctx context.Context, arg InsertDataInventoryReviewParams) (InsertDataInventoryReviewRow, error) {
+	row := q.db.QueryRow(ctx, insertDataInventoryReview,
+		arg.Quarter,
+		arg.ReviewedBy,
+		arg.ReviewedAt,
+		arg.Note,
+	)
+	var i InsertDataInventoryReviewRow
+	err := row.Scan(
+		&i.ID,
+		&i.Quarter,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.Note,
+	)
+	return i, err
+}
+
 const insertPolicyAcknowledgement = `-- name: InsertPolicyAcknowledgement :one
 INSERT INTO fyniq.policy_acknowledgement (key, version, acknowledged_by, acknowledged_at)
 VALUES ($1, $2, $3, $4)
@@ -852,6 +930,99 @@ func (q *Queries) ListControlStates(ctx context.Context) ([]FyniqControlState, e
 			&i.RunAt,
 			&i.ChangedAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDataInventoryEntries = `-- name: ListDataInventoryEntries :many
+SELECT entry_id, version, what, why, where_held, who, retention, transfers, needs_dpia, state, saved_by, saved_at
+FROM fyniq.data_inventory_entry ORDER BY entry_id, version
+`
+
+type ListDataInventoryEntriesRow struct {
+	EntryID   uuid.UUID
+	Version   int32
+	What      string
+	Why       string
+	WhereHeld string
+	Who       string
+	Retention string
+	Transfers string
+	NeedsDpia bool
+	State     string
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+// Every version of the organisation's inventory entries, by entry and version (CMP-PD-02).
+func (q *Queries) ListDataInventoryEntries(ctx context.Context) ([]ListDataInventoryEntriesRow, error) {
+	rows, err := q.db.Query(ctx, listDataInventoryEntries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDataInventoryEntriesRow
+	for rows.Next() {
+		var i ListDataInventoryEntriesRow
+		if err := rows.Scan(
+			&i.EntryID,
+			&i.Version,
+			&i.What,
+			&i.Why,
+			&i.WhereHeld,
+			&i.Who,
+			&i.Retention,
+			&i.Transfers,
+			&i.NeedsDpia,
+			&i.State,
+			&i.SavedBy,
+			&i.SavedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDataInventoryReviews = `-- name: ListDataInventoryReviews :many
+SELECT id, quarter, reviewed_by, reviewed_at, note FROM fyniq.data_inventory_review ORDER BY quarter
+`
+
+type ListDataInventoryReviewsRow struct {
+	ID         uuid.UUID
+	Quarter    time.Time
+	ReviewedBy string
+	ReviewedAt time.Time
+	Note       *string
+}
+
+// The inventory's quarterly reviews, oldest first (CTL-DP-05).
+func (q *Queries) ListDataInventoryReviews(ctx context.Context) ([]ListDataInventoryReviewsRow, error) {
+	rows, err := q.db.Query(ctx, listDataInventoryReviews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDataInventoryReviewsRow
+	for rows.Next() {
+		var i ListDataInventoryReviewsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Quarter,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.Note,
 		); err != nil {
 			return nil, err
 		}

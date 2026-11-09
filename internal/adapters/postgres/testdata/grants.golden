@@ -137,6 +137,10 @@ fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
+fyniq_api       INSERT    data_inventory_entry (entry_id, needs_dpia, retention, saved_at, saved_by, state, transfers, version, what, where_held, who, why)
+fyniq_api       SELECT    data_inventory_entry
+fyniq_api       INSERT    data_inventory_review (note, quarter, reviewed_at, reviewed_by)
+fyniq_api       SELECT    data_inventory_review
 fyniq_api       EXECUTE   decide_installation_change()
 fyniq_api       EXECUTE   decide_join_request()
 fyniq_api       INSERT    dimension (kind, name, position)
@@ -551,6 +555,8 @@ fyniq_readonly  SELECT    conversion_step
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    customer_group
+fyniq_readonly  SELECT    data_inventory_entry
+fyniq_readonly  SELECT    data_inventory_review
 fyniq_readonly  SELECT    dimension
 fyniq_readonly  SELECT    dimension_set
 fyniq_readonly  SELECT    dimension_value
@@ -725,6 +731,8 @@ fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    customer_group
+fyniq_worker    SELECT    data_inventory_entry
+fyniq_worker    SELECT    data_inventory_review
 fyniq_worker    EXECUTE   destroyed_installation_connector_secret()
 fyniq_worker    SELECT    dimension
 fyniq_worker    INSERT    dimension_set (value_ids)

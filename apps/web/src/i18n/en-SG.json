@@ -2024,6 +2024,22 @@
       "label": "Reviews and attestations",
       "tooltip": "The recurring reviews people sign off: what is due, what is overdue and when each was last signed off, with where to sign it."
     },
+    "compliance.data-protection": {
+      "label": "Data protection",
+      "tooltip": "The PDPA programme: what personal data the company holds and for how long, its Data Protection Officer, and the penalty for a breach."
+    },
+    "data-protection.inventory": {
+      "label": "Inventory",
+      "tooltip": "What personal data Fyniq and the company hold, why, where, who reads it, how long it is kept and where it goes abroad."
+    },
+    "data-protection.entry": {
+      "label": "What the company holds outside Fyniq",
+      "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
+    },
+    "data-protection.review": {
+      "label": "Record the review",
+      "tooltip": "Each quarter the Compliance officer checks that the inventory still says what the company holds, within 14 days of the quarter's end."
+    },
     "compliance.privacy-notices": {
       "label": "Privacy notices and consent",
       "tooltip": "The notices that tell members and contacts what the company does with their personal data, and consent for the purposes that need it."

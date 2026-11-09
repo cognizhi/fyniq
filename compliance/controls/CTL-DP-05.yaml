@@ -10,5 +10,6 @@ evidence: "Inventory version"
 owner: DPO
 checks:
   - frequency: Q
-    status: planned
-    arrives: "p1-pdpa-retention"
+    status: running
+    how: "attestation data-inventory"
+    evidence: "the Compliance officer's quarterly review of the personal-data inventory, overdue 14 days after the quarter; on Compliance › Data protection and Reviews and attestations"

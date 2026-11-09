@@ -450,3 +450,69 @@ func TestTheNoticeDrafts(t *testing.T) {
 		t.Error("who acknowledges what")
 	}
 }
+
+// personalColumn is a column name that looks personal: a name of a person, an email address, a phone number, an
+// address, an IP address or browser, a person, a birth date, an NRIC or FIN, or a bank account's number or name.
+var personalColumn = regexp.MustCompile(`^(display_name|legal_name|email|[a-z_]+_email|phone|[a-z_]*phone|address|[a-z_]+_address|ip|user_agent|recipient|person|[a-z_]*birth[a-z_]*|nric[a-z_]*|fin|[a-z_]*account_number|holder_name|bank_account_name|dpo_name|number_sealed|number_last4|number_fingerprint)$`)
+
+// Fyniq's personal-data inventory (CMP-PD-02, rev 0.244; p1-pdpa-retention D3) is complete: every column of the schema
+// whose name looks personal is in a class or named not personal with why, every column it names exists, and each class
+// says what, why, where, who, how long, how it is protected and where it goes abroad. NRIC and card data are not held.
+// req: CMP-PD-02
+// req: SEC-14
+func TestTheDataInventory(t *testing.T) {
+	inv, err := LoadInventory()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile("../internal/adapters/postgres/testdata/schema.golden")
+	if err != nil {
+		t.Fatal(err)
+	}
+	columns := map[string]bool{}
+	in := false
+	for _, l := range strings.Split(string(b), "\n") {
+		switch {
+		case strings.HasPrefix(l, "## columns"):
+			in = true
+		case strings.HasPrefix(l, "## "):
+			in = false
+		case in:
+			if f := strings.Split(l, " | "); len(f) > 3 {
+				columns[f[0]+"."+f[1]] = true
+			}
+		}
+	}
+	named := map[string]string{}
+	for _, c := range inv.Classes {
+		if c.Key == "" || c.What == "" || c.Why == "" || c.Where == "" || c.Who == "" || c.Retention == "" || c.Protection == "" || c.Transfers == "" || len(c.Columns) == 0 {
+			t.Errorf("class %q leaves something out: %+v", c.Key, c)
+		}
+		for _, col := range c.Columns {
+			named[col] = c.Key
+		}
+	}
+	for _, n := range inv.NotPersonal {
+		if n.Why == "" {
+			t.Errorf("%s is not personal, but says not why", n.Column)
+		}
+		named[n.Column] = "not personal"
+	}
+	for col := range named {
+		if !columns[col] {
+			t.Errorf("the inventory names %s, which the schema does not hold", col)
+		}
+	}
+	for col := range columns {
+		if _, name, _ := strings.Cut(col, "."); personalColumn.MatchString(name) && named[col] == "" {
+			t.Errorf("%s looks personal, and the inventory does not say what it is: add it to a class or to not_personal", col)
+		}
+	}
+	held := map[string]bool{}
+	for _, n := range inv.NotHeld {
+		held[n.Key] = n.Why != ""
+	}
+	if !held["nric"] || !held["card-data"] {
+		t.Errorf("NRIC and card data are not said to be not held: %v", inv.NotHeld)
+	}
+}
