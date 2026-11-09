@@ -14,6 +14,6 @@ checks:
     how: "test TestEveryFileAndRevealIsAudited"
     evidence: "opening an evidence file and revealing a masked value each write their audit event; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
+    status: running
     how: "verify audit.exports-reconciled"
-    arrives: "p1-compliance-center (slice 4)"
+    evidence: "the latest run for the organisation (fyniq.control_run): every report export of the last day has its audit event, and up to 1,000 of each audited read keep their request details beside the chain"

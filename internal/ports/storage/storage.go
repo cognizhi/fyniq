@@ -147,6 +147,8 @@ type UnitOfWork interface {
 	Checks() Checks
 	// AccessReviews are the quarterly access review's attestations and the members' sign-ins (FR-CTL-06).
 	AccessReviews() AccessReviews
+	// Compliance is what the Compliance Center's verifications read and record (CMP-01).
+	Compliance() Compliance
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

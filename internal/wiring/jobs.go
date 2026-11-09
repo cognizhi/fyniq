@@ -117,6 +117,14 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			}
 			return notify.DomainChecks(ctx, k.Store, k.Store, k.dispatcher(clock), results, clock.Now()) // FR-NTF-01
 		},
+		controls.RunJob: func(ctx context.Context) error { // CMP-01: each organisation's verifications
+			registry, err := compliance.Load()
+			if err != nil {
+				return err
+			}
+			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry}.Nightly(ctx)
+			return err
+		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released
 			want, err := postgres.ReleaseGuards()
 			if err != nil {

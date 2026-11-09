@@ -283,7 +283,7 @@ var catalogueWarnings = map[string]string{
 // that proves none (design D1, D2).
 // req: CMP-01
 // req: CTL-FIN-03, CTL-FIN-04, CTL-FIN-06, CTL-FIN-07, CTL-FIN-08, CTL-FIN-09, CTL-FIN-10, CTL-FIN-11, CTL-FIN-12
-// req: CTL-IAM-02, CTL-API-02, CTL-STAT-01, CTL-STAT-02, CTL-STAT-03, CTL-STAT-04
+// req: CTL-IAM-02, CTL-STAT-01, CTL-STAT-02, CTL-STAT-03, CTL-STAT-04
 func TestTheCatalogueChecksThatProveControls(t *testing.T) {
 	controls, err := Load()
 	if err != nil {

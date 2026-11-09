@@ -18,9 +18,9 @@ checks:
     how: "test TestAChangeOfBankDetailsNeedsASecondPerson"
     evidence: "a payee's bank details change only on another person's approval; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
+    status: running
     how: "verify payments.dual-control"
-    arrives: "p1-compliance-center (slice 4)"
+    evidence: "the latest run for the organisation (fyniq.control_run): every approval of a payment batch or bank change, and every release, of the last day was another person's or a break-glass's use by its Owner; what broke it is listed"
   - frequency: N
     status: running
     how: "check controls.break-glass-unreviewed"

@@ -52,6 +52,9 @@ var PlatformSchedules = []Schedule{
 	// Nightly at 04:15, every check of every organisation, after the night's verifications whose outcomes some of them read
 	// (FR-CTL-01, FR-CTL-05; p1-checks design D5).
 	{Job: "checks.run", Every: 24 * time.Hour, Offset: 20*time.Hour + 15*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
+	// Daily at 04:35, after the checks, each organisation's verifications of the Compliance Center (CTL-FIN-08,
+	// CTL-IAM-01, CTL-AUD-05; p1-compliance-center D4).
+	{Job: "compliance.run", Every: 24 * time.Hour, Offset: 20*time.Hour + 35*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly at :50, the connectors' clean-up: replaced keys past their overlap, an uninstalled connector's keys, a refused

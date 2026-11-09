@@ -59,7 +59,10 @@ It comes before `p1-pdpa-retention`, which adds the PDPA registers (CMP-05) to t
   - CTL-AUD-03, CTL-AUD-04, CTL-RES-03 and CTL-RES-05 to `p1-operations-dr`;
   - CTL-CHG-04 and CTL-CHG-05 to `p1-security-hardening`.
 
-  The 43 control rows left are closed here.
+  Building the verifications found that Fyniq registers no integration client yet (rev 0.242): CTL-API-02 moves to
+  `p1-mcp-first-party`, whose Connected apps first registers them.
+
+  The 42 control rows left are closed here.
 - **The registry names every check that runs.** A check may now be:
   - a check of the organisation's catalogue (Appendix C), such as `ledger.sub-ledgers` for CTL-FIN-04;
   - an attestation;

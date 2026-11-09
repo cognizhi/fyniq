@@ -221,6 +221,8 @@ BY_ID.update({
     # to the changes that build it.
     "CTL-AUD-03": "p1-operations-dr", "CTL-AUD-04": "p1-operations-dr", "CTL-RES-03": "p1-operations-dr",
     "CTL-RES-05": "p1-operations-dr", "CTL-CHG-04": "p1-security-hardening", "CTL-CHG-05": "p1-security-hardening",
+    # (rev 0.242) Integration clients are first registered by Connected apps (AI-46).
+    "CTL-API-02": "p1-mcp-first-party",
 })
 # The checks of Appendix C are built with the module each guards, on the checks engine of p1-checks (the owner's
 # decision of 29 Oct 2026, PRD-001 rev 0.162): those of modules after p1-checks sit with those modules' changes.
