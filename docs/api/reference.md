@@ -11626,6 +11626,28 @@ Asks another person to approve a drafted pool resolution at the version read (FR
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-06`, `EQUITY-16`, `EQUITY-17`, `EQUITY-18`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-07`
 
+### `POST /v1/round-models`
+
+**Try a round** (`modelRound`)
+
+The round simulator's sandbox (FR-EQ-21, design D8): models a round scenario's inputs against today's books and answers with its outcome, as createRoundScenario would, and saves nothing: no scenario, no audit event, nothing posted. Anyone who reads the whole cap table may try one; saving a scenario and asking for its approval need the right to draft. The holder the caller signs in as is marked you. Every problem comes back together. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3). The sandbox: it saves nothing.
+- **Request body:** [`RoundScenarioDraft`](../../contracts/schemas/RoundScenarioDraft.schema.json)
+- **Responses:**
+  - `200` OK [`RoundOutcomeView`](../../contracts/schemas/RoundOutcomeView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQUITY-14` The SAFE or note does not fit; `EQUITY-19` The round does not fit; `STORAGE-SHARE-08` The round scenario does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `EQUITY-05`, `EQUITY-14`, `EQUITY-19`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-08`
+
 ### `GET /v1/round-scenarios`
 
 **List the round scenarios, side by side** (`listRoundScenarios`)

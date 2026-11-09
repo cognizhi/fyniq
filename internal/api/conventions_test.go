@@ -38,6 +38,8 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).
 	want = append(want, "backTestBankRule Idempotency-Key", "backTestBankRule Prefer")
+	// Trying a round in the sandbox saves nothing too (FR-EQ-21).
+	want = append(want, "modelRound Idempotency-Key", "modelRound Prefer")
 	// Reconcile now posts each line in its own transaction; a repeat finds them no longer waiting (FR-BNK-14, rev 0.143).
 	want = append(want, "autoReconcileBankLines Idempotency-Key")
 	// A reveal changes no record: a repeat shows the number again and records another look (FR-CT-03, rev 0.153).

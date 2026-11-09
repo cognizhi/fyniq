@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -89,6 +90,7 @@ type RoundHolderView struct {
 	DilutedShareAfter  string `json:"diluted_after,omitempty" doc:"Percentage fully diluted after." example:"79.87"`
 	Dilution           string `json:"dilution,omitempty" doc:"Percentage points fully diluted lost: before less after, exact, shown to 2 decimals; negative for a gain." example:"20.13"`
 	ProRata            string `json:"pro_rata" doc:"What their pro-rata right entitles them to of the round's new shares: the new shares × their part fully diluted before, rounded down [accountant to confirm against the side letter]." example:"252083"`
+	You                bool   `json:"you,omitempty" doc:"The holder is the contact the caller signs in as (linkContactMember), so a founder sees what they would own." example:"true"`
 }
 
 // RoundOutcomeView is a scenario's outcome, computed on read (FR-EQ-21): never stored.
@@ -107,6 +109,10 @@ type RoundOutcomeView struct {
 	UnallocatedBefore string                `json:"unallocated_before" doc:"What the option pool leaves to grant before." example:"0"`
 	UnallocatedAfter  string                `json:"unallocated_after" doc:"And after, with the top-up." example:"0"`
 	NewShares         string                `json:"new_shares" doc:"Every share the round issues: the investors' and the conversions'." example:"252083"`
+	Raised            Money                 `json:"raised" doc:"The money the round takes for its shares: each investor's allotment as it costs (RND-LINE), added; what buys no whole share is not taken."`
+	PoolBefore        string                `json:"pool_diluted_before,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"What the option pool leaves to grant as a percentage of every share fully diluted before (RND-DISPLAY); left out when it leaves nothing." example:"4.15"`
+	PoolAfter         string                `json:"pool_diluted_after,omitempty" pattern:"^(0|[1-9][0-9]*)\\.[0-9]{2}$" doc:"And after, with the top-up." example:"13.89"`
+	PoolDilution      string                `json:"pool_dilution,omitempty" doc:"The points fully diluted the pool loses, as a holder's dilution; negative when a top-up enlarges it; left out with no pool on either side." example:"-13.89"`
 }
 
 // RoundScenarioView is a round scenario with its outcome.
@@ -139,6 +145,8 @@ type (
 		PreferHeader
 		Body RoundScenarioDraft
 	}
+	roundModelInput     struct{ Body RoundScenarioDraft }
+	roundModelOutput    struct{ Body RoundOutcomeView }
 	scenarioReviseInput struct {
 		RoundScenarioPath
 		KeyHeader
@@ -213,7 +221,7 @@ func scenarioDraftOf(s equity.Scenario) RoundScenarioDraft {
 }
 
 // outcomeView is a scenario's outcome as the API shows it, names resolved.
-func (a *API) outcomeView(ctx context.Context, u storage.UnitOfWork, o equity.RoundOutcome, safes map[uuid.UUID]uuid.UUID) (RoundOutcomeView, error) {
+func (a *API) outcomeView(ctx context.Context, u storage.UnitOfWork, o equity.RoundOutcome, safes map[uuid.UUID]uuid.UUID, me uuid.UUID) (RoundOutcomeView, error) {
 	names := map[uuid.UUID]string{}
 	name := func(id uuid.UUID) (string, error) {
 		if n, ok := names[id]; ok {
@@ -230,6 +238,14 @@ func (a *API) outcomeView(ctx context.Context, u storage.UnitOfWork, o equity.Ro
 		Issues: []RoundIssueView{}, Conversions: []RoundConversionView{}, Holders: []RoundHolderView{}, IssuedBefore: whole(o.IssuedBefore),
 		IssuedAfter: whole(o.IssuedAfter), DilutedBefore: whole(o.DilutedBefore), DilutedAfter: whole(o.DilutedAfter),
 		UnallocatedBefore: whole(o.UnallocatedBefore), UnallocatedAfter: whole(o.UnallocatedAfter), NewShares: whole(o.NewShares)}
+	raised, err := o.Raised()
+	if err != nil {
+		return out, err
+	}
+	out.Raised = moneyOut(raised)
+	if out.PoolBefore, out.PoolAfter, out.PoolDilution, err = o.PoolShare(); err != nil {
+		return out, err
+	}
 	for _, x := range o.Issues {
 		n, err := name(x.HolderID)
 		if err != nil {
@@ -258,7 +274,7 @@ func (a *API) outcomeView(ctx context.Context, u storage.UnitOfWork, o equity.Ro
 		out.Holders = append(out.Holders, RoundHolderView{HolderID: h.HolderID.String(), HolderName: n, IssuedBefore: whole(h.IssuedBefore),
 			IssuedAfter: whole(h.IssuedAfter), DilutedBefore: whole(h.DilutedBefore), DilutedAfter: whole(h.DilutedAfter), OwnershipBefore: h.OwnershipBefore,
 			OwnershipAfter: h.OwnershipAfter, DilutedShareBefore: h.DilutedShareBefore, DilutedShareAfter: h.DilutedShareAfter, Dilution: h.Drop,
-			ProRata: whole(h.ProRata)})
+			ProRata: whole(h.ProRata), You: me != uuid.Nil && h.HolderID == me})
 	}
 	slices.SortStableFunc(out.Holders, func(x, y RoundHolderView) int {
 		return strings.Compare(strings.ToLower(x.HolderName), strings.ToLower(y.HolderName))
@@ -286,17 +302,7 @@ func (a *API) scenarioOf(ctx context.Context, u storage.UnitOfWork, doc storage.
 	var e *equity.Error
 	switch {
 	case err == nil:
-		instruments, err := equity.Instruments(ctx, u)
-		if err != nil {
-			return out, err
-		}
-		holders := map[uuid.UUID]uuid.UUID{}
-		for _, d := range instruments {
-			if i, err := equity.ReadInstrument(d); err == nil {
-				holders[d.ID] = i.HolderID
-			}
-		}
-		view, err := a.outcomeView(ctx, u, o, holders)
+		view, err := a.shownOutcome(ctx, u, o)
 		if err != nil {
 			return out, err
 		}
@@ -307,6 +313,32 @@ func (a *API) scenarioOf(ctx context.Context, u storage.UnitOfWork, doc storage.
 		return out, err
 	}
 	return out, nil
+}
+
+// shownOutcome is an outcome as the caller reads it: by name, each instrument's holder found, and the holder they sign in
+// as marked.
+func (a *API) shownOutcome(ctx context.Context, u storage.UnitOfWork, o equity.RoundOutcome) (RoundOutcomeView, error) {
+	instruments, err := equity.Instruments(ctx, u)
+	if err != nil {
+		return RoundOutcomeView{}, err
+	}
+	holders := map[uuid.UUID]uuid.UUID{}
+	for _, d := range instruments {
+		if i, err := equity.ReadInstrument(d); err == nil {
+			holders[d.ID] = i.HolderID
+		}
+	}
+	var me uuid.UUID
+	if p, _ := authn.From(ctx); p.UserID != uuid.Nil {
+		c, err := u.Contacts().OfMember(ctx, p.UserID)
+		switch {
+		case err == nil:
+			me = c.ID
+		case !errors.Is(err, ports.ErrNotFound):
+			return RoundOutcomeView{}, err
+		}
+	}
+	return a.outcomeView(ctx, u, o, holders, me)
 }
 
 func (a *API) shownScenario(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (RoundScenarioView, error) {
@@ -389,6 +421,42 @@ func registerRoundScenarios(a *API) {
 		})
 		return &out, err
 	})
+
+	model := huma.Operation{
+		OperationID: "modelRound", Method: http.MethodPost, Path: "/v1/round-models", Tags: []string{"Equity"},
+		Summary: "Try a round",
+		Description: "The round simulator's sandbox (FR-EQ-21, design D8): models a round scenario's inputs against today's books and " +
+			"answers with its outcome, as createRoundScenario would, and saves nothing: no scenario, no audit event, nothing posted. " +
+			"Anyone who reads the whole cap table may try one; saving a scenario and asking for its approval need the right to draft. " +
+			"The holder the caller signs in as is marked you. Every problem comes back together. Read-only; no side effects.",
+	}
+	model = exempt(model, "Idempotency-Key", "A model saves nothing and has no side effects, so a repeat is harmless.")
+	model = exempt(model, "Prefer", "The operation is itself a preview: it saves nothing, so return=preview would answer the same.")
+	register(a, authz.ModelRound, model, append(append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, locks...), RoundCodes...),
+		func(ctx context.Context, in *roundModelInput) (*roundModelOutput, error) {
+			s, err := scenarioIn(in.Body)
+			if err != nil {
+				return nil, err
+			}
+			p, _ := authn.From(ctx)
+			var out roundModelOutput
+			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				set, err := journal.LoadSettings(ctx, u)
+				if err != nil {
+					return err
+				}
+				o, err := equity.ModelScenarioIn(ctx, u, s, set)
+				if err != nil {
+					return equityProblems(err)
+				}
+				out.Body, err = a.shownOutcome(ctx, u, o)
+				return err
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &out, nil
+		})
 
 	register(a, authz.CreateRoundScenario, huma.Operation{
 		OperationID: "createRoundScenario", Method: http.MethodPost, Path: "/v1/round-scenarios", Tags: []string{"Equity"},

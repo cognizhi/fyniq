@@ -15,7 +15,8 @@ import (
 // converts at min(2.50, 2.40) = S$2.40 into 52,083 shares, the investor takes 200,000, of 1,252,083: the founder 79.87%,
 // diluted by 20.13 points, the investor 15.97%, the SAFE 4.16%. Pre-money S$3,000,000.00, post-money S$3,756,249.00. A
 // pre-money valuation of S$3,000,000 prices the same round; with a top-up of 200,000 before the money the price is
-// S$2.50 and the investor takes 240,000.
+// S$2.50 and the investor takes 240,000, raising the same S$600,000.00, and the pool leaves 200,000 of 1,440,000 to grant:
+// 13.89%, from nothing, so it "loses" -13.89 points.
 // req: FR-EQ-21
 // req: RND-SHARE
 func TestARoundIsModelledByHand(t *testing.T) {
@@ -72,6 +73,12 @@ func TestARoundIsModelledByHand(t *testing.T) {
 			t.Errorf("holder %v: %v, want %v", h.HolderID, got, want[h.HolderID])
 		}
 	}
+	if raised, err := out.Raised(); err != nil || raised.String() != "600000.00" {
+		t.Errorf("raised: %v %v", raised, err)
+	}
+	if b, a, d, err := out.PoolShare(); err != nil || b != "" || a != "" || d != "" {
+		t.Errorf("no pool, so no pool share: %q %q %q %v", b, a, d, err)
+	}
 	if out.Holders[0].HolderID != founder || out.Holders[0].ProRata.Text('f') != "252083" {
 		t.Errorf("the founder's pro-rata entitlement, all of the new shares: %+v", out.Holders[0])
 	}
@@ -87,6 +94,13 @@ func TestARoundIsModelledByHand(t *testing.T) {
 	if v, err := ModelRound(topped, before, nil, nil); err != nil || v.Price.String() != "2.50" || v.Issues[0].Shares.Text('f') != "240000" ||
 		v.UnallocatedAfter.Text('f') != "200000" || v.DilutedAfter.Text('f') != "1440000" {
 		t.Errorf("with a top-up of 200,000 before the money: %+v %v", v, err)
+	} else {
+		if raised, err := v.Raised(); err != nil || raised.String() != "600000.00" {
+			t.Errorf("raised with the top-up: %v %v", raised, err)
+		}
+		if b, a, d, err := v.PoolShare(); err != nil || b != "" || a != "13.89" || d != "-13.89" {
+			t.Errorf("the pool's share with the top-up: %q %q %q %v", b, a, d, err)
+		}
 	}
 	if _, err := ModelRound(RoundModel{On: m.On}, before, nil, nil); err == nil {
 		t.Error("a round with no price and no valuation was modelled")

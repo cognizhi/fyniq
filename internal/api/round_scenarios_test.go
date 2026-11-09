@@ -20,7 +20,9 @@ import (
 // answers with the outcome and saves nothing: the SAFE's 52,083 shares at S$2.40, Seedling's 200,000, the founder 79.87%
 // after, diluted by 20.13 points, S$3,756,249.00 post-money. Saved, it is modelled again on read, by price or by a
 // pre-money valuation of S$3,000,000; approving it, with its resolutions named and a top-up of 100,000 after the money,
-// drafts Seedling's issue for cash and the pool's resolution. Nothing posts. An Employee reads none of it.
+// drafts Seedling's issue for cash and the pool's resolution. Nothing posts. An Owner, who may not draft, tries the round
+// in the sandbox of modelRound: the founder Ah Kow signs in as is marked you, the round raises S$600,000.00, and a top-up of
+// 200,000 before the money leaves the pool 13.89% of every share fully diluted after it. An Employee reads none of it.
 // req: FR-EQ-21
 // req: FM-1
 // asvs: V8.2.1
@@ -81,6 +83,40 @@ func TestARoundIsModelledAndApproved(t *testing.T) {
 		t.Errorf("the sandbox saved a scenario: %s", l.Raw)
 	}
 
+	kow := c.as(c.ahkow, authz.Owner)
+	ct := e.call(http.MethodGet, "/v1/contacts/"+founder, weiling, nil)
+	if r := approve(e.call(http.MethodPut, "/v1/contacts/"+founder+"/member", weiling, map[string]any{"member_user_id": c.ahkow}, "If-Match", ct.Header.Get("ETag")), mei); r.Status != http.StatusOK {
+		t.Fatalf("linking the founder to Ah Kow's sign-in: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/round-scenarios", kow, model, "Prefer", "return=preview"), "createRoundScenario", 403, CodeForbidden)
+	tried := e.call(http.MethodPost, "/v1/round-models", kow, model)
+	if tried.Status != http.StatusOK || !strings.Contains(tried.Raw, `"holder_name":"Ah Kow"`) || !strings.Contains(tried.Raw, `"pro_rata":"252083","you":true`) ||
+		!strings.Contains(tried.Raw, `"raised":{"amount":"600000.00","currency":"SGD"}`) || strings.Contains(tried.Raw, `"pool_diluted_after"`) ||
+		strings.Count(tried.Raw, `"you":true`) != 1 {
+		t.Errorf("an Owner trying the round: %d %s", tried.Status, tried.Raw)
+	}
+	topped := map[string]any{}
+	for k, v := range model {
+		topped[k] = v
+	}
+	delete(topped, "price")
+	topped["pre_money"], topped["top_up"], topped["top_up_before"], topped["instruments"] = "3000000", "200000", true, []string{}
+	if r := e.call(http.MethodPost, "/v1/round-models", kow, topped); r.Status != http.StatusOK || !strings.Contains(r.Raw, `"price":"2.50"`) ||
+		!strings.Contains(r.Raw, `"pool_diluted_after":"13.89","pool_dilution":"-13.89"`) || !strings.Contains(r.Raw, `"unallocated_after":"200000"`) {
+		t.Errorf("trying a top-up before the money: %d %s", r.Status, r.Raw)
+	}
+	bad0 := map[string]any{}
+	for k, v := range model {
+		bad0[k] = v
+	}
+	bad0["investors"] = []map[string]any{{"holder_id": customer, "amount": "600000.00"}}
+	if r := e.call(http.MethodPost, "/v1/round-models", kow, bad0); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, `"field":"body.investors[0].holder_id"`) {
+		t.Errorf("trying a round with a customer as its investor: %d %s", r.Status, r.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/round-scenarios", weiling, nil); len(l.Body["items"].([]any)) != 0 {
+		t.Errorf("trying a round saved a scenario: %s", l.Raw)
+	}
+
 	bad := map[string]any{}
 	for k, v := range model {
 		bad[k] = v
@@ -134,6 +170,7 @@ func TestARoundIsModelledAndApproved(t *testing.T) {
 		t.Errorf("the pool's resolution drafted: %s", p.Raw)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/round-scenarios", e.as(authz.Employee), nil), "listRoundScenarios", 403, CodeForbidden)
+	e.problemIs(e.call(http.MethodPost, "/v1/round-models", e.as(authz.Employee), model), "modelRound", 403, CodeForbidden)
 }
 
 // scenarioFixture is the matrix's round scenario: a draft at S$1.00 a share for one investor.
@@ -198,6 +235,14 @@ var matrixRoundScenarios = map[string]func(e *env, tok string) (response, func()
 		cur := e.call(http.MethodGet, "/v1/round-scenarios/"+id, e.as(authz.Accountant), nil)
 		body := scenarioBody(cur.str("class_account_id"), cur.Body["investors"].([]any)[0].(map[string]any)["holder_id"].(string))
 		r := e.call(http.MethodPost, "/v1/round-scenarios", tok, body, "Prefer", "return=preview")
+		return r, func() bool { return matrixScenarioState(e, id) == was }
+	},
+	"modelRound": func(e *env, tok string) (response, func() bool) {
+		id := matrixScenario(e)
+		was := matrixScenarioState(e, id)
+		cur := e.call(http.MethodGet, "/v1/round-scenarios/"+id, e.as(authz.Accountant), nil)
+		body := scenarioBody(cur.str("class_account_id"), cur.Body["investors"].([]any)[0].(map[string]any)["holder_id"].(string))
+		r := e.call(http.MethodPost, "/v1/round-models", tok, body)
 		return r, func() bool { return matrixScenarioState(e, id) == was }
 	},
 	"replaceRoundScenario": func(e *env, tok string) (response, func() bool) {

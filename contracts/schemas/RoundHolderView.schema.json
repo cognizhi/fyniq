@@ -86,6 +86,13 @@
         "252083"
       ],
       "type": "string"
+    },
+    "you": {
+      "description": "The holder is the contact the caller signs in as (linkContactMember), so a founder sees what they would own.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
     }
   },
   "required": [

@@ -214,20 +214,13 @@ func ModelRound(m RoundModel, before CapTable, safes []Converting, enabled func(
 			}
 		}
 		if before.FullyDiluted.Sign() > 0 && out.DilutedAfter.Sign() > 0 {
-			var b, a, drop apd.Decimal
+			var b apd.Decimal
 			if _, err := exact.Quo(&b, &h.DilutedBefore, &before.FullyDiluted); err != nil {
 				return out, err
 			}
-			if _, err := exact.Quo(&a, &h.DilutedAfter, &out.DilutedAfter); err != nil {
+			if h.Drop, err = points(&h.DilutedBefore, &before.FullyDiluted, &h.DilutedAfter, &out.DilutedAfter); err != nil {
 				return out, err
 			}
-			if _, err := exact.Sub(&drop, &b, &a); err != nil {
-				return out, err
-			}
-			if _, err := exact.Mul(&drop, &drop, apd.New(100, 0)); err != nil {
-				return out, err
-			}
-			h.Drop = rounding.Display(&drop, 2)
 			var entitled apd.Decimal
 			if _, err := exact.Mul(&entitled, &out.NewShares, &b); err != nil {
 				return out, err
@@ -241,6 +234,56 @@ func ModelRound(m RoundModel, before CapTable, safes []Converting, enabled func(
 		out.Holders = append(out.Holders, h)
 	}
 	return out, nil
+}
+
+// points is the percentage points of its whole a part loses from before to after: (before ÷ its whole − after ÷ its
+// whole) × 100, exact, shown to 2 decimals (RND-DISPLAY); negative for a gain.
+func points(partBefore, wholeBefore, partAfter, wholeAfter *apd.Decimal) (string, error) {
+	var b, a, drop apd.Decimal
+	if _, err := exact.Quo(&b, partBefore, wholeBefore); err != nil {
+		return "", err
+	}
+	if _, err := exact.Quo(&a, partAfter, wholeAfter); err != nil {
+		return "", err
+	}
+	if _, err := exact.Sub(&drop, &b, &a); err != nil {
+		return "", err
+	}
+	if _, err := exact.Mul(&drop, &drop, apd.New(100, 0)); err != nil {
+		return "", err
+	}
+	return rounding.Display(&drop, 2), nil
+}
+
+// Raised is the money the round takes for its shares: each investor's allotment as it costs under RND-LINE, added.
+func (o RoundOutcome) Raised() (money.Money, error) {
+	amounts := make([]money.Money, 0, len(o.Issues))
+	for _, x := range o.Issues {
+		amounts = append(amounts, x.Amount)
+	}
+	return money.Sum(o.Price.Currency(), amounts...)
+}
+
+// PoolShare is what the option pool leaves to grant as a part of every share fully diluted, before and after the round
+// (RND-DISPLAY), and the points it loses, worked out as a holder's are; each is empty when there is nothing to show on
+// its side, and the points when either side is.
+func (o RoundOutcome) PoolShare() (before, after, drop string, err error) {
+	if o.UnallocatedBefore.Sign() > 0 && o.DilutedBefore.Sign() > 0 {
+		if before, err = rounding.Ownership(&o.UnallocatedBefore, &o.DilutedBefore); err != nil {
+			return "", "", "", err
+		}
+	}
+	if o.UnallocatedAfter.Sign() > 0 && o.DilutedAfter.Sign() > 0 {
+		if after, err = rounding.Ownership(&o.UnallocatedAfter, &o.DilutedAfter); err != nil {
+			return "", "", "", err
+		}
+	}
+	if (before != "" || after != "") && o.DilutedBefore.Sign() > 0 && o.DilutedAfter.Sign() > 0 {
+		if drop, err = points(&o.UnallocatedBefore, &o.DilutedBefore, &o.UnallocatedAfter, &o.DilutedAfter); err != nil {
+			return "", "", "", err
+		}
+	}
+	return before, after, drop, nil
 }
 
 // valued is shares × price, a valuation, under RND-LINE.
