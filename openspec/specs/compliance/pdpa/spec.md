@@ -6,7 +6,7 @@ How Fyniq meets the Personal Data Protection Act: the Data Protection Officer, t
 ## Requirements
 
 ### Requirement: CMP-PD-01 Data Protection Officer
-A Data Protection Officer SHALL be appointed, and their contact and the data protection policies SHALL be published.
+A Data Protection Officer SHALL be appointed, and their contact and the data protection policies SHALL be published. (rev 0.244) The Owner names the DPO and their business contact in the organisation profile; Fyniq shows it in the app, its notices, emails and documents, and gives text for the company's website, hosting no public page.
 
 Source: PRD-001 §14.3 · Priority M · Phase P1
 
@@ -18,6 +18,20 @@ Source: PRD-001 §14.3 · Priority M · Phase P1
 #### Scenario: Data protection policies published
 - **WHEN** someone looks for the data protection policies
 - **THEN** they are published
+
+#### Scenario: DPO named in the organisation profile
+- **WHEN** the Owner names the Data Protection Officer
+- **THEN** a member, normally holding the Compliance officer role, is named
+- **AND** the DPO's business contact, a name and an email address, is kept in the organisation profile
+
+#### Scenario: Contact shown wherever personal data is explained
+- **WHEN** a privacy notice is shown, or Fyniq sends an email or a document
+- **THEN** it carries the DPO's business contact
+
+#### Scenario: Text for the company's website
+- **WHEN** the company publishes the DPO's contact (PDPA s11(5))
+- **THEN** Fyniq gives a copy-ready block for the company's website
+- **AND** Fyniq hosts no public privacy page
 
 ### Requirement: CMP-PD-02 Personal-data inventory and retention schedule
 The system SHALL maintain a personal-data inventory and a retention schedule in the Compliance Center.
@@ -33,7 +47,7 @@ Source: PRD-001 §14.3 · Priority M · Phase P1
 - **THEN** the retention schedule is maintained with it
 
 ### Requirement: CMP-PD-03 Notices, purposes and consent
-The system SHALL give notices and purposes to employees, contacts and (P3) customers' users, and SHALL obtain consent where required.
+The system SHALL give notices and purposes to employees, contacts and (P3) customers' users, and SHALL obtain consent where required. (rev 0.244) Fyniq drafts each audience's notice for the Owner or DPO to adopt and publish as versions; members acknowledge each version; consent is recorded only for a purpose that needs it, none by default.
 
 Source: PRD-001 §14.3 · Priority M · Phase P1
 
@@ -49,6 +63,26 @@ Source: PRD-001 §14.3 · Priority M · Phase P1
 #### Scenario: Consent where required
 - **WHEN** a purpose requires consent
 - **THEN** consent is obtained for it
+
+#### Scenario: Notices drafted for adoption
+- **WHEN** an organisation opens its privacy notices for the first time
+- **THEN** each audience has a notice drafted by Fyniq from the PDPC's guides, tagged [counsel to confirm] where the law bears on it
+- **AND** nothing is in force until the Owner or the DPO publishes a version, under the policy library's Appendix D row
+
+#### Scenario: Members acknowledge each version
+- **WHEN** a member joins, or a new version of the members' notice is published
+- **THEN** the member is asked to acknowledge that version
+- **AND** the acknowledgement is kept
+
+#### Scenario: Contacts get a summary
+- **WHEN** Fyniq sends an email or a document to a contact
+- **THEN** it carries a summary of the contacts' notice with the DPO's contact
+
+#### Scenario: No consent purpose by default
+- **GIVEN** Fyniq uses contacts' data for the business relationship and its legal obligations [counsel to confirm]
+- **WHEN** no purpose that needs consent is defined
+- **THEN** no consent is asked for
+- **AND** a purpose that needs it records each consent and its withdrawal
 
 ### Requirement: CMP-PD-04 Access and correction requests
 Access and correction requests SHALL be handled in a tracked workflow and answered within 30 days, or the requester SHALL be told in writing within 30 days when it will take longer.
@@ -135,7 +169,7 @@ Source: PRD-001 §14.3 · Priority M · Phase P1
 - **THEN** a data protection impact assessment is done for it
 
 ### Requirement: CMP-PD-09 Penalty awareness
-The risk register SHALL record awareness of the PDPA penalty: up to 10% of Singapore turnover above S$10m, otherwise S$1m.
+The risk register SHALL record awareness of the PDPA penalty: up to 10% of Singapore turnover above S$10m, otherwise S$1m. (rev 0.244) Confirmed against PDPA s48J(3) and reg 10A of the Enforcement Regulations 2021, for contraventions from 1 Oct 2022.
 
 Source: PRD-001 §14.3 · Priority S · Phase P1
 

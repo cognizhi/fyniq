@@ -1432,6 +1432,36 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the policy library
 - **THEN** the AI assistant has no right over it (—)
 
+### Requirement: Permission matrix: Data protection (PDPA)
+In Standard mode, each role SHALL hold only the rights over the PDPA registers that the permission matrix gives it: the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244).
+
+Source: PRD-001 §D
+
+#### Scenario: Create and approve
+- **WHEN** a role acts on the PDPA registers
+- **THEN** the Compliance officer / DPO can create or prepare and approve (C/A), including each shredding run
+
+#### Scenario: View
+- **WHEN** a role acts on the PDPA registers
+- **THEN** the Owner and the Auditor can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the PDPA registers
+- **THEN** the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over them (—)
+
+### Requirement: Permission matrix: Own personal-data requests
+In Standard mode, every member SHALL be able to ask for access to or correction of their own personal data, and the AI assistant SHALL NOT (rev 0.244).
+
+Source: PRD-001 §D
+
+#### Scenario: Every member asks about their own data
+- **WHEN** a member asks for access to or correction of their own personal data
+- **THEN** the Owner, the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer and the Compliance officer / DPO can create the request (C)
+
+#### Scenario: Not the AI
+- **WHEN** the AI assistant acts
+- **THEN** it cannot ask for anyone's personal data on their behalf (—)
+
 ### Requirement: Permission matrix: Statutory calendar
 In Standard mode, each role SHALL hold only the rights over the statutory calendar, its deadlines and the filings recorded as done, that the permission matrix gives it (rev 0.211).
 
