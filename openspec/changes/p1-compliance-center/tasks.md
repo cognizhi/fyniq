@@ -454,11 +454,28 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 10. Threat model and as built (slice 10)
 
-- [ ] 10.1 The threat model `docs/security/threat-models/compliance-center.md`. It covers the registry and its
+- [x] 10.1 The threat model `docs/security/threat-models/compliance-center.md`. It covers the registry and its
   evidence, the release evidence and its workflow permissions, `schema.verify`, the `verify` checks, notices, the risk
   register, the policies and acknowledgements, and who may change what. Each threat has its control and its test.
+
+  **What building added:**
+    - **Fifteen threats**, each with its control and the tests that prove it. Among them: a control covered by a check
+      that does not exist; evidence from a failed run; a self-stamped release; a grant changed by hand; a verification
+      that misses a breach; a stale "pass"; a notice to the wrong people; a policy changed after it was accepted, or an
+      acknowledgement given for someone else; a wrong legal clause adopted unreviewed; and the operator's risks in a
+      customer's organisation.
+    - **What remains:**
+      - the first release's evidence and `schema.verify` in the dev cloud, `[live-verify]`;
+      - self-stamped images, until production admits only signed ones (CTL-CHG-04);
+      - counsel's review of the drafts;
+      - no control for the policy acknowledgements and the risk reviews;
+      - a day's lag in the statuses;
+      - the seed for earlier installations.
 - [ ] 10.2 `make test` and `make up` pass on the last slice, and `make check` passes. The build plan's
   p1-compliance-center paragraph says what was built.
+
+  The build plan's paragraph is written with slice 10. `make test` and `make up` wait for the last slice, the canvas
+  (9.1).
 
 ## Workflow follow-up
 
