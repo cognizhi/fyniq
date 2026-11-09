@@ -61,6 +61,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listConsentPurposes cursor", "listConsents cursor") // consent (CMP-PD-03)
 	want = append(want, "getDataInventory cursor")                           // the inventory (CMP-PD-02)
 	want = append(want, "listDPIAs cursor", "getDPIA cursor")                // the impact assessments (CMP-PD-08)
+	want = append(want, "listPersonalDataRequests cursor", "getPersonalDataReport cursor", "listMyPersonalDataRequests cursor") // CMP-PD-04
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

@@ -2036,6 +2036,14 @@
       "label": "What the company holds outside Fyniq",
       "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
     },
+    "data-protection.requests": {
+      "label": "Requests",
+      "tooltip": "Requests to see or correct personal data: each answered within 30 days, or by the day the requester was told in writing."
+    },
+    "my-data.ask": {
+      "label": "Send the request",
+      "tooltip": "Ask to see the personal data the company holds about you, or to correct it. It is answered within 30 days, or you are told in writing when it will be."
+    },
     "data-protection.dpias": {
       "label": "Impact assessments",
       "tooltip": "The data protection impact assessments: payroll's and the AI assistant's before they are switched on, and one for each new processing."

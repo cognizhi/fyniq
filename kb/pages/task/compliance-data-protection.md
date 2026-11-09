@@ -4,7 +4,7 @@ type: task
 title: Keep the data protection registers
 summary: The PDPA programme - the personal-data inventory and schedule, the quarterly review, impact assessments, the DPO and the penalty
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:2c22fdd216e428ad671594e61a09b883c2d8adf6d0701098abe53494c0cad258
+  - docs/user-guide/compliance-data-protection.md sha256:00dd934650680a73359a5d363a03c2fef9f829d196a626ceacdf5edf1753e9cd
 data_class: general
 taint: trusted
 status: published
@@ -59,6 +59,15 @@ aliases:
 - A processing without an approved assessment shows as overdue on **Reviews and attestations** ([[compliance.reviews]]).
 
 (src: docs/user-guide/compliance-data-protection.md#impact-assessments)
+
+## Access and correction requests
+
+- A member asks in **Settings** › **Profile** ([[preferences.security]]); the Compliance officer records any other request under **Requests** with **Record a request**. Each is due 30 days after it was received.
+- **Next step** acknowledges, extends (told in writing within the first 30 days, naming a later day), answers with its outcome, then closes it.
+- **Data held** shows what Fyniq holds about a member or contact who asked, and the read is recorded in the audit trail; corrections are made where the data lives.
+- A request past its day shows as overdue here and on **Reviews and attestations**.
+
+(src: docs/user-guide/compliance-data-protection.md#access-and-correction-requests)
 
 ## The Data Protection Officer
 

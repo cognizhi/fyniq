@@ -10,7 +10,9 @@
         "monthly",
         "each use",
         "each version",
-        "by review date"
+        "by review date",
+        "each processing",
+        "each request"
       ],
       "examples": [
         "quarterly"
@@ -61,7 +63,9 @@
         "break-glass-review",
         "policy-acknowledgement",
         "risk-review",
-        "data-inventory"
+        "data-inventory",
+        "dpia",
+        "pd-requests"
       ],
       "examples": [
         "access-review"

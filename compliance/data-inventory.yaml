@@ -60,6 +60,15 @@ classes:
     protection: "None beyond the database's"
     transfers: "None"
     columns: [consent_record.person]
+  - key: pdpa-requests
+    what: "Access and correction requests: who asked, how to reach them, what they asked and how it was answered"
+    why: "To answer each request within the law's time and to show it was (CMP-PD-04)"
+    where: "The database, in Singapore"
+    who: "Appendix D's Data protection (PDPA); a member sees their own"
+    retention: "The records' retention"
+    protection: "Read only by the Compliance officer, the Owner and the Auditor"
+    transfers: "None"
+    columns: [pd_request.requester, pd_request.subject, pd_request.details]
   - key: organisation-contacts
     what: "The company's own published contacts, its Data Protection Officer's name and email among them"
     why: "To print them on documents and give them to people who ask about their personal data (PDPA s11(5))"

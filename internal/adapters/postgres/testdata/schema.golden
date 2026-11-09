@@ -1322,6 +1322,25 @@ payment_batch_release | currency | text | not null |
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
 payment_batch_release | break_glass_id | uuid | null | 
+pd_request | organisation_id | uuid | not null | current_org()
+pd_request | id | uuid | not null | uuidv7()
+pd_request | kind | text | not null | 
+pd_request | subject | text | not null | 
+pd_request | requester | text | null | 
+pd_request | details | text | not null | 
+pd_request | received_on | date | not null | 
+pd_request | due_on | date | not null | 
+pd_request | created_by | text | not null | 
+pd_request | created_at | timestamp with time zone | not null | 
+pd_request_step | organisation_id | uuid | not null | current_org()
+pd_request_step | id | uuid | not null | uuidv7()
+pd_request_step | request_id | uuid | not null | 
+pd_request_step | step | text | not null | 
+pd_request_step | at | timestamp with time zone | not null | 
+pd_request_step | by_actor | text | not null | 
+pd_request_step | note | text | null | 
+pd_request_step | new_due_on | date | null | 
+pd_request_step | outcome | text | null | 
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -3872,6 +3891,39 @@ payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organi
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
 payment_batch_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_request | pd_request_created_at_not_null | NOT NULL created_at
+pd_request | pd_request_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_request | pd_request_created_by_not_null | NOT NULL created_by
+pd_request | pd_request_details_length | CHECK (((length(btrim(details)) >= 1) AND (length(btrim(details)) <= 4000)))
+pd_request | pd_request_details_not_null | NOT NULL details
+pd_request | pd_request_due | CHECK ((due_on = (received_on + 30)))
+pd_request | pd_request_due_on_not_null | NOT NULL due_on
+pd_request | pd_request_id_not_null | NOT NULL id
+pd_request | pd_request_kind_known | CHECK ((kind = ANY (ARRAY['access'::text, 'correction'::text])))
+pd_request | pd_request_kind_not_null | NOT NULL kind
+pd_request | pd_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_request | pd_request_organisation_id_not_null | NOT NULL organisation_id
+pd_request | pd_request_pkey | PRIMARY KEY (organisation_id, id)
+pd_request | pd_request_received_on_not_null | NOT NULL received_on
+pd_request | pd_request_requester_length | CHECK (((length(btrim(requester)) >= 1) AND (length(btrim(requester)) <= 500)))
+pd_request | pd_request_someone_asks | CHECK (((subject ~~ 'member:%'::text) OR (requester IS NOT NULL)))
+pd_request | pd_request_subject_format | CHECK ((subject ~ '^((member|contact):[0-9a-f-]{36}|person)$'::text))
+pd_request | pd_request_subject_not_null | NOT NULL subject
+pd_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_request_step | pd_request_step_at_not_null | NOT NULL at
+pd_request_step | pd_request_step_by_actor_not_null | NOT NULL by_actor
+pd_request_step | pd_request_step_by_format | CHECK ((by_actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_request_step | pd_request_step_extension | CHECK (((step = 'extended'::text) = (new_due_on IS NOT NULL)))
+pd_request_step | pd_request_step_id_not_null | NOT NULL id
+pd_request_step | pd_request_step_known | CHECK ((step = ANY (ARRAY['acknowledged'::text, 'extended'::text, 'answered'::text, 'closed'::text])))
+pd_request_step | pd_request_step_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 4000)))
+pd_request_step | pd_request_step_organisation_id_not_null | NOT NULL organisation_id
+pd_request_step | pd_request_step_outcome | CHECK ((((step = 'answered'::text) = (outcome IS NOT NULL)) AND ((outcome IS NULL) OR (outcome = ANY (ARRAY['provided'::text, 'corrected'::text, 'partly'::text, 'refused'::text])))))
+pd_request_step | pd_request_step_pkey | PRIMARY KEY (organisation_id, id)
+pd_request_step | pd_request_step_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES pd_request(organisation_id, id)
+pd_request_step | pd_request_step_request_id_not_null | NOT NULL request_id
+pd_request_step | pd_request_step_step_not_null | NOT NULL step
+pd_request_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period | period_closed_revision | CHECK (((status = 'closed'::text) = (closed_revision IS NOT NULL)))
 period | period_closed_revision_not_negative | CHECK ((closed_revision >= 0))
 period | period_created_at_not_null | NOT NULL created_at
@@ -4641,6 +4693,7 @@ CREATE INDEX operation_job ON fyniq.operation USING btree (organisation_id, job_
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
+CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
@@ -4878,6 +4931,8 @@ CREATE UNIQUE INDEX payment_batch_payment_once ON fyniq.payment_batch_payment US
 CREATE UNIQUE INDEX payment_batch_payment_pkey ON fyniq.payment_batch_payment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payment_batch_release_once ON fyniq.payment_batch_release USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX payment_batch_release_pkey ON fyniq.payment_batch_release USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_request_pkey ON fyniq.pd_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_request_step_pkey ON fyniq.pd_request_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
@@ -5013,6 +5068,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
@@ -5325,6 +5382,10 @@ CREATE TRIGGER payment_batch_payment_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER payment_batch_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_payment FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_payment_guard()
 CREATE TRIGGER payment_batch_release_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payment_batch_release FOR EACH ROW EXECUTE FUNCTION payment_batch_release_guard()
 CREATE TRIGGER payment_batch_release_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_release FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_release_guard()
+CREATE TRIGGER pd_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
+CREATE TRIGGER pd_request_no_truncate BEFORE TRUNCATE ON fyniq.pd_request FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_request_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request_step FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
+CREATE TRIGGER pd_request_step_no_truncate BEFORE TRUNCATE ON fyniq.pd_request_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close FOR EACH ROW EXECUTE FUNCTION period_close_guard()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
@@ -5496,6 +5557,8 @@ owner_succession | tenant_isolation | * | (organisation_id = current_org()) | (o
 payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5651,6 +5714,8 @@ owner_succession | enabled | forced
 payee_bank_account | enabled | forced
 payment_batch_payment | enabled | forced
 payment_batch_release | enabled | forced
+pd_request | enabled | forced
+pd_request_step | enabled | forced
 period | enabled | forced
 period_close | enabled | forced
 period_close_check | enabled | forced
@@ -5919,6 +5984,7 @@ payment_batch_approved() → trigger | security invoker | v | search_path=pg_cat
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
+pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470

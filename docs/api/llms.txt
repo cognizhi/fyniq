@@ -200,6 +200,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/filings/{filing_id}/record` (recordStatutoryFiling): Record a filing record
 - `POST /v1/compliance/filings/{filing_id}/withdraw` (withdrawStatutoryFiling): Withdraw a filing record
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
+- `GET /v1/compliance/personal-data-requests` (listPersonalDataRequests): List the access and correction requests
+- `POST /v1/compliance/personal-data-requests` (createPersonalDataRequest): Record an access or correction request
+- `GET /v1/compliance/personal-data-requests/{request_id}/report` (getPersonalDataReport): Report the personal data held about a request's subject
+- `POST /v1/compliance/personal-data-requests/{request_id}/steps` (stepPersonalDataRequest): Add a request's next step
 - `GET /v1/compliance/policies` (listPolicies): List the policy library
 - `GET /v1/compliance/policies/{key}` (getPolicy): Get a policy
 - `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
@@ -493,6 +497,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/me/holding` (getMyHolding): Get my holding
 - `GET /v1/me/option-grants` (getMyOptionGrants): Get my grants of options
+- `GET /v1/me/personal-data-requests` (listMyPersonalDataRequests): List my requests about my personal data
+- `POST /v1/me/personal-data-requests` (askAboutMyPersonalData): Ask to see or correct my personal data
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations

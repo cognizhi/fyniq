@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "Each value held, with its class.",
+      "items": {
+        "$ref": "ReportItem.schema.json"
+      },
+      "type": "array"
+    },
+    "note": {
+      "description": "What the report does not cover.",
+      "examples": [
+        "The audit trail's history and issued documents are kept as records; ask the Compliance officer for copies."
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "Whose data.",
+      "examples": [
+        "member:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "subject",
+    "items",
+    "note"
+  ],
+  "title": "PersonalDataReport",
+  "type": "object"
+}

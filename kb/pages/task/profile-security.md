@@ -4,7 +4,7 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:dc27039cdee3a5eb3de64bb85887dda0fee54026836c06ef1a5bbd600cfb0b0e
+  - docs/user-guide/profile-and-security.md sha256:30749625dcf077b18c4f87c8adaf70750fd89e9ff27b3420ea97c9eb06e94848
 data_class: general
 taint: trusted
 status: draft
@@ -119,6 +119,14 @@ aliases:
 - Each sign-in also sends an email.
 
 (src: docs/user-guide/profile-and-security.md#your-devices)
+
+
+## See or correct your personal data
+
+- Under **My personal data** (Settings › Profile) a member asks to see the personal data the company holds about them, or to correct it, and selects **Send the request**.
+- The Data Protection Officer is told and answers within 30 days, or tells them in writing within 30 days when they will; the requests stay listed with their status and due day ([[compliance.data-protection]]).
+
+(src: docs/user-guide/profile-and-security.md#see-or-correct-your-personal-data)
 
 ## Common problems
 

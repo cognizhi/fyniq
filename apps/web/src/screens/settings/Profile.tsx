@@ -30,6 +30,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { MyRecoveryCodes } from "../Recovery";
 import { MyBankAccount } from "./MyBankAccount";
+import { MyPersonalData } from "./MyPersonalData";
 import { SettingsPage } from "./SettingsPage";
 
 type Passkey = NonNullable<Awaited<ReturnType<typeof listPasskeys>>>[number];
@@ -585,6 +586,7 @@ export function Profile() {
     <SettingsPage title="Profile and security" screen="profile-preferences" lead="How Fyniq behaves for you, and how you confirm it's you.">
       <ModeChoice mode={mode} />
       <MyBankAccount />
+      <MyPersonalData />
       <section className="fy-card" aria-labelledby="security-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="security-title">

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "details": {
+      "description": "What you ask for; for a correction, what is wrong and what it should say.",
+      "examples": [
+        "Please correct my name: it is Ada Tan, not Ada Tam."
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "description": "access: to see the personal data the company holds about you; correction: to correct it.",
+      "enum": [
+        "access",
+        "correction"
+      ],
+      "examples": [
+        "access"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "details"
+  ],
+  "title": "MyRequestInput",
+  "type": "object"
+}
