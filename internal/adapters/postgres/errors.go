@@ -188,6 +188,7 @@ var fyCodes = map[string]string{
 	"FY306": storage.CodeAudit,           // a recovery out of its epoch order, or changed but for its acknowledgement (000293)
 	"FY307": storage.CodeCheck,           // a verification's run changed or deleted (000294)
 	"FY308": storage.CodeCheck,           // a control's state written other than at version 1, changed out of order, or deleted (000295)
+	"FY309": storage.CodeRisk,            // a risk's version out of order, a review of an earlier version or with no later date, or either changed (000296)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

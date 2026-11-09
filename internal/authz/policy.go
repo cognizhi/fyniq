@@ -1458,8 +1458,13 @@ var (
 	// The purges after retention, the trail's and the ledger's, and a record's purged postings (AUD-09, AUD-10).
 	ListAuditPurges = Policy{Operation: "listAuditPurges", Capability: AuditTrail, Need: View}
 	// The control dashboard (CMP-01; p1-compliance-center D9): everyone with a right on the Compliance Center reads it.
-	ListControls             = Policy{Operation: "listControls", Capability: ComplianceCenter, Need: View}
-	GetControl               = Policy{Operation: "getControl", Capability: ComplianceCenter, Need: View}
+	ListControls = Policy{Operation: "listControls", Capability: ComplianceCenter, Need: View}
+	GetControl   = Policy{Operation: "getControl", Capability: ComplianceCenter, Need: View}
+	// The risk register (CMP-06; p1-compliance-center D7): the Compliance officer saves and reviews risks.
+	ListRisks                = Policy{Operation: "listRisks", Capability: ComplianceCenter, Need: View}
+	CreateRisk               = Policy{Operation: "createRisk", Capability: ComplianceCenter, Need: Create}
+	ReviseRisk               = Policy{Operation: "reviseRisk", Capability: ComplianceCenter, Need: Create}
+	ReviewRisk               = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
 	AcknowledgeAuditRecovery = Policy{Operation: "acknowledgeAuditRecovery", Capability: AuditTrail, Need: Approve, OwnerMay: true,
 		Note: "Nobody holds A on \"Audit trail\" yet, so the Owner acknowledges (p1-audit-explorer design D8)."}
 	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
@@ -1673,7 +1678,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

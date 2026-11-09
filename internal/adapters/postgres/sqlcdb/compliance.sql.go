@@ -307,6 +307,127 @@ func (q *Queries) InsertControlState(ctx context.Context, arg InsertControlState
 	return i, err
 }
 
+const insertRisk = `-- name: InsertRisk :one
+INSERT INTO fyniq.risk (ref, created_at) VALUES ($1, $2) RETURNING organisation_id, id, ref, created_at
+`
+
+type InsertRiskParams struct {
+	Ref       string
+	CreatedAt time.Time
+}
+
+func (q *Queries) InsertRisk(ctx context.Context, arg InsertRiskParams) (FyniqRisk, error) {
+	row := q.db.QueryRow(ctx, insertRisk, arg.Ref, arg.CreatedAt)
+	var i FyniqRisk
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Ref,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertRiskReview = `-- name: InsertRiskReview :one
+INSERT INTO fyniq.risk_review (risk_id, version, reviewed_by, reviewed_at, note, next_review_on)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING organisation_id, id, risk_id, version, reviewed_by, reviewed_at, note, next_review_on
+`
+
+type InsertRiskReviewParams struct {
+	RiskID       uuid.UUID
+	Version      int32
+	ReviewedBy   string
+	ReviewedAt   time.Time
+	Note         string
+	NextReviewOn time.Time
+}
+
+func (q *Queries) InsertRiskReview(ctx context.Context, arg InsertRiskReviewParams) (FyniqRiskReview, error) {
+	row := q.db.QueryRow(ctx, insertRiskReview,
+		arg.RiskID,
+		arg.Version,
+		arg.ReviewedBy,
+		arg.ReviewedAt,
+		arg.Note,
+		arg.NextReviewOn,
+	)
+	var i FyniqRiskReview
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RiskID,
+		&i.Version,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.Note,
+		&i.NextReviewOn,
+	)
+	return i, err
+}
+
+const insertRiskVersion = `-- name: InsertRiskVersion :one
+INSERT INTO fyniq.risk_version (risk_id, version, title, description, owner_role, likelihood, impact, mitigation, review_months,
+                                next_review_on, state, saved_by, saved_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12,
+        $13)
+RETURNING organisation_id, id, risk_id, version, title, description, owner_role, likelihood, impact, mitigation, review_months, next_review_on, state, saved_by, saved_at
+`
+
+type InsertRiskVersionParams struct {
+	RiskID       uuid.UUID
+	Version      int32
+	Title        string
+	Description  string
+	OwnerRole    string
+	Likelihood   string
+	Impact       string
+	Mitigation   string
+	ReviewMonths int16
+	NextReviewOn time.Time
+	State        string
+	SavedBy      string
+	SavedAt      time.Time
+}
+
+func (q *Queries) InsertRiskVersion(ctx context.Context, arg InsertRiskVersionParams) (FyniqRiskVersion, error) {
+	row := q.db.QueryRow(ctx, insertRiskVersion,
+		arg.RiskID,
+		arg.Version,
+		arg.Title,
+		arg.Description,
+		arg.OwnerRole,
+		arg.Likelihood,
+		arg.Impact,
+		arg.Mitigation,
+		arg.ReviewMonths,
+		arg.NextReviewOn,
+		arg.State,
+		arg.SavedBy,
+		arg.SavedAt,
+	)
+	var i FyniqRiskVersion
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RiskID,
+		&i.Version,
+		&i.Title,
+		&i.Description,
+		&i.OwnerRole,
+		&i.Likelihood,
+		&i.Impact,
+		&i.Mitigation,
+		&i.ReviewMonths,
+		&i.NextReviewOn,
+		&i.State,
+		&i.SavedBy,
+		&i.SavedAt,
+	)
+	return i, err
+}
+
 const latestControlRuns = `-- name: LatestControlRuns :many
 SELECT DISTINCT ON (r.control, r.frequency, r.check_how) r.organisation_id, r.id, r.control, r.frequency, r.check_how, r.since, r.ran_at, r.ok, r.item_count, r.items, r.detail
   FROM fyniq.control_run r
@@ -346,6 +467,42 @@ func (q *Queries) LatestControlRuns(ctx context.Context) ([]FyniqControlRun, err
 	return items, nil
 }
 
+const latestRiskReviews = `-- name: LatestRiskReviews :many
+SELECT DISTINCT ON (y.risk_id) y.organisation_id, y.id, y.risk_id, y.version, y.reviewed_by, y.reviewed_at, y.note, y.next_review_on
+  FROM fyniq.risk_review y
+ ORDER BY y.risk_id, y.reviewed_at DESC, y.id DESC
+`
+
+// Each risk's latest review.
+func (q *Queries) LatestRiskReviews(ctx context.Context) ([]FyniqRiskReview, error) {
+	rows, err := q.db.Query(ctx, latestRiskReviews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqRiskReview
+	for rows.Next() {
+		var i FyniqRiskReview
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.RiskID,
+			&i.Version,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.Note,
+			&i.NextReviewOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listControlStates = `-- name: ListControlStates :many
 SELECT organisation_id, id, control, status, detail, checks, failing_since, run_at, changed_at, version FROM fyniq.control_state ORDER BY control
 `
@@ -370,6 +527,70 @@ func (q *Queries) ListControlStates(ctx context.Context) ([]FyniqControlState, e
 			&i.RunAt,
 			&i.ChangedAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRisks = `-- name: ListRisks :many
+SELECT r.id, r.ref, r.created_at, v.version, v.title, v.description, v.owner_role, v.likelihood, v.impact, v.mitigation,
+       v.review_months, v.next_review_on, v.state, v.saved_by, v.saved_at
+  FROM fyniq.risk r
+  JOIN LATERAL (SELECT organisation_id, id, risk_id, version, title, description, owner_role, likelihood, impact, mitigation, review_months, next_review_on, state, saved_by, saved_at FROM fyniq.risk_version x WHERE x.organisation_id = r.organisation_id AND x.risk_id = r.id
+                 ORDER BY x.version DESC LIMIT 1) v ON true
+ ORDER BY substring(r.ref FROM 2)::integer
+`
+
+type ListRisksRow struct {
+	ID           uuid.UUID
+	Ref          string
+	CreatedAt    time.Time
+	Version      int32
+	Title        string
+	Description  string
+	OwnerRole    string
+	Likelihood   string
+	Impact       string
+	Mitigation   string
+	ReviewMonths int16
+	NextReviewOn time.Time
+	State        string
+	SavedBy      string
+	SavedAt      time.Time
+}
+
+// Every risk at its latest version, in the order of their references.
+func (q *Queries) ListRisks(ctx context.Context) ([]ListRisksRow, error) {
+	rows, err := q.db.Query(ctx, listRisks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRisksRow
+	for rows.Next() {
+		var i ListRisksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Ref,
+			&i.CreatedAt,
+			&i.Version,
+			&i.Title,
+			&i.Description,
+			&i.OwnerRole,
+			&i.Likelihood,
+			&i.Impact,
+			&i.Mitigation,
+			&i.ReviewMonths,
+			&i.NextReviewOn,
+			&i.State,
+			&i.SavedBy,
+			&i.SavedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -420,6 +641,18 @@ func (q *Queries) MembersSecondFactor(ctx context.Context, since time.Time) ([]M
 		return nil, err
 	}
 	return items, nil
+}
+
+const nextRiskRef = `-- name: NextRiskRef :one
+SELECT ('R' || (coalesce(max(substring(r.ref FROM 2)::integer), 0) + 1))::text AS ref FROM fyniq.risk r
+`
+
+// The next reference of a new risk: R and one more than the highest number used.
+func (q *Queries) NextRiskRef(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, nextRiskRef)
+	var ref string
+	err := row.Scan(&ref)
+	return ref, err
 }
 
 const updateControlState = `-- name: UpdateControlState :one

@@ -6,8 +6,10 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/setupcode"
 )
@@ -81,10 +83,15 @@ func registerSetup(a *API) {
 			if base == "" {
 				base = "SGD" // FR-ORG-02: the base currency defaults to SGD
 			}
+			seed, err := compliance.Risks()
+			if err != nil {
+				return nil, err
+			}
+			now := a.deps.Clock.Now()
 			res, err := a.deps.Installation.CompleteSetup(ctx, storage.NewSetup{CodeHash: setupcode.Hash(in.Body.SetupCode),
 				DisplayName: in.Body.DisplayName, Issuer: p.Issuer, Subject: p.Subject,
 				OrganisationName: in.Body.Organisation.Name, BaseCurrency: base,
-				RecoveryCodeHashes: hashes, Now: a.deps.Clock.Now()})
+				RecoveryCodeHashes: hashes, Now: now, Risks: controls.SeedRisks(seed, "", now)})
 			if storage.CodeOf(err) == storage.CodeSetup {
 				a.deps.Log.Warn("api.setup.refused", "request_id", requestID(ctx)) // never the code
 				return nil, problem(CodeSetupRefused, "The setup code is not valid, or this installation is set up already.",

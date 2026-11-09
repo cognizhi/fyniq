@@ -5,9 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -189,4 +191,142 @@ func (c compliance) SaveState(ctx context.Context, s storage.ControlState, versi
 	v := out.Version
 	return out, c.u.event(ctx, action, "control_state", out.ID, &v, map[string][2]any{"control": {s.Control, s.Control},
 		"status": {before.Status, s.Status}})
+}
+
+// ------------------------------------------------------------------ the risk register (CMP-06; p1-compliance-center D7)
+
+func riskFieldsOf(title, description, owner, likelihood, impact, mitigation string, months int16, next time.Time, state string) storage.RiskFields {
+	return storage.RiskFields{Title: title, Description: description, Owner: owner, Likelihood: likelihood, Impact: impact,
+		Mitigation: mitigation, ReviewMonths: int(months), NextReviewOn: next, State: state}
+}
+
+func (c compliance) Risks(ctx context.Context) ([]storage.Risk, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListRisks(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	reviews, err := c.u.q.LatestRiskReviews(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	last := map[uuid.UUID]*storage.RiskReview{}
+	for _, r := range reviews {
+		last[r.RiskID] = &storage.RiskReview{Version: int(r.Version), ReviewedBy: r.ReviewedBy, ReviewedAt: r.ReviewedAt, Note: r.Note,
+			NextReviewOn: r.NextReviewOn}
+	}
+	out := make([]storage.Risk, len(rows))
+	for i, r := range rows {
+		out[i] = storage.Risk{ID: r.ID, Ref: r.Ref, CreatedAt: r.CreatedAt, Version: int(r.Version),
+			RiskFields: riskFieldsOf(r.Title, r.Description, r.OwnerRole, r.Likelihood, r.Impact, r.Mitigation, r.ReviewMonths, r.NextReviewOn, r.State),
+			SavedBy:    r.SavedBy, SavedAt: r.SavedAt, LastReview: last[r.ID]}
+		if l := last[r.ID]; l != nil && l.Version == out[i].Version {
+			out[i].NextReviewOn = l.NextReviewOn // a review of this version set when the next one falls due
+		}
+	}
+	return out, nil
+}
+
+// risk is one risk at its latest version, or CodeNotFound.
+func (c compliance) risk(ctx context.Context, id uuid.UUID) (storage.Risk, error) {
+	all, err := c.Risks(ctx)
+	if err != nil {
+		return storage.Risk{}, err
+	}
+	for _, r := range all {
+		if r.ID == id {
+			return r, nil
+		}
+	}
+	return storage.Risk{}, ports.ErrNotFound
+}
+
+func (c compliance) insertVersion(ctx context.Context, id uuid.UUID, version int, f storage.RiskFields, savedBy string, at time.Time) error {
+	_, err := c.u.q.InsertRiskVersion(ctx, sqlcdb.InsertRiskVersionParams{RiskID: id, Version: int32(min(max(version, 1), 1<<30)), // #nosec G115 -- bounded
+		Title: f.Title, Description: f.Description, OwnerRole: f.Owner, Likelihood: f.Likelihood, Impact: f.Impact, Mitigation: f.Mitigation,
+		ReviewMonths: int16(min(max(f.ReviewMonths, 1), 12)), NextReviewOn: f.NextReviewOn, State: f.State, SavedBy: savedBy, SavedAt: at}) // #nosec G115 -- bounded
+	return mapError(err)
+}
+
+func (c compliance) CreateRisk(ctx context.Context, n storage.NewRisk) (storage.Risk, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Risk{}, err
+	}
+	ref := n.Ref
+	if ref == "" {
+		next, err := c.u.q.NextRiskRef(ctx)
+		if err != nil {
+			return storage.Risk{}, mapError(err)
+		}
+		ref = next
+	}
+	row, err := c.u.q.InsertRisk(ctx, sqlcdb.InsertRiskParams{Ref: ref, CreatedAt: n.At})
+	if err != nil {
+		return storage.Risk{}, mapError(err)
+	}
+	if err := c.insertVersion(ctx, row.ID, 1, n.RiskFields, n.SavedBy, n.At); err != nil {
+		return storage.Risk{}, err
+	}
+	v := 1
+	if err := c.u.event(ctx, "risk.saved", "risk", row.ID, &v, map[string][2]any{"ref": {nil, ref}, "title": {nil, n.Title},
+		"owner": {nil, n.Owner}, "likelihood": {nil, n.Likelihood}, "impact": {nil, n.Impact}, "next_review_on": {nil, n.NextReviewOn.Format(time.DateOnly)},
+		"state": {nil, n.State}}); err != nil {
+		return storage.Risk{}, err
+	}
+	return c.risk(ctx, row.ID)
+}
+
+func (c compliance) ReviseRisk(ctx context.Context, id uuid.UUID, f storage.RiskFields, savedBy string, at time.Time, version int) (storage.Risk, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Risk{}, err
+	}
+	before, err := c.risk(ctx, id)
+	if err != nil {
+		return storage.Risk{}, err
+	}
+	if before.Version != version {
+		return storage.Risk{}, &storage.Error{Code: storage.CodeVersion, Message: "the risk changed since it was read"}
+	}
+	if err := c.insertVersion(ctx, id, version+1, f, savedBy, at); err != nil {
+		return storage.Risk{}, err
+	}
+	changes := map[string][2]any{}
+	for name, pair := range map[string][2]any{"title": {before.Title, f.Title}, "description": {before.Description, f.Description},
+		"owner": {before.Owner, f.Owner}, "likelihood": {before.Likelihood, f.Likelihood}, "impact": {before.Impact, f.Impact},
+		"mitigation": {before.Mitigation, f.Mitigation}, "review_months": {before.ReviewMonths, f.ReviewMonths},
+		"next_review_on": {before.NextReviewOn.Format(time.DateOnly), f.NextReviewOn.Format(time.DateOnly)}, "state": {before.State, f.State}} {
+		if pair[0] != pair[1] {
+			changes[name] = pair
+		}
+	}
+	v := version + 1
+	if err := c.u.event(ctx, "risk.saved", "risk", id, &v, changes); err != nil {
+		return storage.Risk{}, err
+	}
+	return c.risk(ctx, id)
+}
+
+func (c compliance) ReviewRisk(ctx context.Context, id uuid.UUID, r storage.RiskReview) (storage.Risk, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Risk{}, err
+	}
+	before, err := c.risk(ctx, id)
+	if err != nil {
+		return storage.Risk{}, err
+	}
+	if before.Version != r.Version {
+		return storage.Risk{}, &storage.Error{Code: storage.CodeVersion, Message: "the risk changed since it was read"}
+	}
+	if _, err := c.u.q.InsertRiskReview(ctx, sqlcdb.InsertRiskReviewParams{RiskID: id, Version: int32(min(max(r.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		ReviewedBy: r.ReviewedBy, ReviewedAt: r.ReviewedAt, Note: r.Note, NextReviewOn: r.NextReviewOn}); err != nil {
+		return storage.Risk{}, mapError(err)
+	}
+	v := r.Version
+	if err := c.u.event(ctx, "risk.reviewed", "risk", id, &v, map[string][2]any{"next_review_on": {
+		before.NextReviewOn.Format(time.DateOnly), r.NextReviewOn.Format(time.DateOnly)}, "note": {nil, r.Note}}); err != nil {
+		return storage.Risk{}, err
+	}
+	return c.risk(ctx, id)
 }

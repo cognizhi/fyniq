@@ -4,7 +4,7 @@ type: task
 title: See whether the controls hold
 summary: Every control with its status, why, its owner role and frameworks, each check and its evidence; the framework filter; the notice when one fails
 sources:
-  - docs/user-guide/compliance-controls.md sha256:c6e11891f68203a44f0df8119383f65854e91281e44baea90a092cde9e6dc967
+  - docs/user-guide/compliance-controls.md sha256:6ad576033f861776568e0b5c2281cd94dad8e5f942373c5988be84297d21457c
 data_class: general
 taint: trusted
 status: published
@@ -31,7 +31,7 @@ aliases:
 
 - **Controls** (from **Compliance**, Expert mode) lists every control that keeps the books and the platform in order, such as every journal entry balancing, payments approved by a second person, every member signing in with a second factor, and the audit trail staying intact ([[compliance.audit-trail]]).
 - Each shows its status, why, the role that answers for it, the frameworks it maps to, and each check with what it last said and its evidence.
-- Fyniq works out every status each night from the checks; nobody types one in.
+- Fyniq works out every status each night from the checks; nobody types one in. The risks the controls reduce are in the risk register ([[compliance.risks]]).
 - The Owner, the Administrator, the Controller, the Accountant, the Auditor and the Compliance officer see it ([[members.roles]]).
 
 (src: docs/user-guide/compliance-controls.md#what-it-is)

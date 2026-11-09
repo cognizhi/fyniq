@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "description": "More about it.",
+      "examples": [
+        "Phishing emails ask to pay a new account."
+      ],
+      "maxLength": 4000,
+      "type": "string"
+    },
+    "impact": {
+      "description": "How much it would hurt.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "likelihood": {
+      "description": "How likely it is.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "medium"
+      ],
+      "type": "string"
+    },
+    "mitigation": {
+      "description": "How it is reduced.",
+      "examples": [
+        "A second person approves every bank change; the supplier is called back on a known number."
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "next_review_on": {
+      "description": "When it is next due for review; left out of a new risk, the end of the next quarter, and of a change, as it was.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "owner": {
+      "description": "The role that answers for it.",
+      "enum": [
+        "owner",
+        "administrator",
+        "controller",
+        "accountant",
+        "dpo",
+        "auditor"
+      ],
+      "examples": [
+        "controller"
+      ],
+      "type": "string"
+    },
+    "review_months": {
+      "description": "How many months after a review the next one falls due; left out, 3.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 12,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "state": {
+      "description": "open, or closed; left out, open, or as it was.",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The risk, in a sentence.",
+      "examples": [
+        "A supplier's bank details are changed by a fraudster"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "owner",
+    "likelihood",
+    "impact",
+    "mitigation"
+  ],
+  "title": "RiskInput",
+  "type": "object"
+}

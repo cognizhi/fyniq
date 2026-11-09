@@ -128,6 +128,7 @@ describe("the Compliance page", () => {
     expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
       "/compliance/calendar",
       "/compliance/controls",
+      "/compliance/risks",
       "/compliance/gst",
       "/compliance/evidence",
       "/compliance/audit-trail",

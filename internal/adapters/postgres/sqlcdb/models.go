@@ -1859,6 +1859,42 @@ type FyniqReviewLogReview struct {
 	Note           *string
 }
 
+type FyniqRisk struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Ref            string
+	CreatedAt      time.Time
+}
+
+type FyniqRiskReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RiskID         uuid.UUID
+	Version        int32
+	ReviewedBy     string
+	ReviewedAt     time.Time
+	Note           string
+	NextReviewOn   time.Time
+}
+
+type FyniqRiskVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RiskID         uuid.UUID
+	Version        int32
+	Title          string
+	Description    string
+	OwnerRole      string
+	Likelihood     string
+	Impact         string
+	Mitigation     string
+	ReviewMonths   int16
+	NextReviewOn   time.Time
+	State          string
+	SavedBy        string
+	SavedAt        time.Time
+}
+
 type FyniqRoleAssignment struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -99,3 +99,38 @@ UPDATE fyniq.control_state
        run_at = sqlc.arg(run_at), changed_at = sqlc.arg(changed_at), version = version + 1
  WHERE control = sqlc.arg(control) AND version = sqlc.arg(version)
 RETURNING *;
+
+-- name: InsertRisk :one
+INSERT INTO fyniq.risk (ref, created_at) VALUES (sqlc.arg(ref), sqlc.arg(created_at)) RETURNING *;
+
+-- name: NextRiskRef :one
+-- The next reference of a new risk: R and one more than the highest number used.
+SELECT ('R' || (coalesce(max(substring(r.ref FROM 2)::integer), 0) + 1))::text AS ref FROM fyniq.risk r;
+
+-- name: InsertRiskVersion :one
+INSERT INTO fyniq.risk_version (risk_id, version, title, description, owner_role, likelihood, impact, mitigation, review_months,
+                                next_review_on, state, saved_by, saved_at)
+VALUES (sqlc.arg(risk_id), sqlc.arg(version), sqlc.arg(title), sqlc.arg(description), sqlc.arg(owner_role), sqlc.arg(likelihood),
+        sqlc.arg(impact), sqlc.arg(mitigation), sqlc.arg(review_months), sqlc.arg(next_review_on), sqlc.arg(state), sqlc.arg(saved_by),
+        sqlc.arg(saved_at))
+RETURNING *;
+
+-- name: InsertRiskReview :one
+INSERT INTO fyniq.risk_review (risk_id, version, reviewed_by, reviewed_at, note, next_review_on)
+VALUES (sqlc.arg(risk_id), sqlc.arg(version), sqlc.arg(reviewed_by), sqlc.arg(reviewed_at), sqlc.arg(note), sqlc.arg(next_review_on))
+RETURNING *;
+
+-- name: ListRisks :many
+-- Every risk at its latest version, in the order of their references.
+SELECT r.id, r.ref, r.created_at, v.version, v.title, v.description, v.owner_role, v.likelihood, v.impact, v.mitigation,
+       v.review_months, v.next_review_on, v.state, v.saved_by, v.saved_at
+  FROM fyniq.risk r
+  JOIN LATERAL (SELECT * FROM fyniq.risk_version x WHERE x.organisation_id = r.organisation_id AND x.risk_id = r.id
+                 ORDER BY x.version DESC LIMIT 1) v ON true
+ ORDER BY substring(r.ref FROM 2)::integer;
+
+-- name: LatestRiskReviews :many
+-- Each risk's latest review.
+SELECT DISTINCT ON (y.risk_id) y.*
+  FROM fyniq.risk_review y
+ ORDER BY y.risk_id, y.reviewed_at DESC, y.id DESC;

@@ -221,7 +221,7 @@ The registry is the plan's record of each control:
 - **Rights.** Under Appendix D's "Compliance Center" row, the DPO creates, revises and reviews, and everyone else with
   V reads.
 - **Seed (the owner's decision).** First-run setup loads R1–R19 into the organisation it creates, in the same unit of
-  work.
+  work. (rev 0.243) R1–R19 is §19's risks, R1–R22 today.
   - **Text.** The text is §19's as it stands at the build, without its revision tags, embedded as
     `compliance/risks.yaml`.
   - **Owner roles.** These go by area, as the registry's owners do: financial to the Controller, data to the DPO,

@@ -109,6 +109,10 @@ Source: PRD-001 §14.7 · Priority S · Phase P1
 - **THEN** R1–R19 are loaded into its register, each with an owner role and a quarterly review date (the owner's decision of 9 Nov 2026)
 - **AND** every other organisation's register starts empty
 
+#### Scenario: The starting register is all of §19's risks (rev 0.243)
+- **WHEN** first-run setup loads the operator's starting register
+- **THEN** it holds §19's risks, R1–R22 today, since R20–R22 were added after CMP-06 named R1–R19
+
 ### Requirement: CMP-07 Policy library
 The Compliance Center SHALL keep a policy library with versions and staff acknowledgements.
 

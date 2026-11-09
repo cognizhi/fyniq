@@ -96,6 +96,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "audit-trail": lazyRouteComponent(() => import("./screens/compliance/AuditTrail"), "AuditTrail"),
   compliance: lazyRouteComponent(() => import("./screens/compliance/Compliance"), "Compliance"),
   "compliance-controls": lazyRouteComponent(() => import("./screens/compliance/Controls"), "Controls"),
+  "compliance-risks": lazyRouteComponent(() => import("./screens/compliance/RiskPolicies"), "RiskPolicies"),
   "accountant-review": lazyRouteComponent(() => import("./screens/accounting/AccountantReviews"), "AccountantReviewPage"),
   "general-ledger": lazyRouteComponent(() => import("./screens/accounting/GeneralLedger"), "GeneralLedger"),
   reports: lazyRouteComponent(() => import("./screens/reports/Reports"), "Reports"),

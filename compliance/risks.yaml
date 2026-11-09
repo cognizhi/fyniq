@@ -1,0 +1,143 @@
+# The risks of building and running Fyniq (PRD-001 §19), as first-run setup loads them into the installation's
+# operator organisation (CMP-06, the owner's decision of 9 Nov 2026; p1-compliance-center design D7). The text is
+# §19's at the build, without its revision tags; a later §19 revision changes the operator's register by a new risk
+# version, never by an edit here. Likelihood and impact are low, medium or high; where §19 qualifies one, its words are
+# kept in the description. Owner roles go by area: financial to the Controller, data to the DPO, the rest to the Owner.
+format: fyniq-risks@1
+risks:
+  - ref: R1
+    title: "Calculation error reaches the books"
+    owner: controller
+    likelihood: low
+    impact: high
+    mitigation: "Database invariants; differential testing against an independent reference ledger; mutation testing; nightly verification; parity with the proven workbook (§16)"
+  - ref: R2
+    title: "Scope is too large for 2–3 founders"
+    owner: owner
+    likelihood: high
+    impact: high
+    mitigation: "Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2. P1 also gains Xero-parity items (auto-reconcile, document capture, bill automation, short-term cash flow, My claims), the AI company secretary, configurable sign-in and email, notifications and banners; benchmarks and Slack/Cliq are P2. P1 also gains connectors, scale-to-zero background work, bank data by email and EMI APIs, payment-provider reconciliation, the template editor, mileage claims and project time; DBS RAPID, ticketing and Model A payment links are P2. The P1 estimate in §17.2 predates these additions. The launch subset is frozen under open question 25; adding a row to it needs an estimate, its dependencies and the item it displaces"
+  - ref: R3
+    title: "AI makes or causes a wrong change"
+    owner: owner
+    likelihood: medium
+    impact: high
+    mitigation: "No write path; catalogue; per-proposal approval with ledger impact; numeric grounding; evals; kill switch (§9)"
+  - ref: R4
+    title: "Prompt injection through documents or bank data"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "Untrusted-data handling; catalogue limits; approvals; red-team suite (AI-18, QA-AI-03)"
+  - ref: R5
+    title: "Insider error or fraud in a team of founders"
+    owner: controller
+    likelihood: low
+    impact: high
+    mitigation: "Founder-mode compensating controls (FM-1…FM-8), dual control on money movement, audit trail, accountant review"
+  - ref: R6
+    title: "Statutory rules change (GST, CPF, InvoiceNow, IRAS APIs)"
+    description: "§19 rates its likelihood High (yearly)."
+    owner: controller
+    likelihood: high
+    impact: medium
+    mitigation: "Effective-dated packs, pinned tests, compliance calendar, yearly review routine (carry over the `cfh-sg-compliance-update` practice)"
+  - ref: R7
+    title: "Data breach of payroll or personal data"
+    owner: dpo
+    likelihood: low
+    impact: high
+    mitigation: "Encryption, masking, least privilege, monitoring, breach runbook, PDPA programme (§13, §14)"
+  - ref: R8
+    title: "Vendor lock-in to Google Cloud or one AI provider"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "PostgreSQL and containers are portable; IaC; AI behind a provider interface (AI-29); ports and adapters for every cloud service, no cloud SDK outside the adapters (NFR-PORT-01…06, ADR-T8); identity (ADR-T3) and the Claude endpoint are the hardest ties and are tracked there"
+  - ref: R9
+    title: "Cloud cost creep (AI tokens, BigQuery, logging)"
+    description: "§19 rates its impact Low–Medium."
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "Budgets and alerts; token budgets; BigQuery only when needed; log sampling with full retention for audit logs only"
+  - ref: R10
+    title: "Integrations unavailable (bank APIs, IRAS APIs) for a small company"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "File-based fallbacks (statement import, payment files, manual filing) remain first-class"
+  - ref: R11
+    title: "Key-person dependency on the founder who builds it"
+    owner: owner
+    likelihood: medium
+    impact: high
+    mitigation: "Everything as code, docs, agent skills (Appendix H), runbooks, managed services over self-hosted"
+  - ref: R12
+    title: "Migration discrepancy from the workbook"
+    owner: controller
+    likelihood: low
+    impact: medium
+    mitigation: "Parity tests on sample, edge-case and live files; parallel run"
+  - ref: R13
+    title: "The newest AI models are not served in Singapore; the residency choice limits model quality or adds transfer risk"
+    description: "§19 rates its likelihood High (today)."
+    owner: dpo
+    likelihood: high
+    impact: medium
+    mitigation: "ADR-T2 options; tool-grounded numbers; eval gate on every model change; revisit quarterly as regional availability changes; track each regional model's retirement date and quota, and have the eval-gated fallback ready before the primary model's earliest retirement"
+  - ref: R14
+    title: "Spreadsheet-grade grid needs a commercial licence (AG Grid Enterprise)"
+    description: "§19 rates its likelihood Certain."
+    owner: owner
+    likelihood: high
+    impact: low
+    mitigation: "Budgeted one-off cost; TanStack Table fallback for read-only tables"
+  - ref: R15
+    title: "OAuth and identity become complex (Identity Platform plus Hydra plus in-house passkeys)"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "One ADR (ADR-T3); a standard server rather than our own protocol code; revisit a passkey-native IdP if the passkey work grows"
+  - ref: R16
+    title: "An MCP client or integration token is stolen or misused"
+    owner: owner
+    likelihood: medium
+    impact: high
+    mitigation: "Agents proposal-only (AI-34); audience-bound tokens ≤ 60 min; rotation with reuse detection; allowlists; anomaly alerts; per-client kill switch; approvals only in the web app (§9.7)"
+  - ref: R17
+    title: "Local substitutes drift from cloud behaviour, so tests pass locally and fail in the cloud"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "Same interfaces and client libraries; staging runs the same suites against real services; known gaps (Bucket Lock, Model Armor, WAF) have staging controls (§12.8)"
+  - ref: R18
+    title: "A breaking API change hurts integrators"
+    owner: owner
+    likelihood: low
+    impact: medium
+    mitigation: "`/v1` additive-only; `oasdiff` gate; deprecation headers and 6 months' notice (FR-INT-06, QA-API-02)"
+  - ref: R19
+    title: "Basic mode hides something a user needed to see"
+    owner: owner
+    likelihood: low
+    impact: medium
+    mitigation: "Presentation-only modes; safety information always visible; \"advanced details\" disclosure; Expert features findable from ⌘K (FR-UX-24…26)"
+  - ref: R20
+    title: "Founders' balances are recorded or settled wrongly: personal spending without receipts, pay deferred without a decision, shares issued at an unapproved price or not lodged"
+    owner: controller
+    likelihood: medium
+    impact: medium
+    mitigation: "Director accounts and the pay choice (FR-EQ-01…04); settlement routes with attached resolutions and FM-9; ACRA lodgement task; checks C.2 #21–25; accountant review (FM-7)"
+  - ref: R21
+    title: "The compiled knowledge base is wrong, stale or poisoned, and the assistant repeats it"
+    owner: owner
+    likelihood: medium
+    impact: medium
+    mitigation: "Figures only from tools; grounding lint (AI-53); stale pages fall back to raw sources; trusted sources only in P1; diffs reviewed; QA-AI-06 before publishing; versions and rollback (AI-56)"
+  - ref: R22
+    title: "People rely on the AI company secretary and a filing is missed or wrong"
+    owner: controller
+    likelihood: medium
+    impact: high
+    mitigation: "The agent never marks an obligation met; a named human secretary (FR-CS-06); the deterministic deadline monitor runs without the AI (AI-67, CMP-02); escalation to the Owner; QA-AI-07"

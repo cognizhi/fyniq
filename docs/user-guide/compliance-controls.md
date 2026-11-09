@@ -15,7 +15,8 @@ every journal entry balances, that payments are approved by a second person, tha
 factor, that the audit trail stays intact, and the rest. Each control shows its status, why, the role that answers for
 it, the frameworks it maps to, and each of its checks with what it last said and its evidence.
 
-Fyniq works out every control's status each night from its checks. Nobody types a status in.
+Fyniq works out every control's status each night from its checks. Nobody types a status in. The risks the controls
+reduce are in the risk register, under **Compliance** › **Risks and policies**.
 
 The Owner, the Administrator, the Controller, the Accountant, the Auditor and the Compliance officer see it.
 
