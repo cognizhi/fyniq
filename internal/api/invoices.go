@@ -1149,7 +1149,12 @@ func (a *API) invoiceRequest(ctx context.Context, rawID, key, ifMatch, prefer st
 		if err != nil {
 			return Approval{}, err
 		}
-		return a.requestApproval(ctx, u, change(doc, i, receivable))
+		c := change(doc, i, receivable)
+		// FR-APR-01: its total in the base currency, accounts and dimension values for the policy's rules.
+		if c.Facts, err = invoiceFacts(ctx, u, i, receivable); err != nil {
+			return Approval{}, err
+		}
+		return a.requestApproval(ctx, u, c)
 	})
 	if err != nil {
 		return nil, err
