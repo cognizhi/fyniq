@@ -10,5 +10,10 @@ evidence: "Verification log"
 owner: Controller
 checks:
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check ledger.sub-ledgers"
+    evidence: "receivables, payables, deposits, prepayments, deferred revenue and the directors' accounts against their control accounts (INV-07, C.2 #2); payroll and GST join with their modules; the check's latest result for each organisation, on Checks"
+  - frequency: N
+    status: running
+    how: "check assets.register"
+    evidence: "the asset register against its accounts (C.1 #22); the check's latest result for each organisation, on Checks"

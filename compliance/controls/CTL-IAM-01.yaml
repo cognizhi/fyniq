@@ -11,4 +11,5 @@ owner: Administrator
 checks:
   - frequency: N
     status: planned
-    arrives: "p0-identity-oauth-first-run"
+    how: "verify members.second-factor"
+    arrives: "p1-compliance-center (slice 4)"

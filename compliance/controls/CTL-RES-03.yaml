@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p1-operations-dr (rev 0.241: SLO burn-rate alerts)"

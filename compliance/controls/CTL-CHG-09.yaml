@@ -15,4 +15,4 @@ checks:
     evidence: "release images without local adapters (CI log); start-up refusal test in make test"
   - frequency: E
     status: planned
-    arrives: "p0-ci-images-release (the release workflow)"
+    arrives: "p1-compliance-center (slice 2: the release's image reports, from the tagged commit's CI run)"

@@ -11,7 +11,7 @@ owner: Owner
 checks:
   - frequency: M
     status: planned
-    arrives: "P1"
+    arrives: "p1-operations-dr"
   - frequency: Q
     status: planned
-    arrives: "P1"
+    arrives: "p1-operations-dr"

@@ -10,5 +10,6 @@ evidence: "Filing record"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check compliance.deadlines"
+    evidence: "the statutory calendar's ECI, Form C-S/C, annual return and AGM deadlines (C.2 #15); the check's latest result for each organisation, on Checks"

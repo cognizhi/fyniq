@@ -10,5 +10,6 @@ evidence: "Filing record"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check gst.return-due"
+    evidence: "every GST return filed by its due day (C.2 #13); the check's latest result for each organisation, on Checks"

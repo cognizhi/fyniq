@@ -107,8 +107,14 @@ func Plan() ([]string, error) {
 	for _, c := range controls {
 		for _, ch := range c.Checks {
 			what := ch.How
-			if ch.Status != "running" {
+			switch ch.Status {
+			case "cloud":
+				what = "runs in the cloud: " + ch.How
+			case "planned":
 				what = "arrives with " + ch.Arrives
+				if ch.How != "" {
+					what += ": " + ch.How
+				}
 			}
 			out = append(out, fmt.Sprintf("%-12s %-3s %-8s %-14s %s", c.ID, ch.Frequency, ch.Status, c.Owner, what))
 		}

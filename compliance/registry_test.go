@@ -3,16 +3,19 @@ package compliance
 import (
 	"bytes"
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"go.yaml.in/yaml/v3"
 
+	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/outbox"
 )
 
@@ -21,12 +24,35 @@ type names struct {
 	makeTargets map[string]bool
 	jobs        map[string]bool
 	tests       map[string]bool
-	ciJobs      map[string]bool
+	ciJobs      map[string]bool              // by name and by ID
+	catalogue   map[string]checks.Definition // the checks of the catalogue, by key
+	tofuRuns    map[string]bool              // <module>/<run> of every infra/ module test
+	changes     map[string]bool              // the changes of the P1–P3 plan, which a planned check arrives with
 }
 
 func repoNames(t *testing.T) names {
 	t.Helper()
-	n := names{makeTargets: map[string]bool{}, jobs: map[string]bool{}, tests: map[string]bool{}, ciJobs: map[string]bool{}}
+	n := names{makeTargets: map[string]bool{}, jobs: map[string]bool{}, tests: map[string]bool{}, ciJobs: map[string]bool{},
+		catalogue: map[string]checks.Definition{}, tofuRuns: map[string]bool{}, changes: map[string]bool{}}
+	for _, d := range checks.Catalogue() {
+		n.catalogue[d.Key] = d
+	}
+	tftests, _ := filepath.Glob("../infra/*/modules/*/tests/*.tftest.hcl")
+	more, _ := filepath.Glob("../infra/modules/*/tests/*.tftest.hcl")
+	for _, f := range append(tftests, more...) {
+		module := filepath.Base(filepath.Dir(filepath.Dir(f)))
+		src, _ := os.ReadFile(f)
+		for _, m := range regexp.MustCompile(`(?m)^run "([a-z0-9_]+)"`).FindAllSubmatch(src, -1) {
+			n.tofuRuns[module+"/"+string(m[1])] = true
+		}
+	}
+	roadmap, err := os.ReadFile("../scripts/roadmap.py")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range regexp.MustCompile(`(?m)^ch\("([a-z0-9-]+)"`).FindAllSubmatch(roadmap, -1) {
+		n.changes[string(m[1])] = true
+	}
 	mk, err := os.ReadFile("../Makefile")
 	if err != nil {
 		t.Fatal(err)
@@ -67,16 +93,18 @@ func repoNames(t *testing.T) names {
 		if err := yaml.Unmarshal(src, &wf); err != nil {
 			t.Fatal(err)
 		}
-		for _, j := range wf.Jobs {
-			n.ciJobs[j.Name] = true
+		for id, j := range wf.Jobs {
+			n.ciJobs[j.Name], n.ciJobs[id] = true, true
 		}
 	}
 	return n
 }
 
 // The registry is Appendix F as files (scripts/controls.py checks the PRD's text in make check): each
-// file is valid, its checks cover the PRD's frequencies once each, and every check that runs names a
-// make target, platform job, Go test or CI job that exists (PRD-001 §14.1, item 1).
+// file is valid, its checks cover the PRD's frequencies in order, one or more each, each mapping names
+// known frameworks, and every check names what exists (problems) (PRD-001 §14.1, item 1).
+// req: CMP-01
+// req: compliance/compliance-center Control registry as code
 func TestTheControlRegistry(t *testing.T) {
 	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(Schema()))
 	if err != nil {
@@ -113,42 +141,103 @@ func TestTheControlRegistry(t *testing.T) {
 		t.Fatalf("only %d controls", len(controls))
 	}
 	repo := repoNames(t)
-	running := 0
+	byStatus := map[string]int{}
 	for _, ctl := range controls {
 		var got []string
 		for _, ch := range ctl.Checks {
 			got = append(got, ch.Frequency)
+			byStatus[ch.Status]++
 		}
-		if want := Frequencies(ctl.Frequency); !slices.Equal(got, want) {
+		if want := Frequencies(ctl.Frequency); !slices.Equal(slices.Compact(got), want) {
 			t.Errorf("%s: checks for %v, but the PRD's frequency %q is %v", ctl.ID, got, ctl.Frequency, want)
 		}
-		for _, ch := range ctl.Checks {
-			if ch.Status == "running" {
-				running++
-			}
+		if len(ctl.Frameworks) == 0 {
+			t.Errorf("%s: its mapping %q names no framework", ctl.ID, ctl.Mapping)
 		}
-		for _, bad := range missingTargets(ctl, repo) {
+		for _, bad := range problems(ctl, repo) {
 			t.Error(bad)
 		}
 	}
-	t.Logf("%d controls; %d checks running", len(controls), running)
-	planted := Control{ID: "CTL-X-01", Checks: []Check{{Frequency: "CI", Status: "running", How: "make no-such-target"},
-		{Frequency: "N", Status: "running", How: "job no.such.job"}, {Frequency: "D", Status: "planned", How: "make nothing"}}}
-	if got := missingTargets(planted, repo); len(got) != 2 {
-		t.Errorf("want the 2 running checks with missing targets reported, got %v", got)
+	t.Logf("%d controls; checks by status: %v", len(controls), byStatus)
+
+	// Each kind of mistake is found.
+	for _, planted := range []struct {
+		why string
+		ctl Control
+	}{
+		{"a running make target that does not exist", Control{Checks: []Check{{Frequency: "CI", Status: "running", How: "make no-such-target"}}}},
+		{"a running job that does not exist", Control{Checks: []Check{{Frequency: "N", Status: "running", How: "job no.such.job"}}}},
+		{"a check key not in the catalogue", Control{Checks: []Check{{Frequency: "D", Status: "running", How: "check no.such-check"}}}},
+		{"an undefined verification", Control{Checks: []Check{{Frequency: "N", Status: "planned", How: "verify no.such-verification", Arrives: "p1-compliance-center"}}}},
+		{"an undefined attestation", Control{Checks: []Check{{Frequency: "Q", Status: "running", How: "attestation no-such-review"}}}},
+		{"a cloud check naming no module test", Control{Checks: []Check{{Frequency: "D", Status: "cloud", How: "tofu environment/no_such_run"}}}},
+		{"a cloud check naming no test at all", Control{Checks: []Check{{Frequency: "D", Status: "cloud", How: "make infra-check"}}}},
+		{"a module test that is not a cloud check", Control{Checks: []Check{{Frequency: "D", Status: "running", How: "tofu environment/spec"}}}},
+		{"a planned check arriving with no change", Control{Checks: []Check{{Frequency: "N", Status: "planned", Arrives: "P1"}}}},
+		{"two jobs for one frequency", Control{Checks: []Check{{Frequency: "N", Status: "running", How: "job ledger.verify"},
+			{Frequency: "N", Status: "running", How: "job audit.verify"}}}},
+	} {
+		planted.ctl.ID = "CTL-X-01"
+		if got := problems(planted.ctl, repo); len(got) != 1 {
+			t.Errorf("%s: want it reported once, got %v", planted.why, got)
+		}
+	}
+	for _, fine := range []Check{{Frequency: "N", Status: "planned", How: "job not.built.yet", Arrives: "p1-compliance-center (slice 3)"},
+		{Frequency: "D", Status: "cloud", How: "tofu environment/spec"}, {Frequency: "D", Status: "running", How: "check ledger.sub-ledgers"}} {
+		if got := problems(Control{ID: "CTL-X-01", Checks: []Check{fine}}, repo); len(got) != 0 {
+			t.Errorf("%+v: want no problem, got %v", fine, got)
+		}
 	}
 }
 
-// missingTargets returns the running checks of ctl whose make target, job, test or CI job does not exist.
-func missingTargets(ctl Control, repo names) []string {
+// problems returns what is wrong with what the checks of ctl name: a running check's make target, job, test or CI job
+// that does not exist; a check key the catalogue lacks; an undefined verification or attestation, whatever the status;
+// a cloud check that names no infra/ module test or CI job; a module test named by anything but a cloud check; a
+// planned check whose arrival names no change of the plan; and a second job for one frequency, whose evidence record
+// (<control>-<frequency>.json) would take the first one's place.
+func problems(ctl Control, repo names) []string {
 	var out []string
+	jobs := map[string]bool{}
 	for _, ch := range ctl.Checks {
-		if ch.Status != "running" {
-			continue
+		kind, target := ch.Kind()
+		where := ctl.ID + " (" + ch.Frequency + "): "
+		if kind == KindJob {
+			if jobs[ch.Frequency] {
+				out = append(out, where+"a second job for one frequency, whose evidence would replace the first's")
+			}
+			jobs[ch.Frequency] = true
 		}
-		kind, target, _ := strings.Cut(ch.How, " ")
-		if !map[string]map[string]bool{"make": repo.makeTargets, "job": repo.jobs, "test": repo.tests, "ci": repo.ciJobs}[kind][target] {
-			out = append(out, ctl.ID+" ("+ch.Frequency+"): "+ch.How+" names no "+kind+" that exists")
+		var known bool
+		switch kind {
+		case KindCheck:
+			_, known = repo.catalogue[target]
+		case KindVerify:
+			_, known = Verifications[target]
+		case KindAttestation:
+			_, known = Attestations[target]
+		case KindTofu:
+			known = repo.tofuRuns[target]
+			if ch.Status != "cloud" {
+				out = append(out, where+ch.How+" is a module test, which only a cloud check names")
+				continue
+			}
+		case KindMake, KindJob, KindTest, KindCI:
+			known = ch.Status != "running" && ch.Status != "cloud" ||
+				map[string]map[string]bool{KindMake: repo.makeTargets, KindJob: repo.jobs, KindTest: repo.tests, KindCI: repo.ciJobs}[kind][target]
+		default:
+			known = ch.How == "" && ch.Status != "running" && ch.Status != "cloud"
+		}
+		switch {
+		case ch.Status == "cloud" && kind != KindTofu && kind != KindCI:
+			out = append(out, where+"a cloud check names an infra/ module test (tofu <module>/<run>) or a CI job, not "+strconv.Quote(ch.How))
+		case !known:
+			out = append(out, where+ch.How+" names no "+kind+" that exists")
+		}
+		if ch.Status == "planned" {
+			change, _, _ := strings.Cut(ch.Arrives, " ")
+			if !repo.changes[strings.TrimRight(change, ":;,")] {
+				out = append(out, where+"it arrives with "+strconv.Quote(ch.Arrives)+", which names no change of the plan")
+			}
 		}
 	}
 	return out
@@ -163,6 +252,87 @@ func TestFrequencies(t *testing.T) {
 	} {
 		if got := Frequencies(cell); !slices.Equal(got, want) {
 			t.Errorf("Frequencies(%q) = %v, want %v", cell, got, want)
+		}
+	}
+}
+
+// What a ⚠ or ⏰ of each catalogue check that proves a control means for it. The dashboard reads either as overdue
+// (design D1), so each check is read here before a control relies on it, and a check that only gives ✖ says so.
+var catalogueWarnings = map[string]string{
+	"ledger.sub-ledgers":                  "an amount on a control account that no document supports awaits review; a sub-ledger that differs is ✖",
+	"assets.register":                     "an amount on an asset account that no asset supports, or a purchase not in the register, awaits review; a register that differs is ✖",
+	"close.closed-unchanged":              "it does not warn: a closed month that changed is ✖",
+	"close.checklist":                     "it does not warn: an unfinished checklist at the close is ✖",
+	"close.month-unclosed":                "a month is still open 15 days after its end: its close is overdue",
+	"controls.sod-conflicts":              "it does not warn: a conflict the team mode does not cover is ✖",
+	"controls.review-log-overdue":         "a logged action has waited more than 14 days for another founder's review: overdue",
+	"controls.access-review-overdue":      "a quarter ended more than 14 days ago without its access review: overdue",
+	"controls.accountant-review-overdue":  "a quarter ended more than 60 days ago without the accountant's review: overdue",
+	"controls.break-glass-unreviewed":     "it does not warn: a break-glass unreviewed by its due day is ✖",
+	"controls.external-users-past-expiry": "it does not warn: an external user still a member past their end date is ✖",
+	"parameters.packs-current":            "a pack in force is past its review date, or a later version waits to be activated: its review is overdue",
+	"founders.conversion-registered":      "⏰ an approved conversion is not registered by ACRA in the days set, or its approval lapses within 30 days",
+	"founders.share-capital-registered":   "it does not warn: share capital that differs from the register is ✖",
+	"equity.acra-register":                "the register differs from the latest ACRA profile typed in: a reconciliation with ACRA is due",
+	"gst.return-due":                      "⏰ a GST return is due within 7 days or past its due day with no filing recorded",
+	"compliance.deadlines":                "⏰ a statutory deadline is due within 14 days or past with nothing recorded",
+	"scheduler.jobs-on-time":              "it does not warn: a job late or failed is ✖",
+}
+
+// The catalogue checks that prove controls are each listed with what their warnings mean, and the list names no check
+// that proves none (design D1, D2).
+// req: CMP-01
+// req: CTL-FIN-03, CTL-FIN-04, CTL-FIN-06, CTL-FIN-07, CTL-FIN-08, CTL-FIN-09, CTL-FIN-10, CTL-FIN-11, CTL-FIN-12
+// req: CTL-IAM-02, CTL-API-02, CTL-STAT-01, CTL-STAT-02, CTL-STAT-03, CTL-STAT-04
+func TestTheCatalogueChecksThatProveControls(t *testing.T) {
+	controls, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	proves := map[string][]string{}
+	for _, ctl := range controls {
+		for _, ch := range ctl.Checks {
+			if kind, key := ch.Kind(); kind == KindCheck && !slices.Contains(proves[key], ctl.ID) {
+				proves[key] = append(proves[key], ctl.ID)
+			}
+		}
+	}
+	for _, key := range slices.Sorted(maps.Keys(proves)) {
+		means, ok := catalogueWarnings[key]
+		if !ok {
+			t.Errorf("%s proves %v: say in catalogueWarnings what its warning means for them", key, proves[key])
+			continue
+		}
+		t.Logf("%-36s %-28s %s", key, strings.Join(proves[key], ","), means)
+	}
+	for key := range catalogueWarnings {
+		if proves[key] == nil {
+			t.Errorf("%s is in catalogueWarnings but proves no control", key)
+		}
+	}
+}
+
+// req: CMP-01
+func TestMappingFrameworks(t *testing.T) {
+	for mapping, want := range map[string][]string{
+		"SOC2 PI1; COSO P10":                          {"soc2", "coso"},
+		"ISO 8.9, 8.19; SOC2 CC7.1; CE":               {"iso27001", "soc2", "csa-ce"},
+		"ISO 5.18; SOC2 CC6.2–6.3; CT":                {"iso27001", "soc2", "csa-ct"},
+		"AG (testing); IMDA Starter Kit; OWASP LLM01": {"imda-ai", "owasp"},
+		"ISO 8.29; ASVS":                              {"iso27001", "owasp"},
+		"ISA 240 expectations; COSO P16":              {"coso", "isa"},
+		"PDPA (PDPC/CSA advisory)":                    {"pdpa"},
+		"Income Tax Act (IRAS)":                       {"sg-statute"},
+		"COSO P10; Companies Act; (rev 0.19) ACRA's register (no section; checked 14 Oct 2026)": {"sg-statute", "coso"},
+	} {
+		got, err := MappingFrameworks(mapping)
+		if err != nil || !slices.Equal(got, want) {
+			t.Errorf("MappingFrameworks(%q) = %v, %v; want %v", mapping, got, err, want)
+		}
+	}
+	for _, unknown := range []string{"NIST 800-53", "SOC2 CC6.1; CEO approval", "ISO; "} {
+		if got, err := MappingFrameworks(unknown); err == nil {
+			t.Errorf("MappingFrameworks(%q) = %v, want an error", unknown, got)
 		}
 	}
 }

@@ -14,5 +14,6 @@ checks:
     how: "make test"
     evidence: "INV-03 trigger tests; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check close.closed-unchanged"
+    evidence: "each closed month's trial balance against the one recorded at its close (C.1 #33); the check's latest result for each organisation, on Checks"

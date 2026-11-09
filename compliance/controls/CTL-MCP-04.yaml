@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: CI
     status: planned
-    arrives: "p0-identity-oauth-first-run"
+    arrives: "p1-mcp-first-party"

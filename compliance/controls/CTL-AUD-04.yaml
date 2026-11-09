@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p1-operations-dr (rev 0.241: Data Access logs for Cloud SQL, Cloud KMS, Cloud Storage and Secret Manager, and their sink to a locked log bucket, §11.5 L4)"

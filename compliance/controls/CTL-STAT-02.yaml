@@ -10,5 +10,6 @@ evidence: "Payment record"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check compliance.deadlines"
+    evidence: "the statutory calendar's CPF deadlines (C.2 #15); the check's latest result for each organisation, on Checks"

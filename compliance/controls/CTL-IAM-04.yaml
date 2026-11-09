@@ -10,5 +10,10 @@ evidence: "Policy snapshot"
 owner: Administrator
 checks:
   - frequency: D
-    status: planned
-    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"
+    status: cloud
+    how: "tofu org-policy/the_policies_of_section_12_4"
+    evidence: "the organisation policy refuses service-account keys; read in the cloud [live-verify]"
+  - frequency: D
+    status: cloud
+    how: "tofu ci-identity/ci_gets_credentials_only_from_main_and_tags"
+    evidence: "CI gets credentials by Workload Identity Federation, from main and tags only; read in the cloud [live-verify]"

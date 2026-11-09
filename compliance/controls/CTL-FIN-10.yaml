@@ -10,5 +10,6 @@ evidence: "Signed review"
 owner: Controller
 checks:
   - frequency: M
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check controls.accountant-review-overdue"
+    evidence: "the external accountant reviews the books, their journals and unusual entries; in Founder mode FM-7 sets it each quarter, overdue 60 days after the quarter ends (C.2 #61); the check's latest result for each organisation, on Checks"

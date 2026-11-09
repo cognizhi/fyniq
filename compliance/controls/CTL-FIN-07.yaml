@@ -14,8 +14,10 @@ checks:
     how: "test TestAuthorisationMatrix"
     evidence: "authorisation matrix (QA-SEC-03); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check controls.sod-conflicts"
+    evidence: "every conflict of duties among the members is covered by the team mode (C.2 #5); the check's latest result for each organisation, on Checks"
   - frequency: W
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check controls.review-log-overdue"
+    evidence: "in Founder mode another founder reviews each logged action within 14 days (FM-3, C.2 #4); the check's latest result for each organisation, on Checks"

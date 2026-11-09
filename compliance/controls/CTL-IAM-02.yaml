@@ -10,8 +10,10 @@ evidence: "Signed review"
 owner: Administrator
 checks:
   - frequency: Q
-    status: planned
-    arrives: "p0-identity-oauth-first-run"
+    status: running
+    how: "check controls.access-review-overdue"
+    evidence: "an Owner attests the access review each quarter, overdue 14 days after it ends (FR-CTL-06, C.2 #7); the check's latest result for each organisation, on Checks"
   - frequency: N
-    status: planned
-    arrives: "p0-identity-oauth-first-run"
+    status: running
+    how: "check controls.external-users-past-expiry"
+    evidence: "no external user stays a member past their end date (C.2 #6); the check's latest result for each organisation, on Checks"

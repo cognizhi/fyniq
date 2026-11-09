@@ -10,5 +10,6 @@ evidence: "Snapshot"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "p0-infra-opentofu"
+    status: cloud
+    how: "tofu environment/the_data_is_encrypted_and_recoverable"
+    evidence: "backups and 7 days of point-in-time recovery in Singapore, deletion protection, zonal by the cost decision; read in the cloud [live-verify]"

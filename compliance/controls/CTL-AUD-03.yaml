@@ -10,5 +10,9 @@ evidence: "Config snapshot"
 owner: Owner
 checks:
   - frequency: D
+    status: cloud
+    how: "tofu anchors/production_anchors_are_locked"
+    evidence: "production's anchors bucket is retention-locked and encrypted under its own key; read in the cloud [live-verify]"
+  - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p1-operations-dr (rev 0.241: the records bucket, retention-locked, with attachment storage; the daily check of each committed object's retention)"

@@ -11,4 +11,4 @@ owner: DPO
 checks:
   - frequency: Q
     status: planned
-    arrives: "P1"
+    arrives: "p1-pdpa-retention"
