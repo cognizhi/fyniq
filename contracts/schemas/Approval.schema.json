@@ -58,6 +58,10 @@
       "format": "uuid",
       "type": "string"
     },
+    "impact": {
+      "$ref": "ApprovalImpact.schema.json",
+      "description": "getApproval only, while it waits: what approving it would post now, worked out by carrying the change out and rolling it back, with the balances it moves, or what would refuse it (FR-APR-02, rev 0.177). Absent for a change that posts nothing."
+    },
     "invitation_code": {
       "description": "Only in the 202 answer to an invitation: its one-time code, shown once, which works once the invitation is approved.",
       "examples": [
@@ -204,6 +208,14 @@
         "founder/organisation_setting@2026-10-20.1"
       ],
       "type": "string"
+    },
+    "policy_rule": {
+      "description": "The rule of its policy whose conditions chose its steps, from 1; absent when the policy's default steps did (FR-APR-01, rev 0.178).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
     },
     "requested_at": {
       "description": "When it was asked for.",
