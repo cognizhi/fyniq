@@ -65,6 +65,16 @@ or are expected to be more than $1 million in the next 12 months.
 - Taxable supplies are the standard-rated and zero-rated sales. Exempt and out-of-scope sales, and
   sales of the company's own assets, are left out.
 
+## Cash buffer
+
+**Cash buffer to keep** is how many months of average net burn the company wants to keep in the
+bank: 6 unless you change it, from 0 to 36.
+
+- A forecast's **funding gap** is the buffer times its average monthly net burn, less its lowest
+  cash, and never below zero. A scenario can set its own buffer.
+- The short-term cash flow draws a **buffer line** at the buffer times the average net burn of the
+  last three closed months. Fyniq alerts the planners when the projection falls below it.
+
 ## Statutory calendar
 
 **Compliance › Calendar** lists every filing and payment deadline from the company's financial years

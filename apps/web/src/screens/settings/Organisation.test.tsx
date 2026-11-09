@@ -40,6 +40,8 @@ describe("Organisation settings", () => {
     expect(valueText("days", "1")).toBe("1 day");
     expect(valueText("minutes", "30")).toBe("30 minutes");
     expect(valueText("years", "7")).toBe("7 years");
+    expect(valueText("months", "6")).toBe("6 months");
+    expect(valueText("months", "1")).toBe("1 month");
     expect(valueText("amount_sgd", "1000.00")).toBe("S$1,000.00");
     expect(valueText("percent", "3")).toBe("3%");
   });

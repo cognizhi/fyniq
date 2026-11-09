@@ -443,3 +443,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the statutory calendar's settings and the evidence rule for filings, p1-gst slice 3a)
 
 ## [2026-11-07] compile | docs/user-guide/statutory-calendar.md, docs/user-guide/gst-registration.md → compliance.calendar, compliance.record-filing, compliance.gst, compliance.gst-forecast (new guide pages, p1-gst slice 4); settings.organisation links them
+
+## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)
+
+## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)

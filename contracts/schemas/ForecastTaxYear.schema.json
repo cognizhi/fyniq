@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "chargeable_income": {
+      "description": "Profit less losses, at least 0.",
+      "examples": [
+        "120000.00"
+      ],
+      "type": "string"
+    },
+    "exempt": {
+      "description": "The exempt amount of the scheme, to the cent.",
+      "examples": [
+        "85000.00"
+      ],
+      "type": "string"
+    },
+    "gross_tax": {
+      "description": "The rate of sg-cit on the rest, to the cent.",
+      "examples": [
+        "5950.00"
+      ],
+      "type": "string"
+    },
+    "losses_brought_forward": {
+      "description": "Losses set off first.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "losses_carried_forward": {
+      "description": "Losses left for the next year.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "profit_before_tax": {
+      "description": "The year's profit before tax.",
+      "examples": [
+        "120000.00"
+      ],
+      "type": "string"
+    },
+    "rebate": {
+      "description": "The YA's rebate from sg-cit, to the cent; 0 when the YA has none.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "scheme": {
+      "description": "sute: the start-up tax exemption; pte: the partial tax exemption.",
+      "enum": [
+        "sute",
+        "pte"
+      ],
+      "examples": [
+        "sute"
+      ],
+      "type": "string"
+    },
+    "tax": {
+      "description": "The year's tax, rounded once (RND-PLAN).",
+      "examples": [
+        "5950.00"
+      ],
+      "type": "string"
+    },
+    "ya": {
+      "description": "The Year of Assessment: the year after the calendar year the forecast year ends in.",
+      "examples": [
+        2028
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "year": {
+      "description": "The forecast year.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "year",
+    "ya",
+    "scheme",
+    "profit_before_tax",
+    "losses_brought_forward",
+    "chargeable_income",
+    "exempt",
+    "gross_tax",
+    "rebate",
+    "tax",
+    "losses_carried_forward"
+  ],
+  "title": "ForecastTaxYear",
+  "type": "object"
+}

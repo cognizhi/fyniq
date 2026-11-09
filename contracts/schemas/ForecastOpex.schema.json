@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base": {
+      "description": "Its amount in the first month.",
+      "examples": [
+        "2500.00"
+      ],
+      "type": "string"
+    },
+    "growth": {
+      "description": "Its monthly growth, as a fraction.",
+      "examples": [
+        "0.02"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "What it is.",
+      "examples": [
+        "Sales \u0026 marketing"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "percent": {
+      "description": "A share of total revenue added each month, as a fraction.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "report_group": {
+      "description": "The chart's income or expense report group it plans, by name: the books' average of the last three months is shown beside it, and a group whose accounts are all S\u0026M adds the line to S\u0026M for CAC.",
+      "examples": [
+        "Sales \u0026 marketing"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    }
+  },
+  "required": [
+    "label",
+    "base",
+    "growth",
+    "percent"
+  ],
+  "title": "ForecastOpex",
+  "type": "object"
+}

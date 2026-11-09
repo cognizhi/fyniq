@@ -135,10 +135,12 @@ year y = ⌈n/12⌉.
   - The forecast starts the month after.
 - **From the books, at the last actual month's end, through the balance service:**
   - **cash:** the accounts whose report group is Cash and cash equivalents, plus an optional adjustment;
-  - **receivables and payables:** the receivables and payables control accounts;
+  - **receivables and payables:** the accounts with the roles accounts-receivable and accounts-payable, as the
+    balance sheet shows them;
   - **existing depreciation:** each month's planned depreciation from the fixed-asset register's schedules;
-  - **the expense hints:** each report group's average over the last three months, the hint beside an
-    other-expense line that names that group.
+  - **the expense hints:** each report group's average over the last three months (fewer before the books have
+    three), the hint beside an other-expense line that names that group by its name, such as Sales & marketing. A
+    group whose accounts are all S&M adds its line to S&M for CAC.
 - **Customers and revenue:**
   - **customers:**
     - customers at the start = the driver;
@@ -236,8 +238,10 @@ year y = ⌈n/12⌉.
 ### D5. Forecasts are documents
 
 - **The document.** `forecast` is a document type whose versions hold the inputs of D3 and D4 as JSON: money as
-  decimal strings, rates as decimal strings, months as `YYYY-MM`. It is drafted, changed (ETag and `If-Match`), and
-  recorded.
+  decimal strings in the base currency, rates as decimal strings, months as `YYYY-MM`, the collection pattern as three
+  named shares (`this_month`, `next_month`, `month_after`). Left out, the scenarios are Base, Best and Worst. It is
+  drafted, changed (ETag and `If-Match`), and recorded. The plan's Go types carry the API's documentation, so the API
+  takes and gives them as they are.
 - **The guard, FY300.** The database keeps a forecast's keys, a horizon of 12 to 60 months, percentages from 0 to
   100% (churn and growth below 100%), decimal strings with at most 2 decimals for money and 6 for rates, and at most
   100 headcount, 50 capex, 50 funding and 30 other-expense rows.
@@ -406,8 +410,8 @@ year y = ⌈n/12⌉.
 
 ### D11. Settings
 
-- **`planning.buffer_months`:** group Planning, "Cash buffer to keep (months of burn)", whole months from 0 to 36,
-  recommended 6. It is not under dual control: it decides a line and an alert, never money. A forecast scenario may set
+- **`planning.buffer_months`:** group Planning, "Cash buffer to keep", a new kind of setting, whole months (`months`),
+  from 0 to 36, recommended 6. It is not under dual control: it decides a line and an alert, never money. A forecast scenario may set
   its own.
 
 ### D12. Screens

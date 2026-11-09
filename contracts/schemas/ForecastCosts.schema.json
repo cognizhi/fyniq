@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ai": {
+      "description": "AI and API costs, as a fraction of total revenue.",
+      "examples": [
+        "0.05"
+      ],
+      "type": "string"
+    },
+    "contractors": {
+      "description": "Contractors, as a fraction of services revenue.",
+      "examples": [
+        "0.05"
+      ],
+      "type": "string"
+    },
+    "fees": {
+      "description": "Payment fees, as a fraction of total revenue.",
+      "examples": [
+        "0.012"
+      ],
+      "type": "string"
+    },
+    "hosting": {
+      "description": "Hosting, as a fraction of subscription revenue.",
+      "examples": [
+        "0.15"
+      ],
+      "type": "string"
+    },
+    "salary_increase": {
+      "description": "Each forecast year's salary increase, as a fraction.",
+      "examples": [
+        "0.04"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "hosting",
+    "ai",
+    "contractors",
+    "fees",
+    "salary_increase"
+  ],
+  "title": "ForecastCosts",
+  "type": "object"
+}

@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/forecasts"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/gstmonitor"
@@ -54,6 +55,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/period"
+	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -821,6 +823,7 @@ var codeFacts = map[string]struct {
 	storage.CodeAcraExtract:          {422, "The ACRA extract does not keep that"},
 	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
+	storage.CodeForecast:             {422, "The forecast does not keep that"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost:  {422, "The cost before the books start does not fit"},
@@ -879,6 +882,12 @@ var codeFacts = map[string]struct {
 	deadlines.CodeRecorded:           {409, "The item is recorded already"},
 	deadlines.CodeWithdrawn:          {409, "The record is withdrawn already"},
 	deadlines.CodeWindow:             {422, "The calendar's window does not fit"},
+	forecasts.CodePlan:               {422, "The forecast does not fit"},
+	forecasts.CodeRecorded:           {409, "The forecast is recorded"},
+	planning.CodeHorizon:             {422, "The forecast's horizon does not fit"},
+	planning.CodeStatutory:           {422, "A statutory figure the forecast needs is missing"},
+	planning.CodeInput:               {422, "The forecast cannot be worked out"},
+	planning.CodeDigits:              {422, "The forecast's figures need too many digits"},
 	equity.CodeNoEvidence:            {422, "No evidence attached"},
 	equity.CodeTransaction:           {422, "The equity transaction does not fit"},
 	equity.CodeEffective:             {409, "The transaction cannot be effective then"},
@@ -944,6 +953,7 @@ var storageFixes = map[string]string{
 	storage.CodeControllerEntry:      "Give a controller its grounds and its days in order, or a holder who is not one the reason, for a contact marked shareholder or investor",
 	storage.CodeAcraExtract:          "Type each holding of a contact marked shareholder or investor, an active share-capital class and whole shares, with the profile's day",
 	storage.CodeGSTForecast:          "Enter the forecast's day, its value in Singapore dollars with cents above zero, and a basis of at most 1,000 characters",
+	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
@@ -1088,6 +1098,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		eqe *equity.Error
 		gme *gstmonitor.Error
 		dle *deadlines.Error
+		fce *forecasts.Error
+		ple *planning.Error
 		ase *asset.Error
 		pye *payee.Error
 		pyp payee.Problems
@@ -1156,6 +1168,12 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(gme.Code, sentence(gme.Message), sentence(gme.Fix))
 	case errors.As(err, &dle):
 		return problem(dle.Code, sentence(dle.Message), sentence(dle.Fix))
+	case errors.As(err, &fce):
+		return problem(fce.Code, sentence(fce.Message), sentence(fce.Fix))
+	case errors.As(err, &ple):
+		return problem(ple.Code, sentence(ple.Field+": "+ple.Message), sentence(ple.Fix))
+	case errors.Is(err, planning.ErrDigits):
+		return problem(planning.CodeDigits, "The forecast's exact figures need more digits than the engine keeps.", "Use fewer decimals in the rates.")
 	case errors.As(err, &ase):
 		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
 	case errors.As(err, &pye):

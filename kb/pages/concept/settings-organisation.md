@@ -2,22 +2,25 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings: GST registration and monitor, numbering, features, terms, GST, tolerances, banking, claims, thresholds, disposals, email-in, retention
+summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:abe3fd45311490587f597820f5a850ec6e4013cc8911553ec97328e8858d644a
+  - docs/user-guide/organisation-settings.md sha256:e361386234b66917fa98eabd69d4dccf18cf751bb21d7c5cad6142a48c5674b8
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-08
 aliases:
   - GST registration
   - GST registration number
   - GST registration threshold
   - must I register for GST
   - statutory calendar
+  - cash buffer
+  - funding gap
+  - months of burn
   - pays staff
   - AGM
   - branch register
@@ -90,6 +93,14 @@ aliases:
 The monitor itself: [[compliance.gst]].
 
 (src: docs/user-guide/organisation-settings.md#gst-registration-monitor)
+
+## Cash buffer
+
+- **Cash buffer to keep** is how many months of average net burn the company wants to keep in the bank: 6 unless changed, from 0 to 36.
+- A forecast's **funding gap** is the buffer times its average monthly net burn, less its lowest cash, never below zero; a scenario can set its own buffer.
+- The short-term cash flow's **buffer line** is the buffer times the average net burn of the last three closed months, and Fyniq alerts the planners when the projection falls below it.
+
+(src: docs/user-guide/organisation-settings.md#cash-buffer)
 
 ## Statutory calendar
 

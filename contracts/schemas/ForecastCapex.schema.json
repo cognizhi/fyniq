@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "Its cost, paid in its month.",
+      "examples": [
+        "8000.00"
+      ],
+      "type": "string"
+    },
+    "item": {
+      "description": "What is bought.",
+      "examples": [
+        "Laptops for 2027 hires"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "life": {
+      "description": "Months it is depreciated over, straight line.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "month": {
+      "description": "The month it is bought (YYYY-MM); one before the forecast counts as the first month.",
+      "examples": [
+        "2027-01"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "amount",
+    "month",
+    "life"
+  ],
+  "title": "ForecastCapex",
+  "type": "object"
+}

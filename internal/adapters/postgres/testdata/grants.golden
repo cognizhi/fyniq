@@ -177,6 +177,8 @@ fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       INSERT    fixed_asset_source (account_id, asset_id, line, source_id, source_version)
 fyniq_api       SELECT    fixed_asset_source
 fyniq_api       UPDATE    fixed_asset_source (released)
+fyniq_api       EXECUTE   forecast_decimal()
+fyniq_api       EXECUTE   forecast_keys()
 fyniq_api       SELECT    fx_feed_rates
 fyniq_api       INSERT    fx_rate (currency, entered_at, entered_by, kind, note, on_date, quote, quote_form, rate)
 fyniq_api       SELECT    fx_rate
@@ -688,6 +690,8 @@ fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, stat
 fyniq_worker    EXECUTE   expire_installation_changes()
 fyniq_worker    EXECUTE   finish_job_slot()
 fyniq_worker    SELECT    fixed_asset_source
+fyniq_worker    EXECUTE   forecast_decimal()
+fyniq_worker    EXECUTE   forecast_keys()
 fyniq_worker    SELECT    fx_feed_rates
 fyniq_worker    SELECT    fx_rate
 fyniq_worker    SELECT    gst_registration

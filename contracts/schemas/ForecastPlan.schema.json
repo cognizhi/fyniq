@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buffer_months": {
+      "description": "Months of average net burn to keep as a buffer for the funding gap; left out, the setting planning.buffer_months (6).",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "maximum": 36,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "capex": {
+      "description": "The purchases of assets.",
+      "items": {
+        "$ref": "ForecastCapex.schema.json"
+      },
+      "maxItems": 50,
+      "type": "array"
+    },
+    "cash_adjustment": {
+      "description": "Added to the books' cash at the start, such as money already committed; 0 for none.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "costs": {
+      "$ref": "ForecastCosts.schema.json",
+      "description": "The direct-cost percentages and the salary increase."
+    },
+    "funding": {
+      "description": "The money planned to be raised or received; none of it is received yet, so runway is also shown without it (FR-PLN-03).",
+      "items": {
+        "$ref": "ForecastFunding.schema.json"
+      },
+      "maxItems": 50,
+      "type": "array"
+    },
+    "headcount": {
+      "description": "The team and the planned hires.",
+      "items": {
+        "$ref": "ForecastHire.schema.json"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "horizon": {
+      "description": "Months to forecast, 12 to 60.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "maximum": 60,
+      "minimum": 12,
+      "type": "integer"
+    },
+    "last_actual": {
+      "description": "The last month with complete actuals (YYYY-MM): the forecast starts the month after. Left out, the last closed month, else the month before today.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "name": {
+      "description": "The forecast's name.",
+      "examples": [
+        "FY2027 plan"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "opex": {
+      "description": "The other operating expenses, each a monthly base that grows, plus a share of revenue.",
+      "items": {
+        "$ref": "ForecastOpex.schema.json"
+      },
+      "maxItems": 30,
+      "type": "array"
+    },
+    "revenue": {
+      "$ref": "ForecastRevenue.schema.json",
+      "description": "The revenue drivers."
+    },
+    "scenarios": {
+      "description": "The scenarios; left out, Base, Best and Worst with the workbook's levers. Custom ones carry their own levers and buffer.",
+      "items": {
+        "$ref": "ForecastScenario.schema.json"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "tax": {
+      "$ref": "ForecastTax.schema.json",
+      "description": "What the tax estimate needs beyond the sg-cit pack."
+    }
+  },
+  "required": [
+    "name",
+    "horizon",
+    "cash_adjustment",
+    "revenue",
+    "costs",
+    "opex",
+    "headcount",
+    "capex",
+    "funding",
+    "tax"
+  ],
+  "title": "ForecastPlan",
+  "type": "object"
+}

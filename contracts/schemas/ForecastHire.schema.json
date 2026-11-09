@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cpf": {
+      "description": "true: employer CPF at the rate for 55 and below up to the Ordinary Wage ceiling (sg-cpf), as the workbook; SDL applies to everyone (sg-sdl).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "end": {
+      "description": "The last month, if they leave.",
+      "examples": [
+        "2028-02"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "function": {
+      "description": "Where the cost goes: COGS (cost of revenue), R\u0026D, S\u0026M or G\u0026A.",
+      "enum": [
+        "COGS",
+        "R\u0026D",
+        "S\u0026M",
+        "G\u0026A"
+      ],
+      "examples": [
+        "R\u0026D"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "The person or the role.",
+      "examples": [
+        "Senior engineer (hire)"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "salary": {
+      "description": "The monthly salary at today's rate: it rises by the salary increase each forecast year.",
+      "examples": [
+        "8500.00"
+      ],
+      "type": "string"
+    },
+    "start": {
+      "description": "The first month (YYYY-MM); one before the forecast is the current team, whom the hiring delay does not move.",
+      "examples": [
+        "2027-01"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "function",
+    "start",
+    "salary",
+    "cpf"
+  ],
+  "title": "ForecastHire",
+  "type": "object"
+}

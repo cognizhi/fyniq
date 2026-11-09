@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "The amount.",
+      "examples": [
+        "100000.00"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month the money arrives (YYYY-MM).",
+      "examples": [
+        "2027-02"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes.",
+      "examples": [
+        "SME working-capital loan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "rate": {
+      "description": "A loan's yearly interest rate, as a fraction.",
+      "examples": [
+        "0.055"
+      ],
+      "type": "string"
+    },
+    "tenor": {
+      "description": "A loan's months of equal repayments, from the month after it is drawn.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "maximum": 360,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "type": {
+      "description": "Equity, a SAFE or a loan raised, which the fundraising levers move and scale; or a grant, which arrives as planned.",
+      "enum": [
+        "Equity",
+        "SAFE",
+        "Loan",
+        "Grant"
+      ],
+      "examples": [
+        "Loan"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "month",
+    "amount"
+  ],
+  "title": "ForecastFunding",
+  "type": "object"
+}

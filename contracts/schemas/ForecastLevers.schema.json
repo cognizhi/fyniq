@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "churn": {
+      "description": "× churn.",
+      "examples": [
+        "1.3"
+      ],
+      "type": "string"
+    },
+    "direct_costs": {
+      "description": "× each direct-cost percentage.",
+      "examples": [
+        "1.1"
+      ],
+      "type": "string"
+    },
+    "fund_amount": {
+      "description": "× the money raised (not grants).",
+      "examples": [
+        "0.6"
+      ],
+      "type": "string"
+    },
+    "fund_delay": {
+      "description": "Months the money raised waits (not grants).",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 24,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "hire_delay": {
+      "description": "Months every planned hire waits.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 24,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "new_customers": {
+      "description": "× new customers.",
+      "examples": [
+        "0.7"
+      ],
+      "type": "string"
+    },
+    "opex": {
+      "description": "× each other operating expense.",
+      "examples": [
+        "1.1"
+      ],
+      "type": "string"
+    },
+    "price": {
+      "description": "× ARPA.",
+      "examples": [
+        "0.9"
+      ],
+      "type": "string"
+    },
+    "services": {
+      "description": "× services revenue.",
+      "examples": [
+        "0.7"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "new_customers",
+    "churn",
+    "price",
+    "services",
+    "opex",
+    "direct_costs",
+    "fund_amount",
+    "hire_delay",
+    "fund_delay"
+  ],
+  "title": "ForecastLevers",
+  "type": "object"
+}
