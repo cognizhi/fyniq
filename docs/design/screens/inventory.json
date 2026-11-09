@@ -3163,17 +3163,19 @@
    ],
    "mode": "both",
    "requirements": [
-    "FR-TAX-07",
     "CMP-02",
+    "FR-CS-02",
+    "FR-DOC-06",
     "FR-EQ-09",
-    "FR-CS-02"
+    "FR-TAX-05",
+    "FR-TAX-07"
    ],
    "purpose": "See every Singapore filing and payment deadline derived from the organisation's year, GST periods and payroll.",
    "content": [
-    "Month and list views: GST F5 (1 month after period end), CPF (14th), AIS (1 Mar), ECI (FY end + 3 months), Form C-S/C (30 Nov), ACRA annual return (FY end + 7 months), AGM, register-of-controllers updates, share-issue approvals (lodge within 14 days), returns of allotment",
-    "Each item: owner, due date, ⏰ chip, reminders at 30, 14, 7 and 1 days, evidence status (acknowledgement required)",
-    "Filter by area (tax, payroll, corporate); link to the Inbox task",
-    "Overdue items also on Checks"
+    "Month and list views: GST F5 (1 month after period end), CPF (14th, or the next working day), AIS (1 Mar), ECI (FY end + 3 months), Form C-S/C (30 Nov), ACRA annual return (FY end + 7 months), the AGM or the financial statements to members, applying to register for GST, and the registers' own deadlines (controllers, share lodgements), each opening its record",
+    "Each item: due date and the rule's words (Expert), ⏰ chip, reminders at 30, 14, 7 and 1 days; record as filed with its acknowledgement, or as not required with the reason; withdraw a record",
+    "Filter by area (tax, payroll, corporate); tiles for what is due in 30 days, overdue and recorded; the Inbox's Deadlines section",
+    "Overdue items also on Checks (C.2 #13, C.2 #15)"
    ],
    "states": [
     "overdue",
