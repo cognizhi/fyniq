@@ -498,6 +498,8 @@ var evidenceFix = map[storage.DocumentType]string{
 	storage.DocumentInstrumentTemplate: "Attach the lawyer's confirmation",
 	storage.DocumentOptionPool:         "Attach the resolution",
 	storage.DocumentOptionGrant:        "Attach the grant letter",
+	storage.DocumentInvestorRights:     "Attach the agreements the rights come from, such as the shareholders' agreement or a side letter",
+	storage.DocumentControllerEntry:    "Attach the company secretary's confirmation, with the register's extract or ACRA's acknowledgement",
 }
 
 // attached counts the files attached to a document and not removed.

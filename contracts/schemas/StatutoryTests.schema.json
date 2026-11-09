@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "Today, the day tested.",
+      "examples": [
+        "2026-11-07"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "controllers": {
+      "description": "Each holder over 25% of the shares or votes, or with rights that could confer control, by name.",
+      "items": {
+        "$ref": "ControllerTestView.schema.json"
+      },
+      "type": "array"
+    },
+    "exempt": {
+      "$ref": "ExemptTestView.schema.json",
+      "description": "The exempt-private-company test."
+    },
+    "lapsed": {
+      "description": "Controllers in force whom the test no longer names, such as one whose shares fell to 25% or less: record the day they ceased, unless other grounds keep them one.",
+      "items": {
+        "$ref": "ControllerEntryView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "at",
+    "controllers",
+    "lapsed",
+    "exempt"
+  ],
+  "title": "StatutoryTests",
+  "type": "object"
+}

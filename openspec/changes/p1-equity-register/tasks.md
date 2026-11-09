@@ -203,7 +203,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 8. Investor rights, controllers and exempt status (slice 7)
 
-- [ ] 8.1 `investor_right` and `controller_entry` (D10):
+- [x] 8.1 `investor_right` and `controller_entry` (D10):
   - the exempt-status re-test after each recorded transaction, raising C.2 #28;
   - the controller test (more than 25% of shares or votes), raising C.2 #27, and "Not assessed" when rights could
     confer control without confirmation;
@@ -211,6 +211,15 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
   Tests: G4-101; a corporate holder ends exempt status; a 21st member; a crossing at 25.01%. `// req: FR-EQ-22`,
   `// req: FR-EQ-25`
+  (Slice 7a: `equity.ControllerTest`, pure, reads the cap table on each day the register moved: more than 25% of the
+  shares issued or the votes, exactly, from the first day of the latest run over it; a board majority or consent matters
+  name a holder for a person to weigh. `equity.ExemptTest`: an entity member or a 21st member ends exempt status, and a
+  member with no holder record leaves it undecided [accountant to confirm the Act's exceptions]. `getStatutoryTests`
+  gives each holder's standing (to enter, to lodge, registered, not assessed, not a controller) with the company's
+  register due 7 days after and ACRA's 2 business days after that, weekends left out [verify public holidays]; C.2 #27
+  is ⏰ for what is due, ⚠ for a notice unanswered 30 days or a controller the test no longer names, and not assessed when
+  only rights remain to weigh; C.2 #28 warns when the register decides otherwise than the status recorded. The annual
+  notices are recorded on the controller entry; the company secretary's confirmation is its evidence (question 41).)
 - [ ] 8.2 The investor rights and controllers on HolderRecord, with help keys and guide sections. Vitest and axe.
   `// req: FR-EQ-22`, `// req: FR-EQ-25`
 

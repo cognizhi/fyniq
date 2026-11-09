@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "replied_on": {
+      "description": "The day they replied; the reply is due within 30 days.",
+      "examples": [
+        "2027-03-29"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "sent_on": {
+      "description": "The day the notice was sent.",
+      "examples": [
+        "2027-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sent_on"
+  ],
+  "title": "ControllerNoticeDraft",
+  "type": "object"
+}

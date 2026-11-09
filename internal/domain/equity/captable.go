@@ -328,31 +328,53 @@ func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
 // the votes per share of the version of its rights recorded by that day, or its first recorded version for a day
 // before it.
 func TableIn(ctx context.Context, u storage.UnitOfWork, day time.Time) (CapTable, error) {
-	moves, err := Moves(ctx, u)
+	r, err := ReaderIn(ctx, u)
 	if err != nil {
 		return CapTable{}, err
+	}
+	return r.At(day)
+}
+
+// Reader reads the cap table on any day from one load of the register: its movements, the option pool and the share
+// classes, as TableIn does for one day.
+type Reader struct {
+	Moves    []Move
+	dilution Dilution
+	classes  map[uuid.UUID][]Recorded[ShareClass]
+}
+
+// ReaderIn loads the register in u once, for the cap table on as many days as are asked.
+func ReaderIn(ctx context.Context, u storage.UnitOfWork) (Reader, error) {
+	moves, err := Moves(ctx, u)
+	if err != nil {
+		return Reader{}, err
 	}
 	dilution, err := DilutionIn(ctx, u)
 	if err != nil {
-		return CapTable{}, err
+		return Reader{}, err
 	}
 	classes, err := ShareClasses(ctx, u)
 	if err != nil {
-		return CapTable{}, err
+		return Reader{}, err
 	}
-	return DilutedAt(day, moves, func(k HoldingKey) (apd.Decimal, bool, error) {
+	return Reader{Moves: moves, dilution: dilution, classes: classes}, nil
+}
+
+// At is the cap table at the end of day.
+func (r Reader) At(day time.Time) (CapTable, error) {
+	return DilutedAt(day, r.Moves, func(k HoldingKey) (apd.Decimal, bool, error) {
 		var v apd.Decimal
 		if k.Class == uuid.Nil {
 			v.SetInt64(1)
 			return v, true, nil
 		}
 		var in *ShareClass
-		for i, x := range classes[k.Class] {
+		for i, x := range r.classes[k.Class] {
 			if x.Doc.Status != storage.DocumentPosted {
 				continue
 			}
 			if in == nil || x.RecordedAt.In(singapore).Format(time.DateOnly) <= day.Format(time.DateOnly) {
-				in = &classes[k.Class][i].Value
+				in = &r.classes[k.Class][i].Value
 			}
 		}
 		if in == nil {
@@ -361,5 +383,5 @@ func TableIn(ctx context.Context, u storage.UnitOfWork, day time.Time) (CapTable
 		}
 		_, _, err := v.SetString(in.VotesPerShare)
 		return v, false, err
-	}, dilution)
+	}, r.dilution)
 }

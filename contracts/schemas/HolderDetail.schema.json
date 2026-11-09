@@ -10,6 +10,17 @@
       "format": "uuid",
       "type": "string"
     },
+    "controller": {
+      "$ref": "ControllerEntryView.schema.json",
+      "description": "The registrable controller entry in force."
+    },
+    "controller_history": {
+      "description": "Every controller entry, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "ControllerEntryView.schema.json"
+      },
+      "type": "array"
+    },
     "director": {
       "description": "Also a director.",
       "examples": [
@@ -89,6 +100,17 @@
       ],
       "type": "boolean"
     },
+    "rights": {
+      "$ref": "InvestorRightsView.schema.json",
+      "description": "Their rights from the agreements in force."
+    },
+    "rights_history": {
+      "description": "Every version of their rights, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "InvestorRightsView.schema.json"
+      },
+      "type": "array"
+    },
     "shareholder": {
       "description": "Marked shareholder.",
       "examples": [
@@ -100,6 +122,8 @@
   "required": [
     "history",
     "issues",
+    "rights_history",
+    "controller_history",
     "contact_id",
     "name",
     "shareholder",

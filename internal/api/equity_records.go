@@ -109,6 +109,11 @@ type HolderDetail struct {
 	Record  *HolderRecordView  `json:"record,omitempty" doc:"The record in force."`
 	History []HolderRecordView `json:"history" nullable:"false" doc:"Every record, drafts and superseded ones included, the latest first."`
 	Issues  []ShareIssue       `json:"issues" nullable:"false" doc:"The holder's share issues, earliest effective date first."`
+	// (FR-EQ-22, FR-EQ-25; slice 7)
+	Rights            *InvestorRightsView   `json:"rights,omitempty" doc:"Their rights from the agreements in force."`
+	RightsHistory     []InvestorRightsView  `json:"rights_history" nullable:"false" doc:"Every version of their rights, drafts and superseded ones included, the latest first."`
+	Controller        *ControllerEntryView  `json:"controller,omitempty" doc:"The registrable controller entry in force."`
+	ControllerHistory []ControllerEntryView `json:"controller_history" nullable:"false" doc:"Every controller entry, drafts and superseded ones included, the latest first."`
 }
 
 // Liquidation and dividend rights as the API shows them.
@@ -721,7 +726,7 @@ func registerEquityRecords(a *API) {
 	register(a, authz.GetHolder, huma.Operation{
 		OperationID: "getHolder", Method: http.MethodGet, Path: "/v1/holders/{contact_id}", Tags: []string{"Equity"},
 		Summary:     "Get a holder",
-		Description: "A holder with the record in force, every record (drafts and superseded ones included, the latest first) and their share issues (FR-EQ-15). Read-only; no side effects.",
+		Description: "A holder with the record in force, every record (drafts and superseded ones included, the latest first), their share issues (FR-EQ-15), their rights from the agreements (FR-EQ-22) and their registrable controller entries (FR-EQ-25), each in force and with its history. Read-only; no side effects.",
 	}, append([]string{CodeNotFound}, locks...), func(ctx context.Context, in *HolderPath) (*holderOutput, error) {
 		id, err := parseID("contact_id", in.ContactID)
 		if err != nil {
@@ -762,7 +767,8 @@ func registerEquityRecords(a *API) {
 			for _, s := range v.issues[id] {
 				out.Body.Issues = append(out.Body.Issues, shareIssueOf(s, c.LegalName, v.codes[s.ClassAccountID]))
 			}
-			return nil
+			out.Body.RightsHistory, out.Body.Rights, out.Body.ControllerHistory, out.Body.Controller, err = a.heldHistory(ctx, u, id)
+			return err
 		})
 		return &out, err
 	})
