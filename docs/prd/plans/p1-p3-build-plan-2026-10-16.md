@@ -11,8 +11,8 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,373 requirements:
-- 112 belong to the P0 changes, which built them or hold them for the cloud gate;
+That is all 1,374 requirements:
+- 113 belong to the P0 changes, which built them or hold them for the cloud gate;
 - the other 1,261 are spread over 65 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
@@ -191,6 +191,14 @@ the threshold; filings recorded under a new Appendix D row, Statutory calendar; 
 staff until `p1-payroll-link`. The F5 return and its corrections stay in its tasks until registration (question 2).
 
 **Wave 5 · Reports, planning, checks and compliance.**
+`p1-planning` is proposed (8 Nov 2026): budgets, the driver-based forecast, the short-term cash flow and its 13-week view,
+and the feasibility calculator, with three packs (`sg-cit@2026.1`, `sg-cpf@2026.1`, `sg-sdl@2026.1`). By the owner's
+decisions of the same day (PRD-001 rev 0.214): the workbook's own model in exact decimals, customers fractional, under the
+new rounding policy `RND-PLAN`, checked against the workbook's reference to the cent; a cash buffer of
+`planning.buffer_months` months of burn (6); and expected payment dates from each contact's average lateness over 12
+months. It also brings what earlier changes left to it: the statements' budget and forecast columns, Budget vs Actual,
+the close's budget variances and Home's budget and cash-out tiles. Pay runs, CPF, GST and tax join the cash projection
+with their modules.
 
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 

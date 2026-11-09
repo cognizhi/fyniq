@@ -53,6 +53,11 @@ Source: PRD-001 §8.14 · Priority M · Phase P1
 - **WHEN** a scenario is built
 - **THEN** it includes a headcount plan, a capex plan, a funding plan and scenario levers
 
+#### Scenario: The workbook's model, exactly (rev 0.214)
+- **WHEN** a forecast is worked out
+- **THEN** it follows the workbook's reference model in exact decimals under RND-PLAN, customers fractional, with employer CPF, SDL and corporate tax from the statutory packs
+- **AND** it agrees with that reference on the workbook's sample to the cent
+
 ### Requirement: FR-PLN-03 Forecast outputs
 The system SHALL produce the outputs of each forecast scenario and compare scenarios side by side.
 
@@ -81,6 +86,11 @@ Source: PRD-001 §8.14 · Priority M · Phase P1
 - **WHEN** runway and the cash-out month are shown
 - **THEN** they are shown with and without the round
 - **AND** Home and alerts use the figure without it and say so
+
+#### Scenario: The buffer is months of burn (rev 0.214)
+- **GIVEN** the setting planning.buffer_months, 6 by default, or a scenario's own number of months
+- **WHEN** a scenario's funding gap is worked out
+- **THEN** it is the buffer months × the average monthly net burn − the minimum cash, at least 0
 
 ### Requirement: FR-PLN-04 Rolling forecast
 The system SHALL keep the forecast rolling, replacing forecast months with actuals automatically as periods close, and SHALL show how accurate past cash projections were.
@@ -144,6 +154,15 @@ Source: PRD-001 §8.14 · Priority M · Phase P1
 #### Scenario: Weekly buckets
 - **WHEN** the projection is shown in weekly buckets
 - **THEN** it is the 13-week view of FR-PLN-05
+
+#### Scenario: Expected dates from payment behaviour (rev 0.214)
+- **WHEN** an open invoice or bill is placed in the projection
+- **THEN** its expected date is its due date plus the contact's average days paid after the due date over the documents settled in the last 12 months, an early payment counting as on time
+- **AND** with no such history it is the due date, or the planned payment date where one is set
+
+#### Scenario: The buffer line (rev 0.214)
+- **WHEN** the projection shows its buffer line
+- **THEN** the buffer is planning.buffer_months × the average monthly net burn of the last 3 closed months
 
 ### Requirement: FR-PLN-06 Feasibility calculator
 The system SHALL provide a feasibility calculator (the workbook model).

@@ -430,6 +430,36 @@ Source: PRD-001 §10.4
 - **WHEN** a KPI is undefined (FR-KPI-03)
 - **THEN** it is shown as "—" with the reason, never rounded to 0
 
+### Requirement: RND-PLAN Forecast figures
+A forecast's and a feasibility study's figures SHALL be worked in exact decimals by the workbook's formulas, each driver line's monthly or yearly amount rounded once, half away from zero, to the base currency's minor units, every total and balance adding the rounded lines (new, the owner's decision of 8 Nov 2026; rev 0.214).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Fractional counts, exact growth
+- **WHEN** a forecast compounds customers, units or a growth rate
+- **THEN** it keeps them fractional and exact, and shows customers and units to 1 decimal
+
+#### Scenario: One rounding per driver line
+- **WHEN** a forecast month's amount on a driver line is worked out
+- **THEN** it is worked from its drivers, the customers and the lines it is a percentage of as they are shown
+- **AND** it is rounded once to the base currency's minor units, half away from zero
+
+#### Scenario: Divisions round once
+- **WHEN** a forecast shows an amount from a division, such as an average, CAC, LTV, the funding gap or break-even revenue
+- **THEN** it is rounded once from its exact value
+
+#### Scenario: What is shown adds up
+- **WHEN** a forecast shows a total, a margin line, a cash flow or a balance
+- **THEN** it adds or subtracts the rounded lines, so the figures on screen add up
+
+#### Scenario: Rates, ratios and years
+- **WHEN** a forecast shows a percentage, a ratio, an IRR or a payback
+- **THEN** a percentage is rounded as RND-PERCENT, a ratio or a multiple to 2 decimals, an IRR to 4 decimals of a fraction and a payback to 1 decimal of a year, half away from zero
+
+#### Scenario: Rules compare exact values
+- **WHEN** a rule decides the verdict, the buffer alert, break-even or the cash-out month
+- **THEN** it compares exact values, never rounded ones
+
 ### Requirement: RND-LINE Line amount
 A line's amount SHALL be round(quantity × unit price, the currency's minor units), half away from zero, computed exactly before its one rounding; part of a line taken after others SHALL be RND-LINE of all taken so far less RND-LINE of what was taken before (rev 0.87; provisional).
 
