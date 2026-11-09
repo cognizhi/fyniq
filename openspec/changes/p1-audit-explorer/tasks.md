@@ -401,13 +401,13 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - restore and recovery.
 
   Each threat has its control and its test.
-  - As built (10 Nov 2026): 15 threats (T1 to T15) across the person, API, worker, bucket and operator boundaries,
+  - As built (9 Nov 2026): 15 threats (T1 to T15) across the person, API, worker, bucket and operator boundaries,
     each with its control and the tests that prove it. What remains: the `[live-verify]` keys, grants and retention
     lock; a real point-in-time restore; holds on records; nobody holding A on "Audit trail"; the cohort keys of
     `p1-pdpa-retention`; and the other records' pages without the purge note.
 - [x] 12.2 `make test` and `make up` pass on the last slice, `make differential` is clean, and `make check` passes. The
   build plan's p1-audit-explorer paragraph says what was built.
-  - As built (10 Nov 2026):
+  - As built (9 Nov 2026):
     - **`make differential`** is clean: 4 passed, `purge` among its sources.
     - **`make check`** passes.
     - **`make test`** first failed in `TestAuthorisationMatrix`, locally and in CI on #515: the test database ran out of

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Feature and requirement IDs | The audit trail and the ledger's retention: FR-CTL-03, AUD-01 to AUD-10, INV-02, INV-03, INV-12, ENG-46, ENG-47, G4-070, G4-071, SEC-15, CTL-AUD-02 (PRD-001 rev 0.230 to rev 0.239; `p1-audit-explorer` task 12.1) |
-| Author, reviewer, date | Claude Code for the founders, 10 Nov 2026; second review at sign-off (waived before production, AGENTS.md); slices 7 to 10 are labelled `needs-human-review` |
+| Author, reviewer, date | Claude Code for the founders, 9 Nov 2026; second review at sign-off (waived before production, AGENTS.md); slices 7 to 10 are labelled `needs-human-review` |
 | Data and its class | The audit trail: every saved change with its actor, reason and before and after values (confidential). It holds proofs of sensitive values (bank numbers, identifiers, pay), never the values. Security events' IP addresses and browsers (personal data, 400 days). Close snapshots (confidential figures). The ledger's posted history and its carry-forward (confidential). The anchors, recoveries and erasure register in the write-once bucket. The fingerprint key and the signing key are secrets held by the key service |
 | Who acts | Appendix D's "Audit trail" row: V (Owner, Administrator, Controller, Accountant, Auditor, Tax agent, DPO) reads, verifies and exports; the Owner acknowledges a recovery (nobody holds A yet). The worker (`fyniq_worker`) anchors, erases, purges and recovers; the API (`fyniq_api`) writes events in each unit of work and reads its organisation's trail. The AI has no tool on the trail |
 
