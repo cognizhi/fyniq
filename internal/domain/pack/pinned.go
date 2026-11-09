@@ -70,7 +70,9 @@ func RunPinned(v Version) []Result {
 			out = append(out, r)
 		}
 	}
-	return append(out, runDeadlines(v)...)
+	out = append(out, runDeadlines(v)...)
+	out = append(out, runCIT(v)...)
+	return append(out, runWages(v)...)
 }
 
 // runDeadlines runs the sg-deadlines pinned cases: each obligation's due date for its anchor and condition, each next

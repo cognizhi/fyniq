@@ -137,6 +137,35 @@ var Schemas = map[string]Schema{
 			"extensions":   {"case", "obligation", "due", "want", "why", "source"},
 		},
 	},
+	// Corporate income tax by Year of Assessment, for the forecast's tax estimate and feasibility (FR-PLN-03, FR-PLN-06).
+	"sg-cit": {
+		Tables: map[string][]string{
+			"rates":      {"ya_from", "ya_to", "rate", "source"},
+			"exemptions": {"scheme", "ya_from", "ya_to", "tier", "band", "percent", "source"},
+			"rebates":    {"ya", "percent", "cap", "cash_grant", "source"},
+		},
+		Pinned: map[string][]string{
+			"rates":      {"case", "ya", "want_rate", "why", "source"},
+			"exemptions": {"case", "scheme", "ya", "chargeable", "want_exempt", "why", "source"},
+			"rebates":    {"case", "ya", "tax_payable", "cash_grant_eligible", "want_rebate", "why", "source"},
+		},
+	},
+	// CPF contribution rates and wage ceilings by the month the wages are earned in (FR-PLN-02).
+	"sg-cpf": {
+		Tables: map[string][]string{
+			"rates":    {"group", "age_above", "age_to", "wage_above", "effective_from", "effective_to", "employer", "employee", "source"},
+			"ceilings": {"ceiling", "effective_from", "effective_to", "amount", "source"},
+		},
+		Pinned: map[string][]string{
+			"rates":    {"case", "month", "group", "age", "wage", "want_employer", "want_employee", "why", "source"},
+			"ceilings": {"case", "ceiling", "month", "want", "why", "source"},
+		},
+	},
+	// The Skills Development Levy by month (FR-PLN-02).
+	"sg-sdl": {
+		Tables: map[string][]string{"levy": {"effective_from", "effective_to", "rate", "minimum", "maximum", "source"}},
+		Pinned: map[string][]string{"levy": {"case", "month", "wages", "want", "why", "source"}},
+	},
 }
 
 // holds reports whether version v of a pack holds the table name of s.
@@ -393,6 +422,12 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		out = append(out, checkGST(dir, v)...)
 	case "sg-deadlines":
 		out = append(out, checkDeadlines(dir, v)...)
+	case "sg-cit":
+		out = append(out, checkCIT(dir, v)...)
+	case "sg-cpf":
+		out = append(out, checkCPF(dir, v)...)
+	case "sg-sdl":
+		out = append(out, checkSDL(dir, v)...)
 	}
 	if len(out) > 0 {
 		return Version{}, out

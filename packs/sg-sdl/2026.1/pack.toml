@@ -1,0 +1,27 @@
+# sg-sdl@2026.1: the Skills Development Levy on each employee's monthly wages (PRD-001 §10.6, ENG-30; p1-planning D1).
+# Never edit this version once it is active anywhere: a correction is sg-sdl@2026.2 (fyniq-sg-statutory).
+id = "sg-sdl@2026.1"
+title = "Singapore Skills Development Levy: the rate on each employee's monthly total wages, with its minimum and maximum"
+effective_from = "2026-01-01"
+review_date = "2027-01-31"
+verifier = "Claude Code against the CPF Board's page on 8 Nov 2026 (p1-planning); the accountant's review is pending (FR-UX-41)"
+conditions = "Every employee, for the total wages of a calendar month; the levy of each employee is the rate of the wages, at least the minimum and at most the maximum; an employer then adds up its employees' levies and rounds the total down to the nearest dollar"
+
+[[sources]]
+id = "cpf-sdl"
+title = "CPF Board: Skills Development Levy"
+url = "https://www.cpf.gov.sg/employer/employer-obligations/skills-development-levy"
+section = "How much SDL do you need to pay? Compute total SDL payable; Need an example?"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "The levy payable for each employee is at 0.25% of the monthly total wages. The minimum payable is $2 for an employee earning less than $800 a month and the maximum is $11.25 for an employee earning more than $4,500 a month."
+
+[[tables]]
+name = "levy"
+file = "levy.csv"
+description = "The rate on each employee's monthly total wages, at least the minimum and at most the maximum, for months from effective_from to effective_to"
+
+[[pinned]]
+name = "levy"
+file = "pinned/levy.csv"
+description = "Hand-pinned levies from the CPF Board's own example, not from levy.csv"

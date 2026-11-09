@@ -1,0 +1,8 @@
+case,ya,tax_payable,cash_grant_eligible,want_rebate,why,source
+CIT-B-01,2026,12000.00,false,6000.00,"Example 2: $12,000 x 50% = $6,000, capped at $40,000",iras-cit-examples
+CIT-B-02,2026,2975.00,true,0.00,"Example 3: $1,487.50 is less than the $2,000 cash grant, so no rebate is given",iras-cit-examples
+CIT-B-03,2026,50400.00,true,23200.00,"Example 4: $25,200 capped at $40,000, less the $2,000 cash grant",iras-cit-examples
+CIT-B-04,2026,124575.00,true,38000.00,"Example 5: $62,287.50 capped at $40,000, less the $2,000 cash grant",iras-cit-examples
+CIT-B-05,2026,124575.00,false,40000.00,"not eligible for the grant: the rebate capped at $40,000",iras-cit-rebate
+CIT-B-06,2026,4000.00,true,0.00,"a rebate of exactly $2,000 is not more than the grant, so none is given",iras-cit-rebate
+CIT-B-07,2027,50000.00,false,none,"no rebate is announced for YA 2027",iras-cit-rebate

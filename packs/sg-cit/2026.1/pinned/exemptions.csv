@@ -1,0 +1,9 @@
+case,scheme,ya,chargeable,want_exempt,why,source
+CIT-E-01,sute,2026,300000.00,125000.00,"the maximum: $75,000 of the first $100,000 at 75% and $50,000 of the next $100,000 at 50%",iras-cit-examples iras-cit-sute
+CIT-E-02,sute,2026,80000.00,60000.00,"75% of an amount inside the first $100,000",iras-cit-sute
+CIT-E-03,sute,2026,150000.00,100000.00,"$75,000 on the first $100,000 and 50% of the $50,000 above it",iras-cit-sute
+CIT-E-04,pte,2026,300000.00,102500.00,"the maximum: $7,500 of the first $10,000 and $95,000 of the next $190,000",iras-cit-pte
+CIT-E-05,pte,2026,8000.00,6000.00,"75% of an amount inside the first $10,000",iras-cit-pte
+CIT-E-06,pte,2026,110000.00,57500.00,"$7,500 on the first $10,000 and 50% of the $100,000 above it",iras-cit-pte
+CIT-E-07,sute,2026,0.00,0.00,"nothing is exempt without chargeable income",iras-cit-sute
+CIT-E-08,sute,2019,300000.00,none,"YA 2019 had other tiers, not held by this version",iras-cit-sute
