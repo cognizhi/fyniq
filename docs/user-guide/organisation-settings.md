@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
+requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
 status: draft
 ---
 
@@ -52,6 +52,18 @@ period today falls in. Below it is each registration Fyniq knows, with the dates
 
 To correct a registration, or to record the day the company is deregistered, select **Change**
 next to it. Two registrations cannot cover the same day.
+
+## GST registration monitor
+
+While the company is not registered, **Compliance › GST** tests whether it must register. IRAS
+asks a business to register when its taxable supplies are more than $1 million in a calendar year,
+or are expected to be more than $1 million in the next 12 months.
+
+- **Warn when the year's taxable supplies reach** sets how early the monitor warns: 80% of the
+  threshold unless you change it, from 50 to 99. The warning shows on Checks before either test is
+  met.
+- Taxable supplies are the standard-rated and zero-rated sales. Exempt and out-of-scope sales, and
+  sales of the company's own assets, are left out.
 
 ## Document numbering
 

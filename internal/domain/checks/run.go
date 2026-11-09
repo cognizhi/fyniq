@@ -41,7 +41,7 @@ var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals",
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, evidenceChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, taxChecks, evidenceChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()

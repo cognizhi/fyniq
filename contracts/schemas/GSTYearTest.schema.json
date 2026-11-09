@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apply_by": {
+      "description": "When exceeded: the day to apply to register by (sg-deadlines).",
+      "examples": [
+        "2027-01-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entries": {
+      "description": "How many posted entries make the figure; a void counts as its own.",
+      "examples": [
+        14
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "exceeded": {
+      "description": "true when it is more than the threshold.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "registered_from": {
+      "description": "When exceeded: the day the registration would start (sg-deadlines).",
+      "examples": [
+        "2027-03-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "taxable_supplies": {
+      "$ref": "Money.schema.json",
+      "description": "The taxable supplies posted in it (design D3): the lines of invoices, credit notes and bank transactions coded for Box 1 or Box 2, on accounts that are not assets, in Singapore dollars."
+    },
+    "to": {
+      "description": "Its last day, or today while it runs.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "unmatched": {
+      "description": "Documents whose entry's lines did not match their lines, so their codes could not be read: left out, and named on C.1 #37.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "year": {
+      "description": "The calendar year.",
+      "examples": [
+        2026
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "year",
+    "from",
+    "to",
+    "taxable_supplies",
+    "entries",
+    "unmatched",
+    "exceeded"
+  ],
+  "title": "GSTYearTest",
+  "type": "object"
+}

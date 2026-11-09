@@ -1386,6 +1386,21 @@ var (
 	GetAcraReconciliation     = Policy{Operation: "getAcraReconciliation", Capability: CapTable, Need: View, Unqualified: true}
 )
 
+// The GST registration monitor (FR-TAX-05; p1-gst slice 2, design D4): read by whoever reads GST returns; a forecast is
+// drafted, given its evidence and recorded by whoever prepares them, the Accountant or the Tax agent.
+var (
+	GetGSTMonitor             = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
+	ListGSTForecasts          = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
+	CreateGSTForecast         = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
+	GetGSTForecast            = Policy{Operation: "getGSTForecast", Capability: GSTReturns, Need: View}
+	ReplaceGSTForecast        = Policy{Operation: "replaceGSTForecast", Capability: GSTReturns, Need: Create}
+	RecordGSTForecast         = Policy{Operation: "recordGSTForecast", Capability: GSTReturns, Need: Create, Note: "A forecast with its evidence: it posts nothing."}
+	AddGSTForecastEvidence    = Policy{Operation: "addGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+	ListGSTForecastEvidence   = Policy{Operation: "listGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	GetGSTForecastEvidence    = Policy{Operation: "getGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	RemoveGSTForecastEvidence = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1572,7 +1587,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation)
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

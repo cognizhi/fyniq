@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "forecast": {
+      "$ref": "GSTForecastTest.schema.json",
+      "description": "The forecast in force: the prospective test; absent while none is recorded for today."
+    },
+    "last_year": {
+      "$ref": "GSTYearTest.schema.json",
+      "description": "Last calendar year: the retrospective test."
+    },
+    "ledger_revision": {
+      "description": "The ledger revision the figures were read at (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "on": {
+      "description": "The day the tests are read on: today.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is not assessed, or since when the organisation is registered.",
+      "examples": [
+        "Registered for GST from 1 Mar 2027"
+      ],
+      "type": "string"
+    },
+    "registration": {
+      "$ref": "GSTRegistration.schema.json",
+      "description": "The registration in force, when registered."
+    },
+    "share": {
+      "description": "The year so far as a percentage of the threshold, to one decimal (RND-PERCENT): for showing only; the test compares the exact amounts.",
+      "examples": [
+        "12.5"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "registered: nothing to test; liable: a test is met, so apply; near: the year so far reached the warning percentage; below: neither; not_assessed: an input is missing, which reason names.",
+      "enum": [
+        "registered",
+        "liable",
+        "near",
+        "below",
+        "not_assessed"
+      ],
+      "examples": [
+        "below"
+      ],
+      "type": "string"
+    },
+    "this_year": {
+      "$ref": "GSTYearTest.schema.json",
+      "description": "This calendar year so far."
+    },
+    "threshold": {
+      "$ref": "Money.schema.json",
+      "description": "The registration threshold of the sg-gst version in force: more than it makes a business liable."
+    },
+    "warning_percent": {
+      "description": "The warning percentage, the setting gst.threshold_warning_percent.",
+      "examples": [
+        "80"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "on",
+    "status"
+  ],
+  "title": "GSTMonitor",
+  "type": "object"
+}

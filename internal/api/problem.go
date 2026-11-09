@@ -41,6 +41,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
+	"github.com/cognizhi/fyniq/internal/domain/gstmonitor"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -817,6 +818,7 @@ var codeFacts = map[string]struct {
 	storage.CodeInvestorRights:       {422, "The investor rights do not keep that"},
 	storage.CodeControllerEntry:      {422, "The controller entry does not keep that"},
 	storage.CodeAcraExtract:          {422, "The ACRA extract does not keep that"},
+	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost:  {422, "The cost before the books start does not fit"},
@@ -868,6 +870,9 @@ var codeFacts = map[string]struct {
 	equity.CodeHolderRecord:          {422, "The holder record does not fit"},
 	equity.CodeShareClass:            {422, "The share class does not fit"},
 	equity.CodeRecorded:              {409, "It is recorded"},
+	gstmonitor.CodeForecast:          {422, "The GST forecast does not fit"},
+	gstmonitor.CodeNoEvidence:        {422, "No evidence attached"},
+	gstmonitor.CodeRecorded:          {409, "The GST forecast is recorded"},
 	equity.CodeNoEvidence:            {422, "No evidence attached"},
 	equity.CodeTransaction:           {422, "The equity transaction does not fit"},
 	equity.CodeEffective:             {409, "The transaction cannot be effective then"},
@@ -932,6 +937,7 @@ var storageFixes = map[string]string{
 	storage.CodeInvestorRights:       "Record the rights of a contact marked shareholder or investor, with 0 to 20 board seats and a list of consent matters",
 	storage.CodeControllerEntry:      "Give a controller its grounds and its days in order, or a holder who is not one the reason, for a contact marked shareholder or investor",
 	storage.CodeAcraExtract:          "Type each holding of a contact marked shareholder or investor, an active share-capital class and whole shares, with the profile's day",
+	storage.CodeGSTForecast:          "Enter the forecast's day, its value in Singapore dollars with cents above zero, and a basis of at most 1,000 characters",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
 	storage.CodeDimensionRequirement: "Name each of the organisation's dimensions once",
@@ -1073,6 +1079,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cle *claim.Error
 		dre *director.Error
 		eqe *equity.Error
+		gme *gstmonitor.Error
 		ase *asset.Error
 		pye *payee.Error
 		pyp payee.Problems
@@ -1137,6 +1144,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(dre.Code, sentence(dre.Message), sentence(dre.Fix))
 	case errors.As(err, &eqe):
 		return problem(eqe.Code, sentence(eqe.Message), sentence(eqe.Fix))
+	case errors.As(err, &gme):
+		return problem(gme.Code, sentence(gme.Message), sentence(gme.Fix))
 	case errors.As(err, &ase):
 		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
 	case errors.As(err, &pye):
