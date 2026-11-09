@@ -307,6 +307,117 @@ func (q *Queries) InsertControlState(ctx context.Context, arg InsertControlState
 	return i, err
 }
 
+const insertPolicyAcknowledgement = `-- name: InsertPolicyAcknowledgement :one
+INSERT INTO fyniq.policy_acknowledgement (key, version, acknowledged_by, acknowledged_at)
+VALUES ($1, $2, $3, $4)
+RETURNING organisation_id, id, key, version, acknowledged_by, acknowledged_at
+`
+
+type InsertPolicyAcknowledgementParams struct {
+	Key            string
+	Version        int32
+	AcknowledgedBy string
+	AcknowledgedAt time.Time
+}
+
+func (q *Queries) InsertPolicyAcknowledgement(ctx context.Context, arg InsertPolicyAcknowledgementParams) (FyniqPolicyAcknowledgement, error) {
+	row := q.db.QueryRow(ctx, insertPolicyAcknowledgement,
+		arg.Key,
+		arg.Version,
+		arg.AcknowledgedBy,
+		arg.AcknowledgedAt,
+	)
+	var i FyniqPolicyAcknowledgement
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Key,
+		&i.Version,
+		&i.AcknowledgedBy,
+		&i.AcknowledgedAt,
+	)
+	return i, err
+}
+
+const insertPolicyDraft = `-- name: InsertPolicyDraft :one
+INSERT INTO fyniq.policy_draft (key, revision, body, sha256, saved_by, saved_at)
+VALUES ($1, $2, $3, sha256(convert_to($3::text, 'UTF8')), $4, $5)
+RETURNING organisation_id, id, key, revision, body, sha256, saved_by, saved_at
+`
+
+type InsertPolicyDraftParams struct {
+	Key      string
+	Revision int32
+	Body     string
+	SavedBy  string
+	SavedAt  time.Time
+}
+
+func (q *Queries) InsertPolicyDraft(ctx context.Context, arg InsertPolicyDraftParams) (FyniqPolicyDraft, error) {
+	row := q.db.QueryRow(ctx, insertPolicyDraft,
+		arg.Key,
+		arg.Revision,
+		arg.Body,
+		arg.SavedBy,
+		arg.SavedAt,
+	)
+	var i FyniqPolicyDraft
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Key,
+		&i.Revision,
+		&i.Body,
+		&i.Sha256,
+		&i.SavedBy,
+		&i.SavedAt,
+	)
+	return i, err
+}
+
+const insertPolicyVersion = `-- name: InsertPolicyVersion :one
+INSERT INTO fyniq.policy_version (key, version, title, body, sha256, from_draft, published_by, published_at)
+VALUES ($1, $2, $3, $4, sha256(convert_to($4::text, 'UTF8')), $5,
+        $6, $7)
+RETURNING organisation_id, id, key, version, title, body, sha256, from_draft, published_by, published_at
+`
+
+type InsertPolicyVersionParams struct {
+	Key         string
+	Version     int32
+	Title       string
+	Body        string
+	FromDraft   string
+	PublishedBy string
+	PublishedAt time.Time
+}
+
+func (q *Queries) InsertPolicyVersion(ctx context.Context, arg InsertPolicyVersionParams) (FyniqPolicyVersion, error) {
+	row := q.db.QueryRow(ctx, insertPolicyVersion,
+		arg.Key,
+		arg.Version,
+		arg.Title,
+		arg.Body,
+		arg.FromDraft,
+		arg.PublishedBy,
+		arg.PublishedAt,
+	)
+	var i FyniqPolicyVersion
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Key,
+		&i.Version,
+		&i.Title,
+		&i.Body,
+		&i.Sha256,
+		&i.FromDraft,
+		&i.PublishedBy,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
 const insertRisk = `-- name: InsertRisk :one
 INSERT INTO fyniq.risk (ref, created_at) VALUES ($1, $2) RETURNING organisation_id, id, ref, created_at
 `
@@ -467,6 +578,40 @@ func (q *Queries) LatestControlRuns(ctx context.Context) ([]FyniqControlRun, err
 	return items, nil
 }
 
+const latestPolicyDrafts = `-- name: LatestPolicyDrafts :many
+SELECT DISTINCT ON (d.key) d.organisation_id, d.id, d.key, d.revision, d.body, d.sha256, d.saved_by, d.saved_at FROM fyniq.policy_draft d ORDER BY d.key, d.revision DESC
+`
+
+// Each policy's latest draft revision.
+func (q *Queries) LatestPolicyDrafts(ctx context.Context) ([]FyniqPolicyDraft, error) {
+	rows, err := q.db.Query(ctx, latestPolicyDrafts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqPolicyDraft
+	for rows.Next() {
+		var i FyniqPolicyDraft
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Key,
+			&i.Revision,
+			&i.Body,
+			&i.Sha256,
+			&i.SavedBy,
+			&i.SavedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const latestRiskReviews = `-- name: LatestRiskReviews :many
 SELECT DISTINCT ON (y.risk_id) y.organisation_id, y.id, y.risk_id, y.version, y.reviewed_by, y.reviewed_at, y.note, y.next_review_on
   FROM fyniq.risk_review y
@@ -527,6 +672,72 @@ func (q *Queries) ListControlStates(ctx context.Context) ([]FyniqControlState, e
 			&i.RunAt,
 			&i.ChangedAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPolicyAcknowledgements = `-- name: ListPolicyAcknowledgements :many
+SELECT organisation_id, id, key, version, acknowledged_by, acknowledged_at FROM fyniq.policy_acknowledgement ORDER BY key, version, acknowledged_at
+`
+
+func (q *Queries) ListPolicyAcknowledgements(ctx context.Context) ([]FyniqPolicyAcknowledgement, error) {
+	rows, err := q.db.Query(ctx, listPolicyAcknowledgements)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqPolicyAcknowledgement
+	for rows.Next() {
+		var i FyniqPolicyAcknowledgement
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Key,
+			&i.Version,
+			&i.AcknowledgedBy,
+			&i.AcknowledgedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPolicyVersions = `-- name: ListPolicyVersions :many
+SELECT organisation_id, id, key, version, title, body, sha256, from_draft, published_by, published_at FROM fyniq.policy_version ORDER BY key, version
+`
+
+func (q *Queries) ListPolicyVersions(ctx context.Context) ([]FyniqPolicyVersion, error) {
+	rows, err := q.db.Query(ctx, listPolicyVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqPolicyVersion
+	for rows.Next() {
+		var i FyniqPolicyVersion
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Key,
+			&i.Version,
+			&i.Title,
+			&i.Body,
+			&i.Sha256,
+			&i.FromDraft,
+			&i.PublishedBy,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}

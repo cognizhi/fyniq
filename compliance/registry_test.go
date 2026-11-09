@@ -370,3 +370,50 @@ func TestEveryCICheckHasItsReleaseAsset(t *testing.T) {
 		t.Errorf("only %d checks run in CI", n)
 	}
 }
+
+// Fyniq's starting drafts are CMP-07's eight policies, each with its front matter, its official sources with the day they
+// were read, the controls it points to, and its text; a draft that bears on the law marks those clauses for counsel
+// (design D8).
+// req: CMP-07
+func TestThePolicyDrafts(t *testing.T) {
+	drafts, err := PolicyDrafts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	controls, _ := Load()
+	known := map[string]bool{}
+	for _, c := range controls {
+		known[c.ID] = true
+	}
+	for _, d := range drafts {
+		keys = append(keys, d.Key)
+		if d.Title == "" || d.Draft != "fyniq-policy-draft@1" || len(d.Sources) == 0 || len(d.Controls) == 0 || len(d.SHA256) != 64 ||
+			!strings.HasPrefix(d.Body, "# "+d.Title) {
+			t.Errorf("%s: %+v", d.Key, d)
+		}
+		for _, s := range d.Sources {
+			if !strings.HasPrefix(s.URL, "https://www.") && !strings.HasPrefix(s.URL, "https://csa.gov.sg/") || s.Title == "" ||
+				!regexp.MustCompile(`^20[0-9]{2}-[0-9]{2}-[0-9]{2}$`).MatchString(s.Retrieved) {
+				t.Errorf("%s: a source without an official URL, a title or its day: %+v", d.Key, s)
+			}
+			host := strings.Split(strings.TrimPrefix(s.URL, "https://"), "/")[0]
+			if !strings.HasSuffix(host, ".gov.sg") && host != "csa.gov.sg" {
+				t.Errorf("%s: %s is not an official Singapore source", d.Key, s.URL)
+			}
+		}
+		for _, c := range d.Controls {
+			if !known[c] {
+				t.Errorf("%s points to %s, which the registry does not hold", d.Key, c)
+			}
+		}
+	}
+	if !slices.Equal(keys, PolicyKeys) {
+		t.Errorf("the drafts are %v, want CMP-07's %v", keys, PolicyKeys)
+	}
+	for _, d := range drafts {
+		if (d.Key == "data-protection" || d.Key == "incident-response") && !strings.Contains(d.Body, "[counsel to confirm]") {
+			t.Errorf("%s bears on the law and marks no clause for counsel", d.Key)
+		}
+	}
+}

@@ -1700,6 +1700,39 @@ type FyniqPeriodVarianceExplanation struct {
 	Kind           string
 }
 
+type FyniqPolicyAcknowledgement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Version        int32
+	AcknowledgedBy string
+	AcknowledgedAt time.Time
+}
+
+type FyniqPolicyDraft struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Revision       int32
+	Body           string
+	Sha256         []byte
+	SavedBy        string
+	SavedAt        time.Time
+}
+
+type FyniqPolicyVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Version        int32
+	Title          string
+	Body           string
+	Sha256         []byte
+	FromDraft      string
+	PublishedBy    string
+	PublishedAt    time.Time
+}
+
 type FyniqQuoteOutcome struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

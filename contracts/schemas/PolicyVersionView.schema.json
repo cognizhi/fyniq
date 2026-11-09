@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acknowledged": {
+      "description": "How many members acknowledged it.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "from": {
+      "description": "What it was published from: Fyniq's starting draft (fyniq-policy-draft@1), or a revision of the organisation's draft.",
+      "examples": [
+        "revision 3"
+      ],
+      "type": "string"
+    },
+    "published_at": {
+      "description": "When.",
+      "examples": [
+        "2027-01-05T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "published_by": {
+      "description": "Who published it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of its text, so a copy can be checked.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The policy's title.",
+      "examples": [
+        "Data protection policy"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its number, from 1.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "sha256",
+    "from",
+    "published_by",
+    "published_at",
+    "acknowledged"
+  ],
+  "title": "PolicyVersionView",
+  "type": "object"
+}

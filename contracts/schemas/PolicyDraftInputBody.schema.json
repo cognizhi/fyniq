@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "The draft's text, as Markdown.",
+      "examples": [
+        "# Data protection policy\n\n## Purpose\n..."
+      ],
+      "maxLength": 100000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "body"
+  ],
+  "title": "PolicyDraftInputBody",
+  "type": "object"
+}

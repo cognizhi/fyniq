@@ -25435,6 +25435,37 @@ components:
         - linked
         - grants
       type: object
+    MyPolicyAcknowledgement:
+      additionalProperties: false
+      properties:
+        acknowledged_at:
+          description: When the caller acknowledged it; none while it waits.
+          examples:
+            - "2027-01-06T09:00:00Z"
+          format: date-time
+          type: string
+        due_on:
+          description: 30 days after the later of its publication and the caller joining.
+          examples:
+            - "2027-02-04"
+          format: date
+          type: string
+        overdue:
+          description: true once its due day has passed without an acknowledgement.
+          examples:
+            - false
+          type: boolean
+        version:
+          description: The current version, which the caller acknowledges.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - version
+        - due_on
+        - overdue
+      type: object
     MyRecoveryCodes:
       additionalProperties: false
       properties:
@@ -28693,6 +28724,217 @@ components:
       required:
         - month
         - currency
+      type: object
+    Policies:
+      additionalProperties: false
+      properties:
+        items:
+          description: The eight policies of CMP-07, in the library's order.
+          items:
+            $ref: "#/components/schemas/PolicyView"
+          type: array
+      required:
+        - items
+      type: object
+    PolicyDraftInputBody:
+      additionalProperties: false
+      properties:
+        body:
+          description: The draft's text, as Markdown.
+          examples:
+            - |-
+              # Data protection policy
+
+              ## Purpose
+              ...
+          maxLength: 100000
+          minLength: 1
+          type: string
+      required:
+        - body
+      type: object
+    PolicyDraftView:
+      additionalProperties: false
+      properties:
+        body:
+          description: Its text, as Markdown; only for those who may edit the library.
+          examples:
+            - |-
+              # Data protection policy
+
+              ## Purpose
+              ...
+          type: string
+        revision:
+          description: The organisation's revision; 0 for Fyniq's draft. The draft's ETag carries it for If-Match.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        sha256:
+          description: The SHA-256 of its text.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        source:
+          description: "fyniq: Fyniq's starting draft, not edited yet. organisation: a revision of the organisation's own."
+          enum:
+            - fyniq
+            - organisation
+          examples:
+            - organisation
+          type: string
+        unpublished:
+          description: "true while it differs from the current version: publishing it makes the next version."
+          examples:
+            - true
+          type: boolean
+      required:
+        - source
+        - revision
+        - sha256
+        - unpublished
+      type: object
+    PolicySourceView:
+      additionalProperties: false
+      properties:
+        retrieved:
+          description: The day it was read.
+          examples:
+            - "2026-11-09"
+          format: date
+          type: string
+        title:
+          description: The source.
+          examples:
+            - PDPC, Guide on Managing and Notifying Data Breaches under the PDPA
+          type: string
+        url:
+          description: Where it is.
+          examples:
+            - https://www.pdpc.gov.sg/
+          format: uri
+          type: string
+      required:
+        - title
+        - url
+        - retrieved
+      type: object
+    PolicyVersionView:
+      additionalProperties: false
+      properties:
+        acknowledged:
+          description: How many members acknowledged it.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        from:
+          description: "What it was published from: Fyniq's starting draft (fyniq-policy-draft@1), or a revision of the organisation's draft."
+          examples:
+            - revision 3
+          type: string
+        published_at:
+          description: When.
+          examples:
+            - "2027-01-05T10:00:00Z"
+          format: date-time
+          type: string
+        published_by:
+          description: Who published it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        sha256:
+          description: The SHA-256 of its text, so a copy can be checked.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        title:
+          description: The policy's title.
+          examples:
+            - Data protection policy
+          type: string
+        version:
+          description: Its number, from 1.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - version
+        - title
+        - sha256
+        - from
+        - published_by
+        - published_at
+        - acknowledged
+      type: object
+    PolicyView:
+      additionalProperties: false
+      properties:
+        body:
+          description: "With getPolicy: the current version's text, as Markdown."
+          examples:
+            - |-
+              # Data protection policy
+
+              ## Purpose
+              ...
+          type: string
+        current:
+          $ref: "#/components/schemas/PolicyVersionView"
+          description: The version in force; none before the first is published.
+        draft:
+          $ref: "#/components/schemas/PolicyDraftView"
+          description: The draft its next version is published from.
+        key:
+          description: The policy's key.
+          enum:
+            - information-security
+            - acceptable-use
+            - access-control
+            - incident-response
+            - backup
+            - change-management
+            - ai-use
+            - data-protection
+          examples:
+            - data-protection
+          type: string
+        members:
+          description: How many members the current version applies to.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        mine:
+          $ref: "#/components/schemas/MyPolicyAcknowledgement"
+          description: The caller's acknowledgement of the current version; none before one is published.
+        sources:
+          description: "With getPolicy: the official sources Fyniq's starting draft was written from."
+          items:
+            $ref: "#/components/schemas/PolicySourceView"
+          type:
+            - array
+            - "null"
+        title:
+          description: Its title.
+          examples:
+            - Data protection policy
+          type: string
+        versions:
+          description: "With getPolicy: every published version, oldest first."
+          items:
+            $ref: "#/components/schemas/PolicyVersionView"
+          type:
+            - array
+            - "null"
+      required:
+        - key
+        - title
+        - members
+        - draft
       type: object
     PoolResolutionDraft:
       additionalProperties: false
@@ -69410,6 +69652,889 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: GST return, filing
+        right: V
+  /v1/compliance/policies:
+    get:
+      description: "The eight policies of the library (CMP-07): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, and the draft its next version would be published from. Read-only; no side effects."
+      operationId: listPolicies
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policies"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the policy library
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The library holds CMP-07's eight policies: the list is always whole and never grows."
+      x-fyniq-permission:
+        capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
+        right: V
+  /v1/compliance/policies/{key}:
+    get:
+      description: One policy as listPolicies shows it, with the text of its version in force, every published version, and the official sources Fyniq's starting draft was written from. Those who may edit the library also get the draft's text. Read-only; no side effects.
+      operationId: getPolicy
+      parameters:
+        - description: The policy's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The policy's key.
+            enum:
+              - information-security
+              - acceptable-use
+              - access-control
+              - incident-response
+              - backup
+              - change-management
+              - ai-use
+              - data-protection
+            examples:
+              - data-protection
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyView"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The draft's revision, for If-Match on savePolicyDraft and publishPolicyVersion.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `COMPLIANCE-03` No such policy or version."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a policy
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - COMPLIANCE-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "One policy, not a list: its versions are a handful, published by hand."
+      x-fyniq-permission:
+        capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
+        right: V
+  /v1/compliance/policies/{key}/draft:
+    put:
+      description: "Saves the next revision of the organisation's draft of the policy (CMP-07), from Fyniq's starting draft or the last revision. Nothing is in force until it is published. Side effects: the revision, the audit event policy.draft_saved. Needs If-Match with the draft's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: savePolicyDraft
+      parameters:
+        - description: The policy's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The policy's key.
+            enum:
+              - information-security
+              - acceptable-use
+              - access-control
+              - incident-response
+              - backup
+              - change-management
+              - ai-use
+              - data-protection
+            examples:
+              - data-protection
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyDraftInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The draft's revision, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `COMPLIANCE-03` No such policy or version."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-POLICY-01` The policy library's drafts, versions and acknowledgements are kept as they were."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save a policy's draft
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - COMPLIANCE-03
+        - STORAGE-LOCK-01
+        - STORAGE-POLICY-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
+        right: C
+  /v1/compliance/policies/{key}/versions:
+    post:
+      description: "Publishes the policy's draft (Fyniq's starting draft, or the organisation's latest revision) as its next version (CMP-07). A published version never changes, and every member is asked to acknowledge it within 30 days. A draft no different from the version in force is refused. Side effects: the version, the audit event policy.published. Needs If-Match with the draft's ETag, so what is published is what was read. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: publishPolicyVersion
+      parameters:
+        - description: The policy's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The policy's key.
+            enum:
+              - information-security
+              - acceptable-use
+              - access-control
+              - incident-response
+              - backup
+              - change-management
+              - ai-use
+              - data-protection
+            examples:
+              - data-protection
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The draft's revision, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `COMPLIANCE-03` No such policy or version."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-POLICY-01` The policy library's drafts, versions and acknowledgements are kept as they were."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Publish a policy's next version
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - COMPLIANCE-03
+        - STORAGE-LOCK-01
+        - STORAGE-POLICY-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
+        right: A
+  /v1/compliance/policies/{key}/versions/{version}/acknowledgements:
+    post:
+      description: "Records that the caller read and accepts the published version (CMP-07): each member for themselves, signed in to Fyniq, never an integration or the AI, and once per version. Side effects: the acknowledgement, the audit event policy.acknowledged. Needs If-Match with the version's ETag (\"v<version>\"). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: acknowledgePolicyVersion
+      parameters:
+        - description: The policy's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The policy's key.
+            enum:
+              - information-security
+              - acceptable-use
+              - access-control
+              - incident-response
+              - backup
+              - change-management
+              - ai-use
+              - data-protection
+            examples:
+              - data-protection
+            type: string
+        - description: The version.
+          in: path
+          name: version
+          required: true
+          schema:
+            description: The version.
+            examples:
+              - 2
+            format: int64
+            minimum: 1
+            type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The draft's revision, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `COMPLIANCE-03` No such policy or version."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-POLICY-01` The policy library's drafts, versions and acknowledgements are kept as they were."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Acknowledge a policy
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - COMPLIANCE-03
+        - STORAGE-LOCK-01
+        - STORAGE-POLICY-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
         right: V
   /v1/compliance/risks:
     get:

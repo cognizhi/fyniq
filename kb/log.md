@@ -469,3 +469,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-risks-policies.md → compliance.risks (new: the risk register, p1-compliance-center slice 6)
 
 ## [2026-11-09] compile | docs/user-guide/compliance-controls.md → compliance.controls (links the risk register)
+
+## [2026-11-09] compile | docs/user-guide/compliance-policies.md (new), compliance-risks-policies.md → compliance.policies (new), compliance.risks (the policy library, CMP-07)

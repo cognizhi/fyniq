@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -329,4 +330,85 @@ func (c compliance) ReviewRisk(ctx context.Context, id uuid.UUID, r storage.Risk
 		return storage.Risk{}, err
 	}
 	return c.risk(ctx, id)
+}
+
+// ------------------------------------------------------------------ the policy library (CMP-07; p1-compliance-center D8)
+
+func (c compliance) Policies(ctx context.Context) (storage.PolicyLibrary, error) {
+	var out storage.PolicyLibrary
+	if err := c.u.check(); err != nil {
+		return out, err
+	}
+	drafts, err := c.u.q.LatestPolicyDrafts(ctx)
+	if err != nil {
+		return out, mapError(err)
+	}
+	for _, d := range drafts {
+		out.Drafts = append(out.Drafts, storage.PolicyDraft{Key: d.Key, Revision: int(d.Revision), Body: d.Body, SHA256: d.Sha256, SavedBy: d.SavedBy,
+			SavedAt: d.SavedAt})
+	}
+	versions, err := c.u.q.ListPolicyVersions(ctx)
+	if err != nil {
+		return out, mapError(err)
+	}
+	for _, v := range versions {
+		out.Versions = append(out.Versions, toPolicyVersion(v))
+	}
+	acks, err := c.u.q.ListPolicyAcknowledgements(ctx)
+	if err != nil {
+		return out, mapError(err)
+	}
+	for _, a := range acks {
+		out.Acknowledgements = append(out.Acknowledgements, storage.PolicyAcknowledgement{Key: a.Key, Version: int(a.Version), By: a.AcknowledgedBy,
+			At: a.AcknowledgedAt})
+	}
+	return out, nil
+}
+
+func toPolicyVersion(v sqlcdb.FyniqPolicyVersion) storage.PublishedPolicy {
+	return storage.PublishedPolicy{ID: v.ID, Key: v.Key, Version: int(v.Version), Title: v.Title, Body: v.Body, SHA256: v.Sha256, From: v.FromDraft,
+		PublishedBy: v.PublishedBy, PublishedAt: v.PublishedAt}
+}
+
+func (c compliance) SavePolicyDraft(ctx context.Context, d storage.PolicyDraft) (storage.PolicyDraft, error) {
+	if err := c.u.check(); err != nil {
+		return storage.PolicyDraft{}, err
+	}
+	row, err := c.u.q.InsertPolicyDraft(ctx, sqlcdb.InsertPolicyDraftParams{Key: d.Key, Revision: int32(min(max(d.Revision, 1), 1<<30)), // #nosec G115 -- bounded
+		Body: d.Body, SavedBy: d.SavedBy, SavedAt: d.SavedAt})
+	if err != nil {
+		return storage.PolicyDraft{}, mapError(err)
+	}
+	v := int(row.Revision)
+	return storage.PolicyDraft{Key: row.Key, Revision: v, Body: row.Body, SHA256: row.Sha256, SavedBy: row.SavedBy, SavedAt: row.SavedAt},
+		c.u.event(ctx, "policy.draft_saved", "policy_draft", row.ID, &v, map[string][2]any{"key": {nil, row.Key}, "revision": {nil, v},
+			"sha256": {nil, fmt.Sprintf("%x", row.Sha256)}})
+}
+
+func (c compliance) PublishPolicy(ctx context.Context, v storage.PublishedPolicy) (storage.PublishedPolicy, error) {
+	if err := c.u.check(); err != nil {
+		return storage.PublishedPolicy{}, err
+	}
+	row, err := c.u.q.InsertPolicyVersion(ctx, sqlcdb.InsertPolicyVersionParams{Key: v.Key, Version: int32(min(max(v.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		Title: v.Title, Body: v.Body, FromDraft: v.From, PublishedBy: v.PublishedBy, PublishedAt: v.PublishedAt})
+	if err != nil {
+		return storage.PublishedPolicy{}, mapError(err)
+	}
+	out := toPolicyVersion(row)
+	n := out.Version
+	return out, c.u.event(ctx, "policy.published", "policy_version", row.ID, &n, map[string][2]any{"key": {nil, row.Key}, "version": {nil, n},
+		"from": {nil, row.FromDraft}, "sha256": {nil, fmt.Sprintf("%x", row.Sha256)}})
+}
+
+func (c compliance) AcknowledgePolicy(ctx context.Context, a storage.PolicyAcknowledgement) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	row, err := c.u.q.InsertPolicyAcknowledgement(ctx, sqlcdb.InsertPolicyAcknowledgementParams{Key: a.Key, Version: int32(min(max(a.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		AcknowledgedBy: a.By, AcknowledgedAt: a.At})
+	if err != nil {
+		return mapError(err)
+	}
+	return c.u.event(ctx, "policy.acknowledged", "policy_acknowledgement", row.ID, nil, map[string][2]any{"key": {nil, row.Key},
+		"version": {nil, int(row.Version)}})
 }

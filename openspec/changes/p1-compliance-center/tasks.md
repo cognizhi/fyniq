@@ -315,9 +315,17 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 7. The policy library (slice 7)
 
-- [ ] 7.1 The eight drafts in `compliance/policies/` (D8), each written from official sources with their URLs and
+- [x] 7.1 The eight drafts in `compliance/policies/` (D8), each written from official sources with their URLs and
   retrieval dates, and [counsel to confirm] on each legal clause. A test checks that each draft has its front matter,
   sources and policy key, and that the eight keys are CMP-07's. `// req: CMP-07`
+
+  **What building added:**
+    - **The drafts** are `fyniq-policy-draft@1`, each with its key, title, sources (title, URL, retrieved 9 Nov 2026)
+      and the controls it serves. `compliance.PolicyDrafts()` reads them from the embedded files with each text's
+      SHA-256, and `TestThePolicyDrafts` checks them.
+    - **[counsel to confirm]** marks the clauses that bear on the law. They include the breach timers in incident
+      response, and the Data Protection Officer, consent, NRIC, retention, access and transfer clauses in data
+      protection.
 - [ ] 7.2 `fyniq.policy`, `fyniq.policy_version` and `fyniq.policy_acknowledgement` (D8), with attack tests, and the
   Appendix D row **Policy library** in `internal/authz`. The operations are `listPolicies`, `getPolicy`,
   `savePolicyDraft`, `publishPolicyVersion` (If-Match) and `acknowledgePolicyVersion` (own, signed in, never the AI),
@@ -330,9 +338,53 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   - the AI refused.
 
   `// req: CMP-07`, and the "Permission matrix: Policy library" spec text.
-- [ ] 7.3 The Policies tab (versions, acknowledgement rate, drafting and publishing) and the member's "Acknowledge
+
+  **What building added:**
+    - **The tables** (migration 000297) are `policy_draft` (one row for each revision of the organisation's draft),
+      `policy_version` and `policy_acknowledgement`.
+    - **Insert only.** All three are insert-only (FY310), and each row is audited on itself: `policy.draft_saved`,
+      `policy.published`, `policy.acknowledged`.
+    - **Numbering.** A revision or a version must follow the one before it.
+    - **Checksums.** Each row's SHA-256 is checked against its text. A version records what it was published from:
+      `fyniq-policy-draft@1` or `revision N`.
+    - **Fyniq's drafts are not copied on first opening.** Until the organisation saves a draft of its own, Fyniq's
+      draft is served from the embedded file as revision 0. Opening a policy therefore writes nothing, and a
+      read stays a read.
+    - **Who sees what:**
+      - the draft's text is shown only to those who may edit the library;
+      - its ETag `"r<revision>"` guards saving and publishing;
+      - publishing a draft no different from the version in force is refused (422).
+    - **Rights.** Appendix D's "Policy library" gives the Owner and the Compliance officer C/A, and every other role V.
+      Acknowledging needs V and a signed-in session: an integration's token gets `SESSION_REQUIRED`, and the AI is
+      refused.
+    - **Acknowledging** applies to the current version only, once, with `If-Match: "v<n>"`.
+    - **Due dates.** An acknowledgement falls due 30 days after the later of the version's publication and the
+      member's joining (`AcknowledgeWithin`). It is overdue after that day in Singapore time.
+    - **Tests:** `TestThePolicyLibrary`, `TestAttackThePolicyLibraryKeepsItsHistory` and matrix rows.
+- [x] 7.3 The Policies tab (versions, acknowledgement rate, drafting and publishing) and the member's "Acknowledge
   policy" card in the Inbox and on Home. It has help keys, and the guide page's policies section, compiled into `kb/`.
   A component test with axe covers acknowledgement pending. `// req: CMP-07`
+
+  **What building added:**
+    - **No tabs.** The policy library sits below the risk register on `/compliance/risks`, one page called "Risks and
+      policies". Each policy shows:
+      - its version in force and how many of the members acknowledged it;
+      - the reader's own acknowledgement;
+      - for the Owner and the Compliance officer, the draft: Fyniq's ready to adopt, or an unpublished revision.
+    - **Editing.** The editor saves a revision, then publishes it as the next version. Publishing waits until an edit
+      is saved.
+    - **Plain text.** A policy's text shows as plain, pre-wrapped Markdown: the web app has no Markdown renderer.
+    - **The "Acknowledge policy" card** (Basic) is on Home and in the Inbox. It lists the versions waiting for the
+      reader, each with its due day, or **Overdue**, and opens the text to read and accept. It shows nothing when
+      none waits.
+    - **Its own guide page.** `compliance-policies.md` (Basic, every role) has a page of its own instead of a section
+      of the risk page, because every member acknowledges. It is compiled into `kb/pages/task/compliance-policies.md`,
+      and the risk page links to it. The help keys are `policy.acknowledge` and `policy.publish`.
+    - **Component tests with axe** cover:
+      - acknowledgement pending and overdue;
+      - nothing waiting;
+      - a member's read-only library;
+      - the Compliance officer adopting Fyniq's draft and saving an edit.
 
 ## 8. Reviews and attestations (slice 8)
 
