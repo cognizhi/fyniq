@@ -24,6 +24,20 @@ Source: PRD-001 §14.7 · Priority M · Phase P1
 - **WHEN** the user filters the dashboard by a framework
 - **THEN** only the controls mapped to that framework are shown
 
+#### Scenario: A check that runs in CI shows the running release (rev 0.240)
+- **GIVEN** the platform runs a release, which passed every gate before it shipped
+- **WHEN** the dashboard shows a control checked in CI
+- **THEN** that check passes, naming the release, with the evidence attached to the release (the owner's decision of 9 Nov 2026)
+- **AND** in a development build it is not assessed
+
+#### Scenario: Checks of other kinds (rev 0.240)
+- **WHEN** a control is checked by an organisation's check of Appendix C, a platform job or an attestation
+- **THEN** that check shows the check's latest result, the job's latest run, or the attestation's due date and sign-off
+
+#### Scenario: A control's status is its worst check's (rev 0.240)
+- **WHEN** a control has several checks
+- **THEN** its status is the worst of theirs
+
 ### Requirement: CMP-02 Statutory calendar
 The Compliance Center SHALL generate a statutory calendar from the organisation's FY, GST periods, payroll and filing categories, with reminders and overdue items on Checks.
 
@@ -90,6 +104,11 @@ Source: PRD-001 §14.7 · Priority S · Phase P1
 - **THEN** it holds risks R1–R19 and any new risks
 - **AND** each risk has an owner and a review date
 
+#### Scenario: R1–R19 belong to the installation's operator (rev 0.240)
+- **WHEN** first-run setup creates the installation's first organisation (FR-ADM-06)
+- **THEN** R1–R19 are loaded into its register, each with an owner role and a quarterly review date (the owner's decision of 9 Nov 2026)
+- **AND** every other organisation's register starts empty
+
 ### Requirement: CMP-07 Policy library
 The Compliance Center SHALL keep a policy library with versions and staff acknowledgements.
 
@@ -103,6 +122,15 @@ Source: PRD-001 §14.7 · Priority S · Phase P1
 - **WHEN** a policy is published in a new version
 - **THEN** the version is kept
 - **AND** staff acknowledgements are recorded against it
+
+#### Scenario: Drafts from official sources (rev 0.240)
+- **WHEN** an organisation's policy library is first opened
+- **THEN** each policy starts as a draft written for a company of a few people from official sources (CSA's Cyber Essentials and Cyber Trust, the PDPC's guides, the IMDA frameworks), tagged [counsel to confirm] where the law bears on it (the owner's decision of 9 Nov 2026)
+
+#### Scenario: Who publishes, and who acknowledges (rev 0.240)
+- **WHEN** a policy version is published
+- **THEN** the Owner or the DPO publishes it (Appendix D, Policy library)
+- **AND** every member acknowledges it within 30 days of its publication
 
 ### Requirement: Control registry as code
 Every control SHALL live in the repository's control registry (`compliance/controls/*.yaml`) with its ID, description, owner, framework mappings, the automated check that proves it, its frequency and the evidence it produces.
@@ -138,6 +166,11 @@ Source: PRD-001 §14.1
 - **WHEN** a control check runs
 - **THEN** its evidence is stored in the `fyniq-audit` project with a time stamp
 - **AND** it is linked to the control and the commit or run that produced it
+
+#### Scenario: Evidence of the checks that run in CI (rev 0.240)
+- **WHEN** a release is published
+- **THEN** the evidence of the checks that ran in CI for it (the test, scan and image reports and the SBOM) is attached to its GitHub release and kept with it (the owner's decision of 9 Nov 2026)
+- **AND** it is copied into the `fyniq-audit` project with the cloud
 
 ### Requirement: The Compliance Center shows controls and raises tasks
 The Compliance Center SHALL show every control's status, last run, evidence and owner, plus the statutory calendar, and SHALL raise Inbox tasks when anything fails or falls due.
