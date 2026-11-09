@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -161,6 +161,14 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	breaches, err := u.Compliance().Breaches(ctx)
+	if err != nil {
+		return nil, err
+	}
+	exercises, err := u.Compliance().BreachExercises(ctx)
+	if err != nil {
+		return nil, err
+	}
 	features := map[string]bool{}
 	for key, setting := range registry.DPIAFeatures {
 		def, _ := settings.Lookup(setting)
@@ -192,6 +200,8 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		inventoryReview(members, inventory, today),
 		dpiaReview(features, ownEntries, dpias, approvals),
 		requestsReview(requests, today),
+		breachReview(breaches, today),
+		tabletopReview(members, exercises, today),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -201,7 +211,8 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
-	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request"}
+	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request",
+	"breach": "each breach", "breach-tabletop": "twice a year"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -473,7 +484,6 @@ func inventoryReview(members []storage.Member, reviews []storage.InventoryReview
 	return r
 }
 
-
 // DPIAName is how people say each of Fyniq's impact assessments' processing.
 var DPIAName = map[string]string{"payroll": "the payroll link", "ai-assistant": "the AI assistant"}
 
@@ -552,5 +562,97 @@ func requestsReview(requests []storage.PDRequest, today time.Time) Review {
 		r.Detail = fmt.Sprintf("%d access or correction request(s) wait for their answer, %d of them past their day.", r.Waiting, r.Overdue)
 	}
 	r.settle("No access or correction request waits.")
+	return r
+}
+
+// BreachTimers are a breach's two PDPA timers on today (CMP-PD-05): its assessment, due 30 days after awareness until it
+// is assessed; and, once it is decided notifiable, the PDPC's notification, due 3 calendar days after the decision until
+// it is made. A nil due day means that timer does not run.
+func BreachTimers(b storage.Breach) (assessment, pdpc *time.Time) {
+	assessed, notified := false, false
+	var due *time.Time
+	for _, s := range b.Steps {
+		switch s.Step {
+		case "assessed":
+			assessed = true
+		case "decided":
+			due = s.PDPCDueOn
+		case "pdpc_notified":
+			notified = true
+		}
+	}
+	if !assessed {
+		d := b.AssessmentDueOn
+		assessment = &d
+	}
+	if due != nil && !notified {
+		pdpc = due
+	}
+	return assessment, pdpc
+}
+
+// Breaches (CMP-PD-05, CTL-DP-06 E; rev 0.244): each open breach waits; one past its assessment's day, or past the
+// PDPC's once decided notifiable, is overdue.
+func breachReview(breaches []storage.Breach, today time.Time) Review {
+	r := Review{Kind: "breach", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each breach with its steps: assessed, decided notifiable or not, the PDPC notified with its reference, contained, closed"}
+	for _, b := range breaches {
+		closed := false
+		for _, s := range b.Steps {
+			if s.Step == "closed" {
+				closed = true
+				r.signed(s.By, s.At)
+			}
+		}
+		if closed {
+			continue
+		}
+		assessment, pdpc := BreachTimers(b)
+		switch {
+		case pdpc != nil:
+			r.wait(*pdpc, today.After(*pdpc))
+		case assessment != nil:
+			r.wait(*assessment, today.After(*assessment))
+		default:
+			r.Waiting++ // decided not notifiable, or notified, and not yet closed: no timer runs
+		}
+	}
+	if r.Waiting > 0 {
+		r.Detail = fmt.Sprintf("%d breach(es) are open, %d of them past a PDPA timer.", r.Waiting, r.Overdue)
+	}
+	r.settle("No breach is open.")
+	return r
+}
+
+// The tabletop exercise (CTL-DP-06 S): the breach runbook is rehearsed twice a year, the next due 6 months after the
+// last, or after the organisation began; it waits from 30 days before.
+func tabletopReview(members []storage.Member, exercises []storage.BreachExercise, today time.Time) Review {
+	r := Review{Kind: "breach-tabletop", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each exercise with its scenario and findings"}
+	from := today
+	for _, m := range members {
+		if d := m.Since.UTC().Truncate(24 * time.Hour); d.Before(from) {
+			from = d
+		}
+	}
+	var last *time.Time
+	for _, e := range exercises {
+		r.signed(e.RecordedBy, e.RecordedAt)
+		if last == nil || e.HeldOn.After(*last) {
+			held := e.HeldOn
+			last = &held
+		}
+	}
+	if last != nil {
+		from = *last
+	}
+	due := from.AddDate(0, 6, 0)
+	if !today.Before(due.AddDate(0, 0, -30)) {
+		r.wait(due, today.After(due))
+		r.Detail = fmt.Sprintf("The next tabletop exercise of the breach runbook is due by %s.", dayOf(due))
+	} else {
+		r.DueOn = &due
+	}
+	r.settle(fmt.Sprintf("The next tabletop exercise is due by %s.", dayOf(due)))
 	return r
 }

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ChevronRight, ClockAlert, Pencil, Plus, ShieldCheck } from "lucide-react";
+import { Archive, ChevronRight, ClockAlert, Pencil, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -30,7 +30,21 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpias" | "requests" | "dpo";
+type Tab = "inventory" | "dpias" | "requests" | "breaches" | "dpo";
+type Breach = components["schemas"]["BreachView"];
+type BreachClass = Breach["classes"][number];
+
+async function breaches() {
+  const { data, error } = await api.GET("/v1/compliance/breaches");
+  if (error) throw error;
+  return data.items;
+}
+
+async function exercises() {
+  const { data, error } = await api.GET("/v1/compliance/breach-exercises");
+  if (error) throw error;
+  return data.items;
+}
 type Request = components["schemas"]["PDRequestView"];
 type Report = components["schemas"]["PersonalDataReport"];
 
@@ -82,6 +96,9 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "requests"} onClick={() => setTab("requests")} title={helpText("data-protection.requests").tooltip}>
           Requests
         </button>
+        <button type="button" role="tab" aria-selected={tab === "breaches"} onClick={() => setTab("breaches")} title={helpText("data-protection.breaches").tooltip}>
+          Breaches
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
@@ -89,6 +106,7 @@ export function DataProtection() {
       {tab === "inventory" && <InventoryTab />}
       {tab === "dpias" && <DPIAsTab />}
       {tab === "requests" && <RequestsTab />}
+      {tab === "breaches" && <BreachesTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );
@@ -757,6 +775,358 @@ function StepForm({ request, onClose }: { request: Request; onClose: () => void 
           </Button>
           <Button variant="primary" type="submit" disabled={save.isPending}>
             Record the step
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+const classWords: Record<BreachClass, string> = {
+  names: "Names", identification_numbers: "NRIC, FIN or other identification numbers", pay: "Pay", bank_accounts: "Bank account numbers",
+  card_numbers: "Card numbers", credentials: "Sign-in identifiers with passwords", contact_details: "Contact details", other: "Other",
+};
+// breachNext are the steps the database accepts next (FY315): each once, nothing after closing, the decision after the
+// assessment, the PDPC only for a breach decided notifiable, and closing after the decision and any PDPC report.
+function breachNext(b: Breach): string[] {
+  const done = new Set<string>(b.steps.map((s) => s.step));
+  if (done.has("closed")) return [];
+  const notifiable = b.notifiable === true;
+  return ["assessed", "decided", "pdpc_notified", "individuals_notified", "contained", "closed"].filter(
+    (s) =>
+      !done.has(s) &&
+      (s !== "decided" || done.has("assessed")) &&
+      (s !== "pdpc_notified" || notifiable) &&
+      (s !== "closed" || (done.has("decided") && (!notifiable || done.has("pdpc_notified")))),
+  );
+}
+const breachStepWords: Record<string, string> = {
+  assessed: "Assessed", decided: "Decided whether it is notifiable", pdpc_notified: "Notified the PDPC", individuals_notified: "Told the people affected",
+  contained: "Contained", closed: "Closed",
+};
+
+// BreachesTab is the breach register with its PDPA timers (CMP-PD-05), and the tabletop exercises (CTL-DP-06): the
+// assessment due 30 days after awareness, and, once decided notifiable, the PDPC's 3 calendar days.
+function BreachesTab() {
+  const id = useId();
+  const { session } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const list = useQuery({ queryKey: ["breaches"], queryFn: breaches });
+  const ex = useQuery({ queryKey: ["breach-exercises"], queryFn: exercises });
+  const [recording, setRecording] = useState(false);
+  const [stepping, setStepping] = useState<Breach | null>(null);
+  const [exercising, setExercising] = useState(false);
+  if (list.isError) return <Refusal problem={problemOf(list.error)} title="The breach register could not be shown" />;
+  if (!list.data) return <p className="fy-small">Loading the breach register…</p>;
+  return (
+    <>
+      <section className="fy-card" aria-labelledby={`${id}-breaches`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-breaches`}>
+            Breach register
+          </h2>
+          {officer && (
+            <Button size="sm" onClick={() => setRecording(true)}>
+              <Icon of={Plus} />
+              Record a breach
+            </Button>
+          )}
+        </div>
+        {list.data.length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">No breach recorded. Record one, or a suspected one, as soon as the company becomes aware of it: its 30 days run from then.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-breaches`}>
+            {list.data.slice().reverse().map((b) => (
+              <li key={b.id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">{b.title}</span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {b.individuals} {b.individuals === 1 ? "person" : "people"} · {b.classes.map((c) => classWords[c]).join(", ")} · {breachStepWords[b.status] ?? "Recorded"}
+                  </span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {!b.steps.some((s) => s.step === "assessed") ? `Assess by ${date(b.assessment_due_on)}` : ""}
+                    {b.pdpc_due_on && !b.steps.some((s) => s.step === "pdpc_notified") ? `Notify the PDPC by ${date(b.pdpc_due_on)}` : ""}
+                    {b.notifiable === false ? "Decided not notifiable" : ""}
+                  </span>
+                </span>
+                {b.prescribed && (
+                  <span className="fy-chip fy-chip--warning" title="A name or identification number with pay, card or bank account numbers, or credentials: deemed to cause significant harm">
+                    <Icon of={TriangleAlert} />
+                    Prescribed data
+                  </span>
+                )}
+                {(b.assessment_overdue || b.pdpc_overdue) && (
+                  <span className="fy-chip fy-chip--critical">
+                    <Icon of={ClockAlert} />
+                    {b.pdpc_overdue ? "PDPC overdue" : "Assessment overdue"}
+                  </span>
+                )}
+                {officer && breachNext(b).length > 0 && (
+                  <Button size="sm" variant="secondary" onClick={() => setStepping(b)} aria-label={`Next step for ${b.title}`}>
+                    <Icon of={ShieldCheck} />
+                    Next step
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-exercises`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-exercises`} title={helpText("data-protection.tabletop").tooltip}>
+            Tabletop exercises
+          </h2>
+          {officer && (
+            <Button size="sm" onClick={() => setExercising(true)}>
+              <Icon of={Plus} />
+              Record an exercise
+            </Button>
+          )}
+        </div>
+        {(ex.data ?? []).length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">No exercise recorded. Rehearse the breach runbook twice a year.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-exercises`}>
+            {(ex.data ?? []).slice().reverse().map((x) => (
+              <li key={x.id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">
+                    {date(x.held_on)}: {x.scenario}
+                  </span>
+                  <span className="fy-list__meta whitespace-normal">{x.findings}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {recording && <BreachForm onClose={() => setRecording(false)} />}
+      {stepping && <BreachStepForm breach={stepping} onClose={() => setStepping(null)} />}
+      {exercising && <ExerciseForm onClose={() => setExercising(false)} />}
+    </>
+  );
+}
+
+// BreachForm records a breach, or a suspected one, from when the company became aware of it (CMP-PD-05).
+function BreachForm({ onClose }: { onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [form, setForm] = useState({ title: "", description: "", individuals: "0", classes: [] as BreachClass[] });
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/breaches", { params: { header: { "Idempotency-Key": newKey() } },
+          body: { title: form.title.trim(), description: form.description.trim(), individuals: Number(form.individuals) || 0, classes: form.classes } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["breaches", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const toggle = (c: BreachClass) => setForm({ ...form, classes: form.classes.includes(c) ? form.classes.filter((x) => x !== c) : [...form.classes, c] });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Breach register" title="Record a breach"
+      description="Record it as soon as the company becomes aware of it: the assessment is due 30 days from now. The Compliance officer, the Owner and the Auditor are told at once.">
+      {problem && <Refusal problem={problem} title="The breach was not recorded" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-title`}>
+            What happened, in a few words
+          </label>
+          <input className="fy-input" id={`${id}-title`} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-description`}>
+            What is known
+          </label>
+          <textarea className="fy-textarea" id={`${id}-description`} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-individuals`}>
+            How many people, as best known
+          </label>
+          <input className="fy-input" type="number" min={0} id={`${id}-individuals`} value={form.individuals} onChange={(e) => setForm({ ...form, individuals: e.target.value })} />
+        </div>
+        <fieldset className="fy-field">
+          <legend className="fy-label">The data involved</legend>
+          {(Object.keys(classWords) as BreachClass[]).map((c) => (
+            <label key={c} className="fy-check">
+              <input type="checkbox" checked={form.classes.includes(c)} onChange={() => toggle(c)} />
+              {classWords[c]}
+            </label>
+          ))}
+        </fieldset>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending || form.classes.length === 0}>
+            Record it
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// BreachStepForm adds a breach's next step (CMP-PD-05): assessed; decided notifiable or not (a breach of prescribed data,
+// or of 500 or more people, is notifiable); the PDPC notified with its reference; the people told; contained; closed.
+function BreachStepForm({ breach, onClose }: { breach: Breach; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const steps = breachNext(breach);
+  const forced = breach.prescribed || breach.individuals >= 500;
+  const [form, setForm] = useState({ step: steps[0]!, note: "", notifiable: true, reference: "" });
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const body = { step: form.step as "assessed", note: form.note.trim() || undefined, notifiable: form.step === "decided" ? form.notifiable : undefined,
+        reference: form.step === "pdpc_notified" ? form.reference.trim() : undefined };
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/breaches/{breach_id}/steps", { params: { path: { breach_id: breach.id }, header: { "Idempotency-Key": newKey(), "If-Match": `"s${breach.steps.length}"` } }, body }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["breaches", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow={breach.title} title="Next step"
+      description={!breach.steps.some((s) => s.step === "assessed") ? `Assess it by ${date(breach.assessment_due_on)}.` : breach.pdpc_due_on ? `Notify the PDPC by ${date(breach.pdpc_due_on)}.` : undefined}>
+      {problem && <Refusal problem={problem} title="The step was not recorded" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-step`}>
+            Step
+          </label>
+          <select className="fy-select" id={`${id}-step`} value={form.step} onChange={(e) => setForm({ ...form, step: e.target.value })}>
+            {steps.map((s) => (
+              <option key={s} value={s}>
+                {breachStepWords[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {form.step === "decided" && (
+          <fieldset className="fy-field" aria-describedby={`${id}-forced`}>
+            <legend className="fy-label">Is it notifiable?</legend>
+            <label className="fy-check">
+              <input type="radio" name={`${id}-n`} checked={form.notifiable} onChange={() => setForm({ ...form, notifiable: true })} />
+              Yes: likely to cause significant harm, or 500 or more people
+            </label>
+            <label className="fy-check">
+              <input type="radio" name={`${id}-n`} checked={!form.notifiable} disabled={forced} onChange={() => setForm({ ...form, notifiable: false })} />
+              No
+            </label>
+            {forced && (
+              <span className="fy-help" id={`${id}-forced`}>
+                Its data is prescribed, or it affects 500 or more people: the law deems it notifiable.
+              </span>
+            )}
+          </fieldset>
+        )}
+        {form.step === "pdpc_notified" && (
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-ref`}>
+              The PDPC's reference
+            </label>
+            <input className="fy-input" id={`${id}-ref`} value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
+          </div>
+        )}
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-note`}>
+            Note (optional)
+          </label>
+          <textarea className="fy-textarea" id={`${id}-note`} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending || (form.step === "pdpc_notified" && form.reference.trim() === "")}>
+            Record the step
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// ExerciseForm records a tabletop exercise of the breach runbook (CTL-DP-06).
+function ExerciseForm({ onClose }: { onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [form, setForm] = useState({ held_on: "", scenario: "", findings: "" });
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/breach-exercises", { params: { header: { "Idempotency-Key": newKey() } },
+          body: { held_on: form.held_on, scenario: form.scenario.trim(), findings: form.findings.trim() } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["breach-exercises", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Breach register" title="Record a tabletop exercise"
+      description="A rehearsal of the breach runbook: the next is due 6 months after it.">
+      {problem && <Refusal problem={problem} title="The exercise was not recorded" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-held`}>
+            Held on
+          </label>
+          <input className="fy-input" type="date" id={`${id}-held`} value={form.held_on} onChange={(e) => setForm({ ...form, held_on: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-scenario`}>
+            The breach rehearsed
+          </label>
+          <textarea className="fy-textarea" id={`${id}-scenario`} value={form.scenario} onChange={(e) => setForm({ ...form, scenario: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-findings`}>
+            What it found and what changed
+          </label>
+          <textarea className="fy-textarea" id={`${id}-findings`} value={form.findings} onChange={(e) => setForm({ ...form, findings: e.target.value })} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending || !form.held_on}>
+            Record it
           </Button>
         </div>
       </form>

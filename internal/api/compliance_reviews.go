@@ -18,10 +18,10 @@ import (
 
 // ComplianceReview is a recurring review people sign off, as it stands for the organisation (CMP-03, design D6).
 type ComplianceReview struct {
-	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests" doc:"The review." example:"access-review"`
+	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests,breach,breach-tabletop" doc:"The review." example:"access-review"`
 	Title       string             `json:"title" doc:"What it is, in a sentence." example:"An Owner attests the access review (each quarter)"`
 	Owner       string             `json:"owner" enum:"owner,controller,accountant,dpo,member" doc:"The role that signs it off; member when each member signs for themselves." example:"owner"`
-	Cadence     string             `json:"cadence" enum:"weekly,quarterly,monthly,each use,each version,by review date,each processing,each request" doc:"How often it falls due." example:"quarterly"`
+	Cadence     string             `json:"cadence" enum:"weekly,quarterly,monthly,each use,each version,by review date,each processing,each request,each breach,twice a year" doc:"How often it falls due." example:"quarterly"`
 	Status      string             `json:"status" enum:"signed,due,overdue,nothing_due,not_applicable" doc:"overdue: something waits past its time; due: something waits within it; signed: nothing waits and it was signed off before; nothing_due: nothing waits and nothing was ever signed off; not_applicable: the team mode does not call for it." example:"due"`
 	Period      string             `json:"period,omitempty" doc:"The period that waits, as people say it." example:"Q3 2026"`
 	DueOn       string             `json:"due_on,omitempty" format:"date" doc:"When the earliest waiting item falls due; for the risk reviews, the next review date." example:"2026-10-14"`
@@ -63,10 +63,10 @@ func registerComplianceReviews(a *API) {
 		Description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each " +
 			"quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's " +
 			"post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact " +
-			"assessments and the access and correction requests. Each " +
+			"assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each " +
 			"comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, " +
 			"its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.",
-	}, "cursor", "The recurring reviews, ten of them, read whole: one summary per kind, each worked out from its own records."),
+	}, "cursor", "The recurring reviews, twelve of them, read whole: one summary per kind, each worked out from its own records."),
 		[]string{storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, _ *struct{}) (*complianceReviewsOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()

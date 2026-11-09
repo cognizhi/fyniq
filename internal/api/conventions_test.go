@@ -54,14 +54,15 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "reviewCheckItem If-Match")
 	// A trail's recoveries are one per restore behind its anchors, read whole (AUD-09, design D8).
 	want = append(want, "listAuditRecoveries cursor", "listAuditPurges cursor")
-	want = append(want, "listControls cursor", "getControl cursor") // the control dashboard (CMP-01)
-	want = append(want, "listRisks cursor")                         // the risk register (CMP-06)
-	want = append(want, "listComplianceReviews cursor")             // the recurring reviews (CMP-03)
-	want = append(want, "listPolicies cursor", "getPolicy cursor")  // the policy library (CMP-07)
-	want = append(want, "listConsentPurposes cursor", "listConsents cursor") // consent (CMP-PD-03)
-	want = append(want, "getDataInventory cursor")                           // the inventory (CMP-PD-02)
-	want = append(want, "listDPIAs cursor", "getDPIA cursor")                // the impact assessments (CMP-PD-08)
+	want = append(want, "listControls cursor", "getControl cursor")                                                             // the control dashboard (CMP-01)
+	want = append(want, "listRisks cursor")                                                                                     // the risk register (CMP-06)
+	want = append(want, "listComplianceReviews cursor")                                                                         // the recurring reviews (CMP-03)
+	want = append(want, "listPolicies cursor", "getPolicy cursor")                                                              // the policy library (CMP-07)
+	want = append(want, "listConsentPurposes cursor", "listConsents cursor")                                                    // consent (CMP-PD-03)
+	want = append(want, "getDataInventory cursor")                                                                              // the inventory (CMP-PD-02)
+	want = append(want, "listDPIAs cursor", "getDPIA cursor")                                                                   // the impact assessments (CMP-PD-08)
 	want = append(want, "listPersonalDataRequests cursor", "getPersonalDataReport cursor", "listMyPersonalDataRequests cursor") // CMP-PD-04
+	want = append(want, "listBreaches cursor", "listBreachExercises cursor")                                                    // CMP-PD-05, CTL-DP-06
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "What was found or done.",
+      "examples": [
+        "Significant harm likely."
+      ],
+      "maxLength": 4000,
+      "type": "string"
+    },
+    "notifiable": {
+      "description": "With decided: whether it is notifiable.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "reference": {
+      "description": "With pdpc_notified: the PDPC's reference.",
+      "examples": [
+        "DBN-2026-0123"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "step": {
+      "description": "The step.",
+      "enum": [
+        "assessed",
+        "decided",
+        "pdpc_notified",
+        "individuals_notified",
+        "contained",
+        "closed"
+      ],
+      "examples": [
+        "decided"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step"
+  ],
+  "title": "BreachStepInput",
+  "type": "object"
+}

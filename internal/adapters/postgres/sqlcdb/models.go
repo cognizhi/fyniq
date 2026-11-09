@@ -1710,6 +1710,43 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPdBreach struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Title           string
+	Description     string
+	AwareAt         time.Time
+	AssessmentDueOn time.Time
+	Individuals     int32
+	Classes         []string
+	Prescribed      bool
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+type FyniqPdBreachExercise struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	HeldOn         time.Time
+	Scenario       string
+	Findings       string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqPdBreachStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BreachID       uuid.UUID
+	Step           string
+	At             time.Time
+	ByActor        string
+	Note           *string
+	Notifiable     *bool
+	PdpcDueOn      pgtype.Date
+	Reference      *string
+}
+
 type FyniqPdRequest struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

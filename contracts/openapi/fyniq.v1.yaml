@@ -6221,6 +6221,331 @@ components:
         - size_bytes
         - sha256
       type: object
+    BreachExerciseInput:
+      additionalProperties: false
+      properties:
+        findings:
+          description: What it found and what changed.
+          examples:
+            - The runbook now names who calls the PDPC.
+          maxLength: 8000
+          minLength: 1
+          type: string
+        held_on:
+          description: When it was held, today or earlier.
+          examples:
+            - "2026-11-09"
+          format: date
+          type: string
+        scenario:
+          description: The breach it rehearsed.
+          examples:
+            - A laptop with the payroll export is stolen.
+          maxLength: 4000
+          minLength: 1
+          type: string
+      required:
+        - held_on
+        - scenario
+        - findings
+      type: object
+    BreachExerciseView:
+      additionalProperties: false
+      properties:
+        findings:
+          description: What it found and what changed.
+          examples:
+            - The runbook now names who calls the PDPC.
+          type: string
+        held_on:
+          description: When it was held.
+          examples:
+            - "2026-11-09"
+          format: date
+          type: string
+        id:
+          description: The exercise.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        recorded_by:
+          description: Who recorded it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        scenario:
+          description: The breach it rehearsed.
+          examples:
+            - A laptop with the payroll export is stolen.
+          type: string
+      required:
+        - id
+        - held_on
+        - scenario
+        - findings
+        - recorded_by
+      type: object
+    BreachInput:
+      additionalProperties: false
+      properties:
+        aware_at:
+          description: When the company became aware of it; left out, now. Never later than now.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        classes:
+          description: The kinds of data involved.
+          items:
+            description: "A kind of data: a name or identification number with pay, card or bank account numbers, or credentials, is prescribed."
+            enum:
+              - names
+              - identification_numbers
+              - pay
+              - bank_accounts
+              - card_numbers
+              - credentials
+              - contact_details
+              - other
+            examples:
+              - pay
+            type: string
+          minItems: 1
+          type:
+            - array
+            - "null"
+        description:
+          description: What happened, as known now.
+          examples:
+            - The October payroll file went to a supplier's address.
+          maxLength: 8000
+          minLength: 1
+          type: string
+        individuals:
+          description: How many people, as best known.
+          examples:
+            - 12
+          format: int64
+          minimum: 0
+          type: integer
+        title:
+          description: What happened, in a few words.
+          examples:
+            - A payroll file emailed to the wrong person
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - title
+        - description
+        - individuals
+        - classes
+      type: object
+    BreachStepInput:
+      additionalProperties: false
+      properties:
+        note:
+          description: What was found or done.
+          examples:
+            - Significant harm likely.
+          maxLength: 4000
+          type: string
+        notifiable:
+          description: "With decided: whether it is notifiable."
+          examples:
+            - true
+          type: boolean
+        reference:
+          description: "With pdpc_notified: the PDPC's reference."
+          examples:
+            - DBN-2026-0123
+          maxLength: 200
+          type: string
+        step:
+          description: The step.
+          enum:
+            - assessed
+            - decided
+            - pdpc_notified
+            - individuals_notified
+            - contained
+            - closed
+          examples:
+            - decided
+          type: string
+      required:
+        - step
+      type: object
+    BreachStepView:
+      additionalProperties: false
+      properties:
+        at:
+          description: When.
+          examples:
+            - "2026-11-10T02:00:00Z"
+          format: date-time
+          type: string
+        by:
+          description: Who, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        note:
+          description: What was found or done.
+          examples:
+            - "Significant harm likely: pay and names."
+          type: string
+        notifiable:
+          description: "decided's: whether it is notifiable."
+          examples:
+            - true
+          type: boolean
+        reference:
+          description: "pdpc_notified's: the PDPC's reference."
+          examples:
+            - DBN-2026-0123
+          type: string
+        step:
+          description: The step.
+          enum:
+            - assessed
+            - decided
+            - pdpc_notified
+            - individuals_notified
+            - contained
+            - closed
+          examples:
+            - decided
+          type: string
+      required:
+        - step
+        - at
+        - by
+      type: object
+    BreachView:
+      additionalProperties: false
+      properties:
+        assessment_due_on:
+          description: "The last day to assess it: 30 days after awareness, in Singapore."
+          examples:
+            - "2026-12-09"
+          format: date
+          type: string
+        assessment_overdue:
+          description: true when it is not assessed and that day has passed.
+          examples:
+            - false
+          type: boolean
+        aware_at:
+          description: "When the company became aware of it: the assessment's 30 days run from it."
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        classes:
+          description: The kinds of data involved.
+          items:
+            description: "A kind of data: a name or identification number with pay, card or bank account numbers, or credentials, is prescribed."
+            enum:
+              - names
+              - identification_numbers
+              - pay
+              - bank_accounts
+              - card_numbers
+              - credentials
+              - contact_details
+              - other
+            examples:
+              - pay
+            type: string
+          type: array
+        description:
+          description: What happened.
+          examples:
+            - The October payroll file went to a supplier's address.
+          type: string
+        id:
+          description: The breach.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        individuals:
+          description: How many people, as best known.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        notifiable:
+          description: Whether it was decided notifiable; absent before the decision.
+          examples:
+            - true
+          type: boolean
+        pdpc_due_on:
+          description: "Once decided notifiable: the last day to notify the PDPC, 3 calendar days after the decision."
+          examples:
+            - "2026-11-12"
+          format: date
+          type: string
+        pdpc_overdue:
+          description: true when the PDPC is not notified and that day has passed.
+          examples:
+            - false
+          type: boolean
+        prescribed:
+          description: "true when the data is prescribed: a name or identification number with pay, card or bank account numbers, or an account's identifier with its password. Such a breach is deemed to cause significant harm, so it is notifiable."
+          examples:
+            - true
+          type: boolean
+        status:
+          description: Its latest step.
+          enum:
+            - recorded
+            - assessed
+            - decided
+            - pdpc_notified
+            - individuals_notified
+            - contained
+            - closed
+          examples:
+            - decided
+          type: string
+        steps:
+          description: Its steps, oldest first.
+          items:
+            $ref: "#/components/schemas/BreachStepView"
+          type: array
+        title:
+          description: What happened, in a few words.
+          examples:
+            - A payroll file emailed to the wrong person
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - aware_at
+        - individuals
+        - classes
+        - prescribed
+        - assessment_due_on
+        - assessment_overdue
+        - pdpc_overdue
+        - status
+        - steps
+      type: object
+    BreachesOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The breaches, oldest first.
+          items:
+            $ref: "#/components/schemas/BreachView"
+          type: array
+      required:
+        - items
+      type: object
     BreakGlass:
       additionalProperties: false
       properties:
@@ -9932,6 +10257,8 @@ components:
             - by review date
             - each processing
             - each request
+            - each breach
+            - twice a year
           examples:
             - quarterly
           type: string
@@ -9973,6 +10300,8 @@ components:
             - data-inventory
             - dpia
             - pd-requests
+            - breach
+            - breach-tabletop
           examples:
             - access-review
           type: string
@@ -17350,6 +17679,17 @@ components:
         - decided
         - exempt
         - differs
+      type: object
+    ExercisesOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The tabletop exercises, oldest first.
+          items:
+            $ref: "#/components/schemas/BreachExerciseView"
+          type: array
+      required:
+        - items
       type: object
     ExpenseClaim:
       additionalProperties: false
@@ -68520,6 +68860,751 @@ paths:
       x-fyniq-permission:
         capability: Period close / reopen
         right: C
+  /v1/compliance/breach-exercises:
+    get:
+      description: The tabletop exercises of the breach runbook (CTL-DP-06), held twice a year. Read-only; no side effects.
+      operationId: listBreachExercises
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExercisesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the tabletop exercises
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: Two exercises a year, read whole as one register.
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: V
+    post:
+      description: "Records a tabletop exercise of the breach runbook, with its scenario and findings (CTL-DP-06): the next is due 6 months on. Side effects: the exercise, the audit event breach_exercise.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: recordBreachExercise
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreachExerciseInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreachExerciseView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record a tabletop exercise
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-BREACH-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
+  /v1/compliance/breaches:
+    get:
+      description: "Every personal-data breach (CMP-PD-05) with its PDPA timers: the assessment, due 30 days after awareness, and, once decided notifiable, the PDPC's notification, due 3 calendar days after the decision; whether its data is prescribed; and its steps. Read-only; no side effects."
+      operationId: listBreaches
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreachesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the breach register
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: A company records few breaches, read whole as one register.
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: V
+    post:
+      description: "Records a breach, or a suspected one, as soon as the company becomes aware of it (CMP-PD-05): its assessment is due 30 days on. Fyniq works out whether its data is prescribed, which makes it notifiable. Side effects: the breach, the audit event breach.recorded, a critical notice to the Compliance officer, the Owner and the Auditor. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: recordBreach
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreachInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreachView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The breach's steps, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record a personal-data breach
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-BREACH-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
+  /v1/compliance/breaches/{breach_id}/steps:
+    post:
+      description: "Records that a breach was assessed, decided notifiable or not (a breach of prescribed data, or of 500 or more people, is notifiable), reported to the PDPC with its reference, told to the people affected, contained, or closed (CMP-PD-05). Deciding it notifiable starts the PDPC's 3 calendar days and sends a critical notice. Side effects: the step, the audit event breach.<step>. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: stepBreach
+      parameters:
+        - description: The breach.
+          in: path
+          name: breach_id
+          required: true
+          schema:
+            description: The breach.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreachStepInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreachView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The breach's steps, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Add a breach's next step
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-BREACH-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
   /v1/compliance/calendar:
     get:
       description: "Every filing and payment deadline due in a window of at most 18 months, with each earlier one still overdue (FR-TAX-07, CMP-02, design D5): GST F5 for each return period, CPF and IR8A/AIS while the organisation pays staff, ECI, Form C-S/C, the annual return and the AGM or the financial statements to members for each financial year, and applying to register for GST while the monitor finds a test met. Each day comes from the sg-deadlines pack, with the rule's words and sources, from the organisation's years, registrations and settings. An item whose input is missing is not assessed and says which. Read-only; no side effects."
@@ -74342,7 +75427,7 @@ paths:
         right: V
   /v1/compliance/reviews:
     get:
-      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments and the access and correction requests. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
+      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
       operationId: listComplianceReviews
       responses:
         "200":
@@ -74440,7 +75525,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-exempt:
-        cursor: "The recurring reviews, ten of them, read whole: one summary per kind, each worked out from its own records."
+        cursor: "The recurring reviews, twelve of them, read whole: one summary per kind, each worked out from its own records."
       x-fyniq-permission:
         capability: Compliance Center
         right: V

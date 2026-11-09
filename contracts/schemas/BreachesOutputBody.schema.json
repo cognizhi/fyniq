@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The breaches, oldest first.",
+      "items": {
+        "$ref": "BreachView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "BreachesOutputBody",
+  "type": "object"
+}

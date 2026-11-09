@@ -1322,6 +1322,34 @@ payment_batch_release | currency | text | not null |
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
 payment_batch_release | break_glass_id | uuid | null | 
+pd_breach | organisation_id | uuid | not null | current_org()
+pd_breach | id | uuid | not null | uuidv7()
+pd_breach | title | text | not null | 
+pd_breach | description | text | not null | 
+pd_breach | aware_at | timestamp with time zone | not null | 
+pd_breach | assessment_due_on | date | not null | 
+pd_breach | individuals | integer | not null | 
+pd_breach | classes | text[] | not null | 
+pd_breach | prescribed | boolean | not null | 
+pd_breach | recorded_by | text | not null | 
+pd_breach | recorded_at | timestamp with time zone | not null | 
+pd_breach_exercise | organisation_id | uuid | not null | current_org()
+pd_breach_exercise | id | uuid | not null | uuidv7()
+pd_breach_exercise | held_on | date | not null | 
+pd_breach_exercise | scenario | text | not null | 
+pd_breach_exercise | findings | text | not null | 
+pd_breach_exercise | recorded_by | text | not null | 
+pd_breach_exercise | recorded_at | timestamp with time zone | not null | 
+pd_breach_step | organisation_id | uuid | not null | current_org()
+pd_breach_step | id | uuid | not null | uuidv7()
+pd_breach_step | breach_id | uuid | not null | 
+pd_breach_step | step | text | not null | 
+pd_breach_step | at | timestamp with time zone | not null | 
+pd_breach_step | by_actor | text | not null | 
+pd_breach_step | note | text | null | 
+pd_breach_step | notifiable | boolean | null | 
+pd_breach_step | pdpc_due_on | date | null | 
+pd_breach_step | reference | text | null | 
 pd_request | organisation_id | uuid | not null | current_org()
 pd_request | id | uuid | not null | uuidv7()
 pd_request | kind | text | not null | 
@@ -3891,6 +3919,53 @@ payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organi
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
 payment_batch_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_breach | pd_breach_assessment_due | CHECK ((assessment_due_on = (((aware_at AT TIME ZONE 'Asia/Singapore'::text))::date + 30)))
+pd_breach | pd_breach_assessment_due_on_not_null | NOT NULL assessment_due_on
+pd_breach | pd_breach_aware_at_not_null | NOT NULL aware_at
+pd_breach | pd_breach_classes_known | CHECK (((classes <@ ARRAY['names'::text, 'identification_numbers'::text, 'pay'::text, 'bank_accounts'::text, 'card_numbers'::text, 'credentials'::text, 'contact_details'::text, 'other'::text]) AND (cardinality(classes) > 0)))
+pd_breach | pd_breach_classes_not_null | NOT NULL classes
+pd_breach | pd_breach_description_not_null | NOT NULL description
+pd_breach | pd_breach_id_not_null | NOT NULL id
+pd_breach | pd_breach_individuals | CHECK ((individuals >= 0))
+pd_breach | pd_breach_individuals_not_null | NOT NULL individuals
+pd_breach | pd_breach_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_breach | pd_breach_organisation_id_not_null | NOT NULL organisation_id
+pd_breach | pd_breach_pkey | PRIMARY KEY (organisation_id, id)
+pd_breach | pd_breach_prescribed | CHECK ((prescribed = (((classes && ARRAY['names'::text, 'identification_numbers'::text]) AND (classes && ARRAY['pay'::text, 'bank_accounts'::text, 'card_numbers'::text])) OR ('credentials'::text = ANY (classes)))))
+pd_breach | pd_breach_prescribed_not_null | NOT NULL prescribed
+pd_breach | pd_breach_recorded_at_not_null | NOT NULL recorded_at
+pd_breach | pd_breach_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_breach | pd_breach_recorded_by_not_null | NOT NULL recorded_by
+pd_breach | pd_breach_texts | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(btrim(description)) >= 1) AND (length(btrim(description)) <= 8000))))
+pd_breach | pd_breach_title_not_null | NOT NULL title
+pd_breach | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_breach_exercise | pd_breach_exercise_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_breach_exercise | pd_breach_exercise_findings_not_null | NOT NULL findings
+pd_breach_exercise | pd_breach_exercise_held_on_not_null | NOT NULL held_on
+pd_breach_exercise | pd_breach_exercise_id_not_null | NOT NULL id
+pd_breach_exercise | pd_breach_exercise_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_breach_exercise | pd_breach_exercise_organisation_id_not_null | NOT NULL organisation_id
+pd_breach_exercise | pd_breach_exercise_pkey | PRIMARY KEY (organisation_id, id)
+pd_breach_exercise | pd_breach_exercise_recorded_at_not_null | NOT NULL recorded_at
+pd_breach_exercise | pd_breach_exercise_recorded_by_not_null | NOT NULL recorded_by
+pd_breach_exercise | pd_breach_exercise_scenario_not_null | NOT NULL scenario
+pd_breach_exercise | pd_breach_exercise_texts | CHECK ((((length(btrim(scenario)) >= 1) AND (length(btrim(scenario)) <= 4000)) AND ((length(btrim(findings)) >= 1) AND (length(btrim(findings)) <= 8000))))
+pd_breach_exercise | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_breach_step | pd_breach_step_at_not_null | NOT NULL at
+pd_breach_step | pd_breach_step_breach_fkey | FOREIGN KEY (organisation_id, breach_id) REFERENCES pd_breach(organisation_id, id)
+pd_breach_step | pd_breach_step_breach_id_not_null | NOT NULL breach_id
+pd_breach_step | pd_breach_step_by_actor_not_null | NOT NULL by_actor
+pd_breach_step | pd_breach_step_by_format | CHECK ((by_actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_breach_step | pd_breach_step_decision | CHECK (((step = 'decided'::text) = (notifiable IS NOT NULL)))
+pd_breach_step | pd_breach_step_id_not_null | NOT NULL id
+pd_breach_step | pd_breach_step_known | CHECK ((step = ANY (ARRAY['assessed'::text, 'decided'::text, 'pdpc_notified'::text, 'individuals_notified'::text, 'contained'::text, 'closed'::text])))
+pd_breach_step | pd_breach_step_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 4000)))
+pd_breach_step | pd_breach_step_organisation_id_not_null | NOT NULL organisation_id
+pd_breach_step | pd_breach_step_pdpc_due | CHECK ((((pdpc_due_on IS NOT NULL) = ((step = 'decided'::text) AND notifiable)) AND ((pdpc_due_on IS NULL) OR (pdpc_due_on = (((at AT TIME ZONE 'Asia/Singapore'::text))::date + 3)))))
+pd_breach_step | pd_breach_step_pkey | PRIMARY KEY (organisation_id, id)
+pd_breach_step | pd_breach_step_reference | CHECK ((((step = 'pdpc_notified'::text) = (reference IS NOT NULL)) AND ((reference IS NULL) OR ((length(btrim(reference)) >= 1) AND (length(btrim(reference)) <= 200)))))
+pd_breach_step | pd_breach_step_step_not_null | NOT NULL step
+pd_breach_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pd_request | pd_request_created_at_not_null | NOT NULL created_at
 pd_request | pd_request_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 pd_request | pd_request_created_by_not_null | NOT NULL created_by
@@ -4693,6 +4768,7 @@ CREATE INDEX operation_job ON fyniq.operation USING btree (organisation_id, job_
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
+CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
@@ -4931,6 +5007,9 @@ CREATE UNIQUE INDEX payment_batch_payment_once ON fyniq.payment_batch_payment US
 CREATE UNIQUE INDEX payment_batch_payment_pkey ON fyniq.payment_batch_payment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payment_batch_release_once ON fyniq.payment_batch_release USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX payment_batch_release_pkey ON fyniq.payment_batch_release USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_breach_exercise_pkey ON fyniq.pd_breach_exercise USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_breach_pkey ON fyniq.pd_breach USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_breach_step_pkey ON fyniq.pd_breach_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_pkey ON fyniq.pd_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_step_pkey ON fyniq.pd_request_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
@@ -5068,6 +5147,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_exercise DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach_exercise', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'breach_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
@@ -5382,6 +5464,12 @@ CREATE TRIGGER payment_batch_payment_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER payment_batch_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_payment FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_payment_guard()
 CREATE TRIGGER payment_batch_release_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payment_batch_release FOR EACH ROW EXECUTE FUNCTION payment_batch_release_guard()
 CREATE TRIGGER payment_batch_release_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_release FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_release_guard()
+CREATE TRIGGER pd_breach_exercise_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach_exercise FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
+CREATE TRIGGER pd_breach_exercise_no_truncate BEFORE TRUNCATE ON fyniq.pd_breach_exercise FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_breach_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
+CREATE TRIGGER pd_breach_no_truncate BEFORE TRUNCATE ON fyniq.pd_breach FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_breach_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach_step FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
+CREATE TRIGGER pd_breach_step_no_truncate BEFORE TRUNCATE ON fyniq.pd_breach_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
 CREATE TRIGGER pd_request_no_truncate BEFORE TRUNCATE ON fyniq.pd_request FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_request_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request_step FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
@@ -5557,6 +5645,9 @@ owner_succession | tenant_isolation | * | (organisation_id = current_org()) | (o
 payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_breach | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_breach_exercise | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_breach_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5714,6 +5805,9 @@ owner_succession | enabled | forced
 payee_bank_account | enabled | forced
 payment_batch_payment | enabled | forced
 payment_batch_release | enabled | forced
+pd_breach | enabled | forced
+pd_breach_exercise | enabled | forced
+pd_breach_step | enabled | forced
 pd_request | enabled | forced
 pd_request_step | enabled | forced
 period | enabled | forced
@@ -5984,6 +6078,7 @@ payment_batch_approved() → trigger | security invoker | v | search_path=pg_cat
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
+pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The tabletop exercises, oldest first.",
+      "items": {
+        "$ref": "BreachExerciseView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ExercisesOutputBody",
+  "type": "object"
+}

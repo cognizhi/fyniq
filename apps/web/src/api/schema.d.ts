@@ -2740,6 +2740,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/breach-exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tabletop exercises
+         * @description The tabletop exercises of the breach runbook (CTL-DP-06), held twice a year. Read-only; no side effects.
+         */
+        get: operations["listBreachExercises"];
+        put?: never;
+        /**
+         * Record a tabletop exercise
+         * @description Records a tabletop exercise of the breach runbook, with its scenario and findings (CTL-DP-06): the next is due 6 months on. Side effects: the exercise, the audit event breach_exercise.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordBreachExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/breaches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the breach register
+         * @description Every personal-data breach (CMP-PD-05) with its PDPA timers: the assessment, due 30 days after awareness, and, once decided notifiable, the PDPC's notification, due 3 calendar days after the decision; whether its data is prescribed; and its steps. Read-only; no side effects.
+         */
+        get: operations["listBreaches"];
+        put?: never;
+        /**
+         * Record a personal-data breach
+         * @description Records a breach, or a suspected one, as soon as the company becomes aware of it (CMP-PD-05): its assessment is due 30 days on. Fyniq works out whether its data is prescribed, which makes it notifiable. Side effects: the breach, the audit event breach.recorded, a critical notice to the Compliance officer, the Owner and the Auditor. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordBreach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/breaches/{breach_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a breach's next step
+         * @description Records that a breach was assessed, decided notifiable or not (a breach of prescribed data, or of 500 or more people, is notifiable), reported to the PDPC with its reference, told to the people affected, contained, or closed (CMP-PD-05). Deciding it notifiable starts the PDPC's 3 calendar days and sends a critical notice. Side effects: the step, the audit event breach.<step>. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["stepBreach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/calendar": {
         parameters: {
             query?: never;
@@ -3325,7 +3393,7 @@ export interface paths {
         };
         /**
          * List the recurring reviews and attestations
-         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments and the access and correction requests. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
+         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
          */
         get: operations["listComplianceReviews"];
         put?: never;
@@ -16867,6 +16935,212 @@ export interface components {
              */
             size_bytes: number;
         };
+        BreachExerciseInput: {
+            /**
+             * @description What it found and what changed.
+             * @example The runbook now names who calls the PDPC.
+             */
+            findings: string;
+            /**
+             * Format: date
+             * @description When it was held, today or earlier.
+             * @example 2026-11-09
+             */
+            held_on: string;
+            /**
+             * @description The breach it rehearsed.
+             * @example A laptop with the payroll export is stolen.
+             */
+            scenario: string;
+        };
+        BreachExerciseView: {
+            /**
+             * @description What it found and what changed.
+             * @example The runbook now names who calls the PDPC.
+             */
+            findings: string;
+            /**
+             * Format: date
+             * @description When it was held.
+             * @example 2026-11-09
+             */
+            held_on: string;
+            /**
+             * Format: uuid
+             * @description The exercise.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description The breach it rehearsed.
+             * @example A laptop with the payroll export is stolen.
+             */
+            scenario: string;
+        };
+        BreachInput: {
+            /**
+             * Format: date-time
+             * @description When the company became aware of it; left out, now. Never later than now.
+             * @example 2026-11-09T02:00:00Z
+             */
+            aware_at?: string;
+            /** @description The kinds of data involved. */
+            classes: ("names" | "identification_numbers" | "pay" | "bank_accounts" | "card_numbers" | "credentials" | "contact_details" | "other")[] | null;
+            /**
+             * @description What happened, as known now.
+             * @example The October payroll file went to a supplier's address.
+             */
+            description: string;
+            /**
+             * Format: int64
+             * @description How many people, as best known.
+             * @example 12
+             */
+            individuals: number;
+            /**
+             * @description What happened, in a few words.
+             * @example A payroll file emailed to the wrong person
+             */
+            title: string;
+        };
+        BreachStepInput: {
+            /**
+             * @description What was found or done.
+             * @example Significant harm likely.
+             */
+            note?: string;
+            /**
+             * @description With decided: whether it is notifiable.
+             * @example true
+             */
+            notifiable?: boolean;
+            /**
+             * @description With pdpc_notified: the PDPC's reference.
+             * @example DBN-2026-0123
+             */
+            reference?: string;
+            /**
+             * @description The step.
+             * @example decided
+             * @enum {string}
+             */
+            step: "assessed" | "decided" | "pdpc_notified" | "individuals_notified" | "contained" | "closed";
+        };
+        BreachStepView: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-10T02:00:00Z
+             */
+            at: string;
+            /**
+             * @description Who, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            by: string;
+            /**
+             * @description What was found or done.
+             * @example Significant harm likely: pay and names.
+             */
+            note?: string;
+            /**
+             * @description decided's: whether it is notifiable.
+             * @example true
+             */
+            notifiable?: boolean;
+            /**
+             * @description pdpc_notified's: the PDPC's reference.
+             * @example DBN-2026-0123
+             */
+            reference?: string;
+            /**
+             * @description The step.
+             * @example decided
+             * @enum {string}
+             */
+            step: "assessed" | "decided" | "pdpc_notified" | "individuals_notified" | "contained" | "closed";
+        };
+        BreachView: {
+            /**
+             * Format: date
+             * @description The last day to assess it: 30 days after awareness, in Singapore.
+             * @example 2026-12-09
+             */
+            assessment_due_on: string;
+            /**
+             * @description true when it is not assessed and that day has passed.
+             * @example false
+             */
+            assessment_overdue: boolean;
+            /**
+             * Format: date-time
+             * @description When the company became aware of it: the assessment's 30 days run from it.
+             * @example 2026-11-09T02:00:00Z
+             */
+            aware_at: string;
+            /** @description The kinds of data involved. */
+            classes: ("names" | "identification_numbers" | "pay" | "bank_accounts" | "card_numbers" | "credentials" | "contact_details" | "other")[];
+            /**
+             * @description What happened.
+             * @example The October payroll file went to a supplier's address.
+             */
+            description: string;
+            /**
+             * Format: uuid
+             * @description The breach.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many people, as best known.
+             * @example 12
+             */
+            individuals: number;
+            /**
+             * @description Whether it was decided notifiable; absent before the decision.
+             * @example true
+             */
+            notifiable?: boolean;
+            /**
+             * Format: date
+             * @description Once decided notifiable: the last day to notify the PDPC, 3 calendar days after the decision.
+             * @example 2026-11-12
+             */
+            pdpc_due_on?: string;
+            /**
+             * @description true when the PDPC is not notified and that day has passed.
+             * @example false
+             */
+            pdpc_overdue: boolean;
+            /**
+             * @description true when the data is prescribed: a name or identification number with pay, card or bank account numbers, or an account's identifier with its password. Such a breach is deemed to cause significant harm, so it is notifiable.
+             * @example true
+             */
+            prescribed: boolean;
+            /**
+             * @description Its latest step.
+             * @example decided
+             * @enum {string}
+             */
+            status: "recorded" | "assessed" | "decided" | "pdpc_notified" | "individuals_notified" | "contained" | "closed";
+            /** @description Its steps, oldest first. */
+            steps: components["schemas"]["BreachStepView"][];
+            /**
+             * @description What happened, in a few words.
+             * @example A payroll file emailed to the wrong person
+             */
+            title: string;
+        };
+        BreachesOutputBody: {
+            /** @description The breaches, oldest first. */
+            items: components["schemas"]["BreachView"][];
+        };
         BreakGlass: {
             /** @description What it may release in all: the break-glass payment cap when it started. */
             cap: components["schemas"]["Money"];
@@ -19406,7 +19680,7 @@ export interface components {
              * @example quarterly
              * @enum {string}
              */
-            cadence: "weekly" | "quarterly" | "monthly" | "each use" | "each version" | "by review date" | "each processing" | "each request";
+            cadence: "weekly" | "quarterly" | "monthly" | "each use" | "each version" | "by review date" | "each processing" | "each request" | "each breach" | "twice a year";
             /** @description The controls whose attestation check reads it. */
             controls: string[];
             /**
@@ -19430,7 +19704,7 @@ export interface components {
              * @example access-review
              * @enum {string}
              */
-            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests";
+            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop";
             /** @description The latest sign-off; none before the first. */
             last_sign_off?: components["schemas"]["ComplianceSignOff"];
             /**
@@ -24630,6 +24904,10 @@ export interface components {
             recorded?: boolean;
             /** @description Members with no holder record recorded: the test cannot tell until each has one. */
             unknown: string[];
+        };
+        ExercisesOutputBody: {
+            /** @description The tabletop exercises, oldest first. */
+            items: components["schemas"]["BreachExerciseView"][];
         };
         ExpenseClaim: {
             /**
@@ -61242,6 +61520,622 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CLOSE-11` The checklist template is not valid; `CLOSE-13` Skipping a task needs a reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listBreachExercises: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExercisesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordBreachExercise: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachExerciseInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachExerciseView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listBreaches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordBreach: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    stepBreach: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The breach. */
+                breach_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachStepInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

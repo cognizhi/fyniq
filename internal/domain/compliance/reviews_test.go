@@ -172,6 +172,31 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 		reviewIs(t, "nothing switched on", dpiaReview(map[string]bool{}, nil, nil, nil), ReviewNothingDue, 0, 0, "Every processing")
 	})
 
+	t.Run("the breaches", func(t *testing.T) {
+		yes := true
+		pdpcDue := Day(now.AddDate(0, 0, -1))
+		late := storage.Breach{ID: uuid.New(), AwareAt: now.AddDate(0, 0, -40), AssessmentDueOn: Day(now.AddDate(0, 0, -10))}
+		notifiable := storage.Breach{ID: uuid.New(), AssessmentDueOn: Day(now.AddDate(0, 0, 20)),
+			Steps: []storage.BreachStep{{Step: "assessed", At: now}, {Step: "decided", At: now, Notifiable: &yes, PDPCDueOn: &pdpcDue}}}
+		fresh := storage.Breach{ID: uuid.New(), AssessmentDueOn: Day(now.AddDate(0, 0, 25))}
+		closed := storage.Breach{ID: uuid.New(), Steps: []storage.BreachStep{{Step: "closed", At: now, By: "user:" + alice.String()}}}
+		r := breachReview([]storage.Breach{late, notifiable, fresh, closed}, today)
+		reviewIs(t, "one past its assessment, one past the PDPC's day, one fresh", r, ReviewOverdue, 3, 2, "3 breach(es)")
+		if a, p := BreachTimers(notifiable); a != nil || p == nil || !p.Equal(pdpcDue) {
+			t.Errorf("the notifiable breach's timers: %v %v", a, p)
+		}
+		reviewIs(t, "all closed", breachReview([]storage.Breach{closed}, today), ReviewSigned, 0, 0, "No breach is open.")
+	})
+
+	t.Run("the tabletop", func(t *testing.T) {
+		members := []storage.Member{{UserID: alice, Since: today.AddDate(-1, 0, 0)}}
+		reviewIs(t, "none in a year", tabletopReview(members, nil, today), ReviewOverdue, 1, 1, "due by")
+		recent := storage.BreachExercise{HeldOn: today.AddDate(0, -2, 0), RecordedBy: "user:" + alice.String(), RecordedAt: now}
+		reviewIs(t, "one two months ago", tabletopReview(members, []storage.BreachExercise{recent}, today), ReviewSigned, 0, 0, "The next tabletop exercise is due by")
+		older := storage.BreachExercise{HeldOn: today.AddDate(0, -5, -10), RecordedBy: "user:" + alice.String(), RecordedAt: now}
+		reviewIs(t, "due within 30 days", tabletopReview(members, []storage.BreachExercise{older}, today), ReviewDue, 1, 0, "due by")
+	})
+
 	t.Run("the risk reviews", func(t *testing.T) {
 		risk := func(ref, state string, next time.Time, reviewed *time.Time) storage.Risk {
 			r := storage.Risk{Ref: ref, RiskFields: storage.RiskFields{State: state, NextReviewOn: next}}

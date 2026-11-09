@@ -671,3 +671,92 @@ func (c compliance) StepPDRequest(ctx context.Context, id uuid.UUID, s storage.P
 	return c.u.event(ctx, "pd_request."+s.Step, "pd_request", id, nil, map[string][2]any{"step": {nil, s.Step}, "new_due_on": {nil, dayOf(s.NewDueOn)},
 		"outcome": {nil, nilIfEmpty(s.Outcome)}})
 }
+
+func (c compliance) Breaches(ctx context.Context) ([]storage.Breach, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListBreaches(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	steps, err := c.u.q.ListBreachSteps(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Breach, 0, len(rows))
+	at := map[uuid.UUID]int{}
+	for _, r := range rows {
+		at[r.ID] = len(out)
+		out = append(out, storage.Breach{ID: r.ID, Title: r.Title, Description: r.Description, AwareAt: r.AwareAt, AssessmentDueOn: r.AssessmentDueOn,
+			Individuals: int(r.Individuals), Classes: r.Classes, Prescribed: r.Prescribed, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt})
+	}
+	for _, s := range steps {
+		if i, ok := at[s.BreachID]; ok {
+			out[i].Steps = append(out[i].Steps, storage.BreachStep{Step: s.Step, At: s.At, By: s.ByActor, Note: str(s.Note), Notifiable: s.Notifiable,
+				PDPCDueOn: nullDate(s.PdpcDueOn), Reference: str(s.Reference)})
+		}
+	}
+	return out, nil
+}
+
+func (c compliance) RecordBreach(ctx context.Context, b storage.Breach) (storage.Breach, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Breach{}, err
+	}
+	r, err := c.u.q.InsertBreach(ctx, sqlcdb.InsertBreachParams{Title: b.Title, Description: b.Description, AwareAt: b.AwareAt,
+		Individuals: int32(min(max(b.Individuals, 0), 1<<30)), Classes: b.Classes, RecordedBy: b.RecordedBy, RecordedAt: b.RecordedAt}) // #nosec G115 -- bounded
+	if err != nil {
+		return storage.Breach{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "breach.recorded", "pd_breach", r.ID, nil, map[string][2]any{"title": {nil, r.Title}, "aware_at": {nil, r.AwareAt},
+		"individuals": {nil, r.Individuals}, "classes": {nil, r.Classes}, "prescribed": {nil, r.Prescribed}}); err != nil {
+		return storage.Breach{}, err
+	}
+	return storage.Breach{ID: r.ID, Title: r.Title, Description: r.Description, AwareAt: r.AwareAt, AssessmentDueOn: r.AssessmentDueOn,
+		Individuals: int(r.Individuals), Classes: r.Classes, Prescribed: r.Prescribed, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}, nil
+}
+
+func (c compliance) StepBreach(ctx context.Context, id uuid.UUID, s storage.BreachStep) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	r, err := c.u.q.InsertBreachStep(ctx, sqlcdb.InsertBreachStepParams{BreachID: id, Step: s.Step, At: s.At, ByActor: s.By, Note: opt(s.Note),
+		Notifiable: s.Notifiable, Reference: opt(s.Reference)})
+	if err != nil {
+		return mapError(err)
+	}
+	return c.u.event(ctx, "breach."+s.Step, "pd_breach", id, nil, map[string][2]any{"step": {nil, r.Step}, "notifiable": {nil, r.Notifiable},
+		"pdpc_due_on": {nil, dayOf(nullDate(r.PdpcDueOn))}, "reference": {nil, nilIfEmpty(str(r.Reference))}})
+}
+
+func (c compliance) BreachExercises(ctx context.Context) ([]storage.BreachExercise, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListBreachExercises(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.BreachExercise, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.BreachExercise{ID: r.ID, HeldOn: r.HeldOn, Scenario: r.Scenario, Findings: r.Findings, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt})
+	}
+	return out, nil
+}
+
+func (c compliance) RecordBreachExercise(ctx context.Context, e storage.BreachExercise) (storage.BreachExercise, error) {
+	if err := c.u.check(); err != nil {
+		return storage.BreachExercise{}, err
+	}
+	r, err := c.u.q.InsertBreachExercise(ctx, sqlcdb.InsertBreachExerciseParams{HeldOn: e.HeldOn, Scenario: e.Scenario, Findings: e.Findings,
+		RecordedBy: e.RecordedBy, RecordedAt: e.RecordedAt})
+	if err != nil {
+		return storage.BreachExercise{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "breach_exercise.recorded", "pd_breach_exercise", r.ID, nil, map[string][2]any{"held_on": {nil, r.HeldOn.Format(time.DateOnly)},
+		"scenario": {nil, r.Scenario}}); err != nil {
+		return storage.BreachExercise{}, err
+	}
+	return storage.BreachExercise{ID: r.ID, HeldOn: r.HeldOn, Scenario: r.Scenario, Findings: r.Findings, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}, nil
+}

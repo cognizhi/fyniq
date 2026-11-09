@@ -69,6 +69,7 @@ var Catalogue = []Type{
 	{Key: AuditRecoveredType, Label: "The audit trail was restored behind its anchors", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: ControlFailedType, Label: "A control of the Compliance Center failed or fell overdue", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: PDRequestType, Label: "Someone asked to see or correct their personal data", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: BreachType, Label: "A personal-data breach was recorded, or decided notifiable", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
@@ -107,6 +108,10 @@ const ControlFailedType = "compliance.control_failed"
 // PDRequestType is the notice to those who keep the PDPA registers that an access or correction request was received
 // (CMP-PD-04, rev 0.244): it is due 30 days after receipt.
 const PDRequestType = "pdpa.request_received"
+
+// BreachType is the critical notice of a personal-data breach (CMP-PD-05, rev 0.244): when it is recorded, its 30 days of
+// assessment start; when it is decided notifiable, the PDPC's 3 calendar days do.
+const BreachType = "pdpa.breach"
 
 // PayeeBankType is the notice to every founder that a vendor's bank details are changing, and then changed (FR-CT-03):
 // a security type, so always on and emailed at once.

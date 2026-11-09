@@ -173,6 +173,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/compliance/breach-exercises` (listBreachExercises): List the tabletop exercises
+- `POST /v1/compliance/breach-exercises` (recordBreachExercise): Record a tabletop exercise
+- `GET /v1/compliance/breaches` (listBreaches): List the breach register
+- `POST /v1/compliance/breaches` (recordBreach): Record a personal-data breach
+- `POST /v1/compliance/breaches/{breach_id}/steps` (stepBreach): Add a breach's next step
 - `GET /v1/compliance/calendar` (getStatutoryCalendar): Get the statutory calendar
 - `GET /v1/compliance/consent-purposes` (listConsentPurposes): List the consent purposes
 - `POST /v1/compliance/consent-purposes` (createConsentPurpose): Add a consent purpose

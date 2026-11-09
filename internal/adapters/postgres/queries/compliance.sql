@@ -233,3 +233,35 @@ SELECT id, request_id, step, at, by_actor, note, new_due_on, outcome FROM fyniq.
 INSERT INTO fyniq.pd_request_step (request_id, step, at, by_actor, note, new_due_on, outcome)
 VALUES (sqlc.arg(request_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), sqlc.narg(note), sqlc.narg(new_due_on), sqlc.narg(outcome))
 RETURNING id, request_id, step, at, by_actor, note, new_due_on, outcome;
+
+-- name: ListBreaches :many
+-- The organisation's breaches, oldest first (CMP-PD-05).
+SELECT id, title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at FROM fyniq.pd_breach ORDER BY aware_at, id;
+
+-- name: InsertBreach :one
+-- Its assessment is due 30 days after awareness, and the database works out whether its data is prescribed.
+INSERT INTO fyniq.pd_breach (title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at)
+VALUES (sqlc.arg(title), sqlc.arg(description), sqlc.arg(aware_at), (sqlc.arg(aware_at)::timestamptz AT TIME ZONE 'Asia/Singapore')::date + 30,
+  sqlc.arg(individuals), sqlc.arg(classes)::text[],
+  (sqlc.arg(classes)::text[] && ARRAY['names', 'identification_numbers']::text[] AND sqlc.arg(classes)::text[] && ARRAY['pay', 'bank_accounts', 'card_numbers']::text[])
+    OR 'credentials' = ANY(sqlc.arg(classes)::text[]),
+  sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at;
+
+-- name: ListBreachSteps :many
+SELECT id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference FROM fyniq.pd_breach_step ORDER BY at, id;
+
+-- name: InsertBreachStep :one
+INSERT INTO fyniq.pd_breach_step (breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference)
+VALUES (sqlc.arg(breach_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), sqlc.narg(note), sqlc.narg(notifiable),
+  CASE WHEN sqlc.arg(step)::text = 'decided' AND sqlc.narg(notifiable)::boolean THEN (sqlc.arg(at)::timestamptz AT TIME ZONE 'Asia/Singapore')::date + 3 END,
+  sqlc.narg(reference))
+RETURNING id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference;
+
+-- name: ListBreachExercises :many
+SELECT id, held_on, scenario, findings, recorded_by, recorded_at FROM fyniq.pd_breach_exercise ORDER BY held_on, id;
+
+-- name: InsertBreachExercise :one
+INSERT INTO fyniq.pd_breach_exercise (held_on, scenario, findings, recorded_by, recorded_at)
+VALUES (sqlc.arg(held_on), sqlc.arg(scenario), sqlc.arg(findings), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, held_on, scenario, findings, recorded_by, recorded_at;

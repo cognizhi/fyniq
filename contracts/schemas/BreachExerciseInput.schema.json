@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "description": "What it found and what changed.",
+      "examples": [
+        "The runbook now names who calls the PDPC."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "held_on": {
+      "description": "When it was held, today or earlier.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The breach it rehearsed.",
+      "examples": [
+        "A laptop with the payroll export is stolen."
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "held_on",
+    "scenario",
+    "findings"
+  ],
+  "title": "BreachExerciseInput",
+  "type": "object"
+}

@@ -10,8 +10,10 @@ evidence: "Exercise report"
 owner: DPO
 checks:
   - frequency: E
-    status: planned
-    arrives: "p1-pdpa-retention"
+    status: running
+    how: "attestation breach"
+    evidence: "each breach with its timers: assessed within 30 days of awareness, and, once decided notifiable, the PDPC notified within 3 calendar days; on Compliance › Data protection and Reviews and attestations"
   - frequency: S
-    status: planned
-    arrives: "p1-pdpa-retention"
+    status: running
+    how: "attestation breach-tabletop"
+    evidence: "each tabletop exercise of the breach runbook, with its scenario and findings, due 6 months after the last; on Compliance › Data protection and Reviews and attestations"
