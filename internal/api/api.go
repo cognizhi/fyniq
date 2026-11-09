@@ -29,6 +29,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/passkey"
@@ -48,7 +49,10 @@ type Deps struct {
 	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
 	Log          *slog.Logger
 	Version      string // the platform version: the document's info.version
-	Limits       Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
+	// Release is the release this build is, for the Compliance Center's checks that run in CI (CMP-01, p1-compliance-center
+	// D3): the wiring passes version.Release, which this package never imports. Zero: a development build.
+	Release compliance.Release
+	Limits  Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore

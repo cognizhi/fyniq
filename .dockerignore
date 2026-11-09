@@ -9,6 +9,7 @@
 !compliance/registry.go
 !compliance/evidence.go
 !compliance/control.schema.json
+!compliance/release-assets.json
 !compliance/controls/
 !packs/
 !connectors/

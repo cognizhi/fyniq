@@ -8,6 +8,7 @@ package compliance
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"regexp"
@@ -19,7 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-//go:embed controls/*.yaml control.schema.json
+//go:embed controls/*.yaml control.schema.json release-assets.json
 var files embed.FS
 
 // Control is one control of the registry.
@@ -64,6 +65,48 @@ const (
 func (c Check) Kind() (kind, target string) {
 	kind, target, _ = strings.Cut(c.How, " ")
 	return kind, target
+}
+
+// InCI reports whether the check runs in CI: a running make target, Go test or CI job. The release the platform runs
+// carries its evidence (design D3).
+func (c Check) InCI() bool {
+	kind, _ := c.Kind()
+	return c.Status == "running" && (kind == KindMake || kind == KindTest || kind == KindCI)
+}
+
+// ReleaseAssets is where a release keeps the evidence of the checks that run in CI: release-assets.json, which the
+// release's evidence job (scripts/release-evidence.py) reads too.
+type ReleaseAssets struct {
+	Workflows map[string]struct {
+		Artefacts []string `json:"artefacts"`
+		Logs      string   `json:"logs"`
+	} `json:"workflows"`
+	ByHow     map[string]string `json:"by_how"`
+	ByKind    map[string]string `json:"by_kind"`
+	Otherwise string            `json:"otherwise"`
+}
+
+// LoadReleaseAssets reads release-assets.json.
+func LoadReleaseAssets() (ReleaseAssets, error) {
+	var a ReleaseAssets
+	b, err := files.ReadFile("release-assets.json")
+	if err == nil {
+		err = json.Unmarshal(b, &a)
+	}
+	return a, err
+}
+
+// Asset is the name of the release asset that holds the evidence of a check that runs in CI, such as test-report.zip:
+// by its how, then by its kind, otherwise its run's log.
+func (a ReleaseAssets) Asset(c Check) string {
+	if name, ok := a.ByHow[c.How]; ok {
+		return name + ".zip"
+	}
+	kind, _ := c.Kind()
+	if name, ok := a.ByKind[kind]; ok {
+		return name + ".zip"
+	}
+	return a.Otherwise + ".zip"
 }
 
 // Verifications are the checks compliance.run makes for each organisation, by name (design D4).

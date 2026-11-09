@@ -29,7 +29,8 @@ type Deps struct {
 
 // Info returns this binary's identity.
 func Info(service string) version.Info {
-	return version.Info{Service: service, Version: version.Version, Commit: version.Commit, BuildTime: version.BuildTime, Flavour: runtime.Flavour}
+	return version.Info{Service: service, Version: version.Version, Commit: version.Commit, BuildTime: version.BuildTime, Flavour: runtime.Flavour,
+		Release: version.Release}
 }
 
 // Prepare checks the environment and builds the dependencies; every binary calls it first.

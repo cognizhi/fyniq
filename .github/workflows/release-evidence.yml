@@ -1,0 +1,42 @@
+# The evidence of a release (PRD-001 CMP-01, §14.1 item 3; CTL-CHG-06; p1-compliance-center design D3): once
+# release-please publishes vX.Y.Z, attach to it the evidence of the checks that ran in CI on its commit (the test, scan
+# and image reports, the SBOMs, the CTL-CHG-01 report and each run's logs) with controls-evidence.json, which names each
+# CI check's asset. The Compliance Center of a build stamped with that release shows those checks as passed and links
+# to them. It refuses unless the commit's runs succeeded, so no release carries the evidence of a failing gate.
+# Its own job in its own workflow: it waits for CI on the release commit, about an hour, without holding release-please.
+name: release-evidence
+
+on:
+  release:
+    types: [published]   # release-please publishes with the release App's token, which starts workflows (REL-06)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag (vX.Y.Z) whose evidence is missing
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-evidence-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release-evidence:
+    name: Release evidence (CMP-01)
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write   # attach the assets to the release
+      actions: read     # read the runs, their artefacts and their logs
+    steps:
+      # actions/checkout v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+      - run: python3 scripts/release-evidence.py publish "$TAG"
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}

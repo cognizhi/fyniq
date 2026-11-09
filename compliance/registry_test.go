@@ -336,3 +336,37 @@ func TestMappingFrameworks(t *testing.T) {
 		}
 	}
 }
+
+// Each check that runs in CI names a release asset that the release's evidence job attaches: an artefact or the logs of
+// a workflow of release-assets.json (design D3; scripts/release-evidence.py self-test checks the workflows upload them).
+// req: CMP-01
+func TestEveryCICheckHasItsReleaseAsset(t *testing.T) {
+	controls, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, err := LoadReleaseAssets()
+	if err != nil {
+		t.Fatal(err)
+	}
+	held := map[string]bool{}
+	for _, wf := range assets.Workflows {
+		for _, name := range append(slices.Clone(wf.Artefacts), wf.Logs) {
+			held[name+".zip"] = true
+		}
+	}
+	n := 0
+	for _, c := range controls {
+		for _, ch := range c.Checks {
+			if ch.InCI() {
+				n++
+				if a := assets.Asset(ch); !held[a] {
+					t.Errorf("%s (%s) %s: its evidence is %s, which the release does not hold", c.ID, ch.Frequency, ch.How, a)
+				}
+			}
+		}
+	}
+	if n < 20 {
+		t.Errorf("only %d checks run in CI", n)
+	}
+}

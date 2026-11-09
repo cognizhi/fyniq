@@ -14,7 +14,9 @@ permissions: {}
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A pull request's newer push cancels its older run; main's runs each finish, since a release's evidence is its
+  # commit's run (release-evidence.yml, CMP-01).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   conventional-commits:

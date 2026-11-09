@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/maildns"
@@ -51,7 +52,8 @@ func main() {
 
 // routes adds the API's routes to s.
 func routes(s *httpserver.Server, deps app.Deps) error {
-	d := api.Deps{Clock: deps.Clock, Auth: authn.NotYet{}, Log: logging.New(os.Stderr, slog.LevelInfo), Version: version.Version}
+	d := api.Deps{Clock: deps.Clock, Auth: authn.NotYet{}, Log: logging.New(os.Stderr, slog.LevelInfo), Version: version.Version,
+		Release: compliance.Release{Tag: version.Release, Repository: version.Repository}}
 	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
 	var sessions storage.Sessions
 	if err == nil {

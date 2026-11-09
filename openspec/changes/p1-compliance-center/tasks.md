@@ -64,17 +64,42 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 2. CI evidence from the running release (slice 2)
 
-- [ ] 2.1 The `release-evidence` job in `release-please.yml` (D3):
+- [x] 2.1 The `release-evidence` job in `release-please.yml` (D3):
   - it runs only when a release is created, and requires the tagged commit's CI run on main to have succeeded;
   - it attaches that run's evidence artefacts and a `controls-evidence.json` manifest to the GitHub release;
   - it holds `contents: write` for that job alone, with every action pinned by SHA.
 
   `make scan` passes (actionlint, zizmor). A script test builds the manifest from a fixture run.
   `// req: CMP-01`, `// req: CTL-CHG-06`, and the unnumbered "Evidence collected automatically".
-- [ ] 2.2 `version.Release`, stamped only by the release image build, passed through the wiring to the API's
+
+  **What building added:**
+    - **Its own workflow.** The job is `.github/workflows/release-evidence.yml`, started when release-please publishes
+      a release (its App token starts workflows), or by hand for a tag. It waits up to four hours for CI on the release
+      commit, which would otherwise hold release-please's concurrency group and its release pull request.
+    - **Both runs.** It waits for the commit's `ci.yml` and `controls.yml` runs (CTL-CHG-01's report), and refuses unless
+      both succeeded. It attaches their artefacts as `<name>.zip` and their logs as `ci-logs.zip` and
+      `controls-logs.zip`, so a check without an artefact, such as `make differential`, has its run's log.
+    - **One table.** `compliance/release-assets.json` names each CI check's asset. The script and the Go registry
+      (`ReleaseAssets.Asset`) both read it, so the manifest and the dashboard's links cannot differ.
+      `scripts/release-evidence.py self-test` (in `make controls`) checks that each workflow uploads the artefacts the
+      table names, and builds a manifest from a fixture run, refusing a failed or cancelled run, a missing run and a
+      missing artefact.
+    - **CI on main finishes.** `ci.yml` cancels only a pull request's older runs; a push to main no longer cancels the
+      run of the commit before it, which may be a release's.
+    - **CTL-CHG-06 E and CTL-CHG-09 E** run as `ci Release evidence (CMP-01)`, with the release's image reports.
+    - [live-verify] The publish path (the runs API, the artefact downloads, the logs archive and the upload) runs on the
+      first release.
+- [x] 2.2 `version.Release`, stamped only by the release image build, passed through the wiring to the API's
   dependencies (never imported by `internal/api`), with the repository's address. A resolver turns a CI check into
   passed-in-release with its asset link, or not assessed in a development build. Unit tests cover both builds.
   `// req: CMP-01`
+
+  **What building added:**
+    - `make images RELEASE=vX.Y.Z` is the only build that stamps it, through the Dockerfile's `RELEASE` argument; `/version`
+      reports it. The images job of a release (not built yet) uses it, and the release-please workflow says so.
+    - Only a tag of the form vX.Y.Z is a release; any other value, or no repository, is a development build.
+    - The resolver is `internal/domain/compliance` (`Release.CI`), which slice 4 extends.
+    - `.dockerignore` lets `release-assets.json` into the image build, since the registry embeds it.
 
 ## 3. The database and AI checks (slice 3)
 

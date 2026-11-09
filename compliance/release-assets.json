@@ -1,0 +1,19 @@
+{
+  "$comment": "Where the release keeps the evidence of each check that runs in CI (p1-compliance-center D3). The release-evidence job of release-please.yml (scripts/release-evidence.py) attaches each workflow's artefacts to the GitHub release as <name>.zip, and each run's logs as <workflow>-logs.zip; the Compliance Center links a CI check to its asset (compliance.ReleaseAsset). A check names its asset by its how, then by its kind; any other CI check's evidence is its run's log.",
+  "workflows": {
+    "ci.yml": {"artefacts": ["test-report", "security-scan-reports", "image-reports"], "logs": "ci-logs"},
+    "controls.yml": {"artefacts": ["control-ctl-chg-01"], "logs": "controls-logs"}
+  },
+  "by_how": {
+    "make test": "test-report",
+    "make check": "test-report",
+    "make scan": "security-scan-reports",
+    "make images": "image-reports",
+    "ci Repository settings and merge audit (CTL-CHG-01)": "control-ctl-chg-01",
+    "ci Release evidence (CMP-01)": "image-reports"
+  },
+  "by_kind": {
+    "test": "test-report"
+  },
+  "otherwise": "ci-logs"
+}
