@@ -394,6 +394,8 @@ export const actions = [
   { kind: "action", id: "data-protection.inventory", mode: "expert", help: "data-protection.inventory", guide: "compliance.data-protection#the-inventory" },
   { kind: "action", id: "data-protection.entry", mode: "expert", help: "data-protection.entry", guide: "compliance.data-protection#add-what-the-company-holds-elsewhere" },
   { kind: "action", id: "data-protection.review", mode: "expert", help: "data-protection.review", guide: "compliance.data-protection#review-the-inventory-each-quarter" },
+  { kind: "action", id: "data-protection.dpias", mode: "expert", help: "data-protection.dpias", guide: "compliance.data-protection#impact-assessments" },
+  { kind: "action", id: "data-protection.dpia-approve", mode: "expert", help: "data-protection.dpia-approve", guide: "compliance.data-protection#impact-assessments" },
   { kind: "action", id: "risk.save", mode: "expert", help: "risk.save", guide: "compliance.risks#add-or-change-a-risk" },
   { kind: "action", id: "risk.review", mode: "expert", help: "risk.review", guide: "compliance.risks#review-a-risk" },
   { kind: "action", id: "policy.acknowledge", mode: "basic", help: "policy.acknowledge", guide: "compliance.policies#acknowledge-a-policy" },

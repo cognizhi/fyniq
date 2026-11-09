@@ -559,3 +559,58 @@ func (c compliance) ReviewInventory(ctx context.Context, r storage.InventoryRevi
 	}
 	return storage.InventoryReview{ID: row.ID, Quarter: row.Quarter, ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt, Note: str(row.Note)}, nil
 }
+
+func (c compliance) DPIAs(ctx context.Context) ([]storage.DPIAVersion, []storage.DPIAApproval, error) {
+	if err := c.u.check(); err != nil {
+		return nil, nil, err
+	}
+	rows, err := c.u.q.ListDPIAVersions(ctx)
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	versions := make([]storage.DPIAVersion, 0, len(rows))
+	for _, r := range rows {
+		versions = append(versions, storage.DPIAVersion{Key: r.Key, Version: int(r.Version), Title: r.Title, Body: r.Body, SHA256: r.Sha256,
+			From: r.FromDraft, EntryID: r.EntryID, SavedBy: r.SavedBy, SavedAt: r.SavedAt})
+	}
+	arows, err := c.u.q.ListDPIAApprovals(ctx)
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	approvals := make([]storage.DPIAApproval, 0, len(arows))
+	for _, r := range arows {
+		approvals = append(approvals, storage.DPIAApproval{Key: r.Key, Version: int(r.Version), ApprovedBy: r.ApprovedBy, ApprovedAt: r.ApprovedAt})
+	}
+	return versions, approvals, nil
+}
+
+func (c compliance) SaveDPIA(ctx context.Context, v storage.DPIAVersion) (storage.DPIAVersion, error) {
+	if err := c.u.check(); err != nil {
+		return storage.DPIAVersion{}, err
+	}
+	r, err := c.u.q.InsertDPIAVersion(ctx, sqlcdb.InsertDPIAVersionParams{Key: v.Key, Version: int32(min(max(v.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		Title: v.Title, Body: v.Body, FromDraft: v.From, EntryID: v.EntryID, SavedBy: v.SavedBy, SavedAt: v.SavedAt})
+	if err != nil {
+		return storage.DPIAVersion{}, mapError(err)
+	}
+	ver := int(r.Version)
+	if err := c.u.event(ctx, "dpia.saved", "dpia_version", r.ID, &ver, map[string][2]any{"key": {nil, r.Key}, "title": {nil, r.Title},
+		"from": {nil, r.FromDraft}, "sha256": {nil, fmt.Sprintf("%x", r.Sha256)}}); err != nil {
+		return storage.DPIAVersion{}, err
+	}
+	return storage.DPIAVersion{Key: r.Key, Version: ver, Title: r.Title, Body: r.Body, SHA256: r.Sha256, From: r.FromDraft, EntryID: r.EntryID,
+		SavedBy: r.SavedBy, SavedAt: r.SavedAt}, nil
+}
+
+func (c compliance) ApproveDPIA(ctx context.Context, a storage.DPIAApproval) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	r, err := c.u.q.InsertDPIAApproval(ctx, sqlcdb.InsertDPIAApprovalParams{Key: a.Key, Version: int32(min(max(a.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		ApprovedBy: a.ApprovedBy, ApprovedAt: a.ApprovedAt})
+	if err != nil {
+		return mapError(err)
+	}
+	ver := int(r.Version)
+	return c.u.event(ctx, "dpia.approved", "dpia_approval", r.ID, &ver, map[string][2]any{"key": {nil, r.Key}, "version": {nil, ver}})
+}

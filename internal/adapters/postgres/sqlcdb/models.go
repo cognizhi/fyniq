@@ -970,6 +970,29 @@ type FyniqDocumentVersion struct {
 	CreatedBy      *string
 }
 
+type FyniqDpiaApproval struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Version        int32
+	ApprovedBy     string
+	ApprovedAt     time.Time
+}
+
+type FyniqDpiaVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Version        int32
+	Title          string
+	Body           string
+	Sha256         []byte
+	FromDraft      string
+	EntryID        *uuid.UUID
+	SavedBy        string
+	SavedAt        time.Time
+}
+
 type FyniqEmailEvent struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

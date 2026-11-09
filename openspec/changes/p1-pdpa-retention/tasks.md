@@ -199,10 +199,41 @@ event format.
 
 ## 5. DPIAs (slice 5)
 
-- [ ] 5.1 `dpia` and `dpia_version` (D4), insert-only, the DPO approving stepped up, with Fyniq's drafts for the payroll
+- [x] 5.1 `dpia` and `dpia_version` (D4), insert-only, the DPO approving stepped up, with Fyniq's drafts for the payroll
   link and the AI assistant in `compliance/dpias/`. The attestation `dpia` reads a class or entry that needs one.
   Attack tests and matrix rows. `// req: CMP-PD-08`
-- [ ] 5.2 The DPIAs tab, with its help keys and guide section. `// req: CMP-PD-08`
+
+  **What building added:**
+    - **Tables.** Migration 000304 adds `dpia_version` and `dpia_approval`, insert-only (FY313), both audited
+      (`dpia.saved`, `dpia.approved`).
+    - **The database's rules:**
+      - the text's SHA-256 is checked;
+      - an approval is only of the latest version;
+      - a key is `payroll`, `ai-assistant` or `other-<uuid>`, with an optional inventory entry.
+    - **Fyniq's drafts** (`fyniq-dpia-draft@1`) have the sections of the PDPC's guide. They are written from that
+      guide, the PDPC's guidelines on employment and on NRIC (payroll), and its AI recommendation and generative AI
+      guidelines (the assistant).
+    - **When a DPIA is due.** Each of Fyniq's is required once its feature switch is on (`features.payroll`,
+      `features.ai_assistant`). An organisation's DPIA is required while the open inventory entry it assesses needs
+      one.
+    - **The API:** `listDPIAs`, `getDPIA`, `createDPIA`, `saveDPIA` (If-Match) and `approveDPIA` (A, stepped up).
+      Approving Fyniq's draft adopts it as version 1, and a later version needs approving again.
+    - **Reviews and controls.** The attestation `dpia` treats a required processing without an approved assessment as
+      overdue, because the processing is already live. CTL-DP-05's Q check reads it.
+    - **Tests:**
+      - `TestTheDPIADrafts`;
+      - `TestTheImpactAssessments`;
+      - `TestAttackImpactAssessmentsKeepTheirHistory`;
+      - the review in `TestEachReviewReadsItsOwnSource`;
+      - matrix rows.
+
+- [x] 5.2 The DPIAs tab, with its help keys and guide section. `// req: CMP-PD-08`
+
+  **What building added:**
+    - **The tab.** Impact assessments shows each DPIA's reason, version and approval. Its dialog shows the text, which
+      the Compliance officer saves as the next version or approves. Others read it.
+    - **Help.** The help keys are `data-protection.dpias` and `data-protection.dpia-approve`, and the guide gains a
+      section.
 
 ## 6. Access and correction requests (slice 6)
 

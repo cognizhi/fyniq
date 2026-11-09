@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-09, CTL-DP-05]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-08, CMP-PD-09, CTL-DP-05]
 ---
 
 # Keep the data protection registers
@@ -36,6 +36,21 @@ version is kept, and each is in the audit trail.
 Once a calendar quarter ends, the Compliance officer checks that the inventory still says what the company holds, and
 selects **Record the review**, within 14 days of the quarter's end. Until then a banner says the review is due, and after
 it that it is overdue. The review also shows on **Reviews and attestations**.
+
+## Impact assessments
+
+The PDPA expects an assessment of the risks to people before a new processing of their personal data. The **Impact
+assessments** tab lists them:
+- Fyniq's drafts for the **payroll link** and the **AI assistant**, written from the PDPC's guides; each is required
+  once its feature is switched on, and says so;
+- the company's own, for any other processing, such as an inventory entry marked as needing one.
+
+Select **Open** to read one. The Compliance officer edits the text and selects **Save the next version**, or **Write
+one** for a new processing, and approves the latest version with **Approve**, confirming it is them. Approving Fyniq's
+draft adopts it as it is. A later change needs approving again. Clauses marked [counsel to confirm] bear on the law:
+have counsel confirm them before you approve.
+
+A processing that goes on without an approved assessment shows as overdue on **Reviews and attestations**.
 
 ## The Data Protection Officer
 

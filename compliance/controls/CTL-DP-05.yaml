@@ -13,3 +13,7 @@ checks:
     status: running
     how: "attestation data-inventory"
     evidence: "the Compliance officer's quarterly review of the personal-data inventory, overdue 14 days after the quarter; on Compliance › Data protection and Reviews and attestations"
+  - frequency: Q
+    status: running
+    how: "attestation dpia"
+    evidence: "an approved impact assessment for each processing that needs one: payroll and the AI assistant once switched on, and the inventory's entries marked so; on Compliance › Data protection and Reviews and attestations"

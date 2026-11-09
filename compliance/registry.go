@@ -20,7 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-//go:embed controls/*.yaml control.schema.json release-assets.json risks.yaml data-inventory.yaml policies/*.md notices/*.md
+//go:embed controls/*.yaml control.schema.json release-assets.json risks.yaml data-inventory.yaml policies/*.md notices/*.md dpias/*.md
 var files embed.FS
 
 // Control is one control of the registry.
@@ -127,6 +127,7 @@ var Attestations = map[string]string{
 	"policy-acknowledgement": "Each member acknowledges each published policy version",
 	"risk-review":            "Each risk is reviewed by its review date",
 	"data-inventory":         "The Compliance officer reviews the personal-data inventory (each quarter)",
+	"dpia":                   "Each processing that needs one has an approved data protection impact assessment",
 }
 
 // Framework is a framework a control may map to, and the words of Appendix F's Mapping cell that name it.

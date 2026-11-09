@@ -159,6 +159,19 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 		reviewIs(t, "Q3 reviewed", inventoryReview(members, []storage.InventoryReview{q2, q3}, today), ReviewSigned, 0, 0, "No quarter")
 	})
 
+	t.Run("the impact assessments", func(t *testing.T) {
+		cvs := storage.InventoryEntry{EntryID: uuid.New(), What: "Job applicants' CVs", NeedsDPIA: true, State: "open"}
+		r := dpiaReview(map[string]bool{"payroll": true}, []storage.InventoryEntry{cvs}, nil, nil)
+		reviewIs(t, "payroll on and an entry, neither assessed", r, ReviewOverdue, 2, 2, "the payroll link; job applicants' CVs")
+		other := "other-" + uuid.NewString()
+		versions := []storage.DPIAVersion{{Key: "payroll", Version: 1}, {Key: other, Version: 1, EntryID: &cvs.EntryID}}
+		approvals := []storage.DPIAApproval{{Key: "payroll", Version: 1, ApprovedBy: "user:" + alice.String(), ApprovedAt: now},
+			{Key: other, Version: 1, ApprovedBy: "user:" + alice.String(), ApprovedAt: now}}
+		reviewIs(t, "both approved", dpiaReview(map[string]bool{"payroll": true}, []storage.InventoryEntry{cvs}, versions, approvals), ReviewSigned, 0, 0,
+			"Every processing")
+		reviewIs(t, "nothing switched on", dpiaReview(map[string]bool{}, nil, nil, nil), ReviewNothingDue, 0, 0, "Every processing")
+	})
+
 	t.Run("the risk reviews", func(t *testing.T) {
 		risk := func(ref, state string, next time.Time, reviewed *time.Time) storage.Risk {
 			r := storage.Risk{Ref: ref, RiskFields: storage.RiskFields{State: state, NextReviewOn: next}}

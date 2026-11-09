@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "Its text, as Markdown.",
+      "examples": [
+        "# Data protection impact assessment of the mailing list\n..."
+      ],
+      "maxLength": 100000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "With createDPIA: the inventory entry it assesses.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title; left out, it keeps its own.",
+      "examples": [
+        "Data protection impact assessment of the mailing list"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "body"
+  ],
+  "title": "DPIAInput",
+  "type": "object"
+}

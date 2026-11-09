@@ -30,7 +30,20 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpo";
+type Tab = "inventory" | "dpias" | "dpo";
+type DPIA = components["schemas"]["DPIAView"];
+
+async function dpias() {
+  const { data, error } = await api.GET("/v1/compliance/dpias");
+  if (error) throw error;
+  return data.items;
+}
+
+async function dpia(key: string) {
+  const { data, error } = await api.GET("/v1/compliance/dpias/{key}", { params: { path: { key } } });
+  if (error) throw error;
+  return data;
+}
 
 // DataProtection is Compliance › Data protection (CMP-05, CMP-PD-01, CMP-PD-02, CMP-PD-09; rev 0.244): the PDPA programme's
 // registers. The inventory: what Fyniq holds and never holds, what the organisation adds, the retention schedule and the
@@ -55,11 +68,15 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "inventory"} onClick={() => setTab("inventory")} title={helpText("data-protection.inventory").tooltip}>
           Inventory
         </button>
+        <button type="button" role="tab" aria-selected={tab === "dpias"} onClick={() => setTab("dpias")} title={helpText("data-protection.dpias").tooltip}>
+          Impact assessments
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
       </div>
       {tab === "inventory" && <InventoryTab />}
+      {tab === "dpias" && <DPIAsTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );
@@ -323,6 +340,157 @@ function ReviewForm({ quarter, label, onClose }: { quarter: string; label: strin
           </Button>
         </div>
       </div>
+    </Dialog>
+  );
+}
+
+// DPIAsTab lists the data protection impact assessments (CMP-PD-08): Fyniq's for the payroll link and the AI assistant,
+// required once switched on, and the organisation's own; the Compliance officer edits, writes and approves them.
+function DPIAsTab() {
+  const id = useId();
+  const { session } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const list = useQuery({ queryKey: ["dpias"], queryFn: dpias });
+  const [open, setOpen] = useState<string | "new" | null>(null);
+  if (list.isError) return <Refusal problem={problemOf(list.error)} title="The impact assessments could not be shown" />;
+  if (!list.data) return <p className="fy-small">Loading the impact assessments…</p>;
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-dpias`}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={`${id}-dpias`}>
+          Impact assessments
+        </h2>
+        {officer && (
+          <Button size="sm" onClick={() => setOpen("new")}>
+            <Icon of={Plus} />
+            Write one
+          </Button>
+        )}
+      </div>
+      <ul className="fy-list" aria-labelledby={`${id}-dpias`}>
+        {list.data.map((d: DPIA) => (
+          <li key={d.key} className="fy-list__item">
+            <span className="fy-list__main">
+              <span className="fy-list__title whitespace-normal">{d.title}</span>
+              <span className="fy-list__meta whitespace-normal">
+                {d.why} · {d.version === 0 ? "Fyniq's draft" : `version ${d.version}`}
+                {d.approved && ` · version ${d.approved.version} approved ${date(d.approved.at)}`}
+              </span>
+            </span>
+            {d.required && d.unapproved ? (
+              <span className="fy-chip fy-chip--serious">
+                <Icon of={ClockAlert} />
+                Needs approving
+              </span>
+            ) : d.approved && !d.unapproved ? (
+              <span className="fy-chip fy-chip--good">
+                <Icon of={ShieldCheck} />
+                Approved
+              </span>
+            ) : null}
+            <Button size="sm" variant="ghost" onClick={() => setOpen(d.key)} aria-label={`Open ${d.title}`}>
+              <Icon of={Pencil} />
+              Open
+            </Button>
+          </li>
+        ))}
+      </ul>
+      {open && <DPIAForm dpiaKey={open === "new" ? null : open} officer={officer} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}
+
+// DPIAForm shows an impact assessment's text, and lets the Compliance officer save its next version, approve it stepped
+// up (approving Fyniq's draft adopts it), or write a new one.
+function DPIAForm({ dpiaKey, officer, onClose }: { dpiaKey: string | null; officer: boolean; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const one = useQuery({ queryKey: ["dpia", dpiaKey], queryFn: () => dpia(dpiaKey!), enabled: dpiaKey !== null });
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState<string | null>(null);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const d = one.data;
+  const text = body ?? d?.body ?? "";
+  const done = async () => {
+    await Promise.all(["dpias", "dpia", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+  };
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        dpiaKey === null
+          ? api.POST("/v1/compliance/dpias", { params: { header: { "Idempotency-Key": newKey() } }, body: { title: title.trim(), body: text } })
+          : api.PUT("/v1/compliance/dpias/{key}", { params: { path: { key: dpiaKey }, header: { "Idempotency-Key": newKey(), "If-Match": `"v${d!.version}"` } }, body: { body: text } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      setBody(null);
+      await done();
+      if (dpiaKey === null) onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const approve = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/dpias/{key}/approvals", { params: { path: { key: dpiaKey! }, header: { "Idempotency-Key": newKey(), "If-Match": `"v${d!.version}"` } } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await done();
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const busy = save.isPending || approve.isPending;
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()} dismissible={!busy} wide eyebrow="Impact assessment" title={d?.title ?? "Write an impact assessment"}
+      description={d ? d.why : "For a new processing of personal data, such as an inventory entry that needs one."}>
+      {problem && <Refusal problem={problem} title="The assessment was not saved or approved" />}
+      {one.isError && <Refusal problem={problemOf(one.error)} title="The assessment could not be shown" />}
+      {(d || dpiaKey === null) && (
+        <div className="fy-stack fy-stack--3">
+          {dpiaKey === null && (
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-title`}>
+                Title
+              </label>
+              <input className="fy-input" id={`${id}-title`} value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+          )}
+          {officer ? (
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-body`}>
+                Text (Markdown)
+              </label>
+              <textarea className="fy-textarea" id={`${id}-body`} rows={16} value={text} onChange={(e) => setBody(e.target.value)} />
+              <span className="fy-help">Clauses marked [counsel to confirm] bear on the law: have counsel confirm them before you approve.</span>
+            </div>
+          ) : (
+            <div className="fy-small whitespace-pre-wrap" role="document" aria-label={d?.title} style={{ maxHeight: "50vh", overflow: "auto" }}>
+              {text}
+            </div>
+          )}
+          {officer && (
+            <div className="fy-row justify-end gap-2">
+              <Button variant="secondary" onClick={() => save.mutate()} disabled={busy || (dpiaKey !== null && (body === null || body === d?.body))}>
+                <Icon of={Pencil} />
+                {dpiaKey === null ? "Save it" : "Save the next version"}
+              </Button>
+              {dpiaKey !== null && (
+                <Button variant="primary" onClick={() => approve.mutate()} disabled={busy || body !== null || !d?.unapproved} title={helpText("data-protection.dpia-approve").tooltip}>
+                  <Icon of={ShieldCheck} />
+                  Approve {d?.version === 0 ? "Fyniq's draft" : `version ${d?.version}`}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </Dialog>
   );
 }

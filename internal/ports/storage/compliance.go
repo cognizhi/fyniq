@@ -225,6 +225,31 @@ type InventoryReview struct {
 	Note       string
 }
 
+// CodeDPIA is the database's refusal of an impact assessment's version out of order, an approval of a version not its
+// latest, or any change or deletion (FY313).
+const CodeDPIA = "STORAGE-DPIA-01"
+
+// DPIAVersion is a version of a data protection impact assessment (CMP-PD-08, design D4).
+type DPIAVersion struct {
+	Key       string // payroll, ai-assistant, or other-<uuid>
+	Version   int
+	Title     string
+	Body      string
+	SHA256    []byte
+	From      string     // fyniq-dpia-draft@1, or organisation
+	EntryID   *uuid.UUID // the inventory entry it assesses, if any
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+// DPIAApproval is the Compliance officer's approval of an assessment's version.
+type DPIAApproval struct {
+	Key        string
+	Version    int
+	ApprovedBy string
+	ApprovedAt time.Time
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -235,6 +260,12 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// DPIAs are every version of the organisation's impact assessments, by key and version, and every approval (CMP-PD-08).
+	DPIAs(ctx context.Context) ([]DPIAVersion, []DPIAApproval, error)
+	// SaveDPIA saves an assessment's version, audited as dpia.saved; CodeDPIA when it does not follow its last.
+	SaveDPIA(ctx context.Context, v DPIAVersion) (DPIAVersion, error)
+	// ApproveDPIA approves an assessment's latest version, audited as dpia.approved; CodeDPIA for any other.
+	ApproveDPIA(ctx context.Context, a DPIAApproval) error
 	// InventoryEntries are the latest versions of the organisation's inventory entries, oldest entry first (CMP-PD-02).
 	InventoryEntries(ctx context.Context) ([]InventoryEntry, error)
 	// SaveInventoryEntry saves an entry at e.Version (1 for a new one), audited as data_inventory_entry.saved;

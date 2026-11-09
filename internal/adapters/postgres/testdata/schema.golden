@@ -744,6 +744,23 @@ document_version | version | integer | not null |
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
 document_version | created_by | text | null | 
+dpia_approval | organisation_id | uuid | not null | current_org()
+dpia_approval | id | uuid | not null | uuidv7()
+dpia_approval | key | text | not null | 
+dpia_approval | version | integer | not null | 
+dpia_approval | approved_by | text | not null | 
+dpia_approval | approved_at | timestamp with time zone | not null | 
+dpia_version | organisation_id | uuid | not null | current_org()
+dpia_version | id | uuid | not null | uuidv7()
+dpia_version | key | text | not null | 
+dpia_version | version | integer | not null | 
+dpia_version | title | text | not null | 
+dpia_version | body | text | not null | 
+dpia_version | sha256 | bytea | not null | 
+dpia_version | from_draft | text | not null | 
+dpia_version | entry_id | uuid | null | 
+dpia_version | saved_by | text | not null | 
+dpia_version | saved_at | timestamp with time zone | not null | 
 email_event | organisation_id | uuid | not null | current_org()
 email_event | id | uuid | not null | uuidv7()
 email_event | message_id | uuid | not null | 
@@ -2973,6 +2990,38 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+dpia_approval | dpia_approval_approved_at_not_null | NOT NULL approved_at
+dpia_approval | dpia_approval_approved_by_not_null | NOT NULL approved_by
+dpia_approval | dpia_approval_by_format | CHECK ((approved_by ~ '^user:[!-~]{1,200}$'::text))
+dpia_approval | dpia_approval_id_not_null | NOT NULL id
+dpia_approval | dpia_approval_key_not_null | NOT NULL key
+dpia_approval | dpia_approval_once | UNIQUE (organisation_id, key, version)
+dpia_approval | dpia_approval_organisation_id_not_null | NOT NULL organisation_id
+dpia_approval | dpia_approval_pkey | PRIMARY KEY (organisation_id, id)
+dpia_approval | dpia_approval_version_fkey | FOREIGN KEY (organisation_id, key, version) REFERENCES dpia_version(organisation_id, key, version)
+dpia_approval | dpia_approval_version_not_null | NOT NULL version
+dpia_approval | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+dpia_version | dpia_version_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 100000)))
+dpia_version | dpia_version_body_not_null | NOT NULL body
+dpia_version | dpia_version_from_draft_not_null | NOT NULL from_draft
+dpia_version | dpia_version_from_format | CHECK ((from_draft ~ '^(fyniq-dpia-draft@[0-9]+|organisation)$'::text))
+dpia_version | dpia_version_id_not_null | NOT NULL id
+dpia_version | dpia_version_key_format | CHECK ((key ~ '^(payroll|ai-assistant|other-[0-9a-f-]{36})$'::text))
+dpia_version | dpia_version_key_not_null | NOT NULL key
+dpia_version | dpia_version_once | UNIQUE (organisation_id, key, version)
+dpia_version | dpia_version_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+dpia_version | dpia_version_organisation_id_not_null | NOT NULL organisation_id
+dpia_version | dpia_version_pkey | PRIMARY KEY (organisation_id, id)
+dpia_version | dpia_version_positive | CHECK ((version > 0))
+dpia_version | dpia_version_saved_at_not_null | NOT NULL saved_at
+dpia_version | dpia_version_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+dpia_version | dpia_version_saved_by_not_null | NOT NULL saved_by
+dpia_version | dpia_version_sha256 | CHECK ((sha256 = sha256(convert_to(body, 'UTF8'::name))))
+dpia_version | dpia_version_sha256_not_null | NOT NULL sha256
+dpia_version | dpia_version_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+dpia_version | dpia_version_title_not_null | NOT NULL title
+dpia_version | dpia_version_version_not_null | NOT NULL version
+dpia_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 email_event | email_event_delivery_id_not_null | NOT NULL delivery_id
 email_event | email_event_id_not_null | NOT NULL id
 email_event | email_event_kind_known | CHECK ((kind = ANY (ARRAY['delivered'::text, 'delayed'::text, 'soft_bounce'::text, 'hard_bounce'::text, 'complaint'::text, 'suppressed'::text, 'failed'::text])))
@@ -4737,6 +4786,10 @@ CREATE UNIQUE INDEX document_template_version_number_key ON fyniq.document_templ
 CREATE UNIQUE INDEX document_template_version_pkey ON fyniq.document_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dpia_approval_once ON fyniq.dpia_approval USING btree (organisation_id, key, version)
+CREATE UNIQUE INDEX dpia_approval_pkey ON fyniq.dpia_approval USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dpia_version_once ON fyniq.dpia_version USING btree (organisation_id, key, version)
+CREATE UNIQUE INDEX dpia_version_pkey ON fyniq.dpia_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_event_once ON fyniq.email_event USING btree (organisation_id, provider, delivery_id)
 CREATE UNIQUE INDEX email_event_pkey ON fyniq.email_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
@@ -4944,6 +4997,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_send DEFE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'template_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.dpia_approval DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dpia_approval', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.dpia_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dpia_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'transaction_id')
@@ -5162,6 +5217,10 @@ CREATE TRIGGER document_template_version_no_truncate BEFORE TRUNCATE ON fyniq.do
 CREATE TRIGGER document_version_created_by BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_created_by()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER dpia_approval_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dpia_approval FOR EACH ROW EXECUTE FUNCTION dpia_guard()
+CREATE TRIGGER dpia_approval_no_truncate BEFORE TRUNCATE ON fyniq.dpia_approval FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER dpia_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dpia_version FOR EACH ROW EXECUTE FUNCTION dpia_guard()
+CREATE TRIGGER dpia_version_no_truncate BEFORE TRUNCATE ON fyniq.dpia_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER email_event_guard BEFORE DELETE OR UPDATE ON fyniq.email_event FOR EACH ROW EXECUTE FUNCTION email_event_guard()
 CREATE TRIGGER email_event_no_truncate BEFORE TRUNCATE ON fyniq.email_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
@@ -5395,6 +5454,8 @@ document_template | tenant_isolation | * | (organisation_id = current_org()) | (
 document_template_default | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_template_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dpia_approval | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dpia_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5539,6 +5600,8 @@ document_template | enabled | forced
 document_template_default | enabled | forced
 document_template_version | enabled | forced
 document_version | enabled | forced
+dpia_approval | enabled | forced
+dpia_version | enabled | forced
 email_event | enabled | forced
 email_message | enabled | forced
 email_sender | enabled | forced
@@ -5750,6 +5813,7 @@ document_template_choice_guard() → trigger | security invoker | v | search_pat
 document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+dpia_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 219729e646b308525974d7a3aabdfd87
 email_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 990580601ef047ba0fb748308b38b333
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b6a284761fd3d84057f1716d568cfe8c
