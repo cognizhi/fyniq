@@ -51,7 +51,8 @@ The checks run by themselves:
 
 Each night Fyniq works the books out again from every entry and compares the result with what
 you see: the balances against their journal lines, and the audit trail's chain of events. The
-**Nightly ledger verification** card shows how last night's run went.
+**Nightly ledger verification** card shows how last night's run went. In Expert mode, **Compliance** › **Controls**
+shows these verifications, and the checks that answer for a control, beside the rest of the controls.
 
 ## Run the checks now
 

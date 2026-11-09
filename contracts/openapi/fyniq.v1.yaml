@@ -10908,6 +10908,218 @@ components:
         - from
         - to
       type: object
+    Control:
+      additionalProperties: false
+      properties:
+        checked_at:
+          description: When compliance.run last worked out its status; none before its first run.
+          examples:
+            - "2027-01-03T20:35:00Z"
+          format: date-time
+          type: string
+        checks:
+          description: Each check, by frequency, with what it last said.
+          items:
+            $ref: "#/components/schemas/ControlCheck"
+          type: array
+        control:
+          description: What the control holds, as Appendix F words it.
+          examples:
+            - Payments and payee bank changes are dual-controlled
+          type: string
+        detail:
+          description: "In plain words, why: the worst check's words, or that each passed."
+          examples:
+            - "1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it"
+          type: string
+        failing_since:
+          description: While it fails or is overdue, since when.
+          examples:
+            - "2027-01-02T20:35:00Z"
+          format: date-time
+          type: string
+        frameworks:
+          description: The frameworks it maps to, as frameworks names them.
+          items:
+            description: A framework's key, as Controls.frameworks lists them.
+            enum:
+              - sg-statute
+              - pdpa
+              - iso27001
+              - soc2
+              - csa-ce
+              - csa-ct
+              - imda-ai
+              - owasp
+              - coso
+              - isa
+            examples:
+              - soc2
+            type: string
+          type: array
+        frequency:
+          description: How often it is checked, as Appendix F says.
+          examples:
+            - CI, N
+          type: string
+        id:
+          description: The control's ID.
+          examples:
+            - CTL-FIN-08
+          type: string
+        mapping:
+          description: Its mapping to the frameworks, as Appendix F words it.
+          examples:
+            - COSO P8; SOC2 CC6.1
+          type: string
+        owner:
+          description: The role that answers for it, and that a notice of its failure goes to.
+          enum:
+            - owner
+            - administrator
+            - controller
+            - accountant
+            - dpo
+            - auditor
+          examples:
+            - controller
+          type: string
+        section:
+          description: Its section of Appendix F.
+          examples:
+            - F.1
+          type: string
+        status:
+          description: "The worst of its checks': fail, overdue, not assessed, pass; not applicable when none applies."
+          enum:
+            - pass
+            - fail
+            - overdue
+            - not_applicable
+            - not_assessed
+          examples:
+            - fail
+          type: string
+      required:
+        - id
+        - section
+        - control
+        - owner
+        - frameworks
+        - mapping
+        - frequency
+        - status
+        - detail
+        - checks
+      type: object
+    ControlCheck:
+      additionalProperties: false
+      properties:
+        arrives:
+          description: For a planned check, the change it arrives with.
+          examples:
+            - p1-mcp-first-party
+          type: string
+        detail:
+          description: "In plain words: what passed, what it found, or what is missing."
+          examples:
+            - "1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it"
+          type: string
+        evidence:
+          description: "A link to its evidence, where there is one: a CI check's asset of the release the platform runs."
+          examples:
+            - https://github.com/cognizhi/fyniq/releases/download/v1.2.0/test-report.zip
+          format: uri
+          type: string
+        frequency:
+          description: CI on every change, daily, nightly, weekly, monthly, quarterly, semi-annually, or on an event.
+          enum:
+            - CI
+            - D
+            - "N"
+            - W
+            - M
+            - Q
+            - S
+            - E
+          examples:
+            - "N"
+          type: string
+        how:
+          description: "What runs it: make <target>, test <Go test> or ci <job> in CI; job <platform job>; check <catalogue check>; verify <verification>; attestation <review>; tofu <module>/<run> for a check that runs in the cloud."
+          examples:
+            - verify payments.dual-control
+          type: string
+        keeps:
+          description: What its evidence is and where it is kept, as the registry says.
+          examples:
+            - the latest run for the organisation (fyniq.control_run)
+          type: string
+        kind:
+          description: "ci: in CI, read from the release the platform runs. job: a platform job. check: a check of the catalogue (Appendix C). verify: a verification compliance.run makes nightly. attestation: a review a person signs off. cloud: it runs only in the cloud. none: nothing runs it yet."
+          enum:
+            - ci
+            - job
+            - check
+            - verify
+            - attestation
+            - cloud
+            - none
+          examples:
+            - verify
+          type: string
+        state:
+          description: "running: it runs here. planned: it arrives with a later change, named in arrives. manual: checked by hand. cloud: built, run only in the cloud."
+          enum:
+            - running
+            - planned
+            - manual
+            - cloud
+          examples:
+            - running
+          type: string
+        status:
+          description: What it last said.
+          enum:
+            - pass
+            - fail
+            - overdue
+            - not_applicable
+            - not_assessed
+          examples:
+            - fail
+          type: string
+      required:
+        - frequency
+        - kind
+        - state
+        - status
+        - detail
+      type: object
+    ControlFramework:
+      additionalProperties: false
+      properties:
+        controls:
+          description: How many controls map to it.
+          examples:
+            - 34
+          format: int64
+          type: integer
+        key:
+          description: Its key, for the framework filter.
+          examples:
+            - soc2
+          type: string
+        title:
+          description: Its name.
+          examples:
+            - SOC 2
+          type: string
+      required:
+        - key
+        - title
+        - controls
+      type: object
     ControllerEntryDraft:
       additionalProperties: false
       properties:
@@ -11231,6 +11443,28 @@ components:
         - votes
         - rights
         - standing
+      type: object
+    Controls:
+      additionalProperties: false
+      properties:
+        frameworks:
+          description: Every framework of the registry, in the order the dashboard lists them.
+          items:
+            $ref: "#/components/schemas/ControlFramework"
+          type: array
+        items:
+          description: The controls the filters keep, in the registry's order.
+          items:
+            $ref: "#/components/schemas/Control"
+          type: array
+        release:
+          description: The release the platform runs, whose evidence its CI checks read; none in a development build, where they are not assessed.
+          examples:
+            - v1.2.0
+          type: string
+      required:
+        - items
+        - frameworks
       type: object
     ConversionACRA:
       additionalProperties: false
@@ -66726,6 +66960,268 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        right: V
+  /v1/compliance/controls:
+    get:
+      description: "Every control of the registry (PRD-001 Appendix F) with its status for the organisation (CMP-01): pass, fail, overdue, not applicable, or not assessed naming what is missing; each check by frequency with what it last said and its evidence; its owner role and the frameworks it maps to. A control's status is the worst of its checks', as compliance.run last worked it out each night; a check that runs in CI reads the release the platform runs. Filter by framework or status. Read-only; no side effects."
+      operationId: listControls
+      parameters:
+        - description: Only the controls mapped to this framework.
+          explode: false
+          in: query
+          name: framework
+          schema:
+            description: Only the controls mapped to this framework.
+            enum:
+              - sg-statute
+              - pdpa
+              - iso27001
+              - soc2
+              - csa-ce
+              - csa-ct
+              - imda-ai
+              - owasp
+              - coso
+              - isa
+            examples:
+              - soc2
+            type: string
+        - description: Only the controls with this status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only the controls with this status.
+            enum:
+              - pass
+              - fail
+              - overdue
+              - not_applicable
+              - not_assessed
+            examples:
+              - fail
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Controls"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the controls and their status
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The registry's controls, under a hundred, are read whole: the dashboard and its framework counts need all of them."
+      x-fyniq-permission:
+        capability: Compliance Center
+        right: V
+  /v1/compliance/controls/{control_id}:
+    get:
+      description: One control as listControls shows it. A control the registry does not hold is COMPLIANCE-01. Read-only; no side effects.
+      operationId: getControl
+      parameters:
+        - description: The control's ID.
+          in: path
+          name: control_id
+          required: true
+          schema:
+            description: The control's ID.
+            examples:
+              - CTL-FIN-08
+            pattern: ^CTL-[A-Z]+-[0-9]{2}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Control"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `COMPLIANCE-01` No such control."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a control and its status
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - COMPLIANCE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "One control, not a list: its checks are a handful, one or more per frequency."
+      x-fyniq-permission:
+        capability: Compliance Center
         right: V
   /v1/compliance/filings:
     get:

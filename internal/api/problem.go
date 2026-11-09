@@ -220,6 +220,7 @@ var codeFacts = map[string]struct {
 	CodeExportNotYours:            {403, "Another person's export"},
 	storage.CodeKPIInput:          {409, "A month's KPI counts change only as their next version"},
 	CodeUnknownCheck:              {404, "No such check"},
+	CodeUnknownControl:            {404, "No such control"},
 	CodeCheckOwner:                {422, "That person cannot own the check"},
 	CodeNotToReview:               {422, "Not an item to review"},
 	storage.CodeCheckReview:       {409, "A review is never changed"},

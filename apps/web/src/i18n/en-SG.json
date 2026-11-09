@@ -2010,7 +2010,19 @@
     },
     "nav.compliance": {
       "label": "Compliance",
-      "tooltip": "The statutory calendar of filing and payment deadlines, and GST registration."
+      "tooltip": "The statutory deadlines, the controls, the GST position, the evidence and the audit trail."
+    },
+    "compliance.controls": {
+      "label": "Controls",
+      "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."
+    },
+    "controls.filter": {
+      "label": "Framework",
+      "tooltip": "Show only the controls mapped to one framework, such as SOC 2 or PDPA."
+    },
+    "inbox.controls": {
+      "label": "Compliance",
+      "tooltip": "The controls you answer for that failed or are overdue, from the Compliance Center."
     },
     "compliance.calendar": {
       "label": "Statutory calendar",

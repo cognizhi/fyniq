@@ -2760,6 +2760,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the controls and their status
+         * @description Every control of the registry (PRD-001 Appendix F) with its status for the organisation (CMP-01): pass, fail, overdue, not applicable, or not assessed naming what is missing; each check by frequency with what it last said and its evidence; its owner role and the frameworks it maps to. A control's status is the worst of its checks', as compliance.run last worked it out each night; a check that runs in CI reads the release the platform runs. Filter by framework or status. Read-only; no side effects.
+         */
+        get: operations["listControls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/controls/{control_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a control and its status
+         * @description One control as listControls shows it. A control the registry does not hold is COMPLIANCE-01. Read-only; no side effects.
+         */
+        get: operations["getControl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/filings": {
         parameters: {
             query?: never;
@@ -19600,6 +19640,136 @@ export interface components {
              */
             to: string;
         };
+        Control: {
+            /**
+             * Format: date-time
+             * @description When compliance.run last worked out its status; none before its first run.
+             * @example 2027-01-03T20:35:00Z
+             */
+            checked_at?: string;
+            /** @description Each check, by frequency, with what it last said. */
+            checks: components["schemas"]["ControlCheck"][];
+            /**
+             * @description What the control holds, as Appendix F words it.
+             * @example Payments and payee bank changes are dual-controlled
+             */
+            control: string;
+            /**
+             * @description In plain words, why: the worst check's words, or that each passed.
+             * @example 1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it
+             */
+            detail: string;
+            /**
+             * Format: date-time
+             * @description While it fails or is overdue, since when.
+             * @example 2027-01-02T20:35:00Z
+             */
+            failing_since?: string;
+            /** @description The frameworks it maps to, as frameworks names them. */
+            frameworks: ("sg-statute" | "pdpa" | "iso27001" | "soc2" | "csa-ce" | "csa-ct" | "imda-ai" | "owasp" | "coso" | "isa")[];
+            /**
+             * @description How often it is checked, as Appendix F says.
+             * @example CI, N
+             */
+            frequency: string;
+            /**
+             * @description The control's ID.
+             * @example CTL-FIN-08
+             */
+            id: string;
+            /**
+             * @description Its mapping to the frameworks, as Appendix F words it.
+             * @example COSO P8; SOC2 CC6.1
+             */
+            mapping: string;
+            /**
+             * @description The role that answers for it, and that a notice of its failure goes to.
+             * @example controller
+             * @enum {string}
+             */
+            owner: "owner" | "administrator" | "controller" | "accountant" | "dpo" | "auditor";
+            /**
+             * @description Its section of Appendix F.
+             * @example F.1
+             */
+            section: string;
+            /**
+             * @description The worst of its checks': fail, overdue, not assessed, pass; not applicable when none applies.
+             * @example fail
+             * @enum {string}
+             */
+            status: "pass" | "fail" | "overdue" | "not_applicable" | "not_assessed";
+        };
+        ControlCheck: {
+            /**
+             * @description For a planned check, the change it arrives with.
+             * @example p1-mcp-first-party
+             */
+            arrives?: string;
+            /**
+             * @description In plain words: what passed, what it found, or what is missing.
+             * @example 1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it
+             */
+            detail: string;
+            /**
+             * Format: uri
+             * @description A link to its evidence, where there is one: a CI check's asset of the release the platform runs.
+             * @example https://github.com/cognizhi/fyniq/releases/download/v1.2.0/test-report.zip
+             */
+            evidence?: string;
+            /**
+             * @description CI on every change, daily, nightly, weekly, monthly, quarterly, semi-annually, or on an event.
+             * @example N
+             * @enum {string}
+             */
+            frequency: "CI" | "D" | "N" | "W" | "M" | "Q" | "S" | "E";
+            /**
+             * @description What runs it: make <target>, test <Go test> or ci <job> in CI; job <platform job>; check <catalogue check>; verify <verification>; attestation <review>; tofu <module>/<run> for a check that runs in the cloud.
+             * @example verify payments.dual-control
+             */
+            how?: string;
+            /**
+             * @description What its evidence is and where it is kept, as the registry says.
+             * @example the latest run for the organisation (fyniq.control_run)
+             */
+            keeps?: string;
+            /**
+             * @description ci: in CI, read from the release the platform runs. job: a platform job. check: a check of the catalogue (Appendix C). verify: a verification compliance.run makes nightly. attestation: a review a person signs off. cloud: it runs only in the cloud. none: nothing runs it yet.
+             * @example verify
+             * @enum {string}
+             */
+            kind: "ci" | "job" | "check" | "verify" | "attestation" | "cloud" | "none";
+            /**
+             * @description running: it runs here. planned: it arrives with a later change, named in arrives. manual: checked by hand. cloud: built, run only in the cloud.
+             * @example running
+             * @enum {string}
+             */
+            state: "running" | "planned" | "manual" | "cloud";
+            /**
+             * @description What it last said.
+             * @example fail
+             * @enum {string}
+             */
+            status: "pass" | "fail" | "overdue" | "not_applicable" | "not_assessed";
+        };
+        ControlFramework: {
+            /**
+             * Format: int64
+             * @description How many controls map to it.
+             * @example 34
+             */
+            controls: number;
+            /**
+             * @description Its key, for the framework filter.
+             * @example soc2
+             */
+            key: string;
+            /**
+             * @description Its name.
+             * @example SOC 2
+             */
+            title: string;
+        };
         ControllerEntryDraft: {
             /**
              * Format: date
@@ -19834,6 +20004,17 @@ export interface components {
              * @example 42.19
              */
             voting?: string;
+        };
+        Controls: {
+            /** @description Every framework of the registry, in the order the dashboard lists them. */
+            frameworks: components["schemas"]["ControlFramework"][];
+            /** @description The controls the filters keep, in the registry's order. */
+            items: components["schemas"]["Control"][];
+            /**
+             * @description The release the platform runs, whose evidence its CI checks read; none in a development build, where they are not assessed.
+             * @example v1.2.0
+             */
+            release?: string;
         };
         ConversionACRA: {
             /**
@@ -59528,6 +59709,209 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CAL-04` The calendar's window does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listControls: {
+        parameters: {
+            query?: {
+                /** @description Only the controls mapped to this framework. */
+                framework?: "sg-statute" | "pdpa" | "iso27001" | "soc2" | "csa-ce" | "csa-ct" | "imda-ai" | "owasp" | "coso" | "isa";
+                /** @description Only the controls with this status. */
+                status?: "pass" | "fail" | "overdue" | "not_applicable" | "not_assessed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Controls"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The control's ID. */
+                control_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Control"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `COMPLIANCE-01` No such control. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

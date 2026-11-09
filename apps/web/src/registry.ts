@@ -155,6 +155,8 @@ export const routes = [
   { kind: "route", id: "compliance-gst", path: "/compliance/gst", mode: "expert", signedIn: true, help: "compliance.gst", guide: "compliance.gst" },
   { kind: "route", id: "evidence-search", path: "/compliance/evidence", mode: "expert", signedIn: true, help: "compliance.evidence", guide: "compliance.evidence" },
   { kind: "route", id: "audit-trail", path: "/compliance/audit-trail", mode: "expert", signedIn: true, help: "compliance.audit-trail", guide: "compliance.audit-trail" },
+  { kind: "route", id: "compliance", path: "/compliance", mode: "basic", signedIn: true, help: "nav.compliance", guide: "compliance.controls" },
+  { kind: "route", id: "compliance-controls", path: "/compliance/controls", mode: "expert", signedIn: true, help: "compliance.controls", guide: "compliance.controls" },
   { kind: "route", id: "accountant-review", path: "/accounting/reviews/$reviewId", mode: "expert", signedIn: true, help: "accounting.review", guide: "accounting.reviews#raise-and-answer-queries" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
@@ -379,6 +381,8 @@ export const actions = [
   { kind: "action", id: "calendar.tile-overdue", mode: "basic", help: "calendar.tile-overdue", guide: "compliance.calendar#reminders-and-checks" },
   { kind: "action", id: "calendar.tile-done", mode: "basic", help: "calendar.tile-done", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "inbox.deadlines", mode: "basic", help: "inbox.deadlines", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "controls.filter", mode: "expert", help: "controls.filter", guide: "compliance.controls#filter-by-framework" },
+  { kind: "action", id: "inbox.controls", mode: "basic", help: "inbox.controls", guide: "compliance.controls#when-a-control-fails" },
   { kind: "action", id: "statutory-filing.attach-evidence", mode: "basic", help: "statutory-filing.attach-evidence", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "gst-forecast.attach-evidence", mode: "expert", help: "gst-forecast.attach-evidence", guide: "compliance.gst#record-a-forecast" },
   { kind: "action", id: "gst-forecast.draft", mode: "expert", help: "gst-forecast.draft", guide: "compliance.gst#record-a-forecast" },
@@ -625,7 +629,7 @@ export const nav = [
   { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
   // Planning shows to the roles that read the plans (Appendix D "Budgets, forecasts", V), in Expert's sidebar.
   { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "auditor", "tax_agent", "board_viewer"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
-  { kind: "nav", id: "nav.compliance", route: "/compliance/calendar", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
+  { kind: "nav", id: "nav.compliance", route: "/compliance", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 

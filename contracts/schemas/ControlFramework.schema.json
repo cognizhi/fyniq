@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "controls": {
+      "description": "How many controls map to it.",
+      "examples": [
+        34
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "key": {
+      "description": "Its key, for the framework filter.",
+      "examples": [
+        "soc2"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its name.",
+      "examples": [
+        "SOC 2"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "controls"
+  ],
+  "title": "ControlFramework",
+  "type": "object"
+}
