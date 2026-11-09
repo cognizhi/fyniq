@@ -220,8 +220,12 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   is ⏰ for what is due, ⚠ for a notice unanswered 30 days or a controller the test no longer names, and not assessed when
   only rights remain to weigh; C.2 #28 warns when the register decides otherwise than the status recorded. The annual
   notices are recorded on the controller entry; the company secretary's confirmation is its evidence (question 41).)
-- [ ] 8.2 The investor rights and controllers on HolderRecord, with help keys and guide sections. Vitest and axe.
+- [x] 8.2 The investor rights and controllers on HolderRecord, with help keys and guide sections. Vitest and axe.
   `// req: FR-EQ-22`, `// req: FR-EQ-25`
+  (Slice 7b: on the holder page, "Rights from the agreements" with a "Could confer control" chip, and "Registrable
+  controller" with the test's words, the standing chip and the days due, the entry in force with its notices, each with
+  its draft, evidence and approval. The design's investments, obligations (FR-EQ-28, P2) and documents tabs are not
+  built here; the exempt test shows on the checks page.)
 
 ## 9. The ACRA reconciliation and integrity (slice 8)
 
