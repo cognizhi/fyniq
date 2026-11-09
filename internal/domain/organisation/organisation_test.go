@@ -139,3 +139,14 @@ func TestTheDPOsContact(t *testing.T) {
 		t.Errorf("a DPO email that is not one: %v", got)
 	}
 }
+
+// A notice's summary is its first paragraph after the title, on one line (CMP-PD-03).
+// req: CMP-PD-03
+func TestANoticesSummary(t *testing.T) {
+	if got := NoticeSummary("# Title\n\nFirst line\nof the summary.\n\n## Next\n\nMore."); got != "First line of the summary." {
+		t.Errorf("a summary: %q", got)
+	}
+	if got := NoticeSummary(""); got != "" {
+		t.Errorf("no notice: %q", got)
+	}
+}

@@ -10528,6 +10528,209 @@ components:
         - destinations
         - webhooks
       type: object
+    ConsentInput:
+      additionalProperties: false
+      properties:
+        event:
+          description: "given: a consent the person gave; withdrawn: one they withdrew."
+          enum:
+            - given
+            - withdrawn
+          examples:
+            - given
+          type: string
+        note:
+          description: How it was given or withdrawn.
+          examples:
+            - Asked by email on 8 Nov 2026.
+          maxLength: 2000
+          type: string
+        person:
+          description: "Whose consent: member:<user id> for a purpose for members, contact:<contact id> for one for contacts."
+          examples:
+            - contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+          pattern: ^(member|contact):[0-9a-f-]{36}$
+          type: string
+        purpose_id:
+          description: The purpose, from listConsentPurposes.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+      required:
+        - purpose_id
+        - person
+        - event
+      type: object
+    ConsentPurposeInput:
+      additionalProperties: false
+      properties:
+        audience:
+          description: Whose data it uses.
+          enum:
+            - members
+            - contacts
+          examples:
+            - contacts
+          type: string
+        description:
+          description: What it means for the person.
+          examples:
+            - A monthly email about our products, to customers' contacts who ask for it.
+          maxLength: 2000
+          minLength: 1
+          type: string
+        name:
+          description: What the data is used for, in a few words.
+          examples:
+            - Newsletter
+          maxLength: 200
+          minLength: 1
+          type: string
+        needs_consent:
+          description: Whether it needs each person's consent.
+          examples:
+            - true
+          type: boolean
+      required:
+        - name
+        - description
+        - audience
+        - needs_consent
+      type: object
+    ConsentPurposeView:
+      additionalProperties: false
+      properties:
+        audience:
+          description: "Whose data it uses: the organisation's members, or its contacts."
+          enum:
+            - members
+            - contacts
+          examples:
+            - contacts
+          type: string
+        created_at:
+          description: When.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        created_by:
+          description: Who added it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        description:
+          description: What it means for the person.
+          examples:
+            - A monthly email about our products, to customers' contacts who ask for it.
+          type: string
+        given:
+          description: How many people's consent stands for it now.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        id:
+          description: The purpose's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        name:
+          description: What the data is used for, in a few words.
+          examples:
+            - Newsletter
+          type: string
+        needs_consent:
+          description: Whether the purpose needs each person's consent; one that does is used only for those whose consent stands.
+          examples:
+            - true
+          type: boolean
+      required:
+        - id
+        - name
+        - description
+        - audience
+        - needs_consent
+        - created_by
+        - created_at
+        - given
+      type: object
+    ConsentPurposesOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The organisation's purposes, oldest first. None is defined by default.
+          items:
+            $ref: "#/components/schemas/ConsentPurposeView"
+          type: array
+      required:
+        - items
+      type: object
+    ConsentView:
+      additionalProperties: false
+      properties:
+        at:
+          description: When the person gave or withdrew it, as recorded.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        event:
+          description: Given, or withdrawn.
+          enum:
+            - given
+            - withdrawn
+          examples:
+            - given
+          type: string
+        id:
+          description: The record's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+          format: uuid
+          type: string
+        note:
+          description: How it was given or withdrawn, such as the email it came in.
+          examples:
+            - Asked by email on 8 Nov 2026.
+          type: string
+        person:
+          description: "Whose consent: member:<user id> or contact:<contact id>."
+          examples:
+            - contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+          type: string
+        purpose_id:
+          description: The purpose.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        recorded_by:
+          description: Who recorded it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+      required:
+        - id
+        - purpose_id
+        - person
+        - event
+        - at
+        - recorded_by
+      type: object
+    ConsentsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: Every consent given or withdrawn, oldest first.
+          items:
+            $ref: "#/components/schemas/ConsentView"
+          type: array
+      required:
+        - items
+      type: object
     Contact:
       additionalProperties: false
       properties:
@@ -28902,7 +29105,7 @@ components:
       additionalProperties: false
       properties:
         items:
-          description: The eight policies of CMP-07, in the library's order.
+          description: The policies of CMP-07, the privacy notices of CMP-PD-03, or both, as kind asks, in the library's order.
           items:
             $ref: "#/components/schemas/PolicyView"
           type: array
@@ -29072,8 +29275,18 @@ components:
             - change-management
             - ai-use
             - data-protection
+            - notice-members
+            - notice-contacts
           examples:
             - data-protection
+          type: string
+        kind:
+          description: "policy: one of CMP-07's eight policies, which every member acknowledges. notice: a privacy notice (CMP-PD-03): the members' notice, which every member acknowledges, or the contacts' notice, whose summary goes in what Fyniq sends to contacts."
+          enum:
+            - policy
+            - notice
+          examples:
+            - policy
           type: string
         members:
           description: How many members the current version applies to.
@@ -29083,7 +29296,7 @@ components:
           type: integer
         mine:
           $ref: "#/components/schemas/MyPolicyAcknowledgement"
-          description: The caller's acknowledgement of the current version; none before one is published.
+          description: The caller's acknowledgement of the current version; none before one is published, and none for the contacts' notice, which members do not acknowledge.
         sources:
           description: "With getPolicy: the official sources Fyniq's starting draft was written from."
           items:
@@ -29091,6 +29304,11 @@ components:
           type:
             - array
             - "null"
+        summary:
+          description: "A notice's summary: the first paragraph of its version in force. The contacts' summary ends every email Fyniq sends to a contact."
+          examples:
+            - We keep the names, email addresses and phone numbers of the people we deal with at our customers and suppliers...
+          type: string
         title:
           description: Its title.
           examples:
@@ -29105,6 +29323,7 @@ components:
             - "null"
       required:
         - key
+        - kind
         - title
         - members
         - draft
@@ -67655,6 +67874,559 @@ paths:
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
         right: V
+  /v1/compliance/consent-purposes:
+    get:
+      description: "The purposes the organisation defined for members' or contacts' data, each saying whether it needs consent and how many people's consent stands for it (CMP-PD-03). None is defined by default: Fyniq uses the data for the work, the business relationship and the law's records. Read-only; no side effects."
+      operationId: listConsentPurposes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentPurposesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the consent purposes
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: An organisation defines a handful of purposes at most, read whole.
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: V
+    post:
+      description: "Adds a purpose for members' or contacts' data, saying whether it needs consent (CMP-PD-03). A purpose never changes; add another instead. Side effects: the purpose, the audit event consent_purpose.created. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createConsentPurpose
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentPurposeInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentPurposeView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Add a consent purpose
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-CONSENT-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
+  /v1/compliance/consents:
+    get:
+      description: Every consent given or withdrawn for the organisation's purposes, oldest first, by purpose or person (CMP-PD-03). A person's last record says whether their consent stands. Read-only; no side effects.
+      operationId: listConsents
+      parameters:
+        - description: Only this purpose's records.
+          explode: false
+          in: query
+          name: purpose_id
+          schema:
+            description: Only this purpose's records.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            type: string
+        - description: Only this person's records.
+          explode: false
+          in: query
+          name: person
+          schema:
+            description: Only this person's records.
+            examples:
+              - contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the consents given and withdrawn
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: Consents exist only for the few purposes that need them, read whole for a purpose or a person.
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: V
+    post:
+      description: "Records that a person gave or withdrew their consent for a purpose that needs it (CMP-PD-03). A consent is given only when none stands for that person and purpose, and withdrawn only when one does; withdrawal stops further use. Side effects: the record, the audit event consent.given or consent.withdrawn. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: recordConsent
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record a consent given or withdrawn
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-CONSENT-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
   /v1/compliance/controls:
     get:
       description: "Every control of the registry (PRD-001 Appendix F) with its status for the organisation (CMP-01): pass, fail, overdue, not applicable, or not assessed naming what is missing; each check by frequency with what it last said and its evidence; its owner role and the frameworks it maps to. A control's status is the worst of its checks', as compliance.run last worked it out each night; a check that runs in CI reads the release the platform runs. Filter by framework or status. Read-only; no side effects."
@@ -69845,8 +70617,23 @@ paths:
         right: V
   /v1/compliance/policies:
     get:
-      description: "The eight policies of the library (CMP-07): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, and the draft its next version would be published from. Read-only; no side effects."
+      description: "The eight policies of the library (CMP-07), or with kind the two privacy notices (CMP-PD-03): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, a notice's summary, and the draft its next version would be published from. Read-only; no side effects."
       operationId: listPolicies
+      parameters:
+        - description: "policy (the default): the eight policies; notice: the two privacy notices; all: both."
+          explode: false
+          in: query
+          name: kind
+          schema:
+            default: policy
+            description: "policy (the default): the eight policies; notice: the two privacy notices; all: both."
+            enum:
+              - policy
+              - notice
+              - all
+            examples:
+              - notice
+            type: string
       responses:
         "200":
           content:
@@ -69943,7 +70730,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-exempt:
-        cursor: "The library holds CMP-07's eight policies: the list is always whole and never grows."
+        cursor: "The library holds CMP-07's eight policies and CMP-PD-03's two notices: the list is always whole and never grows."
       x-fyniq-permission:
         capability: "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
         right: V
@@ -69967,6 +70754,8 @@ paths:
               - change-management
               - ai-use
               - data-protection
+              - notice-members
+              - notice-contacts
             examples:
               - data-protection
             type: string
@@ -70101,6 +70890,8 @@ paths:
               - change-management
               - ai-use
               - data-protection
+              - notice-members
+              - notice-contacts
             examples:
               - data-protection
             type: string
@@ -70316,6 +71107,8 @@ paths:
               - change-management
               - ai-use
               - data-protection
+              - notice-members
+              - notice-contacts
             examples:
               - data-protection
             type: string
@@ -70525,6 +71318,8 @@ paths:
               - change-management
               - ai-use
               - data-protection
+              - notice-members
+              - notice-contacts
             examples:
               - data-protection
             type: string

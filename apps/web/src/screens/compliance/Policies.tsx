@@ -15,8 +15,10 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 type Policy = components["schemas"]["PolicyView"];
 type Key = Policy["key"];
 
-async function policies() {
-  const { data, error } = await api.GET("/v1/compliance/policies");
+type Kind = "policy" | "notice" | "all";
+
+async function policies(kind: Kind = "policy") {
+  const { data, error } = await api.GET("/v1/compliance/policies", { params: { query: { kind } } });
   if (error) throw error;
   return data.items;
 }
@@ -47,25 +49,26 @@ function MineChip({ p }: { p: Policy }) {
   );
 }
 
-// PolicyLibrary is the policy library of Compliance › Risks and policies (CMP-07): each policy's version in force, how
-// many members acknowledged it, the reader's own acknowledgement, and for the Owner and the Compliance officer the draft
-// to edit and publish.
-export function PolicyLibrary() {
+// PolicyLibrary is the policy library of Compliance › Risks and policies (CMP-07), or with kind="notice" the privacy
+// notices of Compliance › Privacy notices and consent (CMP-PD-03): each version in force, how many members acknowledged
+// it (the contacts' notice is given to contacts instead), the reader's own acknowledgement, and for the Owner and the
+// Compliance officer the draft to edit and publish.
+export function PolicyLibrary({ kind = "policy", title = "Policy library" }: { kind?: "policy" | "notice"; title?: string }) {
   const id = useId();
   const { session } = useSignedIn();
   const editor = (session.roles ?? []).some((r) => editors.includes(r));
-  const list = useQuery({ queryKey: ["policies"], queryFn: policies });
+  const list = useQuery({ queryKey: ["policies", kind], queryFn: () => policies(kind) });
   const [reading, setReading] = useState<Key | null>(null);
   const [editing, setEditing] = useState<Key | null>(null);
   return (
     <section className="fy-card" aria-labelledby={`${id}-policies`}>
       <div className="fy-card__head">
         <h2 className="fy-h3" id={`${id}-policies`}>
-          Policy library
+          {title}
         </h2>
-        <span className="fy-small fy-muted">Each member acknowledges each version within 30 days</span>
+        <span className="fy-small fy-muted">{kind === "notice" ? "Members acknowledge theirs; contacts get theirs in what Fyniq sends" : "Each member acknowledges each version within 30 days"}</span>
       </div>
-      {list.isError && <Refusal problem={problemOf(list.error)} title="The policy library could not be shown" />}
+      {list.isError && <Refusal problem={problemOf(list.error)} title={`The ${title.toLowerCase()} could not be shown`} />}
       {list.data && (
         <ul className="fy-list" aria-labelledby={`${id}-policies`}>
           {list.data.map((p) => (
@@ -74,7 +77,7 @@ export function PolicyLibrary() {
                 <span className="fy-list__title">{p.title}</span>
                 <span className="fy-list__meta whitespace-normal">
                   {p.current
-                    ? `Version ${p.current.version}, published ${date(p.current.published_at)} · ${p.current.acknowledged} of ${p.members} acknowledged`
+                    ? `Version ${p.current.version}, published ${date(p.current.published_at)} · ${p.key === "notice-contacts" ? "given to contacts in what Fyniq sends" : `${p.current.acknowledged} of ${p.members} acknowledged`}`
                     : "Not published yet"}
                   {editor && p.draft.unpublished && (p.draft.source === "fyniq" ? " · Fyniq's draft ready to adopt" : ` · draft revision ${p.draft.revision} not published`)}
                 </span>
@@ -241,9 +244,10 @@ function PolicyEditor({ policyKey, onClose }: { policyKey: Key; onClose: () => v
 // has not acknowledged, with when each falls due; nothing when none waits.
 export function PoliciesToAcknowledge() {
   const id = useId();
-  const list = useQuery({ queryKey: ["policies"], queryFn: policies });
+  const list = useQuery({ queryKey: ["policies", "all"], queryFn: () => policies("all") });
   const [reading, setReading] = useState<Key | null>(null);
-  const waiting = (list.data ?? []).filter((p) => p.mine && !p.mine.acknowledged_at);
+  // The members' privacy notice first: a member who has just joined reads it before anything else (CMP-PD-03).
+  const waiting = (list.data ?? []).filter((p) => p.mine && !p.mine.acknowledged_at).sort((a, b) => Number(b.kind === "notice") - Number(a.kind === "notice"));
   if (waiting.length === 0) return null;
   return (
     <section className="fy-card" aria-labelledby={`${id}-ack`}>

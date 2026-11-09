@@ -70,17 +70,74 @@ event format.
 
 ## 3. Privacy notices and consent (slice 3)
 
-- [ ] 3.1 The policy library's keys `notice-members` and `notice-contacts` (D2), with Fyniq's drafts in
+- [x] 3.1 The policy library's keys `notice-members` and `notice-contacts` (D2), with Fyniq's drafts in
   `compliance/notices/` from the PDPC's guides, marked [counsel to confirm]. A migration widens the key checks. Tests:
   the drafts' front matter and sources; a notice published and acknowledged as a policy is. `// req: CMP-PD-03`
-- [ ] 3.2 Joining shows the members' notice in force and records its acknowledgement in the same unit of work. A later
+
+  **What building added:**
+    - **The registry.** `compliance.LibraryKeys` holds the eight policies and the two notices.
+      `compliance.Acknowledged` is false only for the contacts' notice. The drafts are `fyniq-notice-draft@1`, written
+      from the PDPC's guidelines on key concepts and on employment, its page on the obligations, and the Guide to
+      Notification.
+    - **The database.** Migrations 000300 and 000301 widen the library's key checks, and the version's `from_draft` check
+      so that it takes `fyniq-notice-draft`.
+    - **The API:**
+      - `listPolicies` takes `kind` (`policy`, the default, `notice` or `all`);
+      - each item has its `kind`, and a notice has its `summary`: the first paragraph of the version in force;
+      - acknowledging the contacts' notice is refused (422), and members have no `mine` on it.
+    - **Reviews.** The reviews list counts the members' notice among the acknowledgements.
+    - **What Fyniq sends.** An email to a customer or supplier (invoice, quote, reminder, statement, remittance) ends
+      with the contacts' summary and the DPO's contact. An email to a member ends with the DPO's contact alone.
+    - **Where the code lives.** `NoticeSummary` is in `internal/domain/organisation`, so that `internal/email` does not
+      import the registry, which would make an import cycle in its tests.
+    - **Tests:**
+      - `TestTheNoticeDrafts`;
+      - `TestThePrivacyNotices`;
+      - `TestWhatFyniqSendsEndsWithThePrivacyFooter`;
+      - `TestAttackConsentKeepsItsHistory`, a notice's version from an unknown draft.
+
+- [x] 3.2 Joining shows the members' notice in force and records its acknowledgement in the same unit of work. A later
   version waits on the "Acknowledge policy" card. Tests: joining records it; joining before any version records
   nothing. `// req: CMP-PD-03`
-- [ ] 3.3 `consent_purpose` and `consent_record` (D2), insert-only and audited, under "Data protection (PDPA)", with
+
+  **What building added:**
+    - **Not in the join's transaction.** An invitation code reveals its organisation only when it is redeemed, so the
+      page cannot show that organisation's notice before joining.
+    - **Right after joining** Fyniq opens Home, where the "Acknowledge policy" card lists the members' notice first.
+      The acknowledgement is the library's own operation, due 30 days after joining, as a policy is. D2's "in the same
+      unit of work" is not built.
+
+- [x] 3.3 `consent_purpose` and `consent_record` (D2), insert-only and audited, under "Data protection (PDPA)", with
   attack tests and matrix rows. Tests: consent given and withdrawn; none asked by default. `// req: CMP-PD-03`
-- [ ] 3.4 The screen Compliance › Privacy notices and consent (Expert, `/compliance/privacy/notices`): the notices with
+
+  **What building added:**
+    - **Tables.** Migration 000302 adds `consent_purpose` and `consent_record`, insert-only (FY311).
+    - **The database's rules:**
+      - a purpose is for members or contacts, and its records name `member:<user id>` or `contact:<contact id>` to
+        match;
+      - a consent is given only when none stands, and withdrawn only when one does.
+    - **Audit.** Each write is audited: `consent_purpose.created`, `consent.given` and `consent.withdrawn`.
+    - **The API.** `listConsentPurposes` (with how many consents stand), `createConsentPurpose`, `listConsents` (by
+      purpose or person) and `recordConsent`, under "Data protection (PDPA)". The DPO creates; the Owner and the
+      Auditor read. A purpose that needs no consent refuses a record.
+    - **Not built:**
+      - retiring a purpose: it never changes, so a new one is added instead;
+      - a member recording their own consent, which waits for slice 6's My personal data.
+
+- [x] 3.4 The screen Compliance › Privacy notices and consent (Expert, `/compliance/privacy/notices`): the notices with
   their versions and acknowledgements, purposes and consents; the join page's notice. Help keys, the guide page
   `compliance-privacy-notices.md` compiled into `kb/`, and component tests with axe. `// req: CMP-PD-03`
+
+  **What building added:**
+    - **The screen.** It lists the two notices with the library's component. The contacts' notice says it is given in
+      what Fyniq sends. Under the notices:
+      - the purposes, with the consents standing;
+      - the Compliance officer's dialogs to add a purpose and to record a consent given or withdrawn;
+      - every record.
+    - **The join page's notice** is the Home card, as 3.2 says.
+    - **Navigation.** The Compliance page lists the screen.
+    - **Help.** The help keys are `compliance.privacy-notices`, `consent.purpose` and `consent.record`. The guide page
+      is compiled into `kb/pages/task/compliance-privacy-notices.md`, and the policies page links to it.
 
 ## 4. The data inventory and retention schedule (slice 4)
 

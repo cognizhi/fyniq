@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "description": "given: a consent the person gave; withdrawn: one they withdrew.",
+      "enum": [
+        "given",
+        "withdrawn"
+      ],
+      "examples": [
+        "given"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "How it was given or withdrawn.",
+      "examples": [
+        "Asked by email on 8 Nov 2026."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "person": {
+      "description": "Whose consent: member:\u003cuser id\u003e for a purpose for members, contact:\u003ccontact id\u003e for one for contacts.",
+      "examples": [
+        "contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "pattern": "^(member|contact):[0-9a-f-]{36}$",
+      "type": "string"
+    },
+    "purpose_id": {
+      "description": "The purpose, from listConsentPurposes.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "purpose_id",
+    "person",
+    "event"
+  ],
+  "title": "ConsentInput",
+  "type": "object"
+}

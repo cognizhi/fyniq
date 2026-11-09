@@ -47,11 +47,11 @@ func QueueWith(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, o
 	if err != nil {
 		return storage.EmailMessage{}, err
 	}
-	o, err := u.Organisation(ctx)
+	footer, err := footerOf(ctx, u, purpose)
 	if err != nil {
 		return storage.EmailMessage{}, err
 	}
-	text = WithFooter(text, organisation.PrivacyFooter(o.Profile))
+	text = WithFooter(text, footer)
 	b, err := json.Marshal(payload{MessageID: m.ID, To: to, Subject: subject, Text: text, Attachments: files})
 	if err != nil {
 		return storage.EmailMessage{}, err
@@ -61,6 +61,44 @@ func QueueWith(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, o
 		return storage.EmailMessage{}, err
 	}
 	return m, nil
+}
+
+// ToContacts reports whether a message of purpose goes to a contact, a customer's or supplier's, rather than a member.
+func ToContacts(purpose string) bool {
+	switch purpose {
+	case PurposeInvoice, PurposeQuote, PurposeReminder, PurposeStatement, PurposeRemittance:
+		return true
+	}
+	return false
+}
+
+// footerOf is a message's footer (CMP-PD-01, CMP-PD-03, rev 0.244): the DPO's contact once one is named, after the
+// summary of the contacts' privacy notice in force for a message to a contact.
+func footerOf(ctx context.Context, u storage.UnitOfWork, purpose string) (string, error) {
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return "", err
+	}
+	lines := []string{}
+	if ToContacts(purpose) {
+		lib, err := u.Compliance().Policies(ctx)
+		if err != nil {
+			return "", err
+		}
+		body := ""
+		for _, v := range lib.Versions { // oldest first: the last is in force
+			if v.Key == "notice-contacts" {
+				body = v.Body
+			}
+		}
+		if s := organisation.NoticeSummary(body); s != "" {
+			lines = append(lines, s)
+		}
+	}
+	if f := organisation.PrivacyFooter(o.Profile); f != "" {
+		lines = append(lines, f)
+	}
+	return strings.Join(lines, "\n"), nil
 }
 
 // WithFooter ends a message's text with the footer, below the plain-text signature line, when there is one: the

@@ -162,3 +162,16 @@ func PrivacyFooter(p storage.OrganisationProfile) string {
 	}
 	return fmt.Sprintf("Questions about your personal data: %s, Data Protection Officer, %s", p.DPOName, p.DPOEmail)
 }
+
+// NoticeSummary is a notice's summary: its first paragraph after the title, on one line. The contacts' summary goes in
+// what Fyniq sends them (CMP-PD-03, rev 0.244).
+func NoticeSummary(body string) string {
+	for _, p := range strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n\n") {
+		p = strings.TrimSpace(p)
+		if p == "" || strings.HasPrefix(p, "#") {
+			continue
+		}
+		return strings.Join(strings.Fields(p), " ")
+	}
+	return ""
+}

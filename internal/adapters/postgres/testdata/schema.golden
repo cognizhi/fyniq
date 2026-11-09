@@ -526,6 +526,22 @@ connector_route | connector_id | uuid | not null |
 connector_route | owner | uuid | not null | 
 connector_route | connector | text | not null | 
 connector_route | state | text | not null | 
+consent_purpose | organisation_id | uuid | not null | current_org()
+consent_purpose | id | uuid | not null | uuidv7()
+consent_purpose | name | text | not null | 
+consent_purpose | description | text | not null | 
+consent_purpose | audience | text | not null | 
+consent_purpose | needs_consent | boolean | not null | 
+consent_purpose | created_by | text | not null | 
+consent_purpose | created_at | timestamp with time zone | not null | 
+consent_record | organisation_id | uuid | not null | current_org()
+consent_record | id | uuid | not null | uuidv7()
+consent_record | purpose_id | uuid | not null | 
+consent_record | person | text | not null | 
+consent_record | event | text | not null | 
+consent_record | at | timestamp with time zone | not null | 
+consent_record | recorded_by | text | not null | 
+consent_record | note | text | null | 
 contact | organisation_id | uuid | not null | current_org()
 contact | id | uuid | not null | uuidv7()
 contact | legal_name | text | not null | 
@@ -2556,6 +2572,36 @@ connector_route | connector_route_connector_not_null | NOT NULL connector
 connector_route | connector_route_owner_not_null | NOT NULL owner
 connector_route | connector_route_pkey | PRIMARY KEY (connector_id)
 connector_route | connector_route_state_not_null | NOT NULL state
+consent_purpose | consent_purpose_audience_known | CHECK ((audience = ANY (ARRAY['members'::text, 'contacts'::text])))
+consent_purpose | consent_purpose_audience_not_null | NOT NULL audience
+consent_purpose | consent_purpose_created_at_not_null | NOT NULL created_at
+consent_purpose | consent_purpose_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+consent_purpose | consent_purpose_created_by_not_null | NOT NULL created_by
+consent_purpose | consent_purpose_description_length | CHECK (((length(btrim(description)) >= 1) AND (length(btrim(description)) <= 2000)))
+consent_purpose | consent_purpose_description_not_null | NOT NULL description
+consent_purpose | consent_purpose_id_not_null | NOT NULL id
+consent_purpose | consent_purpose_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
+consent_purpose | consent_purpose_name_not_null | NOT NULL name
+consent_purpose | consent_purpose_name_once | UNIQUE (organisation_id, name)
+consent_purpose | consent_purpose_needs_consent_not_null | NOT NULL needs_consent
+consent_purpose | consent_purpose_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+consent_purpose | consent_purpose_organisation_id_not_null | NOT NULL organisation_id
+consent_purpose | consent_purpose_pkey | PRIMARY KEY (organisation_id, id)
+consent_purpose | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+consent_record | consent_record_at_not_null | NOT NULL at
+consent_record | consent_record_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+consent_record | consent_record_event_known | CHECK ((event = ANY (ARRAY['given'::text, 'withdrawn'::text])))
+consent_record | consent_record_event_not_null | NOT NULL event
+consent_record | consent_record_id_not_null | NOT NULL id
+consent_record | consent_record_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 2000)))
+consent_record | consent_record_organisation_id_not_null | NOT NULL organisation_id
+consent_record | consent_record_person_format | CHECK ((person ~ '^(member|contact):[0-9a-f-]{36}$'::text))
+consent_record | consent_record_person_not_null | NOT NULL person
+consent_record | consent_record_pkey | PRIMARY KEY (organisation_id, id)
+consent_record | consent_record_purpose_fkey | FOREIGN KEY (organisation_id, purpose_id) REFERENCES consent_purpose(organisation_id, id)
+consent_record | consent_record_purpose_id_not_null | NOT NULL purpose_id
+consent_record | consent_record_recorded_by_not_null | NOT NULL recorded_by
+consent_record | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
 contact | contact_created_at_not_null | NOT NULL created_at
 contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
@@ -3827,7 +3873,7 @@ policy_acknowledgement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 policy_draft | policy_draft_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 100000)))
 policy_draft | policy_draft_body_not_null | NOT NULL body
 policy_draft | policy_draft_id_not_null | NOT NULL id
-policy_draft | policy_draft_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text])))
+policy_draft | policy_draft_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text, 'notice-members'::text, 'notice-contacts'::text])))
 policy_draft | policy_draft_key_not_null | NOT NULL key
 policy_draft | policy_draft_once | UNIQUE (organisation_id, key, revision)
 policy_draft | policy_draft_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -3844,9 +3890,9 @@ policy_draft | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 policy_version | policy_version_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 100000)))
 policy_version | policy_version_body_not_null | NOT NULL body
 policy_version | policy_version_from_draft_not_null | NOT NULL from_draft
-policy_version | policy_version_from_format | CHECK ((from_draft ~ '^(fyniq-policy-draft@[0-9]+|revision [0-9]+)$'::text))
+policy_version | policy_version_from_format | CHECK ((from_draft ~ '^(fyniq-(policy|notice)-draft@[0-9]+|revision [0-9]+)$'::text))
 policy_version | policy_version_id_not_null | NOT NULL id
-policy_version | policy_version_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text])))
+policy_version | policy_version_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text, 'notice-members'::text, 'notice-contacts'::text])))
 policy_version | policy_version_key_not_null | NOT NULL key
 policy_version | policy_version_once | UNIQUE (organisation_id, key, version)
 policy_version | policy_version_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -4451,6 +4497,7 @@ CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisa
 CREATE INDEX check_owner_person ON fyniq.check_owner USING btree (organisation_id, person_user_id)
 CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, run_trigger, finished_at DESC)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
+CREATE INDEX consent_record_person ON fyniq.consent_record USING btree (organisation_id, purpose_id, person, at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX control_run_latest_idx ON fyniq.control_run USING btree (organisation_id, check_how, ran_at)
@@ -4595,6 +4642,9 @@ CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry US
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
 CREATE UNIQUE INDEX connector_route_pkey ON fyniq.connector_route USING btree (connector_id)
+CREATE UNIQUE INDEX consent_purpose_name_once ON fyniq.consent_purpose USING btree (organisation_id, name)
+CREATE UNIQUE INDEX consent_purpose_pkey ON fyniq.consent_purpose USING btree (organisation_id, id)
+CREATE UNIQUE INDEX consent_record_pkey ON fyniq.consent_record USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_member_once ON fyniq.contact USING btree (organisation_id, member_user_id) WHERE (member_user_id IS NOT NULL)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
@@ -4824,6 +4874,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_review DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consent_purpose DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consent_purpose', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consent_record DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consent_record', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.conversion_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'settlement_id')
@@ -5008,6 +5060,10 @@ CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
 CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER consent_purpose_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.consent_purpose FOR EACH ROW EXECUTE FUNCTION consent_guard()
+CREATE TRIGGER consent_purpose_no_truncate BEFORE TRUNCATE ON fyniq.consent_purpose FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER consent_record_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.consent_record FOR EACH ROW EXECUTE FUNCTION consent_guard()
+CREATE TRIGGER consent_record_no_truncate BEFORE TRUNCATE ON fyniq.consent_record FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.contact_document_template FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
@@ -5253,6 +5309,8 @@ claim_category | tenant_isolation | * | (organisation_id = current_org()) | (org
 claim_place | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+consent_purpose | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+consent_record | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 control_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5391,6 +5449,8 @@ claim_place | enabled | forced
 close_checklist_entry | enabled | forced
 close_checklist_template | enabled | forced
 connector_route | disabled | not forced
+consent_purpose | enabled | forced
+consent_record | enabled | forced
 contact | enabled | forced
 contact_document_template | enabled | forced
 control_run | enabled | forced
@@ -5586,6 +5646,7 @@ confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestam
 connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1
 connector_secret_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0663e962d68100701631e767b398d8c0
 connector_secret_named() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9173546f91feb840e7b1996f3342c4
+consent_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ed075cb6c7cdb3f1d863bdd888fe628f
 contact_member_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0faf2bd332726b6037d87c0a8160e65b
 contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29b6cba43d21e49a9d9d42ebe0738728
 control_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 929292e05aad5f2537886f1e37766f67

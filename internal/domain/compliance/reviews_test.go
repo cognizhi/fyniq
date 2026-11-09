@@ -131,6 +131,7 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 			Versions: []storage.PublishedPolicy{
 				{Key: "backup", Version: 1, PublishedAt: now.AddDate(0, 0, -60)},
 				{Key: "backup", Version: 2, PublishedAt: now.AddDate(0, 0, -40)},
+				{Key: "notice-contacts", Version: 1, PublishedAt: now.AddDate(0, 0, -40)}, // given to contacts: no member acknowledges it
 			},
 			Acknowledgements: []storage.PolicyAcknowledgement{{Key: "backup", Version: 1, By: "user:" + alice.String(), At: now.AddDate(0, 0, -59)}},
 		}

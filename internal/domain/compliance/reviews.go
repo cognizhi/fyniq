@@ -338,7 +338,8 @@ func breakGlassReview(glass []storage.BreakGlass, entries []storage.ReviewLogEnt
 }
 
 // Policy acknowledgements (CMP-07): each member acknowledges each version in force, within 30 days of the later of its
-// publication and their joining. They are signed off on the Reviews and attestations page.
+// publication and their joining, of each policy and of the members' privacy notice (CMP-PD-03). They are signed off on
+// the Reviews and attestations page.
 func policyAcknowledgements(lib storage.PolicyLibrary, members []storage.Member, now time.Time) Review {
 	r := Review{Kind: "policy-acknowledgement", Owner: "member", Where: "/compliance/attestations",
 		Evidence: "Each acknowledgement, with the member, the version and the SHA-256 of its text"}
@@ -351,9 +352,9 @@ func policyAcknowledgements(lib storage.PolicyLibrary, members []storage.Member,
 		acked[fmt.Sprintf("%s@%d %s", a.Key, a.Version, a.By)] = true
 		r.signed(a.By, a.At)
 	}
-	for _, key := range registry.PolicyKeys {
+	for _, key := range registry.LibraryKeys {
 		v, ok := current[key]
-		if !ok {
+		if !ok || !registry.Acknowledged(key) {
 			continue
 		}
 		for _, m := range members {

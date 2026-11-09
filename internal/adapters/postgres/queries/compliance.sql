@@ -160,3 +160,21 @@ RETURNING *;
 INSERT INTO fyniq.policy_acknowledgement (key, version, acknowledged_by, acknowledged_at)
 VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(acknowledged_by), sqlc.arg(acknowledged_at))
 RETURNING *;
+
+-- name: ListConsentPurposes :many
+-- The organisation's consent purposes, oldest first (CMP-PD-03).
+SELECT id, name, description, audience, needs_consent, created_by, created_at FROM fyniq.consent_purpose ORDER BY created_at, id;
+
+-- name: InsertConsentPurpose :one
+INSERT INTO fyniq.consent_purpose (name, description, audience, needs_consent, created_by, created_at)
+VALUES (sqlc.arg(name), sqlc.arg(description), sqlc.arg(audience), sqlc.arg(needs_consent), sqlc.arg(created_by), sqlc.arg(created_at))
+RETURNING id, name, description, audience, needs_consent, created_by, created_at;
+
+-- name: ListConsentRecords :many
+-- Every consent given or withdrawn, oldest first (CMP-PD-03).
+SELECT id, purpose_id, person, event, at, recorded_by, note FROM fyniq.consent_record ORDER BY at, id;
+
+-- name: InsertConsentRecord :one
+INSERT INTO fyniq.consent_record (purpose_id, person, event, at, recorded_by, note)
+VALUES (sqlc.arg(purpose_id), sqlc.arg(person), sqlc.arg(event), sqlc.arg(at), sqlc.arg(recorded_by), sqlc.narg(note))
+RETURNING id, purpose_id, person, event, at, recorded_by, note;

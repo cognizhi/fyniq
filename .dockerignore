@@ -14,6 +14,7 @@
 !compliance/risks.go
 !compliance/policies.go
 !compliance/policies/
+!compliance/notices/
 !compliance/controls/
 !packs/
 !connectors/

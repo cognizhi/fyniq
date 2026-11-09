@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
+	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -57,11 +58,13 @@ type PolicyDraftView struct {
 
 // PolicyView is a policy of the library.
 type PolicyView struct {
-	Key      string                   `json:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection" doc:"The policy's key." example:"data-protection"`
+	Key      string                   `json:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection,notice-members,notice-contacts" doc:"The policy's key." example:"data-protection"`
+	Kind     string                   `json:"kind" enum:"policy,notice" doc:"policy: one of CMP-07's eight policies, which every member acknowledges. notice: a privacy notice (CMP-PD-03): the members' notice, which every member acknowledges, or the contacts' notice, whose summary goes in what Fyniq sends to contacts." example:"policy"`
 	Title    string                   `json:"title" doc:"Its title." example:"Data protection policy"`
+	Summary  string                   `json:"summary,omitempty" doc:"A notice's summary: the first paragraph of its version in force. The contacts' summary ends every email Fyniq sends to a contact." example:"We keep the names, email addresses and phone numbers of the people we deal with at our customers and suppliers..."`
 	Current  *PolicyVersionView       `json:"current,omitempty" doc:"The version in force; none before the first is published."`
 	Members  int                      `json:"members" doc:"How many members the current version applies to." example:"4"`
-	Mine     *MyPolicyAcknowledgement `json:"mine,omitempty" doc:"The caller's acknowledgement of the current version; none before one is published."`
+	Mine     *MyPolicyAcknowledgement `json:"mine,omitempty" doc:"The caller's acknowledgement of the current version; none before one is published, and none for the contacts' notice, which members do not acknowledge."`
 	Draft    PolicyDraftView          `json:"draft" doc:"The draft its next version is published from."`
 	Body     string                   `json:"body,omitempty" doc:"With getPolicy: the current version's text, as Markdown." example:"# Data protection policy\n\n## Purpose\n..."`
 	Versions []PolicyVersionView      `json:"versions,omitempty" doc:"With getPolicy: every published version, oldest first."`
@@ -77,20 +80,23 @@ type PolicySourceView struct {
 
 // Policies is the library.
 type Policies struct {
-	Items []PolicyView `json:"items" nullable:"false" doc:"The eight policies of CMP-07, in the library's order."`
+	Items []PolicyView `json:"items" nullable:"false" doc:"The policies of CMP-07, the privacy notices of CMP-PD-03, or both, as kind asks, in the library's order."`
 }
 
 type (
 	// PolicyPath is a policy's path parameter (exported: huma reads only an exported embedded struct).
 	PolicyPath struct {
-		Key string `path:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection" doc:"The policy's key." example:"data-protection"`
+		Key string `path:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection,notice-members,notice-contacts" doc:"The policy's key." example:"data-protection"`
 	}
 	// PolicyVersionPath is a published version's path parameters.
 	PolicyVersionPath struct {
-		Key     string `path:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection" doc:"The policy's key." example:"data-protection"`
+		Key     string `path:"key" enum:"information-security,acceptable-use,access-control,incident-response,backup,change-management,ai-use,data-protection,notice-members,notice-contacts" doc:"The policy's key." example:"data-protection"`
 		Version int    `path:"version" minimum:"1" doc:"The version." example:"2"`
 	}
 	policiesOutput struct{ Body Policies }
+	policiesInput  struct {
+		Kind string `query:"kind" enum:"policy,notice,all" default:"policy" doc:"policy (the default): the eight policies; notice: the two privacy notices; all: both." example:"notice"`
+	}
 	policyOutput   struct {
 		ETag string `header:"ETag" doc:"The draft's revision, for If-Match on savePolicyDraft and publishPolicyVersion."`
 		Body PolicyView
@@ -136,9 +142,9 @@ func policyAnswer(w written[PolicyView]) *policyWriteOutput {
 
 // policyViews are the library's policies for the caller: each with its current version, its draft (the text only for those
 // who may edit), the caller's acknowledgement, and, with full, the current text, every version and the draft's sources.
-func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) ([]PolicyView, error) {
+func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool, kind string) ([]PolicyView, error) {
 	p, _ := authn.From(ctx)
-	drafts, err := compliance.PolicyDrafts()
+	drafts, err := compliance.LibraryDrafts()
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +167,14 @@ func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) 
 	editor := authz.Decide(authz.SavePolicyDraft, p.Roles, p.AI()).Allowed
 	out := make([]PolicyView, 0, len(drafts))
 	for _, d := range drafts {
-		v := PolicyView{Key: d.Key, Title: d.Title, Members: len(members),
+		k := "policy"
+		if compliance.IsNotice(d.Key) {
+			k = "notice"
+		}
+		if kind != "all" && kind != k {
+			continue
+		}
+		v := PolicyView{Key: d.Key, Kind: k, Title: d.Title, Members: len(members),
 			Draft: PolicyDraftView{Source: "fyniq", SHA256: d.SHA256, Body: d.Body}}
 		if i := slices.IndexFunc(lib.Drafts, func(x storage.PolicyDraft) bool { return x.Key == d.Key }); i >= 0 {
 			x := lib.Drafts[i]
@@ -186,7 +199,10 @@ func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) 
 			current, v.Current = &lib.Versions[i], &view
 		}
 		v.Draft.Unpublished = current == nil || hex.EncodeToString(current.SHA256) != v.Draft.SHA256
-		if current != nil {
+		if current != nil && v.Kind == "notice" {
+			v.Summary = organisation.NoticeSummary(current.Body)
+		}
+		if current != nil && compliance.Acknowledged(d.Key) {
 			due := controls.AcknowledgeBy(current.PublishedAt, joined)
 			mine := &MyPolicyAcknowledgement{Version: current.Version, DueOn: controls.Day(due).Format(time.DateOnly)}
 			for _, ack := range lib.Acknowledgements {
@@ -197,9 +213,9 @@ func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) 
 			}
 			mine.Overdue = mine.AcknowledgedAt == nil && now.After(due)
 			v.Mine = mine
-			if full {
-				v.Body = current.Body
-			}
+		}
+		if current != nil && full {
+			v.Body = current.Body
 		}
 		if !editor {
 			v.Draft.Body = ""
@@ -217,7 +233,7 @@ func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) 
 }
 
 func (a *API) onePolicy(ctx context.Context, u storage.UnitOfWork, key string) (PolicyView, error) {
-	all, err := a.policyViews(ctx, u, true)
+	all, err := a.policyViews(ctx, u, true, "all")
 	if err != nil {
 		return PolicyView{}, err
 	}
@@ -236,15 +252,15 @@ func registerPolicies(a *API) {
 	register(a, authz.ListPolicies, exempt(huma.Operation{
 		OperationID: "listPolicies", Method: http.MethodGet, Path: "/v1/compliance/policies", Tags: []string{"Compliance"},
 		Summary: "List the policy library",
-		Description: "The eight policies of the library (CMP-07): each with its version in force, how many members acknowledged it, the " +
-			"caller's own acknowledgement and when it falls due, and the draft its next version would be published from. Read-only; no " +
-			"side effects.",
-	}, "cursor", "The library holds CMP-07's eight policies: the list is always whole and never grows."),
-		append([]string{CodeInvalid}, locks...), func(ctx context.Context, _ *struct{}) (*policiesOutput, error) {
+		Description: "The eight policies of the library (CMP-07), or with kind the two privacy notices (CMP-PD-03): each with its version " +
+			"in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, a notice's summary, and " +
+			"the draft its next version would be published from. Read-only; no side effects.",
+	}, "cursor", "The library holds CMP-07's eight policies and CMP-PD-03's two notices: the list is always whole and never grows."),
+		append([]string{CodeInvalid}, locks...), func(ctx context.Context, in *policiesInput) (*policiesOutput, error) {
 			p, _ := authn.From(ctx)
 			out := &policiesOutput{Body: Policies{Items: []PolicyView{}}}
 			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-				out.Body.Items, err = a.policyViews(ctx, u, false)
+				out.Body.Items, err = a.policyViews(ctx, u, false, cmpOr(in.Kind, "policy"))
 				return err
 			})
 			return out, err
@@ -325,7 +341,7 @@ func registerPolicies(a *API) {
 				}
 				body, from := before.Draft.Body, "revision "+strconv.Itoa(before.Draft.Revision)
 				if before.Draft.Source == "fyniq" {
-					drafts, err := compliance.PolicyDrafts()
+					drafts, err := compliance.LibraryDrafts()
 					if err != nil {
 						return PolicyView{}, err
 					}
@@ -367,6 +383,10 @@ func registerPolicies(a *API) {
 				before, err := a.onePolicy(ctx, u, in.Key)
 				if err != nil {
 					return PolicyView{}, err
+				}
+				if !compliance.Acknowledged(in.Key) {
+					return PolicyView{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "key", Message: "is the contacts' notice, which members do not acknowledge",
+						Fix: "Its summary goes in what Fyniq sends to contacts; acknowledge the members' notice or a policy"}})
 				}
 				if before.Current == nil || in.Version != before.Current.Version {
 					return PolicyView{}, problem(CodeUnknownPolicy, fmt.Sprintf("Version %d of %s is not the version in force.", in.Version, in.Key),
