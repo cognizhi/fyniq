@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -2577,6 +2579,8 @@ func TestAuthorisationMatrix(t *testing.T) {
 		every = append(every, r)
 	}
 	slices.Sort(every)
+	// FYNIQ_MATRIX_ONLY limits a local run to the operations it matches, a regular expression; CI runs every row.
+	only := regexp.MustCompile(os.Getenv("FYNIQ_MATRIX_ONLY"))
 	// An allowed call of an operation that reads a file or a full identifier writes its audit event (AUD-05): the trail
 	// of the matrix's organisation, read as the worker, gains the operation's action during the call.
 	trail := workerStore(t)
@@ -2614,6 +2618,9 @@ func TestAuthorisationMatrix(t *testing.T) {
 			p.Organisation = [16]byte{} // outside every organisation (FR-ADM-07)
 		}
 		for _, op := range slices.Sorted(maps.Keys(policies)) {
+			if !only.MatchString(op) {
+				continue
+			}
 			// A session per operation: one would pass the rate limit of a minute (FR-INT-16) on the frozen clock.
 			tok := e.principal(p)
 			want, _ := expected(t, rows, role, policies[op])
