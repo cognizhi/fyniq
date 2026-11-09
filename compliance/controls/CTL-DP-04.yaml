@@ -10,5 +10,6 @@ evidence: "Test report"
 owner: DPO
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-compliance-center (slice 3: the archtest that no sign-in, step-up or recovery package reads an NRIC or FIN)"
+    status: running
+    how: "test TestNoNRICAuthenticatesOrLocksAFile"
+    evidence: "no sign-in, step-up or recovery code names an NRIC or FIN, and no function handles both one and a password (archtest); CI artefact test-report (90 days)"

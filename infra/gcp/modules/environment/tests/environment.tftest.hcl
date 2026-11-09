@@ -5,6 +5,8 @@
 # req: CTL-CHG-05
 # req: NFR-PORT-05
 # req: SEC-04
+# req: CMP-AI-01
+# req: CTL-AI-01
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -96,6 +98,31 @@ run "each_service_is_its_own_identity" {
   assert {
     condition     = !contains(keys(google_cloud_run_v2_service_iam_member.public), "executor") && !contains(keys(google_cloud_run_v2_service_iam_member.public), "worker")
     error_message = "the worker and the executor are invoked only by their invokers' Google identities"
+  }
+}
+
+# CMP-AI-01, CTL-AI-01: the AI orchestrator's account holds no role that writes data. It seals or signs with no key,
+# reads no secret, has no project role, enqueues no work, acts as no invoker and starts no job; its only way to the
+# data is the API, as the AI principal, and the database role fyniq_ai, which holds no write privilege
+# (TestTheAIRoleHoldsNoWritePrivilege).
+run "the_ai_service_account_writes_nothing" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = !anytrue(concat(
+      [for m in [google_kms_crypto_key_iam_member.fields, google_kms_crypto_key_iam_member.fingerprints, google_project_iam_member.org_secrets_admin] : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_project_iam_member.org_secrets_reader : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_secret_manager_secret_iam_member.access : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_secret_manager_secret_iam_member.connector_versions : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_cloud_tasks_queue_iam_member.enqueuer : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_service_account_iam_member.act_as_invoker : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in google_cloud_run_v2_job_iam_member.run_jobs : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+    ))
+    error_message = "the AI orchestrator's account must hold no role that writes data (CMP-AI-01, CTL-AI-01)"
+  }
+  assert {
+    condition     = output.accounts["ai"] == "run-ai@fyniq-staging.iam.gserviceaccount.com"
+    error_message = "the AI orchestrator's account is run-ai (the assertion above names it)"
   }
 }
 
