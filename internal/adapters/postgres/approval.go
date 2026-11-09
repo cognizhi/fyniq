@@ -40,6 +40,28 @@ func stepsOf(b []byte) ([]storage.ApprovalStep, error) {
 	return steps, nil
 }
 
+// rulesJSON writes a policy's rules as the database checks them: every condition and both lists of each step, empty
+// rather than null (rev 0.178).
+func rulesJSON(rules []storage.ApprovalRule) ([]byte, error) {
+	out := make([]map[string]any, len(rules))
+	for i, r := range rules {
+		steps, err := stepsJSON(r.Steps)
+		if err != nil {
+			return nil, err
+		}
+		c := r.Conditions
+		ids := func(xs []uuid.UUID) []uuid.UUID {
+			if xs == nil {
+				return []uuid.UUID{}
+			}
+			return xs
+		}
+		out[i] = map[string]any{"conditions": map[string]any{"amount_at_least": c.AmountAtLeast, "departments": ids(c.Departments),
+			"accounts": ids(c.Accounts), "vendors": ids(c.Vendors)}, "steps": json.RawMessage(steps)}
+	}
+	return json.Marshal(out)
+}
+
 // stepsJSON writes a policy's steps as the database checks them: every step with its quorum and both lists, empty
 // rather than null.
 func stepsJSON(steps []storage.ApprovalStep) ([]byte, error) {
@@ -220,8 +242,15 @@ type approvalPolicies struct{ u *unitOfWork }
 
 func toApprovalPolicy(r sqlcdb.ListApprovalPoliciesRow) (storage.ApprovalPolicy, error) {
 	steps, err := stepsOf(r.Steps)
-	return storage.ApprovalPolicy{ID: r.ID, ObjectType: r.ObjectType, Version: int(r.Version), Steps: steps, RequestID: r.RequestID,
-		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}, err
+	if err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	var rules []storage.ApprovalRule
+	if err := json.Unmarshal(r.Rules, &rules); err != nil {
+		return storage.ApprovalPolicy{}, fmt.Errorf("postgres: a policy's rules: %w", err)
+	}
+	return storage.ApprovalPolicy{ID: r.ID, ObjectType: r.ObjectType, Version: int(r.Version), Steps: steps, Rules: rules, RequestID: r.RequestID,
+		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}, nil
 }
 
 func (r approvalPolicies) List(ctx context.Context) ([]storage.ApprovalPolicy, error) {
@@ -252,8 +281,12 @@ func (r approvalPolicies) Add(ctx context.Context, n storage.NewApprovalPolicy) 
 	if err != nil {
 		return storage.ApprovalPolicy{}, err
 	}
+	rules, err := rulesJSON(n.Rules)
+	if err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
 	row, err := r.u.q.InsertApprovalPolicy(ctx, sqlcdb.InsertApprovalPolicyParams{ObjectType: n.ObjectType, Version: int32(n.Version), // 1 to 1,000,000, checked above
-		Steps: steps, RequestID: n.RequestID, CreatedBy: n.CreatedBy, CreatedAt: n.CreatedAt})
+		Steps: steps, Rules: rules, RequestID: n.RequestID, CreatedBy: n.CreatedBy, CreatedAt: n.CreatedAt})
 	if err != nil {
 		return storage.ApprovalPolicy{}, mapError(err)
 	}
@@ -262,7 +295,7 @@ func (r approvalPolicies) Add(ctx context.Context, n storage.NewApprovalPolicy) 
 		return storage.ApprovalPolicy{}, err
 	}
 	if err := r.u.event(ctx, "approval_policy.changed", "approval_policy", p.ID, &p.Version, map[string][2]any{
-		"object_type": {nil, p.ObjectType}, "version": {nil, p.Version}, "steps": {nil, p.Steps}, "request_id": {nil, p.RequestID},
+		"object_type": {nil, p.ObjectType}, "version": {nil, p.Version}, "steps": {nil, p.Steps}, "rules": {nil, p.Rules}, "request_id": {nil, p.RequestID},
 		"created_by": {nil, p.CreatedBy}}); err != nil {
 		return storage.ApprovalPolicy{}, err
 	}
