@@ -4,7 +4,7 @@ type: task
 title: Search and verify the audit trail
 summary: Find who changed what and why, open an event's before and after, verify the chain has not been altered, see purges and restores, and export the events
 sources:
-  - docs/user-guide/audit-trail.md sha256:5f93e3f1be599c13c22ba2151edb7066d3be5e822314cafa7fb3f005703e66ed
+  - docs/user-guide/audit-trail.md sha256:712abe6a6daa6ba04dbaa8a13a48f595b698e043a8cf3de30f6163aec5437183
 data_class: general
 taint: trusted
 status: published
@@ -49,6 +49,7 @@ aliases:
 - An event shows when it was recorded, the record and its version, the actor and on whose behalf, the AI proposal and approvals it carried out, the reason, and the request it came from.
 - A security event (a sign-in, revealing a full bank number, an export) also shows its IP address and browser until the organisation's **Security events' IP address and device kept for** has passed; then they are erased and the event says so ([[settings.organisation]]).
 - **Before and after** for each field. A sensitive value, such as a bank account number, is never kept: only whether it **Changed**, **Changed back** or stayed **Unchanged**, with its last four characters.
+- A person's name, email addresses, phone and address, in an event about a member or a contact who is a person, are sealed under their own key: they show **Sealed** with their values, or **Shredded** once the records' retention for that financial year has ended ([[contacts.manage]]).
 - Its hash and the previous event's hash are shown.
 
 (src: docs/user-guide/audit-trail.md#open-an-event)
@@ -79,6 +80,6 @@ aliases:
 ## Export
 
 - Search with your filters, select **Export**, set **Export from** and **to**, choose **Excel (XLSX)** or **CSV**, then **Ask for the export**.
-- It holds the matching events of those days, oldest first, with sensitive values as proofs; it is prepared in the background, appears under **Your recent exports**, and downloads for 24 hours by the person who asked. Asking is recorded in the audit trail.
+- It holds the matching events of those days, oldest first, with sensitive values as proofs and a person's sealed values as the trail recorded them; it is prepared in the background, appears under **Your recent exports**, and downloads for 24 hours by the person who asked. Asking is recorded in the audit trail.
 
 (src: docs/user-guide/audit-trail.md#export)

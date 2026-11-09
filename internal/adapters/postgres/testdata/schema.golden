@@ -569,6 +569,7 @@ contact | is_director | boolean | not null | false
 contact | is_shareholder | boolean | not null | false
 contact | member_user_id | uuid | null | 
 contact | is_investor | boolean | not null | false
+contact | individual | boolean | not null | false
 contact_document_template | organisation_id | uuid | not null | current_org()
 contact_document_template | id | uuid | not null | uuidv7()
 contact_document_template | contact_id | uuid | not null | 
@@ -1435,6 +1436,12 @@ period_variance_explanation | explanation | text | not null |
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
 period_variance_explanation | kind | text | not null | 'month'::text
+person_key | organisation_id | uuid | not null | current_org()
+person_key | id | uuid | not null | uuidv7()
+person_key | person | text | not null | 
+person_key | cohort | date | not null | 
+person_key | wrapped | bytea | not null | 
+person_key | created_at | timestamp with time zone | not null | now()
 policy_acknowledgement | organisation_id | uuid | not null | current_org()
 policy_acknowledgement | id | uuid | not null | uuidv7()
 policy_acknowledgement | key | text | not null | 
@@ -2711,6 +2718,7 @@ contact | contact_default_account_fkey | FOREIGN KEY (organisation_id, default_a
 contact | contact_discount_terms | CHECK ((((discount_percent IS NULL) = (discount_days IS NULL)) AND ((discount_percent IS NULL) OR ((discount_percent <> 'NaN'::numeric) AND (discount_percent > (0)::numeric) AND (discount_percent < (100)::numeric))) AND ((discount_days IS NULL) OR ((discount_days >= 1) AND (discount_days <= 365)))))
 contact | contact_gst_code_format | CHECK ((default_gst_code ~ '^[A-Z]{2,4}$'::text))
 contact | contact_id_not_null | NOT NULL id
+contact | contact_individual_not_null | NOT NULL individual
 contact | contact_is_active_not_null | NOT NULL is_active
 contact | contact_is_customer_not_null | NOT NULL is_customer
 contact | contact_is_director_not_null | NOT NULL is_director
@@ -4133,6 +4141,17 @@ period_variance_explanation | period_variance_explanation_previous_amount_not_nu
 period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
 period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
 period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_key | person_key_cohort_not_null | NOT NULL cohort
+person_key | person_key_created_at_not_null | NOT NULL created_at
+person_key | person_key_id_not_null | NOT NULL id
+person_key | person_key_once | UNIQUE (organisation_id, person, cohort)
+person_key | person_key_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+person_key | person_key_organisation_id_not_null | NOT NULL organisation_id
+person_key | person_key_person_format | CHECK ((person ~ '^(member|contact|invitation|join_request):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))
+person_key | person_key_person_not_null | NOT NULL person
+person_key | person_key_pkey | PRIMARY KEY (organisation_id, id)
+person_key | person_key_wrapped_length | CHECK (((octet_length(wrapped) >= 16) AND (octet_length(wrapped) <= 2048)))
+person_key | person_key_wrapped_not_null | NOT NULL wrapped
 policy_acknowledgement | policy_acknowledgement_acknowledged_at_not_null | NOT NULL acknowledged_at
 policy_acknowledgement | policy_acknowledgement_acknowledged_by_not_null | NOT NULL acknowledged_by
 policy_acknowledgement | policy_acknowledgement_by_format | CHECK ((acknowledged_by ~ '^user:[!-~]{1,200}$'::text))
@@ -5064,6 +5083,8 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_key_once ON fyniq.person_key USING btree (organisation_id, person, cohort)
+CREATE UNIQUE INDEX person_key_pkey ON fyniq.person_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_acknowledgement_once ON fyniq.policy_acknowledgement USING btree (organisation_id, key, version, acknowledged_by)
 CREATE UNIQUE INDEX policy_acknowledgement_pkey ON fyniq.policy_acknowledgement USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organisation_id, key, revision)
@@ -5532,6 +5553,8 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER person_key_guard BEFORE DELETE OR UPDATE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_guard()
+CREATE TRIGGER person_key_no_truncate BEFORE TRUNCATE ON fyniq.person_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_acknowledgement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_acknowledgement FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_acknowledgement_no_truncate BEFORE TRUNCATE ON fyniq.policy_acknowledgement FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_draft FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
@@ -5705,6 +5728,7 @@ period_close | tenant_isolation | * | (organisation_id = current_org()) | (organ
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+person_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5866,6 +5890,7 @@ period_close | enabled | forced
 period_close_check | enabled | forced
 period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
+person_key | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
@@ -6136,6 +6161,7 @@ period_close_guard() → trigger | security invoker | v | search_path=pg_catalog
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
+person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f52cd4d71e2e3351848a2036f044ce
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509

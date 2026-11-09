@@ -164,3 +164,42 @@ func (k AESKEK) Unwrap(_ context.Context, id string, wrapped, aad []byte) ([]byt
 	}
 	return dek, nil
 }
+
+// NewDataKey is a fresh 32-byte data key, for a key the caller keeps wrapped itself, such as a person's key (§11.8).
+func NewDataKey() ([]byte, error) {
+	dek := make([]byte, 32)
+	if _, err := rand.Read(dek); err != nil {
+		return nil, err
+	}
+	return dek, nil
+}
+
+// SealWith encrypts plaintext under the data key dek with AES-256-GCM, bound to aad: the 12-byte nonce, then the
+// ciphertext and its tag.
+func SealWith(dek, plaintext, aad []byte) ([]byte, error) {
+	gcm, err := newGCM(dek)
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	return gcm.Seal(nonce, nonce, plaintext, aad), nil
+}
+
+// OpenWith decrypts what SealWith returned under the same data key and aad; ports.ErrNotSealed otherwise.
+func OpenWith(dek, sealed, aad []byte) ([]byte, error) {
+	gcm, err := newGCM(dek)
+	if err != nil {
+		return nil, err
+	}
+	if len(sealed) < gcm.NonceSize()+gcm.Overhead() {
+		return nil, ports.ErrNotSealed
+	}
+	out, err := gcm.Open(nil, sealed[:gcm.NonceSize()], sealed[gcm.NonceSize():], aad)
+	if err != nil {
+		return nil, ports.ErrNotSealed
+	}
+	return out, nil
+}

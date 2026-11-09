@@ -727,6 +727,7 @@ type FyniqContact struct {
 	IsShareholder    bool
 	MemberUserID     *uuid.UUID
 	IsInvestor       bool
+	Individual       bool
 }
 
 type FyniqContactDocumentTemplate struct {
@@ -1854,6 +1855,15 @@ type FyniqPeriodVarianceExplanation struct {
 	WrittenBy      string
 	WrittenAt      time.Time
 	Kind           string
+}
+
+type FyniqPersonKey struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Person         string
+	Cohort         time.Time
+	Wrapped        []byte
+	CreatedAt      time.Time
 }
 
 type FyniqPolicyAcknowledgement struct {

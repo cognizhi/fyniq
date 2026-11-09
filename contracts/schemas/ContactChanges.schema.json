@@ -89,6 +89,13 @@
       ],
       "type": "string"
     },
+    "individual": {
+      "description": "A natural person rather than a company (§11.8). Values already in the audit trail stay as they were written.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "investor": {
       "description": "An investor: a SAFE, note or option holder (FR-EQ-15).",
       "examples": [

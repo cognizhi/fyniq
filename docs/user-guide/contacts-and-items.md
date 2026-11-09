@@ -3,7 +3,7 @@ key: contacts.manage
 title: Keep your contacts, items and prices
 mode: basic
 roles: [bookkeeper, ar_specialist, ap_specialist, accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-CT-01, FR-CT-02, FR-CT-03, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13, FR-TPL-05]
+requirements: [FR-CT-01, FR-CT-02, FR-CT-03, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13, FR-TPL-05, AUD-02]
 status: draft            # written with the contacts and items screens (P1); reviewed when sales and purchases arrive
 ---
 
@@ -37,6 +37,14 @@ else. A vendor resident outside Singapore may have tax withheld from its payment
 When a supplier offers a discount for paying early, enter its **Early-payment discount (%)** and
 **If paid within (days)** of the bill's date, such as 2% within 10 days. Its bills then show the
 discount and the last day to take it.
+
+## A person or a company
+
+Tick **A person, not a company** for a customer, supplier or holder who is a natural person rather than a business. A
+director is one already. Their name, email addresses, phone and address in the audit trail are then sealed under a key of
+their own for each financial year, and that key is shredded when the records' retention ends: the trail keeps the event
+and its proof, while the values no longer open. Values the trail recorded before the box was ticked stay as they were
+written.
 
 ## Possible duplicates
 

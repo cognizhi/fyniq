@@ -115,6 +115,24 @@ type Audit interface {
 	// AcknowledgeRecovery records who acknowledged a recovery, once (ports.ErrNotFound when there is none to
 	// acknowledge). It is audited.
 	AcknowledgeRecovery(ctx context.Context, id, by uuid.UUID, at time.Time) (AuditRecovery, error)
+	// OpenSealed opens personal values the organisation's events sealed under person keys (§11.8, fyniq-audit-event@3),
+	// in order: a value whose key was shredded comes back Shredded, with its financial year.
+	OpenSealed(ctx context.Context, values []SealedValue) ([]OpenedValue, error)
+}
+
+// SealedValue is a personal value an event sealed (§11.8): the event, the field (a path for a nested one, such as
+// payee.name), the person key and the ciphertext.
+type SealedValue struct {
+	EventID uuid.UUID
+	Field   string
+	Key     uuid.UUID
+	Text    []byte
+}
+
+// OpenedValue is a sealed value opened: the value, or Shredded once its person's key is gone at the end of retention.
+type OpenedValue struct {
+	Value    string
+	Shredded bool
 }
 
 // NewAuditRecovery is a recovery from a restore behind the anchors (design D8): the epoch it starts, the restored head

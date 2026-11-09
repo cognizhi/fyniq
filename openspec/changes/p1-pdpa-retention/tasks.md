@@ -363,8 +363,23 @@ event format.
 
 ## 9. Person keys and the event format (slice 9)
 
-- [ ] 9.1 `person_key` (D8), with the guarded delete and attack tests. A contact's `individual` field. `// req: SEC-11`
-- [ ] 9.2 `fyniq-audit-event@3`: personal values of a member or an individual contact are sealed under the person's key
+- [x] 9.1 `person_key` (D8), with the guarded delete and attack tests. A contact's `individual` field. `// req: SEC-11`
+
+  **What building added:**
+    - **The key table.** Migration 000308 adds `person_key`: one data key per person and financial year (`cohort`, the
+      year's last day), wrapped by the deployment's `ports.Cipher` with the organisation, person and year as
+      associated data.
+    - **Who may touch keys.** The API, the worker and the executor add and read keys; the read-only role reads none.
+      No role holds DELETE. A key never changes (FY317), and the owner deletes one only inside a shredding run, which
+      marks its transaction (`fyniq.shredding_run`).
+    - **Not built yet: the guarded delete function.** It arrives with the run itself in slice 10.
+    - **Who is a person.** Besides members and contacts (D8), people invited (`invitation:<id>`) and people asking to
+      join (`join_request:<id>`) are persons too: their names and emails reach the trail before they are members. A
+      contact is a person when it is a director or `individual` is set. The contact API and form gain `individual`
+      ("A person, not a company").
+    - **Key creation is not audited.** A key is key material, and the event that first uses it is audited.
+    - **Tests:** `TestPersonalValuesAreSealedUnderThePersonsKey` (attacks, roles, RLS, uniqueness).
+- [x] 9.2 `fyniq-audit-event@3`: personal values of a member or an individual contact are sealed under the person's key
   for the event's financial year. The chain hashes the sealed text. `contracts/audit/` gains the v3 schema. Tests:
   - sealed and opened;
   - the chain verifies;
@@ -372,8 +387,37 @@ event format.
   - `@1` and `@2` events still verify.
 
   `// req: AUD-02` and the unnumbered "Personal data in immutable records is crypto-shredded at the end of retention".
-- [ ] 9.3 The audit explorer opens sealed values for V on "Audit trail", and says when a value was shredded. Component
+
+  **What building added:**
+    - **What is sealed.** In an event about a person (`audit.Subject`), every value of a field named as personal (a
+      name, an email address, a phone number or an address, singular or plural, at any depth) is sealed after masking
+      as `{"pk", "ct"}`: AES-256-GCM under the person's key for the financial year, with
+      `fyniq-audit-personal@1:<organisation>:<event>:<field path>` as associated data. Masking passes sealed values
+      through untouched.
+    - **The financial year.** It is the organisation's, in its time zone, or the calendar year while the years are not
+      set.
+    - **Contract.** `contracts/audit/` gains the v3 schema and a README section.
+    - **Not sealed: no action catalogue.** None exists, so the rule goes by subject and field name. Events about other
+      objects keep their values, such as an email message's recipient, a suppression's address or a notification
+      preference's email. That is a gap to close with their classes' own retention.
+    - **Tests:**
+      - `TestPersonalValuesAreSealed` (domain): every personal key at every depth, the associated data, masking, and a
+        failing seal fails the event;
+      - `TestTheSubjectOfAnEvent` and `TestTheCohortIsTheFinancialYear`;
+      - the adapter test: two financial years, one shredded while the later one opens, and the chain verifies;
+      - `TestEveryEventMatchesTheAUD01Schema` and `TestSuperAdmins` now check v3, while `@1` and `@2` events still
+        verify.
+- [x] 9.3 The audit explorer opens sealed values for V on "Audit trail", and says when a value was shredded. Component
   test. `// req: FR-CTL-03`
+
+  **What building added:**
+    - **The explorer.** `getAuditEvent` opens each sealed value (`storage.Audit.OpenSealed`) and marks the change
+      `sealed: opened`, or `shredded` once the key is gone, with null values. The list and the export keep the sealed
+      text.
+    - **The screen** shows a **Sealed** chip beside an opened value and **Shredded** in place of one.
+    - **Not built yet: the shredding's date.** It comes from the register in slice 10.
+    - **Opening is not an audited read.** The same values show on the contact's own page.
+    - **Tests:** `TestTheExplorerOpensSealedValues` and the explorer's component test with axe.
 
 ## 10. Shredding, the register and anonymisation (slice 10)
 

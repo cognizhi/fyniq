@@ -41,6 +41,16 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 	if err != nil {
 		return err
 	}
+	// §11.8 (rev 0.244): an event about a person seals their personal values under their key for the financial year.
+	person, ok, err := u.subject(ctx, objectType, objectID, e.Changes)
+	if err != nil {
+		return err
+	}
+	if ok {
+		if err := u.sealPersonal(ctx, &e, person, now); err != nil {
+			return fmt.Errorf("audit: seal the personal values of %s: %w", action, err)
+		}
+	}
 	if a.OnBehalfOf != nil {
 		on := audit.Actor(*a.OnBehalfOf)
 		e.OnBehalfOf = &on

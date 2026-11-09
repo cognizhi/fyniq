@@ -58,6 +58,7 @@ interface Draft extends Record<TextKey, string> {
   director: boolean; // a director or shareholder holds a director account, 2500 and 2120 (FR-EQ-01)
   shareholder: boolean;
   investor: boolean; // a SAFE, note or option holder with no shares yet, a holder in the equity register (FR-EQ-15)
+  individual: boolean; // a natural person: their personal values in the audit trail are sealed under their own key (§11.8)
   payment_terms_days: string;
   discount_percent: string; // a supplier's early-payment discount (FR-AP-13): blank for none
   discount_days: string;
@@ -65,7 +66,7 @@ interface Draft extends Record<TextKey, string> {
   active: boolean;
 }
 
-const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, director: false, shareholder: false, investor: false, payment_terms_days: "", discount_percent: "", discount_days: "", customer_group_id: "", active: true };
+const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, director: false, shareholder: false, investor: false, individual: false, payment_terms_days: "", discount_percent: "", discount_days: "", customer_group_id: "", active: true };
 
 function draftOf(c: Contact): Draft {
   const s = (v: string | undefined) => v ?? "";
@@ -86,6 +87,7 @@ function draftOf(c: Contact): Draft {
     director: c.director,
     shareholder: c.shareholder,
     investor: c.investor ?? false,
+    individual: c.individual ?? false,
     payment_terms_days: c.payment_terms_days === undefined ? "" : String(c.payment_terms_days),
     customer_group_id: s(c.customer_group_id),
     discount_percent: s(c.discount_percent),
@@ -177,6 +179,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
       if (d.director) body.director = true;
       if (d.shareholder) body.shareholder = true;
       if (d.investor) body.investor = true;
+      if (d.individual) body.individual = true;
       for (const [k] of textFields) if (k !== "legal_name" && d[k].trim()) body[k] = d[k].trim();
       if (d.address.trim()) body.address = d.address.trim();
       if (terms) body.payment_terms_days = Number(terms);
@@ -208,7 +211,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     if (!one.data || !base) return setBusy(false);
     const changes: Record<string, string | number | boolean> = {};
     for (const k of [...textFields.map(([k]) => k), "address"] as TextKey[]) if (d[k].trim() !== base[k]) changes[k] = d[k].trim();
-    for (const k of ["customer", "vendor", "director", "shareholder", "investor", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
+    for (const k of ["customer", "vendor", "director", "shareholder", "investor", "individual", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
     if (terms !== base.payment_terms_days) changes.payment_terms_days = terms ? Number(terms) : -1; // -1 clears it
     const group = d.customer ? d.customer_group_id : "";
     if (group !== base.customer_group_id) changes.customer_group_id = group; // "" takes it out of its group
@@ -293,6 +296,12 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
               <span className="fy-small fy-muted">What the company owes them, or they owe it, is kept on their director account (2500 and 2120), in Accounting › Director accounts.</span>
             )}
             {(d.shareholder || d.investor) && <span className="fy-small fy-muted">Their details and holdings are kept in Equity › Holders.</span>}
+            <label className="fy-row gap-2" title={helpText("contacts.individual").tooltip}>
+              <input type="checkbox" checked={d.individual || d.director} disabled={d.director} onChange={(e) => set("individual", e.target.checked)} />A person, not a company
+            </label>
+            {(d.individual || d.director) && (
+              <span className="fy-small fy-muted">Their name, email addresses, phone and address in the audit trail are sealed under their own key, and shredded when the records' retention ends.</span>
+            )}
             {errors.customer && (
               <span className="fy-error" id={`${id}-roles-error`}>
                 {errors.customer}

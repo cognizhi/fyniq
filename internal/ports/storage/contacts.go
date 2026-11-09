@@ -35,6 +35,9 @@ type ContactDetails struct {
 	Director, Shareholder bool
 	// An investor holds a SAFE, a note or options, and no shares yet (FR-EQ-15, rev 0.203): a holder with a shareholder.
 	Investor bool
+	// Individual marks a natural person (§11.8, rev 0.244): their personal values in the audit trail are sealed under
+	// their key, as a director's are.
+	Individual bool
 }
 
 // Contact is a customer, a vendor, a director or shareholder, or several of these.

@@ -97,6 +97,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "individual": {
+      "description": "A natural person: their name, emails, phone and address in the audit trail are sealed under their own key and shredded at the end of retention (§11.8), as a director's are.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "investor": {
       "description": "An investor: they hold a SAFE, a note or options, and no shares yet (FR-EQ-15). Shareholders and investors are the equity register's holders.",
       "examples": [
@@ -203,6 +210,7 @@
     "director",
     "shareholder",
     "investor",
+    "individual",
     "active",
     "version",
     "possible_duplicates"

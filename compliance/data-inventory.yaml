@@ -112,6 +112,8 @@ flows:
     cross_border: true
     note: "The email providers keep mail outside Singapore (FR-INT-21); where each processes [live-verify]"
 not_personal:
+  - column: person_key.person
+    why: "Names a member or contact by ID, never by name: whose key seals their values in the audit trail (§11.8)"
   - column: pd_transfer.recipient
     why: "The provider an overseas transfer goes to: an organisation"
   - column: claim_place.address

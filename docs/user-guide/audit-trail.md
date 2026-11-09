@@ -40,7 +40,9 @@ Select an event to see it beside the list (on a phone, in its place; **Events** 
   **Security events' IP address and device kept for** has passed; then they are erased and the event says so.
 - **Before and after** for each field. A sensitive value, such as a bank account number, is never kept: the trail
   shows only whether it **Changed**, **Changed back** to what it was before, or stayed **Unchanged**, with its last
-  four characters.
+  four characters. A person's name, email addresses, phone and address, in an event about a member or a contact who is
+  a person, are sealed under that person's own key: they show **Sealed** with their values, or **Shredded** once the
+  records' retention for that financial year has ended and the key is gone.
 - Its **hash** and the **previous** event's hash.
 
 ## Verify integrity
@@ -92,6 +94,7 @@ Verification goes on explaining the gap after the acknowledgement.
 2. Select **Export**, set **Export from** and **to**, and choose **Excel (XLSX)** or **CSV**.
 3. Select **Ask for the export**.
 
-The export holds the events your filters match on those days, oldest first; a sensitive value stays a proof. It is
+The export holds the events your filters match on those days, oldest first; a sensitive value stays a proof, and a
+person's sealed value stays sealed, as the trail recorded it. It is
 prepared in the background, appears under **Your recent exports**, and downloads for 24 hours by the person who asked
 for it. Asking for it is recorded in the audit trail.

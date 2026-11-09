@@ -30,7 +30,8 @@ type unitOfWork struct {
 	afterCommit []func(ctx context.Context)
 	// afterRollback run when this attempt does not commit.
 	afterRollback []func(ctx context.Context)
-	voided        map[uuid.UUID]bool // approval requests whose voiding is audited already
+	voided        map[uuid.UUID]bool   // approval requests whose voiding is audited already
+	personKeys    map[string]personKey // person keys unwrapped in this unit of work, by person and financial year (§11.8)
 	done          bool
 }
 

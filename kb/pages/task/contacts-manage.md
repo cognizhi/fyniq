@@ -4,7 +4,7 @@ type: task
 title: Keep your contacts, items and prices
 summary: Add or change a contact, its balances and activity, duplicates, a vendor's bank details and their approved changes, its templates, and items with prices
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:b457848cd5b0d0155b6805374abafc6d32d34eb95045db8699868b30938d52b6
+  - docs/user-guide/contacts-and-items.md sha256:ab72cda5a569f6ad510501c81980a3b110a93d841901c1451d545b0d7fe9a13f
 data_class: general
 taint: trusted
 status: draft
@@ -66,6 +66,13 @@ aliases:
 - The pencil changes a contact; **Save the contact**. Clearing **Active** stops offering it for new documents. Vendor bank details have their own change, which another person approves (below).
 
 (src: docs/user-guide/contacts-and-items.md#add-a-contact) (src: docs/user-guide/contacts-and-items.md#possible-duplicates) (src: docs/user-guide/contacts-and-items.md#change-a-contact)
+
+## A person or a company
+
+- Tick **A person, not a company** for a customer, supplier or holder who is a natural person; a director is one already.
+- Their name, email addresses, phone and address in the audit trail are then sealed under a key of their own for each financial year, shredded when the records' retention ends: the trail keeps the event and its proof, and the values no longer open ([[compliance.audit-trail]]). Values recorded before the box was ticked stay as written.
+
+(src: docs/user-guide/contacts-and-items.md#a-person-or-a-company)
 
 ## What a contact stands at
 

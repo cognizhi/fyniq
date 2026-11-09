@@ -76,7 +76,31 @@ describe("the audit trail", () => {
     expect(q(last).get("from")).toBe("2026-10-01");
   });
 
-  // req: AUD-03
+// req: data/backup-and-recovery Personal data in immutable records is crypto-shredded at the end of retention
+  it("shows a person's sealed values opened, and a shredded one as shredded; axe finds nothing", async () => {
+    const person = { ...summary, id: "e3", action: "contact.updated", record: { type: "contact", id: "c-1", version: 2 }, fields: ["legal_name", "phone"] };
+    answer({
+      "GET /v1/audit/recoveries": { status: 200, body: { items: [] } },
+      "GET /v1/audit/purges": { status: 200, body: { items: [] } },
+      "GET /v1/audit/events": { status: 200, body: { items: [person] } },
+      "GET /v1/audit/events/e3": {
+        status: 200,
+        body: { ...view, ...person, changes: [
+          { field: "legal_name", before: "Ada Tan", after: "Ada Lim", sealed: "opened" },
+          { field: "phone", before: null, after: null, sealed: "shredded" },
+        ] },
+      },
+    });
+    renderPage(AuditTrail, { path: "/compliance/audit-trail", session: auditor });
+    fireEvent.click(within(await screen.findByRole("list", { name: "Audit events" })).getByText("contact.updated"));
+    const rows = within(await screen.findByRole("table", { name: "Before and after" })).getAllByRole("row");
+    expect(rows[1]!.textContent).toContain("Ada Lim");
+    expect(within(rows[1]!).getByText("Sealed")).toBeTruthy();
+    expect(within(rows[2]!).getByText("Shredded")).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+    // req: AUD-03
   it("verifies a range of days: passed, failed where it was altered, or explained by a purge; axe finds nothing in each", async () => {
     let outcome: Record<string, unknown> = { ...verification, outcome: "passed" };
     answer({

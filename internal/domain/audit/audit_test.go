@@ -231,8 +231,8 @@ func TestSensitiveValuesAreProvedNeverKept(t *testing.T) {
 			t.Errorf("the body holds %s: %s", clear, body)
 		}
 	}
-	if !strings.Contains(string(body), `"schema":"fyniq-audit-event@2"`) || !strings.Contains(string(body), a0["fingerprint"].(string)) {
-		t.Errorf("the body is v2 and keeps the proofs as written: %s", body)
+	if !strings.Contains(string(body), `"schema":"`+Schema+`"`) || !strings.Contains(string(body), a0["fingerprint"].(string)) {
+		t.Errorf("the body is in the current format and keeps the proofs as written: %s", body)
 	}
 	if _, err := Prove(ctx, in, func(context.Context, []byte) ([]byte, error) { return nil, errors.New("kms down") }); err == nil {
 		t.Error("a fingerprint that fails must fail the event, never keep the value")

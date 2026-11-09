@@ -39,6 +39,17 @@
         "changed"
       ],
       "type": "string"
+    },
+    "sealed": {
+      "description": "For a person's personal value, sealed under their key for the event's financial year (§11.8): opened, before and after are the values; shredded, the key is gone at the end of retention and the values read null.",
+      "enum": [
+        "opened",
+        "shredded"
+      ],
+      "examples": [
+        "opened"
+      ],
+      "type": "string"
     }
   },
   "required": [
