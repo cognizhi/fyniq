@@ -475,11 +475,31 @@ event format.
 
 ## 11. NRIC, encryption, residency, logs and backups (slice 11)
 
-- [ ] 11.1 The archtest of D11: no NRIC, FIN, card number or CVV in a column, an API field or an event field.
+- [x] 11.1 The archtest of D11: no NRIC, FIN, card number or CVV in a column, an API field or an event field.
   `// req: CMP-PD-07`, `// req: SEC-14`
-- [ ] 11.2 HSTS from the API, with a test. The `infra/` retention of application logs (30 days) and of Cloud SQL's
+
+  **What building added:**
+    - **The rule.** `TestNoNRICOrCardDataIsHeld` refuses any column of the schema snapshot, any property of the API's
+      schemas, and any audit change key in the code (`"field": {…}`) named with the word nric, fin, cvv, cvc or pan,
+      or card number, security code or id number.
+    - **The exception.** A true-or-false flag about one is allowed: `evidence.nric_flagged` and the evidence views'
+      `unmasked_nric`. Those are the only matches today.
+    - **The inventory** already records NRIC and card data as not held (slice 4).
+- [x] 11.2 HSTS from the API, with a test. The `infra/` retention of application logs (30 days) and of Cloud SQL's
   backups, plus the monthly export, each with a module test, `[live-verify]`. `// req: SEC-10`, `// req: SEC-13`,
   and the unnumbered "Retention of application logs" and "Retention of backups".
+
+  **What building added:**
+    - **HSTS.** The HTTP shell every service runs in (`internal/httpserver`) sets
+      `Strict-Transport-Security: max-age=63072000; includeSubDomains` on every answer: a route's, a probe's and a 404.
+      It has no `preload`. Test: `TestEveryAnswerCarriesHSTS`.
+    - **Backups.** Cloud SQL keeps daily backups 35 days (from 14), beside the 7 days of point-in-time recovery the
+      Enterprise edition has.
+    - **Application logs.** The `_Default` log bucket keeps 30 days (`logging.tf`).
+    - **Module tests.** Both have asserts in `environment.tftest.hcl`. `make infra-check` passes on mock providers;
+      the real buckets are `[live-verify]`.
+    - **Not built here: the monthly snapshot kept one year.** It is DR-04's monthly export, which `p1-operations-dr`
+      builds with its bucket.
 - [ ] 11.3 AI conversations' retention (Open Questions): decided when this slice is reached. Either a PRD revision moves
   it to `p1-ai-assistant`, or the setting is built here. The unnumbered "Retention of AI conversations".
 

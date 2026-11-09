@@ -231,6 +231,17 @@ run "the_data_is_encrypted_and_recoverable" {
     condition     = google_sql_database_instance.main.settings[0].backup_configuration[0].location == "asia-southeast1" && google_sql_database_instance.main.settings[0].backup_configuration[0].transaction_log_retention_days == 7
     error_message = "backups pinned to Singapore, with 7 days of point-in-time recovery"
   }
+  # req: SEC-13
+  # req: data/backup-and-recovery Retention of backups
+  assert {
+    condition     = google_sql_database_instance.main.settings[0].backup_configuration[0].backup_retention_settings[0].retained_backups == 35
+    error_message = "daily backups kept 35 days"
+  }
+  # req: data/backup-and-recovery Retention of application logs
+  assert {
+    condition     = google_logging_project_bucket_config.application.bucket_id == "_Default" && google_logging_project_bucket_config.application.retention_days == 30
+    error_message = "application logs kept 30 days, then deleted"
+  }
   assert {
     condition     = !google_sql_database_instance.main.settings[0].ip_configuration[0].ipv4_enabled && google_sql_database_instance.main.settings[0].ip_configuration[0].ssl_mode == "ENCRYPTED_ONLY"
     error_message = "a private IP and encrypted connections only"

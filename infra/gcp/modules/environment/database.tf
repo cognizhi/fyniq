@@ -28,7 +28,7 @@ resource "google_sql_database_instance" "main" {
       point_in_time_recovery_enabled = true
       transaction_log_retention_days = 7
       backup_retention_settings {
-        retained_backups = 14
+        retained_backups = 35 # daily backups kept 35 days (SEC-13, §11.9; rev 0.244) [live-verify]
       }
     }
     maintenance_window {
