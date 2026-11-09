@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "A postable income or expense account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amounts": {
+      "description": "One amount for each month of the year, in order, signed as the P\u0026L shows it: income and costs above zero for what is expected.",
+      "items": {
+        "description": "An amount in the base currency, as a decimal string.",
+        "examples": [
+          "12500.00"
+        ],
+        "type": "string"
+      },
+      "maxItems": 24,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "dimension_value_ids": {
+      "description": "The values of the organisation's dimensions the line is for, at most one per dimension; none for the whole company.",
+      "items": {
+        "description": "A value of one of the organisation's dimensions.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c40"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "account_id",
+    "amounts"
+  ],
+  "title": "BudgetLineDraft",
+  "type": "object"
+}

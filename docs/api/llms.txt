@@ -119,6 +119,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/break-glass/{break_glass_id}` (getBreakGlass): Get a break-glass
 - `POST /v1/break-glass/{break_glass_id}/end` (endBreakGlass): End break-glass now
 - `POST /v1/break-glass/{break_glass_id}/review` (reviewBreakGlass): Review a break-glass
+- `GET /v1/budgets` (listBudgets): List the budgets
+- `POST /v1/budgets` (createBudget): Draft a budget
+- `GET /v1/budgets/{budget_id}` (getBudget): Get a budget
+- `PUT /v1/budgets/{budget_id}` (replaceBudget): Change a drafted budget
+- `POST /v1/budgets/{budget_id}/approval` (requestBudgetApproval): Ask for approval of a budget
+- `POST /v1/budgets:copy` (copyBudget): Copy a budget with growth
+- `POST /v1/budgets:import` (importBudget): Import a budget from XLSX
 - `GET /v1/cap-table` (getCapTable): Get the cap table
 - `GET /v1/cap-table/acra-reconciliation` (getAcraReconciliation): Get the register against ACRA's
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table

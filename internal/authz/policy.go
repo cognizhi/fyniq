@@ -117,7 +117,8 @@ const (
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
 // record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
+	Budgets}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -1419,6 +1420,19 @@ var (
 	RunForecast              = Policy{Operation: "runForecast", Capability: Budgets, Need: Create, Unqualified: true, Note: "Saves nothing."}
 )
 
+// Budgets (FR-PLN-01; p1-planning slice 4, design D6): read by whoever views budgets and forecasts; drafted, changed,
+// copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
+// who asked. A department's budget holder (C dept) waits for members to carry their department.
+var (
+	ListBudgets           = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
+	CreateBudget          = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true}
+	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	ImportBudget          = Policy{Operation: "importBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	RequestBudgetApproval = Policy{Operation: "requestBudgetApproval", Capability: Budgets, Need: Create, Unqualified: true, Note: "Approved by A: recorded and locked."}
+)
+
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
 // filed or not required, and a record withdrawn, by the Owner, the Controller, the Accountant and the Tax agent (the
 // owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row).
@@ -1626,7 +1640,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
-	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast)
+	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

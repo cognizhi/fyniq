@@ -127,7 +127,8 @@
         "option_event",
         "round_scenario",
         "investor_right",
-        "controller_entry"
+        "controller_entry",
+        "budget"
       ],
       "examples": [
         "organisation_setting"
@@ -195,7 +196,8 @@
         "option_event.record",
         "round_scenario.approve",
         "investor_right.record",
-        "controller_entry.record"
+        "controller_entry.record",
+        "budget.record"
       ],
       "examples": [
         "organisation_setting.change"

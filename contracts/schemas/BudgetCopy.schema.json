@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "financial_year": {
+      "description": "The financial year's first day: the same year, or one with as many months.",
+      "examples": [
+        "2028-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "from": {
+      "description": "The budget copied: any version.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "growth": {
+      "description": "Each amount × (1 + growth), rounded once (RND-PLAN), as a fraction: 0.05 for 5%, -0.1 for 10% less.",
+      "examples": [
+        "0.05"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "original for another year; revised for the same year, revising the budget copied, which must be recorded.",
+      "enum": [
+        "original",
+        "revised"
+      ],
+      "examples": [
+        "original"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The new version's name.",
+      "examples": [
+        "FY2028 budget"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "name",
+    "kind",
+    "financial_year",
+    "growth"
+  ],
+  "title": "BudgetCopy",
+  "type": "object"
+}

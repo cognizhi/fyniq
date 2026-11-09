@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "costs": {
+      "description": "The expense lines' total, month by month.",
+      "items": {
+        "description": "An amount in the base currency, as a decimal string.",
+        "examples": [
+          "12500.00"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "costs_year": {
+      "description": "The year's costs.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "income": {
+      "description": "The income lines' total, month by month.",
+      "items": {
+        "description": "An amount in the base currency, as a decimal string.",
+        "examples": [
+          "12500.00"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "income_year": {
+      "description": "The year's income.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "net": {
+      "description": "Income less costs, month by month.",
+      "items": {
+        "description": "An amount in the base currency, as a decimal string.",
+        "examples": [
+          "12500.00"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "net_year": {
+      "description": "The year's income less its costs.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "income",
+    "costs",
+    "net",
+    "income_year",
+    "costs_year",
+    "net_year"
+  ],
+  "title": "BudgetTotals",
+  "type": "object"
+}

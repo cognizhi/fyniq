@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/budget"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
@@ -64,9 +65,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class,equity_transaction,instrument,instrument_template,option_pool,option_grant,option_event,round_scenario,investor_right,controller_entry" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class,equity_transaction,instrument,instrument_template,option_pool,option_grant,option_event,round_scenario,investor_right,controller_entry,budget" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record,equity_transaction.approve,instrument.record,instrument_template.enable,option_pool.record,option_grant.record,option_event.record,round_scenario.approve,investor_right.record,controller_entry.record" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record,equity_transaction.approve,instrument.record,instrument_template.enable,option_pool.record,option_grant.record,option_event.record,round_scenario.approve,investor_right.record,controller_entry.record,budget.record" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -760,6 +761,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		}
 	case approval.ObjectInvestorRights, approval.ObjectControllerEntry: // the record's version and status, and its holder (FR-EQ-22, FR-EQ-25)
 		version, deps, err := heldRecordDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
+	case approval.ObjectBudget: // the budget's version and status, and its year (FR-PLN-01)
+		version, deps, err := budgetDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
 			return nil, err
 		}
@@ -1811,6 +1821,13 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executePayeeBankChange(ctx, u, r)
 	case approval.OpClaimantBankChange: // FR-AP-22: the person's account in force, the one it replaces retired
 		_, err := a.approveClaimantBankChange(ctx, u, r)
+		return err
+	case approval.OpBudgetRecord: // FR-PLN-01: the budget recorded and locked, the year's budget from then on
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = budget.RecordIn(ctx, u, id)
 		return err
 	case approval.OpHolderRecordRecord: // FR-EQ-15: the holder's details recorded, superseding the record before them
 		id, err := uuid.Parse(r.ObjectKey)

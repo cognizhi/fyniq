@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
 )
@@ -225,8 +224,3 @@ func parseCSV(data []byte, m Mapping, cur money.Currency, lim Limits) (Statement
 	}
 	return rows(table, m, cur, lim)
 }
-
-// excelEpoch is day 0 of Excel's 1900 date system, as Excel counts it (it has a 29 February 1900 that never was, so
-// serials from 61 on are one day late against a true calendar; 30 December 1899 corrects that for every date a bank
-// statement can hold).
-var excelEpoch = time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)

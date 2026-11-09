@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "financial_year": {
+      "description": "The financial year's first day.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "kind": {
+      "description": "original: the year's first budget; revised: a later version that revises the year's recorded one.",
+      "enum": [
+        "original",
+        "revised"
+      ],
+      "examples": [
+        "original"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "The amounts by account and dimension values: one line per account and set of values.",
+      "items": {
+        "$ref": "BudgetLineDraft.schema.json"
+      },
+      "maxItems": 5000,
+      "type": "array"
+    },
+    "name": {
+      "description": "The version's name.",
+      "examples": [
+        "FY2027 budget"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "revises": {
+      "description": "The recorded budget a revised version revises.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "kind",
+    "financial_year",
+    "lines"
+  ],
+  "title": "BudgetDraft",
+  "type": "object"
+}
