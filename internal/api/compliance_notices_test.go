@@ -193,11 +193,29 @@ var matrixConsent = map[string]func(e *env, tok string) (response, func() bool){
 		return r, func() bool { return matrixConsentState(e) == was }
 	},
 	"recordConsent": func(e *env, tok string) (response, func() bool) {
+		id := matrixConsentPurpose(e)
 		was := matrixConsentState(e)
-		r := e.call(http.MethodPost, "/v1/compliance/consents", tok, map[string]any{"purpose_id": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10",
+		r := e.call(http.MethodPost, "/v1/compliance/consents", tok, map[string]any{"purpose_id": id,
 			"person": "member:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10", "event": "given"}, "Prefer", "return=preview")
 		return r, func() bool { return matrixConsentState(e) == was }
 	},
+}
+
+var matrixConsentPurposeOf = map[*env]string{}
+
+// matrixConsentPurpose is a purpose for members that needs consent, so the matrix's consent is one the API takes.
+func matrixConsentPurpose(e *env) string {
+	e.t.Helper()
+	if id, ok := matrixConsentPurposeOf[e]; ok {
+		return id
+	}
+	r := e.call(http.MethodPost, "/v1/compliance/consent-purposes", e.as(authz.DPO), map[string]any{"name": "Matrix consent",
+		"description": "A purpose that needs consent.", "audience": "members", "needs_consent": true}, "Idempotency-Key", "matrix-consent-purpose")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's consent purpose: %d %s", r.Status, r.Raw)
+	}
+	matrixConsentPurposeOf[e] = r.str("id")
+	return r.str("id")
 }
 
 func matrixConsentState(e *env) string {
