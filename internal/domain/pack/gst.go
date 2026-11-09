@@ -136,10 +136,13 @@ const (
 	// LimitSimplifiedInvoice is the most a simplified tax invoice's total payable, GST included, may be for its input
 	// tax to be claimed (FR-AP-20).
 	LimitSimplifiedInvoice = "simplified_invoice"
+	// LimitRegistrationThreshold is the taxable supplies a GST registration test compares with: more than it, in a
+	// calendar year or expected in the next 12 months, makes a business liable to register (FR-TAX-05, rev 0.208).
+	LimitRegistrationThreshold = "registration_threshold"
 )
 
 // Limits are the limits Fyniq reads.
-var Limits = []string{LimitSimplifiedInvoice}
+var Limits = []string{LimitSimplifiedInvoice, LimitRegistrationThreshold}
 
 var (
 	amountPattern   = regexp.MustCompile(`^[0-9]{1,15}(\.[0-9]{1,4})?$`)

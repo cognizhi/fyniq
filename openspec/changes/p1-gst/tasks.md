@@ -17,14 +17,14 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 2. The packs (slice 1)
 
-- [ ] 2.1 `sg-gst@2026.3` (D1):
+- [x] 2.1 `sg-gst@2026.3` (D1):
   - `2026.2`'s tables, plus the `registration_threshold` limit with the source `iras-register` (quote, URL, retrieved
     2026-11-07);
   - pinned limits for 2026-11-06 (none), 2026-11-07 and 2030-12-31.
 
   `go test ./internal/domain/pack` loads it, and its pinned cases pass. `// req: FR-TAX-05`, `// req: ENG-30`,
   `// req: QA-ENG-08`
-- [ ] 2.2 `sg-deadlines@2026.1` (D1, D2):
+- [x] 2.2 `sg-deadlines@2026.1` (D1, D2):
   - `pack.Schemas` gains its tables (`rules`, `holidays`, `extensions`) and pinned tables (`due_dates`, `working_days`,
     `extensions`), with `checkDeadlines` for the columns' values;
   - `pack.DueOn` and `pack.NextWorkingDay`, with `RunPinned` running the three pinned tables;
@@ -34,8 +34,12 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
   The pinned cases are listed in D2, worked from the sources' own examples and not from the rows.
   Tests: `TestDueOnFollowsMonthEnds`, `TestNextWorkingDaySkipsWeekendsAndHolidays`, `TestAYearWithoutHolidaysIsNotAssessed`,
   and the pack's pinned run. `// req: FR-TAX-07`, `// req: CMP-02`, `// req: ENG-30`, `// req: QA-ENG-08`
-- [ ] 2.3 `migrate up` loads both versions; the global-pack golden files are updated. `fyniq-sg-statutory` and its PRD
+- [x] 2.3 `migrate up` loads both versions; the global-pack golden files are updated. `fyniq-sg-statutory` and its PRD
   §14.2 snapshot name the new pack. `make check` and `make test`.
+  (7 Nov 2026, PRD-001 rev 0.209: no golden file changed, since packs are rows and not schema;
+  `TestTheMigratorLoadsTheShippedPacksOnce` checks the holidays load. D2 revised as built: a rule applies when the date
+  it gives falls within its effective dates, and Form C-S counts from 31 December of the financial year end's year. The
+  pinned cases found both. The skill's pack table names `sg-deadlines` and its January routine.)
 
 ## 3. The registration monitor (slice 2)
 

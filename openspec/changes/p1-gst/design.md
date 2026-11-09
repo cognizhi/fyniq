@@ -108,20 +108,27 @@ Constraints:
   | `gst_register_retrospective` | deadline | calendar_year_end | 1, day 30 | none | IRAS: apply "between 1 Jan to 30 Jan of the following year" |
   | `gst_starts_retrospective` | starts | calendar_year_end | 3, day 1 | none | IRAS: "registered for GST on 1 Mar of the following year" |
   | `gst_register_prospective` | deadline | forecast_on | days 30 | none | IRAS: "within 30 days after the date of your forecast" |
-  | `gst_starts_prospective` | starts | forecast_on | 2 | none | IRAS: "registered 2 months from the date of your forecast", from 1 Jul 2025 |
+  | `gst_starts_prospective` | starts | forecast_on | 2 | none | IRAS: "registered 2 months from the date of your forecast", for a liability from 1 Jul 2025 |
 
-  Each row's `effective_from` is the day its page was read (2026-11-07), except `gst_starts_prospective`, which is
-  2025-07-01 as IRAS dates it. The rule in force on the anchor day applies. An anchor with no rule in force is Not
-  assessed.
+  Each row's `effective_from` is the day its page was read (2026-11-07). A rule applies when the date it gives falls
+  within its effective dates: an obligation falling due from the day the rules were read is assessed, whatever its
+  anchor, and one due earlier is Not assessed, since the pack does not record the rule then. (Built: selecting by the
+  anchor day left October 2026's CPF, due 16 Nov, unassessed.) IRAS dates the two months of `gst_starts_prospective`
+  from 1 Jul 2025; every forecast whose start falls from 7 Nov 2026 is later than that, so the row needs no earlier
+  date.
+
+  The `agm`, `statements_to_members` and `annual_return` rows are ACRA's corporate timing, which FR-CS-02 puts in
+  `sg-acra`. They sit here until `p1-company-secretary` writes that pack, and then move to it in one release.
 
   *Alternative:* code the deadlines as constants, as the registers' are today. Rejected: §10.6 and golden rule 12 put
   statutory values in packs, so a changed deadline is a pack release and not a platform release (ENG-33).
 
 ### D2. The due-date rule
 
-`pack.DueOn(v, obligation, anchor, facts)` picks the rule row in force on the anchor whose condition the facts meet,
-then works out the date:
-1. Move the anchor `months` months forward. When the anchor is its month's last day, the result is the target month's
+`pack.DueOn(v, obligation, anchor, facts)` takes the first rule row whose condition the facts meet and whose effective
+dates hold the date it gives, worked out as follows:
+1. Move the anchor `months` months forward. For `fy_end_year_end`, the anchor passed is the financial year's end, and
+   the rule counts from 31 December of its year. When the anchor is its month's last day, the result is the target month's
    last day (IRAS: 30 Jun → 31 Jul). Otherwise it keeps the anchor's day, or the month's last day when that day does not
    exist.
 2. If the row sets `day`, take that day of the resulting month.

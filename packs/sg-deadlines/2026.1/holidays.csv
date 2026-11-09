@@ -1,0 +1,27 @@
+date,name,observed,source
+2026-01-01,New Year's Day,false,mom-holidays
+2026-02-17,Chinese New Year,false,mom-holidays
+2026-02-18,Chinese New Year,false,mom-holidays
+2026-03-21,Hari Raya Puasa,false,mom-holidays
+2026-04-03,Good Friday,false,mom-holidays
+2026-05-01,Labour Day,false,mom-holidays
+2026-05-27,Hari Raya Haji,false,mom-holidays
+2026-05-31,Vesak Day,false,mom-holidays
+2026-06-01,Vesak Day,true,mom-holidays
+2026-08-09,National Day,false,mom-holidays
+2026-08-10,National Day,true,mom-holidays
+2026-11-08,Deepavali,false,mom-holidays
+2026-11-09,Deepavali,true,mom-holidays
+2026-12-25,Christmas Day,false,mom-holidays
+2027-01-01,New Year's Day,false,mom-holidays
+2027-02-06,Chinese New Year,false,mom-holidays
+2027-02-07,Chinese New Year,false,mom-holidays
+2027-02-08,Chinese New Year,true,mom-holidays
+2027-03-10,Hari Raya Puasa,false,mom-holidays
+2027-03-26,Good Friday,false,mom-holidays
+2027-05-01,Labour Day,false,mom-holidays
+2027-05-17,Hari Raya Haji,false,mom-holidays
+2027-05-20,Vesak Day,false,mom-holidays
+2027-08-09,National Day,false,mom-holidays
+2027-10-28,Deepavali,false,mom-holidays
+2027-12-25,Christmas Day,false,mom-holidays

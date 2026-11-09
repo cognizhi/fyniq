@@ -2,6 +2,7 @@ package pack_test
 
 import (
 	"io/fs"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -75,8 +76,12 @@ func TestTheShippedPacksLoadAndPassTheirPinnedTests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(versions) == 0 || versions[0].ID != "sg-gst@2026.1" {
-		t.Fatalf("loaded %v; want sg-gst@2026.1 first", versions)
+	var ids []string
+	for _, v := range versions {
+		ids = append(ids, v.ID)
+	}
+	if want := []string{"sg-deadlines@2026.1", "sg-gst@2026.1", "sg-gst@2026.2", "sg-gst@2026.3"}; !slices.Equal(ids, want) {
+		t.Fatalf("loaded %v; want %v, sorted by id", ids, want)
 	}
 	for _, v := range versions {
 		results := pack.RunPinned(v)
@@ -251,9 +256,9 @@ func TestTheSimplifiedInvoiceLimitIsInTheGSTPackFromItsVersion(t *testing.T) {
 	if _, _, ok := pack.Limit(v2, "unknown", day(t, "2027-01-01")); ok {
 		t.Error("an unknown limit was found")
 	}
-	// Bills read the newest version in force: 2026.2 supersedes 2026.1 from the same day.
-	if v, _ := pack.At(versions, "sg-gst", day(t, "2026-11-01")); v.ID != "sg-gst@2026.2" {
-		t.Errorf("chose %s on 1 Nov 2026; want sg-gst@2026.2", v.ID)
+	// Bills read the newest version in force: 2026.3 supersedes 2026.2, which superseded 2026.1, from the same day.
+	if v, _ := pack.At(versions, "sg-gst", day(t, "2026-11-01")); v.ID != "sg-gst@2026.3" {
+		t.Errorf("chose %s on 1 Nov 2026; want sg-gst@2026.3", v.ID)
 	}
 
 	const v2dir = "sg-gst/2026.2/"

@@ -1,0 +1,128 @@
+# sg-deadlines@2026.1: the rules that give the statutory calendar its dates (PRD-001 §10.6, ENG-30, FR-TAX-07, CMP-02;
+# rev 0.208). Never edit this version once it is active anywhere: a correction is sg-deadlines@2026.2 (fyniq-sg-statutory).
+id = "sg-deadlines@2026.1"
+title = "Singapore statutory deadlines: GST, CPF, employment income, corporate income tax and ACRA, with the public holidays"
+effective_from = "2026-11-07"
+review_date = "2027-01-31"
+verifier = "Claude Code against IRAS's, CPF Board's, ACRA's and MOM's pages on 7 Nov 2026 (p1-gst); the tax agent's and the accountant's review is pending (FR-UX-41)"
+conditions = "A Singapore private company limited by shares, not listed: its financial years, its GST return periods while registered, the months it pays staff, and its AGM route; a rule applies to an obligation whose date by that rule falls within the rule's effective dates, and a working day is a weekday that is not a public holiday of the table"
+
+[[sources]]
+id = "iras-gst-due"
+title = "IRAS: GST filing due dates and requests for extension"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/gst-filing-due-dates-and-requests-for-extension"
+section = "Due dates for filing and payment"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Your GST return and payment are due 1 month after the end of your accounting period. Apr–Jun: 31 Jul. If your period runs from 5 Apr 2026 to 5 Jul 2026, your return is due on 5 Aug 2026."
+
+[[sources]]
+id = "iras-mytax-downtime"
+title = "IRAS: Service downtime for myTax Portal enhancement"
+url = "https://www.iras.gov.sg/digital-services/others/service-downtime-for-mytax-portal-enhancement"
+section = "Extension of filing due dates"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "For GST F5/ F8 that are due between 22 Dec 2026 and 3 Jan 2027, the due date will automatically be extended to 9 Jan 2027."
+
+[[sources]]
+id = "cpf-due"
+title = "CPF Board: When is the due date for CPF contributions"
+url = "https://www.cpf.gov.sg/service/article/when-is-the-due-date-for-cpf-contributions"
+section = "Due date"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "The due date for CPF contributions is on the last day of the calendar month. Enforcement action would be taken against employers who fail to pay by the 14th of the following month (or the next working day if the 14th falls on a Saturday, Sunday or Public Holiday)."
+
+[[sources]]
+id = "mom-holidays"
+title = "MOM: Public holidays"
+url = "https://www.mom.gov.sg/employment-practices/public-holidays"
+section = "Public holidays for 2026 and 2027"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Monday, 1 June 2026, will be a public holiday if your rest day falls on 31 May 2026."
+
+[[sources]]
+id = "iras-ais"
+title = "IRAS: Submit employment income records (Auto-Inclusion Scheme)"
+url = "https://www.iras.gov.sg/taxes/individual-income-tax/employers/auto-inclusion-scheme-(ais)-for-employment-income/submit-employment-income-records"
+section = "Submission deadline"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "AIS employers are required to submit their employees' employment income information to IRAS electronically by 1 Mar each year"
+
+[[sources]]
+id = "iras-eci"
+title = "IRAS: Estimated Chargeable Income (ECI) filing"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/estimated-chargeable-income-(eci)-filing"
+section = "Filing due date; waiver; change of financial year end example"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Your company has to file ECI within 3 months from the end of your financial year unless: annual revenue is $5 million or below for the financial year and ECI is nil for the YA. Your company is required to file the ECI for YA 2025 (basis period from 1 Jan 2024 to 31 Dec 2024) by 31 Mar 2025."
+
+[[sources]]
+id = "iras-cit-basics"
+title = "IRAS: Basic guide to corporate income tax for companies"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/basics-of-corporate-income-tax/basic-guide-to-corporate-income-tax-for-companies"
+section = "Filing obligations; the basis period"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Form C-S/ Form C-S (Lite)/ Form C: 30 Nov each year. Corporate Income Tax is assessed on a preceding year basis in Singapore."
+
+[[sources]]
+id = "acra-annual-return"
+title = "ACRA: Filing annual returns, deadline requirements"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/filing-annual-returns-companies/deadline-requirements/"
+section = "Filing deadlines: non-listed companies"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Non-listed companies: Within seven months after FYE. Non-listed companies with a share capital and an overseas branch register: Within eight months after FYE."
+
+[[sources]]
+id = "acra-agm"
+title = "ACRA: Holding annual general meetings, due dates and requirements"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/holding-annual-general-meetings/due-dates-requirements/"
+section = "AGM due date; exemptions; dispensing with AGMs"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "Within six months after FYE. Financial statements are sent to all members within five months after the FYE. All members pass a resolution to dispense with the AGM."
+
+[[sources]]
+id = "iras-register"
+title = "IRAS: Do I need to register for GST"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/gst-registration-deregistration/do-i-need-to-register-for-gst"
+section = "Compulsory registration: when to apply and when registration takes effect"
+kind = "official guidance"
+retrieved = "2026-11-07"
+quote = "you must apply for GST registration between 1 Jan to 30 Jan of the following year; registered for GST on 1 Mar of the following year; you must apply for GST registration within 30 days after the date of your forecast; If your liability to register for GST under the prospective basis arises on or after 1 Jul 2025, you will be registered 2 months from the date of your forecast"
+
+[[tables]]
+name = "rules"
+file = "rules.csv"
+description = "Each obligation's date from its anchor: months forward (a month's last day stays a month's last day), then the day of the month, then days; then an extension, then the next working day where it rolls. A condition names the organisation's setting that selects the row"
+
+[[tables]]
+name = "holidays"
+file = "holidays.csv"
+description = "Singapore's public holidays, each Sunday holiday's Monday as its own row (observed); a year without rows is not known"
+
+[[tables]]
+name = "extensions"
+file = "extensions.csv"
+description = "One-off extensions: an obligation due within the window is due on the day given instead"
+
+[[pinned]]
+name = "due_dates"
+file = "pinned/due_dates.csv"
+description = "Hand-pinned due dates worked from the sources' own examples, not from rules.csv"
+
+[[pinned]]
+name = "working_days"
+file = "pinned/working_days.csv"
+description = "Hand-pinned next working days around weekends and public holidays, worked from mom-holidays, not from holidays.csv"
+
+[[pinned]]
+name = "extensions"
+file = "pinned/extensions.csv"
+description = "Hand-pinned due dates either side of the one-off extension, worked from iras-mytax-downtime, not from extensions.csv"

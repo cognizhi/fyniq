@@ -1,0 +1,11 @@
+case,code,want_direction,want_value_box,want_gst_box,why,source
+GST-C-01,SR,supply,1,6,standard-rated supplies: the value in Box 1 and the GST in Box 6,iras-f5-boxes
+GST-C-02,ZR,supply,2,,zero-rated supplies in Box 2,iras-f5-boxes
+GST-C-03,ES,supply,3,,exempt supplies in Box 3,iras-f5-boxes
+GST-C-04,OS,supply,,,out-of-scope supplies are not filled in,iras-f5-boxes
+GST-C-05,TX,purchase,5,7,standard-rated purchases whose GST can be claimed: Box 5 and Box 7,iras-f5-boxes
+GST-C-06,IM,purchase,5,7,imports of goods for business purposes: Box 5 and Box 7,iras-f5-boxes
+GST-C-07,ZP,purchase,5,,zero-rated purchases from GST-registered suppliers in Box 5,iras-f5-boxes
+GST-C-08,BL,purchase,,,expenses whose input tax is disallowed are not included in Box 5,iras-f5-boxes
+GST-C-09,NR,purchase,,,purchases from non GST-registered businesses are not included in Box 5,iras-f5-boxes
+GST-C-10,EP,purchase,,,exempt purchases are not included in Box 5,iras-f5-boxes

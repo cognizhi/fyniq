@@ -1,0 +1,7 @@
+case,limit,date,want,why,source
+GST-L-01,simplified_invoice,2026-10-22,none,"the day before the limit was read on IRAS's page: its history is not recorded, so an earlier simplified invoice goes to the tax agent",iras-invoicing
+GST-L-02,simplified_invoice,2026-10-23,1000.00 SGD,"a simplified tax invoice when the total payable including GST does not exceed $1,000",iras-invoicing
+GST-L-03,simplified_invoice,2030-12-31,1000.00 SGD,the limit has no end,iras-invoicing
+GST-L-04,registration_threshold,2026-11-06,none,"the day before the threshold was read on IRAS's page: its history is not recorded, so a test read on an earlier day is not assessed",iras-register
+GST-L-05,registration_threshold,2026-11-07,1000000.00 SGD,"more than $1 million in the calendar year, or expected in the next 12 months",iras-register
+GST-L-06,registration_threshold,2031-12-31,1000000.00 SGD,the threshold has no end,iras-register

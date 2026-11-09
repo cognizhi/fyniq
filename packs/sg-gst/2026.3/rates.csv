@@ -1,0 +1,7 @@
+effective_from,effective_to,rate,source
+1994-04-01,2002-12-31,0.03,iras-current-rates
+2003-01-01,2003-12-31,0.04,iras-current-rates
+2004-01-01,2007-06-30,0.05,iras-current-rates
+2007-07-01,2022-12-31,0.07,iras-current-rates
+2023-01-01,2023-12-31,0.08,iras-current-rates iras-rate-change
+2024-01-01,,0.09,iras-current-rates iras-rate-change

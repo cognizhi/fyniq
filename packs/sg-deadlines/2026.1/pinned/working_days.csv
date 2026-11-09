@@ -1,0 +1,8 @@
+case,date,want,why,source
+WD-01,2026-11-07,2026-11-10,"Saturday; Deepavali on Sunday 8 Nov and Monday 9 Nov a public holiday, so Tuesday 10 Nov",mom-holidays
+WD-02,2026-11-10,2026-11-10,a Tuesday that is no holiday is a working day itself,mom-holidays
+WD-03,2026-05-31,2026-06-02,"Vesak Day on Sunday 31 May 2026 and Monday 1 June a public holiday",mom-holidays
+WD-04,2027-02-06,2027-02-09,"Chinese New Year on Saturday 6 and Sunday 7 Feb 2027, and Monday 8 Feb a public holiday",mom-holidays
+WD-05,2026-12-25,2026-12-28,"Christmas Day, a Friday: then the weekend",mom-holidays
+WD-06,2027-05-01,2027-05-03,"Labour Day on a Saturday: no Monday holiday, so Monday 3 May",mom-holidays
+WD-07,2028-01-14,none,"a year whose public holidays the pack does not hold",mom-holidays

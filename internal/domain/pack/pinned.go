@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cockroachdb/apd/v3"
 )
@@ -68,6 +69,55 @@ func RunPinned(v Version) []Result {
 			}
 			out = append(out, r)
 		}
+	}
+	return append(out, runDeadlines(v)...)
+}
+
+// runDeadlines runs the sg-deadlines pinned cases: each obligation's due date for its anchor and condition, each next
+// working day, and each date either side of an extension; "none" where the pack must not know one.
+func runDeadlines(v Version) []Result {
+	if v.Pack != "sg-deadlines" {
+		return nil
+	}
+	var out []Result
+	date := func(r *Result, s string) (time.Time, bool) {
+		d, err := ParseDate(s)
+		if err != nil {
+			r.Got = fmt.Sprintf("the date %q does not parse", s)
+		}
+		return d, err == nil
+	}
+	answer := func(r *Result, d time.Time, err error) {
+		if err != nil {
+			r.Got, r.Pass = "none", r.Want == "none"
+			return
+		}
+		r.Got = d.Format(time.DateOnly)
+		r.Pass = r.Got == r.Want
+	}
+	for _, row := range v.Pinned["due_dates"].Rows {
+		r := Result{Table: "due_dates", Case: row[0] + " " + row[1], Why: row[5], Want: row[4]}
+		if anchor, ok := date(&r, row[2]); ok {
+			d, err := DueOn(v, row[1], anchor, Facts(row[3]))
+			answer(&r, d.On, err)
+		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["working_days"].Rows {
+		r := Result{Table: "working_days", Case: row[0] + " " + row[1], Why: row[3], Want: row[2]}
+		if d, ok := date(&r, row[1]); ok {
+			w, err := NextWorkingDay(v, d)
+			answer(&r, w, err)
+		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["extensions"].Rows {
+		r := Result{Table: "extensions", Case: row[0] + " " + row[1], Why: row[4], Want: row[3]}
+		if d, ok := date(&r, row[2]); ok {
+			e, _ := Extended(v, row[1], d)
+			answer(&r, e, nil)
+		}
+		out = append(out, r)
 	}
 	return out
 }
