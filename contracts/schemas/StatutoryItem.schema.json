@@ -48,8 +48,15 @@
       ],
       "type": "string"
     },
+    "link": {
+      "description": "Where in the web app a register's deadline is done.",
+      "examples": [
+        "/equity/holders/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "type": "string"
+    },
     "obligation": {
-      "description": "What is due.",
+      "description": "What is due: the register_ ones are a register's own, done and checked on their record.",
       "enum": [
         "gst_f5",
         "cpf",
@@ -61,6 +68,10 @@
         "statements_to_members",
         "gst_register_retrospective",
         "gst_register_prospective",
+        "register_controller_entry",
+        "register_controller_central",
+        "register_controller_notice",
+        "register_share_lodgement",
         "financial_year",
         "sg-deadlines"
       ],
@@ -75,6 +86,13 @@
         "The books start and the first financial year's end are not set: set them in Settings › Organisation"
       ],
       "type": "string"
+    },
+    "register": {
+      "description": "true for a register's own deadline (a controller, a share lodgement): done on its record, which link opens, and never recorded here.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
     },
     "rolled": {
       "description": "true when its day moved to the next working day.",

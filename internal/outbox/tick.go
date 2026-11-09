@@ -54,6 +54,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Daily at 07:30 Singapore time, before the daily digest, each organisation's bills to pay (FR-NTF-01, FR-AP-13; rev 0.110).
 	{Job: "notify.bills_due", Every: 24 * time.Hour, Offset: 23*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Daily at 07:35 Singapore time, after the bills to pay, each organisation's statutory deadlines 30, 14, 7 and 1 days
+	// ahead, and the day after one passed (FR-TAX-07, CMP-02; p1-gst design D10).
+	{Job: "notify.deadlines", Every: 24 * time.Hour, Offset: 23*time.Hour + 35*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Every hour, notifications' held and digested email (FR-NTF-02, rev 0.108): the daily digest after 08:00 Singapore
 	// time, the weekly on Mondays, and immediate email held in quiet hours once they end.
 	{Job: "notify.digest", Every: time.Hour, Offset: 5 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
