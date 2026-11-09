@@ -97,7 +97,7 @@ var matrixDPIAs = map[string]func(e *env, tok string) (response, func() bool){
 	},
 	"approveDPIA": func(e *env, tok string) (response, func() bool) {
 		was := matrixDPIAState(e)
-		r := e.call(http.MethodPost, "/v1/compliance/dpias/ai-assistant/approvals", tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		r := e.call(http.MethodPost, "/v1/compliance/dpias/ai-assistant/approvals", steppedUp(e, tok), nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixDPIAState(e) == was }
 	},
 }
