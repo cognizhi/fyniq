@@ -96,7 +96,7 @@ var matrixPDRequests = map[string]func(e *env, tok string) (response, func() boo
 		return e.call(http.MethodGet, "/v1/compliance/personal-data-requests", tok, nil), nil
 	},
 	"getPersonalDataReport": func(e *env, tok string) (response, func() bool) {
-		return e.call(http.MethodGet, "/v1/compliance/personal-data-requests/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/report", tok, nil), nil
+		return e.call(http.MethodGet, "/v1/compliance/personal-data-requests/"+matrixPDRequest(e)+"/report", tok, nil), nil
 	},
 	"listMyPersonalDataRequests": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/me/personal-data-requests", tok, nil), nil
@@ -108,16 +108,35 @@ var matrixPDRequests = map[string]func(e *env, tok string) (response, func() boo
 		return r, func() bool { return matrixPDRequestState(e) == was }
 	},
 	"stepPersonalDataRequest": func(e *env, tok string) (response, func() bool) {
+		id := matrixPDRequest(e)
 		was := matrixPDRequestState(e)
-		r := e.call(http.MethodPost, "/v1/compliance/personal-data-requests/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/steps", tok, map[string]any{"step": "acknowledged"},
+		r := e.call(http.MethodPost, "/v1/compliance/personal-data-requests/"+id+"/steps", tok, map[string]any{"step": "acknowledged"},
 			"If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixPDRequestState(e) == was }
 	},
 	"askAboutMyPersonalData": func(e *env, tok string) (response, func() bool) {
 		was := matrixPDRequestState(e)
-		r := e.call(http.MethodPost, "/v1/me/personal-data-requests", tok, map[string]any{"kind": "access", "details": "y"}, "Prefer", "return=preview")
+		// A member asks for themselves: the session carries their user, as steppedUp gives it.
+		r := e.call(http.MethodPost, "/v1/me/personal-data-requests", steppedUp(e, tok), map[string]any{"kind": "access", "details": "y"}, "Prefer", "return=preview")
 		return r, func() bool { return matrixPDRequestState(e) == was }
 	},
+}
+
+var matrixPDRequestOf = map[*env]string{}
+
+// matrixPDRequest is a contact's request, so the matrix reads and steps one that exists.
+func matrixPDRequest(e *env) string {
+	e.t.Helper()
+	if id, ok := matrixPDRequestOf[e]; ok {
+		return id
+	}
+	r := e.call(http.MethodPost, "/v1/compliance/personal-data-requests", e.as(authz.DPO), map[string]any{"kind": "access",
+		"subject": "contact:" + e.directorContact("Matrix contact"), "requester": "Matrix contact", "details": "y"}, "Idempotency-Key", "matrix-pd-request")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's request: %d %s", r.Status, r.Raw)
+	}
+	matrixPDRequestOf[e] = r.str("id")
+	return r.str("id")
 }
 
 func matrixPDRequestState(e *env) string {
