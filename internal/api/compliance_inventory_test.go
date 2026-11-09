@@ -90,13 +90,11 @@ var matrixInventory = map[string]func(e *env, tok string) (response, func() bool
 			"why": "y", "where": "z", "who": "w", "retention": "r", "transfers": "None", "needs_dpia": false}, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixInventoryState(e) == was }
 	},
-	// A quarter waits for its review once one has ended since the first member joined: the organisation gains a member
-	// once, the clock moves to 2100, as for the access review, and the row reviews the quarter the inventory names.
+	// A quarter waits for its review once one has ended since the first member joined: the row makes sure the matrix's
+	// member exists (matrixMember, which the member rows share), the clock moves to 2100, as for the access review, and
+	// the row reviews the quarter the inventory names.
 	"reviewDataInventory": func(e *env, tok string) (response, func() bool) {
-		if !matrixInventoryMember[e] {
-			e.joined("Matrix member", "employee")
-			matrixInventoryMember[e] = true
-		}
+		matrixMember(e)
 		in2100 := func(f func()) {
 			was := e.clock.Now()
 			defer e.clock.Set(was)
@@ -117,10 +115,7 @@ var matrixInventory = map[string]func(e *env, tok string) (response, func() bool
 	},
 }
 
-var (
-	matrixInventoryEntryOf = map[*env]string{}
-	matrixInventoryMember  = map[*env]bool{}
-)
+var matrixInventoryEntryOf = map[*env]string{}
 
 // matrixInventoryEntry is an entry of the company's own, so the matrix revises one that exists.
 func matrixInventoryEntry(e *env) string {
