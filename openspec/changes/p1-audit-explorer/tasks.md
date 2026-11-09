@@ -320,7 +320,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 - [x] 10.2 The erasure register re-applied by the recovery step (G4-070's audit part). Test: details erased, a backup
   from before simulated, the register re-applied, and the erased details gone again before the copy opens.
   `// req: AUD-09`, `// req: G4-070`
-  - As built (10 Nov 2026, rev 0.239):
+  - As built (9 Nov 2026, rev 0.239):
     - **The database (000293).** `fyniq.audit_recovery`: the epoch it starts (the next one only), the restored head
       and its hash, the range no longer proven, when it was found and its signed copy; it never changes or goes
       (FY306). Its acknowledgement is a row of its own, once (`fyniq.audit_recovery_acknowledgement`), so both stay
