@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "anonymised_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-10T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "anonymised_by": {
+      "description": "Who, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "contact_id": {
+      "description": "The contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "contact_name": {
+      "description": "Their legal name, which the records keep.",
+      "examples": [
+        "Ada Tan"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The anonymisation.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reapplied": {
+      "description": "true when a restore applied it again from the register.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "Why.",
+      "examples": [
+        "Their purpose ended: no business since 2022."
+      ],
+      "type": "string"
+    },
+    "request_id": {
+      "description": "The request it honours, if any.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "contact_id",
+    "contact_name",
+    "reason",
+    "anonymised_by",
+    "anonymised_at",
+    "reapplied"
+  ],
+  "title": "AnonymisationView",
+  "type": "object"
+}

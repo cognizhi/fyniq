@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06, CTL-DP-07]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06, CTL-DP-07, AUD-02]
 ---
 
 # Keep the data protection registers
@@ -101,6 +101,21 @@ it, why, what protects it, when it was assessed and by whom, where the evidence 
 **Change** saves a transfer's next version, such as its review with a new day, and **Retire it** marks it stopped. A
 transfer keeps the flow it covers. A review is due from 30 days before its day. A flow without an assessment, or a
 transfer past its review, shows here and on **Reviews and attestations**.
+
+## Shredding at the end of retention
+
+A person's name, email addresses, phone and address in the audit trail are sealed under a key of their own for each
+financial year. Once a year's records' retention has ended (**Records kept for** in Settings › Organisation, at least 7
+years after the year ends), Fyniq lists that year under the **Shredding** tab, and the Compliance officer is told.
+Nothing is shredded until they select **Approve**, confirming it is them. The next daily run then writes a signed entry
+to the shredding register and only after that deletes the year's keys: those values no longer open, and the audit
+explorer shows them as **Shredded**. The events and their proof stay, so the trail still verifies. It cannot be
+undone, and a restore from an older backup shreds them again.
+
+When a person's request is honoured or their purpose ends, the Compliance officer can also **Anonymise** the contact
+from their answered request under **Requests**, giving the reason. Their emails and phone go and their address reads
+Anonymised; their name and every issued document stay, as the records need them. **Anonymised contacts** lists each
+one. A request alone does not shred the trail's values while their retention continues.
 
 ## The Data Protection Officer
 

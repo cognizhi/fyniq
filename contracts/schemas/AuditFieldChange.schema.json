@@ -50,6 +50,22 @@
         "opened"
       ],
       "type": "string"
+    },
+    "shredded_on": {
+      "description": "For a shredded value, when its run shredded the keys.",
+      "examples": [
+        "2027-01-03T17:50:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "shredded_year": {
+      "description": "For a shredded value, the last day of the financial year whose keys were shredded.",
+      "examples": [
+        "2019-12-31"
+      ],
+      "format": "date",
+      "type": "string"
     }
   },
   "required": [

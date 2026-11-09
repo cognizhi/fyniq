@@ -160,11 +160,31 @@ func (r auditTrail) OpenSealed(ctx context.Context, values []storage.SealedValue
 		}
 		keys[k.ID] = dek
 	}
+	var gone []uuid.UUID
+	for _, v := range values {
+		if _, ok := keys[v.Key]; !ok {
+			gone = append(gone, v.Key)
+		}
+	}
+	shredded := map[uuid.UUID]sqlcdb.ShreddedKeysRow{}
+	if len(gone) > 0 {
+		rows, err := r.u.q.ShreddedKeys(ctx, gone)
+		if err != nil {
+			return nil, mapError(err)
+		}
+		for _, s := range rows {
+			shredded[s.Key] = s
+		}
+	}
 	out := make([]storage.OpenedValue, len(values))
 	for i, v := range values {
 		dek, ok := keys[v.Key]
 		if !ok {
 			out[i] = storage.OpenedValue{Shredded: true}
+			if s, ok := shredded[v.Key]; ok {
+				cohort := s.Cohort
+				out[i].Cohort, out[i].ShreddedOn = &cohort, s.DoneAt
+			}
 			continue
 		}
 		plain, err := fieldseal.OpenWith(dek, v.Text, audit.SealAAD(r.u.org, v.EventID, v.Field))

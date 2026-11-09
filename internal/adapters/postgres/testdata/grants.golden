@@ -29,6 +29,7 @@ fyniq_api       SELECT    announcement
 fyniq_api       UPDATE    announcement (withdrawn_at, withdrawn_by)
 fyniq_api       INSERT    announcement_dismissal (announcement_id, dismissed_at, installation, user_id)
 fyniq_api       SELECT    announcement_dismissal
+fyniq_api       EXECUTE   anonymise_contact()
 fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
 fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
@@ -301,6 +302,8 @@ fyniq_api       INSERT    payment_batch_payment (payment_id, release_id)
 fyniq_api       SELECT    payment_batch_payment
 fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, break_glass_id, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
 fyniq_api       SELECT    payment_batch_release
+fyniq_api       INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reason, register, request_id)
+fyniq_api       SELECT    pd_anonymisation
 fyniq_api       INSERT    pd_breach (assessment_due_on, aware_at, classes, description, individuals, prescribed, recorded_at, recorded_by, title)
 fyniq_api       SELECT    pd_breach
 fyniq_api       INSERT    pd_breach_exercise (findings, held_on, recorded_at, recorded_by, scenario)
@@ -311,6 +314,8 @@ fyniq_api       INSERT    pd_request (created_at, created_by, details, due_on, k
 fyniq_api       SELECT    pd_request
 fyniq_api       INSERT    pd_request_step (at, by_actor, new_due_on, note, outcome, request_id, step)
 fyniq_api       SELECT    pd_request_step
+fyniq_api       SELECT    pd_shredding_run
+fyniq_api       UPDATE    pd_shredding_run (approved_at, approved_by, status, version)
 fyniq_api       INSERT    pd_transfer (assessed_by, assessed_on, basis, countries, data, evidence, flow, next_review_on, purpose, recipient, saved_at, saved_by, state, transfer_id, version)
 fyniq_api       SELECT    pd_transfer
 fyniq_api       INSERT    period (ends_on, starts_on)
@@ -339,6 +344,7 @@ fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
 fyniq_api       EXECUTE   record_identity_email()
+fyniq_api       EXECUTE   records_years()
 fyniq_api       EXECUTE   recover_account()
 fyniq_api       EXECUTE   recover_super_admin()
 fyniq_api       INSERT    recurring_bill (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
@@ -634,11 +640,13 @@ fyniq_readonly  SELECT    owner_succession
 fyniq_readonly  SELECT    payee_bank_account
 fyniq_readonly  SELECT    payment_batch_payment
 fyniq_readonly  SELECT    payment_batch_release
+fyniq_readonly  SELECT    pd_anonymisation
 fyniq_readonly  SELECT    pd_breach
 fyniq_readonly  SELECT    pd_breach_exercise
 fyniq_readonly  SELECT    pd_breach_step
 fyniq_readonly  SELECT    pd_request
 fyniq_readonly  SELECT    pd_request_step
+fyniq_readonly  SELECT    pd_shredding_run
 fyniq_readonly  SELECT    pd_transfer
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
@@ -681,6 +689,7 @@ fyniq_worker    SELECT    accountant_review
 fyniq_worker    SELECT    accountant_review_journal
 fyniq_worker    SELECT    accountant_review_query
 fyniq_worker    SELECT    allocation
+fyniq_worker    EXECUTE   anonymise_contact()
 fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
@@ -860,11 +869,16 @@ fyniq_worker    SELECT    owner_succession
 fyniq_worker    SELECT    payee_bank_account
 fyniq_worker    SELECT    payment_batch_payment
 fyniq_worker    SELECT    payment_batch_release
+fyniq_worker    INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reapplied, reason, register, request_id)
+fyniq_worker    SELECT    pd_anonymisation
 fyniq_worker    SELECT    pd_breach
 fyniq_worker    SELECT    pd_breach_exercise
 fyniq_worker    SELECT    pd_breach_step
 fyniq_worker    SELECT    pd_request
 fyniq_worker    SELECT    pd_request_step
+fyniq_worker    INSERT    pd_shredding_run (cohort, keys, listed_at)
+fyniq_worker    SELECT    pd_shredding_run
+fyniq_worker    UPDATE    pd_shredding_run (register, version)
 fyniq_worker    SELECT    pd_transfer
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close
@@ -880,8 +894,10 @@ fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outco
 fyniq_worker    SELECT    quote_outcome
 fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
+fyniq_worker    EXECUTE   reapply_shredding()
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    EXECUTE   record_feed_rate()
+fyniq_worker    EXECUTE   records_years()
 fyniq_worker    SELECT    recurring_bill
 fyniq_worker    UPDATE    recurring_bill (next_on)
 fyniq_worker    SELECT    recurring_bill_version
@@ -906,6 +922,7 @@ fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
 fyniq_worker    EXECUTE   share_class_of()
 fyniq_worker    SELECT    share_issue
+fyniq_worker    EXECUTE   shred_person_keys()
 fyniq_worker    SELECT    sod_override
 fyniq_worker    SELECT    statement_mapping
 fyniq_worker    SELECT    statutory_pack_activation

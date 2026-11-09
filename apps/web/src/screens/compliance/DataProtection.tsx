@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ChevronRight, ClockAlert, Pencil, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Archive, ChevronRight, ClockAlert, EyeOff, Pencil, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -30,7 +30,20 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpias" | "requests" | "breaches" | "transfers" | "dpo";
+type Tab = "inventory" | "dpias" | "requests" | "breaches" | "transfers" | "shredding" | "dpo";
+type Run = components["schemas"]["ShreddingRunView"];
+
+async function shreddingRuns() {
+  const { data, error } = await api.GET("/v1/compliance/shredding-runs");
+  if (error) throw error;
+  return data.items;
+}
+
+async function anonymisations() {
+  const { data, error } = await api.GET("/v1/compliance/anonymisations");
+  if (error) throw error;
+  return data.items;
+}
 type Register = components["schemas"]["TransferRegister"];
 type Transfer = components["schemas"]["TransferView"];
 type TransferInput = components["schemas"]["TransferInput"];
@@ -112,6 +125,9 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "transfers"} onClick={() => setTab("transfers")} title={helpText("data-protection.transfers").tooltip}>
           Transfers
         </button>
+        <button type="button" role="tab" aria-selected={tab === "shredding"} onClick={() => setTab("shredding")} title={helpText("data-protection.shredding").tooltip}>
+          Shredding
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
@@ -121,6 +137,7 @@ export function DataProtection() {
       {tab === "requests" && <RequestsTab />}
       {tab === "breaches" && <BreachesTab />}
       {tab === "transfers" && <TransfersTab />}
+      {tab === "shredding" && <ShreddingTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );
@@ -558,6 +575,7 @@ function RequestsTab() {
   const list = useQuery({ queryKey: ["pd-requests"], queryFn: requests });
   const [recording, setRecording] = useState(false);
   const [stepping, setStepping] = useState<Request | null>(null);
+  const [anonymising, setAnonymising] = useState<Request | null>(null);
   const [report, setReport] = useState<{ request: Request; data: Report } | null>(null);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const readReport = async (r: Request) => {
@@ -612,12 +630,19 @@ function RequestsTab() {
                   Next step
                 </Button>
               )}
+              {officer && r.subject.startsWith("contact:") && (r.status === "answered" || r.status === "closed") && (
+                <Button size="sm" variant="ghost" onClick={() => setAnonymising(r)} aria-label={`Anonymise ${r.requester || r.subject}`} title={helpText("data-protection.anonymise").tooltip}>
+                  <Icon of={EyeOff} />
+                  Anonymise
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
       {recording && <RequestForm onClose={() => setRecording(false)} />}
       {stepping && <StepForm request={stepping} onClose={() => setStepping(null)} />}
+      {anonymising && <AnonymiseForm request={anonymising} onClose={() => setAnonymising(null)} />}
       {report && (
         <Dialog open onOpenChange={(o) => !o && setReport(null)} eyebrow="Data held" title={report.request.requester || report.request.subject} description={report.data.note}>
           {report.data.items.length === 0 ? (
@@ -1346,6 +1371,182 @@ function TransferForm({ transfer, flow, onClose }: { transfer: Transfer | null; 
           </Button>
           <Button variant="primary" type="submit" disabled={save.isPending}>
             {transfer ? "Save the change" : "Record it"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// ShreddingTab is the shredding of personal data at the end of retention (§11.8): each financial year past its records'
+// retention waits for the DPO's approval, stepped up, then the daily run shreds its people's keys, register first. Below,
+// the contacts anonymised (§11.9).
+function ShreddingTab() {
+  const id = useId();
+  const { session } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const runs = useQuery({ queryKey: ["shredding-runs"], queryFn: shreddingRuns });
+  const done = useQuery({ queryKey: ["anonymisations"], queryFn: anonymisations });
+  const [approving, setApproving] = useState<Run | null>(null);
+  if (runs.isError) return <Refusal problem={problemOf(runs.error)} title="The shredding runs could not be shown" />;
+  if (!runs.data) return <p className="fy-small">Loading the shredding runs…</p>;
+  return (
+    <>
+      <section className="fy-card" aria-labelledby={`${id}-runs`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-runs`}>
+            Shredding runs
+          </h2>
+        </div>
+        {runs.data.length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">No year has passed its records' retention yet. When one does, its people's keys are listed here for you to approve.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-runs`}>
+            {runs.data.map((r) => (
+              <li key={r.id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title">The year ending {date(r.cohort)}</span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {r.people} {r.people === 1 ? "person's key" : "people's keys"} · listed {date(r.listed_at)}
+                    {r.approved_at ? ` · approved ${date(r.approved_at)}` : ""}
+                    {r.done_at ? ` · shredded ${date(r.done_at)}` : ""}
+                    {r.reapplied ? " · re-applied after a restore" : ""}
+                  </span>
+                </span>
+                {r.status === "listed" ? (
+                  <span className="fy-chip fy-chip--warning">
+                    <Icon of={ClockAlert} />
+                    Waits for approval
+                  </span>
+                ) : r.status === "approved" ? (
+                  <span className="fy-chip fy-chip--info">
+                    <Icon of={ShieldCheck} />
+                    Approved
+                  </span>
+                ) : (
+                  <span className="fy-chip fy-chip--good">
+                    <Icon of={ShieldCheck} />
+                    Shredded
+                  </span>
+                )}
+                {officer && r.status === "listed" && (
+                  <Button size="sm" variant="secondary" onClick={() => setApproving(r)} aria-label={`Approve the shredding of the year ending ${date(r.cohort)}`}>
+                    Approve
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-anonymised`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-anonymised`} title={helpText("data-protection.anonymise").tooltip}>
+            Anonymised contacts
+          </h2>
+        </div>
+        {(done.data ?? []).length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">No contact was anonymised. Anonymise one from its answered request.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-anonymised`}>
+            {(done.data ?? []).map((x) => (
+              <li key={x.id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title">{x.contact_name}</span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {date(x.anonymised_at)} · {x.reason}
+                    {x.reapplied ? " · re-applied after a restore" : ""}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {approving && <ApproveRunForm run={approving} onClose={() => setApproving(null)} />}
+    </>
+  );
+}
+
+// ApproveRunForm approves a shredding run, stepped up: it cannot be undone (§11.8).
+function ApproveRunForm({ run, onClose }: { run: Run; onClose: () => void }) {
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/shredding-runs/{run_id}/approval", { params: { path: { run_id: run.id }, header: { "Idempotency-Key": newKey(), "If-Match": `"v${run.version}"` } } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await queries.invalidateQueries({ queryKey: ["shredding-runs"] });
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Shredding" title={`Shred the year ending ${date(run.cohort)}?`}
+      description={`The keys of ${run.people} ${run.people === 1 ? "person" : "people"} go on the next daily run, after the signed register entry: their names, emails, phones and addresses in that year's audit events no longer open. The events and the chain stay. This cannot be undone.`}>
+      {problem && <Refusal problem={problem} title="The run was not approved" />}
+      <div className="fy-row justify-end gap-2">
+        <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+          Cancel
+        </Button>
+        <Button variant="destructive" type="button" onClick={() => save.mutate()} disabled={save.isPending}>
+          Approve the shredding
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+
+// AnonymiseForm anonymises the contact a request is about, stepped up (§11.9): their emails and phone go and their
+// address reads Anonymised; their name and every issued document stay.
+function AnonymiseForm({ request, onClose }: { request: Request; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [reason, setReason] = useState("");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/anonymisations", { params: { header: { "Idempotency-Key": newKey() } },
+          body: { contact_id: request.subject.slice("contact:".length), request_id: request.id, reason: reason.trim() } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await queries.invalidateQueries({ queryKey: ["anonymisations"] });
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Anonymise" title={request.requester || request.subject}
+      description="Their emails and phone go and their address reads Anonymised. Their name and every issued document stay, as the records need them. This cannot be undone.">
+      {problem && <Refusal problem={problem} title="The contact was not anonymised" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-reason`}>
+            Why
+          </label>
+          <textarea className="fy-textarea" id={`${id}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="destructive" type="submit" disabled={save.isPending || reason.trim() === ""}>
+            Anonymise
           </Button>
         </div>
       </form>

@@ -54,6 +54,7 @@ var ScheduledJobs = map[string]string{
 	"notify.cash_buffer":    "Cash buffer alerts",
 	"audit.erase":           "Security events' details erased after their retention",
 	"retention.purge":       "The purge after retention, where it is switched on",
+	"pdpa.shred":            "Personal data's keys shredded after their retention",
 }
 
 // The checks of the payments out: p1-checks slice 4 (task 4.3).

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The contact: a director, or one marked as a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why: the request honoured, or the purpose that ended.",
+      "examples": [
+        "Their purpose ended: no business since 2022."
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "request_id": {
+      "description": "The access or correction request it honours, if any.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "reason"
+  ],
+  "title": "AnonymiseInputBody",
+  "type": "object"
+}

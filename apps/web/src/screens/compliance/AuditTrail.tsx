@@ -484,7 +484,11 @@ function Event({ eventId, onBack }: { eventId: string; onBack: () => void }) {
                             <Icon of={Lock} />
                             Shredded
                           </span>
-                          <span className="fy-small fy-muted ml-2">A person's value: their key was shredded when the records' retention ended.</span>
+                          <span className="fy-small fy-muted ml-2">
+                            {c.shredded_on && c.shredded_year
+                              ? `A person's value: their key for the year ending ${date(c.shredded_year)} was shredded on ${date(c.shredded_on)}, when the records' retention ended.`
+                              : "A person's value: their key was shredded when the records' retention ended."}
+                          </span>
                         </td>
                       ) : (
                         <>

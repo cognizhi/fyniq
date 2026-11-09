@@ -421,7 +421,7 @@ event format.
 
 ## 10. Shredding, the register and anonymisation (slice 10)
 
-- [ ] 10.1 `pdpa.shred` (weekly; D9), the approval object `personal_data_shredding` (the DPO, stepped up), the signed
+- [x] 10.1 `pdpa.shred` (weekly; D9), the approval object `personal_data_shredding` (the DPO, stepped up), the signed
   `fyniq-shredding@1` register entry before the keys are deleted, and `pdpa.keys_shredded`. Tests:
   - one cohort shredded, a later one readable;
   - the chain verifies;
@@ -429,11 +429,49 @@ event format.
   - the register written first.
 
   The unnumbered "Personal data in immutable records…" and "Shredded keys do not survive in backups or exports".
-- [ ] 10.2 The restore step re-applies the shredding and anonymisation register before the copy opens, checking each
+- [x] 10.2 The restore step re-applies the shredding and anonymisation register before the copy opens, checking each
   signature. A test restores past a shredding. The runbook is updated. The unnumbered "Shredded keys do not survive…".
-- [ ] 10.3 Anonymising a contact (D10), audited and registered. Tests: fields replaced, documents unchanged, re-applied
+- [x] 10.3 Anonymising a contact (D10), audited and registered. Tests: fields replaced, documents unchanged, re-applied
   on restore. The unnumbered "Retention of personal data not needed for records".
-- [ ] 10.4 The Shredding tab: the runs waiting, approved and done. Help keys, guide section, component test with axe.
+- [x] 10.4 The Shredding tab: the runs waiting, approved and done. Help keys, guide section, component test with axe.
+
+  **What building added (10.1 to 10.4):**
+    - **Tables.** Migration 000309 adds `pd_shredding_run` (one per financial year, `listed`, then `approved`, then
+      `done`; FY318) and `pd_anonymisation`, both audited. It replaces 000308's key guard: a person key goes only
+      inside its run, once approved and registered, for the key's own year, after `retention.records_years` (at least
+      7).
+    - **Two guarded functions.** `fyniq.shred_person_keys` is the worker's and deletes an approved, registered run's
+      keys. `fyniq.reapply_shredding` is the restore's: it recreates a run the copy lacks, marked re-applied.
+      `fyniq.anonymise_contact` is the API's and the worker's, and needs the recorded anonymisation first.
+    - **The DPO approves inline, not through the approval engine.** `approveShreddingRun` is stepped up with If-Match,
+      as the DPIA approvals are, rather than an approval object `personal_data_shredding`. The run records the DPO as
+      its approver, which the scenarios ask for.
+    - **The job runs daily, not weekly.** `pdpa.shred` lists the years whose retention has ended (one run each; the
+      locked notice `pdpa.shredding_due` goes to those who approve on "Data protection (PDPA)"). It also shreds the
+      approved runs, so an approval takes effect by the next morning.
+    - **The register lists key IDs, not fingerprints of the people.** Each shredding writes the signed
+      `fyniq-shredding@1` entry (`pdpa-shredding/<organisation>/<run>.json`: the year, the key IDs, the approver),
+      then deletes the keys, then records `pdpa.keys_shredded`. The key IDs identify what was destroyed without
+      naming anyone.
+    - **The restore.** It re-applies both registers after the erasure register (`audit.ReapplyPDPA` in
+      `audit.Recover`), checking each signature. The runbook says how, and warns of a copy that agrees with its
+      anchors while lacking a shredding.
+    - **Anonymisation (D10).** The DPO anonymises a person's contact (a director, or one marked as a person) from
+      their answered request, stepped up, with a reason. The signed `fyniq-anonymisation@1` entry is written first.
+      Then the emails and the phone go (the columns cannot hold a word) and the address reads Anonymised; the legal
+      name stays. The audit event lists the fields, never their values.
+    - **Not tested: issued documents after an anonymisation.** No test issues a document to an anonymised contact.
+    - **The explorer** now says the year and the day a value was shredded.
+    - **The screen.** The Shredding tab lists the runs (Waits for approval, Approved, Shredded) with **Approve**, and
+      the anonymised contacts; the Requests tab gains **Anonymise** on an answered request about a contact. The help
+      keys are `data-protection.shredding` and `data-protection.anonymise`, with the guide section "Shredding at the
+      end of retention".
+    - **Tests:**
+      - `TestAttackShreddingNeedsTheDPOAndTheRegister`: listed but not shredded; ten attacks; one approval; the register
+        down means nothing shredded; the register first; one year shredded while the later one opens; the chain
+        verifies; the restore re-applies a missing run and an anonymisation and refuses a foreign signature;
+      - `TestShreddingAndAnonymisation` (API), and matrix rows;
+      - the Shredding tab's component test with axe.
 
 ## 11. NRIC, encryption, residency, logs and backups (slice 11)
 

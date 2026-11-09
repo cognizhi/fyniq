@@ -22,7 +22,8 @@ check of the audit trail stays ✖ until the Owner acknowledges the recovery.
 ## Before the restored copy opens
 
 Run the recovery step **before anyone uses the restored database**: it also re-applies the erasure register, so no
-security event's IP address or browser erased after the backup was taken comes back (G4-070).
+security event's IP address or browser erased after the backup was taken comes back (G4-070), and the shredding and
+anonymisation registers (§11.8, §11.9), so no person key shredded and no contact anonymised since comes back either.
 
 1. **Open an incident** (SEC-32): when the restore happened, why, which backup, who ran it. A restore is a security
    event in itself.
@@ -36,8 +37,12 @@ security event's IP address or browser erased after the backup was taken comes b
    ```
 
    For each organisation whose trail is behind its anchors it prints the epoch it started and the range no longer
-   proven, and it re-applies every entry of the organisation's erasure register (each entry's signature is checked
-   first). A trail that agrees with its anchors is left alone, so running it again is safe.
+   proven, and it re-applies every entry of the organisation's erasure, shredding and anonymisation registers (each
+   entry's signature is checked first): a person key the backup brought back is deleted again under its run, which the
+   step recreates if the copy lacks it, and a contact anonymised since is anonymised again. A trail that agrees with
+   its anchors is left alone, so running it again is safe. A copy restored from a backup taken within the hour before an
+   anchor can agree with its anchors while lacking a shredding: compare the shredding register
+   (`pdpa-shredding/<organisation>/`) with Compliance › Data protection › Shredding before opening it.
 3. **Run the other after-restore steps** before opening the copy: `jobs outbox-after-restore` (every unfinished outbox
    row waits for reconciliation), then the usual checks of the restore.
 4. **Open the copy.** The Owner and the DPO receive the notice "The audit trail was restored behind its anchors"
@@ -61,8 +66,9 @@ security event's IP address or browser erased after the backup was taken comes b
 - **The recovery step does nothing but verification fails:** the chain does not link, an anchor's signature does not
   verify, or a purge boundary's signed copy differs. That is not a restore: treat it as tampering (the audit-chain
   incident, SEC-32) and do not acknowledge anything.
-- **An erasure register entry does not verify:** the step stops and names it. Do not open the copy; the register is
-  written once and signed, so a bad entry means the bucket or the key is not the one you think.
+- **An erasure, shredding or anonymisation register entry does not verify:** the step stops and names it. Do not open
+  the copy; the registers are written once and signed, so a bad entry means the bucket or the key is not the one you
+  think.
 - **The restore was behind a purge boundary too** (G4-071): the recovery's restored head is after the boundary;
   verification runs from the boundary and explains both the purged days and the lost range.
 
@@ -73,5 +79,7 @@ security event's IP address or browser erased after the backup was taken comes b
 | The anchors' bucket | `audit-anchors/<organisation>/recovery/<epoch>.json`, signed; the new epoch's anchors under `e<epoch>/` |
 | `fyniq.audit_recovery` | The epoch, the restored head and its hash, the range no longer proven, when it was found, and its signed copy |
 | `fyniq.audit_recovery_acknowledgement` | Who acknowledged it and when, once |
+| The register bucket | `pdpa-shredding/<organisation>/<run>.json` and `pdpa-anonymisation/<organisation>/<entry>.json`, signed, each written before its change |
+| `fyniq.pd_shredding_run`, `fyniq.pd_anonymisation` | A run or an anonymisation the step applied again is marked re-applied, with the audit event `pdpa.keys_shredded` or `contact.anonymised` |
 | The audit trail | `audit.restored`, `audit.details_erased` (with `reapplied`), `audit.restore_acknowledged`, and each night's `audit.verification.completed` with the recoveries waiting |
 | Notifications | `security.audit_recovered` to the Owner and the DPO |

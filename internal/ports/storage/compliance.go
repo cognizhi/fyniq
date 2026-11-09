@@ -351,6 +351,26 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// ShreddingRuns are the organisation's shredding runs, by financial year (§11.8).
+	ShreddingRuns(ctx context.Context) ([]ShreddingRun, error)
+	// DueKeyCohorts are the financial years ending before before whose person keys no run lists yet: the worker only.
+	DueKeyCohorts(ctx context.Context, before time.Time) ([]KeyCohort, error)
+	// ListShreddingRun lists a year's keys for the DPO to approve, audited as pdpa.shredding_listed; CodeShredding while
+	// the year's retention runs: the worker only.
+	ListShreddingRun(ctx context.Context, cohort time.Time, keys []uuid.UUID, at time.Time) (ShreddingRun, error)
+	// ApproveShreddingRun records the DPO's approval of a listed run at version, audited as pdpa.shredding_approved;
+	// CodeShredding when it changed or is not listed.
+	ApproveShreddingRun(ctx context.Context, id uuid.UUID, version int, by string, at time.Time) (ShreddingRun, error)
+	// ShredRun records an approved run's register entry, deletes its keys and marks it done, audited as
+	// pdpa.keys_shredded; CodeShredding when it is not approved: the worker only.
+	ShredRun(ctx context.Context, id uuid.UUID, register string) (int, error)
+	// ReapplyShredding re-applies a signed register entry after a restore, audited as pdpa.keys_shredded: the worker only.
+	ReapplyShredding(ctx context.Context, r ShreddingRun) (int, error)
+	// Anonymisations are the organisation's anonymisations, oldest first (§11.9).
+	Anonymisations(ctx context.Context) ([]Anonymisation, error)
+	// Anonymise records an anonymisation and replaces the contact's details, audited as pd_anonymisation.recorded and
+	// contact.anonymised.
+	Anonymise(ctx context.Context, a Anonymisation) (Anonymisation, error)
 	// Transfers are the latest version of each of the organisation's overseas transfers, oldest first (CMP-PD-06).
 	Transfers(ctx context.Context) ([]Transfer, error)
 	// SaveTransfer saves a transfer at t.Version (1 for a new one), audited as transfer.saved; CodeTransfer when it does

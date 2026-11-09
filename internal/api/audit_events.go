@@ -71,6 +71,9 @@ type AuditFieldChange struct {
 	Proof  string `json:"proof,omitempty" enum:"changed,changed_back,unchanged" doc:"For a sensitive value: whether it changed, changed back to what it was before the field's previous change, or not (AUD-02)." example:"changed"`
 	Hint   string `json:"hint,omitempty" doc:"An identifier's last four characters." example:"******6789"`
 	Sealed string `json:"sealed,omitempty" enum:"opened,shredded" doc:"For a person's personal value, sealed under their key for the event's financial year (§11.8): opened, before and after are the values; shredded, the key is gone at the end of retention and the values read null." example:"opened"`
+	// When shredded: the financial year and the day.
+	ShreddedYear string `json:"shredded_year,omitempty" format:"date" doc:"For a shredded value, the last day of the financial year whose keys were shredded." example:"2019-12-31"`
+	ShreddedOn   string `json:"shredded_on,omitempty" format:"date-time" doc:"For a shredded value, when its run shredded the keys." example:"2027-01-03T17:50:00Z"`
 }
 
 // AuditRequest is where an event came from.
@@ -424,6 +427,12 @@ func openSealed(ctx context.Context, u storage.UnitOfWork, event uuid.UUID, chan
 				o := at[place(i, side, path)]
 				if o.Shredded {
 					changes[i].Sealed = "shredded"
+					if o.Cohort != nil {
+						changes[i].ShreddedYear = o.Cohort.Format(time.DateOnly)
+					}
+					if o.ShreddedOn != nil {
+						changes[i].ShreddedOn = o.ShreddedOn.UTC().Format(time.RFC3339)
+					}
 					return nil
 				}
 				if changes[i].Sealed == "" {

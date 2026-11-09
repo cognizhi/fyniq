@@ -1711,6 +1711,18 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPdAnonymisation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	RequestID      *uuid.UUID
+	Reason         string
+	Register       string
+	AnonymisedBy   string
+	AnonymisedAt   time.Time
+	Reapplied      bool
+}
+
 type FyniqPdBreach struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -1771,6 +1783,21 @@ type FyniqPdRequestStep struct {
 	Note           *string
 	NewDueOn       pgtype.Date
 	Outcome        *string
+}
+
+type FyniqPdShreddingRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Cohort         time.Time
+	Keys           []uuid.UUID
+	ListedAt       time.Time
+	Status         string
+	ApprovedBy     *string
+	ApprovedAt     *time.Time
+	Register       *string
+	DoneAt         *time.Time
+	Reapplied      bool
+	Version        int32
 }
 
 type FyniqPdTransfer struct {

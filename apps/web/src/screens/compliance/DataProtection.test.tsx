@@ -26,6 +26,8 @@ const inventory = {
 // req: CMP-PD-05
 // req: CTL-DP-06
 // req: CMP-PD-06
+// req: data/backup-and-recovery Personal data in immutable records is crypto-shredded at the end of retention
+// req: data/backup-and-recovery Retention of personal data not needed for records
 describe("Compliance › Data protection", () => {
   it("shows the inventory, what is never held, the schedule and the review overdue; axe finds nothing", async () => {
     answer({ "GET /v1/compliance/data-inventory": { status: 200, body: inventory } });
@@ -240,5 +242,42 @@ describe("Compliance › Data protection", () => {
     const put = seen.find((x) => x.method === "PUT")!;
     expect(put.headers.get("If-Match")).toBe('"v1"');
     expect((put.body as { next_review_on: string }).next_review_on).toBe("2027-01-01");
+  });
+
+  it("lists the shredding runs and lets the DPO approve one, and anonymise the contact of an answered request; axe finds nothing", async () => {
+    const run = { id: "s-1", cohort: "2015-12-31", people: 14, listed_at: "2026-11-01T17:50:00Z", status: "listed", reapplied: false, version: 1 };
+    const req = { id: "r-1", kind: "access", subject: "contact:c-1", requester: "Ada Tan, ada@example.com", details: "My data", received_on: "2026-09-01",
+      due_on: "2026-10-01", status: "answered", overdue: false, steps: [] };
+    const seen = answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/shredding-runs": { status: 200, body: { items: [run, { ...run, id: "s-0", cohort: "2014-12-31", status: "done", done_at: "2026-01-03T17:50:00Z", version: 3 }] } },
+      "GET /v1/compliance/anonymisations": { status: 200, body: { items: [{ id: "n-1", contact_id: "c-9", contact_name: "Ben Lim", reason: "Purpose ended", anonymised_by: "user:u-1", anonymised_at: "2026-10-01T02:00:00Z", reapplied: false }] } },
+      "POST /v1/compliance/shredding-runs/s-1/approval": { status: 200, body: { ...run, status: "approved", version: 2 } },
+      "GET /v1/compliance/personal-data-requests": { status: 200, body: { items: [req] } },
+      "POST /v1/compliance/anonymisations": { status: 201, body: { id: "n-2", contact_id: "c-1", contact_name: "Ada Tan", reason: "Request honoured", anonymised_by: "user:u-1", anonymised_at: "2026-11-10T02:00:00Z", reapplied: false } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Shredding" }));
+    const list = await screen.findByRole("list", { name: "Shredding runs" });
+    expect(within(list).getByText("Waits for approval")).toBeTruthy();
+    expect(within(list).getByText("Shredded")).toBeTruthy();
+    expect(await screen.findByText("Ben Lim")).toBeTruthy();
+    await noViolations();
+    fireEvent.click(within(list).getByRole("button", { name: /Approve the shredding of the year ending/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/cannot be undone/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Approve the shredding" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/shredding-runs/s-1/approval")).toBe(true));
+    expect(seen.find((x) => x.path === "/v1/compliance/shredding-runs/s-1/approval")?.headers.get("If-Match")).toBe('"v1"');
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("tab", { name: "Requests" }));
+    const requests = await screen.findByRole("list", { name: "Access and correction requests" });
+    fireEvent.click(within(requests).getByRole("button", { name: /Anonymise Ada Tan/ }));
+    const form = await screen.findByRole("dialog");
+    fireEvent.change(within(form).getByLabelText("Why"), { target: { value: "Request honoured" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Anonymise" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/anonymisations")).toBe(true));
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/compliance/anonymisations")?.body).toEqual({ contact_id: "c-1", request_id: "r-1", reason: "Request honoured" });
   });
 });
