@@ -25,7 +25,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   - an unknown mapping token;
   - a `check` key not in the catalogue;
   - an undefined `verify` or `attestation`;
-  - a `cloud` check that names no module test.
+  - a `cloud` check that names no module test or infra workflow job.
 
   `// req: CMP-01`, and the unnumbered "Control registry as code".
 - [ ] 1.3 The control map (D2). Every control placed in this change names each running check, or is marked `cloud` or

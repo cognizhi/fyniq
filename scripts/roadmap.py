@@ -217,6 +217,10 @@ BY_ID.update({
     "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
     "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
     "CTL-RES-02": "p1-operations-dr",
+    # Found while building p1-compliance-center (PRD-001 rev 0.241): rows whose cloud configuration is not built yet move
+    # to the changes that build it.
+    "CTL-AUD-03": "p1-operations-dr", "CTL-AUD-04": "p1-operations-dr", "CTL-RES-03": "p1-operations-dr",
+    "CTL-RES-05": "p1-operations-dr", "CTL-CHG-04": "p1-security-hardening", "CTL-CHG-05": "p1-security-hardening",
 })
 # The checks of Appendix C are built with the module each guards, on the checks engine of p1-checks (the owner's
 # decision of 29 Oct 2026, PRD-001 rev 0.162): those of modules after p1-checks sit with those modules' changes.

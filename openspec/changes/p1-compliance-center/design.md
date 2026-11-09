@@ -73,6 +73,8 @@ A check's `how` gains three kinds, and its `status` gains one value:
 | `verify <name>` (new) | In `compliance.run` (D4) | Its latest run for the organisation, as for a job |
 | `attestation <kind>` (new) | By a person (D6) | Signed off for the current period → pass; past due → overdue |
 
+- **Several checks per frequency.** A frequency may have more than one check, such as CTL-FIN-09's close checklist and
+  months left open; each is listed, and the control takes the worst of them.
 - **Planned checks.** A `planned` check is not assessed, naming what `arrives`, such as "arrives with
   `p1-ai-proposals`".
 - **Cloud checks.** The new status `cloud` marks a check built and tested in `infra/` that runs only in the cloud. It
@@ -102,15 +104,19 @@ The registry is the plan's record of each control:
   - CTL-DP-04 CI;
   - CTL-FIN-08 N, CTL-IAM-01 N, CTL-API-02 N and CTL-AUD-05 N: as `verify` checks;
   - CTL-CHG-06 E: the release's SBOM.
-- **Cloud.** CTL-AUD-03, CTL-AUD-04, CTL-CHG-02 D, CTL-CHG-04, CTL-CHG-05, CTL-CHG-09 E, CTL-DP-01, CTL-DP-07,
-  CTL-IAM-03, CTL-IAM-04, CTL-RES-01, CTL-RES-03 and CTL-RES-05 D are `cloud`, each naming its `tofu test` or the
-  infra workflow that runs once the founder's organisation and projects exist.
-- **Handed on.** The rows rev 0.240 moved keep `planned`, with `arrives` naming their change.
+- **Cloud.** CTL-CHG-02 D, CTL-DP-01, CTL-DP-07, CTL-IAM-03, CTL-IAM-04 and CTL-RES-01 are `cloud`, each naming its
+  `tofu test` or the infra workflow that runs once the founder's organisation and projects exist. (rev 0.241) Building
+  the map found that `infra/` does not yet hold the rest of the cloud rows this list first named: the records bucket
+  (CTL-AUD-03), the Data Access logs and their sink (CTL-AUD-04), the SLO alerts (CTL-RES-03), the heartbeat alert
+  (CTL-RES-05), Binary Authorization (CTL-CHG-04) and the scan of non-production (CTL-CHG-05). They move to
+  `p1-operations-dr` and `p1-security-hardening`. CTL-CHG-09 E reads the release's image reports (D3).
+- **Handed on.** The rows rev 0.240 and rev 0.241 moved keep `planned` for what is not built, with `arrives` naming
+  their change. What is built of them is named as it runs, `cloud` included.
 
 `registry_test.go` also checks:
 - each `check` key exists in the catalogue;
 - each `verify` and `attestation` name is defined;
-- each `cloud` check names a module test;
+- each `cloud` check names a module test (`tofu <module>/<run>`) or the infra workflow's job;
 - no row placed in this change is left `planned` once its task is done.
 
 ### D3. CI evidence from the running release

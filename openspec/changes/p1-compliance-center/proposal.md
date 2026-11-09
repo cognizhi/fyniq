@@ -55,7 +55,11 @@ It comes before `p1-pdpa-retention`, which adds the PDPA registers (CMP-05) to t
   - CTL-DP-03, CTL-CHG-07 and CTL-RES-04 to `p1-security-hardening`;
   - CTL-RES-02 to `p1-operations-dr`.
 
-  The 49 control rows left are closed here.
+  Building the control map found six more rows whose cloud configuration `infra/` does not hold yet (rev 0.241):
+  - CTL-AUD-03, CTL-AUD-04, CTL-RES-03 and CTL-RES-05 to `p1-operations-dr`;
+  - CTL-CHG-04 and CTL-CHG-05 to `p1-security-hardening`.
+
+  The 43 control rows left are closed here.
 - **The registry names every check that runs.** A check may now be:
   - a check of the organisation's catalogue (Appendix C), such as `ledger.sub-ledgers` for CTL-FIN-04;
   - an attestation;
