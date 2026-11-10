@@ -12848,6 +12848,48 @@ Drafts a budget version from an .xlsx workbook, as multipart/form-data (FR-PLN-0
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `BUDGET-10`, `BUDGET-11`, `BUDGET-12`, `STORAGE-LOCK-01`, `STORAGE-PLAN-02`, `STORAGE-RETRY-01`
 
+### `GET /v1/cash-projection`
+
+**Get the short-term cash flow** (`getCashProjection`)
+
+The money accounts' balance day by day from today for 30, 60, 90 or 180 days (FR-PLN-09), and in 13 weeks (FR-PLN-05; days=91), p1-planning design D7: today's balance valued at today's rates; each open invoice and bill on its expected day (its due date + the contact's average days late over the last 12 months, else its due date or a bill's planned payment date, and today when that has passed); each active recurring invoice's and bill's occurrences; each approved payment batch not yet released on its payment day, its bills not counted again. It gives the lowest balance and its day, the buffer line (planning.buffer_months × the average monthly net burn of the last three closed months) and the first day below it, and what it does not hold yet. Read-only; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `days` (query): How many days from today: 30, 60 (the default), 90 or 180; 91 is the 13-week view.
+- **Responses:**
+  - `200` OK [`CashProjection`](../../contracts/schemas/CashProjection.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/cash-projection:what-if`
+
+**Ask a what-if of the short-term cash flow** (`whatIfCashProjection`)
+
+The projection getCashProjection gives, with movements moved to another day (delay this bill, chase that invoice) or left out (FR-PLN-09, design D7). A what-if never changes a document, a planned payment date or a batch: it saves nothing (FR-PLN-08). A move naming no movement of the projection is refused with the others. Saves nothing; no side effects.
+
+- **Permission:** View on Budgets, forecasts
+- **Request body:** [`CashWhatIf`](../../contracts/schemas/CashWhatIf.schema.json)
+- **Responses:**
+  - `200` OK [`CashProjection`](../../contracts/schemas/CashProjection.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/forecasts`
 
 **List the forecasts** (`listForecasts`)

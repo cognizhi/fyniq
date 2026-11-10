@@ -4,14 +4,14 @@ type: task
 title: Your notifications, how they reach you by email, quiet hours, a test, and banners
 summary: The bell and your notifications, choosing email for each kind, quiet hours, sending yourself a test, and dismissing banners
 sources:
-  - docs/user-guide/notifications.md sha256:7e7367c360d6ebc45d2fc16299ffabbabd13e62914e3232b15ea22706ba21e6e
+  - docs/user-guide/notifications.md sha256:c83d5a9ea95a2d72f8398b32de50cacb73e64e2fb2a5eb51d83c88b804522333
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-08
 aliases:
   - bell
   - notification centre
@@ -35,7 +35,7 @@ aliases:
 ## Your notifications
 
 - The bell in the header counts unread notifications; select it to open them.
-- They cover approvals waiting or decided, security notices, mail in quarantine, someone else's postings, months closed, recurring drafts, bills to pay soon and failed background work.
+- They cover approvals waiting or decided, security notices, mail in quarantine, someone else's postings, months closed, recurring drafts, bills to pay soon, statutory deadlines near or passed, cash projected to fall below its buffer (and back above it) and failed background work.
 - One that waits for you links to it, and opening it marks it read. Show **Unread**, **All** or **Archived**; **Mark read**, **Mark unread**, **Mark all read** and **Archive** (for good).
 - Nobody hears of what they did themselves.
 - One sent to everyone whose role covers it, such as an approval waiting, leaves your list and the bell's count once your roles no longer cover it, and is not emailed; it shows again if the role comes back.

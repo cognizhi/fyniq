@@ -141,6 +141,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/cash-advances/{advance_id}/void` (voidCashAdvance): Void a cash advance or its refund
 - `POST /v1/cash-advances/{advance_id}/void-approval` (requestCashAdvanceVoid): Ask for approval to void a cash advance or its refund
 - `GET /v1/cash-position` (getCashPosition): Get the cash position
+- `GET /v1/cash-projection` (getCashProjection): Get the short-term cash flow
+- `POST /v1/cash-projection:what-if` (whatIfCashProjection): Ask a what-if of the short-term cash flow
 - `GET /v1/checks` (listChecks): List the checks and books health
 - `POST /v1/checks/runs` (runChecks): Run every check now
 - `GET /v1/checks/{key}` (getCheck): Get a check

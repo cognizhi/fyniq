@@ -1434,6 +1434,9 @@ var (
 	// Budget vs Actual and Home's planning tiles show the budget's figures: read on the same row as budgets.
 	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true}
 	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
+	// The short-term cash flow and its what-ifs (FR-PLN-09; p1-planning design D10): read by V on the row, unqualified.
+	GetCashProjection    = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 )
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
@@ -1644,7 +1647,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary)
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

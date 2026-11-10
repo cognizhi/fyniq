@@ -256,3 +256,45 @@ func Reconcile(base money.Currency, asAt time.Time, totals []balance.SourceTotal
 	}
 	return out, nil
 }
+
+// Settlement is a document settled in full (FR-PLN-09; p1-planning design D7): its party, its due date and the day the
+// last of it was settled, what a contact's payment behaviour is read from.
+type Settlement struct {
+	DocumentID uuid.UUID
+	Party      uuid.UUID
+	DueDate    time.Time
+	On         time.Time
+}
+
+// SettledInFull is the day allocations settled owed in full as at asAt: the day of the allocation from which what they
+// settled, net of reversals, reached owed and stayed there. ok is false while something is still open, or owed is
+// nothing.
+func SettledInFull(allocs []storage.Allocation, owed money.Money, asAt time.Time) (on time.Time, ok bool, err error) {
+	if owed.Sign() <= 0 {
+		return on, false, nil
+	}
+	settled := money.Zero(owed.Currency())
+	for _, a := range allocs { // earliest first
+		if a.On.After(asAt) {
+			break
+		}
+		x, err := money.ParseStored(string(a.Amount), owed.Currency())
+		if err != nil {
+			return on, false, err
+		}
+		if settled, err = settled.Add(x); err != nil {
+			return on, false, err
+		}
+		left, err := owed.Sub(settled)
+		if err != nil {
+			return on, false, err
+		}
+		switch {
+		case left.Sign() <= 0 && !ok:
+			on, ok = a.On, true
+		case left.Sign() > 0:
+			ok = false // a reversal opened it again
+		}
+	}
+	return on, ok, nil
+}

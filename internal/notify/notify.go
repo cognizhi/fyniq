@@ -78,6 +78,8 @@ var Catalogue = []Type{
 	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "deadline.reminder", Label: "A statutory deadline is near", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "deadline.overdue", Label: "A statutory deadline passed with nothing recorded", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
+	{Key: "cash.below_buffer", Label: "Cash is projected to fall below the buffer", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
+	{Key: "cash.buffer_recovered", Label: "Cash is projected back above the buffer", Category: Operations, Severity: "info", Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},

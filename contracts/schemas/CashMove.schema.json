@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "The movement's key, from getCashProjection.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "maxLength": 60,
+      "minLength": 1,
+      "type": "string"
+    },
+    "leave_out": {
+      "description": "Leave it out of the projection.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "to": {
+      "description": "Move it to this day: delay a bill, chase an invoice.",
+      "examples": [
+        "2026-12-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "title": "CashMove",
+  "type": "object"
+}

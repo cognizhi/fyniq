@@ -7372,6 +7372,182 @@ components:
         - date
         - amount
       type: object
+    CashBuffer:
+      additionalProperties: false
+      properties:
+        average_burn:
+          $ref: "#/components/schemas/Money"
+          description: The average monthly net burn (the KPI's net_burn) of the last three closed months, fewer while there are fewer; absent while no month is closed.
+        line:
+          $ref: "#/components/schemas/Money"
+          description: months × the average burn, rounded once (RND-PLAN); absent when the company is not burning or no month is closed, which why says.
+        months:
+          description: planning.buffer_months, the months of burn kept.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        why:
+          description: Why there is no line.
+          examples:
+            - no month is closed yet
+          type: string
+      required:
+        - months
+      type: object
+    CashDay:
+      additionalProperties: false
+      properties:
+        close:
+          $ref: "#/components/schemas/Money"
+          description: The balance at its end.
+        date:
+          description: The day.
+          examples:
+            - "2026-11-17"
+          format: date
+          type: string
+        in:
+          $ref: "#/components/schemas/Money"
+          description: Money in on it.
+        out:
+          $ref: "#/components/schemas/Money"
+          description: Money out on it, above zero.
+      required:
+        - date
+        - in
+        - out
+        - close
+      type: object
+    CashExcluded:
+      additionalProperties: false
+      properties:
+        what:
+          description: What is left out.
+          examples:
+            - Pay runs and CPF
+          type: string
+        why:
+          description: Why.
+          examples:
+            - they join with payroll
+          type: string
+      required:
+        - what
+        - why
+      type: object
+    CashMove:
+      additionalProperties: false
+      properties:
+        key:
+          description: The movement's key, from getCashProjection.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          maxLength: 60
+          minLength: 1
+          type: string
+        leave_out:
+          description: Leave it out of the projection.
+          examples:
+            - false
+          type: boolean
+        to:
+          description: "Move it to this day: delay a bill, chase an invoice."
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+      required:
+        - key
+      type: object
+    CashMovement:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "In the base currency: money in above zero, money out below. An open item's is its carrying amount."
+        basis:
+          description: "Why that day: history, the due date + the contact's average days late over the last 12 months; due, its due date (no history); planned, a bill's planned payment date (no history); overdue, expected before today, so today; scheduled, a batch's payment date; moved, a what-if moved it."
+          enum:
+            - history
+            - due
+            - planned
+            - overdue
+            - scheduled
+            - moved
+          examples:
+            - history
+          type: string
+        contact_id:
+          description: The customer or supplier.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+          format: uuid
+          type: string
+        contact_name:
+          description: Its name.
+          examples:
+            - Lumen Health Pte Ltd
+          type: string
+        days_late:
+          description: "history: the contact's average days late, rounded half away from zero."
+          examples:
+            - 7
+          format: int64
+          type: integer
+        due_date:
+          description: Its due date; absent for a batch.
+          examples:
+            - "2026-11-10"
+          format: date
+          type: string
+        expected_on:
+          description: The day it is expected.
+          examples:
+            - "2026-11-17"
+          format: date
+          type: string
+        id:
+          description: The document, the recurring document or the batch.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        key:
+          description: "Names it in a what-if: the document's or batch's ID, or a recurring document's ID and occurrence as <id>@YYYY-MM-DD."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          type: string
+        kind:
+          description: "What it is: an open invoice or bill, a recurring invoice's or bill's occurrence, or an approved payment batch not yet released."
+          enum:
+            - invoice
+            - bill
+            - recurring_invoice
+            - recurring_bill
+            - payment_batch
+          examples:
+            - invoice
+          type: string
+        number:
+          description: The document's or batch's number, or the recurring document's name.
+          examples:
+            - INV-0142
+          type: string
+        occurrence:
+          description: A recurring document's occurrence.
+          examples:
+            - "2026-12-15"
+          format: date
+          type: string
+      required:
+        - key
+        - kind
+        - id
+        - expected_on
+        - basis
+        - amount
+      type: object
     CashPosition:
       additionalProperties: false
       properties:
@@ -7402,6 +7578,134 @@ components:
         - accounts
         - total
         - no_rate
+      type: object
+    CashProjection:
+      additionalProperties: false
+      properties:
+        below_buffer_on:
+          description: The first day whose balance closes below the buffer line; absent when none does, or there is no line.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        buffer:
+          $ref: "#/components/schemas/CashBuffer"
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        daily:
+          description: Each day from today.
+          items:
+            $ref: "#/components/schemas/CashDay"
+          type: array
+        days:
+          description: How many days it runs.
+          examples:
+            - 60
+          format: int64
+          type: integer
+        lowest:
+          $ref: "#/components/schemas/Money"
+          description: The lowest balance at a day's end, today's included.
+        lowest_on:
+          description: The first day it occurs.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        movements:
+          description: Every expected movement in the days, by day.
+          items:
+            $ref: "#/components/schemas/CashMovement"
+          type: array
+        not_included:
+          description: "What the projection does not hold yet, so its lowest point is never taken as complete: pay runs and CPF, GST returns and corporate tax until their changes, and any input it could not read."
+          items:
+            $ref: "#/components/schemas/CashExcluded"
+          type: array
+        opening:
+          $ref: "#/components/schemas/Money"
+          description: The money accounts' balance today, each valued at today's rate.
+        today:
+          description: The organisation's today, the projection's first day.
+          examples:
+            - "2026-11-02"
+          format: date
+          type: string
+        weekly:
+          description: The first 13 weeks from today, when the projection runs that far (91 days or more).
+          items:
+            $ref: "#/components/schemas/CashWeek"
+          type: array
+      required:
+        - today
+        - days
+        - currency
+        - opening
+        - lowest
+        - lowest_on
+        - buffer
+        - movements
+        - daily
+        - weekly
+        - not_included
+      type: object
+    CashWeek:
+      additionalProperties: false
+      properties:
+        close:
+          $ref: "#/components/schemas/Money"
+          description: The balance at its end.
+        from:
+          description: Its first day.
+          examples:
+            - "2026-11-02"
+          format: date
+          type: string
+        in:
+          $ref: "#/components/schemas/Money"
+          description: Money in over it.
+        out:
+          $ref: "#/components/schemas/Money"
+          description: Money out over it, above zero.
+        to:
+          description: Its last day.
+          examples:
+            - "2026-11-08"
+          format: date
+          type: string
+      required:
+        - from
+        - to
+        - in
+        - out
+        - close
+      type: object
+    CashWhatIf:
+      additionalProperties: false
+      properties:
+        days:
+          description: How many days; 60 when left out; 91 is the 13 weeks.
+          enum:
+            - 30
+            - 60
+            - 90
+            - 180
+            - 91
+          examples:
+            - 60
+          format: int64
+          type: integer
+        moves:
+          description: The changes, each to one movement.
+          items:
+            $ref: "#/components/schemas/CashMove"
+          maxItems: 200
+          type: array
+      required:
+        - moves
       type: object
     CatalogueEntry:
       additionalProperties: false
@@ -60472,6 +60776,273 @@ paths:
         - API-RATE-01
       x-fyniq-permission:
         capability: Bank transactions, categorise
+        right: V
+  /v1/cash-projection:
+    get:
+      description: "The money accounts' balance day by day from today for 30, 60, 90 or 180 days (FR-PLN-09), and in 13 weeks (FR-PLN-05; days=91), p1-planning design D7: today's balance valued at today's rates; each open invoice and bill on its expected day (its due date + the contact's average days late over the last 12 months, else its due date or a bill's planned payment date, and today when that has passed); each active recurring invoice's and bill's occurrences; each approved payment batch not yet released on its payment day, its bills not counted again. It gives the lowest balance and its day, the buffer line (planning.buffer_months × the average monthly net burn of the last three closed months) and the first day below it, and what it does not hold yet. Read-only; no side effects."
+      operationId: getCashProjection
+      parameters:
+        - description: "How many days from today: 30, 60 (the default), 90 or 180; 91 is the 13-week view."
+          explode: false
+          in: query
+          name: days
+          schema:
+            default: 60
+            description: "How many days from today: 30, 60 (the default), 90 or 180; 91 is the 13-week view."
+            enum:
+              - 30
+              - 60
+              - 90
+              - 180
+              - 91
+            examples:
+              - 60
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashProjection"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the short-term cash flow
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
+  /v1/cash-projection:what-if:
+    post:
+      description: "The projection getCashProjection gives, with movements moved to another day (delay this bill, chase that invoice) or left out (FR-PLN-09, design D7). A what-if never changes a document, a planned payment date or a batch: it saves nothing (FR-PLN-08). A move naming no movement of the projection is refused with the others. Saves nothing; no side effects."
+      operationId: whatIfCashProjection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashWhatIf"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashProjection"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask a what-if of the short-term cash flow
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A cash what-if saves nothing, so a repeat is harmless and answers the same (FR-PLN-08).
+        Prefer: "A cash what-if saves nothing: return=preview would answer the same as the request itself (FR-INT-14)."
+      x-fyniq-permission:
+        capability: Budgets, forecasts
         right: V
   /v1/checks:
     get:

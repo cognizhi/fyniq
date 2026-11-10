@@ -112,7 +112,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 6. The short-term cash flow (slice 6)
 
-- [ ] 6.1 `internal/domain/cashflow` (D7): the inputs, expected dates, daily and weekly buckets, the lowest point, the
+- [x] 6.1 `internal/domain/cashflow` (D7): the inputs, expected dates, daily and weekly buckets, the lowest point, the
   buffer line and the inputs not yet included. The hand-worked tests cover:
   - a late payer, an early payer, no history, a planned payment date and an overdue item;
   - a batch whose bills are not counted twice;
@@ -120,11 +120,20 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   - not burning.
 
   `// req: FR-PLN-09`, `// req: FR-PLN-05`
-- [ ] 6.2 The API (D7, D10): the projection (30, 60, 90 or 180 days, or 13 weeks) and `POST
+  - As built (rev 0.222):
+    - The pure engine is tested in `TestTheProjection` and `TestAverageLate`; settlements in `TestSettledInFull`.
+    - The cases that need the books are in `TestTheCashProjectionThroughTheAPI` and `TestTheCashProjectionNotBurning`.
+    - The opening is the daily cash position (FR-BNK-13).
+    - A recurring document's occurrences are placed at the total its content comes to today.
+- [x] 6.2 The API (D7, D10): the projection (30, 60, 90 or 180 days, or 13 weeks) and `POST
   /v1/cash-projection:what-if`, which saves nothing. `TestTheCashProjectionThroughTheAPI` checks that a what-if
   changes no document. `// req: FR-PLN-09`, `// req: FR-PLN-08`
-- [ ] 6.3 The `notify.cash_buffer` job and the `cash.below_buffer` notification (D7): sent once per crossing to C and A
+  - As built: `GET /v1/cash-projection?days=` (`91` is the 13 weeks) and the what-if take moves by movement key. The
+    test checks that the ledger revision and the bill's planned date did not change.
+- [x] 6.3 The `notify.cash_buffer` job and the `cash.below_buffer` notification (D7): sent once per crossing to C and A
   holders, again after a recovery, and in the Inbox. `TestTheCashBufferAlert` `// req: FR-PLN-09`, `// req: FR-NTF-01`
+  - As built (rev 0.223): a recovery is told too (`cash.buffer_recovered`), which is how the next crossing is known. The
+    notices link to Home until the cash-flow screen, and Home's cash tile says it with the screens (task 8.1).
 
 ## 7. The feasibility calculator (slice 7)
 

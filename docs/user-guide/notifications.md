@@ -14,7 +14,8 @@ status: draft
 - The bell in the header counts your unread notifications. Select it to open your notifications.
 - A notification says what happened that concerns you: an approval waiting for you, a decision on your request,
   a security notice about your account, mail waiting in quarantine, a posting someone else made, a month closed,
-  a draft made from a recurring journal or bill, bills to pay soon, or background work that failed.
+  a draft made from a recurring journal or bill, bills to pay soon, a statutory deadline near or passed, cash
+  projected to fall below its buffer (and back above it), or background work that failed.
 - One that waits for you to act links to it, and opening it marks it read.
 - Show **Unread**, **All** or **Archived**. **Mark read** and **Mark unread** change one; **Mark all read** marks
   every unread one read; **Archive** moves one to Archived for good.
