@@ -10,5 +10,6 @@ evidence: "Findings report"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "p1-security-hardening"
+    status: running
+    how: "verify posture.findings"
+    evidence: "the latest run in the installation's organisation (fyniq.control_run): Security Command Center's active findings of high or critical severity, and those open past the SLA (Critical 7 days, High 30 days [verify the SLA with the founders]); read as the jobs' account in the cloud [live-verify], none locally"

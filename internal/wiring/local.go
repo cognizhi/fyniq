@@ -88,6 +88,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
 		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
+		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
+		Posture: local.Posture{},
+		Logs:    local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}
 	kit.watchChanges(clock)
 	return kit, nil

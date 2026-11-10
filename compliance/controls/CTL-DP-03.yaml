@@ -10,5 +10,6 @@ evidence: "Scan report"
 owner: DPO
 checks:
   - frequency: W
-    status: planned
-    arrives: "p1-security-hardening"
+    status: running
+    how: "verify logs.scan"
+    evidence: "the latest run in the installation's organisation (fyniq.control_run), daily, more often than the weekly the PRD asks: up to 1,000 of the last day's log entries of the Cloud Run services and jobs (Cloud Logging [live-verify]; locally the files under .data/logs) read with SEC-15's patterns, how many entries hold each kind and never the entry; a hit also raises the log_leak security alert to the Super admins"

@@ -115,6 +115,8 @@ var Verifications = map[string]string{
 	"members.second-factor":    "No session of the last day was used beyond reading itself without a second factor, and every active member has one registered",
 	"integrations.owned":       "Every integration client has an owner, a class and an unexpired end date, and holds only its class's scopes",
 	"audit.exports-reconciled": "Every report export, evidence opening and reveal of the last day has its audit event",
+	"posture.findings":         "No Security Command Center finding of high or critical severity is open past its SLA (the installation's)",
+	"logs.scan":                "None of a sample of the last day's platform logs holds an NRIC or FIN number, a token or an API key (the installation's)",
 }
 
 // Attestations are the recurring reviews people sign off, by kind (design D6).

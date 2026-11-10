@@ -1,6 +1,7 @@
 // Package security raises the security alerts of SEC-31 (p1-security-hardening design D7): an admin's sign-in from a new
 // device, or from another country sooner than travel allows; a vendor's bank details changed; a mass export; repeated
-// authorisation refusals; an audit-chain verification failure; and, from p1-assistant, the AI red team's pattern hits.
+// authorisation refusals; an audit-chain verification failure; a secret or an NRIC in the platform's logs; and, from
+// p1-assistant, the AI red team's pattern hits.
 // Each alert is a locked critical notice to the Owners and the DPO (the Super admins for the installation's), a
 // structured log entry Cloud Monitoring alerts on, and an audit event; one per rule, person and window, so an alert
 // that keeps firing does not drown the others. The rules are pure functions of what the store already keeps; the
@@ -25,6 +26,7 @@ const (
 	RuleRefusals         = "authorisation_refusals"
 	RuleAuditChain       = "audit_chain"
 	RuleAI               = "ai_pattern"
+	RuleLogLeak          = "log_leak" // the weekly log scan found what SEC-15 keeps out of the logs (CTL-DP-03)
 )
 
 // Thresholds are the rules' settings (FYNIQ_ALERT_THRESHOLDS).

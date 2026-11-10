@@ -127,6 +127,26 @@ module "environment" {
   break_glass       = var.break_glass
 }
 
+# The central log store (SEC-30): data-access audit logs, and the audit logs and security alerts kept 400 days beside the
+# anchors, locked where they are.
+module "security_logs" {
+  source        = "../security-logs"
+  project       = var.project
+  audit_project = var.audit_project
+  environment   = var.environment
+  lock          = module.spec.spec.anchors.lock
+}
+
+# Staging only: the weekly scan of its database for production data (CTL-CHG-05 W, DEV-08).
+module "nonprod_scan" {
+  count          = var.environment == "production" ? 0 : 1
+  source         = "../nonprod-scan"
+  project        = var.project
+  environment    = var.environment
+  instance       = module.environment.database_instance
+  database_agent = module.environment.database_agent
+}
+
 # The edge (SEC-23): the load balancer and Cloud Armor in front of the public services, on the public origin's host, with
 # the local stack's paths (deploy/local/Caddyfile).
 locals {

@@ -13,6 +13,8 @@
 # req: SEC-24
 # req: SEC-30
 # req: SEC-31
+# req: SEC-33
+# req: CTL-RES-04
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -452,5 +454,21 @@ run "every_image_passes_binary_authorization" {
       [for j in google_cloud_run_v2_job.jobs : j.binary_authorization[0].use_default && j.binary_authorization[0].breakglass_justification == null],
     ))
     error_message = "every Cloud Run service and job must use the default Binary Authorization policy, without breakglass"
+  }
+}
+
+# The jobs' account reads Security Command Center's findings and the application logs for the Compliance Center, and no
+# other account does (SEC-33, CTL-RES-04, CTL-DP-03).
+run "the_jobs_read_the_posture" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (toset([for m in google_project_iam_member.posture_reader : m.role]) == toset(["roles/securitycenter.findingsViewer", "roles/logging.viewer"]) &&
+    alltrue([for m in google_project_iam_member.posture_reader : m.member == "serviceAccount:run-jobs@fyniq-staging.iam.gserviceaccount.com" && m.project == "fyniq-staging"]))
+    error_message = "the jobs' account, and only it, reads the findings and the logs"
+  }
+  assert {
+    condition     = contains(local.apis, "securitycenter")
+    error_message = "Security Command Center's API is on"
   }
 }

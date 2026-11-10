@@ -19,6 +19,8 @@ type Inputs struct {
 	Runs    map[string]storage.ControlRun // by RunKey
 	Reviews map[string]Review             // by kind
 	Now     time.Time
+	// Installation: the organisation is the installation's own, where the platform's verifications run.
+	Installation bool
 }
 
 // RunKey names a verification's latest run among Inputs.Runs.
@@ -111,6 +113,8 @@ func checkResult(c registry.Control, ch registry.Check, in Inputs) Result {
 	case registry.KindVerify:
 		r, ok := in.Runs[RunKey(c.ID, ch.Frequency, ch.How)]
 		switch {
+		case Platform(name) && !in.Installation:
+			return Result{Status: NotApplicable, Detail: "Checked for the whole installation, in the installation's own organisation."}
 		case !ok:
 			return Result{Status: NotAssessed, Detail: "The verification has not run for this organisation yet."}
 		case in.Now.Sub(r.RanAt) > 26*time.Hour:
