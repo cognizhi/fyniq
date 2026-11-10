@@ -181,8 +181,11 @@ locals {
   }
   default_env = {
     api = {
-      FYNIQ_SIGNIN           = "identity-platform"
-      FYNIQ_PUBLIC_ORIGIN    = var.public_origin
+      FYNIQ_SIGNIN        = "identity-platform"
+      FYNIQ_PUBLIC_ORIGIN = var.public_origin
+      # The edge's load balancer names the client in X-Fyniq-Client-IP (the edge module); the api takes traffic only from
+      # it and from inside Google Cloud (ingress), so every peer may name the client (SEC-23). [live-verify]
+      FYNIQ_TRUSTED_PROXIES  = "0.0.0.0/0,::/0"
       FYNIQ_IDP_PROJECT      = var.project
       FYNIQ_SIGNIN_PROVIDERS = jsonencode(var.signin_providers)
       FYNIQ_API_AUDIENCE     = "${var.public_origin}/api"

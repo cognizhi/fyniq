@@ -399,14 +399,21 @@ func PurgeIdempotencyKeys(ctx context.Context, store storage.Store, now time.Tim
 // differ a little.
 const rateLimitKept = 5 * time.Minute
 
-// PurgeRateLimitWindows deletes every organisation's rate-limit windows that started more than
-// rateLimitKept before now (FR-INT-16) and returns how many. A window is only a count for its minute.
+// PurgeRateLimitWindows deletes every organisation's rate-limit windows, and the per-IP windows, that started more
+// than rateLimitKept before now (FR-INT-16, SEC-23) and returns how many. A window is only a count for its minute.
 func PurgeRateLimitWindows(ctx context.Context, store storage.Store, now time.Time) (int64, error) {
 	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return 0, err
 	}
 	var total int64
+	if ip, ok := store.(storage.IPLimits); ok {
+		n, err := ip.PurgeIP(ctx, now.Add(-rateLimitKept))
+		if err != nil {
+			return 0, fmt.Errorf("the per-IP windows: %w", err)
+		}
+		total += n
+	}
 	for _, org := range orgs {
 		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			n, err := u.RateLimits().Purge(ctx, now.Add(-rateLimitKept))

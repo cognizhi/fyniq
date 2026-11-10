@@ -39,12 +39,13 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // are the installation's connectors, their secret versions and the changes awaiting the other Super admin (000141):
 // written and read only through SECURITY DEFINER functions. private_endpoint is the registered private endpoints (000310):
 // written only through register_private_endpoint, read through private_endpoints and, by an organisation for its own
-// credentials, private_endpoints_for.
+// credentials, private_endpoints_for. ip_rate_window is the per-IP windows of the routes that need no organisation
+// (000312): counted only through count_ip_request, purged through purge_ip_rate_windows.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "sign_in_method",
-	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint"}
+	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}

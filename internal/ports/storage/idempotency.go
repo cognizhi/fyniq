@@ -57,3 +57,21 @@ type RateLimits interface {
 	// Purge deletes the windows that started before before and returns how many (the worker's job).
 	Purge(ctx context.Context, before time.Time) (int64, error)
 }
+
+// The kinds of request the per-IP limits count (SEC-23): those that take no session, before anyone is known to belong to
+// an organisation.
+const (
+	IPSignIn = "signin" // the sign-in flow and its providers
+	IPJoin   = "join"   // accepting an invitation, asking to join, account recovery
+	IPPublic = "public" // the public documents behind an online link
+	IPSetup  = "setup"  // first-run setup and its code
+)
+
+// IPLimits keeps the per-IP windows (SEC-23): installation-wide, by a SHA-256 of the client's address, never the address.
+type IPLimits interface {
+	// CountIP adds one request of kind by client (a SHA-256 of its address, hex) to the window that starts at start, and
+	// returns how many requests the window now holds.
+	CountIP(ctx context.Context, client, kind string, start time.Time) (int, error)
+	// PurgeIP deletes the windows that started before before and returns how many (the jobs).
+	PurgeIP(ctx context.Context, before time.Time) (int64, error)
+}

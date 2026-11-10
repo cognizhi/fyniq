@@ -1295,6 +1295,13 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqIpRateWindow struct {
+	Client      string
+	Kind        string
+	WindowStart time.Time
+	Used        int32
+}
+
 type FyniqItem struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID

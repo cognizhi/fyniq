@@ -9,6 +9,7 @@
 # req: CTL-AI-01
 # req: SEC-22
 # req: SEC-37
+# req: SEC-23
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -385,6 +386,16 @@ run "a_secrets_project_is_a_project_id" {
 }
 
 # Every service and job is held to the project's Binary Authorization policy, with no breakglass (SEC-22).
+# A public service is reached from outside only through the edge's load balancer (SEC-23).
+run "the_public_services_are_behind_the_edge" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = alltrue([for name in ["api", "ai", "mcp", "oauth"] : google_cloud_run_v2_service.services[name].ingress == "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"])
+    error_message = "the public services take traffic from the load balancer and inside Google Cloud only"
+  }
+}
+
 # The services know the platform's own networks, which no registered private endpoint reaches (SEC-37).
 run "the_services_know_the_platforms_own_networks" {
   command = plan

@@ -996,6 +996,10 @@ installation_connector_secret | set_by | text | not null |
 installation_connector_secret | set_at | timestamp with time zone | not null | 
 installation_connector_secret | valid_until | timestamp with time zone | null | 
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
+ip_rate_window | client | text | not null | 
+ip_rate_window | kind | text | not null | 
+ip_rate_window | window_start | timestamp with time zone | not null | 
+ip_rate_window | used | integer | not null | 1
 item | organisation_id | uuid | not null | current_org()
 item | id | uuid | not null | uuidv7()
 item | code | text | not null | 
@@ -3472,6 +3476,14 @@ installation_connector_secret | installation_connector_secret_ref_form | CHECK (
 installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
 installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
 installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
+ip_rate_window | ip_rate_window_client_hash | CHECK ((client ~ '^[0-9a-f]{64}$'::text))
+ip_rate_window | ip_rate_window_client_not_null | NOT NULL client
+ip_rate_window | ip_rate_window_kind_known | CHECK ((kind = ANY (ARRAY['signin'::text, 'join'::text, 'public'::text, 'setup'::text])))
+ip_rate_window | ip_rate_window_kind_not_null | NOT NULL kind
+ip_rate_window | ip_rate_window_pkey | PRIMARY KEY (client, kind, window_start)
+ip_rate_window | ip_rate_window_used_not_null | NOT NULL used
+ip_rate_window | ip_rate_window_used_positive | CHECK ((used >= 1))
+ip_rate_window | ip_rate_window_window_start_not_null | NOT NULL window_start
 item | item_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
 item | item_code_key | UNIQUE (organisation_id, code)
 item | item_code_not_null | NOT NULL code
@@ -4904,6 +4916,7 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX ip_rate_window_start ON fyniq.ip_rate_window USING btree (window_start)
 CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming_organisation)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
@@ -5106,6 +5119,7 @@ CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_
 CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX ip_rate_window_pkey ON fyniq.ip_rate_window USING btree (client, kind, window_start)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
 CREATE UNIQUE INDEX item_price_currency_key ON fyniq.item_price USING btree (organisation_id, item_id, currency)
@@ -5954,6 +5968,7 @@ installation_announcement | disabled | not forced
 installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
+ip_rate_window | disabled | not forced
 item | enabled | forced
 item_price | enabled | forced
 job_slot | disabled | not forced
@@ -6127,6 +6142,7 @@ control_run_guard() → trigger | security invoker | v | search_path=pg_catalog,
 control_state_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29c24bddde9220de15ff64991fa92e47
 controller_entry_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 139b9dd919f3c7f5e7a30616a153d7b3
 conversion_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d31c236d9b87b88fff3de4ebae0ca66
+count_ip_request(p_client text, p_kind text, p_window timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8575f61e43912f7761275d614681a8b1
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
@@ -6277,6 +6293,7 @@ private_endpoint_append_only() → trigger | security invoker | v | search_path=
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
 private_endpoints_for(p_service text, p_credential uuid) → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 85ce4fe273b1eba64231e49b57ed690b
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
+purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
 reapply_shredding(p_run uuid, p_cohort date, p_keys uuid[], p_listed_at timestamp with time zone, p_approved_by text, p_approved_at timestamp with time zone, p_register text) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 479b5993ee4000e36ae2f505d9db0fb9

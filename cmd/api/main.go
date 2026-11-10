@@ -126,6 +126,12 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	if drift, err := wiring.EmailDrift(context.Background(), kit, os.Getenv); err == nil && drift != "" {
 		d.Log.Warn(drift)
 	}
+	// The routes a person reaches before they belong to an organisation, counted per client address (SEC-23).
+	limits, trusted, err := api.ReadIPLimits(os.Getenv)
+	if err != nil {
+		return err
+	}
+	s.Use(api.IPLimiter{Store: kit.Store, Clock: deps.Clock, Limits: limits, Trusted: trusted, Log: d.Log}.Wrap)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),
 		Schedules: outbox.PlatformSchedules, Dispatcher: *d.Outbox, Dead: notify.JobDead(*d.Outbox)}
