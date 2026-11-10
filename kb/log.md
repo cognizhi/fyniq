@@ -497,3 +497,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)
 
 ## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)
+
+## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (SEC-32: the incident register on the Incidents tab)

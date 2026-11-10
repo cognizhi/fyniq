@@ -2,16 +2,16 @@
 key: compliance.controls
 type: task
 title: See whether the controls hold
-summary: Every control with its status, why, its owner role and frameworks, each check and its evidence; the framework filter; the notice when one fails
+summary: Every control with its status, owner, frameworks, checks and evidence; the framework filter; the notice when one fails; the incident register
 sources:
-  - docs/user-guide/compliance-controls.md sha256:6ad576033f861776568e0b5c2281cd94dad8e5f942373c5988be84297d21457c
+  - docs/user-guide/compliance-controls.md sha256:76fcf43725c771bf26f3e7d7e811cf50b773614ea6579b5b6e3e37253078ec56
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-09
+compiled_at: 2026-11-11
 aliases:
   - compliance center
   - control dashboard
@@ -23,6 +23,11 @@ aliases:
   - control evidence
   - control overdue
   - not assessed
+  - security incident
+  - incident register
+  - open an incident
+  - we were hacked
+  - incident severity
 ---
 
 # See whether the controls hold
@@ -68,3 +73,15 @@ aliases:
 - The controls you answer for that fail or are overdue are listed in your **Inbox**, under **Compliance**.
 
 (src: docs/user-guide/compliance-controls.md#when-a-control-fails)
+
+## The incident register
+
+- The **Incidents** tab lists every security incident, from when it was seen to its review.
+- Open one as soon as something is suspected: a security alert, a failing control, a report from a customer or a supplier, anything that may have exposed money, personal data or access.
+- **Open an incident**: a few words, what is known, its **severity** and, if it was seen earlier, when. **Critical**: money, personal data, access or the books' integrity lost or at once at risk. **High**: an attempt that was stopped, or exposure without signs of access. **Medium**: a failing control. **Low**: a false alarm worth keeping.
+- **Next step**, in order: **Contained**, **Assessed**, **Notified** (after it is assessed), **Recovered** (after it is contained), **Reviewed and closed** (after it is recovered: the root-cause review). Each step takes a note.
+- Personal data involved: record the breach first in **Compliance › Data protection › Breaches** ([[compliance.data-protection]]), then choose it on the **Assessed** step; the breach register keeps the PDPA's timers.
+- Steps are only ever added, each in the audit trail. Never write a secret, a token, a full NRIC or a bank number in an incident.
+- The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
+
+(src: docs/user-guide/compliance-controls.md#the-incident-register)

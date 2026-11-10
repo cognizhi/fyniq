@@ -65,6 +65,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listShreddingRuns cursor", "listAnonymisations cursor")                                                // §11.8, §11.9
 	want = append(want, "getTransfers cursor")                                                                                  // CMP-PD-06
 	want = append(want, "listBreaches cursor", "listBreachExercises cursor")                                                    // CMP-PD-05, CTL-DP-06
+	want = append(want, "listIncidents cursor")                                                                                 // SEC-32
 	want = append(want, "createEvidenceDownload Idempotency-Key", "createEvidenceDownload Prefer")                              // SEC-24: a link, no record
 	slices.Sort(want)
 	var got []string

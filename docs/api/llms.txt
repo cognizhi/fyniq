@@ -207,6 +207,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/filings/{filing_id}/record` (recordStatutoryFiling): Record a filing record
 - `POST /v1/compliance/filings/{filing_id}/withdraw` (withdrawStatutoryFiling): Withdraw a filing record
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
+- `GET /v1/compliance/incidents` (listIncidents): List the security incidents
+- `POST /v1/compliance/incidents` (openIncident): Open a security incident
+- `POST /v1/compliance/incidents/{incident_id}/steps` (stepIncident): Add an incident's next step
 - `GET /v1/compliance/personal-data-requests` (listPersonalDataRequests): List the access and correction requests
 - `POST /v1/compliance/personal-data-requests` (createPersonalDataRequest): Record an access or correction request
 - `GET /v1/compliance/personal-data-requests/{request_id}/report` (getPersonalDataReport): Report the personal data held about a request's subject

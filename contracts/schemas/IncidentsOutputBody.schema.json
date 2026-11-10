@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The incidents, oldest first.",
+      "items": {
+        "$ref": "IncidentView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "IncidentsOutputBody",
+  "type": "object"
+}

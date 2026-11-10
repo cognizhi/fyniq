@@ -735,6 +735,100 @@ func (q *Queries) InsertDataInventoryReview(ctx context.Context, arg InsertDataI
 	return i, err
 }
 
+const insertIncident = `-- name: InsertIncident :one
+INSERT INTO fyniq.security_incident (title, summary, severity, detected_at, opened_by, opened_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, title, summary, severity, detected_at, opened_by, opened_at
+`
+
+type InsertIncidentParams struct {
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+type InsertIncidentRow struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+func (q *Queries) InsertIncident(ctx context.Context, arg InsertIncidentParams) (InsertIncidentRow, error) {
+	row := q.db.QueryRow(ctx, insertIncident,
+		arg.Title,
+		arg.Summary,
+		arg.Severity,
+		arg.DetectedAt,
+		arg.OpenedBy,
+		arg.OpenedAt,
+	)
+	var i InsertIncidentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Summary,
+		&i.Severity,
+		&i.DetectedAt,
+		&i.OpenedBy,
+		&i.OpenedAt,
+	)
+	return i, err
+}
+
+const insertIncidentStep = `-- name: InsertIncidentStep :one
+INSERT INTO fyniq.security_incident_step (incident_id, step, at, by_actor, note, breach_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, incident_id, step, at, by_actor, note, breach_id
+`
+
+type InsertIncidentStepParams struct {
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+type InsertIncidentStepRow struct {
+	ID         uuid.UUID
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+func (q *Queries) InsertIncidentStep(ctx context.Context, arg InsertIncidentStepParams) (InsertIncidentStepRow, error) {
+	row := q.db.QueryRow(ctx, insertIncidentStep,
+		arg.IncidentID,
+		arg.Step,
+		arg.At,
+		arg.ByActor,
+		arg.Note,
+		arg.BreachID,
+	)
+	var i InsertIncidentStepRow
+	err := row.Scan(
+		&i.ID,
+		&i.IncidentID,
+		&i.Step,
+		&i.At,
+		&i.ByActor,
+		&i.Note,
+		&i.BreachID,
+	)
+	return i, err
+}
+
 const insertPDRequest = `-- name: InsertPDRequest :one
 INSERT INTO fyniq.pd_request (kind, subject, requester, details, received_on, due_on, created_by, created_at)
 VALUES ($1, $2, $3, $4, $5, $5::date + 30,
@@ -1653,6 +1747,91 @@ func (q *Queries) ListDataInventoryReviews(ctx context.Context) ([]ListDataInven
 			&i.ReviewedBy,
 			&i.ReviewedAt,
 			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncidentSteps = `-- name: ListIncidentSteps :many
+SELECT id, incident_id, step, at, by_actor, note, breach_id FROM fyniq.security_incident_step ORDER BY at, id
+`
+
+type ListIncidentStepsRow struct {
+	ID         uuid.UUID
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+func (q *Queries) ListIncidentSteps(ctx context.Context) ([]ListIncidentStepsRow, error) {
+	rows, err := q.db.Query(ctx, listIncidentSteps)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIncidentStepsRow
+	for rows.Next() {
+		var i ListIncidentStepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.IncidentID,
+			&i.Step,
+			&i.At,
+			&i.ByActor,
+			&i.Note,
+			&i.BreachID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncidents = `-- name: ListIncidents :many
+SELECT id, title, summary, severity, detected_at, opened_by, opened_at FROM fyniq.security_incident ORDER BY detected_at, id
+`
+
+type ListIncidentsRow struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+// The organisation's security incidents, oldest first (SEC-32).
+func (q *Queries) ListIncidents(ctx context.Context) ([]ListIncidentsRow, error) {
+	rows, err := q.db.Query(ctx, listIncidents)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIncidentsRow
+	for rows.Next() {
+		var i ListIncidentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Summary,
+			&i.Severity,
+			&i.DetectedAt,
+			&i.OpenedBy,
+			&i.OpenedAt,
 		); err != nil {
 			return nil, err
 		}

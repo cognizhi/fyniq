@@ -3,7 +3,7 @@ key: compliance.controls
 title: See whether the controls hold
 mode: expert
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-01, FR-CTL-05]
+requirements: [CMP-01, FR-CTL-05, SEC-32]
 ---
 
 # See whether the controls hold
@@ -58,3 +58,24 @@ recorded in the audit trail without a notice. A check that runs in CI never send
 change from shipping.
 
 The controls you answer for that fail or are overdue are also listed in your **Inbox**, under **Compliance**.
+
+## The incident register
+
+The **Incidents** tab is the register of security incidents. Open an incident as soon as something is suspected: a
+security alert, a failing control, a report from a customer or a supplier, anything that may have exposed money,
+personal data or access. Then record each step as the incident runbook says:
+
+1. Select **Open an incident**. Give it a few words, what is known, its **severity** and, if it was seen earlier,
+   when. **Critical** is money, personal data, access or the books' integrity lost or at once at risk; **High** an
+   attempt that was stopped, or exposure without signs of access; **Medium** a failing control; **Low** a false alarm
+   worth keeping.
+2. Select **Next step** and record, in this order: **Contained**, **Assessed**, **Notified** (after it is assessed),
+   **Recovered** (after it is contained) and **Reviewed and closed** (after it is recovered: the root-cause review).
+   Each step takes a note of what was found or done.
+3. When the assessment finds personal data involved, record the breach first in **Compliance › Data protection ›
+   Breaches**, then choose it on the **Assessed** step: the breach register keeps the PDPA's timers.
+
+Steps are only ever added, each in the audit trail. Never write a secret, a token, a full NRIC or a bank number in an
+incident. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor
+read it.
+

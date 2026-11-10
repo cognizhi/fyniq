@@ -3387,6 +3387,7 @@
     "Framework filter: Singapore statute, PDPA, ISO 27001, SOC 2, CSA Cyber Essentials / Cyber Trust, IMDA agentic AI, OWASP, COSO",
     "A control's checks: CI checks passed in the release the platform runs, with links to the evidence attached to the release (rev 0.240); the organisation's catalogue checks, platform jobs and attestations with their latest result",
     "Nightly ledger and audit-chain verification results; cloud posture findings",
+    "(p1-security-hardening, SEC-32) Incidents tab: the incident register; each incident with its severity chip (icon and words), when it was seen, its latest step and note, linked breach; the DPO opens one (title, what is known, severity) and records the next step in the runbook's order (contained, assessed with the breach register's breach, notified, recovered, reviewed and closed); the other readers read it",
     "P2: evidence export per framework and period"
    ],
    "states": [

@@ -786,6 +786,66 @@ func (c compliance) StepBreach(ctx context.Context, id uuid.UUID, s storage.Brea
 		"pdpc_due_on": {nil, dayOf(nullDate(r.PdpcDueOn))}, "reference": {nil, nilIfEmpty(str(r.Reference))}})
 }
 
+func (c compliance) Incidents(ctx context.Context) ([]storage.Incident, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListIncidents(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	steps, err := c.u.q.ListIncidentSteps(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Incident, 0, len(rows))
+	at := map[uuid.UUID]int{}
+	for _, r := range rows {
+		at[r.ID] = len(out)
+		out = append(out, storage.Incident{ID: r.ID, Title: r.Title, Summary: r.Summary, Severity: r.Severity, DetectedAt: r.DetectedAt,
+			OpenedBy: r.OpenedBy, OpenedAt: r.OpenedAt})
+	}
+	for _, s := range steps {
+		if i, ok := at[s.IncidentID]; ok {
+			out[i].Steps = append(out[i].Steps, storage.IncidentStep{Step: s.Step, At: s.At, By: s.ByActor, Note: s.Note, Breach: s.BreachID})
+		}
+	}
+	return out, nil
+}
+
+func (c compliance) OpenIncident(ctx context.Context, i storage.Incident) (storage.Incident, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Incident{}, err
+	}
+	r, err := c.u.q.InsertIncident(ctx, sqlcdb.InsertIncidentParams{Title: i.Title, Summary: i.Summary, Severity: i.Severity, DetectedAt: i.DetectedAt,
+		OpenedBy: i.OpenedBy, OpenedAt: i.OpenedAt})
+	if err != nil {
+		return storage.Incident{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "incident.opened", "security_incident", r.ID, nil, map[string][2]any{"title": {nil, r.Title}, "severity": {nil, r.Severity},
+		"detected_at": {nil, r.DetectedAt}}); err != nil {
+		return storage.Incident{}, err
+	}
+	return storage.Incident{ID: r.ID, Title: r.Title, Summary: r.Summary, Severity: r.Severity, DetectedAt: r.DetectedAt, OpenedBy: r.OpenedBy,
+		OpenedAt: r.OpenedAt}, nil
+}
+
+func (c compliance) StepIncident(ctx context.Context, id uuid.UUID, s storage.IncidentStep) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	r, err := c.u.q.InsertIncidentStep(ctx, sqlcdb.InsertIncidentStepParams{IncidentID: id, Step: s.Step, At: s.At, ByActor: s.By, Note: s.Note,
+		BreachID: s.Breach})
+	if err != nil {
+		return mapError(err)
+	}
+	var breach any
+	if r.BreachID != nil {
+		breach = r.BreachID.String()
+	}
+	return c.u.event(ctx, "incident."+s.Step, "security_incident", id, nil, map[string][2]any{"step": {nil, r.Step}, "breach": {nil, breach}})
+}
+
 func (c compliance) BreachExercises(ctx context.Context) ([]storage.BreachExercise, error) {
 	if err := c.u.check(); err != nil {
 		return nil, err

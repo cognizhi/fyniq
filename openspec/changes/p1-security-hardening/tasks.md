@@ -102,8 +102,8 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 12. Incident response (slice 12)
 
-- [ ] 12.1 `docs/runbooks/incident-response.md`, with the PDPA breach procedure and its timers. `// req: SEC-32`
-- [ ] 12.2 The incident register (D10): the table with attack tests, the API with matrix rows, and the Incidents tab
+- [x] 12.1 `docs/runbooks/incident-response.md`, with the PDPA breach procedure and its timers. `// req: SEC-32`
+- [x] 12.2 The incident register (D10): the table with attack tests, the API with matrix rows, and the Incidents tab
   with its help keys, guide section and component test with axe. `// req: SEC-32`
 
 ## 13. Threat model and as built (slice 13)

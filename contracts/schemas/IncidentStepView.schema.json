@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-11T02:40:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "breach_id": {
+      "description": "assessed's: the breach register's breach.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "by": {
+      "description": "Who, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What was found or done.",
+      "examples": [
+        "Removed the session; the Owner confirmed the new laptop by phone."
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "The step.",
+      "enum": [
+        "contained",
+        "assessed",
+        "notified",
+        "recovered",
+        "reviewed"
+      ],
+      "examples": [
+        "contained"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step",
+    "at",
+    "by",
+    "note"
+  ],
+  "title": "IncidentStepView",
+  "type": "object"
+}

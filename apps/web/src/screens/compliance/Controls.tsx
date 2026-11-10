@@ -10,6 +10,7 @@ import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { IncidentsTab } from "./Incidents";
 
 type Control = components["schemas"]["Control"];
 type Check = components["schemas"]["ControlCheck"];
@@ -69,7 +70,8 @@ async function controls() {
 
 // Controls is Compliance › Controls (docs/design/screens ComplianceCenter; CMP-01, FR-CTL-05; Expert): every control of
 // the registry with its status for the organisation, problems first; the counts by status; a filter by framework; a
-// control's checks with what each last said and its evidence; the nightly verifications; and each framework's tally.
+// control's checks with what each last said and its evidence; the nightly verifications; and each framework's tally. Its
+// Incidents tab is the incident register (SEC-32).
 export function Controls() {
   const id = useId();
   const h = helpText("compliance.controls");
@@ -77,6 +79,7 @@ export function Controls() {
   const [framework, setFramework] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [open, setOpen] = useState<string | null>(null);
+  const [tab, setTab] = useState<"controls" | "incidents">("controls");
   const all = list.data?.items ?? [];
   const shown = all
     .filter((c) => (!framework || c.frameworks.includes(framework as Control["frameworks"][number])) && (!status || c.status === status))
@@ -99,15 +102,24 @@ export function Controls() {
           </p>
         </div>
       </div>
-      {list.isError && <Refusal problem={problemOf(list.error)} title="The controls could not be shown" />}
-      {list.isPending && <p className="fy-small">Loading the controls…</p>}
-      {list.data && !list.data.release && (
+      <div className="fy-tabs" role="tablist" aria-label="Controls and incidents">
+        <button type="button" role="tab" aria-selected={tab === "controls"} onClick={() => setTab("controls")}>
+          Controls
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "incidents"} onClick={() => setTab("incidents")} title={helpText("compliance.incidents").tooltip}>
+          {helpText("compliance.incidents").label}
+        </button>
+      </div>
+      {tab === "incidents" && <IncidentsTab />}
+      {tab === "controls" && list.isError && <Refusal problem={problemOf(list.error)} title="The controls could not be shown" />}
+      {tab === "controls" && list.isPending && <p className="fy-small">Loading the controls…</p>}
+      {tab === "controls" && list.data && !list.data.release && (
         <p className="fy-banner fy-banner--info" role="note">
           <Icon of={Info} />
           <span>A development build: the checks that run in CI passed there, but this build carries no release's evidence, so they are not assessed. A release shows them as passed, with links to its evidence.</span>
         </p>
       )}
-      {list.data && (
+      {tab === "controls" && list.data && (
         <>
           <div className="fy-grid fy-grid--tiles" role="group" aria-label="Controls by status">
             {(["fail", "overdue", "not_assessed", "pass"] as const).map((s) => (
