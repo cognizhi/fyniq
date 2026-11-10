@@ -66,11 +66,18 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err := c.check(); err != nil {
 		return nil, err
 	}
-	store, err := postgres.Connect(url, postgres.WithClock(clock))
+	tokens := gcp.MetadataTokens()
+	var fields ports.Cipher
+	if c.Fields.Key != "" { // as the api's own account, the only one with a role on the keys
+		fields = gcp.NewKMSFields(gcp.KMSAPI, c.Fields.Key, c.Fields.MACKeyVersion, tokens, nil)
+	}
+	// The fields' fingerprint key also proves sensitive values in the trail (AUD-02). A service without the keys proves
+	// them under its store's own key, so its proofs do not compare with the api's [live-verify: grant the worker and
+	// jobs accounts macSign on the fingerprint key alone].
+	store, err := postgres.Connect(url, postgres.WithClock(clock), postgres.WithFingerprints(fields))
 	if err != nil {
 		return nil, err
 	}
-	tokens := gcp.MetadataTokens()
 	// The deployment's email providers, in order (FR-INT-21, PRD-001 rev 0.102); an SMTP relay only with STARTTLS.
 	mail, err := ReadMail(os.Getenv)
 	if err != nil {
@@ -86,9 +93,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, nil),
 		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, nil),
 	}
-	if c.Fields.Key != "" { // as the api's own account, the only one with a role on the keys
-		kit.Fields = gcp.NewKMSFields(gcp.KMSAPI, c.Fields.Key, c.Fields.MACKeyVersion, tokens, nil)
-	}
+	kit.Fields = fields
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
 		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, nil)
 		kit.Evidence = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, nil)

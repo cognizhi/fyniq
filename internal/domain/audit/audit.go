@@ -18,8 +18,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// Schema names the event format; contracts/audit/audit-event.v1.schema.json describes it.
-const Schema = "fyniq-audit-event@1"
+// Schema names the format new events are written in; contracts/audit/audit-event.v2.schema.json describes it. Version
+// 2 (PRD-001 rev 0.230) proves sensitive values by fingerprint (AUD-02) and lets a security event keep its request
+// details beside the chain (AUD-06). Events written as version 1 keep verifying: the chain hashes stored text.
+const Schema = "fyniq-audit-event@2"
 
 // Actor is who made a change: a user, an AI proposal's executor, an integration, a service or the
 // scheduler (AUD-01).

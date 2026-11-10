@@ -4,9 +4,12 @@ Anyone with the events and the anchors can verify an organisation's trail withou
 
 ## Events
 
-Each event's **body** is a JSON object in the format `fyniq-audit-event@1`
-([`audit-event.v1.schema.json`](audit-event.v1.schema.json), AUD-01). The body is stored exactly as
-written and never changed. The database adds three values per event:
+Each event's **body** is a JSON object in the format its `schema` names (AUD-01):
+- `fyniq-audit-event@2` ([`audit-event.v2.schema.json`](audit-event.v2.schema.json)) for events written since PRD-001
+  rev 0.230;
+- `fyniq-audit-event@1` ([`audit-event.v1.schema.json`](audit-event.v1.schema.json)) before.
+
+The body is stored exactly as written and never changed. The database adds three values per event:
 
 | Field | Meaning |
 |---|---|
@@ -35,5 +38,17 @@ locally it is an Ed25519 key under `.data/keys/`. A chain rewritten from its fir
 disagrees with an anchor written before the rewrite, so verification checks every anchor against the
 recomputed hash at its `seq` (INV-12, AUD-03).
 
-Values are masked before they reach a body (SEC-15): secrets and tokens are replaced by
-`[redacted]`; NRIC/FIN and bank or card numbers keep their last four characters.
+Values are masked before they reach a body (SEC-15): secrets and tokens are replaced by `[redacted]`, and NRIC/FIN
+numbers found in text keep their last four characters.
+
+From version 2, a **sensitive value** (AUD-02, proof only) never reaches a body. An identifier (NRIC/FIN, a bank, card
+or PayNow number) or a person's pay is replaced by its proof:
+
+```json
+{"fingerprint": "fp1:<HMAC-SHA256 in unpadded base64url>", "hint": "******6789"}
+```
+
+The fingerprint is the organisation's keyed hash of the value (SEC-11: Cloud KMS `macSign`; a key file locally),
+equal for equal values. So two proofs show whether a value changed, and whether it changed back, but not what it is.
+An identifier's proof keeps its last four characters as `hint`; a pay figure's has none. Version 1 events kept an
+identifier's last four characters only.

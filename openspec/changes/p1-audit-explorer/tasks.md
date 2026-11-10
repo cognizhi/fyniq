@@ -19,12 +19,12 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - the new AUD-10: the ledger's purge, built with the trail's.
 
   The build plan places AUD-10 here (`make roadmap`). `// req: AUD-02`, `// req: AUD-06`, `// req: AUD-10` (spec text)
-- [ ] 1.2 The settings `retention.security_events_days` (`Days`, 400, from 30 to 3,650) and
+- [x] 1.2 The settings `retention.security_events_days` (`Days`, 400, from 30 to 3,650) and
   `retention.purge_after_retention` (`Switch`, off), both under dual control, each with its guide text. The guide says
   the switch purges the trail and the ledger after `retention.records_years` and can never be undone. A settings test
   reads both defaults, and a change by one person waits for a second. `// req: AUD-06`, `// req: AUD-09`,
   `// req: AUD-10`
-- [ ] 1.3 Fingerprinted values (D1):
+- [x] 1.3 Fingerprinted values (D1):
   - `audit.New` marks the sensitive fields (identifier names and pay names), and the unit of work replaces each value
     with `{"fingerprint", "hint"}` through `ports.Cipher`;
   - the event format `fyniq-audit-event@2` is documented in `contracts/audit/` next to v1.
@@ -32,6 +32,18 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   Tests: a payee's bank number changed, changed back and unchanged gives three different, equal and equal
   fingerprints. No body or log line holds the number or a salary. A v1 event still verifies. `// req: AUD-02`,
   `// req: AUD-01`, `// req: SEC-15`
+  - As built (9 Nov 2026, rev 0.231):
+    - `audit.Prove` runs in the unit of work before masking, and masking leaves a proof alone.
+    - Pay names match whole field names, so a forecast's `salary_increase` stays a rate.
+    - The store takes the deployment's `ports.Cipher` (`postgres.WithFingerprints`) within the scope
+      `audit:<organisation>`, and the wiring passes it in both modes. A store without it proves under a random key of
+      its own, so a value is still never kept.
+    - [live-verify] The worker and jobs accounts have no role on the fingerprint key in the cloud yet, so their
+      proofs do not compare with the API's until they are granted `macSign` on that key alone.
+    - Tests: `TestSensitiveValuesAreProvedNeverKept`, `TestSensitiveValuesReachTheTrailAsProofs`,
+      `TestEveryEventMatchesTheAUD01Schema` (each event against the schema it names) and
+      `TestTheAuditTrailsRetentionShipsAsDecided`. The settings' dual control is the catalogue's own, as for every
+      FM-1 setting.
 
 ## 2. Security events' details (slice 2)
 

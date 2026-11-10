@@ -1,14 +1,18 @@
 package audit
 
 import (
+	"context"
+	"encoding/base64"
+	"fmt"
 	"regexp"
 	"strings"
 )
 
 // SEC-15: logs and audit events never contain secrets, tokens, full NRIC or bank numbers. Values
 // under a sensitive field name are masked by name; NRIC/FIN numbers and tokens are also found by
-// their shape in any text. AUD-02 (P1) adds encrypted or keyed-hash values so a change can still be
-// proved without exposing it.
+// their shape in any text. AUD-02 (PRD-001 rev 0.230, proof only): before that, Prove replaces each
+// identifier and pay value with the organisation's keyed fingerprint, so a change, and a change back,
+// is proved without the value.
 
 // secretKeys are field names whose values are removed entirely.
 var secretKeys = []string{"password", "secret", "token", "api_key", "apikey", "private_key", "authorization", "cookie", "credential"}
@@ -77,6 +81,9 @@ func MaskValue(key string, v any) any {
 		}
 		return RedactText(x)
 	case map[string]any:
+		if f, ok := x["fingerprint"].(string); ok && strings.HasPrefix(f, FingerprintPrefix) {
+			return x // a proof (AUD-02): its base64url could look like a token to the patterns below
+		}
 		out := make(map[string]any, len(x))
 		for k, val := range x {
 			out[k] = MaskValue(k, val)
@@ -103,4 +110,100 @@ func MaskChanges(changes map[string]Change) map[string]Change {
 		out[k] = Change{MaskValue(k, c[0]), MaskValue(k, c[1])}
 	}
 	return out
+}
+
+// payKeys are field names whose values are a person's pay. They match whole names only: a forecast's
+// salary_increase is a rate, not anyone's pay.
+var payKeys = []string{"salary", "monthly_salary", "annual_salary", "gross_salary", "wage", "wages", "gross_pay", "basic_pay", "net_pay"}
+
+// Sensitive reports whether a field's value is proved by its fingerprint, never kept (AUD-02): an identifier
+// (the names masked to their last four characters) or a person's pay.
+func Sensitive(key string) bool {
+	if keyIs(key, numberKeys) {
+		return true
+	}
+	k := strings.ToLower(key)
+	for _, p := range payKeys {
+		if k == p {
+			return true
+		}
+	}
+	return false
+}
+
+// Fingerprint is the organisation's keyed hash of a value (ports.Cipher.Fingerprint within the organisation's
+// audit scope): equal for equal values, and useless without the key.
+type Fingerprint func(ctx context.Context, value []byte) ([]byte, error)
+
+// FingerprintPrefix starts every proof's fingerprint: its format, HMAC-SHA256 in unpadded base64url.
+const FingerprintPrefix = "fp1:"
+
+// Prove replaces every sensitive value in a change set, at any depth, with its proof: {"fingerprint": "fp1:…"} and,
+// for an identifier, its last four characters as "hint". A value already proved, an absent one and an empty
+// string stay as they are. It runs before masking, which would otherwise fingerprint the mask.
+func Prove(ctx context.Context, changes map[string]Change, fp Fingerprint) (map[string]Change, error) {
+	out := make(map[string]Change, len(changes))
+	for k, c := range changes {
+		before, err := prove(ctx, k, c[0], fp)
+		if err != nil {
+			return nil, err
+		}
+		after, err := prove(ctx, k, c[1], fp)
+		if err != nil {
+			return nil, err
+		}
+		out[k] = Change{before, after}
+	}
+	return out, nil
+}
+
+func prove(ctx context.Context, key string, v any, fp Fingerprint) (any, error) {
+	switch x := v.(type) {
+	case nil:
+		return nil, nil
+	case map[string]any:
+		if _, done := x["fingerprint"]; done {
+			return x, nil
+		}
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			p, err := prove(ctx, k, val, fp)
+			if err != nil {
+				return nil, err
+			}
+			out[k] = p
+		}
+		return out, nil
+	case []any:
+		out := make([]any, len(x))
+		for i, val := range x {
+			p, err := prove(ctx, key, val, fp)
+			if err != nil {
+				return nil, err
+			}
+			out[i] = p
+		}
+		return out, nil
+	case bool:
+		return x, nil
+	}
+	if !Sensitive(key) {
+		return v, nil
+	}
+	s, ok := v.(string)
+	if !ok {
+		s = fmt.Sprint(v) // a pay figure as a number: proved as its text
+	}
+	if s == "" {
+		return s, nil
+	}
+	mac, err := fp(ctx, []byte(s))
+	if err != nil {
+		return nil, fmt.Errorf("audit: fingerprint %s: %w", key, err)
+	}
+	p := map[string]any{"fingerprint": FingerprintPrefix + base64.RawURLEncoding.EncodeToString(mac)}
+	if keyIs(key, numberKeys) {
+		p["hint"] = lastFour(s)
+	}
+	return p, nil
 }
