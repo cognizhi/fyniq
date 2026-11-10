@@ -326,7 +326,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
     - **[counsel to confirm]** marks the clauses that bear on the law. They include the breach timers in incident
       response, and the Data Protection Officer, consent, NRIC, retention, access and transfer clauses in data
       protection.
-- [ ] 7.2 `fyniq.policy`, `fyniq.policy_version` and `fyniq.policy_acknowledgement` (D8), with attack tests, and the
+- [x] 7.2 `fyniq.policy`, `fyniq.policy_version` and `fyniq.policy_acknowledgement` (D8), with attack tests, and the
   Appendix D row **Policy library** in `internal/authz`. The operations are `listPolicies`, `getPolicy`,
   `savePolicyDraft`, `publishPolicyVersion` (If-Match) and `acknowledgePolicyVersion` (own, signed in, never the AI),
   with matrix rows. Tests:
