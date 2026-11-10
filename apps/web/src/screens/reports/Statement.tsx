@@ -76,9 +76,9 @@ function columnLabel(c: Column): string {
 // Figure is a figure that opens the general ledger of its accounts over its column's run (FR-UX-04), of the column's
 // dimension value and the statement's own when it has them (FR-DIM-02); one of more than 20 accounts, which the general
 // ledger does not take at once, a computed one, or one of the lines with no value of a dimension, which the general
-// ledger cannot pick out, does not.
+// ledger cannot pick out, does not; nor does the budget's, which is no ledger figure.
 function Figure({ amount, accounts, column, only }: { amount: string; accounts: readonly string[]; column: Column; only?: string }) {
-  if (accounts.length === 0 || accounts.length > 20 || column.key === "none") return <>{formatAmount(amount)}</>;
+  if (accounts.length === 0 || accounts.length > 20 || column.key === "none" || column.key === "budget") return <>{formatAmount(amount)}</>;
   const values = [only, column.key.startsWith("value:") ? column.key.slice(6) : ""].filter((v): v is string => !!v);
   return (
     <Link
@@ -107,17 +107,26 @@ function Explanation({ k, span }: { k: string; span: number }) {
   );
 }
 
+// forecastOf is the forecast's figure for a P&L block (compare=forecast; p1-planning design D6), "" for a block or line it
+// has none for: its lines are drivers, not accounts.
+function forecastOf(s: Statement, section?: string): string {
+  const x = section ? s.forecast?.sections.find((f) => f.key === section) : undefined;
+  return x ? formatAmount(x.amount.amount) : "";
+}
+
 function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: boolean; only?: string }) {
   const [open, setOpen] = useState(true);
   const id = useId();
-  const span = s.columns.length + 1 + (percent ? 1 : 0);
-  const cells = (amounts: { amount: string }[], percents: string[], accounts: readonly string[]) => (
+  const span = s.columns.length + 1 + (percent ? 1 : 0) + (s.forecast ? 1 : 0);
+  // section is the block a total row closes, whose forecast figure it shows; the forecast has none for a line.
+  const cells = (amounts: { amount: string }[], percents: string[], accounts: readonly string[], section?: string) => (
     <>
       {amounts.map((m, i) => (
         <td key={i} className={i === 0 ? "fy-num" : "fy-num fy-expert-only"}>
           {s.columns[i] ? <Figure amount={m.amount} accounts={accounts} column={s.columns[i]} only={only} /> : formatAmount(m.amount)}
         </td>
       ))}
+      {s.forecast && <td className="fy-num fy-expert-only">{forecastOf(s, section)}</td>}
       {percent && <td className="fy-num fy-expert-only fy-muted">{percents[0] ? `${percents[0]}%` : ""}</td>}
     </>
   );
@@ -126,7 +135,7 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
       <>
         <tr className="fy-strong">
           <th scope="row">{b.title}</th>
-          {cells(b.totals, b.percents, [])}
+          {cells(b.totals, b.percents, [], b.key)}
         </tr>
         <Explanation k={b.key} span={span} />
       </>
@@ -172,7 +181,7 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
         )}
       <tr className="fy-strong">
         <th scope="row">Total {b.title.toLowerCase()}</th>
-        {cells(b.totals, b.percents, all)}
+        {cells(b.totals, b.percents, all, b.key)}
       </tr>
       <Explanation k={b.key} span={span} />
     </>
@@ -223,15 +232,16 @@ function Trend({ s }: { s: Statement }) {
 // or a column per month, read at one ledger revision. Every account's figure opens its general ledger lines (FR-UX-04).
 // Basic shows the current column with plain words under each section; Expert adds the codes, comparatives and % of
 // revenue, and for a P&L a column per value of a dimension or the P&L of one value (FR-DIM-02). The layout is provisional
-// (PRD-001 rev 0.159) [accountant to confirm]; budget comparatives come with planning, and the function view with its
-// task. Export opens the export dialog.
+// (PRD-001 rev 0.159) [accountant to confirm]. A P&L also compares with its budget, a column by account, or with the
+// recorded forecast, a figure per section (p1-planning design D6); the function view comes with its task. Export opens
+// the export dialog, which takes the budget column and not yet the forecast.
 export function FinancialStatement() {
   const id = useId();
   const { kind } = useParams({ strict: false }) as { kind: Kind };
   const { mode } = useSignedIn();
   const [preset, setPreset] = useState<Preset>("month");
   const [custom, setCustom] = useState({ from: "", to: "" });
-  const [compare, setCompare] = useState<"" | "prior_period" | "prior_year">("");
+  const [compare, setCompare] = useState<"" | "prior_period" | "prior_year" | "budget" | "forecast">("");
   const [byMonth, setByMonth] = useState(false);
   // A P&L by dimension (FR-DIM-02): a column per value of pivot, and the lines of only.
   const [pivot, setPivot] = useState("");
@@ -239,6 +249,8 @@ export function FinancialStatement() {
   const dims = useDimensions();
   const pl = kind === "pl";
   const columns = pl && pivot ? "dimension" : byMonth ? "month" : "total";
+  // The budget and the forecast compare a P&L only (p1-planning design D6); a by-dimension P&L takes no comparative.
+  const compared = columns === "dimension" || (!pl && (compare === "budget" || compare === "forecast")) ? undefined : compare || undefined;
   const dimensionQuery = pl ? { dimension_id: pivot || undefined, dimension_value_id: only ? [only] : undefined } : {};
   const periods = useQuery({ queryKey: ["periods"], queryFn: listPeriods });
   const run = useMemo(() => runOf(preset, periods.data?.items ?? [], custom), [preset, periods.data, custom]);
@@ -247,7 +259,7 @@ export function FinancialStatement() {
     enabled: run !== null,
     queryFn: async () => {
       const r = await api.GET("/v1/reports/statements/{kind}", {
-        params: { path: { kind }, query: { from: run!.from, to: run!.to, compare: columns === "dimension" ? undefined : compare || undefined, columns, ...dimensionQuery } },
+        params: { path: { kind }, query: { from: run!.from, to: run!.to, compare: compared, columns, ...dimensionQuery } },
       });
       if (r.error) throw r.error;
       return r.data;
@@ -270,7 +282,9 @@ export function FinancialStatement() {
               ? ", with the period before"
               : compare === "prior_year"
                 ? ", with the same months a year earlier"
-                : ""
+                : compared === "budget"
+                  ? ", with the budget"
+                  : ""
       }${pl && only ? `, only ${valueCodes([only], dims.dimensions, dims.byId)}` : ""}`
     : "";
 
@@ -305,7 +319,7 @@ export function FinancialStatement() {
           kind={kind}
           name={name}
           shown={shown}
-          query={{ from: run.from, to: run.to, compare: columns === "dimension" ? undefined : compare || undefined, columns, ...dimensionQuery, as_at_revision: s.ledger_revision }}
+          query={{ from: run.from, to: run.to, compare: compared === "forecast" ? undefined : compared, columns, ...dimensionQuery, as_at_revision: s.ledger_revision }}
         />
       )}
       <nav className="fy-tabs" aria-label="Statements">
@@ -353,6 +367,8 @@ export function FinancialStatement() {
             <option value="">Nothing</option>
             <option value="prior_period">The period before</option>
             <option value="prior_year">The same months a year earlier</option>
+            {pl && <option value="budget">The budget</option>}
+            {pl && <option value="forecast">The forecast</option>}
           </select>
         </div>
         <label className="fy-row gap-2 self-end fy-expert-only">
@@ -433,6 +449,12 @@ export function FinancialStatement() {
             </h2>
             <span className="fy-small fy-muted">Select a figure to see the lines behind it</span>
           </div>
+          {compared === "budget" && !s.columns.some((c) => c.key === "budget") && (
+            <p className="fy-small fy-secondary fy-expert-only">No budget column: a month of this period is in a financial year with no approved budget.</p>
+          )}
+          {compared === "forecast" && !s.forecast && (
+            <p className="fy-small fy-secondary fy-expert-only">No forecast column: no recorded forecast covers every month of this period. A forecast starts after the last actual month.</p>
+          )}
           <div className="fy-tablewrap">
             <table className="fy-table fy-table--compact fy-statement">
               <caption className="fy-sr">
@@ -446,6 +468,11 @@ export function FinancialStatement() {
                       {columnLabel(c)}
                     </th>
                   ))}
+                  {s.forecast && (
+                    <th scope="col" className="fy-num fy-expert-only" title={`${s.forecast.scenario} scenario of ${s.forecast.name}, by section: its lines are drivers, not accounts`}>
+                      Forecast
+                    </th>
+                  )}
                   {kind === "pl" && (
                     <th scope="col" className="fy-num fy-expert-only">
                       % of revenue

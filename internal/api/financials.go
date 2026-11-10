@@ -66,8 +66,8 @@ type FinancialBlock struct {
 
 // FinancialColumn is a column of a statement: a run of whole months.
 type FinancialColumn struct {
-	Key   string `json:"key" doc:"current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns." example:"current"`
-	Label string `json:"label,omitempty" doc:"A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total." example:"ENG Engineering"`
+	Key   string `json:"key" doc:"current, prior_period, prior_year or budget; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns." example:"current"`
+	Label string `json:"label,omitempty" doc:"A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total; the budget column: Budget." example:"ENG Engineering"`
 	From  string `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
 	To    string `json:"to" format:"date" doc:"The run's last day: a balance sheet's or a trial balance's figures are at its end." example:"2026-10-31"`
 }
@@ -106,13 +106,30 @@ type FinancialStatement struct {
 	Blocks          []FinancialBlock   `json:"blocks" nullable:"false" doc:"The statement, block by block in order."`
 	Checks          []FinancialCheck   `json:"checks" nullable:"false" doc:"Its checks: the balance sheet and trial balance balance, and every balance-sheet account sits in a section (INV-10); the movement in equity reconciles, and the cash flow ties to the cash accounts with every account in a line (INV-11)."`
 	NonCash         []FinancialNonCash `json:"non_cash" nullable:"false" doc:"The cash flow only: the run's investing and financing transactions that moved no money, such as a cost a director paid personally or a conversion to shares, left out of its figures and listed apart."`
+	Forecast        *StatementForecast `json:"forecast,omitempty" doc:"A P&L with compare=forecast: the latest recorded forecast's figures for the run's months, by section; absent when no forecast is recorded or it does not cover every month."`
+}
+
+// StatementForecast is a P&L's forecast comparative (FR-RPT-02; p1-planning design D6): the latest recorded forecast's
+// first scenario, with its funding plan, for the run's months. Its lines are drivers, not accounts, so it has a figure
+// for each section it shares with the P&L and none for an account.
+type StatementForecast struct {
+	ForecastID string                     `json:"forecast_id" format:"uuid" doc:"The forecast." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01"`
+	Name       string                     `json:"name" doc:"Its name." example:"FY2027 plan"`
+	Scenario   string                     `json:"scenario" doc:"The scenario read: its first." example:"Base"`
+	Sections   []StatementForecastSection `json:"sections" nullable:"false" doc:"Its figures by the P&L's blocks, in the P&L's order."`
+}
+
+// StatementForecastSection is one of the forecast's figures for the run.
+type StatementForecastSection struct {
+	Key    string `json:"key" enum:"revenue,cost_of_sales,gross_profit,operating_expenses,profit_before_tax,net_profit" doc:"The P&L block it sits beside: revenue; cost_of_sales, the forecast's direct costs; gross_profit; operating_expenses, from gross profit to EBITDA (payroll other than direct and the other expenses); profit_before_tax; net_profit." example:"revenue"`
+	Amount Money  `json:"amount" doc:"The months' total, each month as the forecast shows it (RND-PLAN), signed as the P&L shows them."`
 }
 
 type financialStatementInput struct {
 	Kind    string `path:"kind" enum:"pl,bs,cf,tb" doc:"pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance." example:"pl"`
 	From    string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
 	To      string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
-	Compare string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
+	Compare string `query:"compare" enum:"prior_period,prior_year,budget,forecast" doc:"A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months. A P&L's only: budget, a column from each month's financial-year budget, its latest recorded version, by account, left out when a month's year has none; forecast, the latest recorded forecast's figures by section in forecast, left out when it does not cover every month (p1-planning design D6). A P&L of some dimension values compares with their budget lines and no forecast." example:"prior_period"`
 	Columns string `query:"columns" enum:"total,month,dimension" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative." example:"total"`
 	// A P&L by dimension (FR-DIM-02; rev 0.171).
 	DimensionID string   `query:"dimension_id" format:"uuid" doc:"With columns=dimension: the dimension whose values make the columns (listDimensions)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
@@ -154,7 +171,7 @@ func registerFinancials(a *API) {
 			"was posted since, with today's account names, flagged restated_presentation when the chart changed after it. Its " +
 			"checks (INV-10, INV-11) say whether it balances, ties and reconciles, and whether every account sits in a section. A month the books have no " +
 			"period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.",
-	}, []string{CodeInvalid, CodeNoPeriod, CodeLaterRevision}, func(ctx context.Context, in *financialStatementInput) (*financialStatementOutput, error) {
+	}, append([]string{CodeInvalid, CodeNoPeriod, CodeLaterRevision}, ForecastCodes...), func(ctx context.Context, in *financialStatementInput) (*financialStatementOutput, error) {
 		p, _ := authn.From(ctx)
 		var out FinancialStatement
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
@@ -288,8 +305,26 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 	if err != nil {
 		return out, err
 	}
+	compare := financials.Compare(in.Compare)
+	totalOnly := in.Columns == "" || in.Columns == "total"
+	if (in.Compare == string(financials.Budget) || in.Compare == "forecast") && in.Kind != string(financials.ProfitAndLoss) {
+		return out, invalid([]FieldProblem{{Code: CodeInvalid, Field: "compare", Message: "compares a P&L only",
+			Fix: "Ask for the P&L (kind pl), or compare with the prior period or the prior year"}})
+	}
+	var supplied map[uuid.UUID]money.Money
+	if compare == financials.Budget {
+		if supplied, err = budgetColumn(ctx, u, org.Profile, base, all[first].StartsOn, all[last].StartsOn, only); err != nil || !totalOnly {
+			supplied = nil
+		}
+		if err != nil {
+			return out, err
+		}
+	}
+	if compare != financials.PriorPeriod && compare != financials.PriorYear && compare != financials.Budget {
+		compare = financials.NoComparison
+	}
 	s, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.Kind(in.Kind), All: all, First: first, Last: last,
-		Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision, Only: only, Pivot: pivot})
+		Compare: compare, ByMonth: in.Columns == "month", Revision: revision, Only: only, Pivot: pivot, Supplied: supplied})
 	if err != nil {
 		return out, err
 	}
@@ -332,6 +367,11 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 	for _, x := range s.NonCash {
 		out.NonCash = append(out.NonCash, FinancialNonCash{Date: dateOf(x.Date), SourceType: x.Source.Type, SourceID: x.Source.ID, Memo: x.Memo, Amount: moneyOut(x.Amount),
 			Label: x.Label})
+	}
+	if in.Compare == "forecast" && totalOnly && len(only) == 0 {
+		if out.Forecast, err = a.statementForecast(ctx, u, base, all[first].StartsOn, all[last].StartsOn); err != nil {
+			return out, err
+		}
 	}
 	return out, nil
 }

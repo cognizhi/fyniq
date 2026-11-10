@@ -37,6 +37,10 @@
       ],
       "type": "string"
     },
+    "forecast": {
+      "$ref": "StatementForecast.schema.json",
+      "description": "A P\u0026L with compare=forecast: the latest recorded forecast's figures for the run's months, by section; absent when no forecast is recorded or it does not cover every month."
+    },
     "from": {
       "description": "The run's first day.",
       "examples": [

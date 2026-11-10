@@ -2,16 +2,16 @@
 key: reports.statements
 type: task
 title: Read the financial statements
-summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
+summary: The P&L, balance sheet, cash flow and trial balance for any months, compared with the past, budget or forecast, traced to their lines
 sources:
-  - docs/user-guide/financial-statements.md sha256:c3320015268f8c02c467bd591b50d623406d0422d1b618df5160d0448d0c87a9
+  - docs/user-guide/financial-statements.md sha256:c38cd190f3e9c94ee304b6afb02abc27114ae78b2cab306941373678369acf5e
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-08
 aliases:
   - financial statements
   - profit and loss
@@ -25,6 +25,9 @@ aliases:
   - EBITDA
   - management statements
   - reports
+  - P&L against budget
+  - budget column
+  - forecast column
 ---
 
 # Read the financial statements
@@ -45,6 +48,14 @@ aliases:
 - While the last month is not closed, a note says its figures can still change ([[accounting.periods]]).
 
 (src: docs/user-guide/financial-statements.md#choose-the-period)
+
+## Compare with the budget or the forecast
+
+- On the profit and loss, **Compare with** also offers **The budget** and **The forecast**.
+- **The budget**: a **Budget** column, account by account, from each month's financial-year budget once approved; its figures are the budget, not the books, so they open no ledger lines. A department's or project's profit and loss compares with the budget lines for it. If a month of the period is in a year with no approved budget, the column is left out and a note says why. The gap and whether it is favourable are in **Budget vs Actual**.
+- **The forecast**: a **Forecast** column from the latest recorded forecast, its first scenario with its funding. A forecast plans by drivers, not accounts, so the column has a figure only for revenue, cost of sales, gross profit, operating expenses, profit before tax and net profit. A forecast starts after the last month of actual figures, so the column appears only for months it covers, such as the months still to come this financial year.
+
+(src: docs/user-guide/financial-statements.md#compare-with-the-budget-or-the-forecast)
 
 ## What each statement shows
 
@@ -74,7 +85,7 @@ aliases:
 ## Export a statement
 
 - **Export** opens a dialog: **Excel (XLSX)**, a workbook with the statement and a **Data** tab of every account's figure in every column; **PDF**, the statement to print or send, with page numbers and the ledger revision on every page (landscape past five columns); or **CSV**, its rows as plain numbers.
-- The export is the statement as on screen (period, comparison, columns), read at the same ledger revision as the screen's; amounts are numbers, not text, and nothing in the file becomes a formula.
+- The export is the statement as on screen (period, comparison, columns), read at the same ledger revision as the screen's; amounts are numbers, not text, and nothing in the file becomes a formula. A comparison with the forecast is on screen only for now: the export leaves it out.
 - Each export is recorded in the audit trail, with what was exported and its filters. A PDF that cannot be made just then says so: try again in a moment, or export to Excel or CSV.
 - The dialog also lists your recent accountant exports, to download one that is ready or ask again for one that expired.
 

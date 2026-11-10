@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The months' total, each month as the forecast shows it (RND-PLAN), signed as the P\u0026L shows them."
+    },
+    "key": {
+      "description": "The P\u0026L block it sits beside: revenue; cost_of_sales, the forecast's direct costs; gross_profit; operating_expenses, from gross profit to EBITDA (payroll other than direct and the other expenses); profit_before_tax; net_profit.",
+      "enum": [
+        "revenue",
+        "cost_of_sales",
+        "gross_profit",
+        "operating_expenses",
+        "profit_before_tax",
+        "net_profit"
+      ],
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "amount"
+  ],
+  "title": "StatementForecastSection",
+  "type": "object"
+}

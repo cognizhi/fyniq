@@ -23363,12 +23363,12 @@ export interface components {
              */
             from: string;
             /**
-             * @description current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
+             * @description current, prior_period, prior_year or budget; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
              * @example current
              */
             key: string;
             /**
-             * @description A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total.
+             * @description A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total; the budget column: Budget.
              * @example ENG Engineering
              */
             label?: string;
@@ -23466,6 +23466,8 @@ export interface components {
              * @example SGD
              */
             currency: string;
+            /** @description A P&L with compare=forecast: the latest recorded forecast's figures for the run's months, by section; absent when no forecast is recorded or it does not cover every month. */
+            forecast?: components["schemas"]["StatementForecast"];
             /**
              * Format: date
              * @description The run's first day.
@@ -35532,6 +35534,36 @@ export interface components {
              * @example Acme Analytics Pte Ltd
              */
             name: string;
+        };
+        StatementForecast: {
+            /**
+             * Format: uuid
+             * @description The forecast.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+             */
+            forecast_id: string;
+            /**
+             * @description Its name.
+             * @example FY2027 plan
+             */
+            name: string;
+            /**
+             * @description The scenario read: its first.
+             * @example Base
+             */
+            scenario: string;
+            /** @description Its figures by the P&L's blocks, in the P&L's order. */
+            sections: components["schemas"]["StatementForecastSection"][];
+        };
+        StatementForecastSection: {
+            /** @description The months' total, each month as the forecast shows it (RND-PLAN), signed as the P&L shows them. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description The P&L block it sits beside: revenue; cost_of_sales, the forecast's direct costs; gross_profit; operating_expenses, from gross profit to EBITDA (payroll other than direct and the other expenses); profit_before_tax; net_profit.
+             * @example revenue
+             * @enum {string}
+             */
+            key: "revenue" | "cost_of_sales" | "gross_profit" | "operating_expenses" | "profit_before_tax" | "net_profit";
         };
         StatementLine: {
             /** @description What it moved: positive when the customer owes more. */
@@ -122082,8 +122114,8 @@ export interface operations {
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;
-                /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
-                compare?: "prior_period" | "prior_year";
+                /** @description A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months. A P&L's only: budget, a column from each month's financial-year budget, its latest recorded version, by account, left out when a month's year has none; forecast, the latest recorded forecast's figures by section in forecast, left out when it does not cover every month (p1-planning design D6). A P&L of some dimension values compares with their budget lines and no forecast. */
+                compare?: "prior_period" | "prior_year" | "budget" | "forecast";
                 /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative. */
                 columns?: "total" | "month" | "dimension";
                 /** @description With columns=dimension: the dimension whose values make the columns (listDimensions). */
@@ -122133,7 +122165,16 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger. */
+            /** @description Conflict: `PLAN-11` The forecast is recorded. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger; `STORAGE-PLAN-01` The forecast does not keep that. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -122175,8 +122216,8 @@ export interface operations {
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;
-                /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
-                compare?: "prior_period" | "prior_year";
+                /** @description A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months; a P&L's budget, as getFinancialStatement gives it. The forecast comparative is on screen only for now. */
+                compare?: "prior_period" | "prior_year" | "budget";
                 /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02). */
                 columns?: "total" | "month" | "dimension";
                 /** @description With columns=dimension: the dimension whose values make the columns (listDimensions). */

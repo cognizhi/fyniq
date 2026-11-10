@@ -92,9 +92,12 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   - As built: `GET /v1/reports/budget-vs-actual?from=&to=&by=` (any run of months in one financial year, so a
     quarter is its three months), worked by hand in `TestBudgetVsActualAndHome` on its own small company rather
     than the sample's, which has no budget yet.
-- [ ] 5.2 The statements' `compare=budget` (by account) and `compare=forecast` (by section) columns (D6), left out
+- [x] 5.2 The statements' `compare=budget` (by account) and `compare=forecast` (by section) columns (D6), left out
   where the source does not cover a month. The enum values are additive (oasdiff clean). `TestStatementComparatives`
   `// req: FR-RPT-02`
+  - As built (rev 0.220): the budget is a column labelled Budget, its figures opening no ledger lines. The forecast is
+    the statement's `forecast` object, a figure per section beside the columns, since a column needs one per account.
+    The export takes the budget column and not yet the forecast.
 - [ ] 5.3 The close's budget variances (D6): the `budget` kind of flux explanation (migration and guard), at the
   close's thresholds, stale when either figure changes. `TestTheBudgetFlux` `// req: FR-GL-14`
 - [x] 5.4 Home's revenue against budget, cost against budget and forecast cash-out tiles (D4, D6), with "without the

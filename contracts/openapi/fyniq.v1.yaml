@@ -16639,12 +16639,12 @@ components:
           format: date
           type: string
         key:
-          description: current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
+          description: current, prior_period, prior_year or budget; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
           examples:
             - current
           type: string
         label:
-          description: "A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total."
+          description: "A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total; the budget column: Budget."
           examples:
             - ENG Engineering
           type: string
@@ -16801,6 +16801,9 @@ components:
           examples:
             - SGD
           type: string
+        forecast:
+          $ref: "#/components/schemas/StatementForecast"
+          description: "A P&L with compare=forecast: the latest recorded forecast's figures for the run's months, by section; absent when no forecast is recorded or it does not cover every month."
         from:
           description: The run's first day.
           examples:
@@ -34013,6 +34016,58 @@ components:
       required:
         - id
         - name
+      type: object
+    StatementForecast:
+      additionalProperties: false
+      properties:
+        forecast_id:
+          description: The forecast.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - FY2027 plan
+          type: string
+        scenario:
+          description: "The scenario read: its first."
+          examples:
+            - Base
+          type: string
+        sections:
+          description: Its figures by the P&L's blocks, in the P&L's order.
+          items:
+            $ref: "#/components/schemas/StatementForecastSection"
+          type: array
+      required:
+        - forecast_id
+        - name
+        - scenario
+        - sections
+      type: object
+    StatementForecastSection:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: The months' total, each month as the forecast shows it (RND-PLAN), signed as the P&L shows them.
+        key:
+          description: "The P&L block it sits beside: revenue; cost_of_sales, the forecast's direct costs; gross_profit; operating_expenses, from gross profit to EBITDA (payroll other than direct and the other expenses); profit_before_tax; net_profit."
+          enum:
+            - revenue
+            - cost_of_sales
+            - gross_profit
+            - operating_expenses
+            - profit_before_tax
+            - net_profit
+          examples:
+            - revenue
+          type: string
+      required:
+        - key
+        - amount
       type: object
     StatementLine:
       additionalProperties: false
@@ -151684,15 +151739,17 @@ paths:
               - 2026-10
             pattern: ^[0-9]{4}-[0-9]{2}$
             type: string
-        - description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+        - description: "A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months. A P&L's only: budget, a column from each month's financial-year budget, its latest recorded version, by account, left out when a month's year has none; forecast, the latest recorded forecast's figures by section in forecast, left out when it does not cover every month (p1-planning design D6). A P&L of some dimension values compares with their budget lines and no forecast."
           explode: false
           in: query
           name: compare
           schema:
-            description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+            description: "A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months. A P&L's only: budget, a column from each month's financial-year budget, its latest recorded version, by account, left out when a month's year has none; forecast, the latest recorded forecast's figures by section in forecast, left out when it does not cover every month (p1-planning design D6). A P&L of some dimension values compares with their budget lines and no forecast."
             enum:
               - prior_period
               - prior_year
+              - budget
+              - forecast
             examples:
               - prior_period
             type: string
@@ -151777,12 +151834,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded."
         "422":
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger; `STORAGE-PLAN-01` The forecast does not keep that."
         "429":
           content:
             application/problem+json:
@@ -151826,8 +151889,15 @@ paths:
         - API-FAILURE-01
         - API-INPUT-02
         - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
         - REPORT-03
         - REPORT-04
+        - STORAGE-PLAN-01
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack.
@@ -151871,15 +151941,16 @@ paths:
               - 2026-10
             pattern: ^[0-9]{4}-[0-9]{2}$
             type: string
-        - description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+        - description: "A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months; a P&L's budget, as getFinancialStatement gives it. The forecast comparative is on screen only for now."
           explode: false
           in: query
           name: compare
           schema:
-            description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+            description: "A comparative column: the run of the same length just before, or the same months a year earlier, left out when the books do not have all its months; a P&L's budget, as getFinancialStatement gives it. The forecast comparative is on screen only for now."
             enum:
               - prior_period
               - prior_year
+              - budget
             examples:
               - prior_period
             type: string

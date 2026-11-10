@@ -285,7 +285,9 @@ year y = ⌈n/12⌉.
   - **Forecast:** the recorded forecast's sections only (revenue, cost of revenue, gross profit, operating expenses,
     profit before tax, net profit), because the forecast's lines are drivers, not accounts.
 
-  A month the source does not cover leaves the column out, as the other comparatives do.
+  A month the source does not cover leaves the column out, as the other comparatives do. As built (rev 0.220), the
+  forecast's figures are the statement's `forecast` object, one per section beside the columns, as a column would need
+  a figure for every account; the export takes the budget column only for now.
 - **The close's flux (FR-GL-14).** The budget half compares each income and expense account's month with the year's
   budget for it, at the same thresholds (`close.variance_amount`, `close.variance_percent`) and in the same exact
   comparison. Its explanations are the flux explanation's new kind `budget`, recording the two figures they explain.

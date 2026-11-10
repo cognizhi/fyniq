@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "forecast_id": {
+      "description": "The forecast.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "FY2027 plan"
+      ],
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The scenario read: its first.",
+      "examples": [
+        "Base"
+      ],
+      "type": "string"
+    },
+    "sections": {
+      "description": "Its figures by the P\u0026L's blocks, in the P\u0026L's order.",
+      "items": {
+        "$ref": "StatementForecastSection.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "forecast_id",
+    "name",
+    "scenario",
+    "sections"
+  ],
+  "title": "StatementForecast",
+  "type": "object"
+}

@@ -31,7 +31,7 @@ const (
 	TrialBalance  Kind = "tb"
 )
 
-// Compare is the comparative column a statement adds (FR-RPT-02). Budget and forecast arrive with p1-planning.
+// Compare is the comparative column a statement adds (FR-RPT-02).
 type Compare string
 
 // The comparatives.
@@ -39,6 +39,7 @@ const (
 	NoComparison Compare = ""
 	PriorPeriod  Compare = "prior_period" // the run of the same length just before
 	PriorYear    Compare = "prior_year"   // the same months a year earlier
+	Budget       Compare = "budget"       // a P&L's: the budget for the run's months, which the request supplies
 )
 
 // Request is what a statement is laid out for.
@@ -53,17 +54,22 @@ type Request struct {
 	// a dimension, gives a column per value of it, one for the lines with no value of it, and their total.
 	Only  []uuid.UUID
 	Pivot uuid.UUID
+	// Supplied is the Budget comparative's figures (p1-planning design D6): each account's amount for the run's months,
+	// signed as the ledger signs them, debits positive, already cut to Only's lines. nil leaves the column out, as the
+	// books leave out a prior year they do not have.
+	Supplied map[uuid.UUID]money.Money
 }
 
 // Column is one column of figures: a run of whole periods. A P&L column holds the run's movements; a balance sheet's
 // and a trial balance's hold the positions at the run's end.
 type Column struct {
-	Key     string // "current", "prior_period", "prior_year", a month such as "2026-10", "total", or a pivot's "value:<id>" or "none"
-	Label   string // a pivot's column: the value's code and name, "No <dimension>", or "Total"
-	From    time.Time
-	To      time.Time
-	Periods []storage.Period
-	only    func(values []uuid.UUID) bool // the lines the column reads (FR-DIM-02); nil for every line
+	Key      string // "current", "prior_period", "prior_year", "budget", a month such as "2026-10", "total", or a pivot's "value:<id>" or "none"
+	Label    string // a pivot's column: the value's code and name, "No <dimension>", or "Total"; the budget's "Budget"
+	From     time.Time
+	To       time.Time
+	Periods  []storage.Period
+	only     func(values []uuid.UUID) bool // the lines the column reads (FR-DIM-02); nil for every line
+	supplied map[uuid.UUID]money.Money     // the figures of a column not read from the ledger, such as the budget's
 }
 
 // Line is one account's figures, one amount per column, signed as the statement shows them.
@@ -249,6 +255,15 @@ func Columns(r Request) ([]Column, error) {
 		if len(earlier) == len(current) {
 			out = append(out, run(string(PriorYear), earlier))
 		}
+	case Budget:
+		if r.Kind != ProfitAndLoss {
+			return nil, fmt.Errorf("financials: a %s has no budget column", r.Kind)
+		}
+		if r.Supplied != nil {
+			c := run(string(Budget), current)
+			c.Label, c.supplied = "Budget", r.Supplied
+			out = append(out, c)
+		}
 	}
 	return out, nil
 }
@@ -259,6 +274,17 @@ func figures(ctx context.Context, u storage.UnitOfWork, base money.Currency, r R
 	out := make([]map[uuid.UUID]money.Money, len(cols))
 	totals := make([]money.Money, len(cols))
 	for i, c := range cols {
+		if c.supplied != nil {
+			out[i], totals[i] = map[uuid.UUID]money.Money{}, money.Zero(base)
+			for id, m := range c.supplied {
+				out[i][id] = m
+				var err error
+				if totals[i], err = totals[i].Add(m); err != nil {
+					return nil, nil, err
+				}
+			}
+			continue
+		}
 		var tb balance.TrialBalance
 		var err error
 		snap := at
