@@ -244,7 +244,7 @@ Source: PRD-001 §F.4
 - **THEN** it is mapped to ISO 8.28 and SOC2 CC7.1
 
 ### Requirement: CTL-CHG-07 Security tests mapped to ASVS and DAST on staging
-Security tests SHALL be mapped to ASVS IDs, and a DAST baseline scan SHALL run on staging. The control runs on every change in CI and nightly, with the reports kept as evidence.
+Security tests SHALL be mapped to ASVS IDs, and a DAST baseline scan SHALL run on staging. The control runs on every change in CI and nightly, with the reports kept as evidence. (rev 0.246) The baseline also runs in CI against the local stack built from the images.
 
 Source: PRD-001 §F.4
 
@@ -257,6 +257,12 @@ Source: PRD-001 §F.4
 - **WHEN** the nightly run happens
 - **THEN** a DAST baseline scan runs on staging
 - **AND** its report is kept as evidence
+
+#### Scenario: DAST baseline in CI on the local stack
+- **GIVEN** the owner's decision of 10 Nov 2026 (rev 0.246)
+- **WHEN** a change runs through CI
+- **THEN** a DAST baseline scan runs against the local stack started from the change's images
+- **AND** a finding at or above its threshold fails it unless waived with a reason and an expiry
 
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
