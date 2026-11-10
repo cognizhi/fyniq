@@ -311,6 +311,30 @@ By the owner's decisions of the same day (PRD-001 rev 0.246):
 
 Its cloud parts are code with module tests, verified in the dev cloud later.
 
+It was built on 10 and 11 Nov 2026, in #543 to #555, one pull request per slice, stacked on #540. The parts:
+- the release workflow: keyless signatures, the SBOM and SLSA provenance verified before the Binary Authorization
+  attestation, made as an attester only a version tag reaches;
+- reproducible images, checked daily;
+- one egress client, and registered private endpoints with pinned keys and dual control;
+- the edge with Cloud Armor, the client's headers trusted only from the load balancer, and per-IP limits;
+- 5-minute signed downloads of evidence;
+- SEC-31's security alerts;
+- the central log store, cloud posture (the SLA of 7 days for a Critical finding and 30 for a High one, the owner's
+  decision of 11 Nov 2026, rev 0.247), the daily log scan and staging's weekly scan for production data;
+- DAST on every pull request against the signed-in local stack, nightly on staging once it exists;
+- Dependabot for Go, npm and the oracle, govulncheck and pnpm audit, Go 1.27.3 for the vulnerabilities they found, and
+  gosec 2.30.0, which reads its export data;
+- the auto-approval's archtest and CODEOWNERS;
+- the platform version, the About dialog, and the version and commit in every export;
+- the incident runbook and register;
+- the threat model `docs/security/threat-models/security-hardening.md`.
+
+Two things wait:
+- ClamAV in the cloud (task 7.2): a Cloud Run service takes no raw TCP, so by the owner's decision of 11 Nov 2026
+  (rev 0.247) it is a private scanner service, an HTTP front with clamd as a sidecar, built in the slice after this
+  one; locally the stack's clamd scans every upload;
+- `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

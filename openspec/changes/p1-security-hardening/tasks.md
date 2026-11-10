@@ -108,8 +108,8 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 13. Threat model and as built (slice 13)
 
-- [ ] 13.1 `docs/security/threat-models/security-hardening.md`.
-- [ ] 13.2 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+- [x] 13.1 `docs/security/threat-models/security-hardening.md`.
+- [x] 13.2 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
 
 ## Workflow follow-up
 

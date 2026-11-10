@@ -33,8 +33,8 @@ var platformVerifications = map[string]platformVerification{
 // Platform reports whether the verification name reads the installation's posture rather than an organisation's records.
 func Platform(name string) bool { _, ok := platformVerifications[name]; return ok }
 
-// PostureSLA is how many days a finding of each severity may stay open before CTL-RES-04 fails (SEC-33).
-// [verify: the SLA with the founders]
+// PostureSLA is how many days a finding of each severity may stay open before CTL-RES-04 fails (SEC-33): the owner's
+// decision of 11 Nov 2026 (PRD-001 rev 0.247).
 var PostureSLA = map[string]int{"CRITICAL": 7, "HIGH": 30}
 
 // LogSample is how many of the last day's log entries logs.scan reads.
