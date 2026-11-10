@@ -160,7 +160,7 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the module tests on mock providers, and no keys, authoritative IAM, human grants or regions outside Singapore (NFR-PORT-05); downloads the providers
 	@$(MISE) python3 scripts/infra.py check
 
-image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical finding fails unless waived (SEC-21)
+image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical or high finding fails unless waived (SEC-21, NFR-IMG-05)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
 
 image-sign: ## Push the release images by digest to a throwaway registry, sign them and attest their SBOMs (cosign), verify; a wrong key and an unsigned image must fail (NFR-IMG-05, SEC-22)

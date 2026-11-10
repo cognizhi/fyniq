@@ -53,6 +53,24 @@ module "ci_identity" {
   secrets_projects = var.secrets_projects
 }
 
+variable "binauthz_enforced" {
+  description = "The environments whose Binary Authorization policy blocks an image without the release attestation. The others only log (dry run). Add staging, then production, once cloud-first-deployment deploys an attested release in place of the placeholder image [live-verify]."
+  type        = set(string)
+  default     = []
+}
+
+# The release attestor and each running environment's admission policy (SEC-22, CTL-CHG-04). Dev runs no platform.
+module "binauthz" {
+  source   = "../modules/binauthz"
+  project  = var.ci_project
+  attester = "serviceAccount:${module.ci_identity.service_accounts["attester"]}"
+  registry = module.ci_identity.repository
+  environments = { for env in ["staging", "production"] : env => {
+    project = var.environments[env]
+    enforce = contains(var.binauthz_enforced, env)
+  } }
+}
+
 output "workload_identity_provider" {
   description = "For the GitHub repository variable GCP_WORKLOAD_IDENTITY_PROVIDER."
   value       = module.ci_identity.provider
@@ -66,4 +84,9 @@ output "service_accounts" {
 output "artifact_registry" {
   description = "Where the release workflow pushes images."
   value       = module.ci_identity.repository
+}
+
+output "binauthz" {
+  description = "For the GitHub repository variables BINAUTHZ_ATTESTOR and BINAUTHZ_KEY_VERSION."
+  value       = { attestor = module.binauthz.attestor, key_version = module.binauthz.key_version }
 }

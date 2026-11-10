@@ -10,5 +10,6 @@ evidence: "Attestations"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "p1-security-hardening (rev 0.241: Binary Authorization admits only attested images, SEC-22). Until then `make image-sign` signs every release image by digest, attests its SBOM and verifies both on each pull request (signatures.json in the CI artefact image-reports)"
+    status: cloud
+    how: "tofu binauthz/only_attested_images_are_admitted"
+    evidence: "the binauthz module test in make infra-check (every environment's policy requires the release attestation and allow-lists nothing; every Cloud Run service and job uses it), the release workflow's run per tag (each image's signature, SBOM and SLSA provenance verified before it is attested; release-digests.json on the GitHub release), and Binary Authorization's decisions in Cloud Audit Logs once staging and production run [live-verify]"

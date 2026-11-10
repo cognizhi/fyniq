@@ -53,7 +53,7 @@ CTL-DP-03 and CTL-RES-04.
 
 ### D1. The release workflow (SEC-22, NFR-IMG-05, CTL-CHG-04; rev 0.246)
 
-`.github/workflows/release.yml` runs on a `v*` tag pushed by release-please.
+`.github/workflows/release.yml` runs when release-please publishes a release, on its `vX.Y.Z` tag (the `release` event, as `release-evidence.yml`: the release App's token starts workflows).
 
 1. **Build and push.** `make images FLAVOURS=release`, for both platforms, pushed to Artifact Registry by digest.
    It authenticates through Workload Identity Federation (the CI identity of `infra/gcp/modules/ci-identity`); no key.
