@@ -3383,10 +3383,10 @@
    ],
    "purpose": "See every control's status, last run, evidence and owner, filtered by framework.",
    "content": [
-    "Control list: ID, description, status (pass, fail, overdue, not applicable, not assessed with the missing input named), last run, evidence link, owner",
-    "Framework filter: Singapore statute, PDPA, ISO 27001, SOC 2, CSA Cyber Essentials / Cyber Trust, IMDA agentic AI, OWASP, COSO",
+    "Counts by status as tiles that filter; the control list, problems first: ID, the control, status (pass, fail, overdue, not applicable, not assessed with the missing input named) with why, and the owner role",
+    "Framework filter: Singapore statute, PDPA, ISO/IEC 27001, SOC 2, CSA Cyber Essentials, CSA Cyber Trust, IMDA AI governance, OWASP, COSO, ISA",
     "A control's checks: CI checks passed in the release the platform runs, with links to the evidence attached to the release (rev 0.240); the organisation's catalogue checks, platform jobs and attestations with their latest result",
-    "Nightly ledger and audit-chain verification results; cloud posture findings",
+    "Nightly ledger and audit-chain verification results; each framework's tally; cloud posture findings as CTL-RES-04's check (p1-security-hardening)",
     "P2: evidence export per framework and period"
    ],
    "states": [
@@ -3495,9 +3495,9 @@
    ],
    "purpose": "Keep risks reviewed and policies versioned and acknowledged by staff.",
    "content": [
-    "Risks tab: risk, owner role, likelihood and impact, mitigation, review date; R1–R19 in the installation's operator organisation only (rev 0.240)",
-    "Policies tab: information security, acceptable use, access control, incident response, backup, change management, AI use, data protection; each starts as Fyniq's draft from official sources, which the Owner or the DPO publishes (rev 0.240); version and acknowledgement rate",
-    "Staff view: 'Acknowledge policy' card, due within 30 days of a version's publication"
+    "Risk register, highest rating first: risk, owner role, likelihood and impact, rating, mitigation, next and last review, an overdue review called out; the Compliance officer adds, changes and reviews; the PRD's risks in the installation's operator organisation only (rev 0.240)",
+    "Policy library below it: information security, acceptable use, access control, incident response, backup, change management, AI use, data protection; each starts as Fyniq's draft from official sources, which the Owner or the DPO publishes (rev 0.240); version, acknowledgement count and the reader's own acknowledgement",
+    "Staff view: the 'Acknowledge policy' card on the Inbox and Home, due within 30 days of a version's publication"
    ],
    "states": [
     "review overdue",
@@ -5637,13 +5637,14 @@
    ],
    "purpose": "Keep the notices and purposes for employees and contacts, and record consent where required.",
    "content": [
-    "Notices per audience (employees, contacts; customers' users in P3) with version, effective date, purposes",
-    "Consent records where consent is required, with withdrawal",
-    "Who has acknowledged which version"
+    "The members' and the contacts' notices from the policy library: the version in force, when it was published, how many members acknowledged it (contacts get theirs in what Fyniq sends), the reader's own acknowledgement, and Fyniq's draft to adopt (customers' users in P3)",
+    "Purposes beyond the work and the records, each saying whether it needs consent and how many consents stand",
+    "Consents given and withdrawn, newest first, with how each came in; the Data Protection Officer is on Data protection"
    ],
    "states": [
     "current",
-    "superseded"
+    "draft ready to adopt",
+    "no purposes"
    ]
   },
   {

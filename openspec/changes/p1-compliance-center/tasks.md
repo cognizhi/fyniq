@@ -455,7 +455,13 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   **Progress (10 Nov 2026):**
     - `Attestations.html`'s Due list gains the PDPA reviews the page now lists: the data inventory's quarter and a
       breach's assessment.
-    - `ComplianceCenter.html` and `RiskPolicies.html` are still to check.
+    - `ComplianceCenter.html` is redrawn as built. It has the status tiles that filter, every framework of the
+      registry, and the control list with its detail: a failing CTL-FIN-08 and its four checks, with their evidence.
+      It shows owner roles, not people, the nightly verification and each framework's tally. Cloud posture moves to
+      CTL-RES-04's check (p1-security-hardening 9.2).
+    - `RiskPolicies.html` is redrawn as built: the risk register (owner roles, rating, mitigation, the next and last
+      review, Change and Review) and the policy library below it, without tabs. The staff's "Acknowledge policy" card
+      is on the Inbox and Home.
     - The publish waits for the design account (the owner's decision of 10 Nov 2026).
 
 ## 10. Threat model and as built (slice 10)
