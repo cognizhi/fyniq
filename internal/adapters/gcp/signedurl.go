@@ -112,7 +112,7 @@ func (s *Storage) DownloadURL(ctx context.Context, key string, d ports.Download,
 }
 
 // iamCredentials is the IAM Credentials API, which signs as a service account.
-const iamCredentials = "https://iamcredentials.googleapis.com"
+const iamCredentials = "https://iamcredentials.googleapis.com" // #nosec G101 -- the API's address, not a credential
 
 // metadataEmailURL is the service's own account.
 const metadataEmailURL = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email"
