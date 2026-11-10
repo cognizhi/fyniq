@@ -183,6 +183,7 @@ var fyCodes = map[string]string{
 	"FY299": storage.CodeStatutoryFiling, // a filing record outside its rules, or a second live one of its item (000274)
 	"FY300": storage.CodeForecast,        // a forecast outside its keys, limits or decimal strings (000277)
 	"FY301": storage.CodeBudget,          // a budget outside its keys, limits or decimal strings (000279)
+	"FY302": storage.CodeFeasibility,     // a feasibility study outside its keys, limits or decimal strings (000283)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

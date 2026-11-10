@@ -670,6 +670,9 @@ const (
 	// DocumentBudget is a version of a financial year's budget (FR-PLN-01, p1-planning design D6): monthly amounts by
 	// income and expense account and dimension value. Approved, it is recorded and locked; it posts nothing.
 	DocumentBudget DocumentType = "budget"
+	// DocumentFeasibilityStudy is one idea's feasibility study (FR-PLN-06, p1-planning design D8): its inputs, as the
+	// workbook's sheet. It posts nothing and is never recorded: drafted, changed and kept.
+	DocumentFeasibilityStudy DocumentType = "feasibility_study"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -942,6 +945,9 @@ const (
 	CodeForecast = "STORAGE-PLAN-01"
 	// CodeBudget: a budget keeps its own keys, a name, its kind and year, and at most 5,000 lines of decimal strings (FY301).
 	CodeBudget = "STORAGE-PLAN-02"
+	// CodeFeasibility: a feasibility study keeps its own keys, a name, 1 to 10 years, a life of 1 to 50 years, decimal
+	// strings within their limits and a salvage no more than its investment (FY302).
+	CodeFeasibility = "STORAGE-PLAN-03"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "npv_by_fixed_costs": {
+      "description": "The NPV with fixed costs at 0.8, 0.9, 1, 1.1 and 1.2 of the study's.",
+      "items": {
+        "description": "An amount in the base currency, at its minor units (RND-PLAN).",
+        "examples": [
+          "75446.46"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "volume": {
+      "description": "The sales volume as a multiple of the study's.",
+      "examples": [
+        "0.8"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "volume",
+    "npv_by_fixed_costs"
+  ],
+  "title": "FeasibilitySensitivity",
+  "type": "object"
+}

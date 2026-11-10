@@ -4988,6 +4988,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/feasibility-studies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the feasibility studies
+         * @description Every feasibility study, the latest first, a page at a time (FR-PLN-06). Read-only; no side effects.
+         */
+        get: operations["listFeasibilityStudies"];
+        put?: never;
+        /**
+         * Draft a feasibility study
+         * @description Saves one idea's inputs as the workbook's sheet has them (FR-PLN-06, design D8), dated today: its tax rate is sg-cit's headline rate then. A study is drafted, changed and kept; it never posts and is never recorded (FR-PLN-08). Its figures are getFeasibilityResults'. Side effects: the study, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createFeasibilityStudy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feasibility-studies/{study_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a feasibility study
+         * @description A study's inputs and its date (FR-PLN-06). Its figures are getFeasibilityResults'. Read-only; no side effects.
+         */
+        get: operations["getFeasibilityStudy"];
+        /**
+         * Change a feasibility study
+         * @description Saves a new version of a study's inputs (FR-PLN-06); its date, and so its tax rate, stays its first. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceFeasibilityStudy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feasibility-studies/{study_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work a feasibility study out
+         * @description A study's figures (FR-PLN-06, design D8), worked out on every read in exact decimals (RND-PLAN) at sg-cit's headline rate on the study's date: each year's cash flows and present values, the NPV, the IRR nearest 10%, the paybacks, the profitability index, break-even, the margin of safety, the 5 × 5 sensitivity grid, the NPV at eight rates, and the verdict. Read-only; no side effects.
+         */
+        get: operations["getFeasibilityResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/fixed-assets": {
         parameters: {
             query?: never;
@@ -23462,6 +23530,230 @@ export interface components {
              */
             state: "nothing" | "due" | "revalued";
         };
+        FeasibilityRate: {
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            npv: string;
+            /**
+             * @description The discount rate, a fraction.
+             * @example 0.12
+             */
+            rate: string;
+        };
+        FeasibilityResults: {
+            /**
+             * @description Break-even units × price.
+             * @example 75446.46
+             */
+            break_even_revenue?: string;
+            /**
+             * @description The first year's fixed costs ÷ (price − variable cost), to 1 decimal; absent when that margin is not above zero.
+             * @example 62.1
+             */
+            break_even_units?: string;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * @description The same with the present values.
+             * @example 4.6
+             */
+            discounted_payback_years?: string;
+            /**
+             * @description The internal rate of return nearest 10%, a fraction to 4 decimals; absent when there is none.
+             * @example 0.2690
+             */
+            irr?: string;
+            /**
+             * @description (units − break-even units) ÷ units, the first year's, as a percentage (RND-PERCENT).
+             * @example -55.2
+             */
+            margin_of_safety_percent?: string;
+            /**
+             * @description What the study is.
+             * @example A study never posts: nothing here changes the books (FR-PLN-08).
+             */
+            note: string;
+            /**
+             * @description The present values added up.
+             * @example 75446.46
+             */
+            npv: string;
+            /** @description The NPV at 8%, 10%, 12%, 15%, 20%, 25%, 30% and 40%. */
+            npv_at_rates: components["schemas"]["FeasibilityRate"][];
+            /**
+             * @description Years until the running total is no longer below zero, to 1 decimal; absent when it never is in the period.
+             * @example 4.1
+             */
+            payback_years?: string;
+            /**
+             * @description 1 + NPV ÷ investment, to 2 decimals; absent without an investment.
+             * @example 1.50
+             */
+            profitability_index?: string;
+            /** @description The NPV with sales volume and fixed costs each at 80% to 120%. */
+            sensitivity: components["schemas"]["FeasibilitySensitivity"][];
+            /**
+             * Format: uuid
+             * @description The study.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+             */
+            study_id: string;
+            /**
+             * @description The sg-cit version it came from.
+             * @example sg-cpf@2026.1
+             */
+            tax_pack: string;
+            /**
+             * @description sg-cit's headline rate at the study's date, fixed for its years.
+             * @example 0.17
+             */
+            tax_rate: string;
+            /**
+             * @description feasible: a positive NPV and a payback within the longest acceptable; marginal: a positive NPV, but a longer payback or none; not_feasible: an NPV at or below zero; no_figures: no investment, units or price yet.
+             * @example marginal
+             * @enum {string}
+             */
+            verdict: "feasible" | "marginal" | "not_feasible" | "no_figures";
+            /**
+             * @description The verdict in plain words.
+             * @example Marginal: a positive NPV, but the payback of 4.1 years is longer than 3
+             */
+            verdict_words: string;
+            /** @description Year 0 to the end of the period. */
+            years: components["schemas"]["FeasibilityYear"][];
+        };
+        FeasibilitySensitivity: {
+            /** @description The NPV with fixed costs at 0.8, 0.9, 1, 1.1 and 1.2 of the study's. */
+            npv_by_fixed_costs: string[];
+            /**
+             * @description The sales volume as a multiple of the study's.
+             * @example 0.8
+             */
+            volume: string;
+        };
+        FeasibilityStudyPage: {
+            items: components["schemas"]["FeasibilityStudyView"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYifQ
+             */
+            next_cursor?: string;
+        };
+        FeasibilityStudyView: {
+            /**
+             * Format: date
+             * @description The study's date, its first version's: the tax rate is sg-cit's headline rate then.
+             * @example 2026-11-08
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description The study's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9e01
+             */
+            id: string;
+            /** @description Its inputs, as the workbook's sheet. */
+            study: components["schemas"]["StudyPlan"];
+            /**
+             * Format: int64
+             * @description The version of its content; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        FeasibilityYear: {
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            cash_flow: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            cumulative: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            cumulative_present_value: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            depreciation: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            ebit: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            fixed_costs: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            nopat: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            present_value: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            revenue: string;
+            /**
+             * @description The last year: the salvage less the tax on its gain over the book value.
+             * @example 75446.46
+             */
+            salvage: string;
+            /**
+             * @description At the study's tax rate; below zero when a loss saves tax.
+             * @example 75446.46
+             */
+            tax: string;
+            /**
+             * @description Units sold, to 1 decimal: they stay fractional as they grow.
+             * @example 40.0
+             */
+            units: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            variable_costs: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            working_capital: string;
+            /**
+             * @description An amount in the base currency, at its minor units (RND-PLAN).
+             * @example 75446.46
+             */
+            working_capital_change: string;
+            /**
+             * @description The last year: the working capital released.
+             * @example 75446.46
+             */
+            working_capital_release: string;
+            /**
+             * Format: int64
+             * @description 0 for the investment, then each year of the period.
+             * @example 1
+             */
+            year: number;
+        };
         Features: {
             /**
              * @description The AI assistant.
@@ -36431,6 +36723,90 @@ export interface components {
              * @example 2026-10-20T09:05:00Z
              */
             stepped_up_until: string;
+        };
+        StudyPlan: {
+            /**
+             * @description The discount rate, a fraction from 0 to 1.
+             * @example 0.18
+             */
+            discount_rate: string;
+            /**
+             * @description The fixed costs of the first year.
+             * @example 180000.00
+             */
+            fixed: string;
+            /**
+             * @description Their yearly change, a fraction above -1.
+             * @example 0.08
+             */
+            fixed_growth: string;
+            /**
+             * @description Spent at the start, in the base currency.
+             * @example 150000.00
+             */
+            investment: string;
+            /**
+             * Format: int64
+             * @description The years it is depreciated over, straight line to its salvage value.
+             * @example 5
+             */
+            life: number;
+            /**
+             * @description The longest acceptable payback, in years, at most 50.
+             * @example 3
+             */
+            max_payback: string;
+            /**
+             * @description The idea's name.
+             * @example Copilot for SMEs (new product line)
+             */
+            name: string;
+            /**
+             * @description The price per unit in the first year.
+             * @example 3600.00
+             */
+            price: string;
+            /**
+             * @description Its yearly change, a fraction above -1.
+             * @example 0.03
+             */
+            price_growth: string;
+            /**
+             * @description What it fetches at the end of the period, at most the investment.
+             * @example 0.00
+             */
+            salvage: string;
+            /**
+             * @description Their yearly change, a fraction above -1.
+             * @example 0.5
+             */
+            unit_growth: string;
+            /**
+             * @description Units sold in the first year, at most 1 decimal.
+             * @example 40
+             */
+            units: string;
+            /**
+             * @description The variable cost per unit in the first year.
+             * @example 700.00
+             */
+            variable_cost: string;
+            /**
+             * @description Its yearly change, a fraction above -1.
+             * @example 0.02
+             */
+            variable_cost_growth: string;
+            /**
+             * @description Working capital kept, a fraction of each year's revenue.
+             * @example 0.1
+             */
+            working_capital: string;
+            /**
+             * Format: int64
+             * @description The evaluation period, 1 to 10 years.
+             * @example 5
+             */
+            years: number;
         };
         SuccessionListOutputBody: {
             /** @description The successions on this page, latest first. */
@@ -77880,6 +78256,628 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFeasibilityStudies: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityStudyPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createFeasibilityStudy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudyPlan"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityStudyView"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityStudyView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-PLAN-03` The feasibility study does not keep that; `STUDY-01` The feasibility study does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFeasibilityStudy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The study. */
+                study_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityStudyView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceFeasibilityStudy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The study. */
+                study_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudyPlan"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityStudyView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-PLAN-03` The feasibility study does not keep that; `STUDY-01` The feasibility study does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFeasibilityResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The study. */
+                study_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityResults"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

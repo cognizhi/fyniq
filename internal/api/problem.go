@@ -28,6 +28,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/budget"
+	"github.com/cognizhi/fyniq/internal/domain/feasibility"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -826,6 +827,7 @@ var codeFacts = map[string]struct {
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
 	storage.CodeForecast:             {422, "The forecast does not keep that"},
 	storage.CodeBudget:               {422, "The budget does not keep that"},
+	storage.CodeFeasibility:          {422, "The feasibility study does not keep that"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost:  {422, "The cost before the books start does not fit"},
@@ -886,6 +888,7 @@ var codeFacts = map[string]struct {
 	deadlines.CodeWindow:             {422, "The calendar's window does not fit"},
 	forecasts.CodePlan:               {422, "The forecast does not fit"},
 	budget.CodeBudget:                {422, "The budget does not fit"},
+	feasibility.CodeStudy:            {422, "The feasibility study does not fit"},
 	budget.CodeRecorded:              {409, "The budget is approved and locked"},
 	budget.CodeImport:                {422, "The budget's sheet does not fit"},
 	forecasts.CodeRecorded:           {409, "The forecast is recorded"},
@@ -959,6 +962,7 @@ var storageFixes = map[string]string{
 	storage.CodeAcraExtract:          "Type each holding of a contact marked shareholder or investor, an active share-capital class and whole shares, with the profile's day",
 	storage.CodeGSTForecast:          "Enter the forecast's day, its value in Singapore dollars with cents above zero, and a basis of at most 1,000 characters",
 	storage.CodeBudget:               "Send the budget as the API takes it: a name, original or revised, its year's first day, and at most 5,000 lines of an account, its dimension values and an amount for each month",
+	storage.CodeFeasibility:          "Send the study as the API takes it: a name, 1 to 10 years, a life of 1 to 50 years, its figures as decimal strings, rates at most 1, changes above -1, and a salvage no more than the investment",
 	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",

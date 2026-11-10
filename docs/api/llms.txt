@@ -319,6 +319,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/expense-claims/{claim_id}/evidence/{evidence_id}` (removeExpenseClaimEvidence): Remove a receipt from your draft claim
 - `POST /v1/expense-claims/{claim_id}/submit` (submitExpenseClaim): Submit an expense claim for approval
 - `POST /v1/expense-claims/{claim_id}/withdraw` (withdrawExpenseClaim): Withdraw a submitted expense claim
+- `GET /v1/feasibility-studies` (listFeasibilityStudies): List the feasibility studies
+- `POST /v1/feasibility-studies` (createFeasibilityStudy): Draft a feasibility study
+- `GET /v1/feasibility-studies/{study_id}` (getFeasibilityStudy): Get a feasibility study
+- `PUT /v1/feasibility-studies/{study_id}` (replaceFeasibilityStudy): Change a feasibility study
+- `GET /v1/feasibility-studies/{study_id}/results` (getFeasibilityResults): Work a feasibility study out
 - `GET /v1/fixed-assets` (listFixedAssets): List the fixed asset register
 - `POST /v1/fixed-assets` (registerFixedAsset): Register a fixed asset
 - `GET /v1/fixed-assets/unregistered` (listUnregisteredAssetLines): List purchases not in the register yet

@@ -92,7 +92,7 @@ type flows struct {
 
 func (c *calc) study(s Study, rate, unitsBy, fixedBy *apd.Decimal) flows {
 	var out flows
-	zero := apd.New(0, 0)
+	zero := c.round(apd.New(0, 0)) // at the currency's minor units, as every line is shown
 	out.years = append(out.years, StudyYear{Year: 0, Units: zero, Revenue: zero, Variable: zero, Fixed: zero, Depreciation: zero, EBIT: zero,
 		Tax: zero, NOPAT: zero, WorkingCap: zero, WorkingCapChange: zero, Salvage: zero, Relief: zero, CashFlow: c.neg(s.Investment)})
 	dep := c.roundFrac(c.over(c.sub(s.Investment, s.Salvage), d(int64(s.Life))))
