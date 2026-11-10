@@ -2975,9 +2975,9 @@
    ],
    "purpose": "Build budgets by account and dimension per month, in versions, and approve and lock them.",
    "content": [
-    "Grid: accounts × months with dimension filter (department budgets for approvers); paste from XLSX, fill-right, = arithmetic",
-    "Versions (original, revised) with status; copy with growth %; import from XLSX",
-    "Approval and lock; AI-proposed budget versions (plan.propose_budget) as drafts"
+    "Lines: income and expense accounts with dimension values (department budgets for approvers) × the year's months, the year's total, and the Income, Costs and Net rows the server works out; paste, fill-right and = arithmetic arrive with the shared grid (p1-app-shell, FR-UX-07)",
+    "Versions (original, revised) with status, picked from a list; new, copy with growth %, import from XLSX",
+    "Ask for approval: another person approves, which records and locks it, with the link to the request; AI-proposed budget versions (plan.propose_budget) as drafts"
    ],
    "states": [
     "draft",
@@ -3008,10 +3008,10 @@
    ],
    "purpose": "Model the company forward from drivers and compare scenarios, without touching the ledger.",
    "content": [
-    "Scenario tabs: Base, Best, Worst, custom; horizon 12–60 months",
-    "Drivers: customers, new customers and growth, churn, ARPA, price increases, services; cost drivers (hosting %, AI/API %, contractors %, payment fees %, salary increases); headcount, capex and funding plans",
-    "Outputs: monthly P&L and cash, cash-out month, runway (with and without unconfirmed funding), minimum cash, break-even month, funding gap",
-    "Side-by-side scenario comparison view",
+    "The forecast picker; the plan, drafted and saved, then recorded as the company's own (read-only once recorded): name, horizon 12–60 months, last actual month, cash adjustment",
+    "Drivers: customers, new customers and growth, churn, ARPA, price increases, services, collection; cost drivers (hosting, AI/API, contractors, payment fees, salary increases); other expenses, team, purchases, funding and tax; each scenario's levers (Base, Best, Worst, custom)",
+    "Scenario tabs with the outputs: runway and the cash-out month without the funding planned first, then with it; minimum cash, break-even month, funding gap, revenue next 12 months; cash by month (chart and table); each forecast year",
+    "Side-by-side scenario comparison, with and without the funding",
     "Sandbox label: never posts; AI simulations can be saved as scenarios"
    ],
    "states": [
@@ -3043,9 +3043,9 @@
    "purpose": "See the cash balance day by day ahead and the lowest point, and test what-ifs safely.",
    "content": [
     "Range picker 30, 60 (default), 90, 180 days; weekly 13-week bucket view",
-    "Projection line from today's balances with expected receipts and payments, scheduled pay runs, CPF, GST and tax due dates; buffer line and alert",
-    "Lowest balance and its date",
-    "What-ifs (delay this bill, chase that invoice) sandboxed, never posted",
+    "Projection line from today's balances with the open invoices and bills on their expected days (customers' and suppliers' habits), recurring documents and approved batches; buffer line and alert; 'Not included yet' lists pay runs and CPF, GST returns and corporate tax until their changes join",
+    "Lowest balance and its date; what moves it, each with why it falls on its day",
+    "Expert: what-ifs per movement (move it to another day, leave it out) sandboxed, never posted, with Reset",
     "P2: forecast accuracy against actual cash 4 and 13 weeks later, by cause"
    ],
    "states": [
@@ -3074,12 +3074,13 @@
    ],
    "purpose": "Evaluate a project or investment from its cash flows.",
    "content": [
-    "Inputs: cash flows by period, discount rate",
-    "Outputs: NPV, IRR, payback, discounted payback, profitability index, break-even, margin of safety, verdict",
-    "Sensitivity grid"
+    "The study picker; inputs as the workbook's sheet groups them: period and rate, investment (depreciation life, salvage, working capital), sales (units, price and their growth), costs (variable and fixed, and their change)",
+    "Outputs: the verdict in words with the CIT pack it used, NPV, IRR, payback, discounted payback, profitability index, break-even, margin of safety; each year's cash flows, present value and running total",
+    "Sensitivity grid (sales volume × fixed costs, 80% to 120%) and the NPV at other rates"
    ],
    "states": [
     "incomplete inputs",
+    "marginal",
     "IRR undefined"
    ]
   },
