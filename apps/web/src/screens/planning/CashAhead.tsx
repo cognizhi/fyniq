@@ -205,7 +205,7 @@ export function CashAhead() {
             </div>
           </div>
 
-          <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-chart`}>
+          <section aria-labelledby={`${id}-chart`}>
             <h2 className="fy-sr" id={`${id}-chart`}>
               Projected balance
             </h2>

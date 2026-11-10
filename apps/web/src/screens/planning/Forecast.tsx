@@ -544,7 +544,7 @@ function ScenarioResults({ res, name, id }: { res: Results; name: string; id: st
         </div>
       </div>
       {months.length > 0 && (
-        <section className="fy-card fy-card--pad" aria-labelledby={`${id}-cash`}>
+        <section aria-labelledby={`${id}-cash`}>
           <h2 className="fy-sr" id={`${id}-cash`}>
             Cash by month
           </h2>

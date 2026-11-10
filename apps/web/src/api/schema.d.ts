@@ -20839,7 +20839,7 @@ export interface components {
             /** @description Each check, by frequency, with what it last said. */
             checks: components["schemas"]["ControlCheck"][];
             /**
-             * @description What the control holds, as Appendix F words it.
+             * @description What the control holds, as Appendix F words it, without the PRD's revision tags.
              * @example Payments and payee bank changes are dual-controlled
              */
             control: string;
@@ -20867,7 +20867,7 @@ export interface components {
              */
             id: string;
             /**
-             * @description Its mapping to the frameworks, as Appendix F words it.
+             * @description Its mapping to the frameworks, as Appendix F words it, without the PRD's revision tags.
              * @example COSO P8; SOC2 CC6.1
              */
             mapping: string;
