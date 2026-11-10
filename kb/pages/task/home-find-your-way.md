@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, Settings, and signing out
 summary: What Home shows (pulse card, tiles, charts, the plans, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:72da0614ab295ba7fc42ea98d151fbeeebf9f86f4c26b68675a1c18ddb8454ba
+  - docs/user-guide/home.md sha256:42e92d06ea4d7a07e56fe6dc008c404ac1c74edca04d41c696fb986b50d7e497
 data_class: general
 taint: trusted
 status: draft
@@ -54,12 +54,13 @@ aliases:
 - Expert mode also draws three charts: revenue, costs and profit by month; cash by month; and costs by function, this month beside the last.
 - **ⓘ** beside a figure says how it is worked out, the dates it reads, its source and its definition's version; selecting the figure opens the report behind it. A figure the books cannot give shows **—** with the reason, never 0.
 - **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Unbilled time and GST due join with their modules.
-- For someone whose roles read the plans, the tiles add the month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget; see the next section.
+- For someone whose roles read the plans, the tiles add the lowest balance of the next 60 days, the month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget; see the next section.
 
 (src: docs/user-guide/home.md#what-it-is)
 
 ## The plans on Home
 
+- **Cash ahead**: the lowest bank balance of the next 60 days and its day, saying when it falls below the buffer; selecting it opens Cash ahead ([[planning.cash]]).
 - **Cash runs out**: the month cash first falls below zero in the latest recorded forecast, in its first scenario (usually Base). It leaves out the funding the forecast plans, because none of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within the forecast** means cash lasts for all the months the forecast covers.
 - **Revenue against budget** and **Costs against budget** (Expert mode): the financial year so far, to the end of the month the tiles show, against the year's approved budget for the same months, with the gap as a percentage of the budget and whether it is **favourable** (revenue above its budget, or costs below theirs).
 - A tile without a figure shows **—** and says why, such as "No approved budget for the year from 1 Jan 2027" or "No forecast is recorded yet".

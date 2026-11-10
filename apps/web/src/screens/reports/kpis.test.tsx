@@ -353,6 +353,25 @@ describe("Home's tiles from the plans", () => {
     expect(document.querySelector("[data-planning]")).toBeNull();
   });
 
+  it("shows the lowest balance of the next 60 days, opening Cash ahead, and when it falls below the buffer", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/kpis": { status: 200, body: october },
+      "GET /v1/planning/summary": { status: 200, body: planned },
+      "GET /v1/cash-projection": {
+        status: 200,
+        body: { today: "2026-11-02", days: 60, currency: "SGD", opening: { amount: "20300.00", currency: "SGD" }, lowest: { amount: "20018.50", currency: "SGD" },
+          lowest_on: "2026-11-13", below_buffer_on: "2026-11-02", buffer: { months: 6 }, movements: [], daily: [], weekly: [], not_included: [] },
+      },
+    });
+    renderPage(Dashboard, { path: "/", session: accountant, mode: "basic" });
+    const tile = (await screen.findByText("Cash ahead")).closest("[data-planning]") as HTMLElement;
+    expect(within(tile).getByRole("link", { name: "20,018.50 SGD" }).getAttribute("href")).toBe("/planning/cash");
+    expect(within(tile).getByText("Lowest in the next 60 days, on 13 Nov 2026")).toBeTruthy();
+    expect(within(tile).getByText("Below the buffer from 2 Nov 2026")).toBeTruthy();
+    expect(seen.find((x) => x.path === "/v1/cash-projection")!.query).toContain("days=60");
+  });
+
   it("words a variance by whether it is favourable, from the server's percentage", () => {
     expect(varianceText({ actual: "12.00", budget: "10.00", variance: "2.00", variance_percent: "20.0" }, true)).toBe("Budget 10.00, 20.0% over: favourable");
     expect(varianceText({ actual: "12.00", budget: "10.00", variance: "2.00", variance_percent: "20.0" }, false)).toBe("Budget 10.00, 20.0% over: unfavourable");

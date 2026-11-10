@@ -113,7 +113,7 @@ func CashBufferIn(ctx context.Context, store storage.Store, d outbox.Dispatcher,
 		default:
 			return nil
 		}
-		if _, err := notify.Emit(ctx, d, u, org, notify.Event{Type: typ, RecordType: "cash_projection", RecordID: &key, Title: title, Link: "/",
+		if _, err := notify.Emit(ctx, d, u, org, notify.Event{Type: typ, RecordType: "cash_projection", RecordID: &key, Title: title, Link: "/planning/cash",
 			At: now, Audience: notify.Audience{Capability: string(authz.Budgets), Need: "CA"}}); err != nil {
 			return err
 		}

@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -146,6 +146,8 @@ export const routes = [
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "accountant-reviews", path: "/accounting/reviews", mode: "expert", signedIn: true, help: "accounting.reviews", guide: "accounting.reviews" },
   { kind: "route", id: "compliance-calendar", path: "/compliance/calendar", mode: "basic", signedIn: true, help: "compliance.calendar", guide: "compliance.calendar" },
+  // Planning (FR-PLN-09; p1-planning design D12): the short-term cash flow is Basic, its what-ifs Expert.
+  { kind: "route", id: "planning-cash", path: "/planning/cash", mode: "basic", signedIn: true, help: "planning.cash", guide: "planning.cash" },
   { kind: "route", id: "compliance-gst", path: "/compliance/gst", mode: "expert", signedIn: true, help: "compliance.gst", guide: "compliance.gst" },
   { kind: "route", id: "evidence-search", path: "/compliance/evidence", mode: "expert", signedIn: true, help: "compliance.evidence", guide: "compliance.evidence" },
   { kind: "route", id: "accountant-review", path: "/accounting/reviews/$reviewId", mode: "expert", signedIn: true, help: "accounting.review", guide: "accounting.reviews#raise-and-answer-queries" },
@@ -192,6 +194,15 @@ export const actions = [
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.forecast-cash-out", mode: "basic", help: "home.forecast-cash-out", guide: "home.overview#read-the-plans-on-home" },
+  { kind: "action", id: "home.cash-ahead", mode: "basic", help: "home.cash-ahead", guide: "home.overview#read-the-plans-on-home" },
+  { kind: "action", id: "planning.sandbox", mode: "basic", help: "planning.sandbox", guide: "planning.cash#nothing-here-posts" },
+  { kind: "action", id: "cash.range", mode: "basic", help: "cash.range", guide: "planning.cash#choose-the-days" },
+  { kind: "action", id: "cash.lowest", mode: "basic", help: "cash.lowest", guide: "planning.cash#read-the-projection" },
+  { kind: "action", id: "cash.buffer", mode: "basic", help: "cash.buffer", guide: "planning.cash#the-buffer" },
+  { kind: "action", id: "cash.not-included", mode: "basic", help: "cash.not-included", guide: "planning.cash#what-is-not-included-yet" },
+  { kind: "action", id: "cash.move", mode: "expert", help: "cash.move", guide: "planning.cash#try-a-what-if" },
+  { kind: "action", id: "cash.leave-out", mode: "expert", help: "cash.leave-out", guide: "planning.cash#try-a-what-if" },
+  { kind: "action", id: "cash.reset", mode: "expert", help: "cash.reset", guide: "planning.cash#try-a-what-if" },
   { kind: "action", id: "approval.approve", mode: "basic", help: "approval.approve", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "approval.reject", mode: "basic", help: "approval.reject", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "approval.withdraw", mode: "basic", help: "approval.withdraw", guide: "approvals.decide#withdraw-your-request" },
@@ -588,6 +599,8 @@ export const nav = [
   { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
+  // Planning shows to the roles that read the plans (Appendix D "Budgets, forecasts", V), in Expert's sidebar.
+  { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "auditor", "tax_agent", "board_viewer"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
   { kind: "nav", id: "nav.compliance", route: "/compliance/calendar", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];

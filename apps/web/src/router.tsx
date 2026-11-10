@@ -86,6 +86,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "period-close": lazyRouteComponent(() => import("./screens/accounting/PeriodClose"), "PeriodClose"),
   "accountant-reviews": lazyRouteComponent(() => import("./screens/accounting/AccountantReviews"), "AccountantReviews"),
   "compliance-calendar": lazyRouteComponent(() => import("./screens/compliance/StatutoryCalendar"), "StatutoryCalendar"),
+  "planning-cash": lazyRouteComponent(() => import("./screens/planning/CashAhead"), "CashAhead"),
   "compliance-gst": lazyRouteComponent(() => import("./screens/compliance/GstReturns"), "GstReturns"),
   "evidence-search": lazyRouteComponent(() => import("./screens/accounting/EvidenceSearch"), "EvidenceSearch"),
   "accountant-review": lazyRouteComponent(() => import("./screens/accounting/AccountantReviews"), "AccountantReviewPage"),

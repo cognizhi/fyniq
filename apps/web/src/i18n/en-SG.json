@@ -2123,6 +2123,50 @@
     "home.forecast-cash-out": {
       "label": "Cash runs out",
       "tooltip": "The month cash runs out in the latest recorded forecast, without the funding planned, since none of it is received yet."
+    },
+    "planning.cash": {
+      "label": "Cash ahead",
+      "tooltip": "The bank balance day by day from today, from the invoices, bills, recurring documents and payment batches the books expect."
+    },
+    "nav.planning": {
+      "label": "Planning",
+      "tooltip": "Cash ahead, and with them the budgets, the forecast and feasibility studies: plans that never post."
+    },
+    "planning.sandbox": {
+      "label": "Sandbox: nothing here posts",
+      "tooltip": "Plans and what-ifs never change the books, a document, a planned date or a batch."
+    },
+    "cash.range": {
+      "label": "Range",
+      "tooltip": "How far ahead: 30, 60, 90 or 180 days, or 13 weeks."
+    },
+    "cash.lowest": {
+      "label": "Lowest balance",
+      "tooltip": "The lowest balance at the end of a day in the range, and the first day it happens."
+    },
+    "cash.buffer": {
+      "label": "Buffer",
+      "tooltip": "The months of net burn to keep (Settings › Organisation) × the average net burn of the last three closed months."
+    },
+    "cash.not-included": {
+      "label": "Not included yet",
+      "tooltip": "What the projection cannot hold yet, such as pay runs, CPF, GST and tax: the real lowest point may be lower."
+    },
+    "cash.move": {
+      "label": "Move to",
+      "tooltip": "What if it came on another day: delay a bill, chase an invoice. Nothing changes the bill or invoice."
+    },
+    "cash.leave-out": {
+      "label": "Leave out",
+      "tooltip": "What if it did not happen in the range. Nothing changes the document."
+    },
+    "cash.reset": {
+      "label": "Reset",
+      "tooltip": "Drop every what-if change and show the projection as the books expect it."
+    },
+    "home.cash-ahead": {
+      "label": "Cash ahead",
+      "tooltip": "The lowest bank balance in the next 60 days, and whether it falls below the buffer."
     }
   }
 }
