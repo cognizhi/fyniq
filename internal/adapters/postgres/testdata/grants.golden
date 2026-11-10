@@ -29,11 +29,12 @@ fyniq_api       SELECT    announcement
 fyniq_api       UPDATE    announcement (withdrawn_at, withdrawn_by)
 fyniq_api       INSERT    announcement_dismissal (announcement_id, dismissed_at, installation, user_id)
 fyniq_api       SELECT    announcement_dismissal
-fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
+fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, rules, steps, version)
 fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
 fyniq_api       SELECT    approval_request
 fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
+fyniq_api       EXECUTE   approval_rules_valid()
 fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, passkey_challenge_id, passkey_id, reason, request_id, signed_at, signer, step)
 fyniq_api       SELECT    approval_signature
 fyniq_api       EXECUTE   approval_steps_met()
