@@ -3,3 +3,5 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 add_header Permissions-Policy "camera=(self), microphone=(), geolocation=()" always;
+# Only the web app's own pages load its files (CTL-CHG-07: ZAP's rule 90004).
+add_header Cross-Origin-Resource-Policy "same-origin" always;

@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -160,6 +160,10 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the module tests on mock providers, and no keys, authoritative IAM, human grants or regions outside Singapore (NFR-PORT-05); downloads the providers
 	@$(MISE) python3 scripts/infra.py check
 
+dast: ## DAST (CTL-CHG-07): ZAP's baseline of the running local stack, signed in (after `KEEP=1 scripts/local-smoke.sh`); a High alert or one of a FAIL rule in compliance/zap-rules.tsv fails unless waived; reports and the ASVS coverage in .data/dast/
+	@$(MISE) python3 scripts/dast.py
+	@$(MISE) python3 scripts/dast.py asvs
+
 image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical or high finding fails unless waived (SEC-21, NFR-IMG-05)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
 
@@ -187,10 +191,11 @@ controls: ## The control registry (compliance/controls/) has a file for every Ap
 	@python3 scripts/controls.py check
 	@python3 scripts/release-evidence.py self-test
 
-scan-waivers: ## The scan waivers are well formed, and the scan, image and infra rules hold on planted findings (the scans themselves: make scan, make images, make infra-check)
+scan-waivers: ## The scan waivers are well formed, and the scan, image, infra and DAST rules hold on planted findings (the scans themselves: make scan, make images, make infra-check, make dast)
 	@python3 scripts/scan.py --self-test
 	@python3 scripts/images.py self-test
 	@python3 scripts/infra.py self-test
+	@python3 scripts/dast.py self-test
 
 check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03); the chart palette passes the dataviz checks (FR-VIZ-07)
 	@python3 $(DESIGN)/scripts/check_contrast.py

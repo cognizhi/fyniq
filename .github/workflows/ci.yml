@@ -163,11 +163,21 @@ jobs:
           # Below the kernel's ephemeral range (32768-60999): image-sign's many loopback connections can hold
           # 55432 briefly, and PostgreSQL then cannot bind it (two of three runs of #71 failed that way).
           FYNIQ_PG_PORT: "25432"
+          KEEP: "1"   # left running for the DAST scan
+      - run: make dast   # CTL-CHG-07: ZAP's baseline of the stack, signed in; a High alert or a FAIL rule's fails unless waived
+      - if: always()
+        run: make down
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: image-reports   # SBOMs, scans and signatures: the evidence (CTL-CHG-08, CTL-CHG-04)
           path: .data/images/
+          retention-days: 90
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: dast-report   # ZAP's reports, dast.md and the ASVS coverage: the evidence (CTL-CHG-07)
+          path: .data/dast/
           retention-days: 90
 
   images-arm64:

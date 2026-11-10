@@ -87,7 +87,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 10. DAST (slice 10)
 
-- [ ] 10.1 The ZAP baseline in CI against the local stack, signed in, with `compliance/zap-rules.tsv` and waivers.
+- [x] 10.1 The ZAP baseline in CI against the local stack, signed in, with `compliance/zap-rules.tsv` and waivers.
   Its report is evidence. A nightly staging workflow `[live-verify]`. CTL-CHG-07's checks become `running` and
   `cloud`. `// req: CTL-CHG-07`
 

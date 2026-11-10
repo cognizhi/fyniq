@@ -1,0 +1,27 @@
+# ZAP baseline rules (CTL-CHG-07; p1-security-hardening design D9), as zap-baseline.py reads them: the rule's ID, its
+# level and its name, tab-separated. FAIL: an alert fails the scan unless compliance/scan-waivers.toml waives it (tool
+# "zap", the rule's ID, the alert's path). WARN: reported in the evidence. IGNORE: noise on a single-page app. Any rule
+# not listed is WARN; a High alert fails whatever its level. scripts/dast.py reads this file.
+3	FAIL	Session ID in URL Rewrite
+10003	FAIL	Vulnerable JS Library
+10010	FAIL	Cookie No HttpOnly Flag
+10011	WARN	Cookie Without Secure Flag (the local stack is plain HTTP; staging is HTTPS only)
+10017	FAIL	Cross-Domain JavaScript Source File Inclusion
+10020	FAIL	Missing Anti-clickjacking Header
+10021	FAIL	X-Content-Type-Options Header Missing
+10023	FAIL	Information Disclosure - Debug Error Messages
+10024	FAIL	Information Disclosure - Sensitive Information in URL
+10027	IGNORE	Information Disclosure - Suspicious Comments (words in the minified bundle)
+10035	WARN	Strict-Transport-Security Header (the local stack is plain HTTP)
+10036	FAIL	Server Leaks Version Information via "Server" HTTP Response Header Field
+10037	FAIL	Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+10038	FAIL	Content Security Policy (CSP) Header Not Set
+10049	IGNORE	Storable and Cacheable Content (informational)
+10050	IGNORE	Retrieved from Cache (informational)
+10054	FAIL	Cookie without SameSite Attribute
+10062	FAIL	PII Disclosure
+10096	IGNORE	Timestamp Disclosure (numbers in the minified bundle)
+10098	FAIL	Cross-Domain Misconfiguration
+10105	FAIL	Weak Authentication Method
+10109	IGNORE	Modern Web Application (informational)
+90022	FAIL	Application Error Disclosure
