@@ -86,17 +86,23 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 5. What reads the budget and the forecast (slice 5)
 
-- [ ] 5.1 Budget vs Actual (D6): by account and dimension, for months, a quarter and the year to date, with
+- [x] 5.1 Budget vs Actual (D6): by account and dimension, for months, a quarter and the year to date, with
   favourable and unfavourable by line kind. Every figure is hand-worked on the sample company.
   `TestBudgetVsActual` `// req: FR-RPT-03`, `// req: QA-RPT-01`
+  - As built: `GET /v1/reports/budget-vs-actual?from=&to=&by=` (any run of months in one financial year, so a
+    quarter is its three months), worked by hand in `TestBudgetVsActualAndHome` on its own small company rather
+    than the sample's, which has no budget yet.
 - [ ] 5.2 The statements' `compare=budget` (by account) and `compare=forecast` (by section) columns (D6), left out
   where the source does not cover a month. The enum values are additive (oasdiff clean). `TestStatementComparatives`
   `// req: FR-RPT-02`
 - [ ] 5.3 The close's budget variances (D6): the `budget` kind of flux explanation (migration and guard), at the
   close's thresholds, stale when either figure changes. `TestTheBudgetFlux` `// req: FR-GL-14`
-- [ ] 5.4 Home's revenue against budget, cost against budget and forecast cash-out tiles (D4, D6), with "without the
+- [x] 5.4 Home's revenue against budget, cost against budget and forecast cash-out tiles (D4, D6), with "without the
   funding planned" shown and each tile's undefined state ("No budget for 2027"). `TestHomePlanningTiles`, and the web
   tests. `// req: FR-KPI-01`, `// req: FR-PLN-03`
+  - As built: `GET /v1/planning/summary?month=`, tested in `TestBudgetVsActualAndHome` and the web's "Home's tiles
+    from the plans". Home asks for the KPIs' month, so the tiles agree with the others; the budget tiles are Expert's,
+    the cash-out month shows in both modes.
 
 ## 6. The short-term cash flow (slice 6)
 

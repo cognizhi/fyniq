@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "actual": {
+      "description": "The books' figure, signed as the P\u0026L shows it.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "budget": {
+      "description": "The budget's figure for the same months.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "6110"
+      ],
+      "type": "string"
+    },
+    "dimension_value_ids": {
+      "description": "by=dimension: the row's dimension values; none for the lines with no value.",
+      "items": {
+        "description": "A value of one of the organisation's dimensions.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c40"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "favourable": {
+      "description": "Income at or above its budget, or costs at or below theirs.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "income": {
+      "description": "true for an income account, false for an expense account.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Advertising"
+      ],
+      "type": "string"
+    },
+    "variance": {
+      "description": "Actual less budget.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "variance_percent": {
+      "description": "The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.",
+      "examples": [
+        "-12.5"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "income",
+    "favourable",
+    "actual",
+    "budget",
+    "variance"
+  ],
+  "title": "VsRowView",
+  "type": "object"
+}

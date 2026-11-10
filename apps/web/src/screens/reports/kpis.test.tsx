@@ -6,12 +6,14 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Dashboard } from "../Dashboard";
+import { varianceText } from "../planning/summary";
 import { Kpis } from "./Kpis";
 
 type KPIs = components["schemas"]["KPIs"];
 type KPI = components["schemas"]["KPIItem"];
 type Statement = components["schemas"]["FinancialStatement"];
 type Period = components["schemas"]["Period"];
+type PlanningSummary = components["schemas"]["PlanningSummary"];
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const bookkeeper = { ...ownerSession, roles: ["bookkeeper"] } as Session;
@@ -269,5 +271,92 @@ describe("Home's dashboard", () => {
     await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/kpis")).toBe(true));
     await vi.waitFor(() => expect(container.querySelector(".fy-skeleton")).toBeNull());
     expect(screen.queryByRole("region", { name: /Company pulse/ })).toBeNull();
+  });
+});
+
+// Home's tiles from the plans, as GET /v1/planning/summary answers them: the year to date from January against the budget,
+// and the recorded forecast's cash-out month without its funding, with it beside.
+const planned: PlanningSummary = {
+  month: "2026-10",
+  currency: "SGD",
+  budget: {
+    budget_id: "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01",
+    name: "FY2026 budget",
+    from: "2026-01",
+    revenue: { actual: "54000.00", budget: "60000.00", variance: "-6000.00", variance_percent: "-10.0" },
+    costs: { actual: "57000.00", budget: "60000.00", variance: "-3000.00", variance_percent: "-5.0" },
+  },
+  forecast: {
+    forecast_id: "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01",
+    name: "FY2027 plan",
+    scenario: "Base",
+    cash_out_month: "2027-07",
+    runway_months: 9,
+    runway_beyond: false,
+    runway_beyond_with_funding: true,
+    note: "Without the funding planned: none of it is received yet",
+  },
+};
+
+// req: FR-KPI-01
+// req: FR-PLN-03
+describe("Home's tiles from the plans", () => {
+  it("shows revenue and costs against the budget in Expert and the cash-out month without the funding in both modes; axe finds nothing", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/kpis": { status: 200, body: october },
+      "GET /v1/planning/summary": { status: 200, body: planned },
+      "GET /v1/reports/statements/pl": { status: 200, body: pl },
+      "GET /v1/reports/statements/cf": { status: 200, body: cf },
+    });
+    renderPage(Dashboard, { path: "/", session: accountant, mode: "expert" });
+    const revenue = (await screen.findByText("Revenue against budget")).closest("[data-planning]") as HTMLElement;
+    expect(revenue.dataset.planning).toBe("home.revenue-vs-budget");
+    expect(seen.find((s) => s.path === "/v1/planning/summary")!.query).toContain("month=2026-10");
+    expect(revenue.className).toContain("fy-expert-only");
+    expect(revenue.querySelector(".fy-tile__value")!.textContent).toBe("54,000.00 SGD");
+    expect(within(revenue).getByText("Jan 2026 to Oct 2026. Budget 60,000.00, 10.0% under: unfavourable")).toBeTruthy();
+    const costs = document.querySelector('[data-planning="home.costs-vs-budget"]') as HTMLElement;
+    expect(within(costs).getByText("Jan 2026 to Oct 2026. Budget 60,000.00, 5.0% under: favourable")).toBeTruthy();
+    const out = document.querySelector('[data-planning="home.forecast-cash-out"]') as HTMLElement;
+    expect(out.className).not.toContain("fy-expert-only");
+    expect(out.querySelector(".fy-tile__value")!.textContent).toBe("Jul 2027");
+    expect(
+      within(out).getByText("Without the funding planned: none of it is received yet. Base scenario of FY2027 plan. With the funding: Not within the forecast"),
+    ).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("says why a tile has no figure", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/kpis": { status: 200, body: october },
+      "GET /v1/planning/summary": {
+        status: 200,
+        body: { month: "2026-10", currency: "SGD", budget_missing: "No approved budget for the year from 1 Jan 2026", forecast_missing: "No forecast is recorded yet" },
+      },
+    });
+    renderPage(Dashboard, { path: "/", session: accountant, mode: "basic" });
+    expect((await screen.findAllByText("No figure: No approved budget for the year from 1 Jan 2026")).length).toBe(2);
+    expect(screen.getByText("No figure: No forecast is recorded yet")).toBeTruthy();
+  });
+
+  it("is left out when the person's roles may not read the plans", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/kpis": { status: 200, body: october },
+      "GET /v1/planning/summary": problem(403, "API-AUTHZ-01"),
+    });
+    renderPage(Dashboard, { path: "/", session: accountant, mode: "basic" });
+    await screen.findByRole("region", { name: "Company pulse, Oct 2026" });
+    await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/planning/summary")).toBe(true));
+    expect(document.querySelector("[data-planning]")).toBeNull();
+  });
+
+  it("words a variance by whether it is favourable, from the server's percentage", () => {
+    expect(varianceText({ actual: "12.00", budget: "10.00", variance: "2.00", variance_percent: "20.0" }, true)).toBe("Budget 10.00, 20.0% over: favourable");
+    expect(varianceText({ actual: "12.00", budget: "10.00", variance: "2.00", variance_percent: "20.0" }, false)).toBe("Budget 10.00, 20.0% over: unfavourable");
+    expect(varianceText({ actual: "10.00", budget: "10.00", variance: "0.00", variance_percent: "0.0" }, false)).toBe("Budget 10.00, on budget");
+    expect(varianceText({ actual: "5.00", budget: "0.00", variance: "5.00" }, false)).toBe("Budget 0.00: nothing budgeted");
   });
 });

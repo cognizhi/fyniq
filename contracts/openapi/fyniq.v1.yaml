@@ -6175,6 +6175,81 @@ components:
         - line_totals
         - totals
       type: object
+    BudgetVsActual:
+      additionalProperties: false
+      properties:
+        budget_id:
+          description: The year's budget, its latest recorded version; absent while the year has none, when every budget figure is 0.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01
+          format: uuid
+          type: string
+        budget_name:
+          description: Its name.
+          examples:
+            - FY2027 budget
+          type: string
+        by:
+          description: "account: each account, its dimension sets added up; dimension: each account and set of dimension values."
+          enum:
+            - account
+            - dimension
+          examples:
+            - account
+          type: string
+        costs:
+          $ref: "#/components/schemas/VsFigures"
+          description: The expense rows' totals.
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        financial_year:
+          description: The financial year's first day.
+          examples:
+            - "2027-01-01"
+          format: date
+          type: string
+        from:
+          description: The first month (YYYY-MM).
+          examples:
+            - 2027-01
+          type: string
+        income:
+          $ref: "#/components/schemas/VsFigures"
+          description: The income rows' totals.
+        ledger_revision:
+          description: The ledger revision the actuals were read at (ENG-46).
+          examples:
+            - 42
+          format: int64
+          type: integer
+        net:
+          $ref: "#/components/schemas/VsFigures"
+          description: Income less costs.
+        rows:
+          description: Each account, or account and set, with an actual or a budget, by code.
+          items:
+            $ref: "#/components/schemas/VsRowView"
+          type: array
+        to:
+          description: The last month (YYYY-MM).
+          examples:
+            - 2027-03
+          type: string
+      required:
+        - currency
+        - financial_year
+        - from
+        - to
+        - by
+        - rows
+        - income
+        - costs
+        - net
+        - ledger_revision
+      type: object
     BulkResult:
       additionalProperties: false
       properties:
@@ -27168,6 +27243,130 @@ components:
         - count
         - total
       type: object
+    PlanningBudgetTile:
+      additionalProperties: false
+      properties:
+        budget_id:
+          description: The year's budget.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01
+          format: uuid
+          type: string
+        costs:
+          $ref: "#/components/schemas/VsFigures"
+          description: Costs against their budget, the year to date.
+        from:
+          description: The financial year's first month (YYYY-MM).
+          examples:
+            - 2027-01
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - FY2027 budget
+          type: string
+        revenue:
+          $ref: "#/components/schemas/VsFigures"
+          description: Income against its budget, the year to date.
+      required:
+        - budget_id
+        - name
+        - from
+        - revenue
+        - costs
+      type: object
+    PlanningForecastTile:
+      additionalProperties: false
+      properties:
+        cash_out_month:
+          description: "Without the funding planned: the first month cash closes below zero (YYYY-MM); absent when not within the horizon."
+          examples:
+            - 2027-07
+          type: string
+        cash_out_month_with_funding:
+          description: The same with the funding planned.
+          examples:
+            - 2028-02
+          type: string
+        forecast_id:
+          description: The forecast.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - FY2027 plan
+          type: string
+        note:
+          description: What the figure leaves out.
+          examples:
+            - "Without the funding planned: none of it is received yet"
+          type: string
+        runway_beyond:
+          description: "true: no cash-out month within the horizon."
+          examples:
+            - false
+          type: boolean
+        runway_beyond_with_funding:
+          description: "With the funding planned: no cash-out month within the horizon."
+          examples:
+            - true
+          type: boolean
+        runway_months:
+          description: "Without the funding planned: the months before it, or the horizon."
+          examples:
+            - 7
+          format: int64
+          type: integer
+        scenario:
+          description: "The scenario read: its first."
+          examples:
+            - Base
+          type: string
+      required:
+        - forecast_id
+        - name
+        - scenario
+        - runway_months
+        - runway_beyond
+        - runway_beyond_with_funding
+        - note
+      type: object
+    PlanningSummary:
+      additionalProperties: false
+      properties:
+        budget:
+          $ref: "#/components/schemas/PlanningBudgetTile"
+          description: Revenue and costs against budget for the financial year to the month's end; absent while the year has no approved budget, which budget_missing says.
+        budget_missing:
+          description: Why there is no budget figure.
+          examples:
+            - No approved budget for the year from 1 Jan 2027
+          type: string
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        forecast:
+          $ref: "#/components/schemas/PlanningForecastTile"
+          description: The cash-out month of the latest recorded forecast; absent while none is recorded, which forecast_missing says.
+        forecast_missing:
+          description: Why there is no forecast figure.
+          examples:
+            - No forecast is recorded yet
+          type: string
+        month:
+          description: The month asked for (YYYY-MM).
+          examples:
+            - 2027-03
+          type: string
+      required:
+        - month
+        - currency
+      type: object
     PoolResolutionDraft:
       additionalProperties: false
       properties:
@@ -35990,6 +36189,104 @@ components:
         - threshold_percent
         - unexplained
         - items
+      type: object
+    VsFigures:
+      additionalProperties: false
+      properties:
+        actual:
+          description: The books' figure, signed as the P&L shows it.
+          examples:
+            - "12500.00"
+          type: string
+        budget:
+          description: The budget's figure for the same months.
+          examples:
+            - "12500.00"
+          type: string
+        variance:
+          description: Actual less budget.
+          examples:
+            - "12500.00"
+          type: string
+        variance_percent:
+          description: The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.
+          examples:
+            - "-12.5"
+          type: string
+      required:
+        - actual
+        - budget
+        - variance
+      type: object
+    VsRowView:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b20
+          format: uuid
+          type: string
+        actual:
+          description: The books' figure, signed as the P&L shows it.
+          examples:
+            - "12500.00"
+          type: string
+        budget:
+          description: The budget's figure for the same months.
+          examples:
+            - "12500.00"
+          type: string
+        code:
+          description: Its code.
+          examples:
+            - "6110"
+          type: string
+        dimension_value_ids:
+          description: "by=dimension: the row's dimension values; none for the lines with no value."
+          items:
+            description: A value of one of the organisation's dimensions.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c40
+            format: uuid
+            type: string
+          type:
+            - array
+            - "null"
+        favourable:
+          description: Income at or above its budget, or costs at or below theirs.
+          examples:
+            - true
+          type: boolean
+        income:
+          description: true for an income account, false for an expense account.
+          examples:
+            - false
+          type: boolean
+        name:
+          description: Its name.
+          examples:
+            - Advertising
+          type: string
+        variance:
+          description: Actual less budget.
+          examples:
+            - "12500.00"
+          type: string
+        variance_percent:
+          description: The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.
+          examples:
+            - "-12.5"
+          type: string
+      required:
+        - account_id
+        - code
+        - name
+        - income
+        - favourable
+        - actual
+        - budget
+        - variance
       type: object
     WithdrawFXRateRequest:
       additionalProperties: false
@@ -140854,6 +141151,126 @@ paths:
       x-fyniq-permission:
         capability: Period close / reopen
         right: C
+  /v1/planning/summary:
+    get:
+      description: "What Home shows of the plans for a month (FR-KPI-01): revenue and costs against the year's budget to the month's end, and the cash-out month and runway of the latest recorded forecast's first scenario without the funding planned, since none of it is received yet (FR-PLN-03), with the figures with it beside. Each is absent, with why, while there is no budget or forecast. Read-only; no side effects."
+      operationId: getPlanningSummary
+      parameters:
+        - description: The month (YYYY-MM); left out, the last month that has ended.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The month (YYYY-MM); left out, the last month that has ended.
+            examples:
+              - 2027-03
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanningSummary"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PLAN-11` The forecast is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PLAN-01` The forecast's horizon does not fit; `PLAN-02` A statutory figure the forecast needs is missing; `PLAN-03` The forecast cannot be worked out; `PLAN-09` The forecast's figures need too many digits; `PLAN-10` The forecast does not fit; `STORAGE-PLAN-01` The forecast does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the planning summary for Home
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PLAN-01
+        - PLAN-02
+        - PLAN-03
+        - PLAN-09
+        - PLAN-10
+        - PLAN-11
+        - STORAGE-LOCK-01
+        - STORAGE-PLAN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
+        right: V
   /v1/pre-incorporation-costs:
     get:
       description: "The costs directors and shareholders paid before the books start, newest date first, a page at a time, narrowed by status (FR-EQ-03): each with its person, its amount and GST, its receipts, and the accountant's decision once made (⚠ while it needs one). With them, what every cost comes to for each person, decided and waiting, and the books start. Needs the right to read every director's account. Read-only; no side effects."
@@ -150459,6 +150876,142 @@ paths:
       x-fyniq-permission:
         capability: Reports, dashboards
         note: "Checked again at each download: a right taken away stops the download at once."
+        right: V
+  /v1/reports/budget-vs-actual:
+    get:
+      description: "The year's budget against the books for months of one financial year (FR-RPT-03, design D6): each income and expense account, or account and set of dimension values, with its actual from the balance service, its budget from the year's latest recorded version, the variance and its percentage of the budget (RND-PERCENT), and whether it is favourable. Amounts are signed as the P&L shows them. Read-only; no side effects."
+      operationId: getBudgetVsActual
+      parameters:
+        - description: The first month (YYYY-MM); left out, the financial year's first month.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The first month (YYYY-MM); left out, the financial year's first month.
+            examples:
+              - 2027-01
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+        - description: The last month (YYYY-MM); left out, the last month that has ended.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The last month (YYYY-MM); left out, the last month that has ended.
+            examples:
+              - 2027-03
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+        - description: account (the default) or dimension.
+          explode: false
+          in: query
+          name: by
+          schema:
+            description: account (the default) or dimension.
+            enum:
+              - account
+              - dimension
+            examples:
+              - account
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetVsActual"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `BUDGET-10` The budget does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get Budget vs Actual
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - BUDGET-10
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Budgets, forecasts
         right: V
   /v1/reports/general-ledger:
     get:

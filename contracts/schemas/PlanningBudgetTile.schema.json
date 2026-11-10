@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budget_id": {
+      "description": "The year's budget.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "costs": {
+      "$ref": "VsFigures.schema.json",
+      "description": "Costs against their budget, the year to date."
+    },
+    "from": {
+      "description": "The financial year's first month (YYYY-MM).",
+      "examples": [
+        "2027-01"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "FY2027 budget"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "$ref": "VsFigures.schema.json",
+      "description": "Income against its budget, the year to date."
+    }
+  },
+  "required": [
+    "budget_id",
+    "name",
+    "from",
+    "revenue",
+    "costs"
+  ],
+  "title": "PlanningBudgetTile",
+  "type": "object"
+}

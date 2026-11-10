@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actual": {
+      "description": "The books' figure, signed as the P\u0026L shows it.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "budget": {
+      "description": "The budget's figure for the same months.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "variance": {
+      "description": "Actual less budget.",
+      "examples": [
+        "12500.00"
+      ],
+      "type": "string"
+    },
+    "variance_percent": {
+      "description": "The variance as a percentage of the budget's size (RND-PERCENT); absent when the budget is zero.",
+      "examples": [
+        "-12.5"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "actual",
+    "budget",
+    "variance"
+  ],
+  "title": "VsFigures",
+  "type": "object"
+}

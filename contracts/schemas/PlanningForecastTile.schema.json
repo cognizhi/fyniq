@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cash_out_month": {
+      "description": "Without the funding planned: the first month cash closes below zero (YYYY-MM); absent when not within the horizon.",
+      "examples": [
+        "2027-07"
+      ],
+      "type": "string"
+    },
+    "cash_out_month_with_funding": {
+      "description": "The same with the funding planned.",
+      "examples": [
+        "2028-02"
+      ],
+      "type": "string"
+    },
+    "forecast_id": {
+      "description": "The forecast.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "FY2027 plan"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What the figure leaves out.",
+      "examples": [
+        "Without the funding planned: none of it is received yet"
+      ],
+      "type": "string"
+    },
+    "runway_beyond": {
+      "description": "true: no cash-out month within the horizon.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "runway_beyond_with_funding": {
+      "description": "With the funding planned: no cash-out month within the horizon.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "runway_months": {
+      "description": "Without the funding planned: the months before it, or the horizon.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "scenario": {
+      "description": "The scenario read: its first.",
+      "examples": [
+        "Base"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "forecast_id",
+    "name",
+    "scenario",
+    "runway_months",
+    "runway_beyond",
+    "runway_beyond_with_funding",
+    "note"
+  ],
+  "title": "PlanningForecastTile",
+  "type": "object"
+}

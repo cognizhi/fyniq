@@ -11,6 +11,7 @@ import { month as monthName } from "../format/date";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
 import { listPeriods } from "./accounting/data";
+import { PlanningTiles } from "./planning/summary";
 import { readChecks, scores, statuses, type Checks } from "./checks/data";
 import { About, figureOf, figureText, find, lastMonths, previous, Tile, useKpis, type KPI, type KPIs } from "./reports/kpi";
 import { runOf } from "./reports/Statement";
@@ -24,7 +25,8 @@ type Health = Checks["health"];
 // revenue, gross margin and net profit for the year; and in Expert the charts of revenue, costs and profit, cash, and
 // costs by function. Every figure is the server's (FR-UX-22), each tile has its definition and opens what is behind it
 // (FR-UX-04). It is left out when the person's roles may not read the reports, or the books have no month yet (the
-// set-up checklist says what to do). Revenue and cost against budget, unbilled time and GST due join with their changes.
+// set-up checklist says what to do). Revenue and costs against the budget and the forecast's cash-out month come from the
+// plans (PlanningTiles); unbilled time and GST due join with their changes.
 export function Dashboard() {
   const periods = useQuery({ queryKey: ["periods"], queryFn: listPeriods, retry: false, staleTime: 30_000 });
   const month = useMemo(() => runOf("month", periods.data?.items ?? [], { from: "", to: "" })?.to ?? null, [periods.data]);
@@ -48,6 +50,7 @@ export function Dashboard() {
         {tile("owed_to_us", "/sales/statements")}
         {tile("owed_by_us", "/purchases/bills")}
         {health && tile("net_burn", "/reports/statements/cf")}
+        <PlanningTiles month={k.month} />
         <Link className="fy-tile text-foreground" to="/reports/kpis">
           <span className="fy-tile__label">
             <Icon of={Gauge} />
