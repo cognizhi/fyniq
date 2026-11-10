@@ -137,6 +137,12 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 - **THEN** the event proves the value changed
 - **AND** the value itself is stored encrypted or as a keyed hash, not in clear
 
+#### Scenario: Proof only, as the owner decided
+- **GIVEN** a sensitive value in `changes` (the owner's decision of 8 Nov 2026, rev 0.230)
+- **WHEN** the event is written
+- **THEN** the value is stored as the organisation's keyed fingerprint (SEC-11), with an identifier's last 4 characters as its hint
+- **AND** the trail shows that the value changed, and whether it changed back, and nobody reads the value from the trail
+
 ### Requirement: AUD-03 Verify integrity
 Anyone with audit access SHALL be able to run "Verify integrity" for a date range, which recomputes the chain and checks it against the signed anchors.
 
@@ -212,6 +218,12 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 - **WHEN** the retention of audit events ends
 - **THEN** their personal values are shredded (§11.8) or the events are purged under AUD-09
 
+#### Scenario: Security events keep their details for 400 days
+- **GIVEN** the security-log retention of 400 days, the setting `retention.security_events_days` under dual control (the owner's decision of 8 Nov 2026, rev 0.230)
+- **WHEN** a sign-in, device, sensitive-read or export event is 400 days old
+- **THEN** its IP address and device are erased
+- **AND** the event itself stays, so the chain still verifies
+
 ### Requirement: AUD-07 Audit explorer and export
 The system SHALL provide an audit explorer and export (FR-CTL-03), and the auditor evidence pack SHALL include the chain verification results.
 
@@ -269,3 +281,30 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 - **THEN** the shredded values stay unreadable after the restore
 - **AND** all ledger amounts stay readable
 - **AND** the anonymisation register is re-applied before the copy opens
+
+### Requirement: AUD-10 The ledger's purge keeps the books whole
+With the purge switched on (open question 38), the system SHALL purge a financial year's journal entries only after its records' retention, behind a signed ledger boundary record, replacing the purged lines with carry-forward entries so that every report from the boundary on is unchanged.
+
+Source: PRD-001 §11.5 · Priority M · Phase P1
+
+#### Scenario: A year waits for its retention and for the years before it
+- **GIVEN** the purge switched on
+- **WHEN** the purge job runs
+- **THEN** it purges a financial year only once its records' retention (§11.9) has passed and every earlier year is purged
+
+#### Scenario: The boundary record comes first
+- **WHEN** a year is purged
+- **THEN** a signed, anchored ledger boundary record is written first, with the boundary date, the counts, a hash of the purged lines and the approval
+
+#### Scenario: Carry-forward entries keep every balance
+- **WHEN** a year's lines are purged
+- **THEN** they are replaced by carry-forward entries dated the boundary: balance-sheet accounts by account, dimension set and currency, control accounts per open source document, and revenue and expense into retained earnings (FR-GL-10)
+- **AND** the trial balance at every date from the boundary on is unchanged, and every sub-ledger still agrees with its control account (INV-07)
+
+#### Scenario: Permanent registers keep their entries
+- **WHEN** a year is purged
+- **THEN** the entries a permanent register needs, such as share issues (INV-13), are kept
+
+#### Scenario: Before the boundary is refused
+- **WHEN** a report is asked for a date before the boundary, or as at a revision before the purge
+- **THEN** it is refused with its reason

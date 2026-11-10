@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,374 requirements:
+That is all 1,375 requirements:
 - 113 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,261 are spread over 65 changes below;
+- the other 1,262 are spread over 65 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -200,6 +200,15 @@ months. It also brings what earlier changes left to it: the statements' budget a
 the close's budget variances and Home's budget and cash-out tiles. Pay runs, CPF, GST and tax join the cash projection
 with their modules. It was built the same day, in #490 to #504 (PRD-001 rev 0.215 to 0.229), except the republished
 insight canvas (task 8.4), which waits for the design account.
+`p1-audit-explorer` is proposed (8 Nov 2026): the audit trail explorer and export, Verify integrity for a range, signed
+close snapshots, every sensitive read and export audited, and the trail's retention, purge and restore. By the owner's
+decisions of the same day (PRD-001 rev 0.230):
+- sensitive values in the trail are proof only, the organisation's keyed fingerprint with an identifier's last 4
+  characters;
+- a security event's IP address and device are erased after 400 days (`retention.security_events_days`) while the event
+  stays;
+- open question 38's purge is built in full, the ledger's part included. Its balances are carried forward at the
+  boundary, as the new AUD-10 states.
 
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 
@@ -236,7 +245,7 @@ insight canvas (task 8.4), which waits for the design account.
 | 5 | `p1-dashboard-kpis` | The default Home and Dashboard and the workbook KPI set as versioned definitions | 4 | 2 | `p1-reports` | — | — | — | Launch |
 | 5 | `p1-planning` | Budgets, the driver-based forecast and its outputs, the 13-week and short-term cash forecasts, the feasibility calculator, sandboxed forecasts | 8 | 4 | `p1-reports` | — | — | — | Launch |
 | 5 | `p1-checks` | The checks engine, books health and the user access review page; the workbook checks (Appendix C.1) and platform checks (C.2) of the modules built, each later module building its own on the engine (owner, 29 Oct 2026) | 66 | 2 | `p1-reports` | — | — | Accountant | Launch |
-| 5 | `p1-audit-explorer` | Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain | 9 | 1 | `p1-general-ledger-close` | — | — | Security (#4) | Launch |
+| 5 | `p1-audit-explorer` | Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain, the ledger's purge with carried-forward balances | 10 | 1 | `p1-general-ledger-close` | — | — | Security (#4) | Launch |
 | 5 | `p1-compliance-center` | The control dashboard, statutory calendar view, attestations, PDPA registers, risk register, policy library; the control rows of Appendix F (F.1, F.3, F.7), each closed when its check runs, and AI governance | 79 | 3 | `p1-checks` | Evidence from local runs; cloud evidence at the cloud gate | — | Security (#4) | Launch |
 | 5 | `p1-pdpa-retention` | The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding | 21 | 2 | `p1-documents-evidence`, `p1-audit-explorer` | — | Counsel confirms before payroll data is loaded (Q39) | Security (#4) | Launch (before payroll data) |
 | 6 | `p1-ai-providers` | One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources | 26 | 8 | `p1-connector-framework` | Replay mode offline; live local tests through DEV-09's adapters or an API key | A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09) | Security (#4) | After go-live |
@@ -399,7 +408,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-dashboard-kpis` | `ledger/money-and-rounding`: RND-KPI; `reporting/dashboards-and-kpis`: FR-KPI-01, FR-KPI-02, FR-KPI-03<br>Screens: home, kpis |
 | `p1-planning` | `controls/checks`: C.1 #35; `planning/budgets-and-forecasts`: FR-PLN-01, FR-PLN-02, FR-PLN-03, FR-PLN-05, FR-PLN-09, FR-PLN-06, FR-PLN-08<br>Screens: budgets, cash-flow-forecast, feasibility, forecast |
 | `p1-checks` | `controls/checks`: FR-CTL-01, FR-CTL-02, FR-CTL-05, FR-CTL-06, C.1 #1, C.1 #2, C.1 #3, C.1 #4, C.1 #5, C.1 #6, C.1 #7, C.1 #8, C.1 #9, C.1 #10, C.1 #11, C.1 #12, C.1 #13, C.1 #14, C.1 #15, C.1 #16, C.1 #17, C.1 #18, C.1 #22, C.1 #23, C.1 #24, C.1 #25, C.1 #28, C.1 #29, C.1 #30, C.1 #31, C.1 #32, C.1 #33, C.1 #34, C.1 #36; `controls/platform-checks`: C.2 #1, C.2 #2, C.2 #3, C.2 #4, C.2 #5, C.2 #6, C.2 #7, C.2 #8, C.2 #9, C.2 #10, C.2 #11, C.2 #12, C.2 #16, C.2 #17, C.2 #18, C.2 #20, C.2 #31, C.2 #37, C.2 #38, C.2 #39, C.2 #43, C.2 #48, C.2 #49, C.2 #51, C.2 #56, C.2 #62, C.2 #61, C.2 #60, C.2 #59, C.2 #58, C.2 #57; `ledger/invariants`: INV-07<br>Screens: access-review, checks |
-| `p1-audit-explorer` | `controls/checks`: FR-CTL-03; `data/audit-trail`: AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-09, 1 unnumbered<br>Screens: audit-trail |
+| `p1-audit-explorer` | `controls/checks`: FR-CTL-03; `data/audit-trail`: AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-09, AUD-10, 1 unnumbered<br>Screens: audit-trail |
 | `p1-compliance-center` | `compliance/ai-and-api-controls`: CTL-AI-01, CTL-AI-02, CTL-AI-03, CTL-AI-04, CTL-AI-05, CTL-AI-06, CTL-AI-07, CTL-AI-08, CTL-AI-09, CTL-API-01, CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `compliance/ai-governance`: CMP-AI-01, CMP-AI-02, CMP-AI-03; `compliance/compliance-center`: CMP-01, CMP-03, CMP-06, CMP-07, 5 unnumbered; `compliance/financial-controls`: CTL-FIN-01, CTL-FIN-02, CTL-FIN-03, CTL-FIN-04, CTL-FIN-05, CTL-FIN-06, CTL-FIN-07, CTL-FIN-08, CTL-FIN-09, CTL-FIN-10, CTL-FIN-11, CTL-FIN-12, CTL-AUD-01, CTL-AUD-02, CTL-AUD-03, CTL-AUD-04, CTL-AUD-05, CTL-AUD-06, CTL-STAT-01, CTL-STAT-02, CTL-STAT-03, CTL-STAT-04; `compliance/technology-controls`: CTL-IAM-01, CTL-IAM-02, CTL-IAM-03, CTL-IAM-04, CTL-IAM-05, CTL-IAM-06, CTL-IAM-07, CTL-CHG-01, CTL-CHG-02, CTL-CHG-03, CTL-CHG-04, CTL-CHG-05, CTL-CHG-06, CTL-CHG-07, CTL-CHG-08, CTL-CHG-09, CTL-CHG-10, CTL-CHG-11, CTL-DP-01, CTL-DP-02, CTL-DP-03, CTL-DP-04, CTL-DP-05, CTL-DP-06, CTL-DP-07, CTL-RES-01, CTL-RES-02, CTL-RES-03, CTL-RES-04, CTL-RES-05<br>Screens: attestations, compliance-center, risk-policies |
 | `p1-pdpa-retention` | `compliance/compliance-center`: CMP-05; `compliance/pdpa`: CMP-PD-01, CMP-PD-02, CMP-PD-03, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-07, CMP-PD-08, CMP-PD-09; `data/backup-and-recovery`: 7 unnumbered; `security/data-protection`: SEC-10, SEC-11, SEC-13, SEC-14<br>Screens: data-protection, privacy-notices |
 | `p1-ai-providers` | `ai/model-and-provider`: AI-26, AI-27, AI-28; `ai/model-providers`: AI-70, AI-71, AI-72, AI-73, AI-74, AI-75, AI-76, AI-77, AI-78, AI-79, AI-80, AI-81, AI-82, AI-83, AI-84, AI-85, AI-86, AI-87, AI-88; `controls/platform-checks`: C.2 #55; `platform/local-mode`: DEV-09, 1 unnumbered; `platform/portability-and-cost`: 1 unnumbered<br>Screens: ai-activity-log, ai-model-routes, ai-provider-connection, ai-providers, ai-route-editor, ai-settings, ai-usage, my-ai-plan |
