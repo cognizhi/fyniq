@@ -138,6 +138,13 @@ def gosec() -> list[Finding]:
         if tags:
             cmd += ["-tags", tags]
         data = json.loads(run(cmd + ["./..."], f"gosec{'-' + tags if tags else ''}.json") or "{}")
+        # A package gosec cannot type-check is a package it did not scan: a gosec built for an older Go cannot read a
+        # newer compiler's export data, and would otherwise pass in silence.
+        for file, errs in (data.get("Golang errors") or {}).items():
+            k = ("load", file, 0)
+            if k not in seen:
+                seen.add(k)
+                out.append(Finding("gosec", "load", rel(file), f"not scanned: {errs[0].get('error', '')[:200]}", True))
         for i in data.get("Issues") or []:
             k = (i["rule_id"], i["file"], i["line"])
             if k not in seen:
