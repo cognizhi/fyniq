@@ -337,6 +337,8 @@ fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by,
 fyniq_api       SELECT    policy_draft
 fyniq_api       INSERT    policy_version (body, from_draft, key, published_at, published_by, sha256, title, version)
 fyniq_api       SELECT    policy_version
+fyniq_api       EXECUTE   private_endpoints()
+fyniq_api       EXECUTE   private_endpoints_for()
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_api       SELECT    quote_outcome
@@ -362,6 +364,7 @@ fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_journal_version (content, edited_by, recurring_journal_id, version)
 fyniq_api       SELECT    recurring_journal_version
+fyniq_api       EXECUTE   register_private_endpoint()
 fyniq_api       EXECUTE   release_join_domain()
 fyniq_api       INSERT    report_export (format, parameters, report, requested_at, requested_by)
 fyniq_api       SELECT    report_export
@@ -890,6 +893,7 @@ fyniq_worker    SELECT    person_key
 fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
+fyniq_worker    EXECUTE   private_endpoints_for()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome
 fyniq_worker    DELETE    rate_limit_window

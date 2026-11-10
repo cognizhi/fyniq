@@ -110,7 +110,7 @@ func (r *Runtime) Mail(ctx context.Context, all []storage.InstalledConnector, se
 		if err := checkTrigger(b.Manifest, OutboundEmail, a); err != nil {
 			return Mail{}, err
 		}
-		config, err := r.config(ctx, c, secrets)
+		config, err := r.config(ctx, c, secrets, nil)
 		if err != nil {
 			out.Skipped = append(out.Skipped, c.Connector+": "+err.Error())
 			continue
@@ -148,7 +148,7 @@ func (r *Runtime) InboundEmail(ctx context.Context, u storage.UnitOfWork, a Auth
 		if err := checkTrigger(b.Manifest, InboundEmail, a); err != nil {
 			return nil, c, err
 		}
-		config, err := r.config(ctx, c, secrets)
+		config, err := r.config(ctx, c, secrets, nil)
 		if err != nil {
 			return nil, c, err
 		}
@@ -196,7 +196,11 @@ func (r *Runtime) BankData(ctx context.Context, u storage.UnitOfWork, id uuid.UU
 	if err := checkTrigger(b.Manifest, BankData, a); err != nil {
 		return nil, c, err
 	}
-	config, err := r.config(ctx, c, secrets)
+	eps, err := r.Endpoints(ctx, u, c)
+	if err != nil {
+		return nil, c, err
+	}
+	config, err := r.config(ctx, c, secrets, eps)
 	if err != nil {
 		return nil, c, err
 	}
@@ -217,16 +221,42 @@ func (r *Runtime) VerifyWebhook(ctx context.Context, u storage.UnitOfWork, id uu
 	if (c.State != storage.ConnectorEnabled && c.State != storage.ConnectorPaused) || b.VerifyWebhook == nil {
 		return c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
 	}
-	config, err := r.config(ctx, c, secrets)
+	eps, err := r.Endpoints(ctx, u, c)
+	if err != nil {
+		return c, err
+	}
+	config, err := r.config(ctx, c, secrets, eps)
 	if err != nil {
 		return c, err
 	}
 	return c, b.VerifyWebhook(config, h, body, r.Clock.Now())
 }
 
+// Endpoints are the private endpoints registered for organisation connector c, the credential they are bound to, as its
+// organisation reads them in u (SEC-37); an installation connector has none. A registration that cannot be read as an
+// endpoint is left out, so it reaches nothing.
+func (r *Runtime) Endpoints(ctx context.Context, u storage.UnitOfWork, c storage.InstalledConnector) ([]egress.Endpoint, error) {
+	if c.Installation || u == nil {
+		return nil, nil
+	}
+	all, err := u.PrivateEndpoints().For(ctx, storage.PrivateEndpointConnector, c.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]egress.Endpoint, 0, len(all))
+	for _, e := range all {
+		pin, err := egress.ParsePin(e.Pin)
+		if err != nil || !e.Address.IsValid() || e.Port < 1 || e.Port > 65535 {
+			continue
+		}
+		out = append(out, egress.Endpoint{Prefix: e.Address.Masked(), Port: e.Port, Pin: pin})
+	}
+	return out, nil
+}
+
 // config is what connector c's binding builds from: its configuration, its current secrets, and clients bound to its
-// consented destinations.
-func (r *Runtime) config(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret) (Config, error) {
+// consented destinations and to the private endpoints eps registered for it (SEC-37).
+func (r *Runtime) config(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret, eps []egress.Endpoint) (Config, error) {
 	values := map[string]string{}
 	for _, s := range secrets {
 		if s.ConnectorID == c.ID && s.ValidUntil == nil && s.DestroyedAt == nil {
@@ -239,6 +269,9 @@ func (r *Runtime) config(ctx context.Context, c storage.InstalledConnector, secr
 	}
 	allow := Allows(c.Consent, c.Configuration)
 	g := r.Egress
+	if len(eps) > 0 { // its registered private endpoints, over TLS with their pinned keys only (SEC-37)
+		g = g.With(eps...)
+	}
 	return Config{Values: c.Configuration, Secrets: values, SenderDomain: r.SenderDomain, Consent: c.Consent, Clock: r.Clock,
 		HTTP: g.Client(allow),
 		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -310,7 +343,7 @@ func (r *Runtime) TestEmail(ctx context.Context, c storage.InstalledConnector, s
 	if !ok || b.OutboundEmail == nil {
 		return fail("This connector does not send email.")
 	}
-	config, err := r.config(ctx, c, secrets)
+	config, err := r.config(ctx, c, secrets, nil)
 	if err != nil {
 		return fail("A secret of the connector cannot be read: set it again.")
 	}
@@ -334,7 +367,7 @@ func (r *Runtime) TestEmail(ctx context.Context, c storage.InstalledConnector, s
 
 // TestBankData is the bank-data connectors' test action (FR-INT-20): the accounts the credentials read, by count and
 // currency, never their balances; pass or fail in Fyniq's words, never the provider's answer.
-func (r *Runtime) TestBankData(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret) storage.ConnectorTest {
+func (r *Runtime) TestBankData(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret, eps []egress.Endpoint) storage.ConnectorTest {
 	now := r.Clock.Now()
 	fail := func(reason string) storage.ConnectorTest {
 		return storage.ConnectorTest{Passed: false, Reason: reason, At: now}
@@ -343,7 +376,7 @@ func (r *Runtime) TestBankData(ctx context.Context, c storage.InstalledConnector
 	if !ok || b.BankData == nil {
 		return fail("This connector reads no bank data.")
 	}
-	config, err := r.config(ctx, c, secrets)
+	config, err := r.config(ctx, c, secrets, eps)
 	if err != nil {
 		return fail("A secret of the connector cannot be read: set it again.")
 	}

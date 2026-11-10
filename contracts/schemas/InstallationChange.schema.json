@@ -87,7 +87,7 @@
       "type": "string"
     },
     "step": {
-      "description": "The step; sign_in is a sign-in provider's switches, whose connector is sign-in:\u003cprovider\u003e (FR-ADM-08).",
+      "description": "The step; sign_in is a sign-in provider's switches, whose connector is sign-in:\u003cprovider\u003e (FR-ADM-08); private_endpoint a private endpoint's registration, whose connector is private-endpoint:\u003cid\u003e (SEC-37).",
       "enum": [
         "install",
         "configure",
@@ -98,7 +98,8 @@
         "uninstall",
         "order",
         "consent",
-        "sign_in"
+        "sign_in",
+        "private_endpoint"
       ],
       "examples": [
         "resume"

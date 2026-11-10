@@ -118,6 +118,8 @@ not_personal:
     why: "The provider an overseas transfer goes to: an organisation"
   - column: claim_place.address
     why: "A place where claims are spent, such as a merchant"
+  - column: private_endpoint.address
+    why: "The private network address of a service an organisation runs, such as its ledger API (SEC-37): never a person's"
   - column: email_sender.address
     why: "The organisation's own sending address"
   - column: email_sender.display_name

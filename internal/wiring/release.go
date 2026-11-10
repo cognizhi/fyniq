@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/netip"
 	"net/url"
 	"os"
 	"slices"
@@ -50,6 +51,9 @@ type Config struct {
 	// Render is the private render service (PRD-001 §12.3, rev 0.96): its URL, its audience and its callers' accounts;
 	// optional until the deployment adds it: without it no preview renders and no template with IRAS particulars publishes.
 	Render gcp.Callers `json:"render"`
+	// PlatformRanges are the platform's own networks (its subnet and the range its database is peered on), which no
+	// registered private endpoint reaches (SEC-37).
+	PlatformRanges []string `json:"platform_ranges"`
 }
 
 // Build wires a service's background work on Google Cloud (ADR-T7, ADR-T8): Cloud Tasks, the task
@@ -71,7 +75,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	// Every outbound request through the egress guard (SEC-36): Google's APIs and the render service through the
 	// platform's own guard, each to its hosts only; the email providers and the connectors through one that also refuses
 	// the platform's own services. Objects and documents up to 64 MiB.
-	platform, outbound := PlatformEgress(), &egress.Guard{Internal: c.internalHosts()}
+	own, err := c.ownRanges()
+	if err != nil {
+		return nil, err
+	}
+	platform, outbound := PlatformEgress(), &egress.Guard{Internal: c.internalHosts(), Own: own}
 	google := platform.Bounded(64<<20, 0).For(".googleapis.com")
 	var fields ports.Cipher
 	if c.Fields.Key != "" { // as the api's own account, the only one with a role on the keys
@@ -171,6 +179,19 @@ func (c Config) internalHosts() []string {
 	}
 	add(c.Render.URL)
 	return out
+}
+
+// ownRanges are the platform's own networks, read from PlatformRanges.
+func (c Config) ownRanges() ([]netip.Prefix, error) {
+	out := make([]netip.Prefix, 0, len(c.PlatformRanges))
+	for _, r := range c.PlatformRanges {
+		p, err := netip.ParsePrefix(r)
+		if err != nil {
+			return nil, fmt.Errorf("FYNIQ_GCP platform_ranges: %q is not a range such as 10.10.0.0/24", r)
+		}
+		out = append(out, p.Masked())
+	}
+	return out, nil
 }
 
 // classes are the worker classes the outbox sends to (§12.11), and the callers the handlers check.

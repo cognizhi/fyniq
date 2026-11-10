@@ -51,6 +51,13 @@ type Guard struct {
 	Timeout time.Duration
 	// MaxBody bounds an HTTP answer's body; 0 is 1 MiB.
 	MaxBody int64
+
+	// Own are the platform's own networks (its subnet, the peered range of its database): never reached, even as a
+	// registered private endpoint (SEC-37).
+	Own []netip.Prefix
+
+	// registered are the private endpoints this guard may also reach (With; SEC-37).
+	registered []Endpoint
 }
 
 // alwaysInternal are names no configuration may reach: the cloud metadata service and the platform's internal domains.
@@ -106,6 +113,11 @@ func (g *Guard) timeout() time.Duration {
 // Resolve checks host and returns the addresses to dial: every address it resolves to must be allowed, so an answer
 // that mixes a public and a private address is refused rather than raced.
 func (g *Guard) Resolve(ctx context.Context, host string) ([]netip.Addr, error) {
+	return g.resolve(ctx, host, func(a netip.Addr) error { return g.Allowed(a) })
+}
+
+// resolve is Resolve with allowed deciding each address.
+func (g *Guard) resolve(ctx context.Context, host string, allowed func(netip.Addr) error) ([]netip.Addr, error) {
 	if host == "" {
 		return nil, fmt.Errorf("%w: no host", ErrRefused)
 	}
@@ -113,7 +125,7 @@ func (g *Guard) Resolve(ctx context.Context, host string) ([]netip.Addr, error) 
 		return nil, fmt.Errorf("%w: %s is one of the platform's internal names", ErrRefused, host)
 	}
 	if a, err := netip.ParseAddr(strings.Trim(host, "[]")); err == nil {
-		if err := g.Allowed(a); err != nil {
+		if err := allowed(a); err != nil {
 			return nil, err
 		}
 		return []netip.Addr{a}, nil
@@ -130,7 +142,7 @@ func (g *Guard) Resolve(ctx context.Context, host string) ([]netip.Addr, error) 
 		return nil, fmt.Errorf("%w: %s resolves to nothing", ErrRefused, host)
 	}
 	for _, a := range addrs {
-		if err := g.Allowed(a); err != nil {
+		if err := allowed(a); err != nil {
 			return nil, fmt.Errorf("%s: %w", host, err)
 		}
 	}
@@ -138,29 +150,46 @@ func (g *Guard) Resolve(ctx context.Context, host string) ([]netip.Addr, error) 
 }
 
 // DialContext connects to addr (host:port) through the guard: to the first address the check allowed, never to a
-// name resolved again.
+// name resolved again. A registered private endpoint is never reached this way: only over TLS with its pinned key
+// (the clients With makes).
 func (g *Guard) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	c, _, err := g.dial(ctx, network, addr, false)
+	return c, err
+}
+
+// dial connects to addr through the guard, reaching a registered private endpoint too when overTLS; it returns the
+// endpoint it reached, or nil for a public address.
+func (g *Guard) dial(ctx context.Context, network, addr string, overTLS bool) (net.Conn, *Endpoint, error) {
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrRefused, err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrRefused, err)
 	}
-	if p, err := strconv.Atoi(port); err != nil || p < 1 || p > 65535 {
-		return nil, fmt.Errorf("%w: port %q", ErrRefused, port)
+	p, err := strconv.Atoi(port)
+	if err != nil || p < 1 || p > 65535 {
+		return nil, nil, fmt.Errorf("%w: port %q", ErrRefused, port)
 	}
-	addrs, err := g.Resolve(ctx, host)
+	addrs, err := g.resolve(ctx, host, func(a netip.Addr) error {
+		if e := g.endpoint(a, p); e != nil {
+			if !overTLS {
+				return fmt.Errorf("%w: %s is a registered private endpoint, reached over TLS with its pinned key only", ErrRefused, a)
+			}
+			return nil
+		}
+		return g.Allowed(a)
+	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	d := net.Dialer{Timeout: g.timeout()}
 	var last error
 	for _, a := range addrs {
 		c, err := d.DialContext(ctx, network, net.JoinHostPort(a.String(), port))
 		if err == nil {
-			return c, nil
+			return c, g.endpoint(a, p), nil
 		}
 		last = err
 	}
-	return nil, last
+	return nil, nil, last
 }
 
 // Client is an HTTP client through the guard for the hosts allow accepts (a connector's consented destinations); nil
@@ -175,15 +204,21 @@ func (g *Guard) client(allow func(host string, port int) bool, notAllowed string
 	if max <= 0 {
 		max = 1 << 20
 	}
+	check := func(addr string) error {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return fmt.Errorf("%w: %v", ErrRefused, err)
+		}
+		p, _ := strconv.Atoi(port)
+		if allow != nil && !allow(strings.ToLower(host), p) {
+			return fmt.Errorf("%w: %s %s", ErrRefused, host, notAllowed)
+		}
+		return nil
+	}
 	base := &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			host, port, err := net.SplitHostPort(addr)
-			if err != nil {
-				return nil, fmt.Errorf("%w: %v", ErrRefused, err)
-			}
-			p, _ := strconv.Atoi(port)
-			if allow != nil && !allow(strings.ToLower(host), p) {
-				return nil, fmt.Errorf("%w: %s %s", ErrRefused, host, notAllowed)
+			if err := check(addr); err != nil {
+				return nil, err
 			}
 			return g.DialContext(ctx, network, addr)
 		},
@@ -192,6 +227,14 @@ func (g *Guard) client(allow func(host string, port int) bool, notAllowed string
 		ResponseHeaderTimeout: g.timeout(),
 		MaxIdleConns:          10,
 		IdleConnTimeout:       90 * time.Second,
+	}
+	if len(g.registered) > 0 { // TLS this guard does itself, to pin a registered endpoint's key (SEC-37)
+		base.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if err := check(addr); err != nil {
+				return nil, err
+			}
+			return g.dialTLS(ctx, network, addr)
+		}
 	}
 	return &http.Client{
 		Timeout:       g.timeout(),
