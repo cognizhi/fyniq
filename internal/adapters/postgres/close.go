@@ -135,24 +135,28 @@ func (r closes) LatestReopen(ctx context.Context, period uuid.UUID) (storage.Per
 			ReopenedRevision: row.ReopenedRevision, BeforeHash: row.BeforeHash, AfterHash: row.AfterHash}}, nil
 }
 
-func varianceExplanationOf(id, period, account uuid.UUID, current, previous, explanation, by string, at time.Time) storage.VarianceExplanation {
+func varianceExplanationOf(id, period, account uuid.UUID, kind, current, previous, explanation, by string, at time.Time) storage.VarianceExplanation {
 	return storage.VarianceExplanation{ID: id, WrittenBy: by, WrittenAt: at, NewVarianceExplanation: storage.NewVarianceExplanation{PeriodID: period,
-		AccountID: account, Current: storage.Decimal(current), Previous: storage.Decimal(previous), Explanation: explanation}}
+		AccountID: account, Kind: kind, Current: storage.Decimal(current), Previous: storage.Decimal(previous), Explanation: explanation}}
 }
 
 func (r closes) ExplainVariance(ctx context.Context, e storage.NewVarianceExplanation) (storage.VarianceExplanation, error) {
 	if err := r.u.check(); err != nil {
 		return storage.VarianceExplanation{}, err
 	}
-	row, err := r.u.q.InsertVarianceExplanation(ctx, sqlcdb.InsertVarianceExplanationParams{PeriodID: e.PeriodID, AccountID: e.AccountID,
+	kind := e.Kind
+	if kind == "" {
+		kind = storage.VarianceMonth
+	}
+	row, err := r.u.q.InsertVarianceExplanation(ctx, sqlcdb.InsertVarianceExplanationParams{PeriodID: e.PeriodID, AccountID: e.AccountID, Kind: kind,
 		CurrentAmount: string(e.Current), PreviousAmount: string(e.Previous), Explanation: e.Explanation, WrittenBy: r.u.actor(ctx),
 		WrittenAt: r.u.store.clock.Now()})
 	if err != nil {
 		return storage.VarianceExplanation{}, mapError(err)
 	}
-	out := varianceExplanationOf(row.ID, row.PeriodID, row.AccountID, row.CurrentAmount, row.PreviousAmount, row.Explanation, row.WrittenBy, row.WrittenAt)
+	out := varianceExplanationOf(row.ID, row.PeriodID, row.AccountID, row.Kind, row.CurrentAmount, row.PreviousAmount, row.Explanation, row.WrittenBy, row.WrittenAt)
 	if err := r.u.event(ctx, "period.variance_explained", "period_variance_explanation", out.ID, nil, map[string][2]any{
-		"period_id": {nil, out.PeriodID}, "account_id": {nil, out.AccountID}, "current_amount": {nil, string(e.Current)},
+		"period_id": {nil, out.PeriodID}, "account_id": {nil, out.AccountID}, "kind": {nil, out.Kind}, "current_amount": {nil, string(e.Current)},
 		"previous_amount": {nil, string(e.Previous)}, "explanation": {nil, out.Explanation}}); err != nil {
 		return storage.VarianceExplanation{}, err
 	}
@@ -169,7 +173,7 @@ func (r closes) VarianceExplanations(ctx context.Context, period uuid.UUID) ([]s
 	}
 	out := make([]storage.VarianceExplanation, 0, len(rows))
 	for _, x := range rows {
-		out = append(out, varianceExplanationOf(x.ID, x.PeriodID, x.AccountID, x.CurrentAmount, x.PreviousAmount, x.Explanation, x.WrittenBy, x.WrittenAt))
+		out = append(out, varianceExplanationOf(x.ID, x.PeriodID, x.AccountID, x.Kind, x.CurrentAmount, x.PreviousAmount, x.Explanation, x.WrittenBy, x.WrittenAt))
 	}
 	return out, nil
 }

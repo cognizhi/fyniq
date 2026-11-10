@@ -1248,6 +1248,7 @@ period_variance_explanation | previous_amount | numeric(20,4) | not null |
 period_variance_explanation | explanation | text | not null | 
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
+period_variance_explanation | kind | text | not null | 'month'::text
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -3563,6 +3564,8 @@ period_variance_explanation | period_variance_explanation_amounts | CHECK (((cur
 period_variance_explanation | period_variance_explanation_current_amount_not_null | NOT NULL current_amount
 period_variance_explanation | period_variance_explanation_explanation_not_null | NOT NULL explanation
 period_variance_explanation | period_variance_explanation_id_not_null | NOT NULL id
+period_variance_explanation | period_variance_explanation_kind_known | CHECK ((kind = ANY (ARRAY['month'::text, 'budget'::text])))
+period_variance_explanation | period_variance_explanation_kind_not_null | NOT NULL kind
 period_variance_explanation | period_variance_explanation_length | CHECK (((length(btrim(explanation)) >= 1) AND (length(btrim(explanation)) <= 1000)))
 period_variance_explanation | period_variance_explanation_organisation_id_not_null | NOT NULL organisation_id
 period_variance_explanation | period_variance_explanation_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)

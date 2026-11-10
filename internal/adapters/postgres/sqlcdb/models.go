@@ -1610,6 +1610,7 @@ type FyniqPeriodVarianceExplanation struct {
 	Explanation    string
 	WrittenBy      string
 	WrittenAt      time.Time
+	Kind           string
 }
 
 type FyniqQuoteOutcome struct {

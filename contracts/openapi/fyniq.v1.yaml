@@ -16062,6 +16062,14 @@ components:
     ExplainVarianceRequest:
       additionalProperties: false
       properties:
+        against:
+          description: "Which comparison it explains: previous (the default), against the previous month, or budget, against the month's budget."
+          enum:
+            - previous
+            - budget
+          examples:
+            - previous
+          type: string
         current:
           $ref: "#/components/schemas/Money"
           description: "The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10)."
@@ -16074,7 +16082,7 @@ components:
           type: string
         previous:
           $ref: "#/components/schemas/Money"
-          description: Its total for the previous period as listPeriodVariances showed it.
+          description: Its total for the previous period as listPeriodVariances showed it; against=budget, the month's budget as it showed it.
       required:
         - current
         - previous
@@ -36150,7 +36158,7 @@ components:
           type: boolean
         previous:
           $ref: "#/components/schemas/Money"
-          description: Its total for the previous period.
+          description: Its total for the previous period; against=budget, the month's budget for it, signed as the ledger signs it (income negative).
         type:
           description: "revenue (income) or expense: balance-sheet accounts rely on the support the close requires."
           enum:
@@ -36189,7 +36197,7 @@ components:
           type: string
         previous:
           $ref: "#/components/schemas/Money"
-          description: The account's total for the previous period it explained.
+          description: The account's total for the previous period it explained; against the budget, the month's budget it explained.
         written_at:
           description: When.
           examples:
@@ -36209,8 +36217,21 @@ components:
     VariancePage:
       additionalProperties: false
       properties:
+        against:
+          description: "previous: against the previous month; budget: against the month's budget (p1-planning design D6)."
+          enum:
+            - previous
+            - budget
+          examples:
+            - previous
+          type: string
+        budgeted:
+          description: The month's financial year has a recorded budget, so the close also compares with it.
+          examples:
+            - true
+          type: boolean
         items:
-          description: Each income or expense account with a total in either period.
+          description: Each income or expense account with a total in either period; against=budget, with a total or a budget for the month.
           items:
             $ref: "#/components/schemas/Variance"
           type: array
@@ -36233,12 +36254,14 @@ components:
             - "10"
           type: string
         unexplained:
-          description: "How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any."
+          description: "How many variances of this comparison, on every page, need an explanation and have no current one: the close checks refuse the close while there are any, of either comparison."
           examples:
             - 1
           format: int64
           type: integer
       required:
+        - against
+        - budgeted
         - period
         - threshold_amount
         - threshold_percent
@@ -140581,7 +140604,7 @@ paths:
         right: C
   /v1/periods/{period_id}/variances:
     get:
-      description: "Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances arrive with budgets. Read-only; no side effects."
+      description: "Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires. With against=budget, each account's total against the month's budget for it instead, at the same thresholds, once the month's financial year has a recorded budget (budgeted says whether it has; p1-planning design D6), explained apart. Read-only; no side effects."
       operationId: listPeriodVariances
       parameters:
         - description: The period's ID.
@@ -140615,6 +140638,19 @@ paths:
             examples:
               - eyJhZnRlciI6IjEwMDAifQ
             maxLength: 1000
+            type: string
+        - description: "previous (the default): against the previous month; budget: against the month's budget, when its financial year has a recorded budget."
+          explode: false
+          in: query
+          name: against
+          schema:
+            default: previous
+            description: "previous (the default): against the previous month; budget: against the month's budget, when its financial year has a recorded budget."
+            enum:
+              - previous
+              - budget
+            examples:
+              - previous
             type: string
       responses:
         "200":
@@ -140710,7 +140746,7 @@ paths:
         right: V
   /v1/periods/{period_id}/variances/{account_id}/explanation:
     post:
-      description: "Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing."
+      description: "Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional), or, with against=budget, against the month's budget (p1-planning design D6). The request names the two figures as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation of the same comparison for the period; explanations are never changed or removed, and once either figure changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing."
       operationId: explainVariance
       parameters:
         - description: The period's ID.

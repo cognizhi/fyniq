@@ -23,7 +23,7 @@
     },
     "previous": {
       "$ref": "Money.schema.json",
-      "description": "The account's total for the previous period it explained."
+      "description": "The account's total for the previous period it explained; against the budget, the month's budget it explained."
     },
     "written_at": {
       "description": "When.",

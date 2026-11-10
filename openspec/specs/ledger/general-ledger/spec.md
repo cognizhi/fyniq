@@ -545,3 +545,10 @@ Source: PRD-001 §8.8 · Priority S · Phase P1
 - **WHEN** an explanation is recorded
 - **THEN** it replaces the account's earlier explanation for the period, which is kept
 - **AND** the database refuses an explanation in a period that is not open or for a balance-sheet account, and never changes or removes one
+
+#### Scenario: Budget variances (rev 0.221)
+- **GIVEN** a month whose financial year has a recorded budget
+- **WHEN** the close compares each income or expense account's total for the month with the month's budget for it, signed as the ledger signs it
+- **THEN** a budget variance needs an explanation at the same thresholds and in the same exact comparison, the amount alone deciding when the budget is zero
+- **AND** budget variances are listed and explained apart from the month-on-month ones, each account keeping a latest explanation of each kind, stale once either of its figures changes
+- **AND** a month whose year has no recorded budget has no budget variances

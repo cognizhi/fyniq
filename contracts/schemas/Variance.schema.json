@@ -60,7 +60,7 @@
     },
     "previous": {
       "$ref": "Money.schema.json",
-      "description": "Its total for the previous period."
+      "description": "Its total for the previous period; against=budget, the month's budget for it, signed as the ledger signs it (income negative)."
     },
     "type": {
       "description": "revenue (income) or expense: balance-sheet accounts rely on the support the close requires.",

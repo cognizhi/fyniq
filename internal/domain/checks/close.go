@@ -163,8 +163,8 @@ var closeChecks = []Definition{
 			"open, cannot reverse once the month closes.",
 		Rules: "FR-GL-02", Owner: "controller", View: viewClose, Triggers: onClose, CloseKeys: []string{"reversals"}, Run: atMonthEnd("reversals")},
 	{Key: "close.variances", Ref: "C.2 #57", Area: "Closing", Worst: Error, Title: "Every large variance is explained",
-		Explain: "An income or expense account that moved against the month before by more than both the variance amount and " +
-			"percentage needs its explanation before the close (FR-GL-14).",
+		Explain: "An income or expense account that moved against the month before, or differs from the month's budget once " +
+			"the year has one, by more than both the variance amount and percentage needs its explanation before the close (FR-GL-14).",
 		Rules: "FR-GL-14", Owner: "controller", View: viewClose, Triggers: onClose, CloseKeys: []string{"variances"}, Run: atMonthEnd("variances")},
 	{Key: "close.checklist", Ref: "C.2 #58", Area: "Closing", Worst: Error, Title: "The close checklist is finished",
 		Explain: "Each task of the month's close checklist is done, or skipped with a reason, before the close (FR-GL-07).",

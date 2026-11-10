@@ -26,19 +26,19 @@ type VarianceExplanation struct {
 	ID          string    `json:"id" format:"uuid" doc:"The explanation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4de0"`
 	Explanation string    `json:"explanation" doc:"Why the account moved." example:"The annual design-tool licence renewed in November."`
 	Current     Money     `json:"current" doc:"The account's total for the period it explained."`
-	Previous    Money     `json:"previous" doc:"The account's total for the previous period it explained."`
+	Previous    Money     `json:"previous" doc:"The account's total for the previous period it explained; against the budget, the month's budget it explained."`
 	WrittenBy   *Person   `json:"written_by,omitempty" doc:"Who wrote it."`
 	WrittenAt   time.Time `json:"written_at" doc:"When." example:"2026-12-02T09:30:00Z"`
 }
 
-// Variance is one income or expense account's month-on-month movement.
+// Variance is one income or expense account's movement against the previous month or the month's budget.
 type Variance struct {
 	AccountID        string               `json:"account_id" format:"uuid" doc:"The account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	Code             string               `json:"code" doc:"Its code." example:"6420"`
 	Name             string               `json:"name" doc:"Its name." example:"Software subscriptions"`
 	Type             string               `json:"type" enum:"revenue,expense" doc:"revenue (income) or expense: balance-sheet accounts rely on the support the close requires." example:"expense"`
 	Current          Money                `json:"current" doc:"Its total for the period in the base currency: debit positive, credit negative, so income is negative, as in the trial balance."`
-	Previous         Money                `json:"previous" doc:"Its total for the previous period."`
+	Previous         Money                `json:"previous" doc:"Its total for the previous period; against=budget, the month's budget for it, signed as the ledger signs it (income negative)."`
 	Change           Money                `json:"change" doc:"current − previous."`
 	ChangePercent    string               `json:"change_percent,omitempty" pattern:"^-?(0|[1-9][0-9]*)\\.[0-9]$" doc:"The change as a percentage of the previous total's size, to one decimal, half away from zero (RND-PERCENT), with the change's sign; absent when the previous total is zero. For showing only: the thresholds compare the exact amounts." example:"25.0"`
 	NeedsExplanation bool                 `json:"needs_explanation" doc:"The change is more than both thresholds, so the close needs an explanation of it." example:"true"`
@@ -46,20 +46,24 @@ type Variance struct {
 	Explanation      *VarianceExplanation `json:"explanation,omitempty" doc:"The latest explanation, current or stale; absent while there is none."`
 }
 
-// VariancePage is a period's month-on-month comparison, a page of accounts at a time, by code.
+// VariancePage is a period's comparison with the previous month or with its budget, a page of accounts at a time, by
+// code.
 type VariancePage struct {
+	Against          string     `json:"against" enum:"previous,budget" doc:"previous: against the previous month; budget: against the month's budget (p1-planning design D6)." example:"previous"`
+	Budgeted         bool       `json:"budgeted" doc:"The month's financial year has a recorded budget, so the close also compares with it." example:"true"`
 	Period           Period     `json:"period"`
 	PreviousPeriod   *Period    `json:"previous_period,omitempty" doc:"The period it is compared with: the one that ends the day before it starts; absent when there is none, and then there is nothing to compare."`
 	ThresholdAmount  Money      `json:"threshold_amount" doc:"A variance needs an explanation when its size is more than this (setting close.variance_amount)…"`
 	ThresholdPercent string     `json:"threshold_percent" doc:"…and more than this percentage of the previous total's size (setting close.variance_percent); when the previous total is zero the amount alone decides." example:"10"`
-	Unexplained      int        `json:"unexplained" doc:"How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any." example:"1"`
-	Items            []Variance `json:"items" nullable:"false" doc:"Each income or expense account with a total in either period."`
+	Unexplained      int        `json:"unexplained" doc:"How many variances of this comparison, on every page, need an explanation and have no current one: the close checks refuse the close while there are any, of either comparison." example:"1"`
+	Items            []Variance `json:"items" nullable:"false" doc:"Each income or expense account with a total in either period; against=budget, with a total or a budget for the month."`
 	NextCursor       string     `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjY0MjAifQ"`
 }
 
 type varianceListInput struct {
 	PeriodPath
 	PageQuery
+	Against string `query:"against" enum:"previous,budget" default:"previous" doc:"previous (the default): against the previous month; budget: against the month's budget, when its financial year has a recorded budget." example:"previous"`
 }
 
 type varianceListOutput struct {
@@ -69,7 +73,8 @@ type varianceListOutput struct {
 // ExplainVarianceRequest explains an account's variance, for the totals the writer read.
 type ExplainVarianceRequest struct {
 	Current     Money  `json:"current" doc:"The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10)."`
-	Previous    Money  `json:"previous" doc:"Its total for the previous period as listPeriodVariances showed it."`
+	Previous    Money  `json:"previous" doc:"Its total for the previous period as listPeriodVariances showed it; against=budget, the month's budget as it showed it."`
+	Against     string `json:"against,omitempty" enum:"previous,budget" doc:"Which comparison it explains: previous (the default), against the previous month, or budget, against the month's budget." example:"previous"`
 	Explanation string `json:"explanation" minLength:"1" maxLength:"1000" doc:"Why the account moved, in a sentence or two, for the attester and the accountant." example:"The annual design-tool licence renewed in November."`
 }
 
@@ -121,15 +126,24 @@ func registerVariances(a *API) {
 			"amount and the percentage of the previous total in the organisation's settings (close.variance_amount, " +
 			"close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and " +
 			"whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks " +
-			"refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances " +
-			"arrive with budgets. Read-only; no side effects.",
+			"refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires. With against=budget, " +
+			"each account's total against the month's budget for it instead, at the same thresholds, once the month's financial year has " +
+			"a recorded budget (budgeted says whether it has; p1-planning design D6), explained apart. Read-only; no side effects.",
 	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *varianceListInput) (*varianceListOutput, error) {
 		id, err := parseID("period_id", in.PeriodID)
 		if err != nil {
 			return nil, err
 		}
 		p, _ := authn.From(ctx)
-		out := varianceListOutput{Body: VariancePage{Items: []Variance{}}}
+		against := in.Against
+		if against == "" {
+			against = "previous"
+		}
+		kind := storage.VarianceMonth
+		if against == "budget" {
+			kind = storage.VarianceBudget
+		}
+		out := varianceListOutput{Body: VariancePage{Against: against, Items: []Variance{}}}
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			today, err := orgToday(ctx, a, u)
 			if err != nil {
@@ -149,8 +163,8 @@ func registerVariances(a *API) {
 				out.Body.PreviousPeriod = &prev
 			}
 			out.Body.ThresholdAmount, out.Body.ThresholdPercent = amountOf(f.Thresholds.Amount), f.Thresholds.Percent.Text('f')
-			out.Body.Unexplained = f.Unexplained()
-			page, next, err := pageOf(f.Variances, func(v closing.Variance) string { return v.Account.Code }, in.PageQuery)
+			out.Body.Budgeted, out.Body.Unexplained = f.Budgeted, f.UnexplainedOf(kind)
+			page, next, err := pageOf(f.Of(kind), func(v closing.Variance) string { return v.Account.Code }, in.PageQuery)
 			if err != nil {
 				return err
 			}
@@ -167,9 +181,10 @@ func registerVariances(a *API) {
 		OperationID: "explainVariance", Method: http.MethodPost, Path: "/v1/periods/{period_id}/variances/{account_id}/explanation", Tags: []string{"Periods"},
 		Summary: "Explain a variance",
 		Description: "Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; " +
-			"PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of " +
+			"PRD-001 rev 0.65, provisional), or, with against=budget, against the month's budget (p1-planning design D6). The request " +
+			"names the two figures as listPeriodVariances showed them: the explanation is of " +
 			"those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It " +
-			"replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total " +
+			"replaces the account's earlier explanation of the same comparison for the period; explanations are never changed or removed, and once either figure " +
 			"changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open " +
 			"or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when " +
 			"they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview " +
@@ -224,7 +239,11 @@ func registerVariances(a *API) {
 				if err != nil {
 					return Variance{}, err
 				}
-				_, v, err := closing.Explain(ctx, u, id, account, current, previous, words, today)
+				kind := storage.VarianceMonth
+				if in.Body.Against == "budget" {
+					kind = storage.VarianceBudget
+				}
+				_, v, err := closing.Explain(ctx, u, id, account, kind, current, previous, words, today)
 				if err != nil {
 					return Variance{}, err
 				}

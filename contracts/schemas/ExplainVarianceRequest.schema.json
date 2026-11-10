@@ -2,6 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "against": {
+      "description": "Which comparison it explains: previous (the default), against the previous month, or budget, against the month's budget.",
+      "enum": [
+        "previous",
+        "budget"
+      ],
+      "examples": [
+        "previous"
+      ],
+      "type": "string"
+    },
     "current": {
       "$ref": "Money.schema.json",
       "description": "The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10)."
@@ -17,7 +28,7 @@
     },
     "previous": {
       "$ref": "Money.schema.json",
-      "description": "Its total for the previous period as listPeriodVariances showed it."
+      "description": "Its total for the previous period as listPeriodVariances showed it; against=budget, the month's budget as it showed it."
     }
   },
   "required": [

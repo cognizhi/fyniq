@@ -343,8 +343,9 @@ the previous month's. A change needs a short explanation when it is more than **
 - **Variance to explain, amount**: S$1,000.
 - **Variance to explain, percentage of the previous month**: 10% of the previous month's total.
 
-When the previous month's total is zero, the amount alone decides. Changing either needs a second
-approver. See [Explain the variances](periods-and-close.md#explain-the-variances).
+When the previous month's total is zero, the amount alone decides. The same thresholds apply to
+the comparison with the month's budget, once its financial year has an approved one. Changing
+either needs a second approver. See [Explain the variances](periods-and-close.md#explain-the-variances).
 
 ## Founders' money
 

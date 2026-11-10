@@ -33,7 +33,7 @@ type Closes interface {
 	// (FR-GL-14). The database refuses one in a period that is not open, or of an account that is not an income or
 	// expense account (CodeClose).
 	ExplainVariance(ctx context.Context, e NewVarianceExplanation) (VarianceExplanation, error)
-	// VarianceExplanations are each account's latest explanation of the period's variance.
+	// VarianceExplanations are each account's latest explanation of each kind of the period's variance.
 	VarianceExplanations(ctx context.Context, period uuid.UUID) ([]VarianceExplanation, error)
 	// SaveChecklistTemplate records the next version of the organisation's close checklist template, its tasks as a JSON
 	// array, by the unit of work's actor, now (FR-GL-07).
@@ -80,13 +80,20 @@ type ChecklistEntry struct {
 	WrittenAt time.Time
 }
 
-// NewVarianceExplanation explains an account's month-on-month variance: the two totals it explains, in the base
-// currency, and the words.
+// The kinds of variance an explanation explains (FR-GL-14; p1-planning design D6).
+const (
+	VarianceMonth  = "month"  // against the previous month
+	VarianceBudget = "budget" // against the month's budget
+)
+
+// NewVarianceExplanation explains an account's variance: the two figures it explains, in the base currency, and the
+// words.
 type NewVarianceExplanation struct {
 	PeriodID    uuid.UUID
 	AccountID   uuid.UUID
+	Kind        string  // VarianceMonth ("" is it) or VarianceBudget
 	Current     Decimal // the account's total for the period
-	Previous    Decimal // its total for the previous period
+	Previous    Decimal // its total for the previous period; for VarianceBudget, the month's budget for it
 	Explanation string
 }
 

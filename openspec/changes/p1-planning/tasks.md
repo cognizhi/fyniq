@@ -98,8 +98,11 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   - As built (rev 0.220): the budget is a column labelled Budget, its figures opening no ledger lines. The forecast is
     the statement's `forecast` object, a figure per section beside the columns, since a column needs one per account.
     The export takes the budget column and not yet the forecast.
-- [ ] 5.3 The close's budget variances (D6): the `budget` kind of flux explanation (migration and guard), at the
+- [x] 5.3 The close's budget variances (D6): the `budget` kind of flux explanation (migration and guard), at the
   close's thresholds, stale when either figure changes. `TestTheBudgetFlux` `// req: FR-GL-14`
+  - As built (rev 0.221): migrations 000281 and 000282 add the `kind` column and its check, and the guard is
+    unchanged. `listPeriodVariances` and `explainVariance` take `against=budget`. The close page shows "Variances
+    against the budget" as a second card. The C.2 #57 check counts both kinds.
 - [x] 5.4 Home's revenue against budget, cost against budget and forecast cash-out tiles (D4, D6), with "without the
   funding planned" shown and each tile's undefined state ("No budget for 2027"). `TestHomePlanningTiles`, and the web
   tests. `// req: FR-KPI-01`, `// req: FR-PLN-03`

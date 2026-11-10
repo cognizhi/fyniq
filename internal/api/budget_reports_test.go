@@ -137,23 +137,8 @@ func (f founders) approvedBudget(c budgetChart) response {
 // 1,500.00 and 2,500.00, and rent of 3,000.00 and 3,500.00, all through the bank.
 func (e *env) plannedBooks(c budgetChart) {
 	e.t.Helper()
-	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
 	post := func(month, day int, dr, cr, amount string, values ...string) {
-		id := uuid.NewString()
-		var dims []uuid.UUID
-		for _, v := range values {
-			dims = append(dims, uuid.MustParse(v))
-		}
-		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-			_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(time.Month(month), day), PostingIdentity: ledger.SourceManualJournal + ":" + id + ":v1:test@1",
-				RuleVersion: "test@1", Source: storage.Source{Type: ledger.SourceManualJournal, ID: id, Version: 1}, Lines: []storage.NewLine{
-					{AccountID: uuid.MustParse(dr), Currency: "SGD", Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount), DimensionValues: dims},
-					{AccountID: uuid.MustParse(cr), Currency: "SGD", Amount: storage.Decimal("-" + amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal("-" + amount)},
-				}})
-			return err
-		}); err != nil {
-			e.t.Fatal(err)
-		}
+		e.plannedLine(dr, cr, porttest.Day(time.Month(month), day), amount, values...)
 	}
 	post(10, 5, c.cash, c.revenue, "12000.00")
 	post(10, 10, c.ads, c.cash, "1500.00", c.sales)
@@ -161,6 +146,27 @@ func (e *env) plannedBooks(c budgetChart) {
 	post(11, 5, c.cash, c.revenue, "6000.00")
 	post(11, 10, c.ads, c.cash, "2500.00", c.sales)
 	post(11, 20, c.rent, c.cash, "3500.00")
+}
+
+// plannedLine posts amount from cr to dr on date straight to the ledger, the debit carrying values.
+func (e *env) plannedLine(dr, cr string, date time.Time, amount string, values ...string) {
+	e.t.Helper()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	id := uuid.NewString()
+	var dims []uuid.UUID
+	for _, v := range values {
+		dims = append(dims, uuid.MustParse(v))
+	}
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: date, PostingIdentity: ledger.SourceManualJournal + ":" + id + ":v1:test@1",
+			RuleVersion: "test@1", Source: storage.Source{Type: ledger.SourceManualJournal, ID: id, Version: 1}, Lines: []storage.NewLine{
+				{AccountID: uuid.MustParse(dr), Currency: "SGD", Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount), DimensionValues: dims},
+				{AccountID: uuid.MustParse(cr), Currency: "SGD", Amount: storage.Decimal("-" + amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal("-" + amount)},
+			}})
+		return err
+	}); err != nil {
+		e.t.Fatal(err)
+	}
 }
 
 // matrixBudgetReports are the authorisation matrix's rows for Budget vs Actual and the planning summary.
