@@ -1,4 +1,4 @@
-"""Hypothesis strategies for fyniq-forecast@1 documents (p1-planning design D9, QA-ENG-02).
+"""Hypothesis strategies for fyniq-forecast@1 and fyniq-feasibility@1 documents (p1-planning design D9, QA-ENG-02).
 
 Harness code: it draws documents within forecast.schema.json's limits for the differential run; it never computes an
 expected figure. Rates have few decimals and amounts cents, as a person types them, so sixty months of exact
@@ -175,3 +175,61 @@ def generate(seed: int, count: int) -> list[dict[str, Any]]:
     else:  # pragma: no cover - the strategy cannot be this narrow
         raise RuntimeError(f"the forecast strategy produced only {len(found)} distinct documents")
     return [{**doc, "name": f"forecast-{seed}-{i:04d}"} for i, doc in enumerate(list(found.values())[:count])]
+
+
+def _growth() -> st.SearchStrategy[str]:
+    """A yearly change from −50% to +100%, with up to 2 decimals of a fraction."""
+    return st.integers(-50, 100).map(lambda n: ("-" if n < 0 else "") + _text(abs(n), 2))
+
+
+@st.composite
+def feasibilities(draw: st.DrawFn) -> dict[str, Any]:
+    """A feasibility study within feasibility.schema.json's limits, as a person types it."""
+    investment = draw(_decimal(500_000, 2))
+    salvage_units = draw(st.integers(0, int(investment.replace(".", ""))))
+    return {
+        "schema": "fyniq-feasibility@1",
+        "name": "feasibility",
+        "currency": "SGD",
+        "minor_units": 2,
+        "years": draw(st.integers(1, 10)),
+        "rate": draw(_fraction(40, 2)),
+        "max_payback": draw(st.sampled_from(["1", "2", "2.5", "3", "4", "5", "7", "10"])),
+        "investment": investment,
+        "life": draw(st.integers(1, 15)),
+        "salvage": _text(salvage_units, 2),
+        "working_capital": draw(_fraction(30, 2)),
+        "units": draw(_decimal(5000, 1)),
+        "unit_growth": draw(_growth()),
+        "price": draw(_decimal(5000, 2)),
+        "price_growth": draw(_growth()),
+        "variable_cost": draw(_decimal(3000, 2)),
+        "variable_cost_growth": draw(_growth()),
+        "fixed": draw(_decimal(400_000, 2)),
+        "fixed_growth": draw(_growth()),
+        "tax_rate": draw(st.sampled_from(["0", "0.17"])),
+    }
+
+
+def generate_feasibilities(seed: int, count: int) -> list[dict[str, Any]]:
+    """``count`` distinct feasibility studies, the same for the same seed and Hypothesis version, named
+    ``feasibility-<seed>-<i>``."""
+    found: dict[str, dict[str, Any]] = {}
+    for attempt in range(100):
+        batch: list[dict[str, Any]] = []
+
+        @hypothesis_seed(seed * 1_000_003 + attempt)
+        @settings(max_examples=count - len(found), database=None, deadline=None, phases=[Phase.generate],
+                  suppress_health_check=list(HealthCheck))
+        @given(feasibilities())
+        def collect(doc: dict[str, Any]) -> None:
+            batch.append(doc)
+
+        collect()
+        for doc in batch:
+            found.setdefault(repr(doc), doc)
+        if len(found) >= count:
+            break
+    else:  # pragma: no cover - the strategy cannot be this narrow
+        raise RuntimeError(f"the feasibility strategy produced only {len(found)} distinct documents")
+    return [{**doc, "name": f"feasibility-{seed}-{i:04d}"} for i, doc in enumerate(list(found.values())[:count])]

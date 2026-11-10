@@ -13,6 +13,8 @@ folder holds the contract between them (OpenSpec change `p0-python-oracle-differ
 | `pending/` | Golden scenarios of P1 sources, waiting for `cmd/scenario-run` to read them |
 | `forecast.schema.json` | `fyniq-forecast@1`: a driver-based forecast both sides run ("Forecasts") |
 | `forecasts/` | The golden forecasts the Go gate runs through both sides |
+| `feasibility.schema.json` | `fyniq-feasibility@1`: a feasibility study both sides work out ("Feasibility studies") |
+| `feasibilities/` | The golden studies the Go gate runs through both sides |
 
 Both schemas are JSON Schema draft 2020-12 with RE2- and ECMA-262-compatible patterns, so a Go
 validator and Python's `jsonschema` accept the same documents. The oracle checks its input against
@@ -1566,6 +1568,31 @@ forecast engine (`internal/domain/planning`), and `python -m oracle forecast` th
 - **The gate.** `TestTheForecastEngineAgreesWithTheOracle` runs `forecasts/` and 40 generated forecasts in
   `make test`. `make differential` draws them with Hypothesis (`forecast` in `DIFFERENTIAL_SOURCES`) and saves a
   shrunk disagreement in `forecasts/`.
+
+## Feasibility studies
+
+A **feasibility study** (FR-PLN-06, `RND-PLAN`; `p1-planning` design D8 and D9) is `fyniq-feasibility@1`
+(`feasibility.schema.json`): one idea's inputs, as the workbook's sheet, and the tax rate, given directly. `cmd/scenario-run`
+works one out through the calculator (`internal/domain/planning`), and `python -m oracle feasibility` through the
+oracle's own model (`oracle/src/oracle/feasibility.py`), each writing `fyniq-feasibility-result@1`.
+
+- **`years`**: year 0 (the investment) to the evaluation period. Each year has:
+  - its lines (units to 1 decimal, revenue, variable and fixed costs, depreciation, EBIT, tax, NOPAT, the working
+    capital and its change, at the end the salvage after tax and the release of the working capital);
+  - its cash flow, present value and running totals.
+- **The results** are `npv`, `irr` (4 decimals), `payback` and `discounted_payback` (1 decimal), `profitability_index`
+  (2 decimals), `break_even_units` (1 decimal), `break_even_revenue`, `margin_of_safety` (`RND-PERCENT`), the 5 × 5
+  `grid` and `npv_at` the eight rates, each `null` when it cannot be worked out, and the `verdict` (`feasible`,
+  `marginal`, `not_feasible` or `no_figures`).
+- **The model** is design D8, word for word:
+  - each line of a year is rounded once from its drivers and the lines it is a percentage of as shown;
+  - each present value is rounded once from its exact quotient;
+  - the cash flows, the NPV and the running totals add the rounded lines;
+  - the IRR is the root nearest 10% of the exact polynomial Σ cash flow × (1 + r)^(N − t) on the grid −99% … +1,000%,
+    halved exactly until both ends round alike to 4 decimals. Flows that are all zero have none.
+- **The gate.** `TestTheFeasibilityCalculatorAgreesWithTheOracle` runs `feasibilities/` and 40 generated studies in
+  `make test`. `make differential` draws them with Hypothesis (`feasibility` in `DIFFERENTIAL_SOURCES`) and saves a
+  shrunk disagreement in `feasibilities/`.
 
 ## Commands
 

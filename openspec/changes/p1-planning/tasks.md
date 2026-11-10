@@ -137,13 +137,20 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 7. The feasibility calculator (slice 7)
 
-- [ ] 7.1 The feasibility model in `internal/domain/planning` (D8): cash flows, NPV, the exact IRR on the grid with
+- [x] 7.1 The feasibility model in `internal/domain/planning` (D8): cash flows, NPV, the exact IRR on the grid with
   bisection, payback and discounted payback, the profitability index, break-even, the margin of safety, the
   sensitivity grid, NPV at the eight rates and the verdict. Hand-worked tests cover each verdict, no IRR, two IRRs, no
   margin and no payback. `// req: FR-PLN-06`, `// req: RND-PLAN`
-- [ ] 7.2 The oracle's `feasibility` kind and its Hypothesis strategy (D9). The fixed-seed sample runs in `make test`,
+  - As built (rev 0.224): `TestTheFeasibilityCalculator` and `TestTheIRR`. Each present value is rounded once and the NPV
+    adds them. The IRR's root is found on the exact polynomial, and all-zero flows have none.
+- [x] 7.2 The oracle's `feasibility` kind and its Hypothesis strategy (D9). The fixed-seed sample runs in `make test`,
   and `make differential` stays clean. The workbook sample's feasibility results agree. `// req: QA-ENG-02`,
   `// req: FR-PLN-06`
+  - As built:
+    - The format is `fyniq-feasibility@1` (`oracle/src/oracle/feasibility.py`), with seven golden studies, two of them
+      the workbook's.
+    - The gate is `TestTheFeasibilityCalculatorAgreesWithTheOracle`, with `feasibility` in `DIFFERENTIAL_SOURCES`.
+    - Workbook parity is checked in `TestTheWorkbooksFeasibility`.
 - [ ] 7.3 The `feasibility_study` document type, its guard (FY302) and the API: list, create, get, replace and results,
   with the tax rate from `sg-cit`. `TestFeasibilityThroughTheAPI` and `TestAttackFeasibilityStudiesKeepTheirRules`.
   `// req: FR-PLN-06`, `// req: FR-PLN-08`

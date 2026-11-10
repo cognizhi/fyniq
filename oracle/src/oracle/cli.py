@@ -9,6 +9,10 @@
         Run every scenario of a fyniq-forecast@1 document and write its fyniq-forecast-result@1 JSON to stdout.
     python -m oracle generate-forecasts --seed <n> --count <n> --out <dir>
         Write <count> generated forecast documents to <dir>/<name>.json (p1-planning task 2.3).
+    python -m oracle feasibility <study.json>
+        Work a fyniq-feasibility@1 study out and write its fyniq-feasibility-result@1 JSON to stdout.
+    python -m oracle generate-feasibilities --seed <n> --count <n> --out <dir>
+        Write <count> generated feasibility studies to <dir>/<name>.json (p1-planning task 7.2).
 
 Exit status: 0 on success, 2 when the scenario is not valid input (the reason is on stderr).
 """
@@ -81,6 +85,34 @@ def _generate_forecasts(args: argparse.Namespace) -> int:
     return 0
 
 
+def _feasibility(args: argparse.Namespace) -> int:
+    from oracle.feasibility import feasibility
+    from oracle.planning import ForecastError
+    from oracle.scenario import parse_json
+
+    try:
+        doc = parse_json(Path(args.study).read_text(encoding="utf-8"))
+        result = feasibility(doc)
+    except (ForecastError, ScenarioError, OSError) as exc:
+        print(f"oracle: {args.study}: {exc}", file=sys.stderr)
+        return 2
+    sys.stdout.write(_dump(result))
+    return 0
+
+
+def _generate_feasibilities(args: argparse.Namespace) -> int:
+    from oracle.feasibility import feasibility
+    from oracle.strategies_planning import generate_feasibilities  # Hypothesis is needed only here
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for doc in generate_feasibilities(args.seed, args.count):
+        feasibility(doc)  # every generated study is valid input
+        (out / f"{doc['name']}.json").write_text(_dump(doc), encoding="utf-8")
+    print(f"oracle: wrote {args.count} feasibility studies to {out}", file=sys.stderr)
+    return 0
+
+
 def _positive(text: str) -> int:
     value = int(text)
     if value < 1:
@@ -112,6 +144,16 @@ def main(argv: list[str] | None = None) -> int:
     genf.add_argument("--count", type=_positive, required=True)
     genf.add_argument("--out", required=True, help="the directory to write <name>.json files to")
     genf.set_defaults(handler=_generate_forecasts)
+
+    fe = commands.add_parser("feasibility", help="work a feasibility study out and write its result JSON to stdout")
+    fe.add_argument("study", help="a fyniq-feasibility@1 JSON file")
+    fe.set_defaults(handler=_feasibility)
+
+    genfe = commands.add_parser("generate-feasibilities", help="write generated feasibility studies to a directory")
+    genfe.add_argument("--seed", type=int, required=True)
+    genfe.add_argument("--count", type=_positive, required=True)
+    genfe.add_argument("--out", required=True, help="the directory to write <name>.json files to")
+    genfe.set_defaults(handler=_generate_feasibilities)
 
     args = parser.parse_args(argv)
     return args.handler(args)

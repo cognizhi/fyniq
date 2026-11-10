@@ -37,7 +37,7 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility"))
     base = scenarios("differential")
     if p1:
         base = st.one_of(base, p1_scenarios(p1, "differential"))
@@ -225,3 +225,41 @@ def test_the_forecast_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02, 
     e, o = engine(bad), forecast_oracle(bad)
     raise AssertionError(f"the forecast engine and the oracle disagree: {forecast_difference(e, o) or (e, o)}\n"
                          f"the smallest such forecast is saved as {path}; commit it as a golden case")
+
+
+FEASIBILITIES = Path(__file__).parent / "feasibilities"
+
+
+def feasibility_oracle(doc: dict) -> dict:
+    from oracle.feasibility import feasibility
+    from oracle.planning import ForecastError
+
+    try:
+        return feasibility(doc)
+    except ForecastError as exc:
+        return {"invalid": str(exc)}
+
+
+def test_the_feasibility_calculator_and_the_oracle_agree() -> None:  # req: QA-ENG-02, FR-PLN-06
+    if "feasibility" not in SOURCES:
+        return
+    from oracle.strategies_planning import feasibilities
+
+    def differs(doc: dict) -> bool:
+        e, o = engine(doc), feasibility_oracle(doc)
+        if ("invalid" in e) != ("invalid" in o):
+            return True
+        return "invalid" not in e and forecast_difference(e, o) is not None
+
+    try:
+        bad = find(feasibilities(), differs, settings=settings(max_examples=EXAMPLES, deadline=None, database=None,
+                                                              suppress_health_check=list(HealthCheck)))
+    except NoSuchExample:
+        return
+    digest = hashlib.sha256(json.dumps(bad, sort_keys=True).encode()).hexdigest()[:10]
+    bad["name"] = f"shrunk-{digest}"
+    path = FEASIBILITIES / f"{bad['name']}.json"
+    path.write_text(json.dumps(bad, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    e, o = engine(bad), feasibility_oracle(bad)
+    raise AssertionError(f"the feasibility calculator and the oracle disagree: {forecast_difference(e, o) or (e, o)}\n"
+                         f"the smallest such study is saved as {path}; commit it as a golden case")

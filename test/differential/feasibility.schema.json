@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fyniq-feasibility@1",
+  "description": "A feasibility study that the Go engine (cmd/scenario-run) and the Python oracle (oracle/src/oracle/feasibility.py) both work out (FR-PLN-06, QA-ENG-02; p1-planning design D8, D9): one idea's inputs, as the workbook's sheet, and the tax rate, given directly. README.md beside this file, \"Feasibility studies\", states the model and the result. Patterns are RE2- and ECMA-262-compatible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name", "currency", "minor_units", "years", "rate", "max_payback", "investment", "life", "salvage",
+               "working_capital", "units", "unit_growth", "price", "price_growth", "variable_cost", "variable_cost_growth",
+               "fixed", "fixed_growth", "tax_rate"],
+  "properties": {
+    "schema": {"const": "fyniq-feasibility@1"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "minor_units": {"type": "integer", "minimum": 0, "maximum": 4},
+    "years": {"description": "The evaluation period, in years.", "type": "integer", "minimum": 1, "maximum": 10},
+    "rate": {"description": "The discount rate, a fraction.", "$ref": "#/$defs/fraction"},
+    "max_payback": {"description": "The longest acceptable payback, in years.", "type": "string", "pattern": "^([0-9]|[1-4][0-9]|50)(\\.[0-9])?$"},
+    "investment": {"$ref": "#/$defs/positive"},
+    "life": {"description": "The depreciation life, in whole years.", "type": "integer", "minimum": 1, "maximum": 50},
+    "salvage": {"description": "At most the investment.", "$ref": "#/$defs/positive"},
+    "working_capital": {"description": "Working capital kept, a fraction of each year's revenue.", "$ref": "#/$defs/fraction"},
+    "units": {"$ref": "#/$defs/count"},
+    "unit_growth": {"$ref": "#/$defs/growth"},
+    "price": {"$ref": "#/$defs/positive"},
+    "price_growth": {"$ref": "#/$defs/growth"},
+    "variable_cost": {"$ref": "#/$defs/positive"},
+    "variable_cost_growth": {"$ref": "#/$defs/growth"},
+    "fixed": {"$ref": "#/$defs/positive"},
+    "fixed_growth": {"$ref": "#/$defs/growth"},
+    "tax_rate": {"$ref": "#/$defs/fraction"}
+  },
+  "$defs": {
+    "positive": {"description": "A decimal of zero or more with at most 4 decimals.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,4})?$"},
+    "count": {"description": "Units, at most 1 decimal.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,8})(\\.[0-9])?$"},
+    "fraction": {"description": "A fraction from 0 to 1 with at most 4 decimals.", "type": "string", "pattern": "^(0(\\.[0-9]{1,4})?|1(\\.0{1,4})?)$"},
+    "growth": {"description": "A yearly change above −1 and below 10, at most 4 decimals.", "type": "string", "pattern": "^(-0\\.[0-9]{1,4}|[0-9](\\.[0-9]{1,4})?)$"}
+  }
+}
