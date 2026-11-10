@@ -186,14 +186,28 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
     (`planning.budgets`) and `forecast.md` (`planning.forecast`), each compiled into `kb/pages/task/`.
 - [ ] 8.4 The four fragments checked against the build and the insight canvas republished where they differ (Recipe C).
   `python3 docs/design/screens/build.py check` passes, and the new canvas version is recorded.
-- [ ] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which
+- [x] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which
   reads every open item. It covers what-ifs that save nothing, the alert's audience, budget approval and the absence
   of any AI or MCP tool.
+  - As built: ten threats over three boundaries, each with its control and the test that proves it. The Board's view
+    of the cash projection's contacts is left to revisit with the board pack.
 
 ## 9. As built (slice 9)
 
-- [ ] 9.1 `make test` and `make up` pass on the last slice, and `make differential` is clean. The build plan's
+- [x] 9.1 `make test` and `make up` pass on the last slice, and `make differential` is clean. The build plan's
   p1-planning paragraph says what was built.
+  - As built (8 Nov 2026), on the last slice:
+    - `make test` passes, the full authorisation matrix included. Its one contract-lint test first found no Spectral,
+      because the worktree lacked its root dependencies; after `pnpm install --frozen-lockfile` it passes, and so do
+      the steps after it.
+    - `scripts/local-smoke.sh` passes from the local images (QA-LOCAL-01), as a compose project of its own on port
+      18080.
+    - `make differential` is clean.
+  - The build plan names #490 to #504.
+  - CI found three faults that the slices' own gates missed, each fixed on the slice that brought it:
+    - the matrix's forecast started after periods closed in 2020 and 2025;
+    - the matrix's budget fixture created accounts that earlier rows already held;
+    - gosec flagged an int32 conversion, and Semgrep a bare `P&L` in JSX text.
 
 ## Workflow follow-up
 
