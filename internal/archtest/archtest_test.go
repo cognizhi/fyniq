@@ -586,6 +586,45 @@ jobs:
 	}
 }
 
+// The auto-approval approves only the owner's own development pull requests, from this repository, and leaves the rest
+// for a person; the code owner reviews the workflows, the infrastructure and the migrations (REL-04, CTL-CHG-01).
+// req: REL-04
+// req: CTL-CHG-01
+func TestAutoApprovalApprovesOnlyTheOwnersPullRequests(t *testing.T) {
+	root := repoRoot(t)
+	src, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "auto-approve.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := AutoApproveViolations(src, Owner); len(got) > 0 {
+		t.Fatalf("%s", strings.Join(got, "\n"))
+	}
+	planted := []byte(`
+on:
+  pull_request:
+jobs:
+  approve:
+    if: github.event.pull_request.user.login == 'cyyeong' || github.event.sender.login == 'cyyeong'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: gh pr review "$PR" --approve
+`)
+	// pull_request instead of pull_request_target, || between the conditions, no repository and no draft condition, an
+	// action run, and neither the label nor the reviews left for a person
+	if got := AutoApproveViolations(planted, Owner); len(got) != 7 {
+		t.Fatalf("want 7 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+	owners, err := os.ReadFile(filepath.Join(root, ".github", "CODEOWNERS"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/.github/", "/infra/", "/db/migrations/"} {
+		if !regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(path) + `\s+.*@` + Owner + `\b`).Match(owners) {
+			t.Errorf(".github/CODEOWNERS does not name @%s for %s", Owner, path)
+		}
+	}
+}
+
 // Every step of `make ci` runs in a CI job, so CI is exactly what `make ci` runs (p0-ci-images-release 1.1).
 // req: SEC-21
 // asvs: V15.2.1

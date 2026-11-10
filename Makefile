@@ -121,7 +121,7 @@ differential: ## The full differential run (QA-ENG-02): Hypothesis looks for a s
 	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run
 	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run FYNIQ_DIFFERENTIAL_SOURCES=$(DIFFERENTIAL_SOURCES) $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
 
-scan: ## Security scans (SEC-21): gosec, Semgrep, gitleaks, grype, Checkov, licences, actionlint, zizmor; waivers in compliance/scan-waivers.toml; reports in .data/scan/
+scan: ## Security scans (SEC-21, SEC-26): gosec, Semgrep, gitleaks, grype, govulncheck, pnpm audit --prod, Checkov, licences, actionlint, zizmor; waivers in compliance/scan-waivers.toml; reports in .data/scan/
 	@$(MISE) python3 scripts/scan.py
 
 oracle-test: ## Run the independent oracle's own tests: hand-worked journals, the scenario schemas, Hypothesis properties (QA-ENG-01)

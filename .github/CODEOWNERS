@@ -1,0 +1,8 @@
+# Code owners (REL-04, CTL-CHG-01; p1-security-hardening design D11): GitHub asks the owner to review every pull
+# request that changes the workflows and repository settings, the infrastructure, or the database migrations.
+# Before production the owner's own development pull requests are approved by auto-approve.yml; branch protection's
+# "Require review from Code Owners" turns on with the human approval before the first production deploy
+# [live-verify]. internal/archtest checks these lines.
+/.github/        @cyyeong
+/infra/          @cyyeong
+/db/migrations/  @cyyeong
