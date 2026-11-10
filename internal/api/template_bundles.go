@@ -69,7 +69,8 @@ func registerTemplateBundles(a *API) {
 		OperationID: "exportDocumentTemplates", Method: http.MethodGet, Path: "/v1/document-template-bundle", Tags: []string{"Templates"},
 		Summary: "Export templates as a bundle",
 		Description: "Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never " +
-			"published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Read-only; no side effects.",
+			"published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Changes nothing; " +
+			"side effects: its audit event, as every export has (AUD-05).",
 	}, append([]string{CodeNotFound, CodeInvalid}, locks...), func(ctx context.Context, in *templateExportInput) (*templateExportOutput, error) {
 		ids := make([]uuid.UUID, 0, len(in.TemplateID))
 		for i, s := range in.TemplateID {
@@ -106,7 +107,13 @@ func registerTemplateBundles(a *API) {
 				out.Templates = append(out.Templates, BundledTemplate{Kind: t.Kind, DocumentType: t.DocumentType, Name: t.Name, Version: t.Published,
 					Content: contentOut(c), Hash: hex.EncodeToString(h)})
 			}
-			return nil
+			// Every export is audited (AUD-05): which templates went, at which versions.
+			exported := make([]string, len(out.Templates))
+			for i, bt := range out.Templates {
+				exported[i] = fmt.Sprintf("%s v%d", ids[i], bt.Version)
+			}
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: auditedReads["exportDocumentTemplates"], ObjectType: "document_template_bundle",
+				ObjectID: p.Organisation, Changes: map[string][2]any{"templates": {nil, exported}}})
 		})
 		return &templateExportOutput{Body: out}, err
 	})

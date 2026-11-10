@@ -84,10 +84,23 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 3. Every sensitive read and export audited (slice 3)
 
-- [ ] 3.1 The audit kinds `export` and `read` in `internal/api`'s registry, and the hook that writes an event after
+- [x] 3.1 The audit kinds `export` and `read` in `internal/api`'s registry, and the hook that writes an event after
   the handler succeeds, failing the response when it cannot. Evidence downloads, the payment file and the brand files
   gain their events. A conventions test walks the generated contract and fails on an operation that carries a file
   (`content_base64`) or a full identifier with no kind, or whose call writes no event. `// req: AUD-05`
+  - As built (9 Nov 2026, rev 0.233):
+    - **No hook was needed.** Every such handler already reads in a unit of work, so it records its event there, and the
+      answer never goes out unless the event was saved. `auditedReads` names each operation's action, all of them
+      security events (AUD-06):
+      - the five handler exports' `report.exported` and `access_review.exported`;
+      - `evidence.opened` and `payment_batch.file_downloaded`, newly security events;
+      - the report export's request and download;
+      - the three reveals.
+    - **The gap found.** The template bundle export wrote nothing; it now writes `document_template_bundle.exported`.
+    - **The exemption.** The brand files are `unauditedFiles`: the organisation's own logo and letterhead.
+    - **Tests.** `TestEveryFileAndRevealIsAudited` walks the contract's success schemas for `content_base64`, and
+      takes every `reveal*` and `export*` operation by name. The authorisation matrix checks that each allowed call of
+      a registered operation wrote its action.
 
 ## 4. Close snapshots, signed and anchored (slice 4)
 
