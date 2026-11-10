@@ -55,8 +55,9 @@ func startSessionsWith(t *testing.T, more ...signin.Provider) *sessionStack {
 	t.Cleanup(srv.Close)
 	out := outbox.Dispatcher{Store: e.store, Queue: local.NewMemory(), Clock: e.clock}
 	flow := signin.Flow{Sessions: e.store, Clock: e.clock, Origin: srv.URL, Base: "", Log: slog.New(slog.NewJSONHandler(e.log, nil)),
-		Alert:  signin.Alerts(signin.EmailAlert(e.store, e.store, out), signin.NotifyAlert(e.store, e.store, out)),
-		Linked: signin.NotifyLink(e.store, e.store, out)}
+		Alert: signin.Alerts(signin.EmailAlert(e.store, e.store, out), signin.NotifyAlert(e.store, e.store, out),
+			signin.AuditSignIn(e.store, e.store)),
+		Linked: signin.NotifyLink(e.store, e.store, out), SignedOut: signin.AuditSignOut(e.store, e.store)}
 	dev, err := local.NewDevSignIn(append([]signin.Provider{local.DevSignInProvider}, more...), "", flow.Callback(), e.clock)
 	if err != nil {
 		t.Fatal(err)
@@ -302,6 +303,89 @@ func TestBrowserSessions(t *testing.T) {
 
 	if !strings.Contains(s.log.String(), `"msg":"auth.signed_in"`) || strings.Contains(s.log.String(), code) {
 		t.Error("the sign-ins were not logged, or the setup code was (SEC-15)")
+	}
+}
+
+// Sign-ins and sign-outs are in the trail of the person's organisation (§11.5 L2) as security events (AUD-06, PRD-001
+// rev 0.230): their bodies name the person and the provider and carry only the fingerprint of the IP address and
+// browser, which are kept beside the chain until the security-log retention ends. A sign-in before the person has an
+// organisation is recorded in none.
+// req: AUD-06
+// req: AUD-00
+// asvs: V16.3.1, V16.2.5
+func TestSignInsAndSignOutsAreInTheTrail(t *testing.T) {
+	ctx := context.Background()
+	s := startSessions(t)
+	a := s.browser()
+	a.signIn("founder-a", true)
+	code, hash := setupcode.New()
+	if err := postgres.SetSetupCode(ctx, s.migrator, hash); err != nil {
+		t.Fatal(err)
+	}
+	r := a.call(http.MethodPost, "/v1/setup", "same-origin", map[string]any{"setup_code": code, "display_name": "Mei Ling Tan",
+		"organisation": map[string]any{"name": "Cognizhi Pte. Ltd."}})
+	if r.Status != http.StatusCreated {
+		t.Fatalf("setup: %d %s", r.Status, r.Raw)
+	}
+	user, org := r.str("user_id"), uuid.MustParse(r.str("organisation_id"))
+	a.signIn("founder-a", false)
+	if r := a.call(http.MethodPost, "/auth/signout", "same-origin", nil); r.Status != 200 && r.Status != 404 {
+		t.Fatalf("sign-out: %d", r.Status)
+	}
+
+	reader, err := postgres.Open(ctx, s.readonly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	type body struct {
+		EventID uuid.UUID `json:"event_id"`
+		Action  string    `json:"action"`
+		Actor   struct{ Type, ID string }
+		Object  struct{ Type, ID string }
+		Changes map[string][2]any
+		Request struct{ IP, UserAgent, Detail string }
+	}
+	var sessions []body
+	var details map[uuid.UUID]storage.AuditDetail
+	if err := reader.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		events, err := u.Audit().Events(ctx, 0, 10000)
+		if err != nil {
+			return err
+		}
+		var ids []uuid.UUID
+		for _, e := range events {
+			var b body
+			if err := json.Unmarshal([]byte(e.Body), &b); err != nil {
+				return err
+			}
+			if strings.HasPrefix(b.Action, "session.") {
+				sessions = append(sessions, b)
+				ids = append(ids, b.EventID)
+			}
+		}
+		details, err = u.Audit().Details(ctx, ids)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// The first sign-in had no organisation yet; the second replaced its session, then was signed out.
+	if len(sessions) != 3 || sessions[0].Action != signin.ActionSignedIn || sessions[1].Action != signin.ActionSignedOut ||
+		sessions[2].Action != signin.ActionSignedOut || sessions[1].Changes["reason"][1] != signin.EndedByNewSignIn ||
+		sessions[2].Changes["reason"][1] != signin.EndedBySignOut {
+		t.Fatalf("the trail's sessions: %+v", sessions)
+	}
+	for _, e := range sessions {
+		if e.Actor.Type != "user" || e.Actor.ID != user || e.Object.ID != user || e.Request.IP != "" || e.Request.UserAgent != "" ||
+			!strings.HasPrefix(e.Request.Detail, "fp1:") {
+			t.Errorf("%s: %+v", e.Action, e)
+		}
+		if d := details[e.EventID]; d.IP != "127.0.0.1" || d.UserAgent == "" {
+			t.Errorf("%s's details beside the chain: %+v", e.Action, d)
+		}
+	}
+	if sessions[0].Changes["provider"][1] != "local" || sessions[0].Changes["second_factor"][1] != false {
+		t.Errorf("the sign-in names its provider and factor: %v", sessions[0].Changes)
 	}
 }
 

@@ -250,6 +250,14 @@ type FyniqAuditEvent struct {
 	ObjectID       *uuid.UUID
 }
 
+type FyniqAuditRequestDetail struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	OccurredAt     time.Time
+	Ip             string
+	UserAgent      string
+}
+
 type FyniqBalance struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

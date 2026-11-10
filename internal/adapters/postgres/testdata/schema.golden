@@ -189,6 +189,11 @@ audit_event | created_xact | bigint | not null |
 audit_event | action | text | null | ((body)::jsonb ->> 'action'::text)
 audit_event | object_type | text | null | (((body)::jsonb -> 'object'::text) ->> 'type'::text)
 audit_event | object_id | uuid | null | ((((body)::jsonb -> 'object'::text) ->> 'id'::text))::uuid
+audit_request_detail | organisation_id | uuid | not null | current_org()
+audit_request_detail | id | uuid | not null | 
+audit_request_detail | occurred_at | timestamp with time zone | not null | 
+audit_request_detail | ip | text | not null | 
+audit_request_detail | user_agent | text | not null | 
 balance | organisation_id | uuid | not null | 
 balance | id | uuid | not null | uuidv7()
 balance | account_id | uuid | not null | 
@@ -1885,6 +1890,16 @@ audit_event | audit_event_prev_hash_not_null | NOT NULL prev_hash
 audit_event | audit_event_seq_key | UNIQUE (organisation_id, seq)
 audit_event | audit_event_seq_not_null | NOT NULL seq
 audit_event | audit_event_seq_positive | CHECK ((seq > 0))
+audit_request_detail | audit_request_detail_agent_length | CHECK ((length(user_agent) <= 1000))
+audit_request_detail | audit_request_detail_event_fkey | FOREIGN KEY (organisation_id, id) REFERENCES audit_event(organisation_id, id)
+audit_request_detail | audit_request_detail_id_not_null | NOT NULL id
+audit_request_detail | audit_request_detail_ip_length | CHECK ((length(ip) <= 64))
+audit_request_detail | audit_request_detail_ip_not_null | NOT NULL ip
+audit_request_detail | audit_request_detail_occurred_at_not_null | NOT NULL occurred_at
+audit_request_detail | audit_request_detail_organisation_id_not_null | NOT NULL organisation_id
+audit_request_detail | audit_request_detail_pkey | PRIMARY KEY (organisation_id, id)
+audit_request_detail | audit_request_detail_something | CHECK (((ip <> ''::text) OR (user_agent <> ''::text)))
+audit_request_detail | audit_request_detail_user_agent_not_null | NOT NULL user_agent
 balance | balance_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 balance | balance_account_id_not_null | NOT NULL account_id
 balance | balance_amount_not_null | NOT NULL amount
@@ -4092,6 +4107,7 @@ CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id,
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
+CREATE INDEX audit_request_detail_age_idx ON fyniq.audit_request_detail USING btree (organisation_id, occurred_at)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)
 CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
@@ -4199,6 +4215,7 @@ CREATE UNIQUE INDEX approval_signature_pkey ON fyniq.approval_signature USING bt
 CREATE UNIQUE INDEX audit_chain_pkey ON fyniq.audit_chain USING btree (organisation_id)
 CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
+CREATE UNIQUE INDEX audit_request_detail_pkey ON fyniq.audit_request_detail USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
 CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
@@ -4582,6 +4599,8 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER audit_request_detail_guard BEFORE DELETE OR UPDATE ON fyniq.audit_request_detail FOR EACH ROW EXECUTE FUNCTION audit_request_detail_guard()
+CREATE TRIGGER audit_request_detail_no_truncate BEFORE TRUNCATE ON fyniq.audit_request_detail FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
 CREATE TRIGGER bank_feed_no_truncate BEFORE TRUNCATE ON fyniq.bank_feed FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -4819,6 +4838,7 @@ approval_request | tenant_isolation | * | (organisation_id = current_org()) | (o
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4955,8 +4975,10 @@ approval_void_pending(p_type text, p_key text, p_reason text) → void | securit
 approval_void_pending_all(p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 741722484193d313eb1d8961a41dbf46
 approval_void_pending_type(p_type text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f8b69e58a60cc252f3e4b22a2cc98989
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
+audit_erase_details(p_cutoff timestamp with time zone, OUT erased bigint, OUT first_seq bigint, OUT last_seq bigint) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 53b4cf12dc39db139466d3f45919b2fe
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
+audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
 balances_by_set_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, value_ids uuid[], amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 7e1f3145f1ae4041e42abd85874e0867

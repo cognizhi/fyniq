@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -86,4 +87,27 @@ type Audit interface {
 	Head(ctx context.Context) (AuditHead, error)
 	// Events returns up to limit events after sequence number after, in order.
 	Events(ctx context.Context, after int64, limit int) ([]AuditEvent, error)
+	// Details returns the request details kept beside the chain for those of events that are security events and
+	// still have them (AUD-06), by event. The worker and the read-only role read them.
+	Details(ctx context.Context, events []uuid.UUID) (map[uuid.UUID]AuditDetail, error)
+	// DetailsBefore counts the details of events that occurred before cutoff.
+	DetailsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	// EraseDetails erases the details of events that occurred before cutoff (AUD-06): the worker only, and only for a
+	// cutoff at least 30 days ago by the database's clock (CodeAudit otherwise).
+	EraseDetails(ctx context.Context, cutoff time.Time) (AuditErasure, error)
+}
+
+// AuditDetail is a security event's request details, kept beside the chain until the security-log retention ends
+// (AUD-06): the IP address and the user agent its body's request.detail fingerprints.
+type AuditDetail struct {
+	EventID    uuid.UUID
+	OccurredAt time.Time
+	IP         string
+	UserAgent  string
+}
+
+// AuditErasure is what an erasure removed: how many events' details, and the first and last of those events.
+type AuditErasure struct {
+	Erased            int64
+	FirstSeq, LastSeq int64
 }

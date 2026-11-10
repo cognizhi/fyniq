@@ -52,6 +52,7 @@ var ScheduledJobs = map[string]string{
 	"notify.bills_due":      "Bills-due reminders",
 	"notify.deadlines":      "Statutory deadline reminders",
 	"notify.cash_buffer":    "Cash buffer alerts",
+	"audit.erase":           "Security events' details erased after their retention",
 }
 
 // The checks of the payments out: p1-checks slice 4 (task 4.3).

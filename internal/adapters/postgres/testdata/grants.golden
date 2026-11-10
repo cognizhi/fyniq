@@ -43,6 +43,7 @@ fyniq_api       EXECUTE   approval_void_pending()
 fyniq_api       EXECUTE   approval_void_pending_all()
 fyniq_api       EXECUTE   approval_void_pending_type()
 fyniq_api       INSERT    audit_event (body, id)
+fyniq_api       INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   balances_at()
@@ -388,6 +389,7 @@ fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
+fyniq_executor  INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
 fyniq_executor  SELECT    brand_version
@@ -475,6 +477,7 @@ fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
 fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
+fyniq_readonly  SELECT    audit_request_detail
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
 fyniq_readonly  EXECUTE   balances_at()
@@ -600,8 +603,11 @@ fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
 fyniq_worker    SELECT    audit_chain
+fyniq_worker    EXECUTE   audit_erase_details()
 fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event
+fyniq_worker    INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
+fyniq_worker    SELECT    audit_request_detail
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   balances_at()

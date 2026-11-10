@@ -60,6 +60,9 @@ type Flow struct {
 	Alert Alert
 	// Linked tells a person a sign-in was linked to their account (FR-ADM-08); nil tells nobody. A failure is logged.
 	Linked LinkAlert
+	// SignedOut is told a session ends, before it does (§11.5 L2, AUD-06); nil tells nobody. A failure is logged and
+	// never stops the sign-out.
+	SignedOut SignedOut
 }
 
 // LinkAlert tells user, whose session is session, that a sign-in with provider was linked to their account.
@@ -221,11 +224,11 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if f.Alert != nil {
-		if err := f.Alert(r.Context(), who, hash, agent, now); err != nil {
+		if err := f.Alert(withClient(r), who, hash, agent, now); err != nil {
 			f.log().Error("auth.signin.alert_failed", "provider", who.Provider, "error", err.Error())
 		}
 	}
-	f.endCurrent(r) // a new sign-in replaces the browser's session, never adds to it
+	f.endCurrent(r, EndedByNewSignIn) // a new sign-in replaces the browser's session, never adds to it
 	http.SetCookie(w, f.cookie(authn.SessionCookie(f.Secure()), token, authn.SessionLifetime))
 	f.log().Info("auth.signed_in", "provider", who.Provider, "issuer", who.Issuer, "subject", who.Subject,
 		"second_factor", who.SecondFactor)
@@ -304,18 +307,24 @@ func (f Flow) signOut(w http.ResponseWriter, r *http.Request) {
 			"Sign out from Fyniq itself.")
 		return
 	}
-	f.endCurrent(r)
+	f.endCurrent(r, EndedBySignOut)
 	http.SetCookie(w, f.cookie(authn.SessionCookie(f.Secure()), "", -1))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// endCurrent ends the session the request's cookie names, if any.
-func (f Flow) endCurrent(r *http.Request) {
+// endCurrent ends the session the request's cookie names, if any, for reason.
+func (f Flow) endCurrent(r *http.Request, reason string) {
 	token := authn.CookieValue(r.Header.Get("Cookie"), authn.SessionCookie(f.Secure()))
 	if token == "" {
 		return
 	}
-	if err := f.Sessions.EndSession(r.Context(), authn.HashToken(token), f.Clock.Now()); err != nil {
+	hash, now := authn.HashToken(token), f.Clock.Now()
+	if f.SignedOut != nil {
+		if err := f.SignedOut(withClient(r), hash, reason, now); err != nil {
+			f.log().Error("auth.signout.not_recorded", "error", err.Error())
+		}
+	}
+	if err := f.Sessions.EndSession(r.Context(), hash, now); err != nil {
 		f.log().Error("auth.signout.failure", "error", err.Error())
 	}
 }

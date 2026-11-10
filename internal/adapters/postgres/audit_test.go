@@ -104,7 +104,7 @@ func TestEveryEventMatchesTheAUD01Schema(t *testing.T) {
 	if _, err := audit.AnchorAll(ctx, worker, blobs, signer, frozen); err != nil {
 		t.Fatal(err)
 	}
-	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer)
+	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 	if r := reportFor(t, reports, b.Org); !r.OK() {
 		t.Fatalf("verification: %s", r.Problem)
 	}
@@ -201,7 +201,8 @@ func TestAttackChangesWithoutAnAuditEventFail(t *testing.T) {
 			"SET session_replication_role = replica",
 		} {
 			err := asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
-			wantState(t, role+": "+stmt, err, "42501", "FY060")
+			// 0A000: the security events' details (000285) refer to the events, so not even their owner truncates them.
+			wantState(t, role+": "+stmt, err, "42501", "FY060", "0A000")
 		}
 	}
 	err := asOrg(ctx, conn(t, "fyniq_ai"), b.Org, func(tx pgx.Tx) error {
@@ -244,7 +245,7 @@ func TestTamperingWithTheTrailIsDetected(t *testing.T) {
 	if _, err := audit.AnchorAll(ctx, worker, blobs, signer, frozen); err != nil {
 		t.Fatal(err)
 	}
-	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer)
+	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 	for _, org := range []uuid.UUID{edited.Org, rewritten.Org} {
 		if r := reportFor(t, reports, org); !r.OK() || r.Anchors != 1 {
 			t.Fatalf("before tampering: %+v", r)
@@ -276,7 +277,7 @@ func TestTamperingWithTheTrailIsDetected(t *testing.T) {
 		return err
 	})
 
-	reports, err := audit.VerifyAll(ctx, worker, blobs, signer)
+	reports, err := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 	if err == nil {
 		t.Fatal("VerifyAll passed with two tampered trails")
 	}
@@ -357,7 +358,7 @@ func TestAnchorsAreSignedAndWrittenOnce(t *testing.T) {
 	if err := blobs.Put(ctx, keys[0], bytes.NewReader(forged)); err != nil { // as someone bypassing the lock would
 		t.Fatal(err)
 	}
-	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer)
+	reports, _ := audit.VerifyAll(ctx, worker, blobs, signer, nil)
 	if r := reportFor(t, reports, b.Org); r.OK() || !strings.Contains(r.Problem, "signature") {
 		t.Fatalf("a forged anchor: %+v", r)
 	}
@@ -462,7 +463,9 @@ func TestSensitiveValuesReachTheTrailAsProofs(t *testing.T) {
 	if len(stored) < 3 {
 		t.Fatalf("%d events", len(stored))
 	}
-	type proofs struct{ Changes map[string][2]map[string]string }
+	type proofs struct {
+		Changes map[string][2]map[string]string
+	}
 	var got [3]proofs
 	for i, e := range stored[len(stored)-3:] {
 		for _, clear := range []string{"0123456789", "9876543210", "8500.00", "9000.00"} {

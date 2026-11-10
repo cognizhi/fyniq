@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -29,7 +31,8 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 	if err != nil {
 		return err
 	}
-	e, err := audit.New(u.org, u.store.clock.Now(), audit.Actor(actor), action,
+	now := u.store.clock.Now()
+	e, err := audit.New(u.org, now, audit.Actor(actor), action,
 		audit.Object{Type: objectType, ID: objectID, Version: version}, c)
 	if err != nil {
 		return err
@@ -45,7 +48,22 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 		e.ApprovalIDs = a.ApprovalIDs
 	}
 	e.Reason = a.Reason
-	e.Request = audit.Request(a.Request)
+	e.Request = audit.Request{ID: a.Request.ID, IP: a.Request.IP, UserAgent: a.Request.UserAgent, Session: a.Request.Session}
+	// AUD-06: a security event keeps its IP address and user agent beside the chain, fingerprinted in its body, so they
+	// can be erased after the security-log retention while the event stays and verifies.
+	if audit.IsSecurity(action) && (e.Request.IP != "" || e.Request.UserAgent != "") {
+		d := storage.AuditDetail{EventID: e.EventID, OccurredAt: now, IP: audit.Clip(e.Request.IP, 64), UserAgent: audit.Clip(e.Request.UserAgent, 1000)}
+		mac, err := u.store.fingerprint(ctx, scope, audit.DetailValue(d.IP, d.UserAgent))
+		if err != nil {
+			return fmt.Errorf("audit: fingerprint the request details of %s: %w", action, err)
+		}
+		e.Request.IP, e.Request.UserAgent = "", ""
+		e.Request.Detail = audit.FingerprintPrefix + base64.RawURLEncoding.EncodeToString(mac)
+		if u.details == nil {
+			u.details = map[uuid.UUID]storage.AuditDetail{}
+		}
+		u.details[e.EventID] = d
+	}
 	u.pending = append(u.pending, e)
 	return nil
 }
@@ -70,8 +88,14 @@ func (u *unitOfWork) flush(ctx context.Context) error {
 		if err := u.q.InsertAuditEvent(ctx, sqlcdb.InsertAuditEventParams{ID: e.EventID, Body: string(body)}); err != nil {
 			return mapError(err)
 		}
+		if d, ok := u.details[e.EventID]; ok {
+			if err := u.q.InsertAuditRequestDetail(ctx, sqlcdb.InsertAuditRequestDetailParams{ID: d.EventID, OccurredAt: d.OccurredAt,
+				Ip: d.IP, UserAgent: d.UserAgent}); err != nil {
+				return mapError(err)
+			}
+		}
 	}
-	u.pending = nil
+	u.pending, u.details = nil, nil
 	return nil
 }
 
@@ -111,6 +135,50 @@ func (r auditTrail) Events(ctx context.Context, after int64, limit int) ([]stora
 	out := make([]storage.AuditEvent, len(rows))
 	for i, e := range rows {
 		out[i] = storage.AuditEvent{ID: e.ID, Seq: e.Seq, Body: e.Body, PrevHash: e.PrevHash, Hash: e.Hash}
+	}
+	return out, nil
+}
+
+func (r auditTrail) Details(ctx context.Context, events []uuid.UUID) (map[uuid.UUID]storage.AuditDetail, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListAuditRequestDetails(ctx, events)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make(map[uuid.UUID]storage.AuditDetail, len(rows))
+	for _, d := range rows {
+		out[d.ID] = storage.AuditDetail{EventID: d.ID, OccurredAt: d.OccurredAt, IP: d.Ip, UserAgent: d.UserAgent}
+	}
+	return out, nil
+}
+
+func (r auditTrail) DetailsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.CountAuditRequestDetailsBefore(ctx, cutoff)
+	return n, mapError(err)
+}
+
+func (r auditTrail) EraseDetails(ctx context.Context, cutoff time.Time) (storage.AuditErasure, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AuditErasure{}, err
+	}
+	row, err := r.u.q.EraseAuditRequestDetails(ctx, cutoff)
+	if err != nil {
+		return storage.AuditErasure{}, mapError(err)
+	}
+	out := storage.AuditErasure{}
+	if row.Erased != nil {
+		out.Erased = *row.Erased
+	}
+	if row.FirstSeq != nil {
+		out.FirstSeq = *row.FirstSeq
+	}
+	if row.LastSeq != nil {
+		out.LastSeq = *row.LastSeq
 	}
 	return out, nil
 }

@@ -52,3 +52,33 @@ The fingerprint is the organisation's keyed hash of the value (SEC-11: Cloud KMS
 equal for equal values. So two proofs show whether a value changed, and whether it changed back, but not what it is.
 An identifier's proof keeps its last four characters as `hint`; a pay figure's has none. Version 1 events kept an
 identifier's last four characters only.
+
+## Security events' details
+
+From version 2, a **security event** (AUD-06) keeps the IP address and user agent it came from beside the chain, in
+`fyniq.audit_request_detail`, not in its body. Security events are:
+- sign-ins and sign-outs (`session.started`, `session.ended`);
+- changes to how a person signs in, and recoveries;
+- a Super admin's installation events;
+- every reveal of a full identifier and every export.
+
+Their body's `request` keeps its `id` and `session`, leaves `ip` and `user_agent` empty, and carries `detail`:
+`fp1:` and the organisation's keyed fingerprint of the JSON pair `["<ip>", "<user agent>"]`. While the details exist,
+verification checks them against that fingerprint, so a changed address is caught.
+
+After the security-log retention (`retention.security_events_days`, 400 days by default and at least 30), the erasure
+job deletes them. The event stays, so the chain still verifies.
+
+### The erasure register
+
+Before each erasure the job writes one signed entry, once, to `audit-erasures/<organisation>/<cutoff>.json`:
+
+```json
+{"erasure": {"schema": "fyniq-audit-erasure@1", "organisation_id": "…", "cutoff": "<RFC 3339>", "count": 3,
+             "written_at": "<RFC 3339>", "key_id": "…"},
+ "signature": "<base64>"}
+```
+
+The signature covers the compact JSON of `erasure` as written, with the anchors' key. Every detail of an event that
+occurred before `cutoff` is erased. A database restored from a backup taken before an entry re-applies the register
+before it opens (AUD-09, G4-070), so an erased address never comes back.

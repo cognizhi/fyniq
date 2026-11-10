@@ -54,7 +54,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "jobs: wrote %d audit anchor(s)\n", n)
 			return err
 		case "audit-verify":
-			reports, err := audit.VerifyAll(ctx, kit.Store, kit.Blobs, kit.Signer)
+			reports, err := audit.VerifyAll(ctx, kit.Store, kit.Blobs, kit.Signer, kit.Keyed())
 			for _, r := range reports {
 				status := "ok"
 				if !r.OK() {

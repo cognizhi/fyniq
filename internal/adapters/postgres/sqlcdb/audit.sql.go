@@ -7,9 +7,38 @@ package sqlcdb
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+const countAuditRequestDetailsBefore = `-- name: CountAuditRequestDetailsBefore :one
+SELECT count(*) FROM fyniq.audit_request_detail WHERE occurred_at < $1
+`
+
+func (q *Queries) CountAuditRequestDetailsBefore(ctx context.Context, occurredAt time.Time) (int64, error) {
+	row := q.db.QueryRow(ctx, countAuditRequestDetailsBefore, occurredAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const eraseAuditRequestDetails = `-- name: EraseAuditRequestDetails :one
+SELECT erased, first_seq, last_seq FROM fyniq.audit_erase_details($1)
+`
+
+type EraseAuditRequestDetailsRow struct {
+	Erased   *int64
+	FirstSeq *int64
+	LastSeq  *int64
+}
+
+func (q *Queries) EraseAuditRequestDetails(ctx context.Context, pCutoff time.Time) (EraseAuditRequestDetailsRow, error) {
+	row := q.db.QueryRow(ctx, eraseAuditRequestDetails, pCutoff)
+	var i EraseAuditRequestDetailsRow
+	err := row.Scan(&i.Erased, &i.FirstSeq, &i.LastSeq)
+	return i, err
+}
 
 const getAuditHead = `-- name: GetAuditHead :one
 SELECT c.seq, c.head_hash,
@@ -42,6 +71,28 @@ type InsertAuditEventParams struct {
 // audit_event_append chains it: sequence, prev_hash and hash (INV-12).
 func (q *Queries) InsertAuditEvent(ctx context.Context, arg InsertAuditEventParams) error {
 	_, err := q.db.Exec(ctx, insertAuditEvent, arg.ID, arg.Body)
+	return err
+}
+
+const insertAuditRequestDetail = `-- name: InsertAuditRequestDetail :exec
+INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent) VALUES ($1, $2, $3, $4)
+`
+
+type InsertAuditRequestDetailParams struct {
+	ID         uuid.UUID
+	OccurredAt time.Time
+	Ip         string
+	UserAgent  string
+}
+
+// A security event's request details, beside the chain (AUD-06, 000285).
+func (q *Queries) InsertAuditRequestDetail(ctx context.Context, arg InsertAuditRequestDetailParams) error {
+	_, err := q.db.Exec(ctx, insertAuditRequestDetail,
+		arg.ID,
+		arg.OccurredAt,
+		arg.Ip,
+		arg.UserAgent,
+	)
 	return err
 }
 
@@ -78,6 +129,42 @@ func (q *Queries) ListAuditEvents(ctx context.Context, arg ListAuditEventsParams
 			&i.Body,
 			&i.PrevHash,
 			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditRequestDetails = `-- name: ListAuditRequestDetails :many
+SELECT id, occurred_at, ip, user_agent FROM fyniq.audit_request_detail WHERE id = ANY($1::uuid[])
+`
+
+type ListAuditRequestDetailsRow struct {
+	ID         uuid.UUID
+	OccurredAt time.Time
+	Ip         string
+	UserAgent  string
+}
+
+func (q *Queries) ListAuditRequestDetails(ctx context.Context, eventIds []uuid.UUID) ([]ListAuditRequestDetailsRow, error) {
+	rows, err := q.db.Query(ctx, listAuditRequestDetails, eventIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAuditRequestDetailsRow
+	for rows.Next() {
+		var i ListAuditRequestDetailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OccurredAt,
+			&i.Ip,
+			&i.UserAgent,
 		); err != nil {
 			return nil, err
 		}

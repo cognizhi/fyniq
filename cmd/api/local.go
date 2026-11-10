@@ -42,12 +42,12 @@ func init() {
 	}
 	// The dev sign-in page stands in for Identity Platform (§12.8): the browser signs in through it at
 	// /auth/signin and gets a first-party session.
-	registerSignIn = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert, linked signin.LinkAlert) ports.SignIn {
+	registerSignIn = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, hooks signin.Hooks) ports.SignIn {
 		if sessions == nil {
 			return nil
 		}
-		flow := signin.Flow{Sessions: sessions, Clock: clock, Origin: origin(), Base: base, Log: logging.New(os.Stderr, slog.LevelInfo), Alert: alert,
-			Linked: linked}
+		flow := signin.Flow{Sessions: sessions, Clock: clock, Origin: origin(), Base: base, Log: logging.New(os.Stderr, slog.LevelInfo),
+			Alert: hooks.Alert, Linked: hooks.Linked, SignedOut: hooks.SignedOut}
 		dev, err := local.NewDevSignIn([]signin.Provider{local.DevSignInProvider}, base, flow.Callback(), clock)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "api: no sign-in:", err)

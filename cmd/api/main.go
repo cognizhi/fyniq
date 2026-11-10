@@ -38,7 +38,7 @@ import (
 var (
 	startLocalTick   func(t outbox.Ticker)
 	newAuthenticator func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator
-	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert, linked signin.LinkAlert) ports.SignIn
+	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, hooks signin.Hooks) ports.SignIn
 	// webOrigin is the web app's origin as the browser sees it, "" when the flavour has none configured: the passkey
 	// ceremonies are bound to it (FR-ADM-02).
 	webOrigin     func() string
@@ -61,14 +61,17 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		d.Auth = newAuthenticator(deps.Clock, sessions)
 	}
 	if registerSignIn != nil {
-		var alert signin.Alert // a sign-in alert needs the database and the outbox
-		var linked signin.LinkAlert
+		var hooks signin.Hooks // the alerts and the trail need the database and the outbox
 		if err == nil {
 			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
-			alert = signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out))
-			linked = signin.NotifyLink(kit.Store, kit.Store, out)
+			hooks = signin.Hooks{
+				Alert: signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out),
+					signin.AuditSignIn(kit.Store, kit.Store)),
+				Linked:    signin.NotifyLink(kit.Store, kit.Store, out),
+				SignedOut: signin.AuditSignOut(kit.Store, kit.Store),
+			}
 		}
-		d.SignIn = registerSignIn(s, deps.Clock, sessions, alert, linked)
+		d.SignIn = registerSignIn(s, deps.Clock, sessions, hooks)
 	}
 	if registerOAuth != nil {
 		registerOAuth(s, deps.Clock, sessions)
