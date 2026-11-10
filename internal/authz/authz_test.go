@@ -183,7 +183,9 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 			p.Capability == authz.Joining
 		// The online link's operations are public by design: the link's token is the credential, and they reach one
 		// document of one organisation (FR-AR-06, FR-AR-16; docs/security/threat-models/document-links.md).
-		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink"
+		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink" ||
+			// An evidence file's download link: its signed, 5-minute token is the credential, to one file (SEC-24).
+			op == "getEvidenceDownload"
 		public := op == "getSetupStatus" || op == "listSignInProviders" || link
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {

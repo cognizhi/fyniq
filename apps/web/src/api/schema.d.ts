@@ -5456,6 +5456,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/evidence-downloads/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Save an evidence file through its link
+         * @description Public: no session; the link's token is the right, for 5 minutes (SEC-24). The file itself, served as an attachment with its name and type, checked against the SHA-256 recorded when it was stored. A token that is not the API's, or expired, and a file removed since, is not found. Only the links of an installation without signed URLs of its store come here. Never cached.
+         */
+        get: operations["getEvidenceDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/evidence/{evidence_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a link that saves an evidence file
+         * @description A link that works for 5 minutes and serves the file as an attachment, with its name and type (SEC-24): a signed URL of the stored object in the cloud, a signed path of the API locally. For whoever may open the file, as getEvidenceFile is: any other file, and a removed one, is not found. Side effects: an audit event of the link, with the file's hash. Never cached.
+         */
+        post: operations["createEvidenceDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/evidence/{evidence_id}/file": {
         parameters: {
             query?: never;
@@ -5465,7 +5505,8 @@ export interface paths {
         };
         /**
          * Open an evidence file
-         * @description The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 rev 0.188): from the staging store while its record is a draft, from the retention-locked store once it is final, and checked against the SHA-256 recorded when it was stored before it is sent. Only for whoever views its record's row without a qualifier, as an evidence search lists it, or for the person whose own expense claim or bank account change it is on; any other file, and a removed one, is not found. Show a picture inline only from this answer, never by its name; a PDF is for saving until previews render (FR-DOC-08). Side effects: an audit event of the opening, with the file's hash. Never cached.
+         * @deprecated
+         * @description The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 rev 0.188): from the staging store while its record is a draft, from the retention-locked store once it is final, and checked against the SHA-256 recorded when it was stored before it is sent. Only for whoever views its record's row without a qualifier, as an evidence search lists it, or for the person whose own expense claim or bank account change it is on; any other file, and a removed one, is not found. Show a picture inline only from this answer, never by its name; a PDF is for saving until previews render (FR-DOC-08). Side effects: an audit event of the opening, with the file's hash. Never cached. Deprecated: save a file through the link createEvidenceDownload gives, served with download headers (SEC-24).
          */
         get: operations["getEvidenceFile"];
         put?: never;
@@ -24754,6 +24795,34 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        EvidenceDownload: {
+            /**
+             * Format: date-time
+             * @description When the link stops working: 5 minutes after it was made.
+             * @example 2026-11-10T09:05:00Z
+             */
+            expires_at: string;
+            /**
+             * @description As the uploader named it: data, never a path (FR-DOC-08).
+             * @example AU-100.pdf
+             */
+            file_name: string;
+            /**
+             * @description Its type, decided from its content when it was attached.
+             * @example application/pdf
+             */
+            media_type: string;
+            /**
+             * @description The SHA-256 of the file as stored, in hexadecimal, to check what was saved.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * @description Open it within expires_at: the file is served as an attachment named file_name, of type media_type. A path starting /api/ is on the web app's own origin.
+             * @example https://storage.googleapis.com/fyniq-prod-evidence/01928f6e/AU-100.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Expires=300&X-Goog-Signature=ab12
+             */
+            url: string;
         };
         EvidenceFileContent: {
             /**
@@ -84684,7 +84753,87 @@ export interface operations {
             };
         };
     };
-    getEvidenceFile: {
+    getEvidenceDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The link's token, as createEvidenceDownload gave it. */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file itself, of its stored type, as an attachment with its name. */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Content-Disposition"?: string;
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEvidenceDownload: {
         parameters: {
             query?: never;
             header?: never;
@@ -84706,7 +84855,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EvidenceFileContent"];
+                    "application/json": components["schemas"]["EvidenceDownload"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
@@ -84718,7 +84867,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -84772,6 +84921,150 @@ export interface operations {
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
             503: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEvidenceFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The file. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceFileContent"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    /** @description When this operation was deprecated, as a structured date (RFC 9745). */
+                    Deprecation?: string;
+                    /** @description The page that says what to use instead (rel="deprecation"). */
+                    Link?: string;
+                    /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
+                    Sunset?: string;
                     [name: string]: unknown;
                 };
                 content: {

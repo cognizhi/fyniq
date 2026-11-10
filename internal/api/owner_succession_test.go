@@ -226,6 +226,16 @@ var matrixSuccession = map[string]func(e *env, tok string) (response, func() boo
 		_, file := matrixBillEvidence(e)
 		return e.call(http.MethodGet, "/v1/evidence/"+file+"/file", tok, nil), nil
 	},
+	// A download link (SEC-24): asked for as a file is opened; the API's own link is public, its token the right.
+	"createEvidenceDownload": func(e *env, tok string) (response, func() bool) {
+		_, file := matrixBillEvidence(e)
+		return e.call(http.MethodPost, "/v1/evidence/"+file+"/download", tok, nil), nil
+	},
+	"getEvidenceDownload": func(e *env, tok string) (response, func() bool) {
+		_, file := matrixBillEvidence(e)
+		l := e.call(http.MethodPost, "/v1/evidence/"+file+"/download", e.as(authz.Accountant), nil)
+		return e.call(http.MethodGet, strings.TrimPrefix(l.str("url"), "/api"), tok, nil), nil
+	},
 	"searchEvidence": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/evidence", tok, nil), nil
 	},

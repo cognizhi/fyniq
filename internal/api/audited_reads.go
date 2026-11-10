@@ -13,6 +13,7 @@ var auditedReads = map[string]string{
 	"exportDocumentTemplates":   "document_template_bundle.exported",
 	"exportFinancialStatement":  "report.exported",
 	"exportRelatedParties":      "report.exported",
+	"createEvidenceDownload":    "evidence.download_linked",
 	"getEvidenceFile":           "evidence.opened",
 	"getPaymentBatchFile":       "payment_batch.file_downloaded",
 	"getPersonalDataReport":     "personal_data.exported",

@@ -17,8 +17,9 @@ var (
 	securityPrefixes = []string{"session.", "identity.", "passkey.", "sign_in_method.", "recovery_codes.", "account_recovery.",
 		"account.recovered", "super_admin.", "report_export."}
 	securitySuffixes = []string{".exported", "_revealed", "_downloaded"}
-	// securityExact are reads of a file whose action says neither (AUD-05): opening an evidence file.
-	securityExact = []string{"evidence.opened"}
+	// securityExact are reads of a file whose action says neither (AUD-05): opening an evidence file, or asking for a link
+	// that saves it (SEC-24).
+	securityExact = []string{"evidence.opened", "evidence.download_linked"}
 )
 
 // IsSecurity reports whether an action is a security event's.

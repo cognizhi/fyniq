@@ -79,8 +79,40 @@ func viewsMasked(p authn.Principal, row authz.Capability) bool {
 		p.Roles, p.AI()).Right == authz.Masked
 }
 
+// openableEvidence is file id as p may open it in u: the file, the store it is in now and its key there. A file p may not
+// open, a removed one and a payroll or identity file are not found.
+func (a *API) openableEvidence(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Evidence, ports.BlobStore, string, error) {
+	gone := problem(CodeNotFound, "No file you may open has that ID.", "Open it from its record's Evidence panel, or find it in Accounting › Evidence.")
+	e, err := u.Evidence().Get(ctx, id)
+	if errors.Is(err, ports.ErrNotFound) {
+		return e, nil, "", gone
+	}
+	if err != nil {
+		return e, nil, "", err
+	}
+	if e.State == storage.EvidenceRemoved || e.DataClass == storage.ClassPayroll || e.DataClass == storage.ClassIdentity {
+		return e, nil, "", gone // payroll and identity files wait for payroll's permissions (FR-DOC-09); none is attached yet
+	}
+	doc, err := u.Documents().Get(ctx, e.DocumentID)
+	if err != nil {
+		return e, nil, "", err
+	}
+	if !opens(p, doc) {
+		return e, nil, "", gone
+	}
+	store, key := a.deps.Staging, e.StagingKey
+	if e.State == storage.EvidenceFinal {
+		store, key = a.deps.Evidence, e.LockedKey
+	}
+	if store == nil {
+		return e, nil, "", problem(CodeUnavailable, "This installation has no evidence store to open files from.", "Ask the operator to configure the evidence stores.")
+	}
+	return e, store, key, nil
+}
+
 func registerEvidenceFile(a *API) {
-	register(a, authz.GetEvidenceFile, huma.Operation{
+	// Deprecated for createEvidenceDownload (SEC-24): a file is saved through a short-lived link with download headers.
+	register(a, authz.GetEvidenceFile, deprecate(huma.Operation{
 		OperationID: "getEvidenceFile", Method: http.MethodGet, Path: "/v1/evidence/{evidence_id}/file", Tags: []string{"Evidence"},
 		Summary: "Open an evidence file",
 		Description: "The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 rev 0.188): from the staging store " +
@@ -88,64 +120,45 @@ func registerEvidenceFile(a *API) {
 			"it was stored before it is sent. Only for whoever views its record's row without a qualifier, as an evidence search lists " +
 			"it, or for the person whose own expense claim or bank account change it is on; any other file, and a removed one, is not " +
 			"found. Show a picture inline only from this answer, never by its name; a PDF is for saving until previews render (FR-DOC-08). " +
-			"Side effects: an audit event of the opening, with the file's hash. Never cached.",
-	}, []string{CodeNotFound, CodeUnavailable}, func(ctx context.Context, in *evidenceFilePath) (*evidenceFileOutput, error) {
-		id, err := parseID("evidence_id", in.EvidenceID)
-		if err != nil {
-			return nil, err
-		}
-		p, _ := authn.From(ctx)
-		var out EvidenceFileContent
-		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			gone := problem(CodeNotFound, "No file you may open has that ID.", "Open it from its record's Evidence panel, or find it in Accounting › Evidence.")
-			e, err := u.Evidence().Get(ctx, id)
-			if errors.Is(err, ports.ErrNotFound) {
-				return gone
-			}
+			"Side effects: an audit event of the opening, with the file's hash. Never cached. Deprecated: save a file through the link " +
+			"createEvidenceDownload gives, served with download headers (SEC-24).",
+	}, "2026-11-10", "2027-05-31", "https://github.com/cognizhi/fyniq/blob/main/docs/api/reference.md#createevidencedownload"),
+		[]string{CodeNotFound, CodeUnavailable}, func(ctx context.Context, in *evidenceFilePath) (*evidenceFileOutput, error) {
+			id, err := parseID("evidence_id", in.EvidenceID)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			if e.State == storage.EvidenceRemoved || e.DataClass == storage.ClassPayroll || e.DataClass == storage.ClassIdentity {
-				return gone // payroll and identity files wait for payroll's permissions (FR-DOC-09); none is attached yet
-			}
-			doc, err := u.Documents().Get(ctx, e.DocumentID)
+			p, _ := authn.From(ctx)
+			var out EvidenceFileContent
+			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				e, store, key, err := a.openableEvidence(ctx, u, p, id)
+				if err != nil {
+					return err
+				}
+				r, err := store.Get(ctx, key)
+				if err != nil {
+					return fmt.Errorf("evidence %s: %w", e.ID, err)
+				}
+				defer r.Close()
+				data, err := io.ReadAll(io.LimitReader(r, evidence.MaxBytes+1))
+				if err != nil {
+					return err
+				}
+				sum := sha256.Sum256(data)
+				if want, _ := hex.DecodeString(e.SHA256); !bytes.Equal(sum[:], want) {
+					return fmt.Errorf("evidence %s: the stored file is not the one recorded (FR-DOC-07)", e.ID) // nightly re-verification reports it too
+				}
+				if err := u.Audit().Record(ctx, storage.AuditRecord{Action: "evidence.opened", ObjectType: "evidence", ObjectID: e.ID,
+					Changes: map[string][2]any{"file": {nil, map[string]any{"document_id": e.DocumentID.String(), "sha256": e.SHA256}}}}); err != nil {
+					return err
+				}
+				out = EvidenceFileContent{ID: e.ID.String(), FileName: e.FileName, MediaType: e.MediaType, Size: len(data), SHA256: e.SHA256,
+					Content: base64.StdEncoding.EncodeToString(data)}
+				return nil
+			})
 			if err != nil {
-				return err
+				return nil, err
 			}
-			if !opens(p, doc) {
-				return gone
-			}
-			store, key := a.deps.Staging, e.StagingKey
-			if e.State == storage.EvidenceFinal {
-				store, key = a.deps.Evidence, e.LockedKey
-			}
-			if store == nil {
-				return problem(CodeUnavailable, "This installation has no evidence store to open files from.", "Ask the operator to configure the evidence stores.")
-			}
-			r, err := store.Get(ctx, key)
-			if err != nil {
-				return fmt.Errorf("evidence %s: %w", e.ID, err)
-			}
-			defer r.Close()
-			data, err := io.ReadAll(io.LimitReader(r, evidence.MaxBytes+1))
-			if err != nil {
-				return err
-			}
-			sum := sha256.Sum256(data)
-			if want, _ := hex.DecodeString(e.SHA256); !bytes.Equal(sum[:], want) {
-				return fmt.Errorf("evidence %s: the stored file is not the one recorded (FR-DOC-07)", e.ID) // nightly re-verification reports it too
-			}
-			if err := u.Audit().Record(ctx, storage.AuditRecord{Action: "evidence.opened", ObjectType: "evidence", ObjectID: e.ID,
-				Changes: map[string][2]any{"file": {nil, map[string]any{"document_id": e.DocumentID.String(), "sha256": e.SHA256}}}}); err != nil {
-				return err
-			}
-			out = EvidenceFileContent{ID: e.ID.String(), FileName: e.FileName, MediaType: e.MediaType, Size: len(data), SHA256: e.SHA256,
-				Content: base64.StdEncoding.EncodeToString(data)}
-			return nil
+			return &evidenceFileOutput{Body: out}, nil
 		})
-		if err != nil {
-			return nil, err
-		}
-		return &evidenceFileOutput{Body: out}, nil
-	})
 }
