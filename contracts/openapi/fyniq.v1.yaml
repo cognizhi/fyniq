@@ -2923,6 +2923,373 @@ components:
       required:
         - quarter
       type: object
+    AuditActor:
+      additionalProperties: false
+      properties:
+        id:
+          description: The user's, service's or integration's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        type:
+          description: What kind of actor.
+          enum:
+            - user
+            - service
+            - integration
+            - scheduler
+            - ai
+            - system
+          examples:
+            - user
+          type: string
+      required:
+        - type
+        - id
+      type: object
+    AuditEventList:
+      additionalProperties: false
+      properties:
+        items:
+          description: The events the filters match, newest first.
+          items:
+            $ref: "#/components/schemas/AuditEventSummary"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjMwMCJ9
+          type: string
+      required:
+        - items
+      type: object
+    AuditEventSummary:
+      additionalProperties: false
+      properties:
+        action:
+          description: What happened.
+          examples:
+            - document.posted
+          type: string
+        actor:
+          $ref: "#/components/schemas/AuditActor"
+          description: Who acted.
+        fields:
+          description: The fields it changed; getAuditEvent gives their before and after.
+          items:
+            description: A field of the record the event changed.
+            examples:
+              - status
+            type: string
+          type: array
+        id:
+          description: The event.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+          format: uuid
+          type: string
+        occurred_at:
+          description: When it happened.
+          examples:
+            - "2026-10-31T09:00:00Z"
+          format: date-time
+          type: string
+        on_behalf_of:
+          $ref: "#/components/schemas/AuditActor"
+          description: The person an AI or a service acted for.
+        originator:
+          description: The AI proposal the change carried out.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e55
+          type: string
+        reason:
+          description: The reason given.
+          examples:
+            - A supplier's October invoice arrived late
+          type: string
+        record:
+          $ref: "#/components/schemas/AuditRecord"
+          description: What it is about.
+        seq:
+          description: Its place in the organisation's hash chain.
+          examples:
+            - 342
+          format: int64
+          type: integer
+      required:
+        - id
+        - seq
+        - occurred_at
+        - actor
+        - action
+        - record
+        - fields
+      type: object
+    AuditEventView:
+      additionalProperties: false
+      properties:
+        action:
+          description: What happened.
+          examples:
+            - document.posted
+          type: string
+        actor:
+          $ref: "#/components/schemas/AuditActor"
+          description: Who acted.
+        approval_ids:
+          description: The approvals it carried out.
+          items:
+            description: An approval's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+            type: string
+          type: array
+        changes:
+          description: Each field's before and after.
+          items:
+            $ref: "#/components/schemas/AuditFieldChange"
+          type: array
+        fields:
+          description: The fields it changed; getAuditEvent gives their before and after.
+          items:
+            description: A field of the record the event changed.
+            examples:
+              - status
+            type: string
+          type: array
+        hash:
+          description: "Its hash: SHA-256 of prev_hash and its body (INV-12)."
+          examples:
+            - 6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b
+          type: string
+        id:
+          description: The event.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+          format: uuid
+          type: string
+        occurred_at:
+          description: When it happened.
+          examples:
+            - "2026-10-31T09:00:00Z"
+          format: date-time
+          type: string
+        on_behalf_of:
+          $ref: "#/components/schemas/AuditActor"
+          description: The person an AI or a service acted for.
+        originator:
+          description: The AI proposal the change carried out.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e55
+          type: string
+        prev_hash:
+          description: The hash of the event before it, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        reason:
+          description: The reason given.
+          examples:
+            - A supplier's October invoice arrived late
+          type: string
+        record:
+          $ref: "#/components/schemas/AuditRecord"
+          description: What it is about.
+        request:
+          $ref: "#/components/schemas/AuditRequest"
+          description: Where it came from.
+        seq:
+          description: Its place in the organisation's hash chain.
+          examples:
+            - 342
+          format: int64
+          type: integer
+      required:
+        - approval_ids
+        - request
+        - changes
+        - prev_hash
+        - hash
+        - id
+        - seq
+        - occurred_at
+        - actor
+        - action
+        - record
+        - fields
+      type: object
+    AuditFieldChange:
+      additionalProperties: false
+      properties:
+        after:
+          description: Its value after, the same way.
+          examples:
+            - posted
+        before:
+          description: Its value before; null when absent. A sensitive value is a proof, {fingerprint, hint}, never the value (AUD-02).
+          examples:
+            - draft
+        field:
+          description: The field.
+          examples:
+            - status
+          type: string
+        hint:
+          description: An identifier's last four characters.
+          examples:
+            - "******6789"
+          type: string
+        proof:
+          description: "For a sensitive value: whether it changed, changed back to what it was before the field's previous change, or not (AUD-02)."
+          enum:
+            - changed
+            - changed_back
+            - unchanged
+          examples:
+            - changed
+          type: string
+      required:
+        - field
+        - before
+        - after
+      type: object
+    AuditFilters:
+      additionalProperties: false
+      properties:
+        action:
+          description: Only this action, or every action a prefix ending in . starts, such as document.
+          examples:
+            - document.
+          maxLength: 100
+          type: string
+        actor:
+          description: "Only what this actor did: a user's, service's or integration's ID."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          maxLength: 100
+          type: string
+        ai:
+          description: "Only changes an AI proposal carried out: the proposal's ID, or any."
+          examples:
+            - any
+          maxLength: 100
+          type: string
+        approval_id:
+          description: Only changes that carried out this approval.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+          maxLength: 100
+          type: string
+        field:
+          description: Only events that changed this field.
+          examples:
+            - status
+          maxLength: 100
+          type: string
+        record_id:
+          description: Only events about this record.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          maxLength: 36
+          type: string
+        record_type:
+          description: Only events about records of this type.
+          examples:
+            - document
+          maxLength: 64
+          pattern: ^[a-z][a-z0-9_]*$
+          type: string
+      type: object
+    AuditRecord:
+      additionalProperties: false
+      properties:
+        id:
+          description: The record.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        type:
+          description: The record's type.
+          examples:
+            - document
+          type: string
+        version:
+          description: Its version the event made, for a versioned record.
+          examples:
+            - 3
+          format: int64
+          type: integer
+      required:
+        - type
+        - id
+      type: object
+    AuditRequest:
+      additionalProperties: false
+      properties:
+        details:
+          description: "in_body: kept in the event, as long as the records it is about; kept: a security event's, kept beside the chain until the security-log retention ends (AUD-06); erased: that retention ended."
+          enum:
+            - in_body
+            - kept
+            - erased
+          examples:
+            - kept
+          type: string
+        id:
+          description: The API request.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f99
+          type: string
+        ip:
+          description: The IP address, while kept.
+          examples:
+            - 203.0.113.7
+          type: string
+        session:
+          description: The session.
+          examples:
+            - s-1
+          type: string
+        user_agent:
+          description: The browser or client, while kept.
+          examples:
+            - Mozilla/5.0 (Macintosh) Firefox/140.0
+          type: string
+      required:
+        - details
+      type: object
+    AuditTrailExportRequest:
+      additionalProperties: false
+      properties:
+        filters:
+          $ref: "#/components/schemas/AuditFilters"
+          description: The explorer's filters; left out, every event of the days.
+        format:
+          default: xlsx
+          description: csv or xlsx. Left out, xlsx.
+          enum:
+            - csv
+            - xlsx
+          examples:
+            - xlsx
+          type: string
+        from:
+          description: The first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        to:
+          description: The last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - from
+        - to
+      type: object
     AuditVerification:
       additionalProperties: false
       properties:
@@ -44756,6 +45123,529 @@ paths:
       x-fyniq-permission:
         capability: Fixed assets
         right: P
+  /v1/audit/events:
+    get:
+      description: "The audit trail explorer (FR-CTL-03): the organisation's events newest first, filtered by the actor, the AI proposal, the record, a field, the action, an approval and the days, each filter optional. getAuditEvent gives one event's before and after values. Read-only; no side effects."
+      operationId: listAuditEvents
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: "Only what this actor did: a user's, service's or integration's ID."
+          explode: false
+          in: query
+          name: actor
+          schema:
+            description: "Only what this actor did: a user's, service's or integration's ID."
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+            maxLength: 100
+            type: string
+        - description: "Only changes an AI proposal carried out: the proposal's ID, or any."
+          explode: false
+          in: query
+          name: ai
+          schema:
+            description: "Only changes an AI proposal carried out: the proposal's ID, or any."
+            examples:
+              - any
+            maxLength: 100
+            type: string
+        - description: Only events about records of this type.
+          explode: false
+          in: query
+          name: record_type
+          schema:
+            description: Only events about records of this type.
+            examples:
+              - document
+            maxLength: 64
+            pattern: ^[a-z][a-z0-9_]*$
+            type: string
+        - description: Only events about this record.
+          explode: false
+          in: query
+          name: record_id
+          schema:
+            description: Only events about this record.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+            maxLength: 36
+            type: string
+        - description: Only events that changed this field.
+          explode: false
+          in: query
+          name: field
+          schema:
+            description: Only events that changed this field.
+            examples:
+              - status
+            maxLength: 100
+            type: string
+        - description: Only this action, or every action a prefix ending in . starts, such as document.
+          explode: false
+          in: query
+          name: action
+          schema:
+            description: Only this action, or every action a prefix ending in . starts, such as document.
+            examples:
+              - document.
+            maxLength: 100
+            type: string
+        - description: Only changes that carried out this approval.
+          explode: false
+          in: query
+          name: approval_id
+          schema:
+            description: Only changes that carried out this approval.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+            maxLength: 100
+            type: string
+        - description: Only events on or after this day, in the organisation's time zone.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: Only events on or after this day, in the organisation's time zone.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+        - description: Only events on or before this day.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: Only events on or before this day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the audit trail's events
+      tags:
+        - Audit trail
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Audit trail
+        right: V
+  /v1/audit/events/{event_id}:
+    get:
+      description: "One event of the audit trail (FR-CTL-03): who acted, on whose behalf, what, about which record, why, from where, and each field's before and after. A sensitive value shows only whether it changed, or changed back (AUD-02); a security event's IP address and browser while they are kept (AUD-06). Its place in the hash chain is given. Read-only; no side effects."
+      operationId: getAuditEvent
+      parameters:
+        - description: The event.
+          in: path
+          name: event_id
+          required: true
+          schema:
+            description: The event.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get an audit event
+      tags:
+        - Audit trail
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Audit trail
+        right: V
+  /v1/audit/exports:
+    post:
+      description: "Asks for the events the explorer's filters match over a range of days as CSV or XLSX (FR-CTL-03, AUD-07), oldest first, each as its body records it; a sensitive value stays a proof (AUD-02). The worker prepares it as a report export: the answer is 202 with the export, pending, and its Location the operation to poll; getReportExport and getReportExportFile give it to the caller only. Side effects: the export, its audit event (an export is a security event, AUD-05) and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing."
+      operationId: requestAuditTrailExport
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditTrailExportRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportExportOut"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportExportOut"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: "In the answer that asked for it: the operation to poll until it is ready (FR-INT-11)."
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-EXPORT-01` An export changes only from pending to ready or failed, and from ready to expired."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Ask for the audit trail's export
+      tags:
+        - Audit trail
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-EXPORT-01
+      x-fyniq-permission:
+        capability: Audit trail
+        right: V
   /v1/audit/verification:
     get:
       description: "Verify integrity (AUD-03): recomputes the hash chain of the events that occurred on the days from from to to, from the event before them, and checks every signed anchor, close anchor and security event's request details in the range against it. A range is at most 366 days; the nightly verification checks the whole trail. Changes nothing; side effects: its audit event, audit.verified_by_member."
@@ -165365,7 +166255,7 @@ tags:
     name: Compliance
   - description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."
     name: Planning
-  - description: "The audit trail (PRD-001 §11.5): Verify integrity for a range of days (AUD-03) and, as they arrive, the explorer and its export (FR-CTL-03, AUD-07). Every saved change, sign-in, sensitive read and export is in it."
+  - description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."
     name: Audit trail
   - description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."
     name: Checks

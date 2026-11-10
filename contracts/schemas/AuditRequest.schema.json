@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "details": {
+      "description": "in_body: kept in the event, as long as the records it is about; kept: a security event's, kept beside the chain until the security-log retention ends (AUD-06); erased: that retention ended.",
+      "enum": [
+        "in_body",
+        "kept",
+        "erased"
+      ],
+      "examples": [
+        "kept"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The API request.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f99"
+      ],
+      "type": "string"
+    },
+    "ip": {
+      "description": "The IP address, while kept.",
+      "examples": [
+        "203.0.113.7"
+      ],
+      "type": "string"
+    },
+    "session": {
+      "description": "The session.",
+      "examples": [
+        "s-1"
+      ],
+      "type": "string"
+    },
+    "user_agent": {
+      "description": "The browser or client, while kept.",
+      "examples": [
+        "Mozilla/5.0 (Macintosh) Firefox/140.0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "details"
+  ],
+  "title": "AuditRequest",
+  "type": "object"
+}

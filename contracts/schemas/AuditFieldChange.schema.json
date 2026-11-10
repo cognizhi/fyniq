@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "after": {
+      "description": "Its value after, the same way.",
+      "examples": [
+        "posted"
+      ]
+    },
+    "before": {
+      "description": "Its value before; null when absent. A sensitive value is a proof, {fingerprint, hint}, never the value (AUD-02).",
+      "examples": [
+        "draft"
+      ]
+    },
+    "field": {
+      "description": "The field.",
+      "examples": [
+        "status"
+      ],
+      "type": "string"
+    },
+    "hint": {
+      "description": "An identifier's last four characters.",
+      "examples": [
+        "******6789"
+      ],
+      "type": "string"
+    },
+    "proof": {
+      "description": "For a sensitive value: whether it changed, changed back to what it was before the field's previous change, or not (AUD-02).",
+      "enum": [
+        "changed",
+        "changed_back",
+        "unchanged"
+      ],
+      "examples": [
+        "changed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "field",
+    "before",
+    "after"
+  ],
+  "title": "AuditFieldChange",
+  "type": "object"
+}

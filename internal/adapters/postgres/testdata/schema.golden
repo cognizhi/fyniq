@@ -3756,7 +3756,7 @@ report_export | report_export_parameters_not_null | NOT NULL parameters
 report_export | report_export_parameters_object | CHECK ((jsonb_typeof(parameters) = 'object'::text))
 report_export | report_export_pkey | PRIMARY KEY (organisation_id, id)
 report_export | report_export_ready_whole | CHECK (((status <> ALL (ARRAY['ready'::text, 'expired'::text])) OR ((ledger_revision IS NOT NULL) AND (file_name IS NOT NULL) AND (media_type IS NOT NULL) AND (size_bytes IS NOT NULL) AND (file_sha256 IS NOT NULL) AND (rows_count IS NOT NULL) AND (ready_at IS NOT NULL) AND (expires_at > ready_at))))
-report_export | report_export_report_known | CHECK ((report = ANY (ARRAY['general_ledger'::text, 'trial_balance'::text, 'journals'::text, 'fixed_assets'::text, 'receivables'::text, 'payables'::text])))
+report_export | report_export_report_known | CHECK ((report = ANY (ARRAY['general_ledger'::text, 'trial_balance'::text, 'journals'::text, 'fixed_assets'::text, 'receivables'::text, 'payables'::text, 'audit_trail'::text])))
 report_export | report_export_report_not_null | NOT NULL report
 report_export | report_export_requested_at_not_null | NOT NULL requested_at
 report_export | report_export_requested_by_not_null | NOT NULL requested_by
@@ -4106,7 +4106,10 @@ CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_i
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
+CREATE INDEX audit_event_action_idx ON fyniq.audit_event USING btree (organisation_id, action, seq)
+CREATE INDEX audit_event_actor_idx ON fyniq.audit_event USING btree (organisation_id, ((((body)::jsonb -> 'actor'::text) ->> 'id'::text)), seq)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
+CREATE INDEX audit_event_record_idx ON fyniq.audit_event USING btree (organisation_id, object_type, object_id, seq)
 CREATE INDEX audit_request_detail_age_idx ON fyniq.audit_request_detail USING btree (organisation_id, occurred_at)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filters": {
+      "$ref": "AuditFilters.schema.json",
+      "description": "The explorer's filters; left out, every event of the days."
+    },
+    "format": {
+      "default": "xlsx",
+      "description": "csv or xlsx. Left out, xlsx.",
+      "enum": [
+        "csv",
+        "xlsx"
+      ],
+      "examples": [
+        "xlsx"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "title": "AuditTrailExportRequest",
+  "type": "object"
+}

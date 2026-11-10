@@ -17,6 +17,7 @@ var auditedReads = map[string]string{
 	"getPaymentBatchFile":       "payment_batch.file_downloaded",
 	"getReportExportFile":       "report_export.downloaded",
 	"requestReportExport":       "report_export.requested",
+	"requestAuditTrailExport":   "report_export.requested",
 	"revealClaimantBankAccount": "document.bank_account_revealed",
 	"revealMyBankAccount":       "document.bank_account_revealed",
 	"revealPayeeBankAccount":    "document.bank_account_revealed",

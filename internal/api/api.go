@@ -185,7 +185,7 @@ func Config(version string) huma.Config {
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
-		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): Verify integrity for a range of days (AUD-03) and, as they arrive, the explorer and its export (FR-CTL-03, AUD-07). Every saved change, sign-in, sensitive read and export is in it."},
+		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
@@ -334,6 +334,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBudgetReports(a)
 	registerCashProjection(a)
 	registerAuditVerification(a)
+	registerAuditEvents(a)
 	registerFeasibility(a)
 	registerSignInMethods(a)
 	registerReviewLog(a)

@@ -676,6 +676,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audit/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the audit trail's events
+         * @description The audit trail explorer (FR-CTL-03): the organisation's events newest first, filtered by the actor, the AI proposal, the record, a field, the action, an approval and the days, each filter optional. getAuditEvent gives one event's before and after values. Read-only; no side effects.
+         */
+        get: operations["listAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an audit event
+         * @description One event of the audit trail (FR-CTL-03): who acted, on whose behalf, what, about which record, why, from where, and each field's before and after. A sensitive value shows only whether it changed, or changed back (AUD-02); a security event's IP address and browser while they are kept (AUD-06). Its place in the hash chain is given. Read-only; no side effects.
+         */
+        get: operations["getAuditEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for the audit trail's export
+         * @description Asks for the events the explorer's filters match over a range of days as CSV or XLSX (FR-CTL-03, AUD-07), oldest first, each as its body records it; a sensitive value stays a proof (AUD-02). The worker prepares it as a report export: the answer is 202 with the export, pending, and its Location the operation to poll; getReportExport and getReportExportFile give it to the caller only. Side effects: the export, its audit event (an export is a security event, AUD-05) and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+         */
+        post: operations["requestAuditTrailExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit/verification": {
         parameters: {
             query?: never;
@@ -13873,6 +13933,265 @@ export interface components {
              * @example 2026-07-01
              */
             quarter: string;
+        };
+        AuditActor: {
+            /**
+             * @description The user's, service's or integration's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            id: string;
+            /**
+             * @description What kind of actor.
+             * @example user
+             * @enum {string}
+             */
+            type: "user" | "service" | "integration" | "scheduler" | "ai" | "system";
+        };
+        AuditEventList: {
+            /** @description The events the filters match, newest first. */
+            items: components["schemas"]["AuditEventSummary"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjMwMCJ9
+             */
+            next_cursor?: string;
+        };
+        AuditEventSummary: {
+            /**
+             * @description What happened.
+             * @example document.posted
+             */
+            action: string;
+            /** @description Who acted. */
+            actor: components["schemas"]["AuditActor"];
+            /** @description The fields it changed; getAuditEvent gives their before and after. */
+            fields: string[];
+            /**
+             * Format: uuid
+             * @description The event.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it happened.
+             * @example 2026-10-31T09:00:00Z
+             */
+            occurred_at: string;
+            /** @description The person an AI or a service acted for. */
+            on_behalf_of?: components["schemas"]["AuditActor"];
+            /**
+             * @description The AI proposal the change carried out.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e55
+             */
+            originator?: string;
+            /**
+             * @description The reason given.
+             * @example A supplier's October invoice arrived late
+             */
+            reason?: string;
+            /** @description What it is about. */
+            record: components["schemas"]["AuditRecord"];
+            /**
+             * Format: int64
+             * @description Its place in the organisation's hash chain.
+             * @example 342
+             */
+            seq: number;
+        };
+        AuditEventView: {
+            /**
+             * @description What happened.
+             * @example document.posted
+             */
+            action: string;
+            /** @description Who acted. */
+            actor: components["schemas"]["AuditActor"];
+            /** @description The approvals it carried out. */
+            approval_ids: string[];
+            /** @description Each field's before and after. */
+            changes: components["schemas"]["AuditFieldChange"][];
+            /** @description The fields it changed; getAuditEvent gives their before and after. */
+            fields: string[];
+            /**
+             * @description Its hash: SHA-256 of prev_hash and its body (INV-12).
+             * @example 6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b
+             */
+            hash: string;
+            /**
+             * Format: uuid
+             * @description The event.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it happened.
+             * @example 2026-10-31T09:00:00Z
+             */
+            occurred_at: string;
+            /** @description The person an AI or a service acted for. */
+            on_behalf_of?: components["schemas"]["AuditActor"];
+            /**
+             * @description The AI proposal the change carried out.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e55
+             */
+            originator?: string;
+            /**
+             * @description The hash of the event before it, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            prev_hash: string;
+            /**
+             * @description The reason given.
+             * @example A supplier's October invoice arrived late
+             */
+            reason?: string;
+            /** @description What it is about. */
+            record: components["schemas"]["AuditRecord"];
+            /** @description Where it came from. */
+            request: components["schemas"]["AuditRequest"];
+            /**
+             * Format: int64
+             * @description Its place in the organisation's hash chain.
+             * @example 342
+             */
+            seq: number;
+        };
+        AuditFieldChange: {
+            /**
+             * @description Its value after, the same way.
+             * @example posted
+             */
+            after: unknown;
+            /**
+             * @description Its value before; null when absent. A sensitive value is a proof, {fingerprint, hint}, never the value (AUD-02).
+             * @example draft
+             */
+            before: unknown;
+            /**
+             * @description The field.
+             * @example status
+             */
+            field: string;
+            /**
+             * @description An identifier's last four characters.
+             * @example ******6789
+             */
+            hint?: string;
+            /**
+             * @description For a sensitive value: whether it changed, changed back to what it was before the field's previous change, or not (AUD-02).
+             * @example changed
+             * @enum {string}
+             */
+            proof?: "changed" | "changed_back" | "unchanged";
+        };
+        AuditFilters: {
+            /**
+             * @description Only this action, or every action a prefix ending in . starts, such as document.
+             * @example document.
+             */
+            action?: string;
+            /**
+             * @description Only what this actor did: a user's, service's or integration's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            actor?: string;
+            /**
+             * @description Only changes an AI proposal carried out: the proposal's ID, or any.
+             * @example any
+             */
+            ai?: string;
+            /**
+             * @description Only changes that carried out this approval.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            approval_id?: string;
+            /**
+             * @description Only events that changed this field.
+             * @example status
+             */
+            field?: string;
+            /**
+             * @description Only events about this record.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            record_id?: string;
+            /**
+             * @description Only events about records of this type.
+             * @example document
+             */
+            record_type?: string;
+        };
+        AuditRecord: {
+            /**
+             * Format: uuid
+             * @description The record.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            id: string;
+            /**
+             * @description The record's type.
+             * @example document
+             */
+            type: string;
+            /**
+             * Format: int64
+             * @description Its version the event made, for a versioned record.
+             * @example 3
+             */
+            version?: number;
+        };
+        AuditRequest: {
+            /**
+             * @description in_body: kept in the event, as long as the records it is about; kept: a security event's, kept beside the chain until the security-log retention ends (AUD-06); erased: that retention ended.
+             * @example kept
+             * @enum {string}
+             */
+            details: "in_body" | "kept" | "erased";
+            /**
+             * @description The API request.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f99
+             */
+            id?: string;
+            /**
+             * @description The IP address, while kept.
+             * @example 203.0.113.7
+             */
+            ip?: string;
+            /**
+             * @description The session.
+             * @example s-1
+             */
+            session?: string;
+            /**
+             * @description The browser or client, while kept.
+             * @example Mozilla/5.0 (Macintosh) Firefox/140.0
+             */
+            user_agent?: string;
+        };
+        AuditTrailExportRequest: {
+            /** @description The explorer's filters; left out, every event of the days. */
+            filters?: components["schemas"]["AuditFilters"];
+            /**
+             * @description csv or xlsx. Left out, xlsx.
+             * @default xlsx
+             * @example xlsx
+             * @enum {string}
+             */
+            format: "csv" | "xlsx";
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-10-31
+             */
+            to: string;
         };
         AuditVerification: {
             /**
@@ -43315,6 +43634,366 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAuditEvents: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only what this actor did: a user's, service's or integration's ID. */
+                actor?: string;
+                /** @description Only changes an AI proposal carried out: the proposal's ID, or any. */
+                ai?: string;
+                /** @description Only events about records of this type. */
+                record_type?: string;
+                /** @description Only events about this record. */
+                record_id?: string;
+                /** @description Only events that changed this field. */
+                field?: string;
+                /** @description Only this action, or every action a prefix ending in . starts, such as document. */
+                action?: string;
+                /** @description Only changes that carried out this approval. */
+                approval_id?: string;
+                /** @description Only events on or after this day, in the organisation's time zone. */
+                from?: string;
+                /** @description Only events on or before this day. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAuditEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The event. */
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestAuditTrailExport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditTrailExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportOut"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportOut"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-EXPORT-01` An export changes only from pending to ready or failed, and from ready to expired. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

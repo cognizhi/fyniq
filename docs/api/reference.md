@@ -13225,7 +13225,83 @@ What Home shows of the plans for a month (FR-KPI-01): revenue and costs against 
 
 ## Audit trail
 
-The audit trail (PRD-001 §11.5): Verify integrity for a range of days (AUD-03) and, as they arrive, the explorer and its export (FR-CTL-03, AUD-07). Every saved change, sign-in, sensitive read and export is in it.
+The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it.
+
+### `GET /v1/audit/events`
+
+**List the audit trail's events** (`listAuditEvents`)
+
+The audit trail explorer (FR-CTL-03): the organisation's events newest first, filtered by the actor, the AI proposal, the record, a field, the action, an approval and the days, each filter optional. getAuditEvent gives one event's before and after values. Read-only; no side effects.
+
+- **Permission:** View on Audit trail
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `actor` (query): Only what this actor did: a user's, service's or integration's ID.
+  - `ai` (query): Only changes an AI proposal carried out: the proposal's ID, or any.
+  - `record_type` (query): Only events about records of this type.
+  - `record_id` (query): Only events about this record.
+  - `field` (query): Only events that changed this field.
+  - `action` (query): Only this action, or every action a prefix ending in . starts, such as document.
+  - `approval_id` (query): Only changes that carried out this approval.
+  - `from` (query): Only events on or after this day, in the organisation's time zone.
+  - `to` (query): Only events on or before this day.
+- **Responses:**
+  - `200` OK [`AuditEventList`](../../contracts/schemas/AuditEventList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/audit/events/{event_id}`
+
+**Get an audit event** (`getAuditEvent`)
+
+One event of the audit trail (FR-CTL-03): who acted, on whose behalf, what, about which record, why, from where, and each field's before and after. A sensitive value shows only whether it changed, or changed back (AUD-02); a security event's IP address and browser while they are kept (AUD-06). Its place in the hash chain is given. Read-only; no side effects.
+
+- **Permission:** View on Audit trail
+- **Parameters:**
+  - `event_id` (path, required): The event.
+- **Responses:**
+  - `200` OK [`AuditEventView`](../../contracts/schemas/AuditEventView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/audit/exports`
+
+**Ask for the audit trail's export** (`requestAuditTrailExport`)
+
+Asks for the events the explorer's filters match over a range of days as CSV or XLSX (FR-CTL-03, AUD-07), oldest first, each as its body records it; a sensitive value stays a proof (AUD-02). The worker prepares it as a report export: the answer is 202 with the export, pending, and its Location the operation to poll; getReportExport and getReportExportFile give it to the caller only. Side effects: the export, its audit event (an export is a security event, AUD-05) and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+
+- **Permission:** View on Audit trail
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AuditTrailExportRequest`](../../contracts/schemas/AuditTrailExportRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `202` Accepted [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-EXPORT-01` An export changes only from pending to ready or failed, and from ready to expired.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-EXPORT-01`
 
 ### `GET /v1/audit/verification`
 

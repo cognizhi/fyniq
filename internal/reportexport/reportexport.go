@@ -55,16 +55,18 @@ const (
 )
 
 // Reports are the accountant exports and whether each runs over a range of days (else it is as at a day).
-var Reports = map[string]bool{GeneralLedger: true, TrialBalance: false, Journals: true, FixedAssets: false, Receivables: false, Payables: false}
+var Reports = map[string]bool{GeneralLedger: true, TrialBalance: false, Journals: true, FixedAssets: false, Receivables: false, Payables: false,
+	AuditTrail: true}
 
 // Names are the reports' names, as a file and a sheet are titled.
 var Names = map[string]string{GeneralLedger: "General ledger", TrialBalance: "Trial balance", Journals: "Journal entries",
-	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail"}
+	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail", AuditTrail: "Audit trail"}
 
 // Parameters are an export's: the first day of a range, and its last day or the day it is as at, YYYY-MM-DD.
 type Parameters struct {
-	From string `json:"from,omitempty"`
-	To   string `json:"to"`
+	From  string       `json:"from,omitempty"`
+	To    string       `json:"to"`
+	Audit *AuditFilter `json:"audit,omitempty"` // an audit trail export's filters
 }
 
 // Refusal is an export the books refuse: it fails with why, and is not tried again.
@@ -143,6 +145,16 @@ func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, cr
 		sheets, err = fixedAssets(ctx, u, base, to)
 	case Receivables, Payables:
 		sheets, err = subLedger(ctx, u, base, x.Report, to)
+	case AuditTrail:
+		loc, lerr := time.LoadLocation(org.Profile.TimeZone)
+		if lerr != nil || org.Profile.TimeZone == "" {
+			loc = time.UTC
+		}
+		f := AuditFilter{}
+		if p.Audit != nil {
+			f = *p.Audit
+		}
+		sheets, err = auditTrail(ctx, u, f, from, to, loc)
 	default:
 		return File{}, Refusal{fmt.Sprintf("%q is not a report that exports", x.Report)}
 	}
