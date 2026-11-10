@@ -36,6 +36,10 @@ func AnchorAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 	written := 0
 	for _, org := range orgs {
 		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			// Each close and reopening not yet anchored first (AUD-04); their events are anchored with the next head.
+			if _, err := anchorCloses(ctx, u, blobs, signer, org, clock.Now()); err != nil {
+				return err
+			}
 			head, err := u.Audit().Head(ctx)
 			if err != nil || head.Seq == 0 || head.Action == ActionAnchorWritten {
 				return err
@@ -70,6 +74,7 @@ type Report struct {
 	Events       int
 	Anchors      int
 	Details      int    // security events' request details checked against their fingerprints (AUD-06)
+	Closes       int    // close anchors checked against their snapshots and the chain (AUD-04)
 	Unchecked    bool   // the details could not be checked: this service holds no fingerprint key
 	Problem      string // empty when the chain, every anchor and every detail agree
 }
@@ -155,12 +160,17 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 				return err
 			}
 		}
+		if r.Problem == "" {
+			if r.Closes, r.Problem, err = checkCloses(ctx, u, blobs, signer, org, hashes); err != nil {
+				return err
+			}
+		}
 		status := "passed"
 		if r.Problem != "" {
 			status = "failed"
 		}
 		return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "audit_chain", ObjectID: org,
-			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details},
+			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details}, "closes": {nil, r.Closes},
 				"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}}})
 	})
 	return r, err

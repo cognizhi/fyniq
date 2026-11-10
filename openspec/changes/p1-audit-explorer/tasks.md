@@ -104,16 +104,28 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 4. Close snapshots, signed and anchored (slice 4)
 
-- [ ] 4.1 `fyniq-close-snapshot@2` (D4) holds the subledger totals of every control account the close reconciles and
+- [x] 4.1 `fyniq-close-snapshot@2` (D4) holds the subledger totals of every control account the close reconciles and
   the chain's head, both read under the ledger lock (ENG-47). A reopen records its before and after snapshots the same
   way. Test: a hand-worked close with receivables, payables, an asset and a director's account, whose snapshot holds
   each total and the head at the close's revision. `// req: AUD-04`, `// req: ENG-47`
-- [ ] 4.2 The outbox job `audit.anchor_close` signs and writes the close anchor once, for a close and for a reopen's
+- [x] 4.2 The outbox job `audit.anchor_close` signs and writes the close anchor once, for a close and for a reopen's
   two snapshots. Verification checks the stored snapshot's hash and the head against it. Tests:
   - a changed snapshot fails;
   - a second write is refused by the bucket.
 
   `// req: AUD-04`, `// req: CTL-AUD-02`
+  - As built (9 Nov 2026, rev 0.234):
+    - **No outbox job.** The hourly `audit.anchor` job anchors each close and reopening not yet anchored, before the
+      chain head, so a close is anchored within the hour. This needs no outbox plumbing into the close or into the
+      approval executor's reopening, and a missing write-once object is what "not yet anchored" means.
+    - **Prefixes.** Close anchors live under `audit-close-anchors/`, apart from the chain anchors.
+    - **The head.** The API reads it through `fyniq.audit_chain_head` (000286), since it may not read the trail.
+    - **Control accounts.** The subledger totals cover every account flagged as a control account, and the
+      receivables' and payables' by role, as the close's checks find them.
+    - **Test:** `TestClosesAreSignedAndAnchored`, with an invoice, a bill and a journal. It checks:
+      - the snapshot's totals (1,000.00 and −327.00) and the head's hash;
+      - one anchor per close, the reopening's anchor, and verification;
+      - a forged anchor refused.
 
 ## 5. Verify integrity (slice 5)
 

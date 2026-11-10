@@ -135,6 +135,21 @@ func (r closes) LatestReopen(ctx context.Context, period uuid.UUID) (storage.Per
 			ReopenedRevision: row.ReopenedRevision, BeforeHash: row.BeforeHash, AfterHash: row.AfterHash}}, nil
 }
 
+func (r closes) Snapshots(ctx context.Context) ([]storage.CloseSnapshot, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListCloseSnapshots(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.CloseSnapshot, len(rows))
+	for i, x := range rows {
+		out[i] = storage.CloseSnapshot{Kind: x.Kind, ID: x.ID, PeriodID: x.PeriodID, Revision: x.Revision, Snapshot: []byte(x.Snapshot), Hash: x.Hash, At: x.At}
+	}
+	return out, nil
+}
+
 func varianceExplanationOf(id, period, account uuid.UUID, kind, current, previous, explanation, by string, at time.Time) storage.VarianceExplanation {
 	return storage.VarianceExplanation{ID: id, WrittenBy: by, WrittenAt: at, NewVarianceExplanation: storage.NewVarianceExplanation{PeriodID: period,
 		AccountID: account, Kind: kind, Current: storage.Decimal(current), Previous: storage.Decimal(previous), Explanation: explanation}}

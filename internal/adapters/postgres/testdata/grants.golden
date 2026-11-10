@@ -42,6 +42,7 @@ fyniq_api       EXECUTE   approval_steps_valid()
 fyniq_api       EXECUTE   approval_void_pending()
 fyniq_api       EXECUTE   approval_void_pending_all()
 fyniq_api       EXECUTE   approval_void_pending_type()
+fyniq_api       EXECUTE   audit_chain_head()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_api       SELECT    balance
@@ -388,6 +389,7 @@ fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
+fyniq_executor  EXECUTE   audit_chain_head()
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_executor  SELECT    balance
@@ -476,6 +478,7 @@ fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
 fyniq_readonly  SELECT    audit_chain
+fyniq_readonly  EXECUTE   audit_chain_head()
 fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    audit_request_detail
 fyniq_readonly  SELECT    balance
@@ -603,6 +606,7 @@ fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
 fyniq_worker    SELECT    audit_chain
+fyniq_worker    EXECUTE   audit_chain_head()
 fyniq_worker    EXECUTE   audit_erase_details()
 fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event

@@ -64,3 +64,12 @@ RETURNING id, period_id, task_key, template_version, state, note, written_by, wr
 SELECT DISTINCT ON (task_key) id, period_id, task_key, template_version, state, note, written_by, written_at
 FROM fyniq.close_checklist_entry WHERE period_id = $1
 ORDER BY task_key, written_at DESC, id DESC;
+
+-- name: ListCloseSnapshots :many
+-- Every close's and reopening's snapshot, for anchoring and verifying them (AUD-04).
+SELECT 'close'::text AS kind, id, period_id, closed_revision AS revision, snapshot, snapshot_hash AS hash, attested_at AS at
+  FROM fyniq.period_close
+UNION ALL
+SELECT 'reopen'::text, id, period_id, reopened_revision, after_snapshot, after_hash, reopened_at
+  FROM fyniq.period_reopen
+ORDER BY at, id;

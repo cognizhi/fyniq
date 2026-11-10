@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -805,15 +806,40 @@ func (s Service) RunChecks(ctx context.Context, org, periodID uuid.UUID) (storag
 	return out, err
 }
 
-// Snapshot is the trial balance at a period's end, as the close records it (AUD-04).
+// SnapshotSchema names the snapshot's format. Version 2 (PRD-001 rev 0.234) adds the subledger totals and the audit
+// chain's head; a version 1 snapshot, which has no schema, keeps its hash.
+const SnapshotSchema = "fyniq-close-snapshot@2"
+
+// Snapshot is the books at a period's end as a close or a reopening records it (AUD-04): the trial balance, every
+// control account's subledger totals, and the audit chain's head, all read under the ledger lock (ENG-47).
 type Snapshot struct {
-	PeriodID string            `json:"period_id"`
-	StartsOn string            `json:"starts_on"`
-	EndsOn   string            `json:"ends_on"`
-	Revision int64             `json:"ledger_revision"`
-	Currency string            `json:"currency"`
-	Accounts []SnapshotAccount `json:"accounts"`
-	Total    string            `json:"total"`
+	Schema     string              `json:"schema"`
+	PeriodID   string              `json:"period_id"`
+	StartsOn   string              `json:"starts_on"`
+	EndsOn     string              `json:"ends_on"`
+	Revision   int64               `json:"ledger_revision"`
+	Currency   string              `json:"currency"`
+	Accounts   []SnapshotAccount   `json:"accounts"`
+	Total      string              `json:"total"`
+	Subledgers []SnapshotSubledger `json:"subledgers"`
+	Chain      SnapshotChain       `json:"chain"`
+}
+
+// SnapshotSubledger is what one source type posted to a control account through the period end, in one currency and
+// in the base currency (balance.Control): what the control's subledger reconciles with (INV-07).
+type SnapshotSubledger struct {
+	AccountID string `json:"account_id"`
+	Code      string `json:"code"`
+	Source    string `json:"source_type"`
+	Currency  string `json:"currency"`
+	Amount    string `json:"amount"`
+	Base      string `json:"base"`
+}
+
+// SnapshotChain is the audit chain's head when the snapshot was taken: its sequence number and its hash in hexadecimal.
+type SnapshotChain struct {
+	Seq  int64  `json:"seq"`
+	Hash string `json:"hash"`
 }
 
 // SnapshotAccount is one account's base-currency balance at the period end.
@@ -841,11 +867,30 @@ func snapshot(ctx context.Context, u storage.UnitOfWork, p storage.Period, all [
 	for _, a := range accounts {
 		codes[a.ID] = a.Code
 	}
-	s := Snapshot{PeriodID: p.ID.String(), StartsOn: p.StartsOn.Format(time.DateOnly), EndsOn: p.EndsOn.Format(time.DateOnly), Revision: rev,
-		Currency: cur.Code, Accounts: []SnapshotAccount{}, Total: tb.Total.String()}
+	s := Snapshot{Schema: SnapshotSchema, PeriodID: p.ID.String(), StartsOn: p.StartsOn.Format(time.DateOnly), EndsOn: p.EndsOn.Format(time.DateOnly),
+		Revision: rev, Currency: cur.Code, Accounts: []SnapshotAccount{}, Total: tb.Total.String(), Subledgers: []SnapshotSubledger{}}
 	for _, r := range tb.Rows {
 		s.Accounts = append(s.Accounts, SnapshotAccount{AccountID: r.AccountID.String(), Code: codes[r.AccountID], Balance: r.Base.String()})
 	}
+	for _, a := range accounts {
+		// A control account: one with a sub-ledger, or the receivables' or payables' by role, as the close's checks find them.
+		if !a.Control && a.Role != storage.AccountRole(ledger.RoleAccountsReceivable) && a.Role != storage.AccountRole(ledger.RoleAccountsPayable) {
+			continue
+		}
+		totals, err := balance.Control(ctx, u, cur, a.ID, p.EndsOn)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, x := range totals {
+			s.Subledgers = append(s.Subledgers, SnapshotSubledger{AccountID: a.ID.String(), Code: a.Code, Source: x.SourceType,
+				Currency: x.Amount.Currency().Code, Amount: x.Amount.String(), Base: x.Base.String()})
+		}
+	}
+	head, err := u.Audit().Head(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	s.Chain = SnapshotChain{Seq: head.Seq, Hash: hex.EncodeToString(head.Hash)}
 	raw, err := json.Marshal(s)
 	if err != nil {
 		return nil, nil, err

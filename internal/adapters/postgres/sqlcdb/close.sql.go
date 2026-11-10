@@ -565,3 +565,51 @@ func (q *Queries) LatestVarianceExplanations(ctx context.Context, periodID uuid.
 	}
 	return items, nil
 }
+
+const listCloseSnapshots = `-- name: ListCloseSnapshots :many
+SELECT 'close'::text AS kind, id, period_id, closed_revision AS revision, snapshot, snapshot_hash AS hash, attested_at AS at
+  FROM fyniq.period_close
+UNION ALL
+SELECT 'reopen'::text, id, period_id, reopened_revision, after_snapshot, after_hash, reopened_at
+  FROM fyniq.period_reopen
+ORDER BY at, id
+`
+
+type ListCloseSnapshotsRow struct {
+	Kind     string
+	ID       uuid.UUID
+	PeriodID uuid.UUID
+	Revision int64
+	Snapshot string
+	Hash     []byte
+	At       time.Time
+}
+
+// Every close's and reopening's snapshot, for anchoring and verifying them (AUD-04).
+func (q *Queries) ListCloseSnapshots(ctx context.Context) ([]ListCloseSnapshotsRow, error) {
+	rows, err := q.db.Query(ctx, listCloseSnapshots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCloseSnapshotsRow
+	for rows.Next() {
+		var i ListCloseSnapshotsRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.ID,
+			&i.PeriodID,
+			&i.Revision,
+			&i.Snapshot,
+			&i.Hash,
+			&i.At,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
