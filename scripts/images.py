@@ -8,6 +8,7 @@
     python3 scripts/images.py self-test                # the checks on planted images (part of make check)
     python3 scripts/images.py publish --release v1.2.0 --registry <AR repository URL>   # release.yml only
     python3 scripts/images.py admit --release v1.2.0 --images '<publish's JSON>' --attestor … --key-version …
+    python3 scripts/images.py repro [--only api,web]   # two clean builds give the same digests (make images-repro)
 
 check (part of `make images`; Docker only):
   - the compressed size is within deploy/docker/budgets.json (NFR-IMG-04);
@@ -38,6 +39,11 @@ admit (release.yml, as the attester): for each pushed image, verifies its signat
 identity on the tag, and its SLSA provenance against slsa-github-generator's on this repository and tag; only then
 creates its Binary Authorization attestation (the index and each platform's manifest) with the Cloud KMS key. An image
 that fails any verification gets none, and the job fails (CTL-CHG-04).
+repro (make images-repro; daily in CI, and on changes to what the images are built from; NFR-IMG-07): builds every
+release image and the web image twice, for both platforms, each time with a new BuildKit builder and so no cache, and
+compares the digests. publish and repro run the same build command: SOURCE_DATE_EPOCH is the commit's time, every
+file's time in the layers is clamped to it (rewrite-timestamp), and the Dockerfiles fix the files' owner and mode, so
+the same commit gives the same digests. A difference names the image; .data/images/repro.json keeps both digests.
 """
 
 from __future__ import annotations
@@ -296,9 +302,21 @@ def self_test() -> None:
     if platform_digests(index) != ["sha256:a", "sha256:b"] or attested(line(provenance), SLSA_V02) != {"sha256:cc"} \
             or attested(line(provenance), SPDX):
         raise SystemExit("✖ images self-test: an attestation manifest was attested, or a provenance counted as an SBOM")
+    # Reproducible builds (NFR-IMG-07): publish and repro share one command, which fixes the time and clamps the layers.
+    cmd = build_command("api", "b", "1.2.0", "a" * 40, "v1.2.0", "1700000000", "type=oci,dest=x,rewrite-timestamp=true")
+    if "SOURCE_DATE_EPOCH=1700000000" not in cmd or "--provenance=false" not in cmd or "GIT_SHA=" + "a" * 12 not in cmd \
+            or cmd[cmd.index("--platform") + 1] != ",".join(PLATFORMS):
+        raise SystemExit(f"✖ images self-test: the reproducible build command is {cmd}")
+    for bad_epoch, bad_output in (("", "type=oci,dest=x,rewrite-timestamp=true"), ("1700000000", "type=oci,dest=x")):
+        try:
+            build_command("web", "b", "1.2.0", "a" * 40, "", bad_epoch, bad_output)
+        except SystemExit:
+            continue
+        raise SystemExit("✖ images self-test: a build without SOURCE_DATE_EPOCH or without clamped file times was accepted")
     print("✔ image checks: an over-budget image, a root user, a shell, a local adapter in release, the wrong platform"
           " and a single-platform pin are each refused; a signature counts only for its digest; a release is attested only"
-          " after release.yml's signature and the SLSA generator's provenance for its tag")
+          " after release.yml's signature and the SLSA generator's provenance for its tag; every reproducible build fixes"
+          " its time")
 
 
 def scan_images(version: str) -> int:
@@ -447,6 +465,85 @@ def sign_images(version: str, registry: str, key: str) -> int:
     return 0
 
 
+def build_command(svc: str, builder: str, version: str, sha: str, release: str, epoch: str, output: str,
+                  extra: tuple[str, ...] = ()) -> list[str]:
+    """The one reproducible buildx command publish and repro run (NFR-IMG-07): both platforms, SOURCE_DATE_EPOCH from
+    the commit, file times in the layers clamped to it, OCI media types, and no attestation BuildKit would add with a
+    time of its own (the provenance and the SBOM are attested separately, signed)."""
+    if not re.fullmatch(r"\d+", epoch):
+        raise SystemExit(f"✖ SOURCE_DATE_EPOCH {epoch!r} is not a time in seconds")
+    if "rewrite-timestamp=true" not in output:
+        raise SystemExit("✖ a reproducible build clamps the layers' file times: its output needs rewrite-timestamp=true")
+    cmd = ["docker", "buildx", "build", "--builder", builder, "--platform", ",".join(PLATFORMS),
+           "--build-arg", f"SOURCE_DATE_EPOCH={epoch}", "--provenance=false", "--sbom=false", "--output", output]
+    if svc == "web":
+        cmd += ["-f", "deploy/docker/Dockerfile.web"]
+    else:
+        cmd += ["-f", "deploy/docker/Dockerfile.go-service", "--target", "render" if svc == "render" else "service",
+                "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
+                "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}"]
+    return [*cmd, *extra, "."]
+
+
+def commit_epoch() -> str:
+    """The commit's time, in seconds: every reproducible build's SOURCE_DATE_EPOCH."""
+    return sh("git", "log", "-1", "--format=%ct").strip()
+
+
+def new_builder(name: str) -> None:
+    """A BuildKit builder of its own, on the pinned BuildKit image, with nothing cached."""
+    run("docker", "buildx", "rm", "--force", name)
+    sh("docker", "buildx", "create", "--name", name, "--driver", "docker-container", "--driver-opt", f"image={BUILDKIT_IMAGE}")
+
+
+def oci_digest(archive: Path) -> str:
+    """The digest of the image (a multi-platform index) in an OCI archive."""
+    with tarfile.open(archive) as t:
+        f = t.extractfile("index.json")
+        if f is None:
+            raise SystemExit(f"✖ {archive.name}: no index.json")
+        manifests = json.load(f)["manifests"]
+    if len(manifests) != 1:
+        raise SystemExit(f"✖ {archive.name}: {len(manifests)} images in one archive")
+    return manifests[0]["digest"]
+
+
+# req: NFR-IMG-07
+def repro(only: list[str]) -> int:
+    images = only or [*GO_IMAGES, "web"]
+    if unknown := [i for i in images if i not in BUDGETS]:
+        raise SystemExit(f"✖ repro: no image {', '.join(unknown)}; the images are {', '.join(BUDGETS)}")
+    version, sha, epoch = (ROOT / "VERSION").read_text().strip(), sh("git", "rev-parse", "HEAD").strip(), commit_epoch()
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(prefix="fyniq-repro-"))
+    digests: dict[str, list[str]] = {i: [] for i in images}
+    try:
+        for attempt in (1, 2):
+            builder = f"fyniq-repro-{attempt}"
+            new_builder(builder)
+            try:
+                for svc in images:
+                    dest = tmp / f"{svc}-{attempt}.tar"
+                    p = run(*build_command(svc, builder, version, sha, "", epoch, f"type=oci,dest={dest},rewrite-timestamp=true"))
+                    if p.returncode:
+                        raise SystemExit(f"✖ build {svc} ({attempt}): {p.stderr.strip()[-1500:]}")
+                    digests[svc].append(oci_digest(dest))
+                    dest.unlink()
+                    print(f"  {svc} build {attempt}: {digests[svc][-1]}")
+            finally:
+                run("docker", "buildx", "rm", "--force", builder)   # with its cache: the next build starts from nothing
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    differ = [f"fyniq-{i}: {d[0]} then {d[1]}" for i, d in digests.items() if d[0] != d[1]]
+    (REPORTS / "repro.json").write_text(json.dumps({"git_sha": sha, "source_date_epoch": int(epoch), "buildkit": BUILDKIT_IMAGE,
+                                                   "platforms": list(PLATFORMS), "digests": digests, "differ": differ}, indent=1))
+    if differ:
+        print("✖ reproducible images (NFR-IMG-07): two clean builds of the same commit differ:\n  " + "\n  ".join(differ))
+        return 1
+    print(f"✔ {len(images)} images built twice from nothing for {' and '.join(PLATFORMS)}: the same digests; .data/images/repro.json")
+    return 0
+
+
 def release_identity(repository: str, release: str) -> str:
     """The certificate identity of release.yml's keyless signatures on the release tag."""
     if not RELEASE_TAG.match(release):
@@ -483,21 +580,16 @@ def publish(release: str, registry: str, github_output: str) -> int:
         raise SystemExit(f"✖ VERSION is not {version}: publish runs on release-please's tag, whose commit sets it")
     sha = sh("git", "rev-parse", "HEAD").strip()
     REPORTS.mkdir(parents=True, exist_ok=True)
-    builder = "fyniq-release"
-    if run("docker", "buildx", "inspect", builder).returncode:
-        sh("docker", "buildx", "create", "--name", builder, "--driver", "docker-container", "--driver-opt", f"image={BUILDKIT_IMAGE}")
+    builder, epoch = "fyniq-release", commit_epoch()
+    new_builder(builder)
     tmp = Path(tempfile.mkdtemp(prefix="fyniq-publish-"))
     rows, findings = [], []
     try:
         for svc in GO_IMAGES:
             name, meta = f"{registry}/fyniq-{svc}", tmp / f"{svc}.json"
-            p = run("docker", "buildx", "build", "--builder", builder, "--platform", ",".join(PLATFORMS),
-                    "-f", "deploy/docker/Dockerfile.go-service", "--target", "render" if svc == "render" else "service",
-                    "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
-                    "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}",
-                    # The SLSA generator attests the provenance and this script the SBOM, each signed and verifiable.
-                    "--provenance=false", "--sbom=false",
-                    "--metadata-file", str(meta), "-t", f"{name}:{release}", "-t", f"{name}:sha-{sha}", "--push", ".")
+            # The build repro checks: the same commit gives the same digests (NFR-IMG-07).
+            output = f'type=image,"name={name}:{release},{name}:sha-{sha}",push=true,oci-mediatypes=true,rewrite-timestamp=true'
+            p = run(*build_command(svc, builder, version, sha, release, epoch, output, ("--metadata-file", str(meta))))
             if p.returncode:
                 raise SystemExit(f"✖ build and push fyniq-{svc}: {p.stderr.strip()[-1500:]}")
             digest = json.loads(meta.read_text())["containerimage.digest"]
@@ -577,7 +669,7 @@ def admit(release: str, repository: str, images_json: str, attestor: str, key_ve
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "platforms", "scan", "sign", "self-test", "publish", "admit"])
+    ap.add_argument("command", choices=["check", "platforms", "scan", "sign", "self-test", "publish", "admit", "repro"])
     ap.add_argument("--version", default="0.0.0")
     ap.add_argument("--flavours", default="release local")
     ap.add_argument("--platform", default="", help="check: the platform the images were built for; default the Docker engine's")
@@ -589,6 +681,7 @@ def main() -> int:
     ap.add_argument("--images", default="", help="admit: publish's JSON list of {image, digest}")
     ap.add_argument("--attestor", default="", help="admit: the Binary Authorization attestor (projects/<p>/attestors/<a>)")
     ap.add_argument("--key-version", default="", help="admit: the Cloud KMS key version that signs attestations")
+    ap.add_argument("--only", default="", help="repro: these images only (comma-separated), for a quicker local check")
     a = ap.parse_args()
     if a.command == "self-test":
         self_test()
@@ -603,6 +696,8 @@ def main() -> int:
         if not a.registry:
             raise SystemExit("✖ publish needs --registry: Artifact Registry's repository URL")
         return publish(a.release, a.registry, a.github_output)
+    if a.command == "repro":
+        return repro([i for i in a.only.split(",") if i])
     if a.command == "admit":
         if not (a.images and a.attestor and a.key_version):
             raise SystemExit("✖ admit needs --images, --attestor and --key-version")

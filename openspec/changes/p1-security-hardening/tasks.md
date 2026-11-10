@@ -30,7 +30,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 3. Reproducible images (slice 3)
 
-- [ ] 3.1 `SOURCE_DATE_EPOCH` and normalised layers in both Dockerfiles. `scripts/images.py repro` and
+- [x] 3.1 `SOURCE_DATE_EPOCH` and normalised layers in both Dockerfiles. `scripts/images.py repro` and
   `make images-repro` build twice and compare digests, and a daily CI job runs them, as do changes to the images'
   inputs. `// req: NFR-IMG-07`
 

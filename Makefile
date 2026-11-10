@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -162,6 +162,9 @@ infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the
 
 image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical or high finding fails unless waived (SEC-21, NFR-IMG-05)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
+
+images-repro: ## Reproducible images (NFR-IMG-07): build every release image and the web image twice, for both platforms, with no cache, and compare the digests (daily in CI)
+	@$(MISE) python3 scripts/images.py repro
 
 image-sign: ## Push the release images by digest to a throwaway registry, sign them and attest their SBOMs (cosign), verify; a wrong key and an unsigned image must fail (NFR-IMG-05, SEC-22)
 	@$(MISE) python3 scripts/images.py sign --version $(VERSION)
