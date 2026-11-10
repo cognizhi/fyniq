@@ -7,10 +7,12 @@ import (
 	netmail "net/mail"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/resend"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/adapters/zeptomail"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -48,14 +50,22 @@ type MailConfig struct {
 //   - FYNIQ_RESEND_WEBHOOK_SECRET and FYNIQ_ZEPTOMAIL_WEBHOOK_KEY: the webhooks' secrets, on the API.
 //   - FYNIQ_CAPTURE_DOMAIN: the email-in addresses' domain, such as in.example.com; Resend receives for it with
 //     FYNIQ_RESEND_KEY (and FYNIQ_RESEND_API for another base than Resend's).
-func ReadMail(env func(string) string) (MailConfig, error) {
+//
+// The providers reach their own hosts only, through guard (SEC-36): the outbound guard, which also refuses the
+// platform's own services; nil is one that allows public addresses only.
+func ReadMail(env func(string) string, guard *egress.Guard) (MailConfig, error) {
+	if guard == nil {
+		guard = &egress.Guard{}
+	}
 	c := MailConfig{From: env("FYNIQ_MAIL_FROM"), ResendWebhookSecret: env("FYNIQ_RESEND_WEBHOOK_SECRET"),
 		ZeptoMailWebhookKey: env("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY"), CaptureDomain: strings.ToLower(strings.TrimSpace(env("FYNIQ_CAPTURE_DOMAIN")))}
 	if err := readDomains(env, &c); err != nil {
 		return MailConfig{}, err
 	}
 	if key := env("FYNIQ_RESEND_KEY"); key != "" {
-		c.Inbound = resend.NewReceiving(cmp.Or(env("FYNIQ_RESEND_API"), resend.DefaultBase), key)
+		base := cmp.Or(env("FYNIQ_RESEND_API"), resend.DefaultBase)
+		// The API on its own host; an attachment from the download URL the API gives, wherever the guard allows.
+		c.Inbound = resend.NewReceiving(base, key, guard.Bounded(8<<20, time.Minute).For(egress.HostOf(base)), guard.Bounded(64<<20, time.Minute).Client(nil))
 	}
 	names := env("FYNIQ_EMAIL_PROVIDERS")
 	if names == "" && env("FYNIQ_SMTP_ADDR") != "" {
@@ -86,12 +96,14 @@ func ReadMail(env func(string) string) (MailConfig, error) {
 			if env("FYNIQ_ZEPTOMAIL_KEY") == "" {
 				return MailConfig{}, fmt.Errorf("FYNIQ_EMAIL_PROVIDERS names zeptomail, but FYNIQ_ZEPTOMAIL_KEY is not set")
 			}
-			c.Providers = append(c.Providers, zeptomail.New(cmp.Or(env("FYNIQ_ZEPTOMAIL_URL"), zeptomail.DefaultURL), env("FYNIQ_ZEPTOMAIL_KEY")))
+			u := cmp.Or(env("FYNIQ_ZEPTOMAIL_URL"), zeptomail.DefaultURL)
+			c.Providers = append(c.Providers, zeptomail.New(u, env("FYNIQ_ZEPTOMAIL_KEY"), guard.For(egress.HostOf(u))))
 		case "resend":
 			if env("FYNIQ_RESEND_KEY") == "" {
 				return MailConfig{}, fmt.Errorf("FYNIQ_EMAIL_PROVIDERS names resend, but FYNIQ_RESEND_KEY is not set")
 			}
-			c.Providers = append(c.Providers, resend.New(cmp.Or(env("FYNIQ_RESEND_URL"), resend.DefaultURL), env("FYNIQ_RESEND_KEY")))
+			u := cmp.Or(env("FYNIQ_RESEND_URL"), resend.DefaultURL)
+			c.Providers = append(c.Providers, resend.New(u, env("FYNIQ_RESEND_KEY"), guard.For(egress.HostOf(u))))
 		default:
 			return MailConfig{}, fmt.Errorf("FYNIQ_EMAIL_PROVIDERS names %q: the providers are smtp, zeptomail and resend", name)
 		}

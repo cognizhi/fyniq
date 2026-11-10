@@ -73,7 +73,7 @@ func startOAuth(t *testing.T, ttl time.Duration) *oauthStack {
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 	pub, _ := c.PortEndpoint(ctx, "4444/tcp", "http")
 	adm, _ := c.PortEndpoint(ctx, "4445/tcp", "http")
-	s := &oauthStack{t: t, e: e, admin: hydra.New(adm), srv: srv, clock: clock.NewFrozen(clock.System{}.Now())}
+	s := &oauthStack{t: t, e: e, admin: hydra.New(adm, http.DefaultClient), srv: srv, clock: clock.NewFrozen(clock.System{}.Now())}
 	s.public, _ = url.Parse(pub)
 	dev := e.tokens // the first-party session, until the SignIn port: dev tokens
 	auth := authn.Local{Dev: dev, OAuth: &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: s.clock, TTL: ttl}}

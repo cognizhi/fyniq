@@ -16,6 +16,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/signin"
 )
@@ -231,7 +232,7 @@ func (p *IdentityPlatform) call(ctx context.Context, method string, body, out an
 	req.Header.Set("X-Goog-Api-Key", p.APIKey)
 	client := p.Client
 	if client == nil {
-		client = http.DefaultClient
+		client = egress.Public()
 	}
 	resp, err := client.Do(req)
 	if err != nil {

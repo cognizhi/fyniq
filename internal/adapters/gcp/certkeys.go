@@ -17,6 +17,7 @@ import (
 
 	jose "github.com/go-jose/go-jose/v4"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -85,7 +86,7 @@ func (c *CertKeys) fetch(ctx context.Context, now time.Time) error {
 	}
 	client := c.Client
 	if client == nil {
-		client = http.DefaultClient
+		client = egress.Public()
 	}
 	resp, err := client.Do(req)
 	if err != nil {

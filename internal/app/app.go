@@ -12,9 +12,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/runtime"
@@ -121,8 +121,7 @@ func healthcheck(service string) int {
 	if port == "" {
 		port = "8080"
 	}
-	client := http.Client{Timeout: 3 * time.Second}
-	resp, err := client.Get("http://127.0.0.1:" + port + "/readyz")
+	resp, err := egress.Loopback().Get("http://127.0.0.1:" + port + "/readyz")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s healthcheck: %v\n", service, err)
 		return 1

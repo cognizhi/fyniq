@@ -3,6 +3,7 @@ package archtest
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -105,6 +106,81 @@ func TestNoWallClockOutsideTheClockPackage(t *testing.T) {
 	}
 	if len(found) > 0 {
 		t.Fatalf("wall-clock reads outside internal/clock:\n%s", strings.Join(found, "\n"))
+	}
+}
+
+// Every outbound HTTP request goes through internal/egress (SEC-36): no other client, transport, default client or
+// shortcut, and no go-oidc fetch with its own client; the metadata and loopback clients stay with their one user.
+// req: SEC-36
+// req: QA-SEC-04
+// asvs: V1.3.6, V15.3.2
+func TestEveryOutboundRequestGoesThroughEgress(t *testing.T) {
+	root := repoRoot(t)
+	var found []string
+	for _, top := range []string{"internal", "cmd", "connectors"} {
+		err := filepath.WalkDir(filepath.Join(root, top), func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			rel, _ := filepath.Rel(root, path)
+			if d.IsDir() {
+				if d.Name() == "testdata" || rel == filepath.Join("internal", "egress") || rel == filepath.Join("internal", "archtest") {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+			src, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			slash := filepath.ToSlash(rel)
+			uses, err := EgressUses(rel, src, strings.HasPrefix(slash, "internal/adapters/gcp/"), strings.HasPrefix(slash, "internal/app/"))
+			found = append(found, uses...)
+			return err
+		})
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			t.Fatal(err)
+		}
+	}
+	if len(found) > 0 {
+		t.Fatalf("outbound requests outside internal/egress:\n%s", strings.Join(found, "\n"))
+	}
+	planted := []byte(`package x
+import (
+	"context"
+	h "net/http"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/cognizhi/fyniq/internal/egress"
+)
+type ok struct{ c *h.Client }
+type byValue struct{ c h.Client }
+var zero h.Client
+func f(c *h.Client) {
+	_ = &h.Client{}
+	_ = h.Transport{}
+	_ = new(h.Client)
+	_ = h.DefaultClient
+	_ = h.DefaultTransport
+	_, _ = h.Get("https://example.com")
+	_, _ = h.Post("https://example.com", "", nil)
+	_ = oidc.NewRemoteKeySet(context.Background(), "https://example.com/keys")
+	_ = oidc.NewRemoteKeySet(oidc.ClientContext(context.Background(), c), "https://example.com/keys")
+	_ = egress.Metadata()
+	_ = egress.Loopback()
+	_ = egress.Public()
+	// h.DefaultClient in a comment is not a use
+}
+`)
+	// a client held by value, a zero-value client, a built client and transport, new(Client), the default client and
+	// transport, Get and Post, a key set on the default client, and the metadata and loopback clients
+	if got, err := EgressUses("x.go", planted, false, false); err != nil || len(got) != 12 {
+		t.Fatalf("want 12 planted uses, got %d (%v):\n%s", len(got), err, strings.Join(got, "\n"))
+	}
+	if got, _ := EgressUses("x.go", planted, true, true); len(got) != 10 {
+		t.Fatalf("the gcp adapter may use the metadata client and the healthcheck the loopback one: %v", got)
 	}
 }
 

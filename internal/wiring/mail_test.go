@@ -16,7 +16,7 @@ func env(m map[string]string) func(string) string { return func(k string) string
 // req: FR-INT-21
 func TestTheDeploymentNamesItsEmailProvidersInOrder(t *testing.T) {
 	c, err := wiring.ReadMail(env(map[string]string{"FYNIQ_EMAIL_PROVIDERS": "zeptomail, resend", "FYNIQ_ZEPTOMAIL_KEY": "z", "FYNIQ_RESEND_KEY": "r",
-		"FYNIQ_MAIL_FROM": "Fyniq <no-reply@Mail.Example.com>", "FYNIQ_MAIL_DOMAINS": "mail.example.com, Example.org,example.org"}))
+		"FYNIQ_MAIL_FROM": "Fyniq <no-reply@Mail.Example.com>", "FYNIQ_MAIL_DOMAINS": "mail.example.com, Example.org,example.org"}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,12 +25,12 @@ func TestTheDeploymentNamesItsEmailProvidersInOrder(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 	// An SMTP relay alone, as before, when only it is set; its sender's domain is the sending domain.
-	c, err = wiring.ReadMail(env(map[string]string{"FYNIQ_SMTP_ADDR": "smtp.example.com:587", "FYNIQ_MAIL_FROM": "no-reply@Example.com"}))
+	c, err = wiring.ReadMail(env(map[string]string{"FYNIQ_SMTP_ADDR": "smtp.example.com:587", "FYNIQ_MAIL_FROM": "no-reply@Example.com"}), nil)
 	if err != nil || len(c.Providers) != 1 || c.Providers[0].Name() != "smtp" || strings.Join(c.Domains, ",") != "example.com" {
 		t.Fatalf("%+v, %v", c, err)
 	}
 	// Nothing set: no provider, so no email is sent.
-	if c, err := wiring.ReadMail(env(nil)); err != nil || len(c.Providers) != 0 {
+	if c, err := wiring.ReadMail(env(nil), nil); err != nil || len(c.Providers) != 0 {
 		t.Fatalf("%+v, %v", c, err)
 	}
 	for name, m := range map[string]map[string]string{
@@ -40,7 +40,7 @@ func TestTheDeploymentNamesItsEmailProvidersInOrder(t *testing.T) {
 		"no platform sender":         {"FYNIQ_EMAIL_PROVIDERS": "resend", "FYNIQ_RESEND_KEY": "r"},
 		"smtp without its relay":     {"FYNIQ_EMAIL_PROVIDERS": "smtp", "FYNIQ_MAIL_FROM": "a@example.com"},
 	} {
-		if _, err := wiring.ReadMail(env(m)); err == nil {
+		if _, err := wiring.ReadMail(env(m), nil); err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}
@@ -52,7 +52,7 @@ func TestTheDeploymentNamesItsEmailProvidersInOrder(t *testing.T) {
 func TestTheSendingDomainsRecordsAreConfiguration(t *testing.T) {
 	c, err := wiring.ReadMail(env(map[string]string{"FYNIQ_MAIL_DOMAINS": "mail.example.com",
 		"FYNIQ_MAIL_DNS": `{"mail.example.com":[{"type":"TXT","name":"k._domainkey.mail.example.com","value":"v=DKIM1"},` +
-			`{"type":"CNAME","name":"bounce.mail.example.com","value":"cluster.zeptomail.com"}]}`}))
+			`{"type":"CNAME","name":"bounce.mail.example.com","value":"cluster.zeptomail.com"}]}`}), nil)
 	if err != nil || len(c.Providers) != 0 || len(c.DNS["mail.example.com"]) != 2 || c.DNS["mail.example.com"][1].Type != "CNAME" {
 		t.Fatalf("%+v, %v", c, err)
 	}
@@ -62,7 +62,7 @@ func TestTheSendingDomainsRecordsAreConfiguration(t *testing.T) {
 		"an MX record":           `{"mail.example.com":[{"type":"MX","name":"a","value":"b"}]}`,
 		"a record with no value": `{"mail.example.com":[{"type":"TXT","name":"a"}]}`,
 	} {
-		if _, err := wiring.ReadMail(env(map[string]string{"FYNIQ_MAIL_DOMAINS": "mail.example.com", "FYNIQ_MAIL_DNS": v})); err == nil {
+		if _, err := wiring.ReadMail(env(map[string]string{"FYNIQ_MAIL_DOMAINS": "mail.example.com", "FYNIQ_MAIL_DNS": v}), nil); err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}
@@ -86,7 +86,7 @@ func TestEveryPlatformScheduleHasItsJob(t *testing.T) {
 func TestEmailProvidersAreConfigurationNotCode(t *testing.T) {
 	for _, order := range []string{"zeptomail,resend,smtp", "smtp,resend", "resend"} {
 		c, err := wiring.ReadMail(env(map[string]string{"FYNIQ_EMAIL_PROVIDERS": order, "FYNIQ_ZEPTOMAIL_KEY": "z", "FYNIQ_RESEND_KEY": "r",
-			"FYNIQ_SMTP_ADDR": "smtp.example.com:587", "FYNIQ_MAIL_FROM": "a@example.com"}))
+			"FYNIQ_SMTP_ADDR": "smtp.example.com:587", "FYNIQ_MAIL_FROM": "a@example.com"}), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,7 +98,7 @@ func TestEmailProvidersAreConfigurationNotCode(t *testing.T) {
 			t.Errorf("%s: providers %v, inbound %v, Mailpit %q", order, names, c.Inbound, c.MailpitWebhook)
 		}
 	}
-	if c, _ := wiring.ReadMail(env(nil)); c.Inbound != nil {
+	if c, _ := wiring.ReadMail(env(nil), nil); c.Inbound != nil {
 		t.Error("an inbound adapter without its key")
 	}
 }

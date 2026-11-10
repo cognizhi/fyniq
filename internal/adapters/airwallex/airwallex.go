@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -79,16 +80,15 @@ func (g readOnly) RoundTrip(r *http.Request) (*http.Response, error) {
 	return g.next.RoundTrip(r)
 }
 
+// client is the connector's client (through the egress guard, SEC-36) with the method check in front of it.
 func (c *Client) client() *http.Client {
 	base := c.HTTP
-	if base == nil {
-		base = http.DefaultClient
+	if base == nil || base.Transport == nil {
+		base = egress.Public()
 	}
-	next := base.Transport
-	if next == nil {
-		next = http.DefaultTransport
-	}
-	return &http.Client{Transport: readOnly{next: next}, Timeout: 30 * time.Second, CheckRedirect: base.CheckRedirect, Jar: base.Jar}
+	wrapped := *base
+	wrapped.Transport = readOnly{next: base.Transport}
+	return &wrapped
 }
 
 func (c *Client) do(req *http.Request, path string, ok int, into any) error {

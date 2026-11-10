@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/httpserver"
@@ -20,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/signin"
+	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
 // base is where the browser finds the API on the web app's origin: Caddy (make up) and Vite (make dev)
@@ -36,7 +36,7 @@ func init() {
 		l := firstParty(clock, sessions)
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			// Hydra's access tokens for the API's audience, introspected and cached for at most 30 s (ADR-T3).
-			l.OAuth = &authn.Introspector{OAuth: hydra.New(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}
+			l.OAuth = &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}
 		}
 		return l
 	}
@@ -64,7 +64,7 @@ func init() {
 		if admin == "" {
 			return
 		}
-		oauthflow.Flow{OAuth: hydra.New(admin), SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(),
+		oauthflow.Flow{OAuth: wiring.Hydra(admin), SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(),
 			MCPAudience: cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"),
 			Log:         logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: base}.Register(s)
 	}

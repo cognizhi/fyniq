@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -33,12 +34,12 @@ const DefaultURL = "https://cpaas.zoho.com/v1.1/email"
 type Sender struct {
 	URL  string       // the account's email endpoint
 	Key  string       // the Mail Agent's send token
-	HTTP *http.Client // nil: one with a 30-second limit
+	HTTP *http.Client // through the egress guard, to URL's host only (SEC-36); egress.Public when nil
 }
 
-// New returns a sender to url with the send token key.
-func New(url, key string) *Sender {
-	return &Sender{URL: url, Key: key, HTTP: &http.Client{Timeout: 30 * time.Second}}
+// New returns a sender to url with the send token key, through client (wiring: the egress guard, for url's host).
+func New(url, key string, client *http.Client) *Sender {
+	return &Sender{URL: url, Key: key, HTTP: client}
 }
 
 // Name implements ports.Email.
@@ -111,7 +112,7 @@ func (s *Sender) Send(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 	req.Header.Set("Accept", "application/json")
 	client := s.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 30 * time.Second}
+		client = egress.Public()
 	}
 	res, err := client.Do(req)
 	if err != nil {

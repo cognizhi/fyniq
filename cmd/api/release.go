@@ -12,14 +12,15 @@ import (
 	"strings"
 
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
-	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/oauthflow"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/signin"
+	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
 // The release build signs people in through Identity Platform (ADR-T3) once the deployment configures
@@ -36,7 +37,7 @@ func init() {
 	newAuthenticator = func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator {
 		r := authn.Release{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
-			r.OAuth = &authn.Introspector{OAuth: hydra.New(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache}
+			r.OAuth = &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache}
 		}
 		if _, err := releaseSignIn(); err == nil && sessions != nil {
 			r.Sessions = authn.Sessions{Store: sessions, Clock: clock, Cookie: authn.SessionCookie(true)}
@@ -58,7 +59,8 @@ func init() {
 			return nil
 		}
 		c.platform.Clock = clock
-		c.platform.Keys = &gcp.CertKeys{URL: gcp.IdentityPlatformCertsURL, Clock: clock}
+		c.platform.Keys = &gcp.CertKeys{URL: gcp.IdentityPlatformCertsURL, Clock: clock,
+			Client: wiring.PlatformEgress().For(egress.HostOf(gcp.IdentityPlatformCertsURL))}
 		signin.Flow{SignIn: c.platform, Sessions: sessions, Clock: clock, Origin: c.origin, Base: "/api", Log: log, Alert: hooks.Alert,
 			Linked: hooks.Linked, SignedOut: hooks.SignedOut}.Register(s)
 		return c.platform
@@ -79,7 +81,7 @@ func init() {
 			return // nobody can sign in, so nobody can consent
 		}
 		signedIn := authn.Release{Sessions: authn.Sessions{Store: sessions, Clock: clock, Cookie: authn.SessionCookie(true)}}
-		oauthflow.Flow{OAuth: hydra.New(admin), SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"),
+		oauthflow.Flow{OAuth: wiring.Hydra(admin), SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"),
 			MCPAudience: os.Getenv("FYNIQ_MCP_AUDIENCE"), Log: logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: "/api"}.Register(s)
 	}
 }
@@ -101,7 +103,7 @@ func releaseSignIn() (releaseConfig, error) {
 		return releaseConfig{}, errors.New("FYNIQ_PUBLIC_ORIGIN must be the web app's https origin, such as https://fyniq.example.com")
 	}
 	p := &gcp.IdentityPlatform{Endpoint: gcp.IdentityToolkit, APIKey: os.Getenv("FYNIQ_IDP_API_KEY"), Project: os.Getenv("FYNIQ_IDP_PROJECT"),
-		Tenant: os.Getenv("FYNIQ_IDP_TENANT")}
+		Tenant: os.Getenv("FYNIQ_IDP_TENANT"), Client: wiring.PlatformEgress().For(egress.HostOf(gcp.IdentityToolkit))}
 	if p.APIKey == "" || p.Project == "" {
 		return releaseConfig{}, errors.New("FYNIQ_IDP_PROJECT and FYNIQ_IDP_API_KEY are required")
 	}

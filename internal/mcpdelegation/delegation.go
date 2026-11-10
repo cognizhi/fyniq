@@ -23,6 +23,7 @@ import (
 	jose "github.com/go-jose/go-jose/v4"
 
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -84,7 +85,7 @@ func (d Delegator) APIToken(ctx context.Context, authorization string) (Token, e
 	req.SetBasicAuth(url.QueryEscape(d.ClientID), url.QueryEscape(d.Secret))
 	client := d.HTTP
 	if client == nil {
-		client = http.DefaultClient
+		client = egress.Public()
 	}
 	resp, err := client.Do(req)
 	if err != nil {

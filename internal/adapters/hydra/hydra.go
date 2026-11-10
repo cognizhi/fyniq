@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -29,9 +30,13 @@ type Admin struct {
 
 var _ ports.OAuthServer = (*Admin)(nil)
 
-// New returns the admin API at baseURL, with a short timeout.
-func New(baseURL string) *Admin {
-	return &Admin{BaseURL: strings.TrimSuffix(baseURL, "/"), HTTP: &http.Client{Timeout: 10 * time.Second}}
+// New returns the admin API at baseURL, called through client (wiring.Hydra: the egress guard, to baseURL's host only,
+// with a short timeout); egress.Public when nil.
+func New(baseURL string, client *http.Client) *Admin {
+	if client == nil {
+		client = egress.Public()
+	}
+	return &Admin{BaseURL: strings.TrimSuffix(baseURL, "/"), HTTP: client}
 }
 
 // do sends a request to the admin API and decodes a JSON answer into out.

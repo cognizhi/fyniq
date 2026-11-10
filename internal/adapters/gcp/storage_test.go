@@ -26,7 +26,7 @@ func TestStorageSendsLockedRetentionAndTemporaryHold(t *testing.T) {
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
-	s := NewStorage(srv.URL, "fyniq-evidence", nil, nil)
+	s := NewStorage(srv.URL, "fyniq-evidence", nil, http.DefaultClient)
 	until := time.Date(2034, 3, 31, 16, 0, 0, 0, time.UTC)
 	if err := s.SetRetainUntil(context.Background(), "evidence/o/1", until); err != nil {
 		t.Fatal(err)
@@ -56,7 +56,7 @@ func TestStorageReadsTheRetentionLock(t *testing.T) {
 		_, _ = w.Write([]byte(answer))
 	}))
 	defer srv.Close()
-	s := NewStorage(srv.URL, "fyniq-anchors", oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "service-token"}), nil)
+	s := NewStorage(srv.URL, "fyniq-anchors", oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "service-token"}), http.DefaultClient)
 	r, err := s.Retention(context.Background())
 	if err != nil || !r.Locked || r.Period != 315360000*time.Second || auth != "Bearer service-token" {
 		t.Fatalf("Retention = %+v, %v (auth %q)", r, err, auth)

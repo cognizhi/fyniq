@@ -12,6 +12,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
@@ -67,9 +68,14 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	tokens := gcp.MetadataTokens()
+	// Every outbound request through the egress guard (SEC-36): Google's APIs and the render service through the
+	// platform's own guard, each to its hosts only; the email providers and the connectors through one that also refuses
+	// the platform's own services. Objects and documents up to 64 MiB.
+	platform, outbound := PlatformEgress(), &egress.Guard{Internal: c.internalHosts()}
+	google := platform.Bounded(64<<20, 0).For(".googleapis.com")
 	var fields ports.Cipher
 	if c.Fields.Key != "" { // as the api's own account, the only one with a role on the keys
-		fields = gcp.NewKMSFields(gcp.KMSAPI, c.Fields.Key, c.Fields.MACKeyVersion, tokens, nil)
+		fields = gcp.NewKMSFields(gcp.KMSAPI, c.Fields.Key, c.Fields.MACKeyVersion, tokens, google)
 	}
 	// The fields' fingerprint key also proves sensitive values in the trail (AUD-02). A service without the keys proves
 	// them under its store's own key, so its proofs do not compare with the api's [live-verify: grant the worker and
@@ -79,7 +85,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	// The deployment's email providers, in order (FR-INT-21, PRD-001 rev 0.102); an SMTP relay only with STARTTLS.
-	mail, err := ReadMail(os.Getenv)
+	mail, err := ReadMail(os.Getenv, outbound)
 	if err != nil {
 		return nil, err
 	}
@@ -87,19 +93,20 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Mail:   mail,
 		Origin: os.Getenv("FYNIQ_PUBLIC_ORIGIN"),
 		Store:  store,
-		Tokens: &gcp.TaskTokens{Invokers: c.Invokers, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock},
-		Queue:  gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, nil),
-		Jobs:   gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, nil),
-		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, nil),
-		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, nil),
+		Tokens: &gcp.TaskTokens{Invokers: c.Invokers, Keys: GoogleKeys(), Clock: clock},
+		Queue:  gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, google),
+		Jobs:   gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, google),
+		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, google),
+		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, google),
 	}
 	kit.Fields = fields
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
-		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, nil)
-		kit.Evidence = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, nil)
+		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, google)
+		kit.Evidence = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, google)
 	}
 	if strings.HasPrefix(c.Render.URL, "https://") && c.Render.Audience != "" { // as the service's own account
-		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil)}
+		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil),
+			HTTP: platform.Bounded(64<<20, 2*time.Minute).For(egress.HostOf(c.Render.URL))}
 	}
 	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" { // clamd beside the service (SEC-24)
 		kit.Scanner = clamav.Scanner{Addr: addr}
@@ -114,7 +121,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	installation := slices.Collect(maps.Values(kit.ConnectorNames))
-	kit.ConnectorSecrets = gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, []string{gcp.OrgSecretPrefix}, tokens, nil)
+	kit.ConnectorSecrets = gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, []string{gcp.OrgSecretPrefix}, tokens, google)
 	// The organisations' connector secrets in their own project (design D12), each made under the secrets key the first
 	// time it is typed (FYNIQ_ORG_SECRETS_PROJECT, FYNIQ_ORG_SECRETS_KEY; infra/gcp/modules/environment/org_secrets.tf).
 	if project := os.Getenv("FYNIQ_ORG_SECRETS_PROJECT"); project != "" {
@@ -122,14 +129,14 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		if key == "" {
 			return nil, errors.New("FYNIQ_ORG_SECRETS_PROJECT is set without FYNIQ_ORG_SECRETS_KEY, the key its secrets are made under")
 		}
-		orgs := gcp.NewSecretManager(gcp.SecretManagerAPI, project, nil, []string{gcp.OrgSecretPrefix}, tokens, nil)
+		orgs := gcp.NewSecretManager(gcp.SecretManagerAPI, project, nil, []string{gcp.OrgSecretPrefix}, tokens, google)
 		orgs.Create = &gcp.SecretCreation{Location: secretsRegion, KMSKey: key}
 		kit.ConnectorSecrets = gcp.SplitSecrets{
-			Installation:  gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, nil, tokens, nil),
+			Installation:  gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, nil, tokens, google),
 			Organisations: orgs,
 		}
 	}
-	kit.Egress = &egress.Guard{Internal: c.internalHosts()}
+	kit.Egress = outbound
 	kit.watchChanges(clock)
 	return kit, nil
 }
@@ -206,3 +213,12 @@ func (c Config) check() error {
 
 // mailEnv is the deployment's email settings the bootstrap reads, as they are (rev 0.139).
 func mailEnv(env func(string) string) func(string) string { return env }
+
+// PlatformEgress is the guard of the platform's own outbound connections: public addresses only.
+func PlatformEgress() *egress.Guard { return &egress.Guard{} }
+
+// GoogleKeys are Google's signing keys, which the OIDC checks of Cloud Tasks' and the render service's callers verify
+// against, fetched through the platform's guard from Google's certificate host only.
+func GoogleKeys() oidc.KeySet {
+	return oidc.NewRemoteKeySet(oidc.ClientContext(context.Background(), PlatformEgress().For(egress.HostOf(gcp.GoogleCerts))), gcp.GoogleCerts)
+}

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -20,7 +21,7 @@ import (
 // 1.31). Mailpit checks no SPF, DKIM or DMARC, so it reports them as passing: local mode only, never a release build.
 type MailpitInbound struct {
 	URL  string       // Mailpit's web address, such as http://localhost:8025
-	HTTP *http.Client // nil: one with a 30-second limit
+	HTTP *http.Client // nil: through the local flavour's egress guard, to URL's host only
 }
 
 // Name implements ports.InboundMail.
@@ -28,7 +29,7 @@ func (m MailpitInbound) Name() string { return "mailpit" }
 
 func (m MailpitInbound) client() *http.Client {
 	if m.HTTP == nil {
-		return &http.Client{Timeout: 30 * time.Second}
+		return (&egress.Guard{Local: true}).Bounded(64<<20, 30*time.Second).For(egress.HostOf(m.URL))
 	}
 	return m.HTTP
 }

@@ -97,7 +97,7 @@ func TestTheEmailConnectorsSendThroughTheirFakes(t *testing.T) {
 			_, _ = w.Write([]byte(c.answer))
 		}))
 		b := get(t, c.id)
-		email, err := b.OutboundEmail(connector.Config{Values: map[string]any{"url": srv.URL}, Secrets: map[string]string{c.secret: "token-1"}})
+		email, err := b.OutboundEmail(connector.Config{HTTP: http.DefaultClient, Values: map[string]any{"url": srv.URL}, Secrets: map[string]string{c.secret: "token-1"}})
 		if err != nil {
 			t.Fatalf("%s: %v", c.id, err)
 		}
@@ -126,7 +126,7 @@ func TestResendReceivesThroughItsFake(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"from": "supplier@example.com", "subject": "Bill", "text": "Attached."})
 	}))
 	defer srv.Close()
-	in, err := get(t, "resend").InboundEmail(connector.Config{Values: map[string]any{"api_base": srv.URL}, Secrets: map[string]string{"api_key": "token-1"}})
+	in, err := get(t, "resend").InboundEmail(connector.Config{HTTP: http.DefaultClient, Values: map[string]any{"api_base": srv.URL}, Secrets: map[string]string{"api_key": "token-1"}})
 	if err != nil {
 		t.Fatal(err)
 	}

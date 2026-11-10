@@ -59,7 +59,7 @@ func TestTasksEnqueueNamedOIDCTasks(t *testing.T) {
 	defer srv.Close()
 	q := NewTasks(srv.URL, map[string]TaskClass{"worker": {Queue: queue, URL: "https://worker.example.run.app/",
 		ServiceAccount: "tasks-worker@fyniq-staging.iam.gserviceaccount.com", Audience: "https://worker.example.run.app"}},
-		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "api-sa-token"}), nil)
+		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "api-sa-token"}), http.DefaultClient)
 	ctx := context.Background()
 	row := "0192f1a0-0000-7000-8000-0000000000a1"
 	if err := q.Enqueue(ctx, ports.Task{Queue: "worker", Name: row, Payload: []byte(`{"kind":"oauth.subject.revoke"}`), Deadline: time.Minute}); err != nil {
@@ -205,7 +205,7 @@ func TestRunJobsStartsTheSlot(t *testing.T) {
 		_, _ = w.Write([]byte(`{"name":"projects/fyniq-staging/locations/asia-southeast1/operations/op-1","metadata":{"name":"projects/fyniq-staging/locations/asia-southeast1/jobs/fyniq-jobs/executions/fyniq-jobs-x7k2p"}}`))
 	}))
 	defer srv.Close()
-	j := NewRunJobs(srv.URL, "projects/fyniq-staging/locations/asia-southeast1/jobs/fyniq-jobs", nil, nil)
+	j := NewRunJobs(srv.URL, "projects/fyniq-staging/locations/asia-southeast1/jobs/fyniq-jobs", nil, http.DefaultClient)
 	exec, err := j.Start(context.Background(), "audit.anchor", time.Date(2026, 10, 15, 3, 0, 0, 0, time.FixedZone("SGT", 8*3600)))
 	if err != nil || !strings.HasSuffix(exec, "/executions/fyniq-jobs-x7k2p") {
 		t.Fatalf("Start = %q, %v", exec, err)
