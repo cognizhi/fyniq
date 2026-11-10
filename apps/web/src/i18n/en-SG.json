@@ -2223,6 +2223,30 @@
     "budget-vs-actual.favourable": {
       "label": "Favourable",
       "tooltip": "Income at or above its budget, or costs at or below theirs."
+    },
+    "planning.forecast": {
+      "label": "Forecast",
+      "tooltip": "The company modelled forward from its drivers, in scenarios, from the books' figures today: it never posts."
+    },
+    "forecast.new": {
+      "label": "New forecast",
+      "tooltip": "Start a forecast with nothing planned yet: 24 months, Base, Best and Worst."
+    },
+    "forecast.save": {
+      "label": "Save",
+      "tooltip": "Save the plan as a draft and work its figures out."
+    },
+    "forecast.record": {
+      "label": "Record",
+      "tooltip": "Make this the company's plan: Home and the alerts read the latest recorded forecast. It changes no more."
+    },
+    "forecast.without-funding": {
+      "label": "Without the funding planned",
+      "tooltip": "None of the funding planned is received yet, so runway and the cash-out month are shown without it first."
+    },
+    "forecast.compare": {
+      "label": "Compare the scenarios",
+      "tooltip": "Every scenario's key results side by side, with and without the funding planned."
     }
   }
 }

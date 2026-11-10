@@ -61,7 +61,7 @@ aliases:
 ## The plans on Home
 
 - **Cash ahead**: the lowest bank balance of the next 60 days and its day, saying when it falls below the buffer; selecting it opens Cash ahead ([[planning.cash]]).
-- **Cash runs out**: the month cash first falls below zero in the latest recorded forecast, in its first scenario (usually Base). It leaves out the funding the forecast plans, because none of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within the forecast** means cash lasts for all the months the forecast covers.
+- **Cash runs out**: the month cash first falls below zero in the latest recorded forecast ([[planning.forecast]]), in its first scenario (usually Base). It leaves out the funding the forecast plans, because none of it is in the bank yet, and says so; the month with the funding is shown beside it. **Not within the forecast** means cash lasts for all the months the forecast covers.
 - **Revenue against budget** and **Costs against budget** (Expert mode): the financial year so far, to the end of the month the tiles show, against the year's approved budget for the same months, with the gap as a percentage of the budget and whether it is **favourable** (revenue above its budget, or costs below theirs).
 - A tile without a figure shows **—** and says why, such as "No approved budget for the year from 1 Jan 2027" or "No forecast is recorded yet".
 - The figures are the books' and the plans' as they stand when Home opens; a budget counts once approved, a forecast once recorded.
