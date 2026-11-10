@@ -52,6 +52,9 @@ type Deps struct {
 	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
 	Log          *slog.Logger
 	Version      string // the platform version: the document's info.version
+	// Build is the build's commit, time and flavour (REL-05): the platform version's endpoint answers them, and every
+	// exported report carries the commit beside the version.
+	Build PlatformBuild
 	// Release is the release this build is, for the Compliance Center's checks that run in CI (CMP-01, p1-compliance-center
 	// D3): the wiring passes version.Release, which this package never imports. Zero: a development build.
 	Release compliance.Release
@@ -436,6 +439,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)
+	registerPlatformVersion(a)
 	registerSuperAdmins(a)
 	registerConnectors(a)
 	registerBanking(a)

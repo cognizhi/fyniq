@@ -493,3 +493,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-10] compile | docs/user-guide/contacts-and-items.md, audit-trail.md → contacts.manage, compliance.audit-trail (a person or a company; sealed and shredded personal values, §11.8)
 
 ## [2026-11-10] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (shredding at the end of retention and anonymisation, §11.8, §11.9)
+
+## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)
+
+## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)

@@ -1191,7 +1191,9 @@ var (
 
 var (
 	ListSignInProviders = Policy{Operation: "listSignInProviders", Capability: Session, Need: View, Public: true}
-	GetSession          = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true, SingleFactor: true,
+	GetPlatformVersion  = Policy{Operation: "getPlatformVersion", Capability: Session, Need: View, Public: true,
+		Note: "The platform version and build, as /version answers them (REL-05)."}
+	GetSession = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true, SingleFactor: true,
 		Note: "Needs a person signed in to Fyniq; an OAuth client or the AI is refused."}
 )
 
@@ -1715,7 +1717,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddMoneyAccountEvidence, ListMoneyAccountEvidence, ListBankSignals, DismissBankSignal,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
-	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
+	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetPlatformVersion, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint,

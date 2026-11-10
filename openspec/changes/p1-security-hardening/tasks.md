@@ -97,7 +97,7 @@ module tests on mock providers and tagged `[live-verify]`.
   `make scan`. `// req: SEC-26`
 - [x] 11.2 The archtest that the auto-approval never approves a pull request not opened by the owner, `CODEOWNERS`,
   and branch protection `[live-verify]`. `// req: REL-04`
-- [ ] 11.3 `getPlatformVersion` and the About dialog. The version and git SHA in every exported report. Component
+- [x] 11.3 `getPlatformVersion` and the About dialog. The version and git SHA in every exported report. Component
   test with axe. `// req: REL-05`
 
 ## 12. Incident response (slice 12)

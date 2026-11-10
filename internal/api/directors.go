@@ -458,9 +458,9 @@ func registerDirectors(a *API) {
 				sh.Rows = append(sh.Rows, sheet.Row{Cells: []sheet.Cell{sheet.Text(m.Date), sheet.Text(codes[m.AccountID]), sheet.Text(m.Origin),
 					sheet.Text(m.SourceType), sheet.Text(m.Number), sheet.Text(cmpOr(m.Description, m.Memo)), sheet.Number(m.Amount.Amount, 2)}})
 			}
-			data, media, name = sheet.CSV(sh), mediaCSV, name+".csv"
+			data, media, name = sheet.CSV(a.footed(a.deps.Clock.Now(), sh)[0]), mediaCSV, name+".csv"
 		default:
-			if data, err = a.renderReport(ctx, directorReport(s, author, a.deps.Version), a.deps.Clock.Now()); err != nil {
+			if data, err = a.renderReport(ctx, directorReport(s, author, a.stamp()), a.deps.Clock.Now()); err != nil {
 				return nil, err
 			}
 			media, name = mediaPDF, name+".pdf"

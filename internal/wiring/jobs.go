@@ -351,7 +351,7 @@ func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 
 // Exports prepare the exports that run in the background in the staging store, and expire them (FR-RPT-09).
 func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
-	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock}
+	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock, Stamp: k.Stamp}
 }
 
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.

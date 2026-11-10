@@ -13,6 +13,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -44,6 +45,37 @@ type Sheet struct {
 	Name   string
 	Header []string
 	Rows   []Row
+	// Footer follows the rows after a blank row, each line in the first column: the platform and build that prepared
+	// the report, as every exported report names them (REL-05).
+	Footer []string
+}
+
+// Stamp names the platform version and the build's commit, as every exported report does (REL-05), such as
+// "0.12.0 (3f2c1a9d)"; the version alone when the commit is not known.
+func Stamp(version, commit string) string {
+	commit = commit[:min(len(commit), 12)]
+	if commit == "" || commit == "unknown" {
+		return version
+	}
+	return version + " (" + commit + ")"
+}
+
+// Prepared is an exported report's footer line: the platform and build that prepared it, and when.
+func Prepared(stamp string, at time.Time) string {
+	if stamp != "" {
+		stamp = " " + stamp
+	}
+	return "Prepared by Fyniq" + stamp + " on " + at.UTC().Format("2006-01-02 15:04") + " UTC"
+}
+
+// Footed is sheets, each with footer: the footer every exported report carries (REL-05).
+func Footed(sheets []Sheet, footer ...string) []Sheet {
+	out := make([]Sheet, len(sheets))
+	for i, s := range sheets {
+		s.Footer = append(slices.Clone(s.Footer), footer...)
+		out[i] = s
+	}
+	return out
 }
 
 // decimal is a number as a cell takes it: an optional minus, digits, and optional decimals (FR-UX-20's strict
@@ -76,6 +108,12 @@ func CSV(s Sheet) []byte {
 	line(header)
 	for _, r := range s.Rows {
 		line(r.Cells)
+	}
+	if len(s.Footer) > 0 {
+		b.WriteString("\r\n")
+		for _, f := range s.Footer {
+			line([]Cell{Text(f)})
+		}
 	}
 	return b.Bytes()
 }
@@ -197,6 +235,9 @@ func worksheet(s Sheet) string {
 	row(1, header, true)
 	for i, r := range s.Rows {
 		row(i+2, r.Cells, r.Strong)
+	}
+	for i, f := range s.Footer { // after a blank row
+		row(len(s.Rows)+3+i, []Cell{Text(f)}, false)
 	}
 	b.WriteString(`</sheetData></worksheet>`)
 	return b.String()

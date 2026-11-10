@@ -1574,6 +1574,9 @@ var matrixCalls = map[string]matrixCall{
 	"getSetupStatus": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/setup", tok, nil), nil
 	},
+	"getPlatformVersion": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/platform/version", tok, nil), nil
+	},
 	// Setup runs once per installation, so the matrix sends a code that is never valid: allowed means
 	// the API looked at the code (409), refused means 401 or 403.
 	"completeSetup": func(e *env, tok string) (response, func() bool) {

@@ -201,6 +201,9 @@ export const actions = [
   { kind: "action", id: "appearance.density", mode: "expert", help: "appearance.density", guide: "preferences.appearance#density" },
   { kind: "action", id: "appearance.motion", mode: "basic", help: "appearance.motion", guide: "preferences.appearance#motion" },
   { kind: "action", id: "sign-out", mode: "basic", help: "auth.sign-out", guide: "home.overview#sign-out" },
+  // The Help menu and its About dialog (REL-05): the version and the commit, in both modes.
+  { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
+  { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },

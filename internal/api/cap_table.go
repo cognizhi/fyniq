@@ -486,14 +486,14 @@ func registerCapTable(a *API) {
 		media := mediaXLSX
 		switch in.Format {
 		case "csv":
-			data, media, name = sheet.CSV(sheets[0]), mediaCSV, name+".csv"
+			data, media, name = sheet.CSV(a.footed(now, sheets[0])[0]), mediaCSV, name+".csv"
 		case "pdf":
-			if data, err = a.renderReport(ctx, capReport(t, author, a.deps.Version, revision), now); err != nil {
+			if data, err = a.renderReport(ctx, capReport(t, author, a.stamp(), revision), now); err != nil {
 				return nil, err
 			}
 			media, name = mediaPDF, name+".pdf"
 		default:
-			if data, err = sheet.XLSX(sheets, now); err != nil {
+			if data, err = sheet.XLSX(a.footed(now, sheets...), now); err != nil {
 				return nil, err
 			}
 			name += ".xlsx"
