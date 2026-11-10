@@ -3453,17 +3453,20 @@
     "CMP-PD-02",
     "CMP-PD-04",
     "CMP-PD-05",
+    "CMP-PD-06",
     "CMP-PD-08",
     "CMP-AI-02",
-    "CMP-PD-01"
+    "CMP-PD-01",
+    "CTL-DP-06"
    ],
-   "purpose": "Run the PDPA programme: data inventory, DPIAs, access requests and breach timers.",
+   "purpose": "Run the PDPA programme: data inventory, DPIAs, access requests, breach timers, transfers abroad and shredding at the end of retention.",
    "content": [
-    "Data inventory: what, why, where, who, how long, cross-border flows (AI endpoint, email providers)",
-    "DPIAs (payroll, AI assistant) and AI inventory",
-    "Access and correction requests with 30-day timers",
-    "Breach register with timers: assessment within 30 days, PDPC notification within 3 calendar days after deciding it is notifiable",
-    "DPO contact and published policies"
+    "Tabs as built (p1-pdpa-retention): Inventory, Impact assessments, Requests, Breaches, Transfers, Shredding, Data Protection Officer; the canvas shows Breaches",
+    "Breach register with timers: assessment within 30 days, PDPC notification within 3 calendar days after deciding it is notifiable; the Prescribed data chip; Next step",
+    "Tabletop exercises of the breach runbook, twice a year",
+    "Data inventory: what, why, where, who, how long, cross-border flows; DPIAs (payroll, AI assistant); access and correction requests with 30-day timers",
+    "Transfers: Fyniq's flows abroad and the company's own, each assessed; Shredding: the runs waiting for approval, approved and done, and the anonymised contacts",
+    "DPO contact, the text for the website and the published policies"
    ],
    "states": [
     "breach timer running",

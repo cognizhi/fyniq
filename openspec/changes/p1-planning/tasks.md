@@ -192,6 +192,9 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
   - As built: ten threats over three boundaries, each with its control and the test that proves it. The Board's view
     of the cash projection's contacts is left to revisit with the board pack.
 
+  **Waiting (10 Nov 2026):** the design account (the owner's decision of 10 Nov 2026): this Claude account cannot open
+  the insight canvas. The check of the four fragments is done with the publish.
+
 ## 9. As built (slice 9)
 
 - [x] 9.1 `make test` and `make up` pass on the last slice, and `make differential` is clean. The build plan's

@@ -452,6 +452,12 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   This waits for the canvas hold to end, on 10 Nov 2026 06:00 SGT, and for access to the canvas from the new account.
   `python3 docs/design/screens/build.py check` passes.
 
+  **Progress (10 Nov 2026):**
+    - `Attestations.html`'s Due list gains the PDPA reviews the page now lists: the data inventory's quarter and a
+      breach's assessment.
+    - `ComplianceCenter.html` and `RiskPolicies.html` are still to check.
+    - The publish waits for the design account (the owner's decision of 10 Nov 2026).
+
 ## 10. Threat model and as built (slice 10)
 
 - [x] 10.1 The threat model `docs/security/threat-models/compliance-center.md`. It covers the registry and its

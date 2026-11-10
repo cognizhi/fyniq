@@ -518,6 +518,14 @@ event format.
 - [x] 12.2 The threat model `docs/security/threat-models/pdpa-retention.md`. It covers the registers, the timers,
   personal keys, shredding, the register, the restore, anonymisation, notices and consent, and who may see what.
 
+  **Progress (10 Nov 2026):**
+    - `DataProtection.html` is redrawn as built: the seven tabs, with Breaches shown (the register with its timer and
+      Prescribed data chip, Next step, and the tabletop exercises). The inventory row names the tabs. The row wraps at
+      344 px.
+    - `PrivacyNotices.html` is still to check.
+    - Every publish waits for the design account (the owner's decision of 10 Nov 2026): this Claude account cannot open
+      the canvases.
+
   **What building added:** fifteen threats across six boundaries, each mapped to its control and the tests that prove
   it. "What remains" lists:
     - counsel;
