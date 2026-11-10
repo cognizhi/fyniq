@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/clientip"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -28,7 +29,7 @@ var IPLimitDefaults = map[string]int{storage.IPSignIn: 30, storage.IPJoin: 10, s
 
 // ClientIPHeader is the header the edge puts the client's address in: the load balancer's custom request header, and
 // Caddy's locally (deploy/local/Caddyfile).
-const ClientIPHeader = "X-Fyniq-Client-IP"
+const ClientIPHeader = clientip.HeaderIP
 
 // IPLimiter counts the requests that need no organisation per client address.
 type IPLimiter struct {
@@ -58,27 +59,12 @@ func IPKindOf(r *http.Request) string {
 	return ""
 }
 
-// ClientIP is r's client: the address the edge names in ClientIPHeader when the peer is trusted (its last value, the one
-// the edge added), else the peer's own.
+// ClientIP is r's client: as clientip.Resolver put it in the request's context, else as the limiter's trusted peers say.
 func (l IPLimiter) ClientIP(r *http.Request) netip.Addr {
-	peer, err := netip.ParseAddrPort(r.RemoteAddr)
-	if err != nil {
-		return netip.Addr{}
+	if from, ok := clientip.From(r.Context()); ok {
+		return from.IP
 	}
-	addr := peer.Addr().Unmap()
-	for _, t := range l.Trusted {
-		if !t.Contains(addr) {
-			continue
-		}
-		if vs := r.Header.Values(ClientIPHeader); len(vs) > 0 {
-			parts := strings.Split(vs[len(vs)-1], ",")
-			if a, err := netip.ParseAddr(strings.TrimSpace(parts[len(parts)-1])); err == nil {
-				return a.Unmap()
-			}
-		}
-		break
-	}
-	return addr
+	return clientip.Resolver{Trusted: l.Trusted}.Of(r).IP
 }
 
 // IPKey is what the windows keep of a client: a SHA-256 of its address, never the address; an IPv6 client by its /64,

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -31,5 +33,20 @@ func (r rateLimits) Purge(ctx context.Context, before time.Time) (int64, error) 
 		return 0, err
 	}
 	n, err := r.u.q.PurgeRateLimitWindows(ctx, before)
-	return n, mapError(err)
+	if err != nil {
+		return n, mapError(err)
+	}
+	m, err := r.u.q.PurgeRefusals(ctx, before)
+	return n + m, mapError(err)
+}
+
+func (r rateLimits) Refused(ctx context.Context, user uuid.UUID, start time.Time) (int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	if start.IsZero() || user == uuid.Nil {
+		return 0, &storage.Error{Code: storage.CodeInvalid, Message: "a refusal's window needs its person and its start"}
+	}
+	n, err := r.u.q.CountRefusal(ctx, sqlcdb.CountRefusalParams{UserID: user, WindowStart: start})
+	return int(n), mapError(err)
 }

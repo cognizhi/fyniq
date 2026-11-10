@@ -15,10 +15,10 @@ SELECT organisation_id FROM fyniq.tenants ORDER BY created_at, organisation_id;
 
 -- name: InsertAuditRequestDetail :exec
 -- A security event's request details, beside the chain (AUD-06, 000285).
-INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent) VALUES ($1, $2, $3, $4);
+INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent, country, region) VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: ListAuditRequestDetails :many
-SELECT id, occurred_at, ip, user_agent FROM fyniq.audit_request_detail WHERE id = ANY(sqlc.arg(event_ids)::uuid[]);
+SELECT id, occurred_at, ip, user_agent, country, region FROM fyniq.audit_request_detail WHERE id = ANY(sqlc.arg(event_ids)::uuid[]);
 
 -- name: CountAuditRequestDetailsBefore :one
 SELECT count(*) FROM fyniq.audit_request_detail WHERE occurred_at < $1;

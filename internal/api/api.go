@@ -27,11 +27,13 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clientip"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -81,6 +83,8 @@ type Deps struct {
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string
+	// AlertThresholds are SEC-31's alert settings (FYNIQ_ALERT_THRESHOLDS); zero: security.Defaults.
+	AlertThresholds security.Thresholds
 	// DownloadKey signs the API's own download links (SEC-24), shared by every instance; empty: each instance makes one.
 	// The cloud's evidence stores give signed URLs instead.
 	DownloadKey []byte
@@ -568,9 +572,14 @@ func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
 	if err != nil {
 		host = ctx.RemoteAddr()
 	}
+	var country, region string
+	if from, ok := clientip.From(ctx.Context()); ok && from.IP.IsValid() { // the edge's view, behind the load balancer or Caddy
+		host, country, region = from.IP.String(), from.Country, from.Region
+	}
 	c := context.WithValue(ctx.Context(), requestIDKey{}, id)
 	c = context.WithValue(c, loggerKey{}, a.deps.Log)
-	c = storage.WithAudit(c, storage.AuditContext{Request: storage.Request{ID: id, IP: host, UserAgent: ctx.Header("User-Agent")}})
+	c = storage.WithAudit(c, storage.AuditContext{Request: storage.Request{ID: id, IP: host, UserAgent: ctx.Header("User-Agent"),
+		Country: country, Region: region}})
 	next(huma.WithContext(ctx, c))
 }
 
@@ -659,10 +668,16 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		a.deps.Log.Warn("api.refused", "operation", op.OperationID, "code", refusal.Code, "subject", p.Subject,
 			"client", p.Client, "organisation", p.Organisation.String(), "reason", d.Reason, "request_id", requestID(ctx.Context()))
 		_ = huma.WriteErr(a.API, ctx, refusal.Status, "", refusal)
+		if refusal.Code == CodeForbidden { // the policy layer's refusal (API-AUTHZ-01), counted for SEC-31's alert
+			a.afterRefusal(ctx.Context(), p)
+		}
 		return
 	}
 	c := context.WithValue(ctx.Context(), decisionKey{}, d)
 	next(huma.WithContext(ctx, context.WithValue(c, operationKey{}, op.OperationID)))
+	if _, audited := auditedReads[op.OperationID]; audited && ctx.Status() < 300 { // a mass export (SEC-31)
+		a.afterAuditedRead(ctx.Context(), p)
+	}
 }
 
 func requestID(ctx context.Context) string {

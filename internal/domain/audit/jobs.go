@@ -262,7 +262,7 @@ func checkDetails(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, even
 			return checked, "", err
 		}
 		for id, d := range got {
-			mac, err := keyed(ctx, scope, DetailValue(d.IP, d.UserAgent))
+			mac, err := keyed(ctx, scope, DetailValue(d.IP, d.UserAgent, d.Country, d.Region))
 			if err != nil {
 				return checked, "", err
 			}

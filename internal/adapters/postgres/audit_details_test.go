@@ -108,7 +108,7 @@ func TestSecurityEventsKeepTheirDetailsBesideTheChain(t *testing.T) {
 	if len(d) != 1 || d[signin.EventID].IP != "203.0.113.7" || d[signin.EventID].UserAgent != "Mozilla/5.0 (Macintosh) Firefox/140.0" {
 		t.Fatalf("the sign-in's details beside the chain: %+v", d)
 	}
-	mac, err := fields.Fingerprint(ctx, []byte("audit:"+b.Org.String()), audit.DetailValue("203.0.113.7", "Mozilla/5.0 (Macintosh) Firefox/140.0"))
+	mac, err := fields.Fingerprint(ctx, []byte("audit:"+b.Org.String()), audit.DetailValue("203.0.113.7", "Mozilla/5.0 (Macintosh) Firefox/140.0", "", ""))
 	if err != nil || audit.FingerprintPrefix+base64.RawURLEncoding.EncodeToString(mac) != signin.Request.Detail {
 		t.Errorf("the body's fingerprint is the deployment's of the details: %v", err)
 	}
@@ -131,6 +131,44 @@ func TestSecurityEventsKeepTheirDetailsBesideTheChain(t *testing.T) {
 	reports, _ = audit.VerifyAll(context.Background(), worker, blobs, signer, fields.Fingerprint)
 	if r := reportFor(t, reports, b.Org); r.OK() || !strings.Contains(r.Problem, "request details differ") {
 		t.Errorf("a changed IP must fail verification: %+v", r)
+	}
+}
+
+// A sign-in from where the edge said keeps its country and region beside the chain with its IP address and user agent
+// (SEC-31, 000313), fingerprinted with them, so verification finds a changed country; an event with no place
+// fingerprints as before.
+// req: SEC-31
+// req: AUD-06
+// asvs: V16.2.5
+func TestASignInKeepsWhereItCameFromBesideTheChain(t *testing.T) {
+	fields := detailsKey(t)
+	b := books(t, "Place Pte Ltd")
+	api := store(t, "fyniq_api", postgres.WithFingerprints(fields))
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "place-user"},
+		Request: storage.Request{IP: "203.0.113.7", UserAgent: "Mozilla/5.0 Firefox/140.0", Country: "SG", Region: "SG01"}})
+	recordAs(t, api, ctx, b.Org, "session.started")
+	signin := lastEvents(t, b.Org, 1)[0]
+	d := detailsOf(t, b.Org, signin.EventID)[signin.EventID]
+	if d.Country != "SG" || d.Region != "SG01" || d.IP != "203.0.113.7" {
+		t.Fatalf("the place beside the chain: %+v", d)
+	}
+	mac, err := fields.Fingerprint(ctx, []byte("audit:"+b.Org.String()), audit.DetailValue("203.0.113.7", "Mozilla/5.0 Firefox/140.0", "SG", "SG01"))
+	if err != nil || audit.FingerprintPrefix+base64.RawURLEncoding.EncodeToString(mac) != signin.Request.Detail {
+		t.Fatalf("the fingerprint covers the place: %v", err)
+	}
+	if string(audit.DetailValue("a", "b", "", "")) != `["a","b"]` {
+		t.Fatal("an event with no place must fingerprint as before")
+	}
+	worker := store(t, "fyniq_worker")
+	blobs, signer := anchoring(t)
+	superuser(t, func(tx pgx.Tx) error {
+		_, err := tx.Exec(context.Background(), "UPDATE fyniq.audit_request_detail SET country = 'MY' WHERE organisation_id = $1 AND id = $2",
+			b.Org, signin.EventID)
+		return err
+	})
+	reports, _ := audit.VerifyAll(context.Background(), worker, blobs, signer, fields.Fingerprint)
+	if r := reportFor(t, reports, b.Org); r.OK() || !strings.Contains(r.Problem, "request details differ") {
+		t.Errorf("a changed country must fail verification: %+v", r)
 	}
 }
 

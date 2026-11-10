@@ -23,6 +23,9 @@ func (a Actor) String() string { return a.Type + ":" + a.ID }
 // Request is where a change came from.
 type Request struct {
 	ID, IP, UserAgent, Session string
+	// Country and Region are where the edge says the request came from (SEC-31): kept, as the IP address is, beside a
+	// security event's chain only (AUD-06).
+	Country, Region string
 }
 
 // AuditContext is what a request knows about the change it makes.
@@ -180,6 +183,8 @@ type AuditDetail struct {
 	OccurredAt time.Time
 	IP         string
 	UserAgent  string
+	Country    string // ISO 3166-1 alpha-2, as the edge said; "" when it did not (SEC-31)
+	Region     string
 }
 
 // NewAuditBoundary is a purge boundary to write: the last purged event, the setting change that switched the purge on,

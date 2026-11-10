@@ -2,8 +2,11 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -27,8 +30,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/retention"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -49,8 +54,8 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"audit.verify": func(ctx context.Context) error {
-			_, _, err := audit.Nightly(ctx, k.Store, k.Blobs, k.Signer, k.Keyed(), k.TellRecovery(clock), clock) // the recovery step first (D8)
-			return err
+			_, reports, err := audit.Nightly(ctx, k.Store, k.Blobs, k.Signer, k.Keyed(), k.TellRecovery(clock), clock) // the recovery step first (D8)
+			return errors.Join(err, k.alertChains(ctx, reports, clock))
 		},
 		"audit.erase": func(ctx context.Context) error { // AUD-06: security events' details after their retention
 			_, err := audit.EraseAll(ctx, k.Store, k.Blobs, k.Signer, clock)
@@ -435,4 +440,33 @@ func (k *Kit) Keyed() audit.Keyed {
 		return nil
 	}
 	return k.Fields.Fingerprint
+}
+
+// Alerts is the raiser of SEC-31's alerts, with the deployment's thresholds (FYNIQ_ALERT_THRESHOLDS; the defaults when
+// they cannot be read, which is logged).
+func (k *Kit) Alerts(clock ports.Clock) security.Raiser {
+	log := logging.New(os.Stderr, slog.LevelInfo)
+	t, err := security.ReadThresholds(os.Getenv)
+	if err != nil {
+		log.Warn("alerts.thresholds", "error", err.Error())
+	}
+	return security.Raiser{Dispatcher: outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}, Clock: clock, Thresholds: t, Log: log}
+}
+
+// alertChains raises an audit-chain alert in each organisation whose trail failed its verification (SEC-31).
+func (k *Kit) alertChains(ctx context.Context, reports []audit.Report, clock ports.Clock) error {
+	r := k.Alerts(clock)
+	var errs []error
+	for _, rep := range reports {
+		if rep.OK() {
+			continue
+		}
+		errs = append(errs, k.Store.Do(ctx, rep.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := r.Raise(ctx, u, rep.Organisation, security.Alert{Rule: security.RuleAuditChain, Subject: rep.Organisation,
+				Link: "/compliance/audit-trail", Title: "The audit trail failed its nightly verification: " + rep.Problem,
+				Facts: map[string]any{"events": rep.Events}})
+			return err
+		}))
+	}
+	return errors.Join(errs...)
 }

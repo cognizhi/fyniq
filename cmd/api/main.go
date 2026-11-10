@@ -17,8 +17,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
+	"github.com/cognizhi/fyniq/internal/clientip"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/maildns"
@@ -68,7 +70,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 			hooks = signin.Hooks{
 				Alert: signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out),
-					signin.AuditSignIn(kit.Store, kit.Store)),
+					signin.AuditSignIn(kit.Store, kit.Store), security.QueueSignInCheck(kit.Store, kit.Store, out)), // SEC-31: an admin's sign-in, checked by the worker
 				Linked:    signin.NotifyLink(kit.Store, kit.Store, out),
 				SignedOut: signin.AuditSignOut(kit.Store, kit.Store),
 			}
@@ -87,6 +89,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		return nil
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
+	d.AlertThresholds = kit.Alerts(deps.Clock).Thresholds // SEC-31's settings
 	// Verify integrity reads the anchors with the key that signed them (AUD-03) [live-verify: the api account reads the
 	// anchors' bucket and the signing key's public key].
 	d.Anchors, d.Signer, d.Keyed = kit.Blobs, kit.Signer, kit.Keyed()
@@ -131,6 +134,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	if err != nil {
 		return err
 	}
+	s.Use(clientip.Resolver{Trusted: trusted}.Wrap) // where each request came from, as the edge says (SEC-31)
 	s.Use(api.IPLimiter{Store: kit.Store, Clock: deps.Clock, Limits: limits, Trusted: trusted, Log: d.Log}.Wrap)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),

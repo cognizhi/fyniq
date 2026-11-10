@@ -42,9 +42,14 @@ func IsSecurity(action string) bool {
 var LooksSecurity = regexp.MustCompile(`(^|[._])(sign_in|signin|sign_out|signout|session|passkey|identity|recover\w*|login|logout|export\w*|reveal\w*|download\w*|super_admin|device|factor|totp|step_up)([._]|$)`)
 
 // DetailValue is what a security event's request.detail fingerprints: its IP address and user agent, as a JSON pair,
-// so no two pairs read alike.
-func DetailValue(ip, userAgent string) []byte {
-	b, _ := json.Marshal([2]string{ip, userAgent}) // two strings always marshal
+// so no two pairs read alike; with the country and region the edge said it came from (SEC-31), when it said either, as a
+// JSON quadruple. An event with no place fingerprints as it did before places were kept.
+func DetailValue(ip, userAgent, country, region string) []byte {
+	if country == "" && region == "" {
+		b, _ := json.Marshal([2]string{ip, userAgent}) // strings always marshal
+		return b
+	}
+	b, _ := json.Marshal([4]string{ip, userAgent, country, region})
 	return b
 }
 

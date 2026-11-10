@@ -51,6 +51,11 @@ const RecoveryType = "security.recovery"
 // (FR-ADM-08, rev 0.197).
 const SignInProviderType = "security.sign_in_provider"
 
+// SecurityAlertType is a security alert (SEC-31): an admin's sign-in from a new device or impossible travel, a vendor's
+// bank details changed, a mass export, repeated refusals, an audit-chain failure, an AI pattern hit. Critical and locked:
+// always on, emailed at once, to the Owners and the DPO (the Super admins for the installation's).
+const SecurityAlertType = "security.alert"
+
 // PrivateEndpointType is the notice to every Super admin that a private endpoint was registered, changed or retired
 // (SEC-37): a security type, so it is always on and emailed at once.
 const PrivateEndpointType = "security.private_endpoint"
