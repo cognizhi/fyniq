@@ -161,7 +161,7 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 			}
 		}
 		if r.Problem == "" {
-			if r.Closes, r.Problem, err = checkCloses(ctx, u, blobs, signer, org, hashes); err != nil {
+			if r.Closes, r.Problem, err = checkCloses(ctx, u, blobs, signer, org, hashes, nil); err != nil {
 				return err
 			}
 		}

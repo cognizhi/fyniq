@@ -121,27 +121,33 @@ type Stored struct {
 // last, every prev_hash is the previous hash, and every hash is recomputed from its body. It returns
 // the recomputed hash at each sequence number, for the anchors.
 func Chain(events []Stored) (map[int64][]byte, error) {
-	prev := Genesis
+	hashes, _, err := ChainAfter(Genesis, 1, events)
+	return hashes, err
+}
+
+// ChainAfter checks stored events, in sequence order, from sequence number first, whose event before had the hash prev
+// (Genesis before the first): a range of the chain (AUD-03). It also returns the sequence number where it failed.
+func ChainAfter(prev []byte, first int64, events []Stored) (map[int64][]byte, int64, error) {
 	hashes := make(map[int64][]byte, len(events))
 	for i, e := range events {
-		if want := int64(i + 1); e.Seq != want {
-			return hashes, fmt.Errorf("event %s has sequence %d, where %d was expected: an event is missing or out of order", e.ID, e.Seq, want)
+		if want := first + int64(i); e.Seq != want {
+			return hashes, want, fmt.Errorf("event %s has sequence %d, where %d was expected: an event is missing or out of order", e.ID, e.Seq, want)
 		}
 		if !bytes.Equal(e.PrevHash, prev) {
-			return hashes, fmt.Errorf("event %d (%s) does not link to the event before it", e.Seq, e.ID)
+			return hashes, e.Seq, fmt.Errorf("event %d (%s) does not link to the event before it", e.Seq, e.ID)
 		}
 		got := Link(prev, e.Body)
 		if !bytes.Equal(got, e.Hash) {
-			return hashes, fmt.Errorf("event %d (%s) was altered: its body no longer gives its stored hash", e.Seq, e.ID)
+			return hashes, e.Seq, fmt.Errorf("event %d (%s) was altered: its body no longer gives its stored hash", e.Seq, e.ID)
 		}
 		var body struct {
 			EventID uuid.UUID `json:"event_id"`
 		}
 		if err := json.Unmarshal([]byte(e.Body), &body); err != nil || body.EventID != e.ID {
-			return hashes, fmt.Errorf("event %d does not carry its own id", e.Seq)
+			return hashes, e.Seq, fmt.Errorf("event %d does not carry its own id", e.Seq)
 		}
 		hashes[e.Seq] = got
 		prev = got
 	}
-	return hashes, nil
+	return hashes, 0, nil
 }

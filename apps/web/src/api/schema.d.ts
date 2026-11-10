@@ -676,6 +676,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audit/verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify the audit trail's integrity for a range of days
+         * @description Verify integrity (AUD-03): recomputes the hash chain of the events that occurred on the days from from to to, from the event before them, and checks every signed anchor, close anchor and security event's request details in the range against it. A range is at most 366 days; the nightly verification checks the whole trail. Changes nothing; side effects: its audit event, audit.verified_by_member.
+         */
+        get: operations["getAuditVerification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auto-reconciliations": {
         parameters: {
             query?: never;
@@ -13853,6 +13873,84 @@ export interface components {
              * @example 2026-07-01
              */
             quarter: string;
+        };
+        AuditVerification: {
+            /**
+             * Format: int64
+             * @description The range's events are anchored through this event; later ones are anchored within the hour.
+             * @example 336
+             */
+            anchored_through: number;
+            /**
+             * Format: int64
+             * @description The hourly signed anchors in the range, each checked against the recomputed chain.
+             * @example 31
+             */
+            anchors: number;
+            /**
+             * Format: int64
+             * @description The signed close snapshots in the range, each checked against the stored snapshot and the chain (AUD-04).
+             * @example 1
+             */
+            close_anchors: number;
+            /**
+             * Format: int64
+             * @description The security events' request details checked against the fingerprints in their bodies (AUD-06).
+             * @example 12
+             */
+            details: number;
+            /**
+             * @description false when this service holds no fingerprint key, so the details were not checked.
+             * @example true
+             */
+            details_checked: boolean;
+            /**
+             * Format: int64
+             * @description How many events the range holds: each recomputed and linked to the one before it.
+             * @example 225
+             */
+            events: number;
+            /**
+             * Format: int64
+             * @description failed: the first event that does not agree, when the failure has one.
+             * @example 201
+             */
+            failed_seq?: number;
+            /**
+             * Format: int64
+             * @description The first event of the range, by its place in the chain; 0 when no event occurred in it.
+             * @example 118
+             */
+            first_seq: number;
+            /**
+             * Format: date
+             * @description The range's first day, in the organisation's time zone.
+             * @example 2026-10-01
+             */
+            from: string;
+            /**
+             * Format: int64
+             * @description The last event of the range.
+             * @example 342
+             */
+            last_seq: number;
+            /**
+             * @description passed: every link, anchor and detail agrees. failed: the trail was altered; problem and failed_seq say where. explained: a purge boundary or a restore left a gap, each with its signed record (AUD-09).
+             * @example passed
+             * @enum {string}
+             */
+            outcome: "passed" | "failed" | "explained";
+            /**
+             * @description failed: what does not agree, in words.
+             * @example event 201 was altered: its body no longer gives its stored hash
+             */
+            problem?: string;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-10-31
+             */
+            to: string;
         };
         AutoReconciled: {
             /**
@@ -43216,6 +43314,104 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAuditVerification: {
+        parameters: {
+            query: {
+                /** @description The range's first day (YYYY-MM-DD), in the organisation's time zone. */
+                from: string;
+                /** @description Its last day; at most 366 days after from. */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditVerification"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `AUDIT-01` The range cannot be verified at once. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

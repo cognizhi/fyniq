@@ -129,7 +129,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 5. Verify integrity (slice 5)
 
-- [ ] 5.1 One range verification (D5) serves the nightly job and `GET /v1/audit/verification?from=&to=`, with
+- [x] 5.1 One range verification (D5) serves the nightly job and `GET /v1/audit/verification?from=&to=`, with
   matrix rows (V on "Audit trail"). It answers passed, failed with the first bad sequence and its reason, or
   explained, and writes `audit.verified_by_member`. Tests:
   - a clean range passes;
@@ -137,6 +137,22 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - a range over 366 days is refused with its code.
 
   `// req: AUD-03`, `// req: INV-12`
+  - As built (9 Nov 2026, rev 0.235):
+    - **Shared links, separate checks.** `audit.VerifyRange` checks the events that occurred on the range's days in the
+      organisation's time zone. `Chain` became `ChainAfter`, so a range is linked from the event before it, and the
+      nightly job uses the same link check over the whole chain.
+    - **What a range checks.** Its anchors, close anchors and security details. The answer gives `anchored_through`:
+      later events are anchored within the hour.
+    - **Grants.** The API reads its organisation's trail now (000287, under row-level security). Its dependencies take
+      the anchors' bucket, the signer and the keyed hash [live-verify: the api account's read of the bucket and the
+      key's public key].
+    - **Test:** `TestVerifyIntegrityForARange` covers:
+      - a clean range and an empty one;
+      - a journal's event changed in place, failing at its sequence, and passing once undone;
+      - backwards, too-long and malformed ranges, and a Bookkeeper, all refused;
+      - four verifications in the trail.
+
+      The matrix row `getAuditVerification` covers the "Audit trail" row.
 
 ## 6. The explorer and its export (slice 6)
 

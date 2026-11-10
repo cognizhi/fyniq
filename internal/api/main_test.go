@@ -77,8 +77,11 @@ type env struct {
 	clock  *clock.Frozen
 	tokens *tokens
 	log    *bytes.Buffer
-	blobs  *local.Dir    // the evidence staging store
-	queue  *local.Memory // the outbox's tasks
+	blobs  *local.Dir // the evidence staging store
+	// anchors is the audit trail's write-once bucket and signer the anchors' key, as Verify integrity reads them (AUD-03).
+	anchors *local.Dir
+	signer  *local.Ed25519
+	queue   *local.Memory // the outbox's tasks
 	// standard is a second organisation of the same database and server in Standard mode, once inStandardMode made it.
 	standard *env
 	// emailing says readyToEmail ran; links are the online links tests share, by name.
@@ -99,7 +102,7 @@ const testOrigin = "https://fyniq.test"
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	store, err := postgres.Open(context.Background(), db.URL("fyniq_api"))
+	store, err := postgres.Open(context.Background(), db.URL("fyniq_api"), postgres.WithFingerprints(testFields(t)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,11 +114,18 @@ func newEnv(t *testing.T) *env {
 	if e.blobs, err = local.NewDir(t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
+	if e.anchors, err = local.NewDir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	if e.signer, err = local.NewEd25519(bytes.Repeat([]byte{5}, 32)); err != nil {
+		t.Fatal(err)
+	}
 	e.queue = local.NewMemory()
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
 		Staging: e.blobs, Evidence: e.blobs, Scanner: local.EICARScanner{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
+		Anchors: e.anchors, Signer: e.signer, Keyed: testFields(t).Fingerprint,
 		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},
 			CaptureDomain: "in.example.com",
 			Check: func(context.Context) ([]maildns.Result, time.Time) {

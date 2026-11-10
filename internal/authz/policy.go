@@ -1441,7 +1441,9 @@ var (
 	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true}
 	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
 	// The short-term cash flow and its what-ifs (FR-PLN-09; p1-planning design D10): read by V on the row, unqualified.
-	GetCashProjection    = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	GetCashProjection = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	// Verify integrity of the audit trail for a range of days (AUD-03).
+	GetAuditVerification = Policy{Operation: "getAuditVerification", Capability: AuditTrail, Need: View}
 	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 )
 
@@ -1653,7 +1655,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

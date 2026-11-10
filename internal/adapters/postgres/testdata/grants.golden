@@ -42,9 +42,12 @@ fyniq_api       EXECUTE   approval_steps_valid()
 fyniq_api       EXECUTE   approval_void_pending()
 fyniq_api       EXECUTE   approval_void_pending_all()
 fyniq_api       EXECUTE   approval_void_pending_type()
+fyniq_api       SELECT    audit_chain
 fyniq_api       EXECUTE   audit_chain_head()
 fyniq_api       INSERT    audit_event (body, id)
+fyniq_api       SELECT    audit_event
 fyniq_api       INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
+fyniq_api       SELECT    audit_request_detail
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   balances_at()

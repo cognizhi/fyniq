@@ -122,7 +122,7 @@ func anchorCloses(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobSto
 // checkCloses checks org's close anchors (AUD-04): each signature, the stored snapshot it names and that snapshot's own
 // hash, and the chain hash at the sequence the snapshot recorded. It returns how many it checked and the first problem.
 func checkCloses(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStore, signer ports.Signer, org uuid.UUID,
-	hashes map[int64][]byte) (int, string, error) {
+	hashes map[int64][]byte, in func(chainSeq int64) bool) (int, string, error) {
 	keys, err := blobs.List(ctx, CloseAnchorPrefix(org))
 	if err != nil || len(keys) == 0 {
 		return 0, "", err
@@ -135,11 +135,17 @@ func checkCloses(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStor
 	for _, s := range snaps {
 		byKey[CloseAnchorKey(org, s.Kind, s.ID)] = s
 	}
-	for i, k := range keys {
+	checked := 0
+	for _, k := range keys {
 		var sa SignedCloseAnchor
 		if err := readJSON(ctx, blobs, k, &sa); err != nil {
-			return i, fmt.Sprintf("close anchor %s cannot be read: %v", k, err), nil
+			return checked, fmt.Sprintf("close anchor %s cannot be read: %v", k, err), nil
 		}
+		if in != nil && !in(sa.Anchor.ChainSeq) {
+			continue
+		}
+		i := checked
+		checked++
 		msg, err := json.Marshal(sa.Anchor)
 		if err != nil {
 			return i, "", err
@@ -161,7 +167,7 @@ func checkCloses(ctx context.Context, u storage.UnitOfWork, blobs ports.BlobStor
 			}
 		}
 	}
-	return len(keys), "", nil
+	return checked, "", nil
 }
 
 // readJSON reads the blob at key into v.

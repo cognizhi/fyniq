@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "anchored_through": {
+      "description": "The range's events are anchored through this event; later ones are anchored within the hour.",
+      "examples": [
+        336
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "anchors": {
+      "description": "The hourly signed anchors in the range, each checked against the recomputed chain.",
+      "examples": [
+        31
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "close_anchors": {
+      "description": "The signed close snapshots in the range, each checked against the stored snapshot and the chain (AUD-04).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "details": {
+      "description": "The security events' request details checked against the fingerprints in their bodies (AUD-06).",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "details_checked": {
+      "description": "false when this service holds no fingerprint key, so the details were not checked.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "events": {
+      "description": "How many events the range holds: each recomputed and linked to the one before it.",
+      "examples": [
+        225
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "failed_seq": {
+      "description": "failed: the first event that does not agree, when the failure has one.",
+      "examples": [
+        201
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "first_seq": {
+      "description": "The first event of the range, by its place in the chain; 0 when no event occurred in it.",
+      "examples": [
+        118
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "from": {
+      "description": "The range's first day, in the organisation's time zone.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "last_seq": {
+      "description": "The last event of the range.",
+      "examples": [
+        342
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "outcome": {
+      "description": "passed: every link, anchor and detail agrees. failed: the trail was altered; problem and failed_seq say where. explained: a purge boundary or a restore left a gap, each with its signed record (AUD-09).",
+      "enum": [
+        "passed",
+        "failed",
+        "explained"
+      ],
+      "examples": [
+        "passed"
+      ],
+      "type": "string"
+    },
+    "problem": {
+      "description": "failed: what does not agree, in words.",
+      "examples": [
+        "event 201 was altered: its body no longer gives its stored hash"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "first_seq",
+    "last_seq",
+    "events",
+    "anchors",
+    "close_anchors",
+    "details",
+    "details_checked",
+    "anchored_through",
+    "outcome"
+  ],
+  "title": "AuditVerification",
+  "type": "object"
+}

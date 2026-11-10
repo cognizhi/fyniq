@@ -13223,6 +13223,31 @@ What Home shows of the plans for a month (FR-KPI-01): revenue and costs against 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
 
+## Audit trail
+
+The audit trail (PRD-001 §11.5): Verify integrity for a range of days (AUD-03) and, as they arrive, the explorer and its export (FR-CTL-03, AUD-07). Every saved change, sign-in, sensitive read and export is in it.
+
+### `GET /v1/audit/verification`
+
+**Verify the audit trail's integrity for a range of days** (`getAuditVerification`)
+
+Verify integrity (AUD-03): recomputes the hash chain of the events that occurred on the days from from to to, from the event before them, and checks every signed anchor, close anchor and security event's request details in the range against it. A range is at most 366 days; the nightly verification checks the whole trail. Changes nothing; side effects: its audit event, audit.verified_by_member.
+
+- **Permission:** View on Audit trail
+- **Parameters:**
+  - `from` (query, required): The range's first day (YYYY-MM-DD), in the organisation's time zone.
+  - `to` (query, required): Its last day; at most 366 days after from.
+- **Responses:**
+  - `200` OK [`AuditVerification`](../../contracts/schemas/AuditVerification.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `AUDIT-01` The range cannot be verified at once.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `AUDIT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Checks
 
 The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05).
