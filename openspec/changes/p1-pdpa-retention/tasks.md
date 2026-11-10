@@ -527,7 +527,13 @@ event format.
     - `[live-verify]`;
     - the AI connections abroad;
     - documents after an anonymisation.
-- [ ] 12.3 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+- [x] 12.3 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+
+  **Done on 10 Nov 2026, on #539's branch:**
+    - `make test` passed in full, including the authorisation matrix (33 minutes) and the oracle;
+    - `scripts/local-smoke.sh` (QA-LOCAL-01) passed: `make up` from the local images on port 8090, since another
+      project held 8080 on this machine;
+    - the build plan's paragraph is written with slice 12.
 
 ## Workflow follow-up
 
