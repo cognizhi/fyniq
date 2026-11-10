@@ -3012,7 +3012,8 @@
     "Drivers: customers, new customers and growth, churn, ARPA, price increases, services, collection; cost drivers (hosting, AI/API, contractors, payment fees, salary increases); other expenses, team, purchases, funding and tax; each scenario's levers (Base, Best, Worst, custom)",
     "Scenario tabs with the outputs: runway and the cash-out month without the funding planned first, then with it; minimum cash, break-even month, funding gap, revenue next 12 months; cash by month (chart and table); each forecast year",
     "Side-by-side scenario comparison, with and without the funding",
-    "Sandbox label: never posts; AI simulations can be saved as scenarios"
+    "Sandbox label: never posts; AI simulations can be saved as scenarios",
+    "(PRD-001 rev 0.247, the owner's decision of 11 Nov 2026) The results come first; the plan follows them, folded once the forecast is recorded ('Show the plan it was worked out from', read-only), open for a draft or a new forecast"
    ],
    "states": [
     "sandbox",
