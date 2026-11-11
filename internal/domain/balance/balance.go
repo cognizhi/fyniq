@@ -444,6 +444,38 @@ func EachAccountLine(ctx context.Context, u storage.UnitOfWork, account uuid.UUI
 	}
 }
 
+// EachEntryIn calls each with every entry of the periods up to a revision, with its lines: period by period, as given,
+// and each period's in revision order. A statement that needs entries for some months, such as a month's cash flow the
+// checks lay for every open month, reads those months alone, so it keeps its time as the ledger grows (NFR-PERF-02,
+// INV-11; p1-operations-dr task 13.13).
+func EachEntryIn(ctx context.Context, u storage.UnitOfWork, periods []uuid.UUID, revision int64, each func(storage.Entry) error) error {
+	if err := CheckRevision(ctx, u, revision); err != nil {
+		return err
+	}
+	const page = 500
+	for _, p := range periods {
+		after := int64(0)
+		for more := true; more; {
+			entries, err := u.Ledger().EntriesOfPeriod(ctx, p, after, page)
+			if err != nil {
+				return err
+			}
+			more = len(entries) == page
+			for _, e := range entries {
+				if e.LedgerRevision > revision {
+					more = false
+					break
+				}
+				if err := each(e); err != nil {
+					return err
+				}
+				after = e.LedgerRevision
+			}
+		}
+	}
+	return nil
+}
+
 // EachEntry calls each with every entry the ledger holds up to a revision, in revision order, with its lines: what a
 // statement that needs entries rather than balances reads, such as the cash flow (FR-RPT-01, INV-11), at the revision
 // it reads every other figure at.

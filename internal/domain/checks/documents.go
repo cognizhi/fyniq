@@ -133,25 +133,39 @@ func (e *Env) openSpan() (from, to string, ok bool) {
 	return from, to, ok
 }
 
-// documents are the documents of types with status dated from to (inclusive, "" for no bound), a page at a time.
+// documents are the documents of types with status dated from to (inclusive, "" for no bound), read a page at a time.
 func documents(ctx context.Context, u storage.UnitOfWork, types []storage.DocumentType, status storage.DocumentStatus, from, to string) ([]storage.Document, error) {
 	var out []storage.Document
 	for _, t := range types {
-		f := storage.DocumentFilter{Type: t, Status: status, From: from, To: to, Limit: 500}
-		for {
-			page, err := u.Documents().Page(ctx, f)
-			if err != nil {
-				return nil, err
-			}
+		if err := eachDocumentPage(ctx, u, t, status, from, to, func(page []storage.Document) error {
 			out = append(out, page...)
-			if len(page) < f.Limit {
-				break
-			}
-			last := page[len(page)-1]
-			f.AfterDate, f.AfterID = last.Date, &last.ID
+			return nil
+		}); err != nil {
+			return nil, err
 		}
 	}
 	return out, nil
+}
+
+// eachDocumentPage calls each with the documents of a type with status dated from to, a page of 500 at a time, so a
+// check that needs no more than a page at once holds no more (NFR-PERF-01).
+func eachDocumentPage(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, status storage.DocumentStatus, from, to string,
+	each func([]storage.Document) error) error {
+	f := storage.DocumentFilter{Type: t, Status: status, From: from, To: to, Limit: 500}
+	for {
+		page, err := u.Documents().Page(ctx, f)
+		if err != nil {
+			return err
+		}
+		if err := each(page); err != nil {
+			return err
+		}
+		if len(page) < f.Limit {
+			return nil
+		}
+		last := page[len(page)-1]
+		f.AfterDate, f.AfterID = last.Date, &last.ID
+	}
 }
 
 // docItem is an item naming a document, at its version.

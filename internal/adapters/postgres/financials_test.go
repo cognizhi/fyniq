@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -273,5 +274,32 @@ cash_at_end [8120.00]
 	tb := b.lay(t, s, financials.TrialBalance, 1, 1, financials.NoComparison, 0)
 	if last := tb.Blocks[len(tb.Blocks)-1]; last.Key != financials.KeyTotal || !last.Totals[0].IsZero() || !tb.Checks[0].OK {
 		t.Errorf("the trial balance nets to zero: %+v %+v", last, tb.Checks)
+	}
+}
+
+// A cash flow reads its columns' months alone, month by month, and still lists its non-cash transactions in the order
+// they were posted (p1-operations-dr task 13.13): November's accrual of 40.00 was posted before October's of 30.00, so
+// October to November lists 40.00 then 30.00, and November alone lists 40.00 only.
+// req: INV-11
+// req: NFR-PERF-02
+func TestACashFlowReadsItsMonthsAloneInPostingOrder(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
+	s := store(t, "fyniq_api")
+	b := newFinancialBooks(t, ctx, s, "Cash flow months Pte Ltd")
+	b.post(t, ctx, s, ledger.SourceOpeningBalance, 10, 1, "1010", "3010", "10000.00")
+	b.post(t, ctx, s, ledger.SourceManualJournal, 11, 30, "7110", "2500", "40.00")
+	b.post(t, ctx, s, ledger.SourceManualJournal, 10, 31, "7110", "2500", "30.00")
+	amounts := func(cf financials.Statement) []string {
+		var out []string
+		for _, x := range cf.NonCash {
+			out = append(out, x.Amount.String())
+		}
+		return out
+	}
+	if got := amounts(b.lay(t, s, financials.CashFlow, 0, 1, financials.NoComparison, 0)); !slices.Equal(got, []string{"40.00", "30.00"}) {
+		t.Errorf("October to November's non-cash transactions: %v; want 40.00 then 30.00, as posted", got)
+	}
+	if got := amounts(b.lay(t, s, financials.CashFlow, 1, 1, financials.NoComparison, 0)); !slices.Equal(got, []string{"40.00"}) {
+		t.Errorf("November's non-cash transactions: %v; want 40.00 alone", got)
 	}
 }

@@ -181,6 +181,48 @@ JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.doc
 LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
 WHERE d.id = sqlc.arg(id);
 
+-- name: SearchRecentDocuments :many
+-- Global search's first try for text alone (FR-UX-02, NFR-PERF-01): the text in the newest documents of the types, read
+-- newest first from document_version_date and checked one by one until the page is full, no further back than window.
+-- When the page fills, or the window held every document of the types, it is the search's answer, since every document
+-- not read is older; else Search asks SearchDocuments. A word in most documents, such as "payment", so costs a page, not the trigram index's whole match.
+SELECT r.id, r.type, r.status, r.current_version, r.payload, n.number, r.created_by, r.posted_by, r.posted_at,
+       r.doc_date::text AS date, coalesce(c.legal_name, '')::text AS party,
+       coalesce(big.amount::text, '')::text AS amount, coalesce(big.currency, '')::text AS currency
+FROM (
+  SELECT d.id, d.organisation_id, d.type, d.status, d.current_version, v.payload, v.created_by, d.posted_by, d.posted_at, v.doc_date
+  FROM fyniq.document d
+  JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+  WHERE d.type = ANY(sqlc.arg(types)::text[])
+    AND (sqlc.narg(claimant)::text IS NULL OR d.type <> 'expense_claim' OR v.payload->>'claimant_id' = sqlc.narg(claimant)::text)
+  ORDER BY v.doc_date DESC, d.id DESC
+  LIMIT sqlc.arg(window_size)
+) r
+LEFT JOIN fyniq.document_number n ON n.organisation_id = r.organisation_id AND n.id = r.id
+LEFT JOIN fyniq.contact c ON c.organisation_id = r.organisation_id
+  AND c.id::text = coalesce(r.payload->>'customer_id', r.payload->>'supplier_id')
+LEFT JOIN LATERAL (
+  SELECT abs(l.amount)::numeric(20, 4) AS amount, l.currency
+  FROM fyniq.journal_entry e
+  JOIN fyniq.journal_line l ON l.organisation_id = e.organisation_id AND l.entry_id = e.id
+  WHERE e.organisation_id = r.organisation_id AND e.source_id = r.id::text AND e.reverses_entry_id IS NULL
+    AND NOT EXISTS (SELECT 1 FROM fyniq.journal_entry x WHERE x.organisation_id = e.organisation_id AND x.reverses_entry_id = e.id)
+  ORDER BY abs(l.amount) DESC
+  LIMIT 1
+) big ON true
+WHERE strpos(lower(concat_ws(' ', n.number, r.payload->>'memo', r.payload->>'reference', r.payload->>'notes', r.payload->>'title',
+        r.payload->>'supplier_ref', c.legal_name,
+        (SELECT string_agg(concat_ws(' ', x->>'description', x->>'merchant'), ' ')
+         FROM jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'lines') = 'array' THEN r.payload->'lines' ELSE '[]'::jsonb END) x))),
+      lower(sqlc.arg(needle)::text)) > 0
+ORDER BY r.doc_date DESC, r.id DESC
+LIMIT sqlc.arg(page_size);
+
+-- name: CountDocumentsOfTypes :one
+-- How many documents of the types there are, counted no further than up_to, on document_type: a search for text whose
+-- newest-first window held every document of its types has its whole answer (NFR-PERF-01).
+SELECT count(*)::int FROM (SELECT 1 FROM fyniq.document WHERE type = ANY(sqlc.arg(types)::text[]) LIMIT sqlc.arg(up_to)) x;
+
 -- name: SearchDocuments :many
 -- Global search (FR-UX-02, rev 0.190): documents of the types given, at their current version, whose number, memo,
 -- reference, notes, title, lines' descriptions and merchants, or party's name hold the text, and/or one of whose live

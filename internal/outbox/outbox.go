@@ -87,6 +87,18 @@ var ErrHeld = errors.New("held: every connector this work needs is paused or dis
 // HoldFor is how long a held row waits before it is delivered again.
 const HoldFor = 10 * time.Minute
 
+// Held is ErrHeld with a wait of its own: work that cannot start now for a reason of its own, such as another run of it
+// still going (the checks' refresh, NFR-PERF-01), is delivered again after For, and the attempt is given back.
+type Held struct {
+	For    time.Duration
+	Reason string
+}
+
+func (e Held) Error() string { return "held: " + e.Reason }
+
+// Is makes a Held an ErrHeld.
+func (e Held) Is(target error) bool { return target == ErrHeld }
+
 // Work does one row's work, in its own unit of work. It must be idempotent on the row: a posting
 // uses a posting identity derived from the row, so a second run cannot post twice.
 type Work func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error
@@ -170,12 +182,16 @@ func (h *Handler) run(ctx context.Context, m Message) (int, string) {
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxUnknownOutcome, err.Error())
 		return http.StatusOK, "unknown outcome: reconcile before any retry"
 	case errors.Is(err, ErrHeld):
+		wait := HoldFor
+		if held := (Held{}); errors.As(err, &held) && held.For > 0 {
+			wait = held.For
+		}
 		if herr := h.Store.Do(ctx, m.OrganisationID, func(ctx context.Context, u storage.UnitOfWork) error {
-			return u.Outbox().Hold(ctx, row.ID, h.Holder, h.Clock.Now().Add(HoldFor), err.Error())
+			return u.Outbox().Hold(ctx, row.ID, h.Holder, h.Clock.Now().Add(wait), err.Error())
 		}); herr != nil {
 			return http.StatusInternalServerError, herr.Error()
 		}
-		return http.StatusOK, "held: delivered again in " + HoldFor.String()
+		return http.StatusOK, "held: delivered again in " + wait.String()
 	case row.Attempts >= row.MaxAttempts:
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxDead, err.Error())
 		return http.StatusOK, "dead after " + fmt.Sprint(row.Attempts) + " attempts"

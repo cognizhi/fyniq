@@ -68,6 +68,24 @@ func (q *Queries) BillsOfOrder(ctx context.Context, orderID string) ([]BillsOfOr
 	return items, nil
 }
 
+const countDocumentsOfTypes = `-- name: CountDocumentsOfTypes :one
+SELECT count(*)::int FROM (SELECT 1 FROM fyniq.document WHERE type = ANY($1::text[]) LIMIT $2) x
+`
+
+type CountDocumentsOfTypesParams struct {
+	Types []string
+	UpTo  int32
+}
+
+// How many documents of the types there are, counted no further than up_to, on document_type: a search for text whose
+// newest-first window held every document of its types has its whole answer (NFR-PERF-01).
+func (q *Queries) CountDocumentsOfTypes(ctx context.Context, arg CountDocumentsOfTypesParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countDocumentsOfTypes, arg.Types, arg.UpTo)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const creditNotesOfInvoice = `-- name: CreditNotesOfInvoice :many
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
        coalesce(v.payload->>'date', '')::text AS date
@@ -745,6 +763,108 @@ func (q *Queries) SearchDocuments(ctx context.Context, arg SearchDocumentsParams
 	var items []SearchDocumentsRow
 	for rows.Next() {
 		var i SearchDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+			&i.Party,
+			&i.Amount,
+			&i.Currency,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchRecentDocuments = `-- name: SearchRecentDocuments :many
+SELECT r.id, r.type, r.status, r.current_version, r.payload, n.number, r.created_by, r.posted_by, r.posted_at,
+       r.doc_date::text AS date, coalesce(c.legal_name, '')::text AS party,
+       coalesce(big.amount::text, '')::text AS amount, coalesce(big.currency, '')::text AS currency
+FROM (
+  SELECT d.id, d.organisation_id, d.type, d.status, d.current_version, v.payload, v.created_by, d.posted_by, d.posted_at, v.doc_date
+  FROM fyniq.document d
+  JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+  WHERE d.type = ANY($1::text[])
+    AND ($2::text IS NULL OR d.type <> 'expense_claim' OR v.payload->>'claimant_id' = $2::text)
+  ORDER BY v.doc_date DESC, d.id DESC
+  LIMIT $3
+) r
+LEFT JOIN fyniq.document_number n ON n.organisation_id = r.organisation_id AND n.id = r.id
+LEFT JOIN fyniq.contact c ON c.organisation_id = r.organisation_id
+  AND c.id::text = coalesce(r.payload->>'customer_id', r.payload->>'supplier_id')
+LEFT JOIN LATERAL (
+  SELECT abs(l.amount)::numeric(20, 4) AS amount, l.currency
+  FROM fyniq.journal_entry e
+  JOIN fyniq.journal_line l ON l.organisation_id = e.organisation_id AND l.entry_id = e.id
+  WHERE e.organisation_id = r.organisation_id AND e.source_id = r.id::text AND e.reverses_entry_id IS NULL
+    AND NOT EXISTS (SELECT 1 FROM fyniq.journal_entry x WHERE x.organisation_id = e.organisation_id AND x.reverses_entry_id = e.id)
+  ORDER BY abs(l.amount) DESC
+  LIMIT 1
+) big ON true
+WHERE strpos(lower(concat_ws(' ', n.number, r.payload->>'memo', r.payload->>'reference', r.payload->>'notes', r.payload->>'title',
+        r.payload->>'supplier_ref', c.legal_name,
+        (SELECT string_agg(concat_ws(' ', x->>'description', x->>'merchant'), ' ')
+         FROM jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'lines') = 'array' THEN r.payload->'lines' ELSE '[]'::jsonb END) x))),
+      lower($4::text)) > 0
+ORDER BY r.doc_date DESC, r.id DESC
+LIMIT $5
+`
+
+type SearchRecentDocumentsParams struct {
+	Types      []string
+	Claimant   *string
+	WindowSize int32
+	Needle     string
+	PageSize   int32
+}
+
+type SearchRecentDocumentsRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+	Party          string
+	Amount         string
+	Currency       string
+}
+
+// Global search's first try for text alone (FR-UX-02, NFR-PERF-01): the text in the newest documents of the types, read
+// newest first from document_version_date and checked one by one until the page is full, no further back than window.
+// When the page fills, or the window held every document of the types, it is the search's answer, since every document
+// not read is older; else Search asks SearchDocuments. A word in most documents, such as "payment", so costs a page, not the trigram index's whole match.
+func (q *Queries) SearchRecentDocuments(ctx context.Context, arg SearchRecentDocumentsParams) ([]SearchRecentDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, searchRecentDocuments,
+		arg.Types,
+		arg.Claimant,
+		arg.WindowSize,
+		arg.Needle,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchRecentDocumentsRow
+	for rows.Next() {
+		var i SearchRecentDocumentsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Type,

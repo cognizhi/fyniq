@@ -251,6 +251,20 @@ func (r outbox) Waiting(ctx context.Context, kind string) (*storage.OutboxRow, e
 	return &row, nil
 }
 
+func (r outbox) Ahead(ctx context.Context, kind string, row uuid.UUID, leaseUntil, now time.Time) (*storage.OutboxRow, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.OutboxAhead(ctx, sqlcdb.OutboxAheadParams{Kind: kind, Now: &now, LeaseUntil: leaseUntil, RowID: row})
+	if err != nil || len(rows) == 0 {
+		return nil, mapError(err)
+	}
+	x := rows[0]
+	out := toOutbox(x.ID, x.WorkerClass, x.Kind, x.Payload, x.BusinessKey, x.State, x.Attempts, x.MaxAttempts, x.Dispatches, x.TaskName,
+		x.LeaseHolder, x.LeaseExpiresAt, x.DeadlineAt, x.LastError)
+	return &out, nil
+}
+
 // changedTypes are the object types of the events u recorded, sorted, each once.
 func (u *unitOfWork) changedTypes() []string {
 	var out []string
