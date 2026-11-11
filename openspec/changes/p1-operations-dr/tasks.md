@@ -126,8 +126,8 @@ module tests on mock providers and tagged `[live-verify]`.
   read of an account's lines (`AccountLinesAfter`), `balance.Opening` and `Walk`, streaming CSV and XLSX writers (a
   sheet goes on in another at Excel's row limit), the worker piping the file into the store, and the GCS adapter's
   resumable upload in 8 MiB chunks. The on-screen general ledger is the reference the export is checked against: the
-  oracle's general ledger source compares postings and trial balances, not the report's running balances. Measured locally at 200,000 lines: 200,158 rows in 1m26s; the 1 M run is the weekly
-  job's.
+  oracle's general ledger source compares postings and trial balances, not the report's running balances. Measured
+  locally at 200,000 lines: 200,158 rows in 1m26s; the 1 M run is the weekly job's.
 - [ ] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02`
 - [x] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09` The harness now sends the ETag back as it
   came. Building found Caddy names the encoding in the tag (`"1-draft-gzip"`), so that is accepted too (rev 0.251).
