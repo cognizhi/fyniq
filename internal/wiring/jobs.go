@@ -148,7 +148,8 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return err
 			}
 			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry, Platform: k.Store, Release: k.Release, Assets: assets,
-				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock)}.Nightly(ctx)
+				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock),
+				Evidence: k.Evidence}.Nightly(ctx)
 			return err
 		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released

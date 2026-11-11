@@ -233,6 +233,15 @@ func (s *Storage) SetLegalHold(ctx context.Context, key string, hold bool) error
 	return s.patch(ctx, key, map[string]any{"temporaryHold": hold, "metadata": map[string]any{holdMetadata: strconv.FormatBool(hold)}})
 }
 
+// RetentionOf implements ports.BlobStore: the object's retention as Cloud Storage keeps it (CTL-AUD-03).
+func (s *Storage) RetentionOf(ctx context.Context, key string) (ports.BlobRetention, error) {
+	o, err := s.retention(ctx, key)
+	if err != nil {
+		return ports.BlobRetention{}, err
+	}
+	return ports.BlobRetention{Locked: o.Retention != nil && o.Retention.Mode == "Locked", RetainUntil: o.until(), Held: o.held()}, nil
+}
+
 // Retention is a bucket's retention policy.
 type Retention struct {
 	Period time.Duration

@@ -42,6 +42,14 @@ variable "anchors" {
   })
 }
 
+variable "evidence" {
+  description = "The staging and the locked evidence buckets (infra/gcp/modules/evidence; FR-DOC-13, DR-07)."
+  type = object({
+    staging = string
+    bucket  = string
+  })
+}
+
 variable "exports" {
   description = "The weekly export's buckets in the audit project (infra/gcp/modules/db-export; DR-02, DR-04)."
   type = object({
@@ -148,7 +156,7 @@ locals {
   url = { for name in keys(local.spec.services) : name => "https://${name}-${local.number}.${local.region}.run.app" }
 
   # FYNIQ_GCP (internal/wiring/release.go Config): the worker classes' queues, handlers and invokers, the
-  # Scheduler's, the anchors, the jobs image's Cloud Run job, the weekly export, and the render and scanner services.
+  # Scheduler's, the anchors, the jobs image's Cloud Run job, the evidence buckets, the weekly export, and the render and scanner services.
   gcp_config = jsonencode({
     tasks = { for class, c in local.spec.classes : class => {
       queue           = "projects/${var.project}/locations/${local.region}/queues/${class}"
@@ -160,8 +168,9 @@ locals {
       { for class, c in local.spec.classes : class => { service_account = local.email["tasks-${class}"], audience = local.url[c.service] } },
       { scheduler = { service_account = local.email["scheduler"], audience = "${local.url["api"]}/internal/tick" } },
     )
-    anchors = var.anchors
-    job     = "projects/${var.project}/locations/${local.region}/jobs/jobs"
+    anchors  = var.anchors
+    evidence = var.evidence
+    job      = "projects/${var.project}/locations/${local.region}/jobs/jobs"
     # The weekly export (DR-02, DR-04): the instance the jobs' account exports, its database, and the buckets.
     exports = merge({ instance = "projects/${var.project}/instances/${google_sql_database_instance.main.name}", database = google_sql_database.databases["fyniq"].name }, var.exports)
     # The field keys (SEC-11, fields.tf): the wrapping key and the fingerprint key's pinned version.

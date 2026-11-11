@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 // What Cloud Storage receives for retention (FR-DOC-02): a retain-until in Locked mode, which the bucket
@@ -64,5 +67,33 @@ func TestStorageReadsTheRetentionLock(t *testing.T) {
 	answer = `{}`
 	if r, err := s.Retention(context.Background()); err != nil || r.Locked || r.Period != 0 {
 		t.Fatalf("a bucket without a policy: %+v, %v", r, err)
+	}
+}
+
+// An object's retention as Cloud Storage reports it (CTL-AUD-03's daily check): Locked mode only when the mode says so;
+// an Unlocked retention, which a privileged account could shorten, or none, reads as not locked.
+// req: CTL-AUD-03
+// asvs: V14.2.7
+func TestStorageReadsAnObjectsRetention(t *testing.T) {
+	answer := `{"retention":{"mode":"Locked","retainUntilTime":"2034-03-31T16:00:00Z"},"temporaryHold":true}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/storage/v1/b/fyniq-evidence/o/evidence/o/1" || r.URL.Query().Get("fields") != "retention,temporaryHold,metadata" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write([]byte(answer))
+	}))
+	defer srv.Close()
+	s := NewStorage(srv.URL, "fyniq-evidence", nil, http.DefaultClient)
+	r, err := s.RetentionOf(context.Background(), "evidence/o/1")
+	if err != nil || !r.Locked || !r.Held || !r.RetainUntil.Equal(time.Date(2034, 3, 31, 16, 0, 0, 0, time.UTC)) {
+		t.Fatalf("RetentionOf = %+v, %v", r, err)
+	}
+	answer = `{"retention":{"mode":"Unlocked","retainUntilTime":"2034-03-31T16:00:00Z"}}`
+	if r, err := s.RetentionOf(context.Background(), "evidence/o/1"); err != nil || r.Locked || r.Held {
+		t.Fatalf("an unlocked retention = %+v, %v", r, err)
+	}
+	if _, err := s.RetentionOf(context.Background(), "evidence/o/2"); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("a missing object: %v", err)
 	}
 }

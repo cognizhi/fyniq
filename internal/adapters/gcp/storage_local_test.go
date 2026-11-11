@@ -116,6 +116,9 @@ func TestStorageRetentionAgainstTheEmulator(t *testing.T) {
 	if err := s.SetRetainUntil(ctx, key, until); err != nil {
 		t.Fatalf("SetRetainUntil: %v", err)
 	}
+	if r, err := s.RetentionOf(ctx, key); err != nil || !r.Locked || !r.RetainUntil.Equal(until) {
+		t.Fatalf("RetentionOf a retained object = %+v, %v", r, err)
+	}
 	if err := s.Delete(ctx, key); !errors.Is(err, ports.ErrRetained) {
 		t.Fatalf("Delete of a retained object: %v", err)
 	}
