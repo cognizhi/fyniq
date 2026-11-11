@@ -357,6 +357,64 @@ func (q *Queries) EntriesAfter(ctx context.Context, arg EntriesAfterParams) ([]E
 	return items, nil
 }
 
+const entriesOfSourceType = `-- name: EntriesOfSourceType :many
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_type = $1
+ORDER BY ledger_revision
+`
+
+type EntriesOfSourceTypeRow struct {
+	ID              uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	PeriodID        uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	RuleVersion     string
+	ReversesEntryID *uuid.UUID
+	Memo            *string
+	RecordedAt      time.Time
+}
+
+// Every entry of a source type, in revision order, without their lines (LinesOfEntries reads them), on
+// journal_entry_source_type (NFR-PERF-02).
+func (q *Queries) EntriesOfSourceType(ctx context.Context, sourceType string) ([]EntriesOfSourceTypeRow, error) {
+	rows, err := q.db.Query(ctx, entriesOfSourceType, sourceType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EntriesOfSourceTypeRow
+	for rows.Next() {
+		var i EntriesOfSourceTypeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.PeriodID,
+			&i.PostingIdentity,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.RuleVersion,
+			&i.ReversesEntryID,
+			&i.Memo,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const entryIDsOfSource = `-- name: EntryIDsOfSource :many
 SELECT id FROM fyniq.journal_entry
 WHERE source_id = $1::text

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -623,6 +624,19 @@ func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storag
 	return out, nil
 }
 
+// likeWords are a search's words, each with LIKE's wildcards and escape character escaped, for the trigram indexes to
+// find the documents that may hold the text (SearchDocuments' matched); none for no text.
+func likeWords(text string) []string {
+	words := []string{}
+	for _, w := range strings.Fields(text) {
+		words = append(words, likeEscape.Replace(w))
+	}
+	return words
+}
+
+// likeEscape escapes LIKE's escape character and wildcards, so a word matches as typed.
+var likeEscape = strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`)
+
 func (r documents) Search(ctx context.Context, f storage.DocumentSearch) ([]storage.DocumentHit, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
@@ -640,7 +654,7 @@ func (r documents) Search(ctx context.Context, f storage.DocumentSearch) ([]stor
 	if f.Text != "" {
 		needle = &f.Text
 	}
-	rows, err := r.u.q.SearchDocuments(ctx, sqlcdb.SearchDocumentsParams{Types: types, Claimant: claimant, Either: f.Either, Needle: needle,
+	rows, err := r.u.q.SearchDocuments(ctx, sqlcdb.SearchDocumentsParams{Types: types, Claimant: claimant, Either: f.Either, Needle: needle, Words: likeWords(f.Text),
 		AmountMin: f.Min, AmountMax: f.Max, MinInclusive: f.MinInclusive, MaxInclusive: f.MaxInclusive,
 		PageSize: int32(min(max(f.Limit, 1), 1000))}) // 1 to 1,000
 	if err != nil {
@@ -994,12 +1008,17 @@ func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]
 		ids = append(ids, x.ID)
 		out = append(out, toEntry(sqlcdb.GetEntryRow(x)))
 	}
+	return out, r.linesOf(ctx, out, ids, at)
+}
+
+// linesOf reads the lines of entries out, whose IDs are ids, at out's index at, in one query.
+func (r ledger) linesOf(ctx context.Context, out []storage.Entry, ids []uuid.UUID, at map[uuid.UUID]int) error {
 	if len(ids) == 0 {
-		return out, nil
+		return nil
 	}
 	lines, err := r.u.q.LinesOfEntries(ctx, ids)
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 	for _, l := range lines {
 		e := &out[at[l.EntryID]]
@@ -1007,7 +1026,26 @@ func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]
 			Amount: l.Amount, FxRate: l.FxRate, FxRateSource: l.FxRateSource, BaseCurrency: l.BaseCurrency, BaseAmount: l.BaseAmount,
 			Description: l.Description, PartyID: l.PartyID, DimensionValueIds: l.DimensionValueIds, InstrumentID: l.InstrumentID}))
 	}
-	return out, nil
+	return nil
+}
+
+func (r ledger) OfSourceType(ctx context.Context, sourceType string) ([]storage.Entry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EntriesOfSourceType(ctx, sourceType)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Entry, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	at := make(map[uuid.UUID]int, len(rows))
+	for _, x := range rows {
+		at[x.ID] = len(out)
+		ids = append(ids, x.ID)
+		out = append(out, toEntry(sqlcdb.GetEntryRow(x)))
+	}
+	return out, r.linesOf(ctx, out, ids, at)
 }
 
 func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) {
@@ -1209,7 +1247,17 @@ func (r balances) ForPeriodAt(ctx context.Context, periodID uuid.UUID, revision 
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
-	rows, err := r.u.q.BalancesForPeriodAt(ctx, sqlcdb.BalancesForPeriodAtParams{PeriodID: periodID, LedgerRevision: revision})
+	var rows []sqlcdb.BalancesForPeriodAtRow
+	var err error
+	if storage.FromLines(ctx) { // a check's read: the lines alone, never the cache it is compared with (INV-08)
+		var lines []sqlcdb.BalanceLinesForPeriodAtRow
+		lines, err = r.u.q.BalanceLinesForPeriodAt(ctx, sqlcdb.BalanceLinesForPeriodAtParams{PeriodID: periodID, LedgerRevision: revision})
+		for _, x := range lines {
+			rows = append(rows, sqlcdb.BalancesForPeriodAtRow(x))
+		}
+	} else {
+		rows, err = r.u.q.BalancesForPeriodAt(ctx, sqlcdb.BalancesForPeriodAtParams{PeriodID: periodID, LedgerRevision: revision})
+	}
 	if err != nil {
 		return nil, mapError(err)
 	}

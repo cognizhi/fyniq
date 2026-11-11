@@ -92,6 +92,44 @@ type Runner struct {
 	// go without one; with no Platform, C.2 #12 is not assessed.
 	Platform storage.Platform
 	Jobs     []WatchedJob
+	// Sleep waits d or until ctx ends, for Paced; nil waits on the wall clock.
+	Sleep func(ctx context.Context, d time.Duration) error
+}
+
+// Pace is the least time between two runs on a change: a burst of changes, such as a 10,000-line import's
+// reconciliations, is checked once a minute instead of run after run (NFR-PERF-01; p1-operations-dr task 13.11).
+const Pace = time.Minute
+
+// Paced runs Refresh once Pace has passed since the latest run on a change finished, waiting for the rest of it first:
+// the changes made meanwhile are all read by this one run, as the outbox asks for at most one more while one waits.
+func (r Runner) Paced(ctx context.Context, org uuid.UUID) (Report, error) {
+	var last storage.CheckRun
+	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		last, err = u.Checks().LatestRun(ctx, storage.CheckOnChange)
+		return err
+	})
+	if err != nil && !errors.Is(err, ports.ErrNotFound) {
+		return Report{}, err
+	}
+	if wait := Pace - r.Clock.Now().Sub(last.FinishedAt); err == nil && wait > 0 {
+		sleep := r.Sleep
+		if sleep == nil {
+			sleep = func(ctx context.Context, d time.Duration) error {
+				t := time.NewTimer(d)
+				defer t.Stop()
+				select {
+				case <-t.C:
+					return nil
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+		}
+		if err := sleep(ctx, wait); err != nil {
+			return Report{}, err
+		}
+	}
+	return r.Refresh(ctx, org)
 }
 
 // WatchedJob is a scheduled job C.2 #12 watches: its name, as the schedule and its heartbeat call it, and how long it
@@ -284,6 +322,9 @@ type result struct {
 }
 
 func (r Runner) run(ctx context.Context, org uuid.UUID, trigger, by string, choose func(prepared, []Definition) []Definition) (Report, error) {
+	// The statements a check reads as at a revision sum the ledger's lines, apart from the balances cache the trial
+	// balance's check reads, so a cache that drifted from its lines shows (C.1 #1 to #3, INV-08).
+	ctx = storage.WithLines(ctx)
 	started := r.Clock.Now()
 	p, err := r.prepare(ctx, org)
 	if err != nil {

@@ -43,7 +43,8 @@ Controller for the ledger, or a person named instead.
 
 The checks run by themselves:
 
-- within about a minute of a change they read, such as a posting or a new account;
+- within about a minute of a change they read, such as a posting or a new account; while changes keep coming, such
+  as during a large bank import, at most once a minute, each run reading every change since the last;
 - every night, when every check runs, after the night's verification of the ledger;
 - when you ask, with **Run all checks now**.
 

@@ -4,6 +4,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -90,4 +91,56 @@ func TestTheGlobalSearchFindsWhatThePersonMaySee(t *testing.T) {
 		t.Errorf("the AR specialist's kinds: %v", g)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/search?q=", acc, nil), "searchRecords", 422, CodeInvalid)
+}
+
+// The search finds its text however its words fall (NFR-PERF-01, FR-UX-02): a phrase that runs from a journal's number
+// into its memo, a line's description, a word too short for the trigram index, and wildcards taken as typed, a percent
+// and an underscore as themselves. The trigram indexes only narrow the documents; the match is the whole text's, as before.
+// req: FR-UX-02
+// req: NFR-PERF-01
+func TestTheSearchFindsTheTextHoweverItsWordsFall(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	draft := e.draft("120.00")
+	draft["memo"] = "Office 50% share_cost"
+	draft["lines"].([]map[string]any)[0]["description"] = "Quarterly lease Tanjong"
+	r := e.call(http.MethodPost, "/v1/journals", acc, draft)
+	if r.Status != http.StatusCreated {
+		t.Fatalf("createJournal = %d: %s", r.Status, r.Raw)
+	}
+	id := r.str("id")
+	if p := e.call(http.MethodPost, "/v1/journals/"+id+"/post", acc, nil, "If-Match", r.Header.Get("ETag")); p.Status != http.StatusOK {
+		t.Fatalf("postJournal = %d: %s", p.Status, p.Raw)
+	}
+	number := e.call(http.MethodGet, "/v1/journals/"+id, acc, nil).str("number")
+	if number == "" {
+		t.Fatal("the posted journal has no number")
+	}
+	found := func(query string) bool {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/search?q="+url.QueryEscape(query)+"&group=journals", acc, nil)
+		if r.Status != http.StatusOK {
+			t.Fatalf("%q: %d %s", query, r.Status, r.Raw)
+		}
+		for _, x := range r.Body["results"].([]any) {
+			if x.(map[string]any)["id"] == id {
+				return true
+			}
+		}
+		return false
+	}
+	for query, want := range map[string]bool{
+		number + " office":      true, // from the number into the memo
+		strings.ToLower(number): true,
+		"tanjong":               true, // a line's description
+		"of":                    true, // too short for a trigram
+		"50% share_cost":        true, // a percent and an underscore as typed
+		"5% share":              false,
+		"share-cost":            false, // the underscore is not a wildcard
+		"office tanjong":        false, // two words, not the phrase
+	} {
+		if got := found(query); got != want {
+			t.Errorf("%q found it: %t, want %t", query, got, want)
+		}
+	}
 }

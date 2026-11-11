@@ -4,7 +4,7 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:f7c709205d3fe7e567e1871bce346f0ac79b33ff871643e9a5c8bbf1de940c7f
+  - docs/user-guide/checks.md sha256:a2d555e1d506f81c4628b64adab14b3f9d7bb2f384a2d6f163e14b8d25e12558
 data_class: general
 taint: trusted
 status: draft
@@ -52,7 +52,7 @@ aliases:
 
 ## When the checks run
 
-- Within about a minute of a change they read, such as a posting or a new account.
+- Within about a minute of a change they read, such as a posting or a new account; while changes keep coming, such as during a large bank import, at most once a minute, each run reading every change since the last.
 - Every night, when every check runs, after the night's verification of the ledger.
 - When someone selects **Run all checks now**.
 

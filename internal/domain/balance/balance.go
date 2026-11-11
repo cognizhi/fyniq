@@ -7,6 +7,7 @@ package balance
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -30,8 +31,9 @@ type TrialBalance struct {
 }
 
 // Snapshot is how the balance service reads the ledger (FR-RPT-08, ENG-46): Current reads the materialised balances as
-// they stand; At reads the lines up to a ledger revision, so that a report re-run at the revision it recorded gives the
-// same figures whatever was posted since.
+// they stand; At reads the ledger as at a revision, so that a report re-run at the revision it recorded gives the same
+// figures whatever was posted since: a period's cached balances when nothing later is in it (INV-08 keeps them its
+// lines' sums; NFR-PERF-02), else its lines up to the revision. A check's read sums the lines (storage.WithLines).
 type Snapshot struct {
 	at       bool
 	revision int64
@@ -403,6 +405,43 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 		}
 	}
 	return total, nil
+}
+
+// EntriesOfType are the entries of a source type posted up to a revision, with their lines, in revision order: the few,
+// such as the opening balances, that a statement reads apart from the balances (NFR-PERF-02).
+func EntriesOfType(ctx context.Context, u storage.UnitOfWork, sourceType string, revision int64) ([]storage.Entry, error) {
+	all, err := u.Ledger().OfSourceType(ctx, sourceType)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(all, func(e storage.Entry) bool { return e.LedgerRevision > revision }), nil
+}
+
+// EachAccountLine gives each line of an account dated from..to and posted up to a revision, in posting order, a page at
+// a time and with no limit of lines: the equity accounts' few lines a statement reads apart from the balances
+// (NFR-PERF-02).
+func EachAccountLine(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, from, to time.Time, revision int64,
+	each func(storage.AccountLine) error) error {
+	var after *storage.LineKey
+	for {
+		lines, err := u.Ledger().AccountLinesAfter(ctx, account, from, to, after, LedgerPage)
+		if err != nil {
+			return err
+		}
+		for _, l := range lines {
+			if l.LedgerRevision > revision {
+				continue
+			}
+			if err := each(l); err != nil {
+				return err
+			}
+		}
+		if len(lines) < LedgerPage {
+			return nil
+		}
+		k := lines[len(lines)-1].Key()
+		after = &k
+	}
 }
 
 // EachEntry calls each with every entry the ledger holds up to a revision, in revision order, with its lines: what a

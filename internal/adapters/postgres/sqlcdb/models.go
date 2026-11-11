@@ -980,6 +980,8 @@ type FyniqDocumentVersion struct {
 	Payload        []byte
 	CreatedAt      time.Time
 	CreatedBy      *string
+	DocDate        *string
+	SearchText     *string
 }
 
 type FyniqDpiaApproval struct {

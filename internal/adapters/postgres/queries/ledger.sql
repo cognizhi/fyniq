@@ -109,6 +109,15 @@ WHERE ledger_revision > sqlc.arg(after_revision)
 ORDER BY ledger_revision
 LIMIT sqlc.arg(page_size);
 
+-- name: EntriesOfSourceType :many
+-- Every entry of a source type, in revision order, without their lines (LinesOfEntries reads them), on
+-- journal_entry_source_type (NFR-PERF-02).
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_type = sqlc.arg(source_type)
+ORDER BY ledger_revision;
+
 -- name: LinesOfEntries :many
 -- The lines of a page of entries, each entry's in line order: one read for the page, as GetEntryLines reads one entry's.
 SELECT l.entry_id, l.id, l.line_no, l.account_id, l.currency, l.amount, l.fx_rate, l.fx_rate_source, l.base_currency,
