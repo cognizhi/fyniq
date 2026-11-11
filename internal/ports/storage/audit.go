@@ -96,6 +96,13 @@ type Audit interface {
 	Details(ctx context.Context, events []uuid.UUID) (map[uuid.UUID]AuditDetail, error)
 	// DetailsBefore counts the details of events that occurred before cutoff.
 	DetailsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	// Boundaries are the organisation's purge boundaries, oldest first (AUD-09).
+	Boundaries(ctx context.Context) ([]AuditBoundary, error)
+	// RecordBoundary writes a purge boundary at an event of the trail, after every earlier one: the worker only.
+	RecordBoundary(ctx context.Context, b NewAuditBoundary) (AuditBoundary, error)
+	// Purge deletes the events up to lastSeq and their details, behind a boundary at exactly lastSeq, while the purge
+	// after retention is switched on, never an event less than 7 years old (CodeAudit otherwise): the worker only.
+	Purge(ctx context.Context, lastSeq int64) (int64, error)
 	// EraseDetails erases the details of events that occurred before cutoff (AUD-06): the worker only, and only for a
 	// cutoff at least 30 days ago by the database's clock (CodeAudit otherwise).
 	EraseDetails(ctx context.Context, cutoff time.Time) (AuditErasure, error)
@@ -122,6 +129,24 @@ type AuditDetail struct {
 	OccurredAt time.Time
 	IP         string
 	UserAgent  string
+}
+
+// NewAuditBoundary is a purge boundary to write: the last purged event, the setting change that switched the purge on,
+// the counts, and where its signed copy is.
+type NewAuditBoundary struct {
+	LastSeq        int64
+	LastHash       []byte
+	LastOccurredAt time.Time
+	Approval       string
+	Counts         map[string]int64
+	AnchorKey      string
+	WrittenAt      time.Time
+}
+
+// AuditBoundary is a written purge boundary.
+type AuditBoundary struct {
+	NewAuditBoundary
+	ID uuid.UUID
 }
 
 // AuditErasure is what an erasure removed: how many events' details, and the first and last of those events.

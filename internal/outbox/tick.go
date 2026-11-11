@@ -37,6 +37,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "audit.verify", Every: 24 * time.Hour, Offset: 18 * time.Hour, Lease: 6 * time.Hour, Stale: 26 * time.Hour},
 	// Security events' details erased after their retention (AUD-06); a run two days late is reported (C.2 #12).
 	{Job: "audit.erase", Every: 24 * time.Hour, Offset: 17*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
+	// The purge after retention, weekly, where an organisation switched it on (AUD-09, AUD-10).
+	{Job: "retention.purge", Every: 7 * 24 * time.Hour, Offset: 17*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 8 * 24 * time.Hour},
 	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ratelimit.purge", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ledger.verify", Every: 24 * time.Hour, Offset: 18*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},

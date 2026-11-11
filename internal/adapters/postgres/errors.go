@@ -185,6 +185,7 @@ var fyCodes = map[string]string{
 	"FY301": storage.CodeBudget,          // a budget outside its keys, limits or decimal strings (000279)
 	"FY302": storage.CodeFeasibility,     // a feasibility study outside its keys, limits or decimal strings (000283)
 	"FY303": storage.CodeAudit,           // a security event's request details changed, or erased early or not by the job (000285)
+	"FY304": storage.CodeAudit,           // a purge with no boundary, switched off, too early, or a boundary changed (000291)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

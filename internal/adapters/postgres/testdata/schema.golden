@@ -176,6 +176,15 @@ approval_signature | passkey_id | uuid | null |
 approval_signature | authenticator_data | bytea | null | 
 approval_signature | client_data | bytea | null | 
 approval_signature | assertion_signature | bytea | null | 
+audit_boundary | organisation_id | uuid | not null | current_org()
+audit_boundary | id | uuid | not null | uuidv7()
+audit_boundary | last_seq | bigint | not null | 
+audit_boundary | last_hash | bytea | not null | 
+audit_boundary | last_occurred_at | timestamp with time zone | not null | 
+audit_boundary | approval | text | not null | 
+audit_boundary | counts | jsonb | not null | 
+audit_boundary | anchor_key | text | not null | 
+audit_boundary | written_at | timestamp with time zone | not null | 
 audit_chain | organisation_id | uuid | not null | current_org()
 audit_chain | seq | bigint | not null | 0
 audit_chain | head_hash | bytea | not null | '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea
@@ -1867,6 +1876,22 @@ approval_signature | approval_signature_signer_not_null | NOT NULL signer
 approval_signature | approval_signature_step_not_null | NOT NULL step
 approval_signature | approval_signature_step_positive | CHECK (((step >= 1) AND (step <= 20)))
 approval_signature | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+audit_boundary | audit_boundary_anchor_key_not_null | NOT NULL anchor_key
+audit_boundary | audit_boundary_approval_not_null | NOT NULL approval
+audit_boundary | audit_boundary_counts_not_null | NOT NULL counts
+audit_boundary | audit_boundary_counts_object | CHECK ((jsonb_typeof(counts) = 'object'::text))
+audit_boundary | audit_boundary_hash_sha256 | CHECK ((length(last_hash) = 32))
+audit_boundary | audit_boundary_id_not_null | NOT NULL id
+audit_boundary | audit_boundary_last_hash_not_null | NOT NULL last_hash
+audit_boundary | audit_boundary_last_occurred_at_not_null | NOT NULL last_occurred_at
+audit_boundary | audit_boundary_last_seq_not_null | NOT NULL last_seq
+audit_boundary | audit_boundary_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+audit_boundary | audit_boundary_organisation_id_not_null | NOT NULL organisation_id
+audit_boundary | audit_boundary_pkey | PRIMARY KEY (organisation_id, id)
+audit_boundary | audit_boundary_seq_key | UNIQUE (organisation_id, last_seq)
+audit_boundary | audit_boundary_seq_positive | CHECK ((last_seq > 0))
+audit_boundary | audit_boundary_text_lengths | CHECK ((((length(approval) >= 1) AND (length(approval) <= 200)) AND ((length(anchor_key) >= 1) AND (length(anchor_key) <= 300))))
+audit_boundary | audit_boundary_written_at_not_null | NOT NULL written_at
 audit_chain | audit_chain_hash_sha256 | CHECK ((length(head_hash) = 32))
 audit_chain | audit_chain_head_hash_not_null | NOT NULL head_hash
 audit_chain | audit_chain_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -4215,6 +4240,8 @@ CREATE UNIQUE INDEX approval_request_one_pending ON fyniq.approval_request USING
 CREATE UNIQUE INDEX approval_request_pkey ON fyniq.approval_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_signature_once ON fyniq.approval_signature USING btree (organisation_id, request_id, signer)
 CREATE UNIQUE INDEX approval_signature_pkey ON fyniq.approval_signature USING btree (organisation_id, id)
+CREATE UNIQUE INDEX audit_boundary_pkey ON fyniq.audit_boundary USING btree (organisation_id, id)
+CREATE UNIQUE INDEX audit_boundary_seq_key ON fyniq.audit_boundary USING btree (organisation_id, last_seq)
 CREATE UNIQUE INDEX audit_chain_pkey ON fyniq.audit_chain USING btree (organisation_id)
 CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
@@ -4597,10 +4624,12 @@ CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR E
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
 CREATE TRIGGER approval_request_voided AFTER UPDATE OF status ON fyniq.approval_request FOR EACH ROW WHEN ((new.status = 'void'::text)) EXECUTE FUNCTION approval_request_voided()
 CREATE TRIGGER approval_signature_check BEFORE INSERT OR UPDATE ON fyniq.approval_signature FOR EACH ROW EXECUTE FUNCTION approval_signature_check()
+CREATE TRIGGER audit_boundary_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.audit_boundary FOR EACH ROW EXECUTE FUNCTION audit_boundary_guard()
+CREATE TRIGGER audit_boundary_no_truncate BEFORE TRUNCATE ON fyniq.audit_boundary FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON fyniq.audit_chain FOR EACH ROW EXECUTE FUNCTION audit_chain_guard()
 CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
-CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_guard()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_request_detail_guard BEFORE DELETE OR UPDATE ON fyniq.audit_request_detail FOR EACH ROW EXECUTE FUNCTION audit_request_detail_guard()
 CREATE TRIGGER audit_request_detail_no_truncate BEFORE TRUNCATE ON fyniq.audit_request_detail FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
@@ -4839,6 +4868,7 @@ announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()
 approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+audit_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4977,11 +5007,14 @@ approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
 approval_void_pending_all(p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 741722484193d313eb1d8961a41dbf46
 approval_void_pending_type(p_type text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f8b69e58a60cc252f3e4b22a2cc98989
+audit_boundary_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | baa2681f0793b6c19420fcb9e3bc8319
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
 audit_chain_head(OUT seq bigint, OUT head_hash bytea, OUT action text) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | ceccce4fd90b996a86d2290faab7f69e
 audit_erase_details(p_cutoff timestamp with time zone, OUT erased bigint, OUT first_seq bigint, OUT last_seq bigint) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 53b4cf12dc39db139466d3f45919b2fe
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
+audit_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 575215a6a315686b1069b99ebd4db910
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
+audit_purge(p_last_seq bigint) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d72747db4e3930a148d3c4075dca432c
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
@@ -5164,6 +5197,7 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
+purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f

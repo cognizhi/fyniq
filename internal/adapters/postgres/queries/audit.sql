@@ -48,3 +48,15 @@ LIMIT sqlc.arg(max);
 
 -- name: GetAuditEventByID :one
 SELECT id, seq, body, prev_hash, hash FROM fyniq.audit_event WHERE id = $1;
+
+-- name: InsertAuditBoundary :one
+-- A purge boundary, written before the purge it bounds (AUD-09, 000291).
+INSERT INTO fyniq.audit_boundary (last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at;
+
+-- name: ListAuditBoundaries :many
+SELECT id, last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, written_at FROM fyniq.audit_boundary ORDER BY last_seq;
+
+-- name: PurgeAudit :one
+SELECT fyniq.audit_purge($1)::bigint AS purged;

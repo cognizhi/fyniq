@@ -184,16 +184,29 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 7. The trail's purge (slice 7)
 
-- [ ] 7.1 `fyniq.audit_boundary` and `fyniq.audit_purge` (D7a). Attack tests:
+- [x] 7.1 `fyniq.audit_boundary` and `fyniq.audit_purge` (D7a). Attack tests:
   - a direct delete;
   - a purge without a boundary, past one, with the switch off, or as `fyniq_api`;
   - the flag set by hand;
   - TRUNCATE.
 
   Each is refused, and AUD-08 holds everywhere else. `// req: AUD-09`, `// req: AUD-08`
-- [ ] 7.2 The trail's part of `retention.purge`. On a clock past the retention, with the switch on, it purges the
+- [x] 7.2 The trail's part of `retention.purge`. On a clock past the retention, with the switch on, it purges the
   leading expired segment behind a signed, anchored boundary, and verification starts from it. With the switch off,
   or with one event not yet expired at the front, nothing goes. `// req: AUD-09`, `// req: AUD-03`
+  - As built (9 Nov 2026, rev 0.237):
+    - **The database's checks (000291).** The delete guard on `audit_event` checks the purge's flag, a boundary
+      covering the event, the switch (`fyniq.purge_switched_on`) and an age of at least 7 years. So even the table's
+      owner, with the flag set by hand, deletes nothing the purge could not. `audit_purge` checks the same before it
+      deletes the events and their details.
+    - **The boundary.** It names its last event by sequence and hash, moves forward only, never changes (FY304), and
+      records the setting change that switched the purge on.
+    - **The job.** `retention.purge` runs weekly; C.2 #12 watches it, stale after 8 days.
+    - **Verification.** It starts from the latest boundary, after checking its signed copy. A range over purged days
+      is explained.
+    - **Legal holds.** None exist on records yet (only on stored files), so none stops a purge. When records can be
+      held, the purge stops at the first event about one.
+    - **Tests:** `TestTheTrailIsPurgedBehindASignedBoundary` and `TestAttackThePurgeKeepsItsRules`.
 
 ## 8. The ledger's carry-forward (slice 8)
 

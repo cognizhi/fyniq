@@ -42,6 +42,7 @@ fyniq_api       EXECUTE   approval_steps_valid()
 fyniq_api       EXECUTE   approval_void_pending()
 fyniq_api       EXECUTE   approval_void_pending_all()
 fyniq_api       EXECUTE   approval_void_pending_type()
+fyniq_api       SELECT    audit_boundary
 fyniq_api       SELECT    audit_chain
 fyniq_api       EXECUTE   audit_chain_head()
 fyniq_api       INSERT    audit_event (body, id)
@@ -480,6 +481,7 @@ fyniq_readonly  SELECT    announcement_dismissal
 fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
+fyniq_readonly  SELECT    audit_boundary
 fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  EXECUTE   audit_chain_head()
 fyniq_readonly  SELECT    audit_event
@@ -608,11 +610,14 @@ fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
+fyniq_worker    INSERT    audit_boundary (anchor_key, approval, counts, last_hash, last_occurred_at, last_seq, written_at)
+fyniq_worker    SELECT    audit_boundary
 fyniq_worker    SELECT    audit_chain
 fyniq_worker    EXECUTE   audit_chain_head()
 fyniq_worker    EXECUTE   audit_erase_details()
 fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event
+fyniq_worker    EXECUTE   audit_purge()
 fyniq_worker    INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_worker    SELECT    audit_request_detail
 fyniq_worker    SELECT    balance

@@ -231,6 +231,18 @@ type FyniqApprovalSignature struct {
 	AssertionSignature []byte
 }
 
+type FyniqAuditBoundary struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LastSeq        int64
+	LastHash       []byte
+	LastOccurredAt time.Time
+	Approval       string
+	Counts         []byte
+	AnchorKey      string
+	WrittenAt      time.Time
+}
+
 type FyniqAuditChain struct {
 	OrganisationID uuid.UUID
 	Seq            int64
