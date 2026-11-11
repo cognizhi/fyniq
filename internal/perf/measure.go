@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -22,11 +23,14 @@ import (
 
 // The budgets the harness measures (PRD-001 §15).
 var (
-	Reads   = Budget{ID: "NFR-PERF-01", What: "interactive reads (a journal, a list page, a search), 100 readers at once (NFR-SCALE-01)", Limit: 300 * time.Millisecond, Each: true, Gated: true}
-	Posting = Budget{ID: "NFR-PERF-03", What: "save and post a 50-line journal", Limit: 500 * time.Millisecond, Each: true, Gated: true}
-	Imports = Budget{ID: "NFR-PERF-04", What: "import a 10,000-line bank statement", Limit: time.Minute, Gated: true}
-	Exports = Budget{ID: "NFR-PERF-05", What: "export the general ledger of the grown months to CSV", Limit: 5 * time.Minute, Gated: true}
-	Cold    = Budget{ID: "NFR-PERF-06", What: "the first request after the API starts from idle", Limit: 2300 * time.Millisecond}
+	Reads = Budget{ID: "NFR-PERF-01", What: "interactive reads (a journal, a list page, a search) by 100 people, each pausing 1 to 3 s between reads (NFR-SCALE-01)", Limit: 300 * time.Millisecond, Each: true, Gated: true}
+	// Throughput is the same reads, 100 at once and back to back: where the stack saturates, reported and never gated
+	// (the owner's decision of 11 Nov 2026, PRD-001 rev 0.252).
+	Throughput = Budget{ID: "NFR-SCALE-01", What: "the same reads, 100 at once, back to back: throughput", Limit: 300 * time.Millisecond, Each: true}
+	Posting    = Budget{ID: "NFR-PERF-03", What: "save and post a 50-line journal", Limit: 500 * time.Millisecond, Each: true, Gated: true}
+	Imports    = Budget{ID: "NFR-PERF-04", What: "import a 10,000-line bank statement", Limit: time.Minute, Gated: true}
+	Exports    = Budget{ID: "NFR-PERF-05", What: "export the general ledger of the grown months to CSV", Limit: 5 * time.Minute, Gated: true}
+	Cold       = Budget{ID: "NFR-PERF-06", What: "the first request after the API starts from idle", Limit: 2300 * time.Millisecond}
 )
 
 // ReportsBudget is NFR-PERF-02's: a standard report over twelve months with its comparative, within 2 s at up to 1 M
@@ -57,6 +61,9 @@ type Measurer struct {
 	// Only names the budgets to measure, by requirement (NFR-PERF-02) or step (reads, reports, posting, import,
 	// export); none measures every one.
 	Only []string
+	// Pause is the least and the most a reader waits between two reads, as a person reading a page does: 1 to 3 s
+	// when zero (NFR-SCALE-01, rev 0.252).
+	Pause [2]time.Duration
 }
 
 // wanted is whether the run measures a budget.
@@ -74,8 +81,12 @@ func (m Measurer) Run(ctx context.Context, g GrowReport) []Result {
 	}
 	var out []Result
 	if m.wanted(Reads, "reads") {
-		m.say("perf: reads, %d readers at once", m.Readers)
-		out = append(out, m.reads(ctx, g))
+		m.say("perf: reads by %d people, each pausing between reads", m.Readers)
+		out = append(out, m.reads(ctx, g, Reads))
+	}
+	if m.wanted(Throughput, "reads") {
+		m.say("perf: the same reads, %d at once, back to back", m.Readers)
+		out = append(out, m.reads(ctx, g, Throughput))
 	}
 	if m.wanted(ReportsBudget(m.Lines), "reports") {
 		m.say("perf: reports")
@@ -160,7 +171,17 @@ func (m Measurer) postJSON(ctx context.Context, path string, v any, header map[s
 }
 
 // reads times a journal, a page of journals and a search, by many readers at once.
-func (m Measurer) reads(ctx context.Context, g GrowReport) Result {
+// reads times the readers' reads: for Reads each pauses between reads as a person does, for Throughput none does.
+func (m Measurer) reads(ctx context.Context, g GrowReport, b Budget) Result {
+	least, most := m.Pause[0], m.Pause[1]
+	if most <= 0 {
+		least, most = time.Second, 3*time.Second
+	}
+	pause := func(r *rand.Rand) {
+		if b.Gated {
+			time.Sleep(least + time.Duration(r.Int64N(int64(most-least)+1)))
+		}
+	}
 	// Each kind of read takes its turn, so a list or a search is measured as often as a journal is.
 	kinds := []string{"list", "search"}
 	if len(g.Sample) > 0 {
@@ -182,7 +203,9 @@ func (m Measurer) reads(ctx context.Context, g GrowReport) Result {
 	var wg sync.WaitGroup
 	for w := range m.Readers {
 		wg.Go(func() {
+			r := rand.New(rand.NewPCG(uint64(w), 1)) // #nosec G404 G115 -- a reader's pauses, not a secret
 			for i := range m.ReadsEach {
+				pause(r)
 				n := w*m.ReadsEach + i
 				kind := kinds[n%len(kinds)]
 				_, d, err := m.call(ctx, fmt.Sprintf("perf-reader-%d", w), http.MethodGet, path(kind, n/len(kinds)), nil, "", nil)
@@ -199,9 +222,9 @@ func (m Measurer) reads(ctx context.Context, g GrowReport) Result {
 		})
 	}
 	wg.Wait()
-	r := sampled(Reads, took, first)
-	r.Note = each(per, kinds)
-	return r
+	res := sampled(b, took, first)
+	res.Note = each(per, kinds)
+	return res
 }
 
 // each is the 95th percentile of each kind's samples, in words: where the time goes.

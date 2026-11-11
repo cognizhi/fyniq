@@ -286,6 +286,8 @@ Taken interactively on 11 Nov 2026, once slices 1 to 12 were built:
   - the general ledger export streams: the worker reads each account's lines a page at a time (keyset paging) and
     writes the CSV or XLSX as it reads, with no limit; the on-screen report keeps its 5,000 lines an account;
   - the reports are measured at 1 M and 10 M lines, and made to meet NFR-PERF-02 where the time goes.
+  - (rev 0.252, the owner's decision while building) NFR-PERF-01's gated measure is 100 users who each pause 1 to 3
+    seconds between reads; 100 reads at once, back to back, are reported as throughput, ungated.
 - **`If-Match` accepts the API's own tag weak or strong.** The comparison drops a leading `W/` from the client's tag
   before comparing it with the record's: the tag names the record's version, the same in every encoding. Any other tag
   is still 412. (rev 0.251) Building found that Caddy names the encoding in a strong tag (`"1-draft-gzip"`) rather than

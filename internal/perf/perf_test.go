@@ -180,7 +180,8 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 		mu.Unlock()
 		return "owner-token", nil
 	}
-	m := Measurer{API: srv.URL + "/api", Token: token, HTTP: srv.Client(), Clock: clock.System{}, Readers: 8, ReadsEach: 3, Lines: 1000}
+	m := Measurer{API: srv.URL + "/api", Token: token, HTTP: srv.Client(), Clock: clock.System{}, Readers: 8, ReadsEach: 3, Lines: 1000,
+		Pause: [2]time.Duration{time.Millisecond, 2 * time.Millisecond}}
 	results := m.Run(context.Background(), g)
 	if len(problems) > 0 {
 		t.Fatalf("the calls: %s", strings.Join(problems, "; "))
@@ -189,8 +190,11 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 	for _, r := range results {
 		byID[r.ID] = r
 	}
-	if r := byID["NFR-PERF-01"]; r.Samples != 24 || r.Error != "" || !clients["perf-reader-7"] || !clients["perf"] || len(clients) != 9 {
+	if r := byID["NFR-PERF-01"]; r.Samples != 24 || r.Error != "" || !r.Gated || !clients["perf-reader-7"] || !clients["perf"] || len(clients) != 9 {
 		t.Errorf("the reads, each reader a client of its own: %+v %v", r, clients)
+	}
+	if r := byID["NFR-SCALE-01"]; r.Samples != 24 || r.Error != "" || r.Gated { // back to back: throughput, reported (rev 0.252)
+		t.Errorf("the same reads back to back: %+v", r)
 	}
 	if r := byID["NFR-PERF-02"]; r.Samples != 30 || r.Error != "" {
 		t.Errorf("the reports: %+v", r)
