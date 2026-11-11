@@ -5177,6 +5177,7 @@ installation_announcement | disabled | not forced
 installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
+invitation_code | disabled | not forced
 item | enabled | forced
 item_price | enabled | forced
 job_slot | disabled | not forced
