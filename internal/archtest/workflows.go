@@ -23,9 +23,10 @@ var WriteJobs = map[string]struct {
 	Scopes []string
 	Why    string
 }{
-	"auto-approve.yml/approve": {[]string{"pull-requests"}, "approves the owner's development pull requests before production (founder decision, 14 Oct 2026)"},
-	"infra.yml/plan":           {[]string{"id-token"}, "plans each environment through Workload Identity Federation, which trusts main and tags only (SEC-04, CTL-CHG-02)"},
-	"infra.yml/apply":          {[]string{"id-token"}, "applies one environment through Workload Identity Federation, in a GitHub environment that holds production for approval (§12.4)"},
+	"auto-approve.yml/approve":              {[]string{"pull-requests"}, "approves the owner's development pull requests before production (founder decision, 14 Oct 2026)"},
+	"infra.yml/plan":                        {[]string{"id-token"}, "plans each environment through Workload Identity Federation, which trusts main and tags only (SEC-04, CTL-CHG-02)"},
+	"infra.yml/apply":                       {[]string{"id-token"}, "applies one environment through Workload Identity Federation, in a GitHub environment that holds production for approval (§12.4)"},
+	"release-evidence.yml/release-evidence": {[]string{"contents"}, "attaches a published release's CI evidence to it as assets; it reads runs and artefacts with actions: read (CMP-01, p1-compliance-center D3)"},
 }
 
 var (

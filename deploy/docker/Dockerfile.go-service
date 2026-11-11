@@ -31,6 +31,8 @@ ARG FLAVOUR=release
 ARG VERSION=0.0.0-dev
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
+# The release tag (vX.Y.Z), passed only by the build of a published release's images; empty for every other build.
+ARG RELEASE=
 # Set by BuildKit from the target platform (--platform, else the build machine's).
 ARG TARGETOS
 ARG TARGETARCH
@@ -47,7 +49,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       -ldflags "-s -w -buildid= \
         -X github.com/cognizhi/fyniq/internal/version.Version=${VERSION} \
         -X github.com/cognizhi/fyniq/internal/version.Commit=${GIT_SHA} \
-        -X github.com/cognizhi/fyniq/internal/version.BuildTime=${BUILD_TIME}" \
+        -X github.com/cognizhi/fyniq/internal/version.BuildTime=${BUILD_TIME} \
+        -X github.com/cognizhi/fyniq/internal/version.Release=${RELEASE}" \
       -o /out/app ./cmd/${SERVICE}
 
 # ---- Typst, for the render image only ------------------------------------------------------

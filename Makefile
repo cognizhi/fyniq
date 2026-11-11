@@ -44,6 +44,8 @@ endif
 endif
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
+# RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
+RELEASE ?=
 
 .PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
@@ -149,7 +151,7 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
 	  target=$$( [ "$$svc" = render ] && echo render || echo service ); \
 	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --target $$target --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
-	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t fyniq-$$svc:$$tag . >/dev/null; \
+	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)" --platform "$(PLATFORM)"
@@ -178,8 +180,9 @@ ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, 
 
 check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
 
-controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text
+controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text; the release's evidence manifest is built from a fixture run
 	@python3 scripts/controls.py check
+	@python3 scripts/release-evidence.py self-test
 
 scan-waivers: ## The scan waivers are well formed, and the scan, image and infra rules hold on planted findings (the scans themselves: make scan, make images, make infra-check)
 	@python3 scripts/scan.py --self-test
