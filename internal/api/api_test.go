@@ -228,7 +228,7 @@ func TestIdempotencyKeyReplaysAndRefusesReuse(t *testing.T) {
 }
 
 // A versioned record answers its ETag, and a command needs If-Match: none is 428, a stale tag 412, and the current
-// one, strong or sent back weak, runs it (FR-INT-09, rev 0.250).
+// one, strong or as a compressing proxy left it, runs it (FR-INT-09, rev 0.250, rev 0.251).
 // req: FR-INT-09
 // req: data/data-model Versioning of records
 func TestETagAndIfMatch(t *testing.T) {
@@ -245,8 +245,10 @@ func TestETagAndIfMatch(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil), "postJournal", 428, CodeIfMatchRequired)
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"1-posted"`), "postJournal", 412, CodeStale)
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `W/"0-draft"`), "postJournal", 412, CodeStale)
-	// The current tag sent back weak, as a compressing proxy leaves it, is the record's own (rev 0.250).
-	r := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft", W/`+tag)
+	// The current tag sent back as a compressing proxy left it, weak or with its encoding named, is the record's own
+	// (rev 0.250, rev 0.251).
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft-gzip"`), "postJournal", 412, CodeStale)
+	r := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft", W/"1-draft-zstd"`)
 	if r.Status != 200 || r.Header.Get("ETag") != `"1-posted"` || r.str("journal", "status") != "posted" {
 		t.Fatalf("post with a matching If-Match: %d %v %s", r.Status, r.Header, r.Raw)
 	}

@@ -288,7 +288,8 @@ Taken interactively on 11 Nov 2026, once slices 1 to 12 were built:
   - the reports are measured at 1 M and 10 M lines, and made to meet NFR-PERF-02 where the time goes.
 - **`If-Match` accepts the API's own tag weak or strong.** The comparison drops a leading `W/` from the client's tag
   before comparing it with the record's: the tag names the record's version, the same in every encoding. Any other tag
-  is still 412.
+  is still 412. (rev 0.251) Building found that Caddy names the encoding in a strong tag (`"1-draft-gzip"`) rather than
+  weakening it, so a named gzip, zstd, br or deflate is dropped too.
 
 ## Risks / Trade-offs
 

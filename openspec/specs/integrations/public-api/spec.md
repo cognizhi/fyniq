@@ -177,6 +177,12 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **THEN** the API accepts it, since the tag names the record's version, the same in every encoding
 - **AND** any other tag is still refused with 412
 
+#### Scenario: Our own tag, with a proxy's encoding named (rev 0.251)
+- **GIVEN** a compressing proxy named its encoding in the API's strong `ETag`, such as `"1-draft-gzip"` (Caddy)
+- **WHEN** the client sends that tag back in `If-Match`
+- **THEN** the API accepts it for gzip, zstd, br or deflate, as its own tag
+- **AND** a tag of another version or encoding is still refused with 412
+
 ### Requirement: FR-INT-10 Lists and value formats
 List endpoints SHALL use cursor pagination and support filtering on documented fields, sorting and sparse fieldsets, and the API SHALL format money, dates and IDs in one way throughout.
 
