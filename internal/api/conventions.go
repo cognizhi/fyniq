@@ -224,7 +224,7 @@ func applied[B any](w written[B]) string {
 
 // IfMatchHeader is the precondition of a command that changes a versioned record.
 type IfMatchHeader struct {
-	IfMatch string `header:"If-Match" doc:"The record's ETag from your last read, sent back as it came, even if a proxy made it weak (W/); the command runs only if the record has not changed since (412 otherwise; 428 without it)." example:"\"1-draft\""`
+	IfMatch string `header:"If-Match" doc:"The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it)." example:"\"1-draft\""`
 }
 
 // etag is a strong entity tag over a record's version and, for documents, its status.
@@ -237,23 +237,37 @@ func etag(parts ...any) string {
 }
 
 // checkIfMatch compares an If-Match header with the record's current ETag (RFC 9110 §13.1.1; "*" matches any
-// current record). A tag may come back weak, W/"…": a proxy that compresses the answer marks the API's own ETag so
-// (Caddy's encode does). The tag names the record's version, the same in every encoding, so the prefix is dropped
-// before the strong comparison (FR-INT-09, rev 0.250); any other tag is still stale.
+// current record). A proxy that compresses the answer may have changed the API's own tag: nginx weakens it, W/"1-draft",
+// and Caddy names the encoding in it, "1-draft-gzip". The tag names the record's version, the same in every encoding,
+// so both changes are undone before the strong comparison (FR-INT-09, rev 0.250, rev 0.251); any other tag is still
+// stale.
 func checkIfMatch(header, current string) error {
 	if strings.TrimSpace(header) == "" {
 		return problem(CodeIfMatchRequired, "This command changes a versioned record, so it needs If-Match.",
 			"Read the record and send its ETag in If-Match.")
 	}
 	for _, tag := range strings.Split(header, ",") {
-		tag = strings.TrimPrefix(strings.TrimSpace(tag), "W/")
-		if tag == "*" || tag == current {
+		if tag = ownTag(tag); tag == "*" || tag == current {
 			return nil
 		}
 	}
 	return problem(CodeStale, fmt.Sprintf("The record changed since you read it: it is now %s.", current),
 		"Read the record again, check the change, and retry with its new ETag.",
 		FieldProblem{Code: CodeStale, Field: "header.If-Match", Message: "names an older version", Fix: "Send the current ETag"})
+}
+
+// encodings are the content codings a compressing proxy names in a strong ETag ("1-draft-gzip").
+var encodings = []string{"gzip", "zstd", "br", "deflate"}
+
+// ownTag is an entity tag as the API made it: without the weak prefix or the encoding a proxy added.
+func ownTag(tag string) string {
+	tag = strings.TrimPrefix(strings.TrimSpace(tag), "W/")
+	for _, e := range encodings {
+		if strings.HasSuffix(tag, "-"+e+`"`) {
+			return strings.TrimSuffix(tag, "-"+e+`"`) + `"`
+		}
+	}
+	return tag
 }
 
 // ------------------------------------------------------------------ cursor lists (FR-INT-10)

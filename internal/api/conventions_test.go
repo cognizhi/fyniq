@@ -188,9 +188,10 @@ func TestPreferReturnPreview(t *testing.T) {
 	}
 }
 
-// If-Match compares the record's own tag strongly, and takes it back weak too: a proxy that compresses the answer marks
-// the ETag W/, and the tag names the record's version, the same in every encoding (rev 0.250). A list of tags matches
-// when one does, "*" matches any record, and any other tag, weak or not, is stale.
+// If-Match compares the record's own tag strongly, and takes it back as a compressing proxy changed it: weak (nginx) or
+// with the encoding named (Caddy's "3-draft-gzip"), since the tag names the record's version, the same in every
+// encoding (rev 0.250, rev 0.251). A list of tags matches when one does, "*" matches any record, and any other tag,
+// weak, suffixed or not, is stale.
 // req: FR-INT-09
 func TestIfMatchTakesOurOwnTagWeakOrStrong(t *testing.T) {
 	for header, ok := range map[string]bool{
@@ -199,8 +200,14 @@ func TestIfMatchTakesOurOwnTagWeakOrStrong(t *testing.T) {
 		` W/"3-draft" `:          true,
 		`"2-draft", W/"3-draft"`: true,
 		`*`:                      true,
+		`"3-draft-gzip"`:         true,
+		`"3-draft-zstd"`:         true,
+		`W/"3-draft-br"`:         true,
 		`"2-draft"`:              false,
 		`W/"2-draft"`:            false,
+		`"2-draft-gzip"`:         false,
+		`"3-draft-lzma"`:         false,
+		`"3-draft-gzip-gzip"`:    false,
 		`"3-posted"`:             false,
 		`w/"3-draft"`:            false, // the prefix is case-sensitive (RFC 9110 §8.8.3)
 		`W/W/"3-draft"`:          false,

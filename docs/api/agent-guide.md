@@ -24,7 +24,7 @@ arrive in P1's wave 6 (`p1-mcp-first-party`, `p1-ai-proposals`). Until then an a
   - money is a decimal string with its currency, never a number, so keep it as text;
   - dates are ISO 8601 and IDs are UUIDv7 strings;
   - every record you can change later returns an `ETag`; send it back as it came, even if a proxy made it weak
-    (`W/"…"`).
+    (`W/"…"`) or named its encoding in it (`"…-gzip"`).
 - **Errors are problem details** (RFC 9457): read `code`, which is stable, and `fix`. A validation
   error lists every invalid field in `errors`.
 - **Rate limits:** `RateLimit` says how many requests you have left this minute. On `429`, wait for
