@@ -324,8 +324,8 @@ It was built on 10 and 11 Nov 2026, in #543 to #555 and #557, one pull request p
 - the central log store, cloud posture (the SLA of 7 days for a Critical finding and 30 for a High one, the owner's
   decision of 11 Nov 2026, rev 0.247), the daily log scan and staging's weekly scan for production data;
 - DAST on every pull request against the signed-in local stack, nightly on staging once it exists;
-- Dependabot for Go, npm and the oracle, govulncheck and pnpm audit, Go 1.27.3 for the vulnerabilities they found, and
-  gosec 2.30.0, which reads its export data;
+- Dependabot for Go, npm and the oracle, govulncheck and pnpm audit, Go 1.27.3 and then 1.27.4 for the vulnerabilities
+  they found, and gosec 2.30.0, which reads their export data;
 - the auto-approval's archtest and CODEOWNERS;
 - the platform version, the About dialog, and the version and commit in every export;
 - the incident runbook and register;
@@ -333,14 +333,9 @@ It was built on 10 and 11 Nov 2026, in #543 to #555 and #557, one pull request p
 
 One thing waits: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
 
-`p1-operations-dr` is proposed (11 Nov 2026), next in wave 7. It builds:
-- the weekly export into a locked bucket in `fyniq-audit`, with the monthly copy kept a year;
-- the evidence buckets, and a daily check of every committed file's retention;
-- restore drills: a monthly clone verified and removed, and a quarterly drill by runbook;
-- pgAudit's entries in the security log sink;
-- OpenTelemetry traces, SLOs with burn-rate alerts, and the heartbeat's absence alerts;
-- the performance harness, the supported browsers, the idle-cost alert;
-- the operations tray.
+`p1-operations-dr` was proposed on 11 Nov 2026 (#558), next in wave 7, to build backups and restore drills, the
+evidence buckets, traces, SLOs and the heartbeat's alerts, the performance budgets, the browsers, the idle-cost alert
+and the operations tray.
 
 By the owner's decisions of the same day (PRD-001 rev 0.249):
 - the monthly restore clones the database in production's own project, and the quarterly drill restores into an
@@ -349,7 +344,31 @@ By the owner's decisions of the same day (PRD-001 rev 0.249):
 - the performance harness runs weekly at 1 M lines and at 10 M before each minor release;
 - the scanner's warm instance is a fixed fee billed while idle.
 
-Its cloud parts are code with module tests, verified in the dev cloud later.
+It was built on 11 Nov 2026, in #559 to #573, one pull request per slice, stacked on #558. The parts:
+- the weekly export into a locked bucket in `fyniq-audit` with its own key, the first of each month copied and kept a
+  year, and production's database required to be regional;
+- the evidence buckets, each committed file locked under its retention, and a daily check of every file's lock;
+- the monthly restore drill: a clone of production as it was an hour ago, its ledger and audit chain verified, then
+  removed, under roles that reach only the drill's copies; the quarterly drill by runbook; the DPO's register of both;
+- pgAudit's entries in the security log sink;
+- OpenTelemetry traces to Cloud Trace, with only allow-listed attributes;
+- SLOs with fast and slow burn-rate alerts for each public service;
+- a heartbeat from every job, absence alerts to the platform owner and then the founders, an hourly check of the job
+  slots, the scheduler's configuration checked, and the heartbeat drill's register;
+- the performance harness (`make perf`) and its weekly and release workflow;
+- the supported browsers, built for and tested in Chromium, Firefox and WebKit;
+- the idle-compute alert and the cost review's runbook;
+- the operations tray;
+- the threat model `docs/security/threat-models/operations-dr.md`.
+
+The first larger local run of the harness, at about 200,000 lines, found three things that wait for the owner's
+decision:
+- the general ledger export stops at 5,000 lines an account, so NFR-PERF-05's export at 1 M lines cannot pass;
+- the reports' time grows with the ledger (about 1.2 s at that size), so NFR-PERF-02 may not hold at 1 M;
+- the edge's compression weakens the API's ETags, which `If-Match` then refuses.
+
+Two more decisions wait: where the evidence buckets and the sealed fields' key live, and Cloud Trace's storage
+location. And `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
 
 <!-- roadmap:track P1 Fyniq -->
 

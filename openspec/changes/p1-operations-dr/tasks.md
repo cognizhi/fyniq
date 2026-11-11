@@ -109,7 +109,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 12. Threat model and as built (slice 12)
 
-- [ ] 12.1 `docs/security/threat-models/operations-dr.md`.
+- [x] 12.1 `docs/security/threat-models/operations-dr.md`.
 - [ ] 12.2 `make test` and `make up` pass on the last slice; the build plan's paragraph says what was built.
 
 ## Workflow follow-up
