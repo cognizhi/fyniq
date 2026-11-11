@@ -94,7 +94,8 @@ caller's rows of `operation`, which already does.
   - the evidence buckets and the sealed fields' key ring move to `fyniq-audit`, so losing production's project loses
     neither the documents nor the means to open sealed fields (T2);
   - production sends traces only once Cloud Trace is shown to keep them in Singapore (CTL-DP-07, T9);
-  - `If-Match` accepts the API's own weak tag, which a compressing proxy makes (FR-INT-09).
+  - `If-Match` accepts the API's own tag as a compressing proxy changes it, weak or with its encoding named (FR-INT-09,
+    rev 0.251).
 - A clone left by a crash between cloning and removing is found through the drill job's failed slot (CTL-RES-02) and
   the budget alerts, and removed by runbook; nothing sweeps it automatically (T4).
 - A caller can force its own requests to be traced (T11); the rate limits bound the cost, and the trace context from

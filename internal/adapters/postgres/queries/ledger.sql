@@ -67,6 +67,23 @@ WHERE l.account_id = sqlc.arg(account_id) AND e.posting_date BETWEEN sqlc.arg(da
 ORDER BY e.posting_date, e.ledger_revision, l.line_no
 LIMIT sqlc.arg(row_limit);
 
+-- name: AccountLinesAfter :many
+-- AccountLines a page at a time, after a line's place in posting order (NFR-PERF-05): the line's own posting date, on
+-- the account's index, gives them in date order from the page's first day, and an incremental sort orders each day by
+-- revision and line, so a page reads about a page of lines however long the ledger is.
+SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
+FROM fyniq.journal_line l
+JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
+LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
+WHERE l.account_id = sqlc.arg(account_id) AND l.posting_date BETWEEN sqlc.arg(date_from) AND sqlc.arg(date_to)
+  AND l.posting_date >= sqlc.arg(after_date)
+  AND (l.posting_date, e.ledger_revision, l.line_no) > (sqlc.arg(after_date)::date, sqlc.arg(after_revision)::bigint, sqlc.arg(after_line)::integer)
+ORDER BY l.posting_date, e.ledger_revision, l.line_no
+LIMIT sqlc.arg(row_limit);
+
 -- name: EntryIDsAfter :many
 -- The entries after a ledger revision, in revision order, a page at a time: the replay walks them (ENG-06, QA-ENG-06).
 SELECT id, ledger_revision FROM fyniq.journal_entry

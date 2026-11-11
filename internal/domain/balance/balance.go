@@ -196,7 +196,7 @@ func VerifyAll(ctx context.Context, store storage.Store) ([]Verification, error)
 }
 
 // MaxLedgerLines is how many lines of one account the general ledger report shows at once: beyond it, a narrower range
-// is asked for, until the asynchronous export of p1-reports (PRD-001 rev 0.52, provisional).
+// is asked for (PRD-001 rev 0.52, provisional). The export has no limit: it walks the lines a page at a time (rev 0.250).
 const MaxLedgerLines = 5000
 
 // CodeTooManyLines refuses a general ledger report of more than MaxLedgerLines lines for an account.
@@ -241,17 +241,7 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 // its opening balance and its lines are of those lines alone. nil reads every line.
 func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
 	only func(values []uuid.UUID) bool) (AccountLedger, error) {
-	if err := CheckDay(ctx, u, from); err != nil {
-		return AccountLedger{}, err
-	}
-	y, err := yearEndOf(ctx, u)
-	if err != nil {
-		return AccountLedger{}, err
-	}
-	if ys := y.start(to); !ys.IsZero() && from.Before(ys) && !y.start(from).IsZero() {
-		return AccountLedger{}, &CrossesYear{YearStart: ys}
-	}
-	opening, err := before(ctx, u, base, y, account, from, only)
+	out, err := opening(ctx, u, base, account, from, to, only)
 	if err != nil {
 		return AccountLedger{}, err
 	}
@@ -262,38 +252,103 @@ func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Cur
 	if len(lines) > MaxLedgerLines {
 		return AccountLedger{}, &TooMany{AccountID: account}
 	}
-	out := AccountLedger{AccountID: account, Opening: opening, Debits: money.Zero(base), Credits: money.Zero(base), Closing: opening,
-		Lines: make([]LedgerLine, 0, len(lines))}
+	out.Lines = make([]LedgerLine, 0, len(lines))
 	for _, l := range lines {
 		if only != nil && !only(l.DimensionValues) {
 			continue
 		}
-		cur, err := money.Lookup(l.Currency)
+		line, err := out.add(l, base)
 		if err != nil {
 			return AccountLedger{}, err
 		}
-		amount, err := money.ParseStored(string(l.Amount), cur)
-		if err != nil {
-			return AccountLedger{}, err
-		}
-		b, err := money.ParseStored(string(l.BaseAmount), base)
-		if err != nil {
-			return AccountLedger{}, err
-		}
-		if out.Closing, err = out.Closing.Add(b); err != nil {
-			return AccountLedger{}, err
-		}
-		if b.Sign() > 0 {
-			out.Debits, err = out.Debits.Add(b)
-		} else {
-			out.Credits, err = out.Credits.Add(b.Neg())
-		}
-		if err != nil {
-			return AccountLedger{}, err
-		}
-		out.Lines = append(out.Lines, LedgerLine{AccountLine: l, Amount: amount, Base: b, Balance: out.Closing})
+		out.Lines = append(out.Lines, line)
 	}
 	return out, nil
+}
+
+// LedgerPage is how many lines the general ledger export reads at a time (NFR-PERF-05).
+var LedgerPage = 5000
+
+// Opening is an account's general ledger over from..to before its lines, as the export starts it (NFR-PERF-05, rev
+// 0.250): its balance before from, with no lines and nothing added yet. A range that crosses a financial year's start is
+// refused, as GeneralLedger's is (CrossesYear).
+func Opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time) (AccountLedger, error) {
+	return opening(ctx, u, base, account, from, to, nil)
+}
+
+// Walk reads the account's lines dated from..to in posting order, a page of LedgerPage at a time and with no limit of
+// lines, adding each to gl and giving it to each with the balance after it, so gl ends with the range's debits,
+// credits and closing balance and holds no lines (NFR-PERF-05, rev 0.250). base is the organisation's currency.
+func (gl *AccountLedger) Walk(ctx context.Context, u storage.UnitOfWork, base money.Currency, from, to time.Time, each func(LedgerLine) error) error {
+	var after *storage.LineKey
+	for {
+		lines, err := u.Ledger().AccountLinesAfter(ctx, gl.AccountID, from, to, after, LedgerPage)
+		if err != nil {
+			return err
+		}
+		for _, l := range lines {
+			line, err := gl.add(l, base)
+			if err != nil {
+				return err
+			}
+			if err := each(line); err != nil {
+				return err
+			}
+		}
+		if len(lines) < LedgerPage {
+			return nil
+		}
+		k := lines[len(lines)-1].Key()
+		after = &k
+	}
+}
+
+// opening is the account's ledger over from..to with its opening balance and nothing added yet.
+func opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
+	only func(values []uuid.UUID) bool) (AccountLedger, error) {
+	if err := CheckDay(ctx, u, from); err != nil {
+		return AccountLedger{}, err
+	}
+	y, err := yearEndOf(ctx, u)
+	if err != nil {
+		return AccountLedger{}, err
+	}
+	if ys := y.start(to); !ys.IsZero() && from.Before(ys) && !y.start(from).IsZero() {
+		return AccountLedger{}, &CrossesYear{YearStart: ys}
+	}
+	o, err := before(ctx, u, base, y, account, from, only)
+	if err != nil {
+		return AccountLedger{}, err
+	}
+	return AccountLedger{AccountID: account, Opening: o, Debits: money.Zero(base), Credits: money.Zero(base), Closing: o}, nil
+}
+
+// add adds a line to the ledger's totals and closing balance, and is the line with the balance after it.
+func (gl *AccountLedger) add(l storage.AccountLine, base money.Currency) (LedgerLine, error) {
+	cur, err := money.Lookup(l.Currency)
+	if err != nil {
+		return LedgerLine{}, err
+	}
+	amount, err := money.ParseStored(string(l.Amount), cur)
+	if err != nil {
+		return LedgerLine{}, err
+	}
+	b, err := money.ParseStored(string(l.BaseAmount), base)
+	if err != nil {
+		return LedgerLine{}, err
+	}
+	if gl.Closing, err = gl.Closing.Add(b); err != nil {
+		return LedgerLine{}, err
+	}
+	if b.Sign() > 0 {
+		gl.Debits, err = gl.Debits.Add(b)
+	} else {
+		gl.Credits, err = gl.Credits.Add(b.Neg())
+	}
+	if err != nil {
+		return LedgerLine{}, err
+	}
+	return LedgerLine{AccountLine: l, Amount: amount, Base: b, Balance: gl.Closing}, nil
 }
 
 // before is an account's base-currency balance before a day: the cached balances of every period that ends before it

@@ -50,20 +50,103 @@ func (s *Storage) object(key string) string {
 	return fmt.Sprintf("%s/storage/v1/b/%s/o/%s", s.Endpoint, url.PathEscape(s.Bucket), url.PathEscape(key))
 }
 
+// Chunk is how much of a blob an upload holds at a time: a blob that fits is sent in one request; a longer one, such as
+// an export written as it is read (NFR-PERF-05, rev 0.250), goes as a resumable upload, a chunk at a time, so it is never
+// held whole. Cloud Storage wants every chunk but the last to be a multiple of 256 KiB.
+var Chunk = 8 << 20
+
 func (s *Storage) upload(ctx context.Context, key string, r io.Reader, extra url.Values) error {
 	if key == "" || strings.HasPrefix(key, "/") || strings.Contains(key, "..") {
 		return fmt.Errorf("blob key %q is not a relative key such as org/1/file.pdf", key)
 	}
-	b, err := io.ReadAll(r)
+	cur := make([]byte, Chunk)
+	n, err := io.ReadFull(r, cur)
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) { // it fits: one request
+		q := url.Values{"uploadType": {"media"}, "name": {key}}
+		for k, v := range extra {
+			q[k] = v
+		}
+		u := fmt.Sprintf("%s/upload/storage/v1/b/%s/o?%s", s.Endpoint, url.PathEscape(s.Bucket), q.Encode())
+		return s.r.do(ctx, http.MethodPost, u, "application/octet-stream", bytes.NewReader(cur[:n]), nil)
+	}
 	if err != nil {
 		return err
 	}
-	q := url.Values{"uploadType": {"media"}, "name": {key}}
+	session, err := s.resumable(ctx, key, extra)
+	if err != nil {
+		return err
+	}
+	ahead := make([]byte, Chunk)
+	var offset int64
+	for {
+		m, rerr := io.ReadFull(r, ahead) // reading ahead tells whether cur is the last chunk
+		end := errors.Is(rerr, io.EOF) || errors.Is(rerr, io.ErrUnexpectedEOF)
+		if rerr != nil && !end {
+			s.cancel(ctx, session)
+			return rerr
+		}
+		if end && m == 0 {
+			return s.chunk(ctx, session, cur, offset, true)
+		}
+		if err := s.chunk(ctx, session, cur, offset, false); err != nil {
+			s.cancel(ctx, session)
+			return err
+		}
+		offset += int64(len(cur))
+		if end {
+			return s.chunk(ctx, session, ahead[:m], offset, true)
+		}
+		cur, ahead = ahead, cur
+	}
+}
+
+// resumable starts a resumable upload of key and is its session's address, on the store's own host.
+func (s *Storage) resumable(ctx context.Context, key string, extra url.Values) (string, error) {
+	q := url.Values{"uploadType": {"resumable"}, "name": {key}}
 	for k, v := range extra {
 		q[k] = v
 	}
 	u := fmt.Sprintf("%s/upload/storage/v1/b/%s/o?%s", s.Endpoint, url.PathEscape(s.Bucket), q.Encode())
-	return s.r.do(ctx, http.MethodPost, u, "application/octet-stream", bytes.NewReader(b), nil)
+	status, h, err := s.r.send(ctx, http.MethodPost, u, nil, nil)
+	switch {
+	case err != nil:
+		return "", err
+	case status == http.StatusPreconditionFailed:
+		return "", errPrecondition
+	case status != http.StatusOK && status != http.StatusCreated:
+		return "", fmt.Errorf("POST: the resumable upload was not started: %d", status)
+	}
+	session := h.Get("Location")
+	if !strings.HasPrefix(session, s.Endpoint+"/") { // the token goes only to the store it was meant for
+		return "", fmt.Errorf("POST: the resumable upload's session is not on %s", s.Endpoint)
+	}
+	return session, nil
+}
+
+// chunk sends the bytes of a resumable upload from offset; the last one names the blob's size and finishes it.
+func (s *Storage) chunk(ctx context.Context, session string, b []byte, offset int64, last bool) error {
+	total := "*"
+	if last {
+		total = strconv.FormatInt(offset+int64(len(b)), 10)
+	}
+	rng := fmt.Sprintf("bytes %d-%d/%s", offset, offset+int64(len(b))-1, total)
+	status, _, err := s.r.send(ctx, http.MethodPut, session, http.Header{"Content-Range": {rng}}, bytes.NewReader(b))
+	switch {
+	case err != nil:
+		return err
+	case status == http.StatusPreconditionFailed:
+		return errPrecondition
+	case last && (status == http.StatusOK || status == http.StatusCreated):
+		return nil
+	case !last && status == http.StatusPermanentRedirect: // 308: Resume Incomplete, the chunk kept
+		return nil
+	}
+	return fmt.Errorf("PUT: a chunk of the resumable upload was not kept: %d", status)
+}
+
+// cancel ends a resumable upload that will not finish, so the store keeps none of it.
+func (s *Storage) cancel(ctx context.Context, session string) {
+	_, _, _ = s.r.send(context.WithoutCancel(ctx), http.MethodDelete, session, nil, nil)
 }
 
 // Put implements ports.BlobStore: a retained object is never replaced.

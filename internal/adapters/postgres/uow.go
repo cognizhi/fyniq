@@ -1092,15 +1092,41 @@ func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to ti
 	}
 	out := make([]storage.AccountLine, len(rows))
 	for i, x := range rows {
-		out[i] = storage.AccountLine{EntryID: x.EntryID, LedgerRevision: x.LedgerRevision, PostingDate: x.PostingDate,
-			Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
-			LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
-			Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID, InstrumentID: x.InstrumentID}
-		if len(x.DimensionValueIds) > 0 {
-			out[i].DimensionValues = x.DimensionValueIds
-		}
+		out[i] = toAccountLine(x)
 	}
 	return out, nil
+}
+
+func (r ledger) AccountLinesAfter(ctx context.Context, account uuid.UUID, from, to time.Time, after *storage.LineKey, limit int) ([]storage.AccountLine, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	key := storage.LineKey{PostingDate: from.AddDate(0, 0, -1)} // before the first line of the range
+	if after != nil {
+		key = *after
+	}
+	rows, err := r.u.q.AccountLinesAfter(ctx, sqlcdb.AccountLinesAfterParams{AccountID: account, DateFrom: dateOf(from), DateTo: dateOf(to),
+		AfterDate: dateOf(key.PostingDate), AfterRevision: key.Revision, AfterLine: int32(key.LineNo), // #nosec G115 -- a line number
+		RowLimit: int32(min(max(limit, 1), 100000))}) // 1 to 100,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AccountLine, len(rows))
+	for i, x := range rows {
+		out[i] = toAccountLine(sqlcdb.AccountLinesRow(x))
+	}
+	return out, nil
+}
+
+func toAccountLine(x sqlcdb.AccountLinesRow) storage.AccountLine {
+	l := storage.AccountLine{EntryID: x.EntryID, LedgerRevision: x.LedgerRevision, PostingDate: x.PostingDate,
+		Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
+		LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
+		Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID, InstrumentID: x.InstrumentID}
+	if len(x.DimensionValueIds) > 0 {
+		l.DimensionValues = x.DimensionValueIds
+	}
+	return l
 }
 
 func (r ledger) Lock(ctx context.Context) (int64, error) {

@@ -3,6 +3,7 @@ package sheet
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -133,5 +134,65 @@ func TestAnExportsFooterNamesTheVersionAndCommit(t *testing.T) {
 	if s := read(t, x, "xl/worksheets/sheet1.xml"); !strings.Contains(s, `<row r="4"><c r="A4" s="0" t="inlineStr"><is><t xml:space="preserve">`+line+`</t>`) ||
 		strings.Contains(s, `<row r="3">`) {
 		t.Errorf("the XLSX's footer: %s", s)
+	}
+}
+
+// A long report is written as its rows come (NFR-PERF-05, rev 0.250): a sheet that reaches the row limit goes on in
+// another, named after it with its part's number and its header repeated, the footer on the last part; a workbook's
+// sheet names stay within 31 characters; CSV keeps the first sheet alone; and a row outside a sheet is refused.
+// req: NFR-PERF-05
+func TestALongReportIsWrittenAsItsRowsCome(t *testing.T) {
+	defer func(n int) { MaxRows = n }(MaxRows)
+	MaxRows = footerRoom + 4 // the header and three rows fit in each part
+	name := "General ledger of a very long name"
+	var b bytes.Buffer
+	w := NewXLSX(&b, time.Date(2026, 11, 11, 0, 0, 0, 0, time.UTC))
+	if err := w.Row(Row{}); err == nil {
+		t.Error("a row outside a sheet was taken")
+	}
+	if err := w.Begin(name, []string{"Account", "Amount"}); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 7 {
+		if err := w.Row(Row{Cells: []Cell{Text(fmt.Sprint("line ", i)), Number("1.00", 2)}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.End("Prepared by Fyniq"); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	x := b.Bytes()
+	wb := read(t, x, "xl/workbook.xml")
+	for _, want := range []string{`<sheet name="General ledger of a very long n" sheetId="1"`, `<sheet name="General ledger of a very lo (2)" sheetId="2"`,
+		`<sheet name="General ledger of a very lo (3)" sheetId="3"`} {
+		if !strings.Contains(wb, want) {
+			t.Errorf("the workbook lacks %s: %s", want, wb)
+		}
+	}
+	for n, want := range map[int][]string{
+		1: {`<row r="1"><c r="A1" s="1" t="inlineStr"><is><t xml:space="preserve">Account</t>`, `line 0`, `line 2`},
+		2: {`<row r="1"><c r="A1" s="1" t="inlineStr"><is><t xml:space="preserve">Account</t>`, `line 3`, `line 5`},
+		3: {`line 6`, `<row r="4"><c r="A4" s="0" t="inlineStr"><is><t xml:space="preserve">Prepared by Fyniq</t>`},
+	} {
+		s := read(t, x, fmt.Sprintf("xl/worksheets/sheet%d.xml", n))
+		for _, w := range want {
+			if !strings.Contains(s, w) {
+				t.Errorf("sheet%d lacks %s:\n%s", n, w, s)
+			}
+		}
+		if n < 3 && strings.Contains(s, "Prepared by") {
+			t.Errorf("sheet%d has the footer", n)
+		}
+	}
+
+	var c bytes.Buffer
+	if err := Write(NewCSV(&c), []Sheet{table, {Name: "Second", Header: []string{"Left out"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(c.String(), "Left out") || !bytes.Equal(c.Bytes(), CSV(table)) {
+		t.Errorf("the CSV holds another sheet: %s", c.String())
 	}
 }
