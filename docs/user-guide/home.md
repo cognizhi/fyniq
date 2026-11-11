@@ -107,6 +107,9 @@ Select **Operations** (the hourglass in the header) to follow it; the header cou
 
 You see only the work you asked for. An export also sends you a notification when it is ready.
 
+On a phone, **Operations** is not in the header yet: the export's notification says when it is ready, and **Reports**
+lists your exports under **Accountant exports**.
+
 ### Copy and paste amounts
 
 Amounts copied from a page, a table or a report reach the clipboard as plain numbers, ready for a

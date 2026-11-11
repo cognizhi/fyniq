@@ -140,7 +140,9 @@ function Item({ o, x, onClose }: { o: Operation; x: Export | undefined; onClose:
 // OperationsTray is the header's operations button and the panel it opens (FR-INT-11; design D10, docs/design/screens
 // OperationsTray): the long work the person asked for, newest first, read again every 5 seconds while any runs. A
 // running one's progress is indeterminate, since operations carry no percentage yet; a finished one links to what it
-// made, such as the export's download; a failed one says why when its export knows, and how to ask again.
+// made, such as the export's download; a failed one says why when its export knows, and how to ask again. From the
+// medium class up: the compact header has no room left until p1-app-shell lays it out again, and on a phone an export's
+// notification and Reports › My exports say when it is ready.
 export function OperationsTray() {
   const device = useContext(DeviceRoot);
   const id = useId();
@@ -167,7 +169,7 @@ export function OperationsTray() {
   const close = () => setOpen(false);
   return (
     <>
-      <button type="button" className={`${buttonVariants({ variant: "ghost", size: "icon" })} relative`} onClick={() => setOpen(true)} title={help.tooltip}
+      <button type="button" className={`${buttonVariants({ variant: "ghost", size: "icon" })} fy-from-medium relative`} onClick={() => setOpen(true)} title={help.tooltip}
         aria-label={running > 0 ? `${help.label}, ${running} running` : help.label}>
         <Icon of={Hourglass} size={20} />
         {running > 0 && (
@@ -176,7 +178,7 @@ export function OperationsTray() {
           </span>
         )}
       </button>
-      <span className="fy-sr" role="status" aria-live="polite">
+      <span className="fy-sr fy-from-medium" role="status" aria-live="polite">
         {running > 0 ? runningSaid : ""}
       </span>
       <Primitive.Root open={open} onOpenChange={setOpen}>

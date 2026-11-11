@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: What Home shows (pulse, tiles, plans, set-up), Search and commands (Ctrl+K), Operations (long work), Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:4f7bef33488e31b812a0c32a25ee265c9e8de952375acfd13014db00f0da509c
+  - docs/user-guide/home.md sha256:fde6a1462f2f1c806ab2f8c1328be089c669a019abacedcd7404dfca8a4b1503
 data_class: general
 taint: trusted
 status: draft
@@ -102,6 +102,7 @@ aliases:
 - **Done** work links to what it made: **Download** for an export, for 24 hours after it is ready, and **See the checks** for a run of the checks.
 - **Failed** work says why when it knows, and how to ask again.
 - Each person sees only the work they asked for; an export also sends a notification when it is ready: [[settings.notifications]].
+- On a phone, **Operations** is not in the header yet: the export's notification says when it is ready, and **Reports** lists the person's exports under **Accountant exports**.
 
 (src: docs/user-guide/home.md#follow-long-work)
 
