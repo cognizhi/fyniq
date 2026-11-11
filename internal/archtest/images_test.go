@@ -122,7 +122,9 @@ func TestImagesArePinnedByDigest(t *testing.T) {
 }
 
 // Our services run in the local stack as in production (NFR-IMG-02): read-only root, non-root
-// user, no capabilities, no privilege escalation, writable paths only on tmpfs.
+// user, no capabilities, no privilege escalation, writable paths only on tmpfs, but the one named
+// volume that stands in for the cloud's buckets and keys (fyniq-data, at the image user's home), which
+// the API, the worker and the executor share as they share those in the cloud.
 // req: NFR-IMG-02
 // req: SEC-27
 // asvs: V15.2.3
@@ -153,9 +155,20 @@ func TestComposeHardensOurServices(t *testing.T) {
 			want = "101:101" // nginx-unprivileged (§12.9)
 		}
 		if !s.ReadOnly || s.User != want || !slices.Equal(s.CapDrop, []string{"ALL"}) ||
-			!slices.Contains(s.SecurityOpt, "no-new-privileges:true") || len(s.Tmpfs) == 0 || len(s.Volumes) > 0 {
+			!slices.Contains(s.SecurityOpt, "no-new-privileges:true") || len(s.Tmpfs) == 0 ||
+			!(len(s.Volumes) == 0 || slices.Equal(s.Volumes, []string{sharedData})) {
 			t.Errorf("compose service %s is not hardened: read_only %v, user %q, cap_drop %v, security_opt %v, tmpfs %v, volumes %v",
 				name, s.ReadOnly, s.User, s.CapDrop, s.SecurityOpt, s.Tmpfs, s.Volumes)
+		}
+	}
+	if shared := []string{}; true {
+		for name, s := range compose.Services {
+			if slices.Equal(s.Volumes, []string{sharedData}) {
+				shared = append(shared, name)
+			}
+		}
+		if slices.Sort(shared); !slices.Equal(shared, []string{"api", "executor", "worker"}) {
+			t.Errorf("the shared data volume is mounted by %v, want the API, the executor and the worker", shared)
 		}
 	}
 	if ours < 10 {
@@ -264,3 +277,6 @@ func TestEveryPartnerDocumentIsMocked(t *testing.T) {
 		}
 	}
 }
+
+// sharedData is the local stand-in for the cloud's buckets and keys: a named volume at the image user's home.
+const sharedData = "fyniq-data:/home/nonroot"

@@ -5,14 +5,9 @@ package local
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 
 	"github.com/cognizhi/fyniq/internal/fieldseal"
 )
@@ -38,19 +33,8 @@ func NewFieldKeys(seed []byte) (fieldseal.Sealer, error) {
 // LoadOrCreateFieldKeys reads the field keys at path, creating them (0600) on first use. Never commit them; without
 // them the local database's sealed values do not open (`make reset` starts again).
 func LoadOrCreateFieldKeys(path string) (fieldseal.Sealer, error) {
-	seed, err := os.ReadFile(path) // #nosec G304 -- the path is the deployment's own data directory
-	if errors.Is(err, fs.ErrNotExist) {
-		seed = make([]byte, 64)
-		if _, err := rand.Read(seed); err != nil {
-			return fieldseal.Sealer{}, err
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			return fieldseal.Sealer{}, err
-		}
-		if err := os.WriteFile(path, seed, 0o600); err != nil {
-			return fieldseal.Sealer{}, err
-		}
-	} else if err != nil {
+	seed, err := loadOrCreateSeed(path, 64)
+	if err != nil {
 		return fieldseal.Sealer{}, err
 	}
 	return NewFieldKeys(seed)
