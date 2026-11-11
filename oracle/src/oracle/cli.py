@@ -13,6 +13,10 @@
         Work a fyniq-feasibility@1 study out and write its fyniq-feasibility-result@1 JSON to stdout.
     python -m oracle generate-feasibilities --seed <n> --count <n> --out <dir>
         Write <count> generated feasibility studies to <dir>/<name>.json (p1-planning task 7.2).
+    python -m oracle purge <purge.json>
+        Purge a fyniq-purge@1 ledger and write its fyniq-purge-result@1 JSON to stdout (p1-audit-explorer task 8.2).
+    python -m oracle generate-purges --seed <n> --count <n> --out <dir>
+        Write <count> generated purge documents to <dir>/<name>.json.
 
 Exit status: 0 on success, 2 when the scenario is not valid input (the reason is on stderr).
 """
@@ -113,6 +117,33 @@ def _generate_feasibilities(args: argparse.Namespace) -> int:
     return 0
 
 
+def _purge(args: argparse.Namespace) -> int:
+    from oracle.purge import purge
+    from oracle.scenario import parse_json
+
+    try:
+        doc = parse_json(Path(args.purge).read_text(encoding="utf-8"))
+        result = purge(doc)
+    except (ScenarioError, OSError) as exc:
+        print(f"oracle: {args.purge}: {exc}", file=sys.stderr)
+        return 2
+    sys.stdout.write(_dump(result))
+    return 0
+
+
+def _generate_purges(args: argparse.Namespace) -> int:
+    from oracle.purge import purge
+    from oracle.strategies_purge import generate_purges  # Hypothesis is needed only here
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for doc in generate_purges(args.seed, args.count):
+        purge(doc)  # every generated ledger is valid input
+        (out / f"{doc['name']}.json").write_text(_dump(doc), encoding="utf-8")
+    print(f"oracle: wrote {args.count} purge documents to {out}", file=sys.stderr)
+    return 0
+
+
 def _positive(text: str) -> int:
     value = int(text)
     if value < 1:
@@ -154,6 +185,16 @@ def main(argv: list[str] | None = None) -> int:
     genfe.add_argument("--count", type=_positive, required=True)
     genfe.add_argument("--out", required=True, help="the directory to write <name>.json files to")
     genfe.set_defaults(handler=_generate_feasibilities)
+
+    pu = commands.add_parser("purge", help="purge a ledger and write its result JSON to stdout")
+    pu.add_argument("purge", help="a fyniq-purge@1 JSON file")
+    pu.set_defaults(handler=_purge)
+
+    genpu = commands.add_parser("generate-purges", help="write generated purge documents to a directory")
+    genpu.add_argument("--seed", type=int, required=True)
+    genpu.add_argument("--count", type=_positive, required=True)
+    genpu.add_argument("--out", required=True, help="the directory to write <name>.json files to")
+    genpu.set_defaults(handler=_generate_purges)
 
     args = parser.parse_args(argv)
     return args.handler(args)

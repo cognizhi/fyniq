@@ -23,3 +23,8 @@ var ForecastSchema []byte
 //
 //go:embed feasibility.schema.json
 var FeasibilitySchema []byte
+
+// PurgeSchema is purge.schema.json (fyniq-purge@1).
+//
+//go:embed purge.schema.json
+var PurgeSchema []byte

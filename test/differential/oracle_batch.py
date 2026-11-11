@@ -2,7 +2,8 @@
 
 Harness code, not the oracle: it only calls the oracle's public entry points. Each line of output is
 JSON: {"file": <path>, "result": <fyniq-scenario-result@1>} or {"file": <path>, "invalid": <why>}. A fyniq-forecast@1
-document gets its fyniq-forecast-result@1 instead, and a fyniq-feasibility@1 study its fyniq-feasibility-result@1.
+document gets its fyniq-forecast-result@1 instead, a fyniq-feasibility@1 study its fyniq-feasibility-result@1, and a
+fyniq-purge@1 ledger its fyniq-purge-result@1.
 
     uv run --project oracle --locked python test/differential/oracle_batch.py <scenario.json>...
 """
@@ -15,6 +16,7 @@ from pathlib import Path
 from oracle.feasibility import feasibility
 from oracle.ledger import Ledger
 from oracle.planning import ForecastError, forecast
+from oracle.purge import purge
 from oracle.scenario import ScenarioError, load_scenario, parse_json
 
 
@@ -26,6 +28,8 @@ def main(paths: list[str]) -> int:
                 line = {"file": path, "result": forecast(doc)}
             elif isinstance(doc, dict) and doc.get("schema") == "fyniq-feasibility@1":
                 line = {"file": path, "result": feasibility(doc)}
+            elif isinstance(doc, dict) and doc.get("schema") == "fyniq-purge@1":
+                line = {"file": path, "result": purge(doc)}
             else:
                 line = {"file": path, "result": Ledger(load_scenario(path)).result()}
         except (ScenarioError, ForecastError) as exc:

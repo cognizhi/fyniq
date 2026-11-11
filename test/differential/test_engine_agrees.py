@@ -37,7 +37,7 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility", "purge"))
     base = scenarios("differential")
     if p1:
         base = st.one_of(base, p1_scenarios(p1, "differential"))
@@ -263,3 +263,43 @@ def test_the_feasibility_calculator_and_the_oracle_agree() -> None:  # req: QA-E
     e, o = engine(bad), feasibility_oracle(bad)
     raise AssertionError(f"the feasibility calculator and the oracle disagree: {forecast_difference(e, o) or (e, o)}\n"
                          f"the smallest such study is saved as {path}; commit it as a golden case")
+
+
+PURGES = Path(__file__).parent / "purges"
+
+
+def purge_oracle(doc: dict) -> dict:
+    from oracle.purge import purge
+
+    try:
+        return purge(doc)
+    except ScenarioError as exc:
+        return {"invalid": str(exc)}
+
+
+def test_the_purge_and_the_oracle_agree() -> None:  # req: QA-ENG-02, AUD-10
+    if "purge" not in SOURCES:
+        return
+    from oracle.strategies_purge import purges
+
+    def differs(doc: dict) -> bool:
+        e, o = engine(doc), purge_oracle(doc)
+        if ("invalid" in e) != ("invalid" in o):
+            return True
+        if "invalid" in e:
+            return False
+        return forecast_difference(e, o) is not None or e.get("unchanged") is not True or o.get("unchanged") is not True
+
+    try:
+        bad = find(purges(), differs, settings=settings(max_examples=EXAMPLES, deadline=None, database=None,
+                                                        suppress_health_check=list(HealthCheck)))
+    except NoSuchExample:
+        return
+    digest = hashlib.sha256(json.dumps(bad, sort_keys=True).encode()).hexdigest()[:10]
+    bad["name"] = f"shrunk-{digest}"
+    path = PURGES / f"{bad['name']}.json"
+    path.write_text(json.dumps(bad, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    e, o = engine(bad), purge_oracle(bad)
+    raise AssertionError(f"the purge and the oracle disagree, or the purge changes a position: "
+                         f"{forecast_difference(e, o) or (e.get('unchanged'), o.get('unchanged'))}\n"
+                         f"the smallest such ledger is saved as {path}; commit it as a golden case")
