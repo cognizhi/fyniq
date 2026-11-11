@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -88,6 +89,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
 		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
+		// The weekly export with pg_dump as the database's owner, into .data/exports (DR-02, DR-04).
+		Backup: local.PGDump{URL: cmp.Or(os.Getenv("FYNIQ_EXPORT_DATABASE_URL"), fmt.Sprintf("postgres://fyniq:%s@localhost:%s/fyniq?sslmode=disable",
+			postgres.LocalPassword, cmp.Or(os.Getenv("FYNIQ_PG_PORT"), "55432"))), Dir: filepath.Join(data, "exports")},
+		ExportBuckets: backup.Buckets{Weekly: "weekly", Monthly: "monthly"},
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
 		Posture: local.Posture{},
 		Logs:    local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},

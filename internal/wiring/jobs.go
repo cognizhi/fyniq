@@ -21,6 +21,7 @@ import (
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
@@ -78,6 +79,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"ratelimit.purge": func(ctx context.Context) error {
 			_, err := PurgeRateLimitWindows(ctx, k.Store, clock.Now())
+			return err
+		},
+		backup.Job: func(ctx context.Context) error { // DR-02, DR-04: the weekly export, and the month's in its first week
+			if k.Backup == nil {
+				return fmt.Errorf("no database export is configured (FYNIQ_GCP exports)")
+			}
+			done, err := backup.Export(ctx, k.Backup, k.ExportBuckets, clock.Now())
+			for _, d := range done {
+				fmt.Fprintln(os.Stderr, "db.export:", d)
+			}
 			return err
 		},
 		"ledger.verify": func(ctx context.Context) error {

@@ -91,6 +91,12 @@ resource "google_sql_database_instance" "main" {
       value = "0"
     }
   }
+  lifecycle {
+    precondition {
+      condition     = local.spec.environment != "production" || local.spec.database.availability == "REGIONAL"
+      error_message = "Production's database must be regional HA, a synchronous standby in a second zone (DR-01)."
+    }
+  }
   depends_on = [google_service_networking_connection.services, google_kms_crypto_key_iam_member.agent]
 }
 

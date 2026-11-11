@@ -16,6 +16,10 @@
 # req: SEC-33
 # req: FR-DOC-08
 # req: CTL-RES-04
+# req: DR-01
+# req: DR-02
+# req: DR-03
+# req: DR-04
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -58,6 +62,7 @@ variables {
     bucket      = "fyniq-staging-audit-anchors"
     key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/audit-staging/cryptoKeys/anchor/cryptoKeyVersions/1"
   }
+  exports = { weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
   break_glass = {
     requesters = ["group:platform-admins@example.com"]
     approvers  = ["group:founders@example.com"]
@@ -186,6 +191,10 @@ run "the_wiring_the_services_read" {
   assert {
     condition     = jsondecode(output.gcp_config).job == "projects/fyniq-staging/locations/asia-southeast1/jobs/jobs" && jsondecode(output.gcp_config).anchors.bucket == "fyniq-staging-audit-anchors"
     error_message = "the jobs image's job and the anchors"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports == { instance = "projects/fyniq-staging/instances/fyniq-staging", database = "fyniq", weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
+    error_message = "the weekly export's instance, database and buckets, as internal/wiring/release.go reads them (DR-02, DR-04)"
   }
   assert {
     condition     = local.env["api"]["FYNIQ_PUBLIC_ORIGIN"] == "https://staging.fyniq.example" && local.env["api"]["FYNIQ_SIGNIN"] == "identity-platform" && local.secret_env["api"]["FYNIQ_IDP_API_KEY"] == "idp-api-key"
@@ -502,4 +511,69 @@ run "only_the_api_and_the_worker_scan" {
     condition     = jsondecode(output.gcp_config).scanner.audience == jsondecode(output.gcp_config).scanner.url && toset(jsondecode(output.gcp_config).scanner.service_accounts) == toset(["run-api@fyniq-staging.iam.gserviceaccount.com", "run-worker@fyniq-staging.iam.gserviceaccount.com"])
     error_message = "the scanner accepts the api's and the worker's ID tokens for its own audience"
   }
+}
+
+# Production (DR-01, DR-02, DR-03): regional HA, a synchronous standby in a second zone; point-in-time recovery with 7 days
+# of logs; 35 daily backups, kept in Singapore. A zonal production database is refused.
+run "spec_production" {
+  command = apply
+  module {
+    source = "../../../modules/platform-spec"
+  }
+  variables {
+    environment = "production"
+    database    = { tier = "db-custom-1-3840", availability = "REGIONAL", disk_gb = 10 }
+    budget      = { amount_usd = 400, emails = ["founders@example.com"] }
+    anchors     = { retention_days = 2557, lock = true }
+  }
+}
+
+run "production_is_highly_available_and_recoverable" {
+  command = plan
+  variables {
+    spec            = run.spec_production.spec
+    project         = "fyniq-prod"
+    secrets_project = "fyniq-prod-secrets"
+    public_origin   = "https://fyniq.example"
+    exports         = { weekly = "fyniq-production-db-weekly", monthly = "fyniq-production-db-monthly" }
+  }
+  assert {
+    condition     = google_sql_database_instance.main.settings[0].availability_type == "REGIONAL"
+    error_message = "production's database is regional HA (DR-01)"
+  }
+  assert {
+    condition = (google_sql_database_instance.main.settings[0].backup_configuration[0].point_in_time_recovery_enabled &&
+      google_sql_database_instance.main.settings[0].backup_configuration[0].transaction_log_retention_days == 7 &&
+      google_sql_database_instance.main.settings[0].backup_configuration[0].backup_retention_settings[0].retained_backups == 35 &&
+    google_sql_database_instance.main.settings[0].backup_configuration[0].location == "asia-southeast1")
+    error_message = "point-in-time recovery with 7 days of logs, and 35 daily backups kept in Singapore (DR-02, DR-03)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports.weekly == "fyniq-production-db-weekly" && jsondecode(output.gcp_config).exports.instance == "projects/fyniq-prod/instances/fyniq-production"
+    error_message = "production exports its own instance (DR-04)"
+  }
+}
+
+run "spec_production_zonal" {
+  command = apply
+  module {
+    source = "../../../modules/platform-spec"
+  }
+  variables {
+    environment = "production"
+    database    = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
+    budget      = { amount_usd = 400, emails = ["founders@example.com"] }
+    anchors     = { retention_days = 2557, lock = true }
+  }
+}
+
+run "a_zonal_production_database_is_refused" {
+  command = plan
+  variables {
+    spec            = run.spec_production_zonal.spec
+    project         = "fyniq-prod"
+    secrets_project = "fyniq-prod-secrets"
+    public_origin   = "https://fyniq.example"
+  }
+  expect_failures = [google_sql_database_instance.main]
 }

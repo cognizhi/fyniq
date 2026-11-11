@@ -1,5 +1,5 @@
 # Staging or production, whole: the cloud-neutral spec, the environment on Google Cloud, its audit
-# anchors (in fyniq-audit for production, §12.4) and its budget. The roots in infra/gcp/envs/ only choose
+# anchors and weekly export (in fyniq-audit for production, §12.4) and its budget. The roots in infra/gcp/envs/ only choose
 # the values.
 
 terraform {
@@ -115,12 +115,25 @@ module "anchors" {
   writers        = [module.environment.members["jobs"]]
 }
 
+# The weekly export of the database beside the anchors (DR-02, DR-04): in fyniq-audit for production, locked where the
+# anchors are.
+module "db_export" {
+  source         = "../db-export"
+  project        = var.project
+  audit_project  = var.audit_project
+  environment    = var.environment
+  database_agent = module.environment.database_agent
+  jobs_member    = module.environment.members["jobs"]
+  lock           = module.spec.spec.anchors.lock
+}
+
 module "environment" {
   source            = "../environment"
   spec              = module.spec.spec
   project           = var.project
   secrets_project   = var.secrets_project
   anchors           = { bucket = module.anchors.bucket, key_version = module.anchors.key_version }
+  exports           = module.db_export.buckets
   public_origin     = var.public_origin
   signin_providers  = var.signin_providers
   artifact_registry = var.artifact_registry
