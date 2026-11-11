@@ -5,6 +5,7 @@
 # req: SEC-30
 # req: DR-04
 # req: DR-07
+# req: CTL-RES-03
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -69,6 +70,10 @@ run "production" {
   assert {
     condition     = jsondecode(output.gcp_config).evidence == module.evidence.buckets && module.evidence.buckets.bucket == "fyniq-production-evidence"
     error_message = "the services keep evidence in the buckets the evidence module made (DR-07)"
+  }
+  assert {
+    condition     = toset(keys(module.slo.slos)) == toset(["api", "ai", "mcp", "oauth"])
+    error_message = "every public service has its objectives (CTL-RES-03)"
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")

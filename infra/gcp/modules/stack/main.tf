@@ -188,6 +188,15 @@ module "edge" {
   services = { for name, s in module.spec.spec.services : name => local.edge_paths[name] if s.public }
 }
 
+# The public services' objectives and their burn-rate alerts to the founders (NFR-AVAIL-01, NFR-PERF-01, CTL-RES-03).
+module "slo" {
+  source      = "../slo"
+  project     = var.project
+  environment = var.environment
+  services    = [for name, s in module.spec.spec.services : name if s.public]
+  channels    = module.environment.alert_channels
+}
+
 module "budget" {
   source          = "../budget"
   billing_account = var.billing_account

@@ -22,8 +22,9 @@ Infrastructure workflow does nothing.
 | `gcp/modules/evidence/` | The records' and attachments' buckets (DR-07, CTL-AUD-03), in the environment's project, in Singapore, under their own CMEK key: staging (what is not yet a record; the app deletes each file in its time, and a backstop deletes report exports after 7 days) and evidence, with Object Retention Lock on, so the API sets each committed file's retain-until in Locked mode. The api reads committed files; the worker and the jobs commit them with a role that may never delete one |
 | `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs, the database's pgAudit entries and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
 | `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
+| `gcp/modules/slo/` | Service levels (NFR-AVAIL-01, NFR-PERF-01, CTL-RES-03): for each public service, 99.9% of requests without a server error each month and 95% within 300 ms over 28 days, from Cloud Run's metrics; burn-rate alerts to the founders (fast: 14.4 times over an hour; slow: 6 times over six hours); a dashboard |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
-| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, the evidence buckets, security logs, the edge, the budget and, in staging, the non-production scan |
+| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, the evidence buckets, security logs, the service levels, the edge, the budget and, in staging, the non-production scan |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
 | `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
@@ -167,6 +168,8 @@ assumptions, not facts.
 - `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
   (a write across projects under that project's key), that `db.export` succeeds with the custom role
   alone, and how long an export of production takes.
+- `[live-verify]` The service levels: that Cloud Monitoring reads the objectives from Cloud Run's request metrics as
+  written, and that a burn-rate alert reaches the founders.
 - `[live-verify]` Traces (NFR-OBS-01): that the Telemetry API takes OTLP/JSON at `telemetry.googleapis.com/v1/traces`
   with the resource attribute `gcp.project_id`, that `roles/telemetry.tracesWriter` is its role (`[verify]`), and
   where Cloud Trace keeps the traces (`[verify]`: CTL-DP-07 allows Singapore only; a trace holds no personal data).
