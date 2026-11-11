@@ -112,6 +112,8 @@ Period close, CPF age bands, statutory deadlines and FX revaluation depend on th
   organisation (Settings → Developer, or `FYNIQ_BUSINESS_DATE=2026-12-31` for the whole stack).
   The UI shows a persistent banner whenever it is set.
 - The production build does not contain the override. A start-up check refuses the setting.
+- Traces (NFR-OBS-01): set `FYNIQ_OTLP_ENDPOINT=http://localhost:4318` to send the services' traces to a local OTLP/HTTP
+  collector (Jaeger's all-in-one listens there); unset, nothing is sent, and log lines still carry `trace_id`.
 
 ## Connecting Claude Code to the local MCP server (DEV-06, P1)
 

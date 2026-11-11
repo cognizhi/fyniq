@@ -269,7 +269,7 @@ func (c Config) check() error {
 func mailEnv(env func(string) string) func(string) string { return env }
 
 // PlatformEgress is the guard of the platform's own outbound connections: public addresses only.
-func PlatformEgress() *egress.Guard { return &egress.Guard{} }
+func PlatformEgress() *egress.Guard { return &egress.Guard{Propagate: true} }
 
 // GoogleKeys are Google's signing keys, which the OIDC checks of Cloud Tasks' and the render service's callers verify
 // against, fetched through the platform's guard from Google's certificate host only.

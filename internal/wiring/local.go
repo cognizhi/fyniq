@@ -134,7 +134,7 @@ func mailEnv(env func(string) string) func(string) string {
 
 // PlatformEgress is the guard of the platform's own outbound connections; the local flavour lets the local stand-ins
 // (Hydra, the render service, Mailpit) through on loopback and the Docker network, never the metadata service.
-func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true} }
+func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true, Propagate: true} }
 
 // asOwner is the local database's URL, at the service's own host, as the owner the local stack creates (POSTGRES_USER in
 // deploy/local/compose.yaml), on database db.
