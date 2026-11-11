@@ -14,5 +14,6 @@ checks:
     how: "job restore.drill"
     evidence: "the job's latest run (every 28 days): a copy of the database an hour back, cloned in production's own project, the ledger's and the audit chain's verifications passed on it within NFR-DR-02's 4 hours, the copy removed; its restore.drilled event in the installation's trail. Cloud SQL's clone is [live-verify]; locally make restore-drill"
   - frequency: Q
-    status: planned
-    arrives: "p1-operations-dr slice 4b: the quarterly full drill of the weekly export into an isolated project, by runbook, signed off as the restore-drill review"
+    status: running
+    how: "attestation restore-drill"
+    evidence: "the restore drill register (fyniq.restore_drill): each full drill of the weekly export restored into an isolated project by docs/runbooks/restore-drill.md, with its scenario, the data lost, the time taken and DR-06's checks; the review is due 3 months after the last that recovered"

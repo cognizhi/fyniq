@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audit_chain": {
+      "description": "The audit chain's verification passed on the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "data_lost_minutes": {
+      "description": "The data the copy lacked, in minutes (NFR-DR-01).",
+      "examples": [
+        10080
+      ],
+      "format": "int64",
+      "maximum": 525600,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "documents": {
+      "description": "Documents and evidence opened from the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "findings": {
+      "description": "What it found and what changed. Never a secret, a token, a full NRIC or a bank number (SEC-15).",
+      "examples": [
+        "Importing the export took 40 minutes; the runbook now starts it first."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "held_on": {
+      "description": "When it was held, today or earlier.",
+      "examples": [
+        "2026-11-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "keys": {
+      "description": "The keys decrypted the sealed fields and signed an anchor.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ledger": {
+      "description": "The ledger's verification passed on the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "outbox": {
+      "description": "The outbox's unfinished work was reconciled.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "restored_from": {
+      "description": "What the copy was made from: the weekly export or the point in time.",
+      "examples": [
+        "The weekly export of 2026-11-08"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The scenario it rehearsed (docs/runbooks/restore-drill.md).",
+      "enum": [
+        "project_loss",
+        "corruption",
+        "zone_failure"
+      ],
+      "examples": [
+        "project_loss"
+      ],
+      "type": "string"
+    },
+    "sign_in": {
+      "description": "People signed in to the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "tick": {
+      "description": "The Scheduler's tick ran the platform jobs.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "took_minutes": {
+      "description": "How long the recovery took, in minutes (NFR-DR-02).",
+      "examples": [
+        185
+      ],
+      "format": "int64",
+      "maximum": 525600,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "held_on",
+    "scenario",
+    "restored_from",
+    "data_lost_minutes",
+    "took_minutes",
+    "ledger",
+    "audit_chain",
+    "documents",
+    "keys",
+    "sign_in",
+    "tick",
+    "outbox",
+    "findings"
+  ],
+  "title": "RestoreDrillInput",
+  "type": "object"
+}

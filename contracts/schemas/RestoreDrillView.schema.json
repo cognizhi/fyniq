@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audit_chain": {
+      "description": "The audit chain's verification passed on the copy (NFR-DR-03).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "data_lost_minutes": {
+      "description": "The data the copy lacked, in minutes before the drill's starting point (NFR-DR-01).",
+      "examples": [
+        10080
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "documents": {
+      "description": "Documents and evidence opened from the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "findings": {
+      "description": "What it found and what changed.",
+      "examples": [
+        "Importing the export took 40 minutes; the runbook now starts it first."
+      ],
+      "type": "string"
+    },
+    "held_on": {
+      "description": "When it was held.",
+      "examples": [
+        "2026-11-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The drill.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "keys": {
+      "description": "The keys decrypted the sealed fields and signed an anchor.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ledger": {
+      "description": "The ledger's verification passed on the copy (NFR-DR-03).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "outbox": {
+      "description": "The outbox's unfinished work was reconciled (outbox-after-restore).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-11-15T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "recovered": {
+      "description": "Whether the drill counts as recovered: every check passed (DR-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "restored_from": {
+      "description": "What the copy was made from: the weekly export or the point in time.",
+      "examples": [
+        "The weekly export of 2026-11-08"
+      ],
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The scenario it rehearsed (NFR-DR-01, NFR-DR-02): the loss of the production project (the weekly export restored into an isolated project), database corruption or operator error (point-in-time recovery), or a zone's failure (failover).",
+      "enum": [
+        "project_loss",
+        "corruption",
+        "zone_failure"
+      ],
+      "examples": [
+        "project_loss"
+      ],
+      "type": "string"
+    },
+    "sign_in": {
+      "description": "People signed in to the copy.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "tick": {
+      "description": "The Scheduler's tick ran the platform jobs.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "took_minutes": {
+      "description": "How long the recovery took, in minutes (NFR-DR-02).",
+      "examples": [
+        185
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "held_on",
+    "scenario",
+    "restored_from",
+    "data_lost_minutes",
+    "took_minutes",
+    "ledger",
+    "audit_chain",
+    "documents",
+    "keys",
+    "sign_in",
+    "tick",
+    "outbox",
+    "recovered",
+    "findings",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "title": "RestoreDrillView",
+  "type": "object"
+}

@@ -1619,6 +1619,23 @@ report_export | rows_count | bigint | null |
 report_export | ready_at | timestamp with time zone | null | 
 report_export | expires_at | timestamp with time zone | null | 
 report_export | failure | text | null | 
+restore_drill | organisation_id | uuid | not null | current_org()
+restore_drill | id | uuid | not null | uuidv7()
+restore_drill | held_on | date | not null | 
+restore_drill | scenario | text | not null | 
+restore_drill | restored_from | text | not null | 
+restore_drill | data_lost_minutes | integer | not null | 
+restore_drill | took_minutes | integer | not null | 
+restore_drill | ledger | boolean | not null | 
+restore_drill | audit_chain | boolean | not null | 
+restore_drill | documents | boolean | not null | 
+restore_drill | keys | boolean | not null | 
+restore_drill | sign_in | boolean | not null | 
+restore_drill | tick | boolean | not null | 
+restore_drill | outbox | boolean | not null | 
+restore_drill | findings | text | not null | 
+restore_drill | recorded_by | text | not null | 
+restore_drill | recorded_at | timestamp with time zone | not null | 
 review_log_entry | organisation_id | uuid | not null | current_org()
 review_log_entry | id | uuid | not null | uuidv7()
 review_log_entry | kind | text | not null | 
@@ -4511,6 +4528,30 @@ report_export | report_export_requested_by_not_null | NOT NULL requested_by
 report_export | report_export_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'failed'::text, 'expired'::text])))
 report_export | report_export_status_not_null | NOT NULL status
 report_export | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+restore_drill | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+restore_drill | restore_drill_audit_chain_not_null | NOT NULL audit_chain
+restore_drill | restore_drill_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+restore_drill | restore_drill_data_lost_minutes_not_null | NOT NULL data_lost_minutes
+restore_drill | restore_drill_documents_not_null | NOT NULL documents
+restore_drill | restore_drill_findings_not_null | NOT NULL findings
+restore_drill | restore_drill_held_on_not_null | NOT NULL held_on
+restore_drill | restore_drill_id_not_null | NOT NULL id
+restore_drill | restore_drill_keys_not_null | NOT NULL keys
+restore_drill | restore_drill_ledger_not_null | NOT NULL ledger
+restore_drill | restore_drill_minutes | CHECK (((data_lost_minutes >= 0) AND (took_minutes > 0)))
+restore_drill | restore_drill_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+restore_drill | restore_drill_organisation_id_not_null | NOT NULL organisation_id
+restore_drill | restore_drill_outbox_not_null | NOT NULL outbox
+restore_drill | restore_drill_pkey | PRIMARY KEY (organisation_id, id)
+restore_drill | restore_drill_recorded_at_not_null | NOT NULL recorded_at
+restore_drill | restore_drill_recorded_by_not_null | NOT NULL recorded_by
+restore_drill | restore_drill_restored_from_not_null | NOT NULL restored_from
+restore_drill | restore_drill_scenario_known | CHECK ((scenario = ANY (ARRAY['project_loss'::text, 'corruption'::text, 'zone_failure'::text])))
+restore_drill | restore_drill_scenario_not_null | NOT NULL scenario
+restore_drill | restore_drill_sign_in_not_null | NOT NULL sign_in
+restore_drill | restore_drill_texts | CHECK ((((length(btrim(restored_from)) >= 1) AND (length(btrim(restored_from)) <= 500)) AND ((length(btrim(findings)) >= 1) AND (length(btrim(findings)) <= 8000))))
+restore_drill | restore_drill_tick_not_null | NOT NULL tick
+restore_drill | restore_drill_took_minutes_not_null | NOT NULL took_minutes
 review_log_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 review_log_entry | review_log_entry_actor_fkey | FOREIGN KEY (actor) REFERENCES app_user(user_id)
 review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -5287,6 +5328,7 @@ CREATE UNIQUE INDEX recurring_journal_pkey ON fyniq.recurring_journal USING btre
 CREATE UNIQUE INDEX recurring_journal_version_key ON fyniq.recurring_journal_version USING btree (organisation_id, recurring_journal_id, version)
 CREATE UNIQUE INDEX recurring_journal_version_pkey ON fyniq.recurring_journal_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX report_export_pkey ON fyniq.report_export USING btree (organisation_id, id)
+CREATE UNIQUE INDEX restore_drill_pkey ON fyniq.restore_drill USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
 CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btree (organisation_id, entry_id)
@@ -5414,6 +5456,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'recurring_invoice_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.restore_drill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('restore_drill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'id')
@@ -5761,6 +5804,8 @@ CREATE TRIGGER removed_member_guard BEFORE INSERT ON fyniq.role_assignment FOR E
 CREATE TRIGGER removed_member_guard BEFORE UPDATE OF status ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION removed_member_guard()
 CREATE TRIGGER report_export_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.report_export FOR EACH ROW EXECUTE FUNCTION report_export_guard()
 CREATE TRIGGER report_export_no_truncate BEFORE TRUNCATE ON fyniq.report_export FOR EACH STATEMENT EXECUTE FUNCTION report_export_guard()
+CREATE TRIGGER restore_drill_guard BEFORE DELETE OR UPDATE ON fyniq.restore_drill FOR EACH ROW EXECUTE FUNCTION restore_drill_guard()
+CREATE TRIGGER restore_drill_no_truncate BEFORE TRUNCATE ON fyniq.restore_drill FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER risk_immutable BEFORE DELETE OR UPDATE ON fyniq.risk FOR EACH ROW EXECUTE FUNCTION audit_immutable()
@@ -5939,6 +5984,7 @@ recurring_invoice_version | tenant_isolation | * | (organisation_id = current_or
 recurring_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 report_export | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+restore_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 risk | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6109,6 +6155,7 @@ recurring_invoice_version | enabled | forced
 recurring_journal | enabled | forced
 recurring_journal_version | enabled | forced
 report_export | enabled | forced
+restore_drill | enabled | forced
 review_log_entry | enabled | forced
 review_log_review | enabled | forced
 risk | enabled | forced
@@ -6405,6 +6452,7 @@ require_installation_audit() → trigger | security definer | v | search_path=pg
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
 require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
+restore_drill_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1d98519bb45029d1d91bd29635d2e5dc
 review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d14270820b2454b3e0adc48a2572e959
 risk_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 912ceee772033bee08e29ff38cf3dc48
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e

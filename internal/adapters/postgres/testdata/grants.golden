@@ -374,6 +374,8 @@ fyniq_api       INSERT    report_export (format, parameters, report, requested_a
 fyniq_api       SELECT    report_export
 fyniq_api       EXECUTE   request_installation_change()
 fyniq_api       EXECUTE   request_to_join()
+fyniq_api       INSERT    restore_drill (audit_chain, data_lost_minutes, documents, findings, held_on, keys, ledger, outbox, recorded_at, recorded_by, restored_from, scenario, sign_in, tick, took_minutes)
+fyniq_api       SELECT    restore_drill
 fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_api       SELECT    review_log_entry
 fyniq_api       INSERT    review_log_review (entry_id, note, reviewed_at, reviewed_by)
@@ -677,6 +679,7 @@ fyniq_readonly  SELECT    recurring_invoice_version
 fyniq_readonly  SELECT    recurring_journal
 fyniq_readonly  SELECT    recurring_journal_version
 fyniq_readonly  SELECT    report_export
+fyniq_readonly  SELECT    restore_drill
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    risk
@@ -928,6 +931,7 @@ fyniq_worker    SELECT    recurring_journal_version
 fyniq_worker    EXECUTE   remittance_allowed()
 fyniq_worker    SELECT    report_export
 fyniq_worker    UPDATE    report_export (expires_at, failure, file_name, file_sha256, ledger_revision, media_type, ready_at, rows_count, size_bytes, status)
+fyniq_worker    SELECT    restore_drill
 fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_worker    SELECT    review_log_entry
 fyniq_worker    SELECT    review_log_review

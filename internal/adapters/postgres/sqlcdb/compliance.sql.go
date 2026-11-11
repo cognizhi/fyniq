@@ -1045,6 +1045,93 @@ func (q *Queries) InsertPolicyVersion(ctx context.Context, arg InsertPolicyVersi
 	return i, err
 }
 
+const insertRestoreDrill = `-- name: InsertRestoreDrill :one
+INSERT INTO fyniq.restore_drill (held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys,
+                                 sign_in, tick, outbox, findings, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12, $13,
+        $14, $15)
+RETURNING id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+          findings, recorded_by, recorded_at
+`
+
+type InsertRestoreDrillParams struct {
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+type InsertRestoreDrillRow struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+func (q *Queries) InsertRestoreDrill(ctx context.Context, arg InsertRestoreDrillParams) (InsertRestoreDrillRow, error) {
+	row := q.db.QueryRow(ctx, insertRestoreDrill,
+		arg.HeldOn,
+		arg.Scenario,
+		arg.RestoredFrom,
+		arg.DataLostMinutes,
+		arg.TookMinutes,
+		arg.Ledger,
+		arg.AuditChain,
+		arg.Documents,
+		arg.Keys,
+		arg.SignIn,
+		arg.Tick,
+		arg.Outbox,
+		arg.Findings,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertRestoreDrillRow
+	err := row.Scan(
+		&i.ID,
+		&i.HeldOn,
+		&i.Scenario,
+		&i.RestoredFrom,
+		&i.DataLostMinutes,
+		&i.TookMinutes,
+		&i.Ledger,
+		&i.AuditChain,
+		&i.Documents,
+		&i.Keys,
+		&i.SignIn,
+		&i.Tick,
+		&i.Outbox,
+		&i.Findings,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
 const insertRisk = `-- name: InsertRisk :one
 INSERT INTO fyniq.risk (ref, created_at) VALUES ($1, $2) RETURNING organisation_id, id, ref, created_at
 `
@@ -1989,6 +2076,69 @@ func (q *Queries) ListPolicyVersions(ctx context.Context) ([]FyniqPolicyVersion,
 			&i.FromDraft,
 			&i.PublishedBy,
 			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRestoreDrills = `-- name: ListRestoreDrills :many
+SELECT id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+       findings, recorded_by, recorded_at
+FROM fyniq.restore_drill ORDER BY held_on, recorded_at, id
+`
+
+type ListRestoreDrillsRow struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// The organisation's restore drills, oldest first (DR-06).
+func (q *Queries) ListRestoreDrills(ctx context.Context) ([]ListRestoreDrillsRow, error) {
+	rows, err := q.db.Query(ctx, listRestoreDrills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRestoreDrillsRow
+	for rows.Next() {
+		var i ListRestoreDrillsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldOn,
+			&i.Scenario,
+			&i.RestoredFrom,
+			&i.DataLostMinutes,
+			&i.TookMinutes,
+			&i.Ledger,
+			&i.AuditChain,
+			&i.Documents,
+			&i.Keys,
+			&i.SignIn,
+			&i.Tick,
+			&i.Outbox,
+			&i.Findings,
+			&i.RecordedBy,
+			&i.RecordedAt,
 		); err != nil {
 			return nil, err
 		}

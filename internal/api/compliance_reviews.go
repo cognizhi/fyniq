@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -13,12 +14,13 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // ComplianceReview is a recurring review people sign off, as it stands for the organisation (CMP-03, design D6).
 type ComplianceReview struct {
-	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests,breach,breach-tabletop,transfers" doc:"The review." example:"access-review"`
+	Kind        string             `json:"kind" enum:"review-log,access-review,accountant-review,close-signoff,break-glass-review,policy-acknowledgement,risk-review,data-inventory,dpia,pd-requests,breach,breach-tabletop,transfers,restore-drill" doc:"The review." example:"access-review"`
 	Title       string             `json:"title" doc:"What it is, in a sentence." example:"An Owner attests the access review (each quarter)"`
 	Owner       string             `json:"owner" enum:"owner,controller,accountant,dpo,member" doc:"The role that signs it off; member when each member signs for themselves." example:"owner"`
 	Cadence     string             `json:"cadence" enum:"weekly,quarterly,monthly,each use,each version,by review date,each processing,each request,each breach,twice a year" doc:"How often it falls due." example:"quarterly"`
@@ -63,18 +65,23 @@ func registerComplianceReviews(a *API) {
 		Description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each " +
 			"quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's " +
 			"post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact " +
-			"assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each " +
+			"assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas " +
+			"transfers and the quarterly full restore drill (the installation's). Each " +
 			"comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, " +
 			"its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.",
-	}, "cursor", "The recurring reviews, thirteen of them, read whole: one summary per kind, each worked out from its own records."),
+	}, "cursor", "The recurring reviews, fourteen of them, read whole: one summary per kind, each worked out from its own records."),
 		[]string{storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, _ *struct{}) (*complianceReviewsOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()
 			var reviews []controls.Review
 			var names map[uuid.UUID]string
-			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			installation, err := a.isInstallation(ctx, p.Organisation)
+			if err != nil {
+				return nil, err
+			}
+			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				var err error
-				if reviews, err = controls.Reviews(ctx, u, now); err != nil {
+				if reviews, err = controls.Reviews(ctx, u, now, installation); err != nil {
 					return err
 				}
 				names, err = memberNames(ctx, u, now)
@@ -125,4 +132,16 @@ func attestedBy() (map[string][]ControlRef, error) {
 		}
 	}
 	return out, nil
+}
+
+// isInstallation reports whether org is the installation's own organisation, where the platform's reviews apply.
+func (a *API) isInstallation(ctx context.Context, org uuid.UUID) (bool, error) {
+	if a.deps.Installation == nil {
+		return false, nil
+	}
+	inst, err := a.deps.Installation.InstallationOrganisation(ctx)
+	if errors.Is(err, ports.ErrNotFound) {
+		return false, nil
+	}
+	return err == nil && inst == org, err
 }

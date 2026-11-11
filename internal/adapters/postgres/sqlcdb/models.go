@@ -2098,6 +2098,26 @@ type FyniqReportExport struct {
 	Failure        *string
 }
 
+type FyniqRestoreDrill struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

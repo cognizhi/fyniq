@@ -40,12 +40,14 @@ module tests on mock providers and tagged `[live-verify]`.
   clone, time it, record `restore.drilled` and CTL-RES-02's monthly run, remove the clone whatever happens; `make
   restore-drill` locally, with a database test. `// req: DR-06`, `// req: NFR-DR-02`, `// req: NFR-DR-03`,
   `// req: CTL-RES-02`
-- [ ] 4.3 `docs/runbooks/restore-drill.md` and the `restore-drill` review (quarterly) in the Compliance Center; CTL-RES-02's
+- [x] 4.3 `docs/runbooks/restore-drill.md` and the `restore-drill` review (quarterly) in the Compliance Center; CTL-RES-02's
   quarterly check becomes an attestation; the jobs' grants in `infra/` (clone and delete on the instance only)
   `[live-verify]`. `// req: DR-06`, `// req: CTL-RES-02`
   - Slice 4a built 4.1, 4.2 (CTL-RES-02's monthly run is the check `job restore.drill`, the job's own outcome; design
-    D2) and 4.3's grants (`infra/gcp/modules/environment/database.tf`); slice 4b builds the runbook, the register and
-    the review.
+    D2) and 4.3's grants (`infra/gcp/modules/environment/database.tf`); slice 4b the runbook, the restore drill register
+    (migration 000317, `listRestoreDrills`, `recordRestoreDrill`, Compliance › Controls › Restore drills; the DPO
+    records, as Appendix D's Compliance Center allows) and the review `restore-drill`, in the installation's
+    organisation only.
 
 ## 5. Database and platform logs (slice 5)
 

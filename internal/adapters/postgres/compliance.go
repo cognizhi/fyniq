@@ -876,3 +876,47 @@ func (c compliance) RecordBreachExercise(ctx context.Context, e storage.BreachEx
 	}
 	return storage.BreachExercise{ID: r.ID, HeldOn: r.HeldOn, Scenario: r.Scenario, Findings: r.Findings, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}, nil
 }
+
+func restoreDrillOf(id uuid.UUID, heldOn time.Time, scenario, from string, lost, took int32, ledger, chain, docs, keys, signIn, tick, outbox bool,
+	findings, by string, at time.Time) storage.RestoreDrill {
+	return storage.RestoreDrill{ID: id, HeldOn: heldOn, Scenario: scenario, RestoredFrom: from, DataLostMinutes: int(lost), TookMinutes: int(took),
+		Ledger: ledger, AuditChain: chain, Documents: docs, Keys: keys, SignIn: signIn, Tick: tick, Outbox: outbox, Findings: findings,
+		RecordedBy: by, RecordedAt: at}
+}
+
+func (c compliance) RestoreDrills(ctx context.Context) ([]storage.RestoreDrill, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListRestoreDrills(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.RestoreDrill, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, restoreDrillOf(r.ID, r.HeldOn, r.Scenario, r.RestoredFrom, r.DataLostMinutes, r.TookMinutes, r.Ledger, r.AuditChain,
+			r.Documents, r.Keys, r.SignIn, r.Tick, r.Outbox, r.Findings, r.RecordedBy, r.RecordedAt))
+	}
+	return out, nil
+}
+
+func (c compliance) RecordRestoreDrill(ctx context.Context, d storage.RestoreDrill) (storage.RestoreDrill, error) {
+	if err := c.u.check(); err != nil {
+		return storage.RestoreDrill{}, err
+	}
+	lost, took := int32(d.DataLostMinutes), int32(d.TookMinutes) // #nosec G115 -- minutes, at most a year's by the API (recordRestoreDrill)
+	r, err := c.u.q.InsertRestoreDrill(ctx, sqlcdb.InsertRestoreDrillParams{HeldOn: d.HeldOn, Scenario: d.Scenario, RestoredFrom: d.RestoredFrom,
+		DataLostMinutes: lost, TookMinutes: took, Ledger: d.Ledger, AuditChain: d.AuditChain, Documents: d.Documents, Keys: d.Keys, SignIn: d.SignIn,
+		Tick: d.Tick, Outbox: d.Outbox, Findings: d.Findings, RecordedBy: d.RecordedBy, RecordedAt: d.RecordedAt})
+	if err != nil {
+		return storage.RestoreDrill{}, mapError(err)
+	}
+	out := restoreDrillOf(r.ID, r.HeldOn, r.Scenario, r.RestoredFrom, r.DataLostMinutes, r.TookMinutes, r.Ledger, r.AuditChain, r.Documents, r.Keys,
+		r.SignIn, r.Tick, r.Outbox, r.Findings, r.RecordedBy, r.RecordedAt)
+	if err := c.u.event(ctx, "restore_drill.recorded", "restore_drill", r.ID, nil, map[string][2]any{"held_on": {nil, r.HeldOn.Format(time.DateOnly)},
+		"scenario": {nil, r.Scenario}, "restored_from": {nil, r.RestoredFrom}, "data_lost_minutes": {nil, r.DataLostMinutes}, "took_minutes": {nil, r.TookMinutes},
+		"recovered": {nil, out.Recovered()}}); err != nil {
+		return storage.RestoreDrill{}, err
+	}
+	return out, nil
+}

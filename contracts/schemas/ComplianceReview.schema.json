@@ -70,7 +70,8 @@
         "pd-requests",
         "breach",
         "breach-tabletop",
-        "transfers"
+        "transfers",
+        "restore-drill"
       ],
       "examples": [
         "access-review"
