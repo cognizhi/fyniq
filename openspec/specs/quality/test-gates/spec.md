@@ -441,3 +441,8 @@ Source: PRD-001 §16.2
 - **WHEN** the week's CI runs, or a minor release is prepared
 - **THEN** the harness runs on the local stack at 1 M lines each week, and at 10 M lines before the release
 - **AND** the release's report is kept as evidence
+
+#### Scenario: Gating from the first release (rev 0.250)
+- **WHEN** release evidence is gathered for any release
+- **THEN** the 10 M-line run must meet the NFR-PERF targets for it to pass
+- **AND** the general ledger export and the reports are made to meet NFR-PERF-05 and NFR-PERF-02 first

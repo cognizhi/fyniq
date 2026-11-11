@@ -90,11 +90,11 @@ caller's rows of `operation`, which already does.
 - Everything in the cloud is code with module tests until the dev cloud: the export and its lock, the keys, the
   clone and its removal, the evidence buckets, the sink, Cloud Trace, the SLOs and every alert `[live-verify]`
   (`p1-launch-readiness` lists them).
-- **Waiting for the owner's decision:**
-  - The evidence buckets and the sealed fields' key live in production's project, so losing that project loses the
-    documents and the sealed fields even though the exports survive (T2).
-  - Where Cloud Trace stores spans is not yet checked against CTL-DP-07's Singapore-only rule; the spans carry no
-    personal data (T9).
+- **Decided on 11 Nov 2026 (rev 0.250), built in task 13:**
+  - the evidence buckets and the sealed fields' key ring move to `fyniq-audit`, so losing production's project loses
+    neither the documents nor the means to open sealed fields (T2);
+  - production sends traces only once Cloud Trace is shown to keep them in Singapore (CTL-DP-07, T9);
+  - `If-Match` accepts the API's own weak tag, which a compressing proxy makes (FR-INT-09).
 - A clone left by a crash between cloning and removing is found through the drill job's failed slot (CTL-RES-02) and
   the budget alerts, and removed by runbook; nothing sweeps it automatically (T4).
 - A caller can force its own requests to be traced (T11); the rate limits bound the cost, and the trace context from

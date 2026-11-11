@@ -361,14 +361,18 @@ It was built on 11 Nov 2026, in #559 to #573, one pull request per slice, stacke
 - the operations tray;
 - the threat model `docs/security/threat-models/operations-dr.md`.
 
-The first larger local run of the harness, at about 200,000 lines, found three things that wait for the owner's
-decision:
+The first larger local run of the harness, at about 200,000 lines, found three things:
 - the general ledger export stops at 5,000 lines an account, so NFR-PERF-05's export at 1 M lines cannot pass;
 - the reports' time grows with the ledger (about 1.2 s at that size), so NFR-PERF-02 may not hold at 1 M;
 - the edge's compression weakens the API's ETags, which `If-Match` then refuses.
 
-Two more decisions wait: where the evidence buckets and the sealed fields' key live, and Cloud Trace's storage
-location. And `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
+By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250), its task 13 follows:
+- the evidence buckets and the sealed fields' key ring move to `fyniq-audit`;
+- production sends traces only once Cloud Trace keeps them in Singapore;
+- the 10 M-line run gates from the first release, so the export streams and the reports are made faster first;
+- `If-Match` accepts the API's own weak tag.
+
+One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
 
 <!-- roadmap:track P1 Fyniq -->
 
