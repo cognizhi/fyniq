@@ -105,7 +105,8 @@ module tests on mock providers and tagged `[live-verify]`.
 - [x] 11.2 The header's operations button and panel (D10), polling while any runs, linking each result; help key
   `shell.operations`, the guide section, a component test with axe, and the `OperationsTray` fragment (local; the
   canvas waits for the design account). `// req: FR-INT-11`, `// req: NFR-PERF-04`, `// req: NFR-PERF-05` Building added
-  the kit's `fy-progress--indeterminate` (the skeleton's sheen when motion is on, still when off).
+  the kit's `fy-progress--indeterminate` (the skeleton's sheen when motion is on, still when off). The button shows from
+  the medium class up: the compact header had 18 px left at 390 px, and `p1-app-shell` lays it out again.
 
 ## 12. Threat model and as built (slice 12)
 

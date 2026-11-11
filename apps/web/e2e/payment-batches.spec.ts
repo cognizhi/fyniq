@@ -73,6 +73,8 @@ async function batches(page: Page) {
         return json(200, { items: [], unreviewed: 0, overdue: 0 });
       case "GET /v1/notifications":
         return json(200, { items: [], unread: 0 });
+      case "GET /v1/operations": // the header's operations tray (FR-INT-11): nothing asked for
+        return json(200, { items: [] });
       case "GET /v1/banners":
         return json(200, { items: [] });
       case "GET /v1/break-glass": // a releaser's page asks whether their own break-glass is on (FM-8): none is

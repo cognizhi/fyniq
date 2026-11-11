@@ -110,6 +110,7 @@ async function serve(page: Page) {
       case "GET /v1/approvals":
       case "GET /v1/notifications":
       case "GET /v1/banners":
+      case "GET /v1/operations": // the header's operations tray (FR-INT-11)
       case "GET /v1/journals/waiting-reversals":
         return json(200, { items: [] });
       case "GET /v1/review-log":
