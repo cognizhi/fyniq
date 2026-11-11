@@ -10,5 +10,6 @@ evidence: "Config snapshot"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "p1-operations-dr (rev 0.241: Data Access logs for Cloud SQL, Cloud KMS, Cloud Storage and Secret Manager, and their sink to a locked log bucket, §11.5 L4)"
+    status: cloud
+    how: "tofu security-logs/production_keeps_its_security_logs_in_the_audit_project"
+    evidence: "Data Access logs on for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage; the sink of Cloud Audit Logs, the database's pgAudit entries and the security alerts to the log bucket in fyniq-audit, kept 400 days and locked; the daily configuration check is the nightly drift check of infra/ (CTL-CHG-02); read in the cloud [live-verify]"
