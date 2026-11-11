@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: D
     status: planned
-    arrives: "P1"
+    arrives: "p1-security-hardening"

@@ -15,4 +15,5 @@ checks:
     evidence: "AUD-08 same-transaction tests; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "P1"
+    how: "job schema.verify"
+    arrives: "p1-compliance-center (slice 3: every audited table keeps its require_audit trigger)"

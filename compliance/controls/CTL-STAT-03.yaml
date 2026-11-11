@@ -10,5 +10,6 @@ evidence: "Submission record"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check compliance.deadlines"
+    evidence: "the statutory calendar's AIS and IR8A deadlines (C.2 #15); IR21 comes with payroll; the check's latest result for each organisation, on Checks"

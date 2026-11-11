@@ -10,8 +10,14 @@ evidence: "Pack record; test report"
 owner: Controller
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestTheShippedPacksLoadAndPassTheirPinnedTests"
+    evidence: "every shipped pack version loads with its sources and passes its pinned cases (QA-ENG-08); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestPackActivationWaitsForASecondApprover"
+    evidence: "a pack version activates only on a second person's approval (SOD-10); CI artefact test-report (90 days)"
   - frequency: E
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check parameters.packs-current"
+    evidence: "a pack in force past its review date, or a later version loaded and not yet activated, warns (C.2 #16); the check's latest result for each organisation, on Checks"

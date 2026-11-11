@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: CI
     status: planned
-    arrives: "P1"
+    arrives: "p1-mcp-first-party"

@@ -19,7 +19,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   - CMP-AI-02 and CMP-AI-03 with `p1-ai-providers`.
 
   The build plan moves the control rows whose modules come later (`make roadmap`).
-- [ ] 1.2 The registry's check kinds `check <key>`, `verify <name>` and `attestation <kind>`, and the status `cloud`
+- [x] 1.2 The registry's check kinds `check <key>`, `verify <name>` and `attestation <kind>`, and the status `cloud`
   (design D1), in `control.schema.json` and `registry.go`. Each control also gets its frameworks, parsed from its
   mapping. `registry_test.go` fails on:
   - an unknown mapping token;
@@ -28,11 +28,39 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   - a `cloud` check that names no module test or infra workflow job.
 
   `// req: CMP-01`, and the unnumbered "Control registry as code".
-- [ ] 1.3 The control map (D2). Every control placed in this change names each running check, or is marked `cloud` or
+
+  **What building added:**
+    - **Several checks per frequency.** A frequency may have more than one check; the control takes the worst. A
+      control may still have only one `job` check per frequency, since its evidence record is named by control and
+      frequency.
+    - **Cloud checks** name an `infra/` module test (`tofu <module>/<run>`) or the infra workflow's job (`ci plan`), and a
+      module test may only be named by a cloud check.
+    - **Arrivals.** A planned check's `arrives` starts with a change of the P1–P3 plan (`scripts/roadmap.py`), never a
+      phase such as "P1".
+    - **Frameworks.** Ten, from Appendix F's mapping keys: Singapore statute, PDPA, ISO/IEC 27001, SOC 2, CSA Cyber
+      Essentials, CSA Cyber Trust, IMDA AI governance (AG and the Starter Kit), OWASP (ASVS included), COSO, and the
+      International Standards on Auditing (CTL-FIN-10's ISA 240). A mapping is split at semicolons outside brackets.
+    - **Declared names.** The four verifications (D4) and the seven attestations (D6) are declared in `registry.go`; the
+      slices that build them run each declared name.
+- [x] 1.3 The control map (D2). Every control placed in this change names each running check, or is marked `cloud` or
   built by a later slice. The rows rev 0.240 moved keep `planned` with `arrives` naming their change.
   `go run -tags local ./cmd/jobs controls` lists each control with how it runs. The registry test lists the catalogue
   checks mapped to controls and what their warnings mean. `// req:` each CTL ID whose check is named here, in
   `registry_test.go`.
+
+  **What building added:**
+    - **Counts.** Of 109 checks (99 before, one per frequency), 55 run (25 before), 10 run in the cloud and 44 are
+      planned: 11 for later slices of this change, the rest with the change each row moved to.
+    - **Rev 0.241.** `infra/` does not yet hold what six rows check in the cloud: the records bucket (CTL-AUD-03), the
+      Data Access logs and their sink (CTL-AUD-04), the SLO alerts (CTL-RES-03), the heartbeat alert (CTL-RES-05),
+      Binary Authorization (CTL-CHG-04) and the scan of non-production (CTL-CHG-05). They moved to `p1-operations-dr`
+      and `p1-security-hardening`; what is built of them is named (the anchors bucket's lock, the separate projects,
+      `scheduler.jobs-on-time`). 43 rows are closed here.
+    - **Warnings.** `ledger.sub-ledgers`, `assets.register` and `equity.acra-register` warn about an amount or a
+      difference awaiting review, not a date; the list in `registry_test.go` says so for each, and the dashboard reads
+      them as overdue under D1.
+    - **CTL-FIN-10** maps to the accountant's review, which Founder mode's FM-7 sets each quarter, not monthly; its
+      evidence says so.
 
 ## 2. CI evidence from the running release (slice 2)
 

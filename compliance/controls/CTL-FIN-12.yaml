@@ -10,11 +10,14 @@ evidence: "Reconciliation log; transaction evidence"
 owner: Controller
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestAttackShareCapitalMovesOnlyWithTheRegister"
+    evidence: "share capital moves only with the register of share issues (INV-13); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check founders.share-capital-registered"
+    evidence: "share capital agrees with the register of share issues (INV-13, C.2 #25); the check's latest result for each organisation, on Checks"
   - frequency: E
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check equity.acra-register"
+    evidence: "the register of members agrees with the latest ACRA extract uploaded (C.2 #26); the check's latest result for each organisation, on Checks"

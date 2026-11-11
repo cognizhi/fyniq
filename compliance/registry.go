@@ -1,16 +1,20 @@
 // Package compliance is the control registry of PRD-001 Appendix F as code: one file per control in
 // controls/, validated against control.schema.json. Each control names its owner and, per frequency,
-// how it is checked here (a make target, a platform job, a Go test or a CI job) or when its check
-// arrives. scripts/controls.py keeps the PRD's text in step; the Compliance Center (P1) reads the same
-// files and the evidence the checks leave.
+// how it is checked (a make target, a Go test or a CI job in CI; a platform job; a check of the
+// organisation's catalogue; a verification of compliance.run; an attestation; or an infra test of what
+// only the cloud runs) or when its check arrives. scripts/controls.py keeps the PRD's text in step; the
+// Compliance Center reads the same files and the evidence the checks leave (p1-compliance-center D1).
 package compliance
 
 import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -29,15 +33,127 @@ type Control struct {
 	Evidence       string  `yaml:"evidence" json:"evidence"`
 	Owner          string  `yaml:"owner" json:"owner"`
 	Checks         []Check `yaml:"checks" json:"checks"`
+	// Frameworks are the keys of the frameworks its mapping names, in the order of Frameworks; Load parses them.
+	Frameworks []string `yaml:"-" json:"frameworks"`
 }
 
-// Check is how one frequency of a control is checked.
+// Check is how one frequency of a control is checked. A frequency may have several checks.
 type Check struct {
 	Frequency string `yaml:"frequency" json:"frequency"` // CI, D, N, W, M, Q, S (semi-annual) or E (on an event)
-	Status    string `yaml:"status" json:"status"`       // running, planned or manual
-	How       string `yaml:"how,omitempty" json:"how,omitempty"`
-	Evidence  string `yaml:"evidence,omitempty" json:"evidence,omitempty"`
-	Arrives   string `yaml:"arrives,omitempty" json:"arrives,omitempty"`
+	// Status is running; planned (it arrives later); manual; or cloud: built and tested in infra/, it runs only in the
+	// cloud, so it is not assessed until then (design D1).
+	Status   string `yaml:"status" json:"status"`
+	How      string `yaml:"how,omitempty" json:"how,omitempty"`
+	Evidence string `yaml:"evidence,omitempty" json:"evidence,omitempty"`
+	Arrives  string `yaml:"arrives,omitempty" json:"arrives,omitempty"`
+}
+
+// The kinds of How: what runs a check.
+const (
+	KindMake        = "make"        // a make target, in CI
+	KindTest        = "test"        // a Go test, in CI
+	KindCI          = "ci"          // a CI job, by its name or ID
+	KindJob         = "job"         // a platform job: its latest run
+	KindCheck       = "check"       // a check of the organisation's catalogue (Appendix C): its latest result
+	KindVerify      = "verify"      // a verification compliance.run makes for each organisation (Verifications)
+	KindAttestation = "attestation" // a review a person signs off (Attestations)
+	KindTofu        = "tofu"        // a run of an infra/ module's tests, <module>/<run>: what a cloud check proves
+)
+
+// Kind returns the kind of the check's How and what it names.
+func (c Check) Kind() (kind, target string) {
+	kind, target, _ = strings.Cut(c.How, " ")
+	return kind, target
+}
+
+// Verifications are the checks compliance.run makes for each organisation, by name (design D4).
+var Verifications = map[string]string{
+	"payments.dual-control":    "Every payment batch released, and every payee and claimant bank change approved, in the last day was decided by someone other than whoever prepared it, or falls under the team mode's recorded exception",
+	"members.second-factor":    "No session of the last day was used beyond reading itself without a second factor, and every active member has one registered",
+	"integrations.owned":       "Every integration client has an owner, a class and an unexpired end date, and holds only its class's scopes",
+	"audit.exports-reconciled": "Every report export, evidence opening and reveal of the last day has its audit event",
+}
+
+// Attestations are the recurring reviews people sign off, by kind (design D6).
+var Attestations = map[string]string{
+	"review-log":             "Another founder reviews each logged action (Founder mode, weekly)",
+	"access-review":          "An Owner attests the access review (each quarter)",
+	"accountant-review":      "The accountant reviews the journals (monthly)",
+	"close-signoff":          "Someone other than the preparer signs off the close (monthly)",
+	"break-glass-review":     "Each break-glass is reviewed after it ends",
+	"policy-acknowledgement": "Each member acknowledges each published policy version",
+	"risk-review":            "Each risk is reviewed by its review date",
+}
+
+// Framework is a framework a control may map to, and the words of Appendix F's Mapping cell that name it.
+type Framework struct {
+	Key, Title string
+	Tokens     []string
+}
+
+// Frameworks are the frameworks of Appendix F's mappings, in the order the Compliance Center lists them.
+var Frameworks = []Framework{
+	{"sg-statute", "Singapore statute", []string{"Companies Act", "Income Tax Act", "GST Act", "GST", "IRAS", "CPF Act", "ETA", "ACRA"}},
+	{"pdpa", "PDPA", []string{"PDPA"}},
+	{"iso27001", "ISO/IEC 27001:2022 Annex A", []string{"ISO"}},
+	{"soc2", "SOC 2", []string{"SOC2"}},
+	{"csa-ce", "CSA Cyber Essentials", []string{"CE"}},
+	{"csa-ct", "CSA Cyber Trust", []string{"CT"}},
+	{"imda-ai", "IMDA AI governance", []string{"AG", "IMDA"}},
+	{"owasp", "OWASP", []string{"OWASP", "ASVS"}},
+	{"coso", "COSO", []string{"COSO"}},
+	{"isa", "International Standards on Auditing", []string{"ISA"}},
+}
+
+var revisionTag = regexp.MustCompile(`^\(rev [0-9.]+\)\s*`)
+
+// MappingFrameworks returns the keys of the frameworks a Mapping cell names, in the order of Frameworks. Each part of
+// the cell, between semicolons outside brackets, starts with a framework's word, such as "ISO 8.32" or "PDPA (PDPC/CSA advisory)"; a part
+// that names none is an error, so a new framework is added here before a control maps to it.
+func MappingFrameworks(mapping string) ([]string, error) {
+	found := map[string]bool{}
+	var parts []string
+	depth, start := 0, 0
+	for i, r := range mapping { // split at the semicolons outside brackets
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		case ';':
+			if depth == 0 {
+				parts, start = append(parts, mapping[start:i]), i+1
+			}
+		}
+	}
+	for _, part := range append(parts, mapping[start:]) {
+		part = revisionTag.ReplaceAllString(strings.TrimSpace(part), "")
+		key := ""
+		for _, f := range Frameworks {
+			for _, t := range f.Tokens {
+				rest, ok := strings.CutPrefix(part, t)
+				next, _ := utf8.DecodeRuneInString(rest)
+				if ok && (rest == "" || !unicode.IsLetter(next) && !unicode.IsDigit(next)) {
+					key = f.Key
+					break
+				}
+			}
+			if key != "" {
+				break
+			}
+		}
+		if key == "" {
+			return nil, fmt.Errorf("the mapping %q names no known framework", part)
+		}
+		found[key] = true
+	}
+	var out []string
+	for _, f := range Frameworks {
+		if found[f.Key] {
+			out = append(out, f.Key)
+		}
+	}
+	return out, nil
 }
 
 // Schema returns the JSON Schema of a control file.
@@ -74,6 +190,9 @@ func Load() ([]Control, error) {
 		}
 		if name != c.ID+".yaml" {
 			return nil, fmt.Errorf("%s holds %s", name, c.ID)
+		}
+		if c.Frameworks, err = MappingFrameworks(c.Mapping); err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
 		}
 		out = append(out, c)
 	}

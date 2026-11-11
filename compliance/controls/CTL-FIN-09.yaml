@@ -10,5 +10,10 @@ evidence: "Close record"
 owner: Controller
 checks:
   - frequency: E
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check close.checklist"
+    evidence: "the close's checklist is finished before the month closes (C.2 #58); the check's latest result for each organisation, on Checks"
+  - frequency: E
+    status: running
+    how: "check close.month-unclosed"
+    evidence: "no month stays open more than 15 days after its end (C.2 #18); the check's latest result for each organisation, on Checks"

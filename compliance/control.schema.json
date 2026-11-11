@@ -23,14 +23,18 @@
         "required": ["frequency", "status"],
         "properties": {
           "frequency": { "enum": ["CI", "D", "N", "W", "M", "Q", "S", "E"] },
-          "status": { "enum": ["running", "planned", "manual"] },
-          "how": { "type": "string", "pattern": "^(make [a-z0-9-]+|job [a-z0-9.]+|test Test[A-Za-z0-9_]+|ci .+)$" },
+          "status": { "enum": ["running", "planned", "manual", "cloud"] },
+          "how": { "type": "string", "pattern": "^(make [a-z0-9-]+|job [a-z0-9.-]+|test Test[A-Za-z0-9_]+|ci .+|check [a-z0-9.-]+|verify [a-z0-9.-]+|attestation [a-z0-9-]+|tofu [a-z0-9-]+/[a-z0-9_]+)$" },
           "evidence": { "type": "string", "minLength": 5 },
           "arrives": { "type": "string", "minLength": 2 }
         },
         "allOf": [
           { "if": { "properties": { "status": { "const": "running" } } }, "then": { "required": ["how", "evidence"] } },
-          { "if": { "properties": { "status": { "const": "planned" } } }, "then": { "required": ["arrives"] } }
+          { "if": { "properties": { "status": { "const": "planned" } } }, "then": { "required": ["arrives"] } },
+          {
+            "if": { "properties": { "status": { "const": "cloud" } } },
+            "then": { "required": ["how", "evidence"], "properties": { "how": { "pattern": "^(tofu|ci) " } } }
+          }
         ]
       }
     }

@@ -10,8 +10,18 @@ evidence: "Approval records"
 owner: Controller
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestAttackPaymentBatchesKeepTheirRelease"
+    evidence: "the database refuses a payment batch released without a second person (FR-BNK-12, FM-1); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestAChangeOfBankDetailsNeedsASecondPerson"
+    evidence: "a payee's bank details change only on another person's approval; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "P1"
+    how: "verify payments.dual-control"
+    arrives: "p1-compliance-center (slice 4)"
+  - frequency: N
+    status: running
+    how: "check controls.break-glass-unreviewed"
+    evidence: "every founder break-glass release is reviewed within 7 days of its end (FM-8, C.2 #53); the check's latest result for each organisation, on Checks"

@@ -10,5 +10,6 @@ evidence: "IAM snapshot"
 owner: Administrator
 checks:
   - frequency: D
-    status: planned
-    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"
+    status: cloud
+    how: "tofu environment/no_standing_human_access"
+    evidence: "no person or group holds a role on the environment's projects; elevation is just in time; read in the cloud [live-verify]"

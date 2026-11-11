@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: M
     status: planned
-    arrives: "P1"
+    arrives: "p1-ai-proposals"

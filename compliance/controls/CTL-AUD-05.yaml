@@ -10,8 +10,10 @@ evidence: "Audit events"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestEveryFileAndRevealIsAudited"
+    evidence: "opening an evidence file and revealing a masked value each write their audit event; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "P1"
+    how: "verify audit.exports-reconciled"
+    arrives: "p1-compliance-center (slice 4)"

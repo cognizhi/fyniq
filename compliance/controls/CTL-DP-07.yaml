@@ -10,5 +10,6 @@ evidence: "Policy snapshot"
 owner: DPO
 checks:
   - frequency: D
-    status: planned
-    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"
+    status: cloud
+    how: "tofu org-policy/the_policies_of_section_12_4"
+    evidence: "the organisation policy restricts resource locations to Singapore; read in the cloud [live-verify]"

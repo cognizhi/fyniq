@@ -10,5 +10,10 @@ evidence: "Config snapshot"
 owner: DPO
 checks:
   - frequency: D
-    status: planned
-    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"
+    status: cloud
+    how: "tofu org-policy/the_policies_of_section_12_4"
+    evidence: "the organisation policy requires customer-managed keys for the database and storage in staging and production; read in the cloud [live-verify]"
+  - frequency: D
+    status: cloud
+    how: "tofu environment/the_data_is_encrypted_and_recoverable"
+    evidence: "the database, its backups and the secrets are under customer-managed keys that rotate every 90 days; read in the cloud [live-verify]"

@@ -11,7 +11,8 @@ owner: Owner
 checks:
   - frequency: CI
     status: planned
-    arrives: "P1"
+    arrives: "p1-compliance-center (slice 3: CMP-AI-01's tests of the database grants, the AI service account and the tool registry)"
   - frequency: N
     status: planned
-    arrives: "P1"
+    how: "job schema.verify"
+    arrives: "p1-compliance-center (slice 3: the nightly grant snapshot)"

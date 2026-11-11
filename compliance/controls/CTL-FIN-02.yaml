@@ -15,4 +15,5 @@ checks:
     evidence: "grant snapshot and attack suites (QA-ENG-05); CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "P1 (the nightly grant snapshot and immutability verification, §10.7)"
+    how: "job schema.verify"
+    arrives: "p1-compliance-center (slice 3: the nightly grant snapshot and immutability verification, §10.7)"

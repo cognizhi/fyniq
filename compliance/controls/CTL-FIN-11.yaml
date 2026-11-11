@@ -10,11 +10,18 @@ evidence: "Approval records, resolutions, lodgement evidence"
 owner: Controller
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestEveryApproverBenefits"
+    evidence: "a settlement, conversion or waiver is approved by someone other than its beneficiary (FM-9); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestAttackShareCapitalMovesOnlyWithTheRegister"
+    evidence: "share capital moves only with the register of share issues (INV-13); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check ledger.sub-ledgers"
+    evidence: "each director's and shareholder's account against 2500 and 2120 (INV-13, C.2 #2); the check's latest result for each organisation, on Checks"
   - frequency: E
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "check founders.conversion-registered"
+    evidence: "every approved conversion is lodged with ACRA and registered on time (C.2 #22); the check's latest result for each organisation, on Checks"

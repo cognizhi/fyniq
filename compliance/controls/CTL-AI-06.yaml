@@ -11,7 +11,7 @@ owner: Owner
 checks:
   - frequency: CI
     status: planned
-    arrives: "P1"
+    arrives: "p1-ai-assistant"
   - frequency: W
     status: planned
-    arrives: "P1"
+    arrives: "p1-ai-assistant"

@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: E
     status: planned
-    arrives: "p0-ci-images-release (the release workflow)"
+    arrives: "p1-compliance-center (slice 2: the release's SBOMs, attached to the GitHub release)"

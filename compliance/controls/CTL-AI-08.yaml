@@ -15,7 +15,7 @@ checks:
     evidence: "kb-lint; CI log"
   - frequency: N
     status: planned
-    arrives: "P1"
+    arrives: "p1-knowledge-base"
   - frequency: E
     status: planned
-    arrives: "P1"
+    arrives: "p1-knowledge-base"

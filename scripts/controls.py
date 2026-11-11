@@ -8,8 +8,9 @@
 A file's first fields (section to evidence) are the PRD's row, one JSON-quoted line each, so this script
 reads them without a YAML library. `owner` and `checks` are ours: who answers for the control, and how
 each frequency is checked here. The Go test compliance/registry_test.go validates the whole file
-against compliance/control.schema.json and checks that every make target, job, test and CI job a check
-names exists.
+against compliance/control.schema.json and checks that every make target, job, test, CI job, catalogue
+check, verification, attestation and infra/ module test a check names exists, and that a planned check
+arrives with a change of the P1–P3 plan: a file `generate` writes says "P1" until its change is named.
 """
 
 from __future__ import annotations

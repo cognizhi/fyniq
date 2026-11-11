@@ -11,4 +11,4 @@ owner: DPO
 checks:
   - frequency: W
     status: planned
-    arrives: "P1"
+    arrives: "p1-security-hardening"

@@ -11,4 +11,4 @@ owner: DPO
 checks:
   - frequency: CI
     status: planned
-    arrives: "P1"
+    arrives: "p1-compliance-center (slice 3: the archtest that no sign-in, step-up or recovery package reads an NRIC or FIN)"
