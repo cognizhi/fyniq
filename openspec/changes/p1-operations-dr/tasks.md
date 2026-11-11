@@ -99,11 +99,13 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 11. The operations tray (slice 11)
 
-- [ ] 11.1 `listMyOperations` (`GET /v1/operations`, cursor paging, the caller's own), with its matrix rows and tests.
-  `// req: FR-INT-11`
-- [ ] 11.2 The header's operations button and panel (D10), polling while any runs, linking each result; help key
+- [x] 11.1 `listMyOperations` (`GET /v1/operations`, cursor paging, the caller's own), with its matrix rows and tests.
+  `// req: FR-INT-11` Building added the index `operation_requested` (migration 000319, built concurrently), so the list
+  reads only the caller's rows.
+- [x] 11.2 The header's operations button and panel (D10), polling while any runs, linking each result; help key
   `shell.operations`, the guide section, a component test with axe, and the `OperationsTray` fragment (local; the
-  canvas waits for the design account). `// req: FR-INT-11`, `// req: NFR-PERF-04`, `// req: NFR-PERF-05`
+  canvas waits for the design account). `// req: FR-INT-11`, `// req: NFR-PERF-04`, `// req: NFR-PERF-05` Building added
+  the kit's `fy-progress--indeterminate` (the skeleton's sheen when motion is on, still when off).
 
 ## 12. Threat model and as built (slice 12)
 

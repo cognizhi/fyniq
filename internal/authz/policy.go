@@ -1575,6 +1575,11 @@ var (
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
 	Note: "Only whoever asked for the work reads its operation; anyone else gets 404."}
 
+// ListMyOperations is the caller's own long work, newest first (FR-INT-11; the operations tray, design D10): any member
+// lists only the operations they asked for.
+var ListMyOperations = Policy{Operation: "listMyOperations", Capability: Membership, Need: View,
+	Note: "Only the caller's own operations."}
+
 // Joining by email domain (FR-ADM-08, rev 0.199): a person without a Fyniq account finds and asks; an Owner decides and
 // claims the organisation's domains.
 const joinNote = "Needs a person signed in to Fyniq in the browser, with a second factor; an OAuth client or the AI is refused (FR-ADM-08)."
@@ -1735,7 +1740,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
-	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation,
+	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation, ListMyOperations,
 	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,
 	ListHolderRecordEvidence, GetHolderRecordEvidence, RemoveHolderRecordEvidence, ListShareClasses, GetShareClass, CreateShareClass,
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,

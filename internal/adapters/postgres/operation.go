@@ -38,6 +38,25 @@ func (r operations) Get(ctx context.Context, id uuid.UUID) (storage.Operation, e
 	if err != nil {
 		return storage.Operation{}, mapError(err)
 	}
+	return toOperation(sqlcdb.OperationsOfRow(row)), nil
+}
+
+func (r operations) Mine(ctx context.Context, requestedBy string, limit int) ([]storage.Operation, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.OperationsOf(ctx, sqlcdb.OperationsOfParams{RequestedBy: requestedBy, PageSize: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Operation, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toOperation(row))
+	}
+	return out, nil
+}
+
+func toOperation(row sqlcdb.OperationsOfRow) storage.Operation {
 	return storage.Operation{ID: row.ID, Kind: row.Kind, JobID: row.JobID, Resource: row.Resource, RequestedBy: row.RequestedBy,
-		RequestedAt: row.RequestedAt, JobState: storage.OutboxState(row.JobState), JobUpdated: row.JobUpdated.In(time.UTC)}, nil
+		RequestedAt: row.RequestedAt, JobState: storage.OutboxState(row.JobState), JobUpdated: row.JobUpdated.In(time.UTC)}
 }

@@ -1,10 +1,10 @@
 ---
 key: home.overview
 type: task
-title: The Home page, search and commands, Settings, the version, and signing out
-summary: What Home shows (pulse, tiles, charts, plans, what waits, set-up), Search and commands (Ctrl+K), Settings, the version (Help › About Fyniq), signing out
+title: The Home page, search and commands, long work, Settings, the version, and signing out
+summary: What Home shows (pulse, tiles, plans, set-up), Search and commands (Ctrl+K), Operations (long work), Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:c66e114127571895ed4f2743ff84ade1f11cc3f228430d53ed0d9426f1303104
+  - docs/user-guide/home.md sha256:4f7bef33488e31b812a0c32a25ee265c9e8de952375acfd13014db00f0da509c
 data_class: general
 taint: trusted
 status: draft
@@ -35,9 +35,13 @@ aliases:
   - about fyniq
   - git sha
   - build number
+  - operations
+  - background jobs
+  - is my export ready
+  - long running work
 ---
 
-# The Home page, search and commands, Settings, the version, and signing out
+# The Home page, search and commands, long work, Settings, the version, and signing out
 
 ## What Home shows
 
@@ -89,6 +93,17 @@ aliases:
 - **Appearance** in the header changes theme, high contrast, density and motion: [[preferences.appearance]].
 
 (src: docs/user-guide/home.md#find-anything-with-search) (src: docs/user-guide/home.md#change-how-fyniq-looks)
+
+## Follow long work
+
+- Some work runs in the background so the person can keep working, such as an accountant export or **Run now** on **Checks**.
+- **Operations** (the hourglass in the header) lists it; the header counts the work still running.
+- **Running** work shows a moving bar that does not fill, because Fyniq does not yet know how far along it is; the list is read again every 5 seconds while anything runs.
+- **Done** work links to what it made: **Download** for an export, for 24 hours after it is ready, and **See the checks** for a run of the checks.
+- **Failed** work says why when it knows, and how to ask again.
+- Each person sees only the work they asked for; an export also sends a notification when it is ready: [[settings.notifications]].
+
+(src: docs/user-guide/home.md#follow-long-work)
 
 ## Copy and paste amounts
 

@@ -45,7 +45,7 @@ export function Checks() {
       return;
     }
     setSaid(data.already_waiting ? "A run asked for earlier is still waiting: the checks update once it has run." : "Every check is running now. This page updates once they have run.");
-    await qc.invalidateQueries({ queryKey: ["checks"] });
+    await Promise.all([qc.invalidateQueries({ queryKey: ["checks"] }), qc.invalidateQueries({ queryKey: ["operations"] })]);
   };
 
   return (

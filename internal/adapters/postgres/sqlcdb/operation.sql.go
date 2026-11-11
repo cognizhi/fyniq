@@ -72,3 +72,57 @@ func (q *Queries) InsertOperation(ctx context.Context, arg InsertOperationParams
 	err := row.Scan(&id)
 	return id, err
 }
+
+const operationsOf = `-- name: OperationsOf :many
+SELECT o.id, o.kind, o.job_id, o.resource, o.requested_by, o.requested_at, j.state AS job_state, j.updated_at AS job_updated
+FROM fyniq.operation o
+JOIN fyniq.outbox j ON j.organisation_id = o.organisation_id AND j.id = o.job_id
+WHERE o.requested_by = $1
+ORDER BY o.requested_at DESC, o.id DESC
+LIMIT $2
+`
+
+type OperationsOfParams struct {
+	RequestedBy string
+	PageSize    int32
+}
+
+type OperationsOfRow struct {
+	ID          uuid.UUID
+	Kind        string
+	JobID       uuid.UUID
+	Resource    string
+	RequestedBy string
+	RequestedAt time.Time
+	JobState    string
+	JobUpdated  time.Time
+}
+
+func (q *Queries) OperationsOf(ctx context.Context, arg OperationsOfParams) ([]OperationsOfRow, error) {
+	rows, err := q.db.Query(ctx, operationsOf, arg.RequestedBy, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OperationsOfRow
+	for rows.Next() {
+		var i OperationsOfRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.JobID,
+			&i.Resource,
+			&i.RequestedBy,
+			&i.RequestedAt,
+			&i.JobState,
+			&i.JobUpdated,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

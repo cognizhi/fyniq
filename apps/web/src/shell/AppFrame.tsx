@@ -85,13 +85,14 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // AppFrame is the frame of every signed-in page (MASTER.md §5, §5.1; docs/design/screens AppShell):
 // the sidebar (a rail in the medium class, a bottom bar in compact) cut to the person's roles and
 // the organisation's feature switches (FR-UX-40), the header with search and commands (Ctrl+K or
-// ⌘K), the Basic | Expert switch, the notification bell, appearance and sign out, and the main region with the
+// ⌘K), the Basic | Expert switch, the operations tray (FR-INT-11), the notification bell, appearance and sign out, and the main region with the
 // banners on top (FR-NTF-01, FR-NTF-03; the signed-in layout passes both, which read the API). The organisation
 // switcher and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
-export function AppFrame({ session, title, mode, bell, banners, logo, children }: {
+export function AppFrame({ session, title, mode, operations, bell, banners, logo, children }: {
   session: Pick<Session, "roles" | "features">;
   title: string;
   mode: Mode;
+  operations?: ReactNode;
   bell?: ReactNode;
   banners?: ReactNode;
   logo?: ReactNode; // the organisation's logo (FR-ORG-09), which the signed-in layout reads
@@ -159,6 +160,7 @@ export function AppFrame({ session, title, mode, bell, banners, logo, children }
           <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip}>
             <Icon of={Search} size={20} />
           </Button>
+          {operations}
           {bell}
           <AppearanceMenu />
           <HelpMenu />
