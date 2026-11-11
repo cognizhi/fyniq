@@ -78,3 +78,36 @@ func TestPlatformVerificationsApplyToTheInstallationOnly(t *testing.T) {
 		t.Errorf("the installation's, not run yet: %+v", st)
 	}
 }
+
+// scheduler.configured fails when a stopped tick could go unnoticed: no tick job or a paused one, and each heartbeat alert
+// policy missing, off or telling nobody; a configuration with all of them passes (CTL-RES-05, NFR-OBS-02).
+// req: CTL-RES-05
+// req: NFR-OBS-02
+// asvs: V16.4.2
+func TestWhatLeavesAStoppedTickUnnoticed(t *testing.T) {
+	good := []ports.AlertPolicy{{Name: "Fyniq production: heartbeat tick absent 30 minutes", Enabled: true, Channels: 1},
+		{Name: "Fyniq production: heartbeat tick absent 60 minutes", Enabled: true, Channels: 3},
+		{Name: "Fyniq production: a platform job's heartbeat is late", Enabled: true, Channels: 1}}
+	tick := []ports.SchedulerJob{{Name: "tick", Enabled: true}}
+	if got := schedulingFindings(tick, good); len(got) != 0 {
+		t.Fatalf("a configured schedule: %+v", got)
+	}
+	got := schedulingFindings([]ports.SchedulerJob{{Name: "tick", Enabled: false}}, []ports.AlertPolicy{
+		{Name: "Fyniq production: heartbeat tick absent 30 minutes", Enabled: false, Channels: 1},
+		{Name: "Fyniq production: heartbeat tick absent 60 minutes", Enabled: true, Channels: 0}})
+	want := []string{"The tick's Scheduler job is paused, so no platform job runs",
+		`The alert policy "heartbeat tick absent 30 minutes" is off`,
+		`The alert policy "heartbeat tick absent 60 minutes" tells nobody`,
+		`No alert policy "a platform job's heartbeat is late": a stopped heartbeat would go unnoticed`}
+	if len(got) != len(want) {
+		t.Fatalf("found: %+v", got)
+	}
+	for i, f := range got {
+		if f.Detail != want[i] {
+			t.Errorf("%d: %q, want %q", i, f.Detail, want[i])
+		}
+	}
+	if got := schedulingFindings(nil, good); len(got) != 1 || got[0].Detail != "The Scheduler has no tick job, so no platform job runs" {
+		t.Errorf("no tick: %+v", got)
+	}
+}

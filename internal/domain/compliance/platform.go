@@ -26,8 +26,9 @@ type platformVerification struct {
 }
 
 var platformVerifications = map[string]platformVerification{
-	"posture.findings": {read: postureFindings},
-	"logs.scan":        {read: logsScan, alert: true},
+	"posture.findings":     {read: postureFindings},
+	"logs.scan":            {read: logsScan, alert: true},
+	"scheduler.configured": {read: schedulerConfigured},
 }
 
 // Platform reports whether the verification name reads the installation's posture rather than an organisation's records.
@@ -104,6 +105,52 @@ func plural(n int, one, many string) string {
 		return one
 	}
 	return many
+}
+
+// HeartbeatPolicies are the heartbeat's alert policies scheduler.configured requires, by the end of their names
+// (infra/gcp/modules/heartbeat): the tick's absence at 30 and 60 minutes, and a late platform job.
+var HeartbeatPolicies = []string{"heartbeat tick absent 30 minutes", "heartbeat tick absent 60 minutes", "a platform job's heartbeat is late"}
+
+// schedulerConfigured (CTL-RES-05, NFR-OBS-02): the tick's Scheduler job exists and runs, and the heartbeat's alert
+// policies exist, are on and tell someone, so a stopped tick is noticed independently of the platform.
+func schedulerConfigured(ctx context.Context, r Runner, _ time.Time) ([]Finding, string, error) {
+	if r.Scheduling == nil {
+		return nil, "", errNoPlatform
+	}
+	jobs, err := r.Scheduling.SchedulerJobs(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	policies, err := r.Scheduling.AlertPolicies(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	return schedulingFindings(jobs, policies), fmt.Sprintf("%d Scheduler job(s) and %d alert policies", len(jobs), len(policies)), nil
+}
+
+// schedulingFindings are what keeps a stopped tick from being noticed: no tick, a paused one, and a heartbeat alert
+// policy missing, off or telling nobody.
+func schedulingFindings(jobs []ports.SchedulerJob, policies []ports.AlertPolicy) []Finding {
+	var out []Finding
+	i := slices.IndexFunc(jobs, func(j ports.SchedulerJob) bool { return j.Name == "tick" })
+	switch {
+	case i < 0:
+		out = append(out, Finding{Kind: "scheduler_job", ID: "tick", Detail: "The Scheduler has no tick job, so no platform job runs"})
+	case !jobs[i].Enabled:
+		out = append(out, Finding{Kind: "scheduler_job", ID: "tick", Detail: "The tick's Scheduler job is paused, so no platform job runs"})
+	}
+	for _, want := range HeartbeatPolicies {
+		j := slices.IndexFunc(policies, func(p ports.AlertPolicy) bool { return strings.HasSuffix(p.Name, want) })
+		switch {
+		case j < 0:
+			out = append(out, Finding{Kind: "alert_policy", ID: want, Detail: fmt.Sprintf("No alert policy %q: a stopped heartbeat would go unnoticed", want)})
+		case !policies[j].Enabled:
+			out = append(out, Finding{Kind: "alert_policy", ID: want, Detail: fmt.Sprintf("The alert policy %q is off", want)})
+		case policies[j].Channels == 0:
+			out = append(out, Finding{Kind: "alert_policy", ID: want, Detail: fmt.Sprintf("The alert policy %q tells nobody", want)})
+		}
+	}
+	return out
 }
 
 // errNoPlatform: the deployment gave the runner no reader of the platform's posture or logs.

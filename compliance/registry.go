@@ -117,6 +117,7 @@ var Verifications = map[string]string{
 	"audit.exports-reconciled": "Every report export, evidence opening and reveal of the last day has its audit event",
 	"posture.findings":         "No Security Command Center finding of high or critical severity is open past its SLA (the installation's)",
 	"logs.scan":                "None of a sample of the last day's platform logs holds an NRIC or FIN number, a token or an API key (the installation's)",
+	"scheduler.configured":     "The tick's Scheduler job runs, and the heartbeat's alert policies are on and tell someone (the installation's)",
 	"records.retention":        "Every file committed in the last day is locked in the records store until its record's retain-until, and every kept file has its record",
 }
 

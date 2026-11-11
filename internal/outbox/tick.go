@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -44,6 +47,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "pdpa.shred", Every: 24 * time.Hour, Offset: 17*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ratelimit.purge", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Each hour, the heartbeats of every job checked: a missing or late one is logged for the alert (NFR-OBS-02).
+	{Job: "heartbeats.check", Every: time.Hour, Offset: 55 * time.Minute, Lease: 15 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ledger.verify", Every: 24 * time.Hour, Offset: 18*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	// Weekly on Sundays at 03:00 Singapore time (Saturday 19:00 UTC; the epoch was a Thursday), the database's export into
 	// the audit project's locked bucket, and in a month's first week its monthly copy (DR-02, DR-04; rev 0.249).
@@ -180,7 +185,7 @@ func (t Ticker) Tick(ctx context.Context) (TickReport, error) {
 	if len(r.Errors) > 0 {
 		return r, errors.New(fmt.Sprint(r.Errors))
 	}
-	return r, t.Platform.Beat(ctx, "tick", now, fmt.Sprintf("%d started, %d dispatched", len(r.Started), r.Dispatched))
+	return r, Beat(ctx, t.Platform, "tick", now, fmt.Sprintf("%d started, %d dispatched", len(r.Started), r.Dispatched))
 }
 
 // schedule runs a job's latest slot once, after recording the slots a gap made it miss
@@ -286,6 +291,31 @@ func (t Ticker) sweep(ctx context.Context, now time.Time, r *TickReport) error {
 	return errors.Join(errs...)
 }
 
+// HeartbeatEvent is the structured log entry of a heartbeat, which a log-based metric and Cloud Monitoring's absence alerts
+// watch (NFR-OBS-02; p1-operations-dr design D6): it reaches Cloud Logging whatever the database's state, so the alert
+// depends on neither the database, the API nor the Scheduler.
+const HeartbeatEvent = "fyniq.heartbeat"
+
+// MissingEvent is the structured log entry of a heartbeat that is missing or late, which heartbeats.check logs each hour
+// for the jobs whose schedule is longer than an absence alert can wait (NFR-OBS-02).
+const MissingEvent = "fyniq.heartbeat_missing"
+
+// CheckJob is the hourly platform job that logs every missing or late heartbeat.
+const CheckJob = "heartbeats.check"
+
+// HeartbeatLog is where heartbeats are logged: the service's standard error, which Cloud Run sends to Cloud Logging. A
+// heartbeat names only its job and when, so it needs no redaction.
+var HeartbeatLog = slog.New(slog.NewJSONHandler(os.Stderr, nil))
+
+// Beat records name's heartbeat in the database and, once it is recorded, logs it as HeartbeatEvent.
+func Beat(ctx context.Context, p storage.Platform, name string, at time.Time, detail string) error {
+	if err := p.Beat(ctx, name, at, detail); err != nil {
+		return err
+	}
+	HeartbeatLog.InfoContext(ctx, HeartbeatEvent, "event", HeartbeatEvent, "job", name, "at", at.UTC().Format(time.RFC3339))
+	return nil
+}
+
 // RunSlot runs a platform job's slot where the job executes, then records how it ended and beats on
 // success. A failed run does not beat, so the absence alert notices repeated failures too.
 func RunSlot(ctx context.Context, p storage.Platform, clock ports.Clock, job string, slot time.Time, run func(ctx context.Context) error) error {
@@ -298,9 +328,24 @@ func RunSlot(ctx context.Context, p storage.Platform, clock ports.Clock, job str
 		err = ferr
 	}
 	if err == nil {
-		err = p.Beat(ctx, job, clock.Now(), slot.Format(time.RFC3339))
+		err = Beat(ctx, p, job, clock.Now(), slot.Format(time.RFC3339))
 	}
 	return err
+}
+
+// CheckHeartbeats logs each heartbeat that is missing or late as MissingEvent, and fails when there is one (NFR-OBS-02).
+func CheckHeartbeats(ctx context.Context, p storage.Platform, now time.Time, schedules []Schedule) error {
+	missing, err := Absences(ctx, p, now, schedules)
+	if err != nil {
+		return err
+	}
+	for _, m := range missing {
+		HeartbeatLog.WarnContext(ctx, MissingEvent, "event", MissingEvent, "missing", m)
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("heartbeats missing: %s", strings.Join(missing, "; "))
+	}
+	return nil
 }
 
 // Absences returns the heartbeats that are missing or older than their limit: the tick (three tick

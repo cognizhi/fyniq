@@ -65,12 +65,14 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 7. The heartbeat (slice 7)
 
-- [ ] 7.1 Every `Beat` logs `fyniq.heartbeat` with its job (D6); `infra/gcp/modules/heartbeat`: the log-based metrics and
+- [x] 7.1 Every `Beat` logs `fyniq.heartbeat` with its job (D6); `infra/gcp/modules/heartbeat`: the log-based metrics and
   the absence alerts (the tick at 30 minutes to the platform owner, 60 to the Owner; the daily jobs, or the
   `heartbeat-check` fallback) `[verify the alerting limits]`, with a module test. `// req: NFR-OBS-02`
 - [ ] 7.2 `ports.Scheduling` (GCP and fake) and the `scheduler.configured` verification, daily; the `heartbeat-drill`
   review, quarterly; CTL-RES-05's two planned checks become `running` and an attestation. `// req: NFR-OBS-02`,
   `// req: CTL-RES-05`
+  - Slice 7a built the port, its adapters and `scheduler.configured` (CTL-RES-05's daily check is running); slice 7b
+    builds the `heartbeat-drill` review and its record.
 
 ## 8. Performance and scale (slice 8)
 

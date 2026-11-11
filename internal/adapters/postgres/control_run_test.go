@@ -242,9 +242,23 @@ type logsFake []string
 
 func (l logsFake) Read(context.Context, time.Time, int) ([]string, error) { return l, nil }
 
+type schedulingFake struct {
+	jobs     []ports.SchedulerJob
+	policies []ports.AlertPolicy
+}
+
+func (s schedulingFake) SchedulerJobs(context.Context) ([]ports.SchedulerJob, error) {
+	return s.jobs, nil
+}
+func (s schedulingFake) AlertPolicies(context.Context) ([]ports.AlertPolicy, error) {
+	return s.policies, nil
+}
+
 // The platform's verifications run in the installation's organisation only: a critical finding open past its 7 days
-// fails CTL-RES-04, an NRIC in the logs fails CTL-DP-03 and raises its alert, and another organisation records neither
-// and shows both as not applicable (p1-security-hardening design D8).
+// fails CTL-RES-04, an NRIC in the logs fails CTL-DP-03 and raises its alert, a paused tick with no heartbeat alert
+// fails CTL-RES-05, and another organisation records none of them and shows the first two as not applicable
+// (p1-security-hardening design D8; p1-operations-dr design D6).
+// req: CTL-RES-05
 // req: SEC-33
 // req: CTL-RES-04
 // req: CTL-DP-03
@@ -258,7 +272,7 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 	}
 	var controls []registry.Control
 	for _, c := range all {
-		if c.ID == "CTL-RES-04" || c.ID == "CTL-DP-03" {
+		if c.ID == "CTL-RES-04" || c.ID == "CTL-DP-03" || c.ID == "CTL-RES-05" {
 			controls = append(controls, c)
 		}
 	}
@@ -267,7 +281,8 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 	runner := compliance.Runner{Store: store(t, "fyniq_worker"), Clock: clock.System{}, Controls: controls, Installation: installationAt(inst.Org),
 		Posture: postureFake{{Name: "late", Severity: "CRITICAL", Category: "OPEN_FIREWALL", Resource: "fw", FirstSeen: now.AddDate(0, 0, -8)},
 			{Name: "recent", Severity: "HIGH", Category: "PUBLIC_BUCKET_ACL", Resource: "bucket", FirstSeen: now.AddDate(0, 0, -2)}},
-		Logs: logsFake{`{"msg":"journal posted"}`, "member S1234567D joined"},
+		Logs:       logsFake{`{"msg":"journal posted"}`, "member S1234567D joined"},
+		Scheduling: schedulingFake{jobs: []ports.SchedulerJob{{Name: "tick", Enabled: false}}, policies: nil},
 		Alert: func(_ context.Context, _ storage.UnitOfWork, org uuid.UUID, control string, found []compliance.Finding) error {
 			alerted = append(alerted, fmt.Sprintf("%s %s %d", org, control, len(found)))
 			return nil
@@ -289,8 +304,8 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 			for _, r := range rep.Runs {
 				runs[r.Check] = r
 			}
-			posture, logs := runs["verify posture.findings"], runs["verify logs.scan"]
-			if len(runs) != 2 || posture.OK || posture.Count != 1 || logs.OK ||
+			posture, logs, schedule := runs["verify posture.findings"], runs["verify logs.scan"], runs["verify scheduler.configured"]
+			if len(runs) != 3 || posture.OK || posture.Count != 1 || logs.OK || schedule.OK || schedule.Count != 4 ||
 				logs.Detail != "1 found in 2 log entries of the last day: 1 log entry holds an NRIC or FIN number" ||
 				strings.Contains(string(logs.Items), "S1234567D") {
 				t.Errorf("the installation's runs: %+v", runs)
@@ -302,7 +317,7 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 		}
 		return out
 	}
-	if got := verify(inst.Org); got["CTL-RES-04"].Status != "fail" || got["CTL-DP-03"].Status != "fail" {
+	if got := verify(inst.Org); got["CTL-RES-04"].Status != "fail" || got["CTL-DP-03"].Status != "fail" || got["CTL-RES-05"].Status != "fail" {
 		t.Errorf("the installation's statuses: %+v", got)
 	}
 	if want := inst.Org.String() + " CTL-DP-03 1"; len(alerted) != 1 || alerted[0] != want {

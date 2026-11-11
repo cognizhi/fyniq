@@ -95,6 +95,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := k.Drill(clock).Run(ctx)
 			return err
 		},
+		outbox.CheckJob: func(ctx context.Context) error { // NFR-OBS-02: a missing or late heartbeat, logged for the alert
+			return outbox.CheckHeartbeats(ctx, k.Store, clock.Now(), outbox.PlatformSchedules)
+		},
 		"ledger.verify": func(ctx context.Context) error {
 			_, err := balance.VerifyAll(ctx, k.Store)
 			return err
@@ -153,7 +156,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			}
 			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry, Platform: k.Store, Release: k.Release, Assets: assets,
 				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock),
-				Evidence: k.Evidence}.Nightly(ctx)
+				Evidence: k.Evidence, Scheduling: k.Scheduling}.Nightly(ctx)
 			return err
 		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released

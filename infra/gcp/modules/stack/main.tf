@@ -60,6 +60,12 @@ variable "budget" {
   })
 }
 
+variable "platform_owner_emails" {
+  description = "The named platform owner, whom the heartbeat's alerts tell first (NFR-OBS-02); empty: the Owners."
+  type        = list(string)
+  default     = []
+}
+
 variable "public_origin" {
   description = "The web app's https origin."
   type        = string
@@ -195,6 +201,15 @@ module "slo" {
   environment = var.environment
   services    = [for name, s in module.spec.spec.services : name if s.public]
   channels    = module.environment.alert_channels
+}
+
+# The heartbeat's absence alerts: the platform owner first, the Owners by escalation (NFR-OBS-02, CTL-RES-05).
+module "heartbeat" {
+  source                = "../heartbeat"
+  project               = var.project
+  environment           = var.environment
+  platform_owner_emails = var.platform_owner_emails
+  owner_channels        = module.environment.alert_channels
 }
 
 module "budget" {
