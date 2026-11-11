@@ -194,6 +194,11 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
   - `scheduler.configured` requires the tick's Scheduler job, running, and the three heartbeat policies (the tick at 30
     and 60 minutes, a late job) on with a channel. Locally `local.Scheduling` stands in with the stack's own tick.
 
+- **As built (slice 7b):** the quarterly drill is recorded in a register (`fyniq.tick_drill`: the table name keeps clear of
+  the database's guard on `heartbeat*` tables, which only the ledger's functions write) with where and how long the tick
+  was paused and the minutes to each alert; it passes when the first came within 30 and the escalation within 60. The
+  restore and heartbeat drills' reviews share one rule (`drillReview`).
+
 ### D7. Performance (NFR-PERF-01 to NFR-PERF-06, NFR-SCALE-01, QA-PERF-01; rev 0.249)
 
 - **`cmd/perf`** (a tool built with `-tags local`, like `cmd/seed`):

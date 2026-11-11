@@ -2,9 +2,9 @@
 key: compliance.controls
 type: task
 title: See whether the controls hold
-summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident and restore drill registers
+summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident, restore drill and heartbeat drill registers
 sources:
-  - docs/user-guide/compliance-controls.md sha256:0f2f050fa165a2aecf47b5aaca5bdea4faf7bf79496ad9ad3dbf6abf9964318e
+  - docs/user-guide/compliance-controls.md sha256:1b20bfb0a3a0b45f1618d68a46c299567ac6862a6e41ebf351ea915d44dd8f03
 data_class: general
 taint: trusted
 status: published
@@ -32,6 +32,9 @@ aliases:
   - disaster recovery test
   - can we restore the books
   - backup test
+  - heartbeat drill
+  - scheduler stopped
+  - tick alert
 ---
 
 # See whether the controls hold
@@ -100,3 +103,13 @@ aliases:
 - Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
 
 (src: docs/user-guide/compliance-controls.md#restore-drills)
+
+## Heartbeat drills
+
+- Fyniq's scheduled work starts from one tick every five minutes. If it stops, the platform owner is told within 30 minutes and the Owners within an hour, by alerts that watch it from outside Fyniq.
+- The **Heartbeat drills** tab is the register of the drills that prove it: each quarter the tick is paused in staging, by the heartbeat drill runbook, and timed.
+- **Record a drill** (the DPO): the day, where the tick was paused and for how long, and how many minutes after the pause the first alert and the escalation came; leave one empty when it never came.
+- A drill **Passed** only when both came in time. The next drill is due 3 months after the last that passed; the review **Heartbeat drill** under **Reviews and attestations** says when.
+- Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
+
+(src: docs/user-guide/compliance-controls.md#heartbeat-drills)

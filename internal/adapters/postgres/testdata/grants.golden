@@ -428,6 +428,8 @@ fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
+fyniq_api       INSERT    tick_drill (environment, escalation_minutes, findings, first_alert_minutes, held_on, paused_minutes, recorded_at, recorded_by)
+fyniq_api       SELECT    tick_drill
 fyniq_api       EXECUTE   unlink_identity()
 fyniq_api       EXECUTE   user_cooling_off_until()
 fyniq_api       EXECUTE   user_for_identity()
@@ -698,6 +700,7 @@ fyniq_readonly  SELECT    statutory_pack_activation
 fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
+fyniq_readonly  SELECT    tick_drill
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    access_review_attestation
@@ -955,5 +958,6 @@ fyniq_worker    SELECT    statutory_pack_versions
 fyniq_worker    EXECUTE   super_admin_users()
 fyniq_worker    SELECT    team_mode
 fyniq_worker    SELECT    tenants
+fyniq_worker    SELECT    tick_drill
 fyniq_worker    SELECT    user_membership
 fyniq_worker    SELECT    withholding_decision

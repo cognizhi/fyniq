@@ -3389,6 +3389,7 @@
     "Nightly ledger and audit-chain verification results; cloud posture findings",
     "(p1-security-hardening, SEC-32) Incidents tab: the incident register; each incident with its severity chip (icon and words), when it was seen, its latest step and note, linked breach; the DPO opens one (title, what is known, severity) and records the next step in the runbook's order (contained, assessed with the breach register's breach, notified, recovered, reviewed and closed); the other readers read it",
     "(p1-operations-dr, DR-06, CTL-RES-02) Restore drills tab: the restore drill register; each full drill with its day, scenario, what it restored from, the data lost and the time taken, what did not pass, and a Recovered or Not recovered chip (icon and words); the DPO records one (day, scenario, restored from, minutes lost and taken, DR-06's seven checks, findings); readers see it read-only",
+    "(p1-operations-dr, NFR-OBS-02, CTL-RES-05) Heartbeat drills tab: the heartbeat drill register; each drill with its day, where and how long the tick was paused, when the first alert and the escalation came (or that they never did), and a Passed or Not passed chip (icon and words); the DPO records one (day, environment, minutes paused, minutes to each alert, findings); readers see it read-only",
     "P2: evidence export per framework and period"
    ],
    "states": [

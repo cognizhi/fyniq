@@ -310,3 +310,15 @@ VALUES (sqlc.arg(held_on), sqlc.arg(scenario), sqlc.arg(restored_from), sqlc.arg
         sqlc.arg(recorded_by), sqlc.arg(recorded_at))
 RETURNING id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
           findings, recorded_by, recorded_at;
+
+-- name: ListHeartbeatDrills :many
+-- The organisation's heartbeat drills, oldest first (NFR-OBS-02).
+SELECT id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+FROM fyniq.tick_drill ORDER BY held_on, recorded_at, id;
+
+-- name: InsertHeartbeatDrill :one
+INSERT INTO fyniq.tick_drill (held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by,
+                                   recorded_at)
+VALUES (sqlc.arg(held_on), sqlc.arg(environment), sqlc.arg(paused_minutes), sqlc.narg(first_alert_minutes), sqlc.narg(escalation_minutes),
+        sqlc.arg(findings), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at;

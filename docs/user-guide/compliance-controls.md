@@ -3,7 +3,7 @@ key: compliance.controls
 title: See whether the controls hold
 mode: expert
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02]
+requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02, NFR-OBS-02, CTL-RES-05]
 ---
 
 # See whether the controls hold
@@ -94,6 +94,20 @@ data the copy lacked and how long the recovery took, in minutes, and ticks what 
 ledger's check, the audit trail's check, documents, keys, sign-in, the scheduled jobs and the queued work. A drill
 counts as **Recovered** only when every one worked. The next full drill is due 3 months after the last that recovered;
 the review **Restore drill** under **Reviews and attestations** says when.
+
+Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the
+Controller, the Accountant and the Auditor read it.
+
+## Heartbeat drills
+
+Fyniq's scheduled work starts from one tick every five minutes. If the tick stops, the platform owner is told within 30
+minutes and the Owners within an hour, by alerts that watch it from outside Fyniq.
+
+The **Heartbeat drills** tab is the register of the drills that prove it: each quarter the tick is paused in staging, by
+the heartbeat drill runbook, and timed. After a drill, the DPO selects **Record a drill** and gives the day, where the
+tick was paused and for how long, and how many minutes after the pause the first alert and the escalation came, leaving
+one empty when it never came. A drill **Passed** only when both came in time. The next drill is due 3 months after the
+last that passed; the review **Heartbeat drill** under **Reviews and attestations** says when.
 
 Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the
 Controller, the Accountant and the Auditor read it.

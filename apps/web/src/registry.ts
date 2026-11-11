@@ -208,6 +208,9 @@ export const actions = [
   // The restore drill register, a tab of Compliance › Controls (DR-06, CTL-RES-02): Expert, as Controls is.
   { kind: "action", id: "compliance.restore-drills", mode: "expert", help: "compliance.restore-drills", guide: "compliance.controls#restore-drills" },
   { kind: "action", id: "restore-drills.checks", mode: "expert", help: "restore-drills.checks", guide: "compliance.controls#restore-drills" },
+  // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
+  { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
+  { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.

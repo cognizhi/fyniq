@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers", "restore-drill"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers", "restore-drill", "heartbeat-drill"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -177,6 +177,10 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 	if err != nil {
 		return nil, err
 	}
+	beats, err := u.Compliance().HeartbeatDrills(ctx)
+	if err != nil {
+		return nil, err
+	}
 	catalogue, err := registry.LoadInventory()
 	if err != nil {
 		return nil, err
@@ -216,6 +220,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 		tabletopReview(members, exercises, today),
 		transfersReview(catalogue.Flows, transfers, today),
 		restoreDrillReview(members, drills, today, installation),
+		heartbeatDrillReview(members, beats, today, installation),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -226,7 +231,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
 	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request",
-	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date", "restore-drill": "quarterly"}
+	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date", "restore-drill": "quarterly", "heartbeat-drill": "quarterly"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -671,16 +676,22 @@ func tabletopReview(members []storage.Member, exercises []storage.BreachExercise
 	return r
 }
 
-// The full restore drill (CTL-RES-02 Q, DR-06): the weekly export restored into an isolated project by
-// docs/runbooks/restore-drill.md each quarter, the next due 3 months after the last that recovered, or after the
-// organisation began; it waits from 30 days before. A drill whose checks did not all pass is recorded but does not count.
-// It is the platform's: it applies in the installation's organisation only.
-func restoreDrillReview(members []storage.Member, drills []storage.RestoreDrill, today time.Time, installation bool) Review {
-	r := Review{Kind: "restore-drill", Owner: "dpo", Where: "/compliance/controls",
-		Evidence: "Each drill with its scenario, what it restored from, the data lost, the time taken and DR-06's checks"}
+// drill is a quarterly drill as its review reads it: when it was held, whether it passed, and who recorded it.
+type drill struct {
+	held   time.Time
+	passed bool
+	by     string
+	at     time.Time
+}
+
+// drillReview is a quarterly drill's review: the next due 3 months after the last that passed, or after the
+// organisation began; it waits from 30 days before; a drill that did not pass is recorded but does not count, and says
+// so. A drill of the platform's applies in the installation's organisation only. what names the drill, failed what a
+// failed one did not do.
+func drillReview(r Review, members []storage.Member, drills []drill, today time.Time, installation bool, what, failed string) Review {
 	if !installation {
 		r.Status = ReviewNotApplicable
-		r.Detail = "The platform's restore drills are recorded in the installation's own organisation."
+		r.Detail = "The platform's " + what + "s are recorded in the installation's own organisation."
 		return r
 	}
 	from := today
@@ -691,12 +702,12 @@ func restoreDrillReview(members []storage.Member, drills []storage.RestoreDrill,
 	}
 	var last *time.Time
 	for _, d := range drills {
-		if !d.Recovered() {
+		if !d.passed {
 			continue
 		}
-		r.signed(d.RecordedBy, d.RecordedAt)
-		if last == nil || d.HeldOn.After(*last) {
-			held := d.HeldOn
+		r.signed(d.by, d.at)
+		if last == nil || d.held.After(*last) {
+			held := d.held
 			last = &held
 		}
 	}
@@ -706,15 +717,39 @@ func restoreDrillReview(members []storage.Member, drills []storage.RestoreDrill,
 	due := from.AddDate(0, 3, 0)
 	if !today.Before(due.AddDate(0, 0, -30)) {
 		r.wait(due, today.After(due))
-		r.Detail = fmt.Sprintf("The next full restore drill is due by %s.", dayOf(due))
-		if n := len(drills); n > 0 && !drills[n-1].Recovered() {
-			r.Detail += fmt.Sprintf(" The last, on %s, did not recover: it does not count.", dayOf(drills[n-1].HeldOn))
+		r.Detail = fmt.Sprintf("The next %s is due by %s.", what, dayOf(due))
+		if n := len(drills); n > 0 && !drills[n-1].passed {
+			r.Detail += fmt.Sprintf(" The last, on %s, %s: it does not count.", dayOf(drills[n-1].held), failed)
 		}
 	} else {
 		r.DueOn = &due
 	}
-	r.settle(fmt.Sprintf("The next full restore drill is due by %s.", dayOf(due)))
+	r.settle(fmt.Sprintf("The next %s is due by %s.", what, dayOf(due)))
 	return r
+}
+
+// The full restore drill (CTL-RES-02 Q, DR-06): the weekly export restored into an isolated project by
+// docs/runbooks/restore-drill.md each quarter; it counts only when it recovered.
+func restoreDrillReview(members []storage.Member, drills []storage.RestoreDrill, today time.Time, installation bool) Review {
+	r := Review{Kind: "restore-drill", Owner: "dpo", Where: "/compliance/controls",
+		Evidence: "Each drill with its scenario, what it restored from, the data lost, the time taken and DR-06's checks"}
+	ds := make([]drill, 0, len(drills))
+	for _, d := range drills {
+		ds = append(ds, drill{held: d.HeldOn, passed: d.Recovered(), by: d.RecordedBy, at: d.RecordedAt})
+	}
+	return drillReview(r, members, ds, today, installation, "full restore drill", "did not recover")
+}
+
+// The heartbeat drill (CTL-RES-05 Q, NFR-OBS-02): the tick paused in staging by docs/runbooks/heartbeat-drill.md each
+// quarter; it counts only when the platform owner was told within 30 minutes and the Owners within 60.
+func heartbeatDrillReview(members []storage.Member, drills []storage.HeartbeatDrill, today time.Time, installation bool) Review {
+	r := Review{Kind: "heartbeat-drill", Owner: "dpo", Where: "/compliance/controls",
+		Evidence: "Each drill with where and how long the tick was paused, and when the first alert and the escalation came"}
+	ds := make([]drill, 0, len(drills))
+	for _, d := range drills {
+		ds = append(ds, drill{held: d.HeldOn, passed: d.Passed(), by: d.RecordedBy, at: d.RecordedAt})
+	}
+	return drillReview(r, members, ds, today, installation, "heartbeat drill", "did not alert in time")
 }
 
 // TransferReviewWindow is how long before a transfer's next review it waits on the reviews list.

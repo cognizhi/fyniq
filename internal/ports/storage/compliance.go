@@ -395,6 +395,29 @@ func (d RestoreDrill) Recovered() bool {
 	return d.Ledger && d.AuditChain && d.Documents && d.Keys && d.SignIn && d.Tick && d.Outbox
 }
 
+// CodeHeartbeatDrill is the database's refusal to change or remove a recorded heartbeat drill (FY324).
+const CodeHeartbeatDrill = "STORAGE-HEARTBEAT-DRILL-01"
+
+// HeartbeatDrill is a drill in which the tick was paused, by docs/runbooks/heartbeat-drill.md (NFR-OBS-02, CTL-RES-05 Q;
+// p1-operations-dr design D6): how long, and how many minutes after the pause the first alert and the escalation came.
+type HeartbeatDrill struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string // staging or production
+	PausedMinutes     int
+	FirstAlertMinutes *int // nil: no alert came
+	EscalationMinutes *int // nil: no escalation came
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+// Passed reports whether the drill passed: the platform owner was told within 30 minutes and the Owners within 60
+// (NFR-OBS-02).
+func (d HeartbeatDrill) Passed() bool {
+	return d.FirstAlertMinutes != nil && *d.FirstAlertMinutes <= 30 && d.EscalationMinutes != nil && *d.EscalationMinutes <= 60
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -446,6 +469,10 @@ type Compliance interface {
 	RestoreDrills(ctx context.Context) ([]RestoreDrill, error)
 	// RecordRestoreDrill records a restore drill, audited as restore_drill.recorded.
 	RecordRestoreDrill(ctx context.Context, d RestoreDrill) (RestoreDrill, error)
+	// HeartbeatDrills are the organisation's heartbeat drills, oldest first (NFR-OBS-02).
+	HeartbeatDrills(ctx context.Context) ([]HeartbeatDrill, error)
+	// RecordHeartbeatDrill records a heartbeat drill, audited as tick_drill.recorded.
+	RecordHeartbeatDrill(ctx context.Context, d HeartbeatDrill) (HeartbeatDrill, error)
 	// BreachExercises are the tabletop exercises, oldest first (CTL-DP-06).
 	BreachExercises(ctx context.Context) ([]BreachExercise, error)
 	// RecordBreachExercise records a tabletop exercise, audited as breach_exercise.recorded.

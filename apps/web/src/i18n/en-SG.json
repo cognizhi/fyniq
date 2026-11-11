@@ -2044,6 +2044,14 @@
       "label": "What worked on the restored copy",
       "tooltip": "A drill counts as recovered only when every one passed: the ledger's and the audit chain's verifications, documents, keys, sign-in, the tick and the outbox's reconciliation."
     },
+    "compliance.heartbeat-drills": {
+      "label": "Heartbeat drills",
+      "tooltip": "Each quarter's drill of the scheduled tick paused in staging: whether the platform owner heard within 30 minutes and the Owners within an hour. The DPO keeps it."
+    },
+    "heartbeat-drills.minutes": {
+      "label": "When the alerts came",
+      "tooltip": "Minutes after the tick was paused: the first alert, to the platform owner, within 30; the escalation, to the Owners, within 60. Leave one empty when it never came."
+    },
     "incidents.severity": {
       "label": "Severity",
       "tooltip": "Critical when money, personal data, access or the books' integrity is lost or at once at risk; High for an attempt that was stopped, or exposure without signs of access; Medium for a failing control; Low for a false alarm worth keeping."

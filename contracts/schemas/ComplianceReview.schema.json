@@ -71,7 +71,8 @@
         "breach",
         "breach-tabletop",
         "transfers",
-        "restore-drill"
+        "restore-drill",
+        "heartbeat-drill"
       ],
       "examples": [
         "access-review"

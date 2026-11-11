@@ -501,3 +501,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (SEC-32: the incident register on the Incidents tab)
 
 ## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (the restore drill register, DR-06)
+
+## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (the heartbeat drill register, NFR-OBS-02)

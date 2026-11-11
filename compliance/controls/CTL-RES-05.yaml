@@ -18,5 +18,6 @@ checks:
     how: "verify scheduler.configured"
     evidence: "the latest run in the installation's organisation (fyniq.control_run): the tick's Scheduler job exists and runs, and the heartbeat's alert policies (the tick absent 30 and 60 minutes, a late platform job) are on and tell someone; read as the jobs' account in the cloud [live-verify], the stack's own tick locally"
   - frequency: Q
-    status: planned
-    arrives: "p1-operations-dr (rev 0.241: the quarterly drill that disabling the tick in staging raises the alert)"
+    status: running
+    how: "attestation heartbeat-drill"
+    evidence: "the heartbeat drill register (fyniq.tick_drill): each drill in which staging's tick was paused by docs/runbooks/heartbeat-drill.md, with when the first alert and the escalation came; the review is due 3 months after the last that passed"

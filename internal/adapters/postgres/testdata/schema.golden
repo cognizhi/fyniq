@@ -1823,6 +1823,16 @@ tenant_directory | organisation_id | uuid | not null |
 tenant_directory | created_at | timestamp with time zone | not null | now()
 tenants | organisation_id | uuid | null | 
 tenants | created_at | timestamp with time zone | null | 
+tick_drill | organisation_id | uuid | not null | current_org()
+tick_drill | id | uuid | not null | uuidv7()
+tick_drill | held_on | date | not null | 
+tick_drill | environment | text | not null | 
+tick_drill | paused_minutes | integer | not null | 
+tick_drill | first_alert_minutes | integer | null | 
+tick_drill | escalation_minutes | integer | null | 
+tick_drill | findings | text | not null | 
+tick_drill | recorded_by | text | not null | 
+tick_drill | recorded_at | timestamp with time zone | not null | 
 user_identity | issuer | text | not null | 
 user_identity | subject | text | not null | 
 user_identity | user_id | uuid | not null | 
@@ -4856,6 +4866,21 @@ tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
 tenant_directory | tenant_directory_pkey | PRIMARY KEY (organisation_id)
+tick_drill | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+tick_drill | tick_drill_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+tick_drill | tick_drill_environment_known | CHECK ((environment = ANY (ARRAY['staging'::text, 'production'::text])))
+tick_drill | tick_drill_environment_not_null | NOT NULL environment
+tick_drill | tick_drill_findings | CHECK (((length(btrim(findings)) >= 1) AND (length(btrim(findings)) <= 8000)))
+tick_drill | tick_drill_findings_not_null | NOT NULL findings
+tick_drill | tick_drill_held_on_not_null | NOT NULL held_on
+tick_drill | tick_drill_id_not_null | NOT NULL id
+tick_drill | tick_drill_minutes | CHECK (((paused_minutes > 0) AND ((first_alert_minutes IS NULL) OR (first_alert_minutes >= 0)) AND ((escalation_minutes IS NULL) OR (escalation_minutes >= 0))))
+tick_drill | tick_drill_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+tick_drill | tick_drill_organisation_id_not_null | NOT NULL organisation_id
+tick_drill | tick_drill_paused_minutes_not_null | NOT NULL paused_minutes
+tick_drill | tick_drill_pkey | PRIMARY KEY (organisation_id, id)
+tick_drill | tick_drill_recorded_at_not_null | NOT NULL recorded_at
+tick_drill | tick_drill_recorded_by_not_null | NOT NULL recorded_by
 user_identity | user_identity_created_at_not_null | NOT NULL created_at
 user_identity | user_identity_email_form | CHECK ((((email IS NULL) AND (email_verified_at IS NULL)) OR ((email = lower(email)) AND ((length(email) >= 3) AND (length(email) <= 254)) AND (email_verified_at IS NOT NULL))))
 user_identity | user_identity_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
@@ -5361,6 +5386,7 @@ CREATE UNIQUE INDEX team_mode_pkey ON fyniq.team_mode USING btree (organisation_
 CREATE UNIQUE INDEX team_mode_request_once ON fyniq.team_mode USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX team_mode_version_once ON fyniq.team_mode USING btree (organisation_id, version)
 CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree (organisation_id)
+CREATE UNIQUE INDEX tick_drill_pkey ON fyniq.tick_drill USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btree (organisation_id, user_id)
@@ -5469,6 +5495,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.tick_drill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('tick_drill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.withholding_decision DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('withholding_decision', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
@@ -5845,6 +5872,8 @@ CREATE TRIGGER super_admin_guard BEFORE INSERT OR UPDATE ON fyniq.super_admin FO
 CREATE TRIGGER super_admin_no_delete BEFORE DELETE OR TRUNCATE ON fyniq.super_admin FOR EACH STATEMENT EXECUTE FUNCTION super_admin_no_delete()
 CREATE TRIGGER team_mode_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_guard()
 CREATE TRIGGER team_mode_voids AFTER INSERT ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_voids()
+CREATE TRIGGER tick_drill_guard BEFORE DELETE OR UPDATE ON fyniq.tick_drill FOR EACH ROW EXECUTE FUNCTION tick_drill_guard()
+CREATE TRIGGER tick_drill_no_truncate BEFORE TRUNCATE ON fyniq.tick_drill FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER webauthn_challenge_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_challenge FOR EACH ROW EXECUTE FUNCTION webauthn_challenge_guard()
 CREATE TRIGGER webauthn_credential_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_credential FOR EACH ROW EXECUTE FUNCTION webauthn_credential_guard()
 CREATE TRIGGER withholding_decision_immutable BEFORE DELETE OR UPDATE ON fyniq.withholding_decision FOR EACH ROW EXECUTE FUNCTION withholding_decision_immutable()
@@ -5999,6 +6028,7 @@ sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organ
 statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+tick_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
@@ -6176,6 +6206,7 @@ super_admin | disabled | not forced
 super_admin_grant | disabled | not forced
 team_mode | enabled | forced
 tenant_directory | disabled | not forced
+tick_drill | enabled | forced
 user_identity | disabled | not forced
 user_membership | enabled | forced
 user_recovery_code | disabled | not forced
@@ -6498,6 +6529,7 @@ super_admin_no_delete() → trigger | security invoker | v | search_path=pg_cata
 super_admin_users() → SETOF uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4ddf2dc2a0fe3a9cd3600725e7bf0f97
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
+tick_drill_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2d20fefee069f4a10a9554a506421021
 unlink_identity(p_session bytea, p_issuer text, p_subject text, p_now timestamp with time zone) → TABLE(unlinked_user uuid, unlinked_provider text) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 04c0e37b7eae3e0e00f09b568764bf44
 user_cooling_off_until(p_user uuid, p_now timestamp with time zone) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 19590232dc6fbb14aaa95eada86bfd83
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
