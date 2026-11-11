@@ -1,5 +1,6 @@
 # The records' and attachments' storage (DR-07, NFR-RET-01, CTL-AUD-03; p1-operations-dr design D3): two buckets in the
-# environment's project, in Singapore, under their own key, never public.
+# audit project (fyniq-audit in production, beside the weekly export, so documents outlive the production project: the
+# owner's decision of 11 Nov 2026, rev 0.250), in Singapore, under their own key, never public.
 #   - The staging bucket holds what is not yet a record: uploads waiting for their record to be final, report exports,
 #     imported statements, brand files and outgoing documents. The app deletes each in its time (the sweeper, an
 #     export's expiry), so it has no age-based deletion but a backstop on report exports.
@@ -17,7 +18,7 @@ terraform {
 }
 
 variable "project" {
-  description = "The environment's own project."
+  description = "Where the buckets live: fyniq-audit for production (rev 0.250), the environment's own project for staging."
   type        = string
 }
 
@@ -149,4 +150,9 @@ resource "google_storage_bucket_iam_member" "api_reads" {
 output "buckets" {
   description = "FYNIQ_GCP's evidence: the staging bucket and the locked evidence bucket."
   value       = { staging = google_storage_bucket.staging.name, bucket = google_storage_bucket.evidence.name }
+}
+
+output "project" {
+  description = "The project that holds the buckets."
+  value       = google_storage_bucket.evidence.project
 }

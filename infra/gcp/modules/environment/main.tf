@@ -42,8 +42,22 @@ variable "anchors" {
   })
 }
 
+variable "traces" {
+  description = "Whether the services send traces to Cloud Trace (NFR-OBS-01). Off until the dev cloud shows Cloud Trace keeps them in Singapore (CTL-DP-07; the owner's decision of 11 Nov 2026, rev 0.250) [live-verify]: off, no service is told a trace project or may write traces, and logs and metrics are unchanged."
+  type        = bool
+  default     = false
+}
+
+variable "field_keys" {
+  description = "The field keys in the audit project (infra/gcp/modules/field-keys; SEC-11, rev 0.250): the wrapping key and the fingerprint key's pinned version."
+  type = object({
+    key             = string
+    mac_key_version = string
+  })
+}
+
 variable "evidence" {
-  description = "The staging and the locked evidence buckets (infra/gcp/modules/evidence; FR-DOC-13, DR-07)."
+  description = "The staging and the locked evidence buckets in the audit project (infra/gcp/modules/evidence; FR-DOC-13, DR-07, rev 0.250)."
   type = object({
     staging = string
     bucket  = string
@@ -173,8 +187,8 @@ locals {
     job      = "projects/${var.project}/locations/${local.region}/jobs/jobs"
     # The weekly export (DR-02, DR-04): the instance the jobs' account exports, its database, and the buckets.
     exports = merge({ instance = "projects/${var.project}/instances/${google_sql_database_instance.main.name}", database = google_sql_database.databases["fyniq"].name }, var.exports)
-    # The field keys (SEC-11, fields.tf): the wrapping key and the fingerprint key's pinned version.
-    fields = { key = google_kms_crypto_key.fields.id, mac_key_version = "${google_kms_crypto_key.fingerprints.id}/cryptoKeyVersions/1" }
+    # The field keys (SEC-11, infra/gcp/modules/field-keys): the wrapping key and the fingerprint key's pinned version.
+    fields = var.field_keys
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
     # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
     render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
@@ -187,7 +201,8 @@ locals {
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
   wired = toset(["api", "worker", "executor", "jobs", "render", "scanner"])
   # Fyniq's own services, which send their traces to Cloud Trace (NFR-OBS-01; p1-operations-dr design D5); Hydra does not.
-  traced      = toset([for name in ["api", "ai", "mcp", "worker", "executor", "jobs", "render", "scanner"] : name if contains(keys(local.runners), name)])
+  # Only with var.traces on: Cloud Trace must keep them in Singapore first (CTL-DP-07, rev 0.250).
+  traced      = toset([for name in ["api", "ai", "mcp", "worker", "executor", "jobs", "render", "scanner"] : name if contains(keys(local.runners), name) && var.traces])
   oauth_admin = toset(["api", "worker"])
   with_db     = { for name, r in local.runners : name => r if r.database_role != null }
 
