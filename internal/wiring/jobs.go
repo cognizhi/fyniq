@@ -91,6 +91,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			}
 			return err
 		},
+		backup.DrillJob: func(ctx context.Context) error { // DR-06, CTL-RES-02: the monthly restore drill
+			_, err := k.Drill(clock).Run(ctx)
+			return err
+		},
 		"ledger.verify": func(ctx context.Context) error {
 			_, err := balance.VerifyAll(ctx, k.Store)
 			return err
@@ -384,6 +388,25 @@ func (k *Kit) BankReports(clock ports.Clock) bankingest.Importer {
 
 // Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);
 // ok is false when the kit has no evidence stores.
+// Drill is the monthly restore drill (DR-06, CTL-RES-02): a copy an hour back, verified and removed, recorded in the
+// installation's trail. Without a clone it fails, which its heartbeat and CTL-RES-02 show.
+func (k *Kit) Drill(clock ports.Clock) backup.Drill {
+	clone, open := k.Clone, k.OpenClone
+	if clone == nil || open == nil {
+		clone = noClone{}
+	}
+	return backup.Drill{Clone: clone, Open: open, Store: k.Store, Installation: k.Store, Blobs: k.Blobs, Signer: k.Signer, Keyed: k.Keyed(), Clock: clock}
+}
+
+// noClone is the drill's clone where the deployment configured none.
+type noClone struct{}
+
+func (noClone) Clone(context.Context, time.Time) (ports.CloneTarget, error) {
+	return ports.CloneTarget{}, errors.New("no database clone is configured for the restore drill (FYNIQ_GCP exports)")
+}
+
+func (noClone) Remove(context.Context, string) error { return nil }
+
 func (k *Kit) Committer(clock ports.Clock) (evidence.Committer, bool) {
 	if k.Staging == nil || k.Evidence == nil {
 		return evidence.Committer{}, false

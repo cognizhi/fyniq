@@ -10,6 +10,8 @@
 //	jobs run-slot <job> <slot>   run a platform job's slot (RFC 3339) and report it to its slot and heartbeat
 //	jobs heartbeat-check         fail when the tick or a platform job has stopped beating (the absence alert)
 //	jobs outbox-after-restore    after a database restore: every unfinished outbox row waits for reconciliation
+//	jobs restore-drill           the restore drill now: a copy of the database, the ledger and the audit chain verified
+//	                             on it, the copy removed, the drill recorded (DR-06; make restore-drill locally)
 //	jobs controls                list every check of the control registry and how it runs (the dry run)
 //
 // FYNIQ_DATABASE_URL is the worker's role; the local build defaults it.
@@ -33,12 +35,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-const usage = "usage: jobs audit-anchor | audit-verify | audit-recover | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | controls"
+const usage = "usage: jobs audit-anchor | audit-verify | audit-recover | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | restore-drill | controls"
 
 func main() {
 	os.Exit(app.Run("jobs", func(ctx context.Context, deps app.Deps, args []string) error {
 		if len(args) == 0 {
-			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, audit-recover, run-slot, heartbeat-check, outbox-after-restore, controls")
+			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, audit-recover, run-slot, heartbeat-check, outbox-after-restore, restore-drill, controls")
 			return nil
 		}
 		if args[0] == "controls" { // the runner's dry run: every check of the registry, no database needed
@@ -106,6 +108,15 @@ func main() {
 			}
 			fmt.Fprintln(os.Stderr, "jobs: every heartbeat is current")
 			return nil
+		case "restore-drill":
+			r, err := kit.Drill(deps.Clock).Run(ctx)
+			status := "passed"
+			if !r.OK() {
+				status = "FAILED: " + r.Problem
+			}
+			fmt.Fprintf(os.Stderr, "jobs: restore drill of %s (copy %s, removed %t): %d organisation(s), %d ledger(s) and %d audit chain(s) failed, %d anchor(s) after the copy; took %s; %s\n",
+				r.PointInTime.Format(time.RFC3339), r.Copy, r.Removed, r.Organisations, r.LedgerFailed, r.ChainsFailed, r.Ahead, r.Took.Round(time.Second), status)
+			return err
 		case "outbox-after-restore":
 			orgs, err := kit.Store.Organisations(ctx)
 			if err != nil {

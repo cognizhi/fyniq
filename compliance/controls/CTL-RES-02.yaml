@@ -10,8 +10,9 @@ evidence: "Drill report"
 owner: Owner
 checks:
   - frequency: M
-    status: planned
-    arrives: "p1-operations-dr"
+    status: running
+    how: "job restore.drill"
+    evidence: "the job's latest run (every 28 days): a copy of the database an hour back, cloned in production's own project, the ledger's and the audit chain's verifications passed on it within NFR-DR-02's 4 hours, the copy removed; its restore.drilled event in the installation's trail. Cloud SQL's clone is [live-verify]; locally make restore-drill"
   - frequency: Q
     status: planned
-    arrives: "p1-operations-dr"
+    arrives: "p1-operations-dr slice 4b: the quarterly full drill of the weekly export into an isolated project, by runbook, signed off as the restore-drill review"

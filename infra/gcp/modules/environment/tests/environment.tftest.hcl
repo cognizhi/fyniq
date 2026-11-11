@@ -21,6 +21,8 @@
 # req: DR-03
 # req: DR-04
 # req: DR-07
+# req: DR-06
+# req: CTL-RES-02
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -516,6 +518,24 @@ run "only_the_api_and_the_worker_scan" {
   assert {
     condition     = jsondecode(output.gcp_config).scanner.audience == jsondecode(output.gcp_config).scanner.url && toset(jsondecode(output.gcp_config).scanner.service_accounts) == toset(["run-api@fyniq-staging.iam.gserviceaccount.com", "run-worker@fyniq-staging.iam.gserviceaccount.com"])
     error_message = "the scanner accepts the api's and the worker's ID tokens for its own audience"
+  }
+}
+
+# The restore drill: the jobs' account clones the instance and may update and delete only its drill copies, never the
+# instance itself (DR-06, CTL-RES-02).
+run "the_drill_clones_and_removes_only_its_copies" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (google_project_iam_member.drill_clone.member == "serviceAccount:run-jobs@fyniq-staging.iam.gserviceaccount.com" &&
+      google_project_iam_member.drill_clone.condition[0].expression == "resource.name == \"projects/fyniq-staging/instances/fyniq-staging\"" &&
+    google_project_iam_custom_role.drill_clone.permissions == toset(["cloudsql.instances.clone", "cloudsql.instances.get"]))
+    error_message = "the jobs' account clones the environment's instance and nothing else"
+  }
+  assert {
+    condition = (google_project_iam_member.drill_copies.condition[0].expression == "resource.name.startsWith(\"projects/fyniq-staging/instances/fyniq-staging-drill-\")" &&
+    contains(google_project_iam_custom_role.drill_copies.permissions, "cloudsql.instances.delete"))
+    error_message = "the jobs' account deletes only the drill's copies"
   }
 }
 

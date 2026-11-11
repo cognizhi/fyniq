@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -90,9 +91,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
 		// The weekly export with pg_dump as the database's owner, into .data/exports (DR-02, DR-04).
-		Backup: local.PGDump{URL: cmp.Or(os.Getenv("FYNIQ_EXPORT_DATABASE_URL"), fmt.Sprintf("postgres://fyniq:%s@localhost:%s/fyniq?sslmode=disable",
-			postgres.LocalPassword, cmp.Or(os.Getenv("FYNIQ_PG_PORT"), "55432"))), Dir: filepath.Join(data, "exports")},
+		Backup:        local.PGDump{URL: cmp.Or(os.Getenv("FYNIQ_EXPORT_DATABASE_URL"), asOwner(url, "fyniq")), Dir: filepath.Join(data, "exports")},
 		ExportBuckets: backup.Buckets{Weekly: "weekly", Monthly: "monthly"},
+		// The restore drill's copy, made from the database as a template by its owner, opened as this service's role (DR-06).
+		Clone:     postgres.TemplateClone{AdminURL: asOwner(url, "postgres"), Source: "fyniq", Clock: clock},
+		OpenClone: copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
 		Posture: local.Posture{},
 		Logs:    local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
@@ -132,3 +135,15 @@ func mailEnv(env func(string) string) func(string) string {
 // PlatformEgress is the guard of the platform's own outbound connections; the local flavour lets the local stand-ins
 // (Hydra, the render service, Mailpit) through on loopback and the Docker network, never the metadata service.
 func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true} }
+
+// asOwner is the local database's URL, at the service's own host, as the owner the local stack creates (POSTGRES_USER in
+// deploy/local/compose.yaml), on database db.
+func asOwner(base, db string) string {
+	u, err := neturl.Parse(base)
+	if err != nil {
+		return base
+	}
+	u.User = neturl.UserPassword("fyniq", postgres.LocalPassword)
+	u.Path = "/" + db
+	return u.String()
+}

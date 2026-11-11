@@ -5,12 +5,15 @@
 package wiring
 
 import (
+	"context"
+
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/render"
 )
 
@@ -62,4 +65,8 @@ type Kit struct {
 	// export in the cloud, pg_dump locally. Nil: the export job fails, so its heartbeat's absence alerts.
 	Backup        ports.DatabaseBackup
 	ExportBuckets backup.Buckets
+	// Clone makes the monthly restore drill's copy of the database, and OpenClone opens it as this service's own role
+	// (DR-06, CTL-RES-02; p1-operations-dr design D2); nil: the drill fails, which its heartbeat shows.
+	Clone     ports.DatabaseClone
+	OpenClone func(ctx context.Context, t ports.CloneTarget) (storage.Store, func(), error)
 }

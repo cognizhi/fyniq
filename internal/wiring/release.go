@@ -166,9 +166,13 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = outbound
-	// The weekly export (DR-02, DR-04), as the jobs' account [live-verify].
+	// The weekly export (DR-02, DR-04) and the restore drill's copy (DR-06), as the jobs' account [live-verify].
 	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
-		kit.Backup = gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)
+		sql := gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)
+		sql.Clock = clock
+		// The monthly restore drill's copy, cloned in this project and opened as this service's role (DR-06) [live-verify].
+		kit.Backup, kit.Clone = sql, sql
+		kit.OpenClone = copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields))
 		kit.ExportBuckets = c.Exports.Buckets
 	}
 	// The platform's posture and logs, read as the jobs' account (SEC-33, CTL-DP-03) [live-verify].
