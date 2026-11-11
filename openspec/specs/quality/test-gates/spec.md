@@ -436,3 +436,8 @@ Source: PRD-001 §16.2
 #### Scenario: Gate at every minor release
 - **WHEN** a minor release is prepared
 - **THEN** the load tests must meet the NFR-PERF targets
+
+#### Scenario: Weekly at 1 M lines, at 10 M per release (rev 0.249)
+- **WHEN** the week's CI runs, or a minor release is prepared
+- **THEN** the harness runs on the local stack at 1 M lines each week, and at 10 M lines before the release
+- **AND** the release's report is kept as evidence

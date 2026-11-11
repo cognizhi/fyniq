@@ -98,6 +98,15 @@ Source: PRD-001 §15 · Priority M · Phase P1
 - **WHEN** a request is served
 - **THEN** traces, metrics and structured logs are produced for it, carrying the tenant ID and the request ID
 
+#### Scenario: Traces sampled and kept on error (rev 0.249)
+- **WHEN** a request is served in the cloud
+- **THEN** its trace context (W3C) follows it across the services
+- **AND** one request in ten is exported to Cloud Trace through an adapter, and every request that fails is
+
+#### Scenario: No traces locally unless asked (rev 0.249)
+- **WHEN** a service runs in local mode without an OTLP endpoint
+- **THEN** it exports no traces
+
 #### Scenario: SLO dashboards and burn-rate alerts
 - **WHEN** an SLO's error budget burns faster than its alert rate
 - **THEN** a burn-rate alert is raised

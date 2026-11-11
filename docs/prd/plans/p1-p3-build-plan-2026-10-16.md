@@ -333,6 +333,24 @@ It was built on 10 and 11 Nov 2026, in #543 to #555 and #557, one pull request p
 
 One thing waits: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
 
+`p1-operations-dr` is proposed (11 Nov 2026), next in wave 7. It builds:
+- the weekly export into a locked bucket in `fyniq-audit`, with the monthly copy kept a year;
+- the evidence buckets, and a daily check of every committed file's retention;
+- restore drills: a monthly clone verified and removed, and a quarterly drill by runbook;
+- pgAudit's entries in the security log sink;
+- OpenTelemetry traces, SLOs with burn-rate alerts, and the heartbeat's absence alerts;
+- the performance harness, the supported browsers, the idle-cost alert;
+- the operations tray.
+
+By the owner's decisions of the same day (PRD-001 rev 0.249):
+- the monthly restore clones the database in production's own project, and the quarterly drill restores into an
+  isolated one;
+- traces are sampled at 10%, every error kept;
+- the performance harness runs weekly at 1 M lines and at 10 M before each minor release;
+- the scanner's warm instance is a fixed fee billed while idle.
+
+Its cloud parts are code with module tests, verified in the dev cloud later.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
