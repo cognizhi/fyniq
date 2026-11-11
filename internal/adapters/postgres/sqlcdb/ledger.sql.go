@@ -97,6 +97,100 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 	return items, nil
 }
 
+const accountLinesAfter = `-- name: AccountLinesAfter :many
+SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
+FROM fyniq.journal_line l
+JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
+LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
+WHERE l.account_id = $1 AND l.posting_date BETWEEN $2 AND $3
+  AND l.posting_date >= $4
+  AND (l.posting_date, e.ledger_revision, l.line_no) > ($4::date, $5::bigint, $6::integer)
+ORDER BY l.posting_date, e.ledger_revision, l.line_no
+LIMIT $7
+`
+
+type AccountLinesAfterParams struct {
+	AccountID     uuid.UUID
+	DateFrom      time.Time
+	DateTo        time.Time
+	AfterDate     time.Time
+	AfterRevision int64
+	AfterLine     int32
+	RowLimit      int32
+}
+
+type AccountLinesAfterRow struct {
+	EntryID           uuid.UUID
+	LedgerRevision    int64
+	PostingDate       time.Time
+	SourceType        string
+	SourceID          string
+	SourceVersion     int32
+	Memo              *string
+	ReversesEntryID   *uuid.UUID
+	LineNo            int32
+	Currency          string
+	Amount            string
+	BaseAmount        string
+	Description       *string
+	Number            *string
+	PartyID           *uuid.UUID
+	DimensionValueIds []uuid.UUID
+	InstrumentID      *uuid.UUID
+}
+
+// AccountLines a page at a time, after a line's place in posting order (NFR-PERF-05): the line's own posting date, on
+// the account's index, gives them in date order from the page's first day, and an incremental sort orders each day by
+// revision and line, so a page reads about a page of lines however long the ledger is.
+func (q *Queries) AccountLinesAfter(ctx context.Context, arg AccountLinesAfterParams) ([]AccountLinesAfterRow, error) {
+	rows, err := q.db.Query(ctx, accountLinesAfter,
+		arg.AccountID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.AfterDate,
+		arg.AfterRevision,
+		arg.AfterLine,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AccountLinesAfterRow
+	for rows.Next() {
+		var i AccountLinesAfterRow
+		if err := rows.Scan(
+			&i.EntryID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.Memo,
+			&i.ReversesEntryID,
+			&i.LineNo,
+			&i.Currency,
+			&i.Amount,
+			&i.BaseAmount,
+			&i.Description,
+			&i.Number,
+			&i.PartyID,
+			&i.DimensionValueIds,
+			&i.InstrumentID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dimensionSetOf = `-- name: DimensionSetOf :one
 SELECT id FROM fyniq.dimension_set WHERE value_ids = $1::uuid[]
 `

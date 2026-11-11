@@ -309,6 +309,9 @@ type Ledger interface {
 	// AccountLines are an account's lines dated from..to, in posting order, at most limit (FR-GL-11). Only the
 	// balance service reads them (ENG-04).
 	AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]AccountLine, error)
+	// AccountLinesAfter are AccountLines after a line's place in posting order (nil: from the first), at most limit: the
+	// general ledger export reads them a page at a time, with no limit of lines (NFR-PERF-05, rev 0.250).
+	AccountLinesAfter(ctx context.Context, account uuid.UUID, from, to time.Time, after *LineKey, limit int) ([]AccountLine, error)
 	// OfSource are every entry naming a source document by its ID, reversals included, in revision order, with their
 	// lines: an asset's months of depreciation (FR-FA-02). After a purge, a document's carry-forward is among them.
 	OfSource(ctx context.Context, sourceID uuid.UUID) ([]Entry, error)
@@ -334,6 +337,19 @@ type AccountLine struct {
 	PartyID         *uuid.UUID  // the person of a line on a director's account (B.7), else nil
 	DimensionValues []uuid.UUID // the line's dimension values in ascending order (FR-DIM-02), nil for none
 	InstrumentID    *uuid.UUID  // the SAFE or note of a line on convertible instruments (FR-EQ-18), else nil
+}
+
+// LineKey is a line's place in posting order (FR-GL-11): its date, its entry's ledger revision, which no other entry
+// of the organisation shares, and its number in the entry.
+type LineKey struct {
+	PostingDate time.Time
+	Revision    int64
+	LineNo      int
+}
+
+// Key is the line's place in posting order.
+func (l AccountLine) Key() LineKey {
+	return LineKey{PostingDate: l.PostingDate, Revision: l.LedgerRevision, LineNo: l.LineNo}
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -389,11 +405,11 @@ type OrganisationProfile struct {
 	DocumentFooter                                          string
 	// The Data Protection Officer (CMP-PD-01, rev 0.244): the member named, nil for an outsourced DPO or none, and the
 	// business contact the company publishes for them.
-	DPOUserID         *uuid.UUID
-	DPOName, DPOEmail string
-	FYStartMonth                                            int        // the month a financial year starts in, 1 to 12
-	BooksStart, FirstYearEnd                                *time.Time // dates: the first financial year runs from one to the other
-	TimeZone                                                string     // an IANA time zone, such as Asia/Singapore
+	DPOUserID                *uuid.UUID
+	DPOName, DPOEmail        string
+	FYStartMonth             int        // the month a financial year starts in, 1 to 12
+	BooksStart, FirstYearEnd *time.Time // dates: the first financial year runs from one to the other
+	TimeZone                 string     // an IANA time zone, such as Asia/Singapore
 }
 
 // AccountType is one of the five account types (FR-COA-02).

@@ -4,7 +4,7 @@ type: task
 title: Read the financial statements
 summary: The P&L, balance sheet, cash flow and trial balance for any months, compared with the past, budget or forecast, traced to their lines
 sources:
-  - docs/user-guide/financial-statements.md sha256:c38cd190f3e9c94ee304b6afb02abc27114ae78b2cab306941373678369acf5e
+  - docs/user-guide/financial-statements.md sha256:22d7473882ff7136b741f8b6583934a67e8eb3245073dd2a7b4cd5ee096553cc
 data_class: general
 taint: trusted
 status: draft
@@ -96,6 +96,7 @@ aliases:
 - In Expert mode **Reports** has the **Accountant exports**: the general ledger and the journal entries over a range of days, and the trial balance, the fixed asset schedule, and the receivables and payables in detail at a day, as Excel or CSV.
 - Choose the report, its days and the format, then **Prepare the export**; it is prepared in the background, the list says when it is ready and a notification tells you; then **Download**.
 - Only the person who asked can download it, for 24 hours; then it expires and its file is deleted; **Ask again** beside an expired export makes a fresh one.
+- The general ledger export has no limit of lines: it is written as it is read. An Excel sheet holds at most 1,048,576 rows, so a longer one goes on in a second sheet named after the first with (2), its header repeated.
 - An export that cannot be made says why, such as a general ledger range that crosses the start of a financial year (export each year apart). Each export and download is recorded in the audit trail.
 
 (src: docs/user-guide/financial-statements.md#accountant-exports)

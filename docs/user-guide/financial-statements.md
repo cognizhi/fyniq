@@ -3,7 +3,7 @@ key: reports.statements
 title: Read the financial statements
 mode: basic
 roles: [owner, administrator, controller, accountant, bookkeeper, auditor, tax_agent, dpo]
-requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-08, INV-10, INV-11]
+requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-08, INV-10, INV-11, NFR-PERF-05]
 status: draft            # written with the statements (P1); the layout waits for the accountant's confirmation
 ---
 
@@ -122,6 +122,10 @@ and payables in detail at a day, as Excel or CSV.
 3. Select **Download**. Only the person who asked for an export can download it, for 24 hours;
    then it expires and its file is deleted. Select **Ask again** beside an expired export for a
    fresh one.
+
+The general ledger export has no limit of lines: it is written as it is read, however long the
+ledger. An Excel sheet holds at most 1,048,576 rows, so a longer one goes on in a second sheet,
+named after the first with (2), its header repeated.
 
 An export that cannot be made says why, such as a general ledger range that crosses the start of a
 financial year: export each year apart. Each export and each download is recorded in the audit
