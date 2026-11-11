@@ -1,8 +1,13 @@
 package wiring
 
 import (
+	"context"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -27,5 +32,18 @@ func TestTheDrillsCopyIsReachedWithTheServicesOwnURL(t *testing.T) {
 	}
 	if _, err := pointedAt("host=10.0.0.3 dbname=fyniq", ports.CloneTarget{Host: "10.20.0.7"}); err == nil {
 		t.Error("a keyword DSN was pointed at the copy")
+	}
+}
+
+// The local stack runs the restore drill only when asked (make restore-drill): a copy from a template stops every
+// connection to the database while it is made, so the schedule's run refuses, saying why, and touches nothing; a slot
+// that fails is what CTL-RES-02 reads. In the cloud, Cloud SQL's clone leaves the database alone, and the schedule runs it.
+// req: DR-06
+// req: CTL-RES-02
+func TestTheLocalStackDrillsOnlyWhenAsked(t *testing.T) {
+	k := &Kit{DrillOnDemand: true}
+	err := k.PlatformJobs(clock.NewFrozen(time.Date(2026, 11, 11, 0, 0, 0, 0, time.UTC)))[backup.DrillJob](context.Background())
+	if err == nil || !strings.Contains(err.Error(), "make restore-drill") {
+		t.Errorf("the schedule's drill on the local stack: %v", err)
 	}
 }

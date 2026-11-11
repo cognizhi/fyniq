@@ -94,8 +94,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Backup:        local.PGDump{URL: cmp.Or(os.Getenv("FYNIQ_EXPORT_DATABASE_URL"), asOwner(url, "fyniq")), Dir: filepath.Join(data, "exports")},
 		ExportBuckets: backup.Buckets{Weekly: "weekly", Monthly: "monthly"},
 		// The restore drill's copy, made from the database as a template by its owner, opened as this service's role (DR-06).
-		Clone:     postgres.TemplateClone{AdminURL: asOwner(url, "postgres"), Source: "fyniq", Clock: clock},
-		OpenClone: copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
+		// Only when asked: the copy stops every connection while it is made (DrillOnDemand).
+		Clone:         postgres.TemplateClone{AdminURL: asOwner(url, "postgres"), Source: "fyniq", Clock: clock},
+		OpenClone:     copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
+		DrillOnDemand: true,
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
 		Posture:    local.Posture{},
 		Scheduling: local.Scheduling{},
