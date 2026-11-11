@@ -90,9 +90,10 @@ test("first-run setup: the code, the company, the recovery codes once, then a se
   await page.getByLabel("Company name").fill("Cognizhi Pte Ltd");
   await page.getByRole("button", { name: "Create organisation" }).click();
 
+  // The recovery codes show once setup answered, so the request has been seen by then (Firefox sends it a moment later).
+  await expect(page.getByRole("list", { name: "Recovery codes" }).getByRole("listitem")).toHaveCount(10);
   const setup = seen.find((r) => r.method === "POST" && r.path === "/v1/setup");
   expect(setup?.body).toEqual({ setup_code: "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z", display_name: "Mei Ling Tan", organisation: { name: "Cognizhi Pte Ltd", base_currency: "SGD" } });
-  await expect(page.getByRole("list", { name: "Recovery codes" }).getByRole("listitem")).toHaveCount(10);
   const go = page.getByRole("button", { name: "Continue" });
   await expect(go).toBeDisabled();
   await page.getByLabel("I have kept these codes somewhere safe, offline.").check();
