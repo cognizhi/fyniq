@@ -252,6 +252,11 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
   - a template in `docs/runbooks/cost-review.md`.
 - **NFR-COST-01 and NFR-COST-03** are the budget module's (built), now listed as built.
 
+- **As built (slice 10):** the idle alert is PromQL in `modules/slo` over every service but the warm ones (production's
+  scanner): billable instance time in an hour `unless` a request in it. The `cost-model` review is the reconciliation in
+  `docs/runbooks/cost-review.md`, recorded in the release record, which `p1-launch-readiness` checks before go-live,
+  rather than a register in the Compliance Center: NFR-COST-04's evidence is the release record.
+
 ### D10. The operations tray (screen `operations-tray`; FR-INT-11, NFR-PERF-04, NFR-PERF-05)
 
 - **`listMyOperations`** (`GET /v1/operations`): the caller's operations, newest first, with cursor paging. Each has
