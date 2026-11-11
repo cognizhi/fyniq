@@ -35,48 +35,50 @@ def test_a_year_carried_forward_by_hand() -> None:  # req: AUD-10, INV-01, INV-0
     # 15 January 2019 is after the boundary. The other seven entries go.
     r = purge(ledger("hand-worked-year"))
     assert (r["kept"], r["purged"], r["unchanged"]) == (["E8", "E9"], 7, True)
-    # Boundary: bank 1,090.00 + 200.00; the USD bank at 66.67 ÷ 50.00 = 1.3334; GST −90.00 − 45.00; share capital
-    # −66.67; retained earnings 300.00 − 135.00 = 165.00, "eng" −500.00, "sales" −1,000.00; suspense takes back the
-    # documents' 300.00 + 1,090.00 − 1,090.00 − 545.00 − 135.00 + 200.00 = −180.00, so 180.00.
+    # Every line carries under its own document, its revenue and expense into retained earnings by dimension set, so each
+    # balances as its entries did: INV-1 1,090.00 - 90.00 - 1,000.00 ("sales"); INV-3 USD 100.00 (135.00) - 135.00.
     assert shown(r) == [
-        "ledger_boundary 2019-01-01: 1010@ SGD 1290.00 1 1290.00 1020@ USD 50.00 1.3334 66.67 2200@ SGD -135.00 1 -135.00"
-        " 3010@ SGD -66.67 1 -66.67 3100@ SGD 165.00 1 165.00 3100@dept=eng SGD -500.00 1 -500.00"
-        " 3100@dept=sales SGD -1000.00 1 -1000.00 2999@ SGD 180.00 1 180.00",
-        "bill BILL-1: 2010@ SGD -300.00 1 -300.00 2999@ SGD 300.00 1 300.00",
-        "customer_receipt PAY-1: 1100@ SGD -1090.00 1 -1090.00 2999@ SGD 1090.00 1 1090.00",
-        "invoice INV-1: 1100@ SGD 1090.00 1 1090.00 2999@ SGD -1090.00 1 -1090.00",
-        "invoice INV-2: 1100@ SGD 545.00 1 545.00 2999@ SGD -545.00 1 -545.00",
-        "invoice INV-3: 1100@ USD 100.00 1.35 135.00 2999@ SGD -135.00 1 -135.00",
-        "journal LOAN-1: 2500@ SGD -200.00 1 -200.00 2999@ SGD 200.00 1 200.00",
+        "bill BILL-1: 2010@ SGD -300.00 1 -300.00 3100@ SGD 300.00 1 300.00",
+        "customer_receipt PAY-1: 1010@ SGD 1090.00 1 1090.00 1100@ SGD -1090.00 1 -1090.00",
+        "invoice INV-1: 1100@ SGD 1090.00 1 1090.00 2200@ SGD -90.00 1 -90.00 3100@dept=sales SGD -1000.00 1 -1000.00",
+        "invoice INV-2: 1100@ SGD 545.00 1 545.00 2200@ SGD -45.00 1 -45.00 3100@dept=eng SGD -500.00 1 -500.00",
+        "invoice INV-3: 1100@ USD 100.00 1.35 135.00 3100@ SGD -135.00 1 -135.00",
+        "journal LOAN-1: 1010@ SGD 200.00 1 200.00 2500@ SGD -200.00 1 -200.00",
+        "share_issue_cash SHR-1: 1020@ USD 50.00 1.3334 66.67 3010@ SGD -66.67 1 -66.67",
     ]
     # On 1 February 2019: the bank 1,290.00 + 1,000.00 − 50.00 + 50.00; retained earnings 165.00 + J-9's 50.00 of last
     # year's expense; this year's −50.00 of expense from its reversal; each open item on receivables by its document.
-    last = {(b["account"], b["dimension_set"], b["currency"], b["source"] and b["source"]["id"]): (b["amount"], b["base_amount"])
-            for b in r["positions"][-1]["balances"]}
+    last: dict = {}
+    for b in r["positions"][-1]["balances"]:  # by account, set and currency, each document's summed
+        k = (b["account"], b["dimension_set"], b["currency"])
+        a, c = last.get(k, (Decimal(0), Decimal(0)))
+        last[k] = (a + Decimal(b["amount"]), c + Decimal(b["base_amount"]))
+    last = {k: (f"{a:.2f}", f"{c:.2f}") for k, (a, c) in last.items() if a or c}
+    receivables = {b["source"]["id"]: (b["amount"], b["base_amount"]) for b in r["positions"][-1]["balances"] if b["account"] == "1100"}
     assert [p["date"] for p in r["positions"]] == ["2019-01-01", "2019-01-15", "2019-02-01"]
-    assert last[("1010", "", "SGD", None)] == ("2290.00", "2290.00")
-    assert last[("3100", "", "SGD", None)] == ("215.00", "215.00")
-    assert last[("6010", "", "SGD", None)] == ("-50.00", "-50.00")
-    assert last[("1100", "", "USD", "INV-3")] == ("100.00", "135.00")
-    assert last[("1100", "", "SGD", "INV-4")] == ("218.00", "218.00")
-    assert last[("2200", "", "SGD", None)] == ("-153.00", "-153.00")
-    assert ("2999", "", "SGD", None) not in last  # suspense nets to zero across the carry-forward
+    assert last[("1010", "", "SGD")] == ("2290.00", "2290.00")
+    assert last[("3100", "", "SGD")] == ("215.00", "215.00")
+    assert last[("6010", "", "SGD")] == ("-50.00", "-50.00")
+    assert last[("2200", "", "SGD")] == ("-153.00", "-153.00")
+    assert receivables == {"INV-1": ("1090.00", "1090.00"), "PAY-1": ("-1090.00", "-1090.00"), "INV-2": ("545.00", "545.00"),
+                           "INV-3": ("100.00", "135.00"), "INV-4": ("218.00", "218.00")}  # each open item by its document
 
 
 def test_foreign_residuals_by_hand() -> None:  # req: AUD-10, INV-05
-    # USD 999,999,999.99 worth 1,234,567,895.12 (J2's revaluation of 5.00 included): 1.2345678951 gives
-    # 1,234,567,895.09, and 0.03 is base-only. USD 0.01 worth 100,000,000.00 would need the rate 10,000,000,000, of 11
-    # integer digits, so it carries at 1 with 99,999,999.99 base-only; USD 5.00 worth −1.00 at 1 with −6.00 base-only.
-    # JPY 5,000 worth 43.21 is an open item of J5, at 0.008642 exactly.
+    # J1's USD 999,999,999.99 worth 1,234,567,890.12 carries at 1.2345678901, which gives 1,234,567,890.09, and 0.03
+    # base-only; J2's revaluation of 5.00 is base-only. J3's USD 0.01 worth 100,000,000.00 would need the rate
+    # 10,000,000,000, of 11 integer digits, so it carries at 1 with 99,999,999.99 base-only; J4's USD 5.00 worth -1.00 at 1
+    # with -6.00 base-only; J5's JPY 5,000 worth 43.21 at 0.008642 exactly. Each balances by its own revenue or expense,
+    # carried into retained earnings.
     r = purge(ledger("foreign-residuals"))
     assert (r["kept"], r["purged"], r["unchanged"]) == ([], 5, True)
     assert shown(r) == [
-        "ledger_boundary 2021-04-01: 1020@ USD 999999999.99 1.2345678951 1234567895.09 1020@ USD 0.00 1 0.03"
-        " 1020@dept=eng USD 0.01 1 0.01 1020@dept=eng USD 0.00 1 99999999.99"
-        " 1020@dept=sales USD 5.00 1 5.00 1020@dept=sales USD 0.00 1 -6.00"
-        " 3010@ SGD -1234567895.12 1 -1234567895.12 3100@ SGD -99999999.00 1 -99999999.00"
-        " 3100@dept=eng SGD -43.21 1 -43.21 2999@ SGD 43.21 1 43.21",
-        "journal J5: 1100@dept=eng JPY 5000 0.008642 43.21 2999@ SGD -43.21 1 -43.21",
+        "journal J1: 1020@ USD 999999999.99 1.2345678901 1234567890.09 1020@ USD 0.00 1 0.03"
+        " 3010@ SGD -1234567890.12 1 -1234567890.12",
+        "journal J2: 1020@ USD 0.00 1 5.00 3010@ SGD -5.00 1 -5.00",
+        "journal J3: 1020@dept=eng USD 0.01 1 0.01 1020@dept=eng USD 0.00 1 99999999.99 3100@ SGD -100000000.00 1 -100000000.00",
+        "journal J4: 1020@dept=sales USD 5.00 1 5.00 1020@dept=sales USD 0.00 1 -6.00 3100@ SGD 1.00 1 1.00",
+        "journal J5: 1100@dept=eng JPY 5000 0.008642 43.21 3100@dept=eng SGD -43.21 1 -43.21",
     ]
 
 
@@ -105,7 +107,6 @@ def test_reversals_keep_each_other() -> None:  # req: AUD-10
     (lambda d: d["entries"][9].update(reverses="E99"), "not an entry"),
     (lambda d: d.update(boundary="2019-02-01"), "not the first day"),
     (lambda d: d.update(base_currency="EUR"), "base currency"),
-    (lambda d: d.update(suspense="1100"), "control account"),
     (lambda d: d.update(retained_earnings="4010"), "revenue or expense"),
     (lambda d: d.update(retained_earnings="9999"), "not an account"),
     (lambda d: d["entries"][0].update(posting_date="2018-02-30"), "not a calendar date"),
@@ -125,11 +126,7 @@ def test_a_purge_changes_no_position_from_the_boundary_on(doc: dict) -> None:  #
     assert r["unchanged"]
     for entry in r["entries"]:  # each entry balances
         assert sum((Decimal(x["base_amount"]) for x in entry["lines"]), Decimal(0)) == 0
-    # Suspense nets to zero across the carry-forward: it carries exactly the purged lines' own suspense balance.
     purged = [e for e in doc["entries"] if e["posting_date"] < doc["boundary"] and e["id"] not in r["kept"]]
-    held = sum((Decimal(x["base_amount"]) for e in purged for x in e["lines"] if x["account"] == doc["suspense"]), Decimal(0))
-    carried = sum((Decimal(x["base_amount"]) for e in r["entries"] for x in e["lines"] if x["account"] == doc["suspense"]), Decimal(0))
-    assert carried == held
     assert r["purged"] == len(purged)
 
 
@@ -140,17 +137,16 @@ def test_generated_ledgers_are_the_same_for_the_same_seed() -> None:  # req: QA-
 
 
 def test_each_person_and_instrument_keeps_their_balance() -> None:  # req: AUD-10, INV-13
-    # LOAN-2 lends 300.00 from P-1 and 200.00 from P-2 on the director's loan (a control account); SAFE-1 puts USD 100.00
-    # (135.00) into S-1 and 50.00 into S-2. Each keeps its own line, and P-1's repayment after the boundary clears P-1.
+    # LOAN-2 lends 300.00 from P-1 and 200.00 from P-2 on the director's loan; SAFE-1 puts USD 100.00 (135.00) into S-1
+    # and 50.00 into S-2. Each keeps its own line, and P-1's repayment after the boundary clears P-1.
     r = purge(ledger("persons-and-instruments"))
     assert r["unchanged"]
     tagged = [(e["source"]["id"], x["account"], x["party"], x["instrument"], x["currency"], x["amount"]) for e in r["entries"] for x in e["lines"]]
     assert tagged == [
-        ("2022-07-01", "1010", None, None, "SGD", "550.00"), ("2022-07-01", "1020", None, None, "USD", "100.00"),
-        ("2022-07-01", "2700", None, "S-2", "SGD", "-50.00"), ("2022-07-01", "2700", None, "S-1", "USD", "-100.00"),
-        ("2022-07-01", "2999", None, None, "SGD", "-500.00"),
-        ("LOAN-2", "2500", "P-1", None, "SGD", "-300.00"), ("LOAN-2", "2500", "P-2", None, "SGD", "-200.00"),
-        ("LOAN-2", "2999", None, None, "SGD", "500.00"),
+        ("LOAN-2", "1010", None, None, "SGD", "500.00"), ("LOAN-2", "2500", "P-1", None, "SGD", "-300.00"),
+        ("LOAN-2", "2500", "P-2", None, "SGD", "-200.00"),
+        ("SAFE-1", "1010", None, None, "SGD", "50.00"), ("SAFE-1", "1020", None, None, "USD", "100.00"),
+        ("SAFE-1", "2700", None, "S-2", "SGD", "-50.00"), ("SAFE-1", "2700", None, "S-1", "USD", "-100.00"),
     ]
     last = {(b["account"], b["party"], b["source"] and b["source"]["id"]): b["amount"] for b in r["positions"][-1]["balances"]}
     assert last[("2500", "P-1", "LOAN-2")] == "-300.00" and last[("2500", "P-1", "REPAY-1")] == "300.00"

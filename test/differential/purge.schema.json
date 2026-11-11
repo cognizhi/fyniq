@@ -4,7 +4,7 @@
   "description": "A ledger and a boundary that the Go engine (cmd/scenario-run, internal/domain/retention) and the Python oracle (oracle/src/oracle/purge.py) both purge and carry forward (AUD-10, QA-ENG-02; p1-audit-explorer design D7b): its accounts, its posted entries and the first day of the year after the one purged. README.md beside this file, \"Purges\", states the rule and the result. Patterns are RE2- and ECMA-262-compatible.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "name", "base_currency", "currencies", "fy_start_month", "boundary", "retained_earnings", "suspense", "accounts", "entries"],
+  "required": ["schema", "name", "base_currency", "currencies", "fy_start_month", "boundary", "retained_earnings", "accounts", "entries"],
   "properties": {
     "schema": {"const": "fyniq-purge@1"},
     "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
@@ -19,7 +19,6 @@
     "fy_start_month": {"description": "The month the financial year starts, 1 to 12.", "type": "integer", "minimum": 1, "maximum": 12},
     "boundary": {"description": "The first day of a financial year: entries dated before it are purged, unless kept.", "$ref": "#/$defs/date"},
     "retained_earnings": {"description": "The retained earnings account's code.", "$ref": "#/$defs/code"},
-    "suspense": {"description": "The suspense account's code.", "$ref": "#/$defs/code"},
     "accounts": {
       "type": "array",
       "minItems": 1,
@@ -30,8 +29,7 @@
         "properties": {
           "code": {"$ref": "#/$defs/code"},
           "type": {"enum": ["asset", "liability", "equity", "revenue", "expense"]},
-          "role": {"description": "A system role (FR-COA-03), if any.", "type": "string", "pattern": "^[a-z][a-z-]{0,39}$"},
-          "control": {"description": "The account has a sub-ledger (is_control).", "type": "boolean"}
+          "role": {"description": "A system role (FR-COA-03), if any.", "type": "string", "pattern": "^[a-z][a-z-]{0,39}$"}
         }
       }
     },

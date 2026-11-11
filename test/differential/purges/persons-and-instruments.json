@@ -9,7 +9,6 @@
  "fy_start_month": 7,
  "boundary": "2022-07-01",
  "retained_earnings": "3100",
- "suspense": "2999",
  "accounts": [
   {
    "code": "1010",
@@ -37,8 +36,7 @@
   {
    "code": "2500",
    "type": "liability",
-   "role": "director-loan",
-   "control": true
+   "role": "director-loan"
   },
   {
    "code": "2999",

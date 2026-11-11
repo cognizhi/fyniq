@@ -87,8 +87,26 @@ func Trial(ctx context.Context, u storage.UnitOfWork, base money.Currency, perio
 	return TrialAt(ctx, u, base, Current, periods...)
 }
 
-// TrialAt is Trial read through a snapshot.
+// TrialAt is Trial read through a snapshot. A period before the ledger's latest purge boundary, or a snapshot as at a
+// revision before its purge, is refused (Purged, AUD-10).
 func TrialAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, periods ...uuid.UUID) (TrialBalance, error) {
+	if err := s.check(ctx, u); err != nil {
+		return TrialBalance{}, err
+	}
+	for _, id := range periods {
+		p, err := u.Periods().Get(ctx, id)
+		if err != nil {
+			return TrialBalance{}, err
+		}
+		if err := CheckDay(ctx, u, p.EndsOn); err != nil {
+			return TrialBalance{}, err
+		}
+	}
+	return trialAt(ctx, u, base, s, periods...)
+}
+
+// trialAt is TrialAt with no refusal: what a position from the boundary on reads of the purged periods.
+func trialAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, periods ...uuid.UUID) (TrialBalance, error) {
 	totals := map[uuid.UUID]money.Money{}
 	for _, p := range periods {
 		rows, err := s.forPeriod(ctx, u, p)
@@ -223,6 +241,9 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 // its opening balance and its lines are of those lines alone. nil reads every line.
 func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
 	only func(values []uuid.UUID) bool) (AccountLedger, error) {
+	if err := CheckDay(ctx, u, from); err != nil {
+		return AccountLedger{}, err
+	}
 	y, err := yearEndOf(ctx, u)
 	if err != nil {
 		return AccountLedger{}, err
@@ -333,6 +354,9 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 // statement that needs entries rather than balances reads, such as the cash flow (FR-RPT-01, INV-11), at the revision
 // it reads every other figure at.
 func EachEntry(ctx context.Context, u storage.UnitOfWork, revision int64, each func(storage.Entry) error) error {
+	if err := CheckRevision(ctx, u, revision); err != nil {
+		return err
+	}
 	const page = 500
 	after := int64(0)
 	for {

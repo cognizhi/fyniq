@@ -68,7 +68,7 @@ The auditor evidence pack (AUD-07's P2 part) is in `p2-` work. The analytical co
     writes a signed, anchored boundary record, and verification starts from the latest boundary.
   - **The ledger's.** It purges a financial year's journal entries once that year's records have passed their
     retention and every earlier year is purged. It first writes a signed ledger boundary record, then posts
-    carry-forward entries dated the boundary:
+    carry-forward entries dated the day before the boundary, which every later report reads as its opening balance:
     - balance-sheet accounts by account, dimension set and currency;
     - control accounts per open source document;
     - revenue and expense into retained earnings.

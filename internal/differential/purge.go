@@ -34,12 +34,10 @@ type Purge struct {
 	FYStartMonth     int            `json:"fy_start_month"`
 	Boundary         string         `json:"boundary"`
 	RetainedEarnings string         `json:"retained_earnings"`
-	Suspense         string         `json:"suspense"`
 	Accounts         []struct {
-		Code    string `json:"code"`
-		Type    string `json:"type"`
-		Role    string `json:"role"`
-		Control bool   `json:"control"`
+		Code string `json:"code"`
+		Type string `json:"type"`
+		Role string `json:"role"`
 	} `json:"accounts"`
 	Entries []struct {
 		ID     string `json:"id"`
@@ -113,16 +111,12 @@ func ParsePurge(b []byte) (p Purge, err error) {
 		if _, dup := bk.accounts[a.Code]; dup {
 			return invalid("two accounts have the code %s", a.Code)
 		}
-		bk.accounts[a.Code] = retention.Account{Code: a.Code, Type: a.Type, Role: a.Role, Control: a.Control}
+		bk.accounts[a.Code] = retention.Account{Code: a.Code, Type: a.Type, Role: a.Role}
 	}
-	for what, code := range map[string]string{"retained earnings": p.RetainedEarnings, "suspense": p.Suspense} {
-		a, ok := bk.accounts[code]
-		if !ok {
-			return invalid("the %s account %s is not an account", what, code)
-		}
-		if retention.IsControl(a) || retention.IsProfitOrLoss(a) {
-			return invalid("the %s account %s is a control account, revenue or expense", what, code)
-		}
+	if a, ok := bk.accounts[p.RetainedEarnings]; !ok {
+		return invalid("the retained earnings account %s is not an account", p.RetainedEarnings)
+	} else if retention.IsProfitOrLoss(a) {
+		return invalid("the retained earnings account %s is revenue or expense", p.RetainedEarnings)
 	}
 	if bk.boundary, err = time.Parse(time.DateOnly, p.Boundary); err != nil {
 		return invalid("the boundary %q is not a calendar date", p.Boundary)
@@ -182,8 +176,8 @@ func ParsePurge(b []byte) (p Purge, err error) {
 	return p, nil
 }
 
-// positionKey is what a position sums by: account, dimension set, currency, person, instrument and, for a control
-// account, the source.
+// positionKey is what a position sums by: account, dimension set, currency, person, instrument and source (none for
+// retained earnings, which the rule writes).
 type positionKey struct {
 	account, set, currency, party, instrument, sourceType, sourceID string
 	sourced                                                         bool
@@ -210,7 +204,7 @@ func (p Purge) positions(lines []datedLine, dates []time.Time) ([]map[positionKe
 			switch {
 			case retention.IsProfitOrLoss(a) && l.on.Before(start):
 				k, amount = positionKey{account: p.RetainedEarnings, set: l.DimensionSet, currency: bk.base.Code}, l.Base
-			case retention.IsControl(a):
+			case l.Account != p.RetainedEarnings: // the rule's own fold counts whole
 				k.sourceType, k.sourceID, k.sourced = l.Source.Type, l.Source.ID, true
 			}
 			s, ok := sums[k]
@@ -262,8 +256,7 @@ func RunPurge(p Purge) (map[string]any, error) {
 		}
 	}
 	slices.Sort(keptBefore)
-	entries, err := retention.CarryForward(retention.Input{Base: bk.base, Accounts: bk.accounts, RetainedEarnings: p.RetainedEarnings,
-		Suspense: p.Suspense, Boundary: retention.Source{Type: retention.BoundarySource, ID: p.Boundary}, Lines: purged})
+	entries, err := retention.CarryForward(retention.Input{Base: bk.base, Accounts: bk.accounts, RetainedEarnings: p.RetainedEarnings, Lines: purged})
 	if err != nil {
 		return nil, err
 	}

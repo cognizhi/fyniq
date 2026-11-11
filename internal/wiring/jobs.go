@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/notify"
@@ -49,6 +50,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"retention.purge": func(ctx context.Context) error { // AUD-09, AUD-10: the purge after retention, where it is switched on
+			if err := retention.PurgeLedgers(ctx, k.Store, k.Blobs, k.Signer, clock); err != nil { // the ledger's year first (D7b)
+				return err
+			}
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},

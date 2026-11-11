@@ -14,6 +14,9 @@ import (
 // materialised balances of every period that ends by then, and the lines of the period the day falls in, up to it. A
 // money account's book balance for its reconciliation and the cash position read it (FR-BNK-10, FR-BNK-13).
 func Through(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, cur, base money.Currency, through time.Time) (money.Money, money.Money, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return money.Money{}, money.Money{}, err
+	}
 	amount, value := money.Zero(cur), money.Zero(base)
 	periods, err := u.Periods().List(ctx)
 	if err != nil {

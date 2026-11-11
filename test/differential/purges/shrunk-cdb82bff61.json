@@ -11,12 +11,10 @@
  "fy_start_month": 1,
  "boundary": "2021-01-01",
  "retained_earnings": "3100",
- "suspense": "2999",
  "accounts": [
   {
    "code": "1010",
-   "type": "asset",
-   "control": false
+   "type": "asset"
   },
   {
    "code": "1020",
@@ -49,13 +47,11 @@
   {
    "code": "2500",
    "type": "liability",
-   "role": "director-loan",
-   "control": true
+   "role": "director-loan"
   },
   {
    "code": "2600",
-   "type": "liability",
-   "control": true
+   "type": "liability"
   },
   {
    "code": "2999",

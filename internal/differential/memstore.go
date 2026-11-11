@@ -39,6 +39,14 @@ func (m *memStore) Balances() storage.Balances       { return memBalances{m: m} 
 func (m *memStore) ShareIssues() storage.ShareIssues { return memIssues{m: m} }
 func (m *memStore) Settings() storage.Settings       { return memSettings{m: m} }
 func (m *memStore) KPIInputs() storage.KPIInputs     { return memInputs{m: m} }
+func (m *memStore) Retention() storage.Retention     { return memRetention{} }
+
+// memRetention is a ledger never purged after retention (AUD-10): the balance service reads every date.
+type memRetention struct{ storage.Retention }
+
+func (memRetention) LedgerBoundaries(context.Context) ([]storage.LedgerBoundary, error) {
+	return nil, nil
+}
 
 type memAccounts struct {
 	storage.Accounts
@@ -72,6 +80,15 @@ type memPeriods struct {
 
 func (p memPeriods) List(context.Context) ([]storage.Period, error) {
 	return slices.Clone(p.m.periods), nil
+}
+
+func (p memPeriods) Get(_ context.Context, id uuid.UUID) (storage.Period, error) {
+	for _, x := range p.m.periods {
+		if x.ID == id {
+			return x, nil
+		}
+	}
+	return storage.Period{}, ports.ErrNotFound
 }
 
 type memLedger struct {

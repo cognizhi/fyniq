@@ -3,7 +3,7 @@ package retention
 import (
 	"time"
 
-	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/period"
 )
 
 // Period is what the year plan needs of a period: its days and whether it is still open.
@@ -17,25 +17,20 @@ type Year struct {
 	StartsOn, Boundary time.Time
 }
 
-// NextYear is the oldest financial year whose lines may be purged on now (AUD-10, design D7b): the year that holds
-// earliest, the date of the books' first line still kept, once that year's records' retention has passed (the end of
-// the year plus years, at least 7, evidence.RetainUntil), every period it holds is closed and no record dated in it is
-// on legal hold (holds are the held records' dates). An earlier year is always purged first, since earliest is the
-// first line kept. ok is false when no year may go yet.
-func NextYear(fyStartMonth, years int, earliest time.Time, periods []Period, holds []time.Time, now time.Time, loc *time.Location) (Year, bool) {
+// NextYear is the oldest financial year whose lines may be purged on now (AUD-10, design D7b): the year of the calendar
+// that holds earliest, the date of the books' first line not yet purged (a line before the books start counts in the
+// first year), once that year's records' retention has passed (its end plus years, at least 7: it may go from the day
+// after), every period it holds is closed and no record dated in it is on legal hold (holds are the held records'
+// dates). An earlier year is always purged first, since earliest is the first line left. ok is false when no year may
+// go yet. The ledger's dates are calendar dates, read in UTC.
+func NextYear(cal period.Calendar, years int, earliest time.Time, periods []Period, holds []time.Time, now time.Time) (Year, bool) {
 	if earliest.IsZero() {
 		return Year{}, false
 	}
-	if fyStartMonth < 1 || fyStartMonth > 12 {
-		fyStartMonth = 1
-	}
-	local := earliest.In(loc)
-	start := time.Date(local.Year(), time.Month(fyStartMonth), 1, 0, 0, 0, 0, loc)
-	if start.After(local) {
-		start = start.AddDate(-1, 0, 0)
-	}
-	boundary := start.AddDate(1, 0, 0)
-	if evidence.RetainUntil(fyStartMonth, max(years, 7), earliest, loc).After(now) {
+	y := cal.Year(max(cal.Number(earliest), 1))
+	start, boundary := y.StartsOn, y.EndsOn.AddDate(0, 0, 1)
+	today := time.Date(now.UTC().Year(), now.UTC().Month(), now.UTC().Day(), 0, 0, 0, 0, time.UTC)
+	if !today.After(y.EndsOn.AddDate(max(years, 7), 0, 0)) {
 		return Year{}, false
 	}
 	for _, p := range periods {
@@ -44,7 +39,7 @@ func NextYear(fyStartMonth, years int, earliest time.Time, periods []Period, hol
 		}
 	}
 	for _, h := range holds {
-		if !h.Before(start) && h.Before(boundary) {
+		if h.Before(boundary) && !h.Before(start) {
 			return Year{}, false
 		}
 	}

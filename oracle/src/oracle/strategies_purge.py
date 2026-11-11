@@ -1,8 +1,7 @@
 """Hypothesis strategies for fyniq-purge@1 documents (AUD-10; p1-audit-explorer design D7b, QA-ENG-02).
 
 Harness code: it draws ledgers within purge.schema.json's limits for the differential run; it never computes an
-expected figure. A ledger has a chart with control accounts (receivables, payables and a flagged director's loan),
-accounts kept by person (the director's loan, share application monies) and by instrument (SAFEs), entries in the base
+expected figure. A ledger has a chart with receivables and payables, accounts kept by person (the director's loan, share application monies) and by instrument (SAFEs), entries in the base
 currency and in others, some with a base amount that no rate gives (a revaluation's or a
 rounding's), dimension sets, source documents shared by several entries so their open items net, reversals (of
 reversals too) across the boundary, and entries a register or the bank names.
@@ -20,15 +19,15 @@ from hypothesis import strategies as st
 BASE = "SGD"
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "EUR": 2}
 CHART = [
-    {"code": "1010", "type": "asset", "role": "", "control": False},
+    {"code": "1010", "type": "asset"},
     {"code": "1020", "type": "asset"},
     {"code": "1030", "type": "asset"},
     {"code": "1100", "type": "asset", "role": "accounts-receivable"},
     {"code": "1210", "type": "asset", "role": "prepayments"},
     {"code": "2010", "type": "liability", "role": "accounts-payable"},
     {"code": "2200", "type": "liability", "role": "gst-control"},
-    {"code": "2500", "type": "liability", "role": "director-loan", "control": True},
-    {"code": "2600", "type": "liability", "control": True},
+    {"code": "2500", "type": "liability", "role": "director-loan"},
+    {"code": "2600", "type": "liability"},
     {"code": "2700", "type": "liability", "role": "convertible-instruments"},
     {"code": "2800", "type": "liability", "role": "share-application-monies"},
     {"code": "2999", "type": "liability", "role": "suspense"},
@@ -143,7 +142,6 @@ def purges(draw: st.DrawFn) -> dict[str, Any]:
         "fy_start_month": fy_month,
         "boundary": boundary.isoformat(),
         "retained_earnings": "3100",
-        "suspense": "2999",
         "accounts": [{k: v for k, v in a.items() if v != ""} for a in CHART],
         "entries": entries,
     }

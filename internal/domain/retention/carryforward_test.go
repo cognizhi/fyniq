@@ -23,10 +23,10 @@ func m(s string, c money.Currency) money.Money {
 
 var chart = map[string]Account{
 	"bank": {Code: "1010", Type: "asset"}, "usd": {Code: "1020", Type: "asset"},
-	"ar": {Code: "1100", Type: "asset", Role: AccountsRec}, "gst": {Code: "2200", Type: "liability"},
-	"ap": {Code: "2010", Type: "liability", Role: AccountsPay}, "loan": {Code: "2500", Type: "liability", Control: true},
-	"suspense": {Code: "2999", Type: "liability", Role: "suspense"}, "capital": {Code: "3010", Type: "equity"},
-	"re": {Code: "3100", Type: "equity", Role: RetainedEarnings}, "revenue": {Code: "4010", Type: Revenue},
+	"ar": {Code: "1100", Type: "asset", Role: "accounts-receivable"}, "gst": {Code: "2200", Type: "liability"},
+	"ap": {Code: "2010", Type: "liability", Role: "accounts-payable"}, "loan": {Code: "2500", Type: "liability", Role: "director-loan"},
+	"capital": {Code: "3010", Type: "equity"},
+	"re":      {Code: "3100", Type: "equity", Role: RetainedEarnings}, "revenue": {Code: "4010", Type: Revenue},
 	"expense": {Code: "6010", Type: Expense},
 }
 
@@ -50,18 +50,18 @@ func show(e Entry) string {
 //   - BILL-1 is 300.00 of expense owed on payables.
 //   - INV-3 owes USD 100.00 at 1.35: 135.00 of revenue.
 //   - SHR-1 puts USD 50.00 at 1.3333333333 (66.67) in the USD bank for share capital.
-//   - LOAN-1 is a director's loan of 200.00 into the bank, a control account by its flag.
+//   - LOAN-1 is a director's loan of 200.00 into the bank.
 //
-// The boundary's entry carries the bank (1,290.00), GST (-135.00), the USD bank (USD 50.00 at 1.3334, 66.67), share
-// capital (-66.67) and retained earnings by dimension set: "" 165.00 (300.00 of expense, -135.00 of USD revenue),
-// "eng" -500.00, "sales" -1,000.00. Each source's control lines carry in an entry of its own, balanced through
-// suspense: INV-1 1,090.00, PAY-1 -1,090.00, INV-2 545.00, BILL-1 -300.00, INV-3 USD 100.00 at 1.35 (135.00),
-// LOAN-1 -200.00. Their offsets sum to 180.00, which the boundary's entry takes back on suspense, so suspense nets to zero.
+// Every line carries under its own document: INV-1 its receivable (1,090.00), GST (-90.00) and its "sales" revenue into
+// retained earnings (-1,000.00); INV-2 545.00, -45.00 and "eng" -500.00; INV-3 USD 100.00 at 1.35 (135.00) and -135.00
+// of retained earnings; BILL-1 its payable (-300.00) and 300.00 of retained earnings; PAY-1 its bank (1,090.00) and
+// receivable (-1,090.00); SHR-1 USD 50.00 at 1.3334 (66.67) and share capital (-66.67); LOAN-1 its bank and loan. Each
+// balances as its entries did.
 // req: AUD-10
 // req: INV-01
 // req: INV-07
 func TestTheCarryForwardOfAYearByHand(t *testing.T) {
-	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Suspense: "suspense", Boundary: Source{"ledger_boundary", "B"}, Lines: []Line{
+	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Lines: []Line{
 		l("invoice", "INV-1", "ar", "", "1090.00", sgd, "1090.00"), l("invoice", "INV-1", "revenue", "sales", "-1000.00", sgd, "-1000.00"),
 		l("invoice", "INV-1", "gst", "", "-90.00", sgd, "-90.00"),
 		l("payment", "PAY-1", "bank", "", "1090.00", sgd, "1090.00"), l("payment", "PAY-1", "ar", "", "-1090.00", sgd, "-1090.00"),
@@ -77,14 +77,13 @@ func TestTheCarryForwardOfAYearByHand(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{
-		"ledger_boundary B: 1010@ SGD 1290.00 1290.00 1020@ USD 50.00 66.67 2200@ SGD -135.00 -135.00 3010@ SGD -66.67 -66.67" +
-			" 3100@ SGD 165.00 165.00 3100@eng SGD -500.00 -500.00 3100@sales SGD -1000.00 -1000.00 2999@ SGD 180.00 180.00",
-		"bill BILL-1: 2010@ SGD -300.00 -300.00 2999@ SGD 300.00 300.00",
-		"invoice INV-1: 1100@ SGD 1090.00 1090.00 2999@ SGD -1090.00 -1090.00",
-		"invoice INV-2: 1100@ SGD 545.00 545.00 2999@ SGD -545.00 -545.00",
-		"invoice INV-3: 1100@ USD 100.00 135.00 2999@ SGD -135.00 -135.00",
-		"journal LOAN-1: 2500@ SGD -200.00 -200.00 2999@ SGD 200.00 200.00",
-		"payment PAY-1: 1100@ SGD -1090.00 -1090.00 2999@ SGD 1090.00 1090.00",
+		"bill BILL-1: 2010@ SGD -300.00 -300.00 3100@ SGD 300.00 300.00",
+		"invoice INV-1: 1100@ SGD 1090.00 1090.00 2200@ SGD -90.00 -90.00 3100@sales SGD -1000.00 -1000.00",
+		"invoice INV-2: 1100@ SGD 545.00 545.00 2200@ SGD -45.00 -45.00 3100@eng SGD -500.00 -500.00",
+		"invoice INV-3: 1100@ USD 100.00 135.00 3100@ SGD -135.00 -135.00",
+		"journal LOAN-1: 1010@ SGD 200.00 200.00 2500@ SGD -200.00 -200.00",
+		"payment PAY-1: 1010@ SGD 1090.00 1090.00 1100@ SGD -1090.00 -1090.00",
+		"share_issue SHR-1: 1020@ USD 50.00 66.67 3010@ SGD -66.67 -66.67",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("%d entries, want %d:\n%v", len(got), len(want), got)
@@ -107,9 +106,8 @@ func TestTheCarryForwardOfAYearByHand(t *testing.T) {
 }
 
 // Each person's and each instrument's balance carries on its own (FR-EQ-01, FR-EQ-18, INV-13): one journal lends 300.00
-// from P-1 and 200.00 from P-2 on the director's loan, a control account, and another puts USD 100.00 (135.00) into
-// S-1 and 50.00 into S-2 on the convertible instruments, which is not; both persons and both instruments keep their
-// own line.
+// from P-1 and 200.00 from P-2 on the director's loan, and another puts USD 100.00 (135.00) into S-1 and 50.00 into S-2
+// on the convertible instruments; both persons and both instruments keep their own line.
 // req: AUD-10
 // req: INV-13
 func TestEachPersonAndInstrumentKeepsTheirBalance(t *testing.T) {
@@ -118,7 +116,7 @@ func TestEachPersonAndInstrumentKeepsTheirBalance(t *testing.T) {
 		accounts[k] = a
 	}
 	tag := func(x Line, party, instrument string) Line { x.Party, x.Instrument = party, instrument; return x }
-	in := Input{Base: sgd, Accounts: accounts, RetainedEarnings: "re", Suspense: "suspense", Boundary: Source{BoundarySource, "B"}, Lines: []Line{
+	in := Input{Base: sgd, Accounts: accounts, RetainedEarnings: "re", Lines: []Line{
 		l("journal", "LOAN-2", "bank", "", "500.00", sgd, "500.00"),
 		tag(l("journal", "LOAN-2", "loan", "", "-300.00", sgd, "-300.00"), "P-1", ""), tag(l("journal", "LOAN-2", "loan", "", "-200.00", sgd, "-200.00"), "P-2", ""),
 		l("journal", "SAFE-1", "usd", "", "100.00", usd, "135.00"), l("journal", "SAFE-1", "bank", "", "50.00", sgd, "50.00"),
@@ -136,9 +134,9 @@ func TestEachPersonAndInstrumentKeepsTheirBalance(t *testing.T) {
 		}
 		b.WriteString("\n")
 	}
-	// Keys run by currency before instrument; the boundary's entry takes back the loan's 500.00 on suspense.
-	want := "ledger_boundary B: 1010// SGD 550.00 1020// USD 100.00 2700//S-2 SGD -50.00 2700//S-1 USD -100.00 2999// SGD -500.00\n" +
-		"journal LOAN-2: 2500/P-1/ SGD -300.00 2500/P-2/ SGD -200.00 2999// SGD 500.00\n"
+	// Keys run by currency before instrument.
+	want := "journal LOAN-2: 1010// SGD 500.00 2500/P-1/ SGD -300.00 2500/P-2/ SGD -200.00\n" +
+		"journal SAFE-1: 1010// SGD 50.00 1020// USD 100.00 2700//S-2 SGD -50.00 2700//S-1 USD -100.00\n"
 	if b.String() != want {
 		t.Errorf("got\n%swant\n%s", b.String(), want)
 	}
@@ -149,7 +147,7 @@ func TestEachPersonAndInstrumentKeepsTheirBalance(t *testing.T) {
 // req: AUD-10
 // req: INV-07
 func TestADocumentThatNetsToZeroCarriesNothing(t *testing.T) {
-	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Suspense: "suspense", Boundary: Source{BoundarySource, "B"}, Lines: []Line{
+	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Lines: []Line{
 		l("invoice", "INV-9", "ar", "", "109.00", sgd, "109.00"), l("invoice", "INV-9", "revenue", "", "-100.00", sgd, "-100.00"),
 		l("invoice", "INV-9", "gst", "", "-9.00", sgd, "-9.00"),
 		l("invoice", "INV-9", "ar", "", "-109.00", sgd, "-109.00"), l("invoice", "INV-9", "revenue", "", "100.00", sgd, "100.00"),
@@ -168,18 +166,19 @@ func TestADocumentThatNetsToZeroCarriesNothing(t *testing.T) {
 // req: AUD-10
 // req: INV-05
 func TestTheCarryForwardOfForeignResiduals(t *testing.T) {
-	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Suspense: "suspense", Boundary: Source{"ledger_boundary", "B"}, Lines: []Line{
+	in := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Lines: []Line{
 		l("journal", "J1", "usd", "", "999999999.99", usd, "1234567890.12"), l("journal", "J1", "capital", "", "-1234567890.12", sgd, "-1234567890.12"),
-		l("journal", "J2", "usd", "", "0.00", usd, "5.00"), l("journal", "J2", "capital", "", "-5.00", sgd, "-5.00"),
-		l("journal", "J3", "gst", "", "10.00", sgd, "10.00"), l("journal", "J4", "gst", "", "-10.00", sgd, "-10.00"),
+		l("journal", "J1", "usd", "", "0.00", usd, "5.00"), l("journal", "J1", "capital", "", "-5.00", sgd, "-5.00"),
+		l("journal", "J3", "gst", "", "10.00", sgd, "10.00"), l("journal", "J3", "gst", "", "-10.00", sgd, "-10.00"),
 	}}
 	got, err := CarryForward(in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The USD balance is 999,999,999.99 with a base of 1,234,567,895.12 (J2's revaluation of 5.00 included). Base ÷ amount
-	// rounds to the rate 1.2345678951, which gives 1,234,567,895.09, so a base-only line of 0.03 follows it.
-	want := "ledger_boundary B: 1020@ USD 999999999.99 1234567895.09 1020@ USD 0.00 0.03 3010@ SGD -1234567895.12 -1234567895.12"
+	// J1's USD balance is 999,999,999.99 with a base of 1,234,567,895.12 (its revaluation of 5.00 included). Base ÷ amount
+	// rounds to the rate 1.2345678951, which gives 1,234,567,895.09, so a base-only line of 0.03 follows it. J3's GST nets
+	// to nothing.
+	want := "journal J1: 1020@ USD 999999999.99 1234567895.09 1020@ USD 0.00 0.03 3010@ SGD -1234567895.12 -1234567895.12"
 	if len(got) != 1 {
 		t.Fatalf("entries: %v", got)
 	}
@@ -190,8 +189,8 @@ func TestTheCarryForwardOfForeignResiduals(t *testing.T) {
 
 	// USD 0.01 worth 100,000,000.00 would need the rate 10,000,000,000; USD 5.00 worth -1.00 a rate below zero.
 	for _, c := range []struct{ amount, base, capital, want string }{
-		{"0.01", "100000000.00", "-100000000.00", "ledger_boundary B: 1020@ USD 0.01 0.01 1020@ USD 0.00 99999999.99 3010@ SGD -100000000.00 -100000000.00"},
-		{"5.00", "-1.00", "1.00", "ledger_boundary B: 1020@ USD 5.00 5.00 1020@ USD 0.00 -6.00 3010@ SGD 1.00 1.00"},
+		{"0.01", "100000000.00", "-100000000.00", "journal J1: 1020@ USD 0.01 0.01 1020@ USD 0.00 99999999.99 3010@ SGD -100000000.00 -100000000.00"},
+		{"5.00", "-1.00", "1.00", "journal J1: 1020@ USD 5.00 5.00 1020@ USD 0.00 -6.00 3010@ SGD 1.00 1.00"},
 	} {
 		in.Lines = []Line{l("journal", "J1", "usd", "", c.amount, usd, c.base), l("journal", "J1", "capital", "", c.capital, sgd, c.capital)}
 		got, err := CarryForward(in)
@@ -205,11 +204,11 @@ func TestTheCarryForwardOfForeignResiduals(t *testing.T) {
 }
 
 // The rule refuses what it cannot carry: unbalanced purged lines, a line naming no account, a base in another currency,
-// and a retained earnings or suspense account that is a control account, revenue or expense.
+// and a retained earnings account missing, or revenue or expense.
 // req: AUD-10
 // req: INV-01
 func TestTheCarryForwardRefusesWhatItCannotCarry(t *testing.T) {
-	base := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re", Suspense: "suspense", Boundary: Source{"ledger_boundary", "B"}}
+	base := Input{Base: sgd, Accounts: chart, RetainedEarnings: "re"}
 	for name, lines := range map[string][]Line{
 		"unbalanced":    {l("journal", "J1", "bank", "", "10.00", sgd, "10.00")},
 		"no account":    {l("journal", "J1", "nowhere", "", "10.00", sgd, "10.00")},
@@ -222,15 +221,9 @@ func TestTheCarryForwardRefusesWhatItCannotCarry(t *testing.T) {
 			t.Errorf("%s: carried", name)
 		}
 	}
-	for name, in := range map[string]Input{"suspense a control account": {Suspense: "ar"}, "retained earnings revenue": {RetainedEarnings: "revenue"},
-		"no suspense account": {Suspense: "nowhere"}} {
+	for name, re := range map[string]string{"retained earnings revenue": "revenue", "no retained earnings": "nowhere"} {
 		x := base
-		if in.Suspense != "" {
-			x.Suspense = in.Suspense
-		}
-		if in.RetainedEarnings != "" {
-			x.RetainedEarnings = in.RetainedEarnings
-		}
+		x.RetainedEarnings = re
 		if _, err := CarryForward(x); err == nil {
 			t.Errorf("%s: carried", name)
 		}

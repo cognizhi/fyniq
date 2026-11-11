@@ -1004,6 +1004,25 @@ kpi_input | headcount | bigint | null |
 kpi_input | entered_by | text | not null | 
 kpi_input | entered_at | timestamp with time zone | not null | 
 kpi_input | version | integer | not null | 1
+ledger_boundary | organisation_id | uuid | not null | current_org()
+ledger_boundary | id | uuid | not null | uuidv7()
+ledger_boundary | boundary | date | not null | 
+ledger_boundary | approval | text | not null | 
+ledger_boundary | counts | jsonb | not null | 
+ledger_boundary | purged_hash | bytea | not null | 
+ledger_boundary | anchor_key | text | not null | 
+ledger_boundary | written_at | timestamp with time zone | not null | 
+ledger_boundary | xact | bigint | not null | 
+ledger_boundary | carried_revision | bigint | null | 
+ledger_purged_entry | organisation_id | uuid | not null | current_org()
+ledger_purged_entry | id | uuid | not null | 
+ledger_purged_entry | posting_identity | text | not null | 
+ledger_purged_entry | source_type | text | not null | 
+ledger_purged_entry | source_id | text | not null | 
+ledger_purged_entry | posting_date | date | not null | 
+ledger_purged_entry | ledger_revision | bigint | not null | 
+ledger_purged_entry | reverses_entry_id | uuid | null | 
+ledger_purged_entry | boundary | date | not null | 
 ledger_revision | organisation_id | uuid | not null | current_org()
 ledger_revision | revision | bigint | not null | 0
 member_invitation | organisation_id | uuid | not null | current_org()
@@ -1223,6 +1242,7 @@ period | status | text | not null | 'open'::text
 period | closed_revision | bigint | null | 
 period | version | integer | not null | 1
 period | created_at | timestamp with time zone | not null | now()
+period | purged_on | date | null | 
 period_close | organisation_id | uuid | not null | current_org()
 period_close | id | uuid | not null | uuidv7()
 period_close | period_id | uuid | not null | 
@@ -3195,6 +3215,36 @@ kpi_input | kpi_input_version | CHECK ((version >= 1))
 kpi_input | kpi_input_version_not_null | NOT NULL version
 kpi_input | kpi_input_whole | CHECK ((((paying_customers >= 0) AND (paying_customers <= 10000000)) AND ((new_customers >= 0) AND (new_customers <= 10000000)) AND ((lost_customers >= 0) AND (lost_customers <= 10000000)) AND ((headcount >= 0) AND (headcount <= 1000000))))
 kpi_input | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ledger_boundary | ledger_boundary_anchor_key_not_null | NOT NULL anchor_key
+ledger_boundary | ledger_boundary_approval_not_null | NOT NULL approval
+ledger_boundary | ledger_boundary_boundary_key | UNIQUE (organisation_id, boundary)
+ledger_boundary | ledger_boundary_boundary_not_null | NOT NULL boundary
+ledger_boundary | ledger_boundary_carried | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ledger_boundary | ledger_boundary_counts_not_null | NOT NULL counts
+ledger_boundary | ledger_boundary_counts_object | CHECK ((jsonb_typeof(counts) = 'object'::text))
+ledger_boundary | ledger_boundary_first_day | CHECK ((EXTRACT(day FROM boundary) = (1)::numeric))
+ledger_boundary | ledger_boundary_hash_sha256 | CHECK ((length(purged_hash) = 32))
+ledger_boundary | ledger_boundary_id_not_null | NOT NULL id
+ledger_boundary | ledger_boundary_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+ledger_boundary | ledger_boundary_organisation_id_not_null | NOT NULL organisation_id
+ledger_boundary | ledger_boundary_pkey | PRIMARY KEY (organisation_id, id)
+ledger_boundary | ledger_boundary_purged_hash_not_null | NOT NULL purged_hash
+ledger_boundary | ledger_boundary_revision_positive | CHECK ((carried_revision > 0))
+ledger_boundary | ledger_boundary_text_lengths | CHECK ((((length(approval) >= 1) AND (length(approval) <= 200)) AND ((length(anchor_key) >= 1) AND (length(anchor_key) <= 300))))
+ledger_boundary | ledger_boundary_written_at_not_null | NOT NULL written_at
+ledger_boundary | ledger_boundary_xact_not_null | NOT NULL xact
+ledger_boundary | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ledger_purged_entry | ledger_purged_entry_boundary_fkey | FOREIGN KEY (organisation_id, boundary) REFERENCES ledger_boundary(organisation_id, boundary)
+ledger_purged_entry | ledger_purged_entry_boundary_not_null | NOT NULL boundary
+ledger_purged_entry | ledger_purged_entry_id_not_null | NOT NULL id
+ledger_purged_entry | ledger_purged_entry_identity_key | UNIQUE (organisation_id, posting_identity)
+ledger_purged_entry | ledger_purged_entry_ledger_revision_not_null | NOT NULL ledger_revision
+ledger_purged_entry | ledger_purged_entry_organisation_id_not_null | NOT NULL organisation_id
+ledger_purged_entry | ledger_purged_entry_pkey | PRIMARY KEY (organisation_id, id)
+ledger_purged_entry | ledger_purged_entry_posting_date_not_null | NOT NULL posting_date
+ledger_purged_entry | ledger_purged_entry_posting_identity_not_null | NOT NULL posting_identity
+ledger_purged_entry | ledger_purged_entry_source_id_not_null | NOT NULL source_id
+ledger_purged_entry | ledger_purged_entry_source_type_not_null | NOT NULL source_type
 ledger_revision | ledger_revision_not_negative | CHECK ((revision >= 0))
 ledger_revision | ledger_revision_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 ledger_revision | ledger_revision_organisation_id_not_null | NOT NULL organisation_id
@@ -4183,6 +4233,7 @@ CREATE INDEX journal_entry_source_idx ON fyniq.journal_entry USING btree (organi
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
+CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
 CREATE INDEX notification_digest_due ON fyniq.notification USING btree (organisation_id, email, created_at) WHERE ((digest_id IS NULL) AND (email = ANY (ARRAY['daily'::text, 'weekly'::text])))
 CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree (organisation_id, occurred_at) WHERE (fanned_out_at IS NULL)
 CREATE INDEX notification_inbox ON fyniq.notification USING btree (organisation_id, user_id, created_at DESC) WHERE (archived_at IS NULL)
@@ -4371,6 +4422,10 @@ CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btre
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
+CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
+CREATE UNIQUE INDEX ledger_boundary_pkey ON fyniq.ledger_boundary USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ledger_purged_entry_identity_key ON fyniq.ledger_purged_entry USING btree (organisation_id, posting_identity)
+CREATE UNIQUE INDEX ledger_purged_entry_pkey ON fyniq.ledger_purged_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
@@ -4483,6 +4538,7 @@ CREATE CONSTRAINT TRIGGER holding_movement_settled AFTER INSERT ON fyniq.holding
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.amount = (0)::numeric) AND (new.base_amount <> (0)::numeric))) EXECUTE FUNCTION journal_line_base_only()
+CREATE CONSTRAINT TRIGGER ledger_boundary_carried AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ledger_boundary_carried()
 CREATE CONSTRAINT TRIGGER payee_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payee_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER payment_batch_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payment_batch'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payment_batch_approved()
 CREATE CONSTRAINT TRIGGER payment_batch_holds AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION payment_batch_holds()
@@ -4511,6 +4567,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'transaction_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_preference', 'id')
@@ -4759,6 +4816,10 @@ CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FO
 CREATE TRIGGER kpi_input_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.kpi_input FOR EACH ROW EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER kpi_input_no_truncate BEFORE TRUNCATE ON fyniq.kpi_input FOR EACH STATEMENT EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
+CREATE TRIGGER ledger_boundary_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ledger_boundary FOR EACH ROW EXECUTE FUNCTION ledger_boundary_guard()
+CREATE TRIGGER ledger_boundary_no_truncate BEFORE TRUNCATE ON fyniq.ledger_boundary FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER ledger_purged_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.ledger_purged_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER ledger_purged_entry_no_truncate BEFORE TRUNCATE ON fyniq.ledger_purged_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
@@ -4931,6 +4992,8 @@ join_request | tenant_isolation | * | (organisation_id = current_org()) | (organ
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 money_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5140,21 +5203,25 @@ issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now tim
 join_domains(p_org uuid) → SETOF join_domain | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b323dc2db0dac5d21310e82931a6855b
 join_offer(p_session bytea, p_now timestamp with time zone) → TABLE(organisation_id uuid, domain text, email text, provider text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7ed62c1dab795a1de86f5096e9282304
 join_offer_name(p_org uuid) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b7c93d17ab22b13ef328df6ad8a78c9f
-journal_entry_asset_depreciation() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 50e84c71ecf0c7176fbc2b5d91aa6ee9
-journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
-journal_entry_bank_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 34be50f43608217c20b3ec61982adec8
-journal_entry_bill_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4640943f24f77ab7bdb4001855543147
-journal_entry_invoice_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84b7928f521c3099dc4527133a970979
+journal_entry_asset_depreciation() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b514f0e0d9a7874081dcc59b1e6e67b8
+journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7801ad73654e599f5c25fca619cc3a05
+journal_entry_bank_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bfca34cec43b87a069985b60c8c93215
+journal_entry_bill_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25145c2bffdb96797993df8c57e0ab25
+journal_entry_invoice_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8e67db44ebd27d53b002e2006091459
 journal_entry_not_bank_agreement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 982a9d10d570c6cc2b7bcfedbb720ef3
 journal_entry_not_purchase_order() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d56ef74a45b5b6e0b8b17fbd51ccca8
 journal_entry_not_statement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f9768ffb0fa7da50d93cfce2c84c492
-journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
+journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 016fc5abb5fb0d94c8d2454176cbab4d
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
-journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 96a325d578df24994138905973efca70
-journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ecfb6e8013b002569037cdbbb8e351a8
+journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
+journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
+ledger_boundary_carried() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8fb8f0e19c7306303d6e72d31268204c
+ledger_boundary_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 71f7d7e38bc04371b11ae2ba937ed126
+ledger_carrying(p_org uuid, p_date date) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | d6c568cb2e5f0f022a118d7d7e42c942
+ledger_purge(p_boundary date, p_entries uuid[]) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fd1248a553c34ca81d658cc2a7e34348
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 link_identity(p_session bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca318a9298b9116b53e6571480a735ac
 live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
@@ -5193,7 +5260,7 @@ payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalo
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
-period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
+period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37

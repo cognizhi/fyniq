@@ -54,6 +54,8 @@ type UnitOfWork interface {
 	Ledger() Ledger
 	Balances() Balances
 	Audit() Audit
+	// Retention is the ledger's purge after retention (AUD-10).
+	Retention() Retention
 	Members() Members
 	MemberInvitations() MemberInvitations
 	SuperAdmins() SuperAdmins
@@ -291,7 +293,8 @@ type Ledger interface {
 	// Entries are the entries posted after a ledger revision, in revision order, with their lines, at most limit: the
 	// replay walks them a page at a time (ENG-06, QA-ENG-06).
 	Entries(ctx context.Context, afterRevision int64, limit int) ([]Entry, error)
-	// ByIdentity returns the entry posted with a posting identity.
+	// ByIdentity returns the entry posted with a posting identity. When the purge after retention removed it (AUD-10),
+	// it returns its document's carry-forward instead, marked by Carries.
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
 	// Revision is the organisation's current ledger revision.
 	Revision(ctx context.Context) (int64, error)
@@ -302,8 +305,11 @@ type Ledger interface {
 	// balance service reads them (ENG-04).
 	AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]AccountLine, error)
 	// OfSource are every entry naming a source document by its ID, reversals included, in revision order, with their
-	// lines: an asset's months of depreciation (FR-FA-02).
+	// lines: an asset's months of depreciation (FR-FA-02). After a purge, a document's carry-forward is among them.
 	OfSource(ctx context.Context, sourceID uuid.UUID) ([]Entry, error)
+	// PurgedOfSource are the tombstones of a source document's postings the purge after retention removed (AUD-10), in
+	// the order they were posted: what says that its postings were purged.
+	PurgedOfSource(ctx context.Context, sourceID uuid.UUID) ([]PurgedPosting, error)
 }
 
 // AccountLine is one posted line of an account, with its entry's provenance (ENG-03) and its source's number.
@@ -758,6 +764,21 @@ type Entry struct {
 	Memo            string
 	RecordedAt      time.Time
 	Lines           []Line
+	// Carries is set when Ledger.ByIdentity found the posting asked for purged after retention (AUD-10): this entry is
+	// then its document's carry-forward, the balance its purged postings left, or none (no ID, no lines) when they
+	// left none.
+	Carries *PurgedPosting
+}
+
+// PurgedPosting is a posting the ledger's purge after retention removed (AUD-10): what its tombstone keeps.
+type PurgedPosting struct {
+	EntryID         uuid.UUID
+	PostingIdentity string
+	Source          Source // its type and ID; the version is not kept
+	PostingDate     time.Time
+	LedgerRevision  int64
+	ReversesEntryID *uuid.UUID
+	Boundary        time.Time // the boundary it was carried to
 }
 
 // Line is a posted journal line.
@@ -963,6 +984,7 @@ const (
 	CodeCaptureName          = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner               = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
 	CodeAudit                = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
+	CodeLedgerPurge          = "STORAGE-PURGE-01"      // the ledger's purge after retention outside its rules (AUD-10)
 	CodeOutbox               = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup                = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
 	CodeMembership           = "STORAGE-MEMBER-01"     // a membership or role assignment cannot be made or changed that way

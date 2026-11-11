@@ -26,6 +26,9 @@ type SourceTotal struct {
 // ledger does (FR-GL-11), since the cached balances do not keep the source. Balance-sheet accounts only: the year-end
 // never folds them (FR-GL-10).
 func Control(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, through time.Time) ([]SourceTotal, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return nil, err
+	}
 	type key struct{ source, currency string }
 	totals := map[key]*SourceTotal{}
 	var order []key
@@ -69,6 +72,9 @@ func Control(ctx context.Context, u storage.UnitOfWork, base money.Currency, acc
 // documents a sub-ledger that cannot list its own documents cheaply walks (INV-07; the holding accounts of spreads,
 // FR-GL-03). A source names the document, not the version that posted.
 func Sources(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, through time.Time) ([]storage.Source, error) {
+	if err := CheckDay(ctx, u, through); err != nil {
+		return nil, err
+	}
 	type key struct{ kind, id string }
 	seen := map[key]bool{}
 	var out []storage.Source
