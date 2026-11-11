@@ -1450,7 +1450,9 @@ var (
 	RequestAuditTrailExport = Policy{Operation: "requestAuditTrailExport", Capability: AuditTrail, Need: View}
 	// Restores behind the anchors (AUD-09, design D8): the recoveries read on the row; acknowledged by the Owner, as nobody
 	// holds A on it yet (the design's open question).
-	ListAuditRecoveries      = Policy{Operation: "listAuditRecoveries", Capability: AuditTrail, Need: View}
+	ListAuditRecoveries = Policy{Operation: "listAuditRecoveries", Capability: AuditTrail, Need: View}
+	// The purges after retention, the trail's and the ledger's, and a record's purged postings (AUD-09, AUD-10).
+	ListAuditPurges          = Policy{Operation: "listAuditPurges", Capability: AuditTrail, Need: View}
 	AcknowledgeAuditRecovery = Policy{Operation: "acknowledgeAuditRecovery", Capability: AuditTrail, Need: Approve, OwnerMay: true,
 		Note: "Nobody holds A on \"Audit trail\" yet, so the Owner acknowledges (p1-audit-explorer design D8)."}
 	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
@@ -1664,7 +1666,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

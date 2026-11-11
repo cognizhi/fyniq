@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "Every purge after retention, the trail's and the ledger's, oldest first; none while the purge has never run.",
+      "items": {
+        "$ref": "AuditPurge.schema.json"
+      },
+      "type": "array"
+    },
+    "postings": {
+      "description": "With record_id: that record's postings the ledger's purge removed, in the order they were posted.",
+      "items": {
+        "$ref": "PurgedPosting.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "AuditPurges",
+  "type": "object"
+}

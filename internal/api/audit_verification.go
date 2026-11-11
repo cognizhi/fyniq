@@ -30,7 +30,7 @@ type AuditVerification struct {
 	AnchoredThrough int64  `json:"anchored_through" doc:"The range's events are anchored through this event; later ones are anchored within the hour." example:"336"`
 	Outcome         string `json:"outcome" enum:"passed,failed,explained" doc:"passed: every link, anchor and detail agrees. failed: the trail was altered; problem and failed_seq say where. explained: a purge boundary or a restore left a gap, each with its signed record (AUD-09)." example:"passed"`
 	FailedSeq       int64  `json:"failed_seq,omitempty" doc:"failed: the first event that does not agree, when the failure has one." example:"201"`
-	Problem         string `json:"problem,omitempty" doc:"failed: what does not agree, in words." example:"event 201 was altered: its body no longer gives its stored hash"`
+	Problem         string `json:"problem,omitempty" doc:"failed: what does not agree, in words. explained: what left the gap, naming its purge or recovery." example:"event 201 was altered: its body no longer gives its stored hash"`
 }
 
 type auditVerificationInput struct {

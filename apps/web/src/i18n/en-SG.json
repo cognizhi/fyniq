@@ -232,6 +232,22 @@
       "label": "Evidence",
       "tooltip": "Find the files attached across your records, by kind of record, evidence type and date, and see which posted records still miss theirs."
     },
+    "compliance.audit-trail": {
+      "label": "Audit trail",
+      "tooltip": "Every saved change: who made it, on whose behalf, why and from where, with each field's before and after. Append-only and hash-chained."
+    },
+    "audit.verify": {
+      "label": "Verify integrity",
+      "tooltip": "Recompute the chain of the events of those days and check it against the signed anchors: it passes, fails where it was altered, or explains a purge or a restore."
+    },
+    "audit.export": {
+      "label": "Export",
+      "tooltip": "Ask for the events your filters match over a range of days as Excel or CSV, prepared in the background; asking is recorded in the audit trail."
+    },
+    "audit.acknowledge-recovery": {
+      "label": "Acknowledge",
+      "tooltip": "For the Owner, once the restore runbook was followed: the check of the audit trail passes again; verification still explains the gap."
+    },
     "member.start-succession": {
       "label": "Start a succession",
       "tooltip": "For an Owner who is permanently unavailable: they are told and may object for 7 days; then a Super admin completes it and their membership ends."

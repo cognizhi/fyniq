@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "anchor_key": {
+      "description": "Where its signed copy is in the anchors' write-once bucket.",
+      "examples": [
+        "ledger-boundaries/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/2020-01-01-4f1a2b3c4d5e.json"
+      ],
+      "type": "string"
+    },
+    "approval": {
+      "description": "The setting change that switched the purge after retention on, under dual control.",
+      "examples": [
+        "retention.purge_after_retention v1"
+      ],
+      "type": "string"
+    },
+    "boundary": {
+      "description": "ledger: the first day kept whole; every report from it on is unchanged, and an earlier day is refused (BALANCE-PURGED).",
+      "examples": [
+        "2020-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "carried_revision": {
+      "description": "ledger: the ledger revision after the carry-forward; an \"as at\" revision before it is refused.",
+      "examples": [
+        18342
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "counts": {
+      "additionalProperties": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "description": "What it purged and kept: events and security events, or entries and lines purged and kept and carry-forward entries.",
+      "examples": [
+        {
+          "carry_forward_entries": 212,
+          "entries_purged": 1840
+        }
+      ],
+      "type": "object"
+    },
+    "kind": {
+      "description": "trail: the audit trail's events up to last_seq (AUD-09). ledger: a financial year's entries, carried forward to the boundary (AUD-10).",
+      "enum": [
+        "trail",
+        "ledger"
+      ],
+      "examples": [
+        "ledger"
+      ],
+      "type": "string"
+    },
+    "last_occurred_at": {
+      "description": "trail: when that event occurred.",
+      "examples": [
+        "2019-03-31T15:59:59Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_seq": {
+      "description": "trail: the last event purged; verification starts after it.",
+      "examples": [
+        4120
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "written_at": {
+      "description": "When it was written.",
+      "examples": [
+        "2027-04-04T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "approval",
+    "counts",
+    "anchor_key",
+    "written_at"
+  ],
+  "title": "AuditPurge",
+  "type": "object"
+}

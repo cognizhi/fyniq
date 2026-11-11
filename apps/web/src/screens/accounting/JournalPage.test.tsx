@@ -531,4 +531,24 @@ describe("the journal page", () => {
     expect(screen.getByText("An Accountant or a Tax agent changes drafts.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Post" })).toBeNull();
   });
+
+  // req: AUD-10
+  it("says when the ledger's purge after retention removed a posted journal's postings; axe finds nothing", async () => {
+    const posting = { posting_identity: "journal:j1:v2:journal@1", source_type: "journal", posting_date: "2019-10-31", ledger_revision: 3, reversal: false, boundary: "2020-01-01" };
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1/evidence": noEvidence,
+ "GET /v1/journals/j1": { status: 200, body: { ...posted, date: "2019-10-31" }, headers: { ETag: `"2-posted"` } },
+ "GET /v1/audit/purges": { status: 200, body: { items: [], postings: [posting] } } });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    expect(await screen.findByText("Its postings were purged after their retention")).toBeTruthy();
+    expect(screen.getByText(/The ledger before 1 Jan 2020 was carried forward: its posting of 31 Oct 2019 went, and their balance is in the carry-forward of 31 Dec 2019/)).toBeTruthy();
+    expect(seen.find((s) => s.path === "/v1/audit/purges")!.query).toBe("?record_id=j1");
+    await noViolations(document.body);
+  });
+
+  it("asks nothing about purges for a role that does not view the audit trail", async () => {
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1/evidence": noEvidence, "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } } });
+    renderPage(page({ ...ownerSession, roles: ["bookkeeper"] } as Session), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    expect(await screen.findByRole("table", { name: "Lines as entered" })).toBeTruthy();
+    expect(seen.some((s) => s.path === "/v1/audit/purges")).toBe(false);
+  });
 });

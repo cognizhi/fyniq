@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "boundary": {
+      "description": "The boundary it was carried forward to: the record's balance is in its carry-forward, dated the day before.",
+      "examples": [
+        "2020-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision it was recorded at.",
+      "examples": [
+        1204
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "posting_date": {
+      "description": "The day it was posted on.",
+      "examples": [
+        "2019-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "posting_identity": {
+      "description": "The posting's identity, as the record's history names it.",
+      "examples": [
+        "invoice:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10:v1:invoice@1"
+      ],
+      "type": "string"
+    },
+    "reversal": {
+      "description": "true for a reversal of another posting, such as a void.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "source_type": {
+      "description": "Its source document's type.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "posting_identity",
+    "source_type",
+    "posting_date",
+    "ledger_revision",
+    "reversal",
+    "boundary"
+  ],
+  "title": "PurgedPosting",
+  "type": "object"
+}

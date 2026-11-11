@@ -379,7 +379,7 @@ The founders and the accountant still choose each settlement, which another pers
   - the audit events of that time.
 
   A signed record of what was purged comes first. A report dated before it, or as at an earlier ledger revision, can no
-  longer be run. A purge cannot be undone.
+  longer be run. A purge cannot be undone. Each purge is listed under **Purges and restores** on the audit trail.
 - **Security events' IP address and device kept for**: 400 days. A sign-in, revealing a full bank number and an export
   record the IP address and device they came from. After this many days those two details are erased; the event stays
   in the audit trail.

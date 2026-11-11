@@ -85,6 +85,14 @@
         "docs/runbooks/audit-restore.md"
       ],
       "type": "string"
+    },
+    "version": {
+      "description": "1 while it waits, 2 once acknowledged: its ETag is the version in quotes, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
     }
   },
   "required": [
@@ -96,6 +104,7 @@
     "detected_at",
     "anchor_key",
     "runbook",
+    "version",
     "acknowledged_by",
     "acknowledged_at"
   ],

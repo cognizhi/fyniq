@@ -736,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audit/purges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the purges after retention
+         * @description Every purge after retention behind its signed boundary, oldest first (AUD-09, AUD-10): the audit trail's, each up to an event, and the ledger's, each a financial year carried forward to the first day of the next. With record_id, also that record's postings the ledger's purge removed, from their tombstones, so its view can say when they went. Nothing is listed while retention.purge_after_retention has never run. Changes nothing.
+         */
+        get: operations["listAuditPurges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit/recoveries": {
         parameters: {
             query?: never;
@@ -14163,6 +14183,70 @@ export interface components {
              */
             record_type?: string;
         };
+        AuditPurge: {
+            /**
+             * @description Where its signed copy is in the anchors' write-once bucket.
+             * @example ledger-boundaries/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/2020-01-01-4f1a2b3c4d5e.json
+             */
+            anchor_key: string;
+            /**
+             * @description The setting change that switched the purge after retention on, under dual control.
+             * @example retention.purge_after_retention v1
+             */
+            approval: string;
+            /**
+             * Format: date
+             * @description ledger: the first day kept whole; every report from it on is unchanged, and an earlier day is refused (BALANCE-PURGED).
+             * @example 2020-01-01
+             */
+            boundary?: string;
+            /**
+             * Format: int64
+             * @description ledger: the ledger revision after the carry-forward; an "as at" revision before it is refused.
+             * @example 18342
+             */
+            carried_revision?: number;
+            /**
+             * @description What it purged and kept: events and security events, or entries and lines purged and kept and carry-forward entries.
+             * @example {
+             *       "carry_forward_entries": 212,
+             *       "entries_purged": 1840
+             *     }
+             */
+            counts: {
+                [key: string]: number;
+            };
+            /**
+             * @description trail: the audit trail's events up to last_seq (AUD-09). ledger: a financial year's entries, carried forward to the boundary (AUD-10).
+             * @example ledger
+             * @enum {string}
+             */
+            kind: "trail" | "ledger";
+            /**
+             * Format: date-time
+             * @description trail: when that event occurred.
+             * @example 2019-03-31T15:59:59Z
+             */
+            last_occurred_at?: string;
+            /**
+             * Format: int64
+             * @description trail: the last event purged; verification starts after it.
+             * @example 4120
+             */
+            last_seq?: number;
+            /**
+             * Format: date-time
+             * @description When it was written.
+             * @example 2027-04-04T02:00:00Z
+             */
+            written_at: string;
+        };
+        AuditPurges: {
+            /** @description Every purge after retention, the trail's and the ledger's, oldest first; none while the purge has never run. */
+            items: components["schemas"]["AuditPurge"][];
+            /** @description With record_id: that record's postings the ledger's purge removed, in the order they were posted. */
+            postings?: components["schemas"]["PurgedPosting"][] | null;
+        };
         AuditRecord: {
             /**
              * Format: uuid
@@ -14245,6 +14329,12 @@ export interface components {
              * @example docs/runbooks/audit-restore.md
              */
             runbook: string;
+            /**
+             * Format: int64
+             * @description 1 while it waits, 2 once acknowledged: its ETag is the version in quotes, for If-Match.
+             * @example 1
+             */
+            version: number;
         };
         AuditRequest: {
             /**
@@ -14364,7 +14454,7 @@ export interface components {
              */
             outcome: "passed" | "failed" | "explained";
             /**
-             * @description failed: what does not agree, in words.
+             * @description failed: what does not agree, in words. explained: what left the gap, naming its purge or recovery.
              * @example event 201 was altered: its body no longer gives its stored hash
              */
             problem?: string;
@@ -33005,6 +33095,41 @@ export interface components {
              */
             closed: boolean;
         };
+        PurgedPosting: {
+            /**
+             * Format: date
+             * @description The boundary it was carried forward to: the record's balance is in its carry-forward, dated the day before.
+             * @example 2020-01-01
+             */
+            boundary: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it was recorded at.
+             * @example 1204
+             */
+            ledger_revision: number;
+            /**
+             * Format: date
+             * @description The day it was posted on.
+             * @example 2019-03-14
+             */
+            posting_date: string;
+            /**
+             * @description The posting's identity, as the record's history names it.
+             * @example invoice:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10:v1:invoice@1
+             */
+            posting_identity: string;
+            /**
+             * @description true for a reversal of another posting, such as a void.
+             * @example false
+             */
+            reversal: boolean;
+            /**
+             * @description Its source document's type.
+             * @example invoice
+             */
+            source_type: string;
+        };
         QuietHours: {
             /**
              * @description When they start, as HH:MM.
@@ -44098,6 +44223,102 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAuditPurges: {
+        parameters: {
+            query?: {
+                /** @description A source document: also list its postings the ledger's purge removed. */
+                record_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPurges"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
