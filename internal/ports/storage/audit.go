@@ -106,6 +106,36 @@ type Audit interface {
 	// EraseDetails erases the details of events that occurred before cutoff (AUD-06): the worker only, and only for a
 	// cutoff at least 30 days ago by the database's clock (CodeAudit otherwise).
 	EraseDetails(ctx context.Context, cutoff time.Time) (AuditErasure, error)
+	// Recoveries are the trail's recoveries from restores behind its anchors, oldest first (AUD-09, design D8); the
+	// current anchor epoch is the last one's.
+	Recoveries(ctx context.Context) ([]AuditRecovery, error)
+	// RecordRecovery records a recovery, which starts the next epoch, and its event audit.restored in the chain: the
+	// worker only.
+	RecordRecovery(ctx context.Context, r NewAuditRecovery) (AuditRecovery, error)
+	// AcknowledgeRecovery records who acknowledged a recovery, once (ports.ErrNotFound when there is none to
+	// acknowledge). It is audited.
+	AcknowledgeRecovery(ctx context.Context, id, by uuid.UUID, at time.Time) (AuditRecovery, error)
+}
+
+// NewAuditRecovery is a recovery from a restore behind the anchors (design D8): the epoch it starts, the restored head
+// (the last event whose hash matches every anchor; 0 and the genesis or boundary hash when none does), the anchored
+// range no longer proven, when it was found and where its signed copy is.
+type NewAuditRecovery struct {
+	Epoch        int
+	RestoredSeq  int64
+	RestoredHash []byte
+	MissingFrom  int64
+	MissingTo    int64
+	DetectedAt   time.Time
+	AnchorKey    string
+}
+
+// AuditRecovery is a recorded recovery and its acknowledgement, if any.
+type AuditRecovery struct {
+	ID uuid.UUID
+	NewAuditRecovery
+	AcknowledgedBy *uuid.UUID
+	AcknowledgedAt *time.Time
 }
 
 // AuditQuery filters the trail for the explorer (FR-CTL-03). Every filter is optional.

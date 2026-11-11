@@ -44,6 +44,10 @@ func AnchorAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 			if err != nil || head.Seq == 0 || head.Action == ActionAnchorWritten {
 				return err
 			}
+			recs, err := u.Audit().Recoveries(ctx) // each recovery starts the next epoch's anchors (design D8)
+			if err != nil {
+				return err
+			}
 			signed, err := Sign(ctx, signer, org, head.Seq, head.Hash, clock.Now())
 			if err != nil {
 				return err
@@ -52,7 +56,7 @@ func AnchorAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 			if err != nil {
 				return err
 			}
-			if err := blobs.Create(ctx, AnchorKey(org, head.Seq), bytes.NewReader(b)); errors.Is(err, ports.ErrExists) {
+			if err := blobs.Create(ctx, EpochAnchorKey(org, len(recs), head.Seq), bytes.NewReader(b)); errors.Is(err, ports.ErrExists) {
 				return nil // anchored already
 			} else if err != nil {
 				return err
@@ -70,13 +74,16 @@ func AnchorAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 
 // Report is the outcome of verifying one organisation's trail.
 type Report struct {
-	Organisation uuid.UUID
-	Events       int
-	Anchors      int
-	Details      int    // security events' request details checked against their fingerprints (AUD-06)
-	Closes       int    // close anchors checked against their snapshots and the chain (AUD-04)
-	Unchecked    bool   // the details could not be checked: this service holds no fingerprint key
-	Problem      string // empty when the chain, every anchor and every detail agree
+	Organisation   uuid.UUID
+	Events         int
+	Anchors        int
+	Details        int // security events' request details checked against their fingerprints (AUD-06)
+	Closes         int // close anchors checked against their snapshots and the chain (AUD-04)
+	Explained      int // anchors of an earlier epoch past the head its recovery restored (design D8)
+	Recoveries     int // the trail's recoveries from restores behind its anchors; Unacknowledged of them still waiting
+	Unacknowledged int
+	Unchecked      bool   // the details could not be checked: this service holds no fingerprint key
+	Problem        string // empty when the chain, every anchor and every detail agree
 }
 
 // Keyed is the deployment's keyed hash (ports.Cipher.Fingerprint), which proved sensitive values and security events'
@@ -113,6 +120,21 @@ func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 	return reports, nil
 }
 
+// Nightly is the nightly verification (AUD-03, INV-12, design D8): the recovery step first, then every trail verified.
+// It fails, so the job alerts, when a trail fails or a restore behind the anchors was recovered.
+func Nightly(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, tell Tell,
+	clock ports.Clock) ([]storage.AuditRecovery, []Report, error) {
+	recs, err := RecoverAll(ctx, store, blobs, signer, tell, clock)
+	if err != nil {
+		return recs, nil, err
+	}
+	reports, err := VerifyAll(ctx, store, blobs, signer, keyed)
+	if err == nil && len(recs) > 0 {
+		err = fmt.Errorf("a restore landed behind the audit anchors of %d organisation(s): follow %s", len(recs), Runbook)
+	}
+	return recs, reports, err
+}
+
 func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, org uuid.UUID) (Report, error) {
 	r := Report{Organisation: org}
 	err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -141,21 +163,32 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 		if err != nil && r.Problem == "" {
 			r.Problem = err.Error()
 		}
-		keys, err := blobs.List(ctx, AnchorPrefix(org))
+		recs, err := u.Audit().Recoveries(ctx)
 		if err != nil {
 			return err
 		}
-		for _, k := range keys {
+		r.Recoveries = len(recs)
+		for _, x := range recs {
+			if x.AcknowledgedBy == nil {
+				r.Unacknowledged++
+			}
+		}
+		anchors, explained, err := liveAnchors(ctx, blobs, org, recs)
+		if err != nil {
+			return err
+		}
+		r.Explained = explained
+		for _, a := range anchors {
 			if r.Problem != "" {
 				break
 			}
-			if seq, err := anchorSeq(k); err == nil && seq < first {
+			if a.seq < first {
 				continue // behind the boundary: its events were purged
 			}
 			r.Anchors++
-			signed, err := readAnchor(ctx, blobs, k)
+			signed, err := readAnchor(ctx, blobs, a.key)
 			if err != nil {
-				r.Problem = fmt.Sprintf("anchor %s cannot be read: %v", k, err)
+				r.Problem = fmt.Sprintf("anchor %s cannot be read: %v", a.key, err)
 				break
 			}
 			if err := signed.Check(signer, org, hashes); err != nil {
@@ -180,7 +213,8 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 		}
 		return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "audit_chain", ObjectID: org,
 			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details}, "closes": {nil, r.Closes},
-				"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}}})
+				"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}, "explained_anchors": {nil, r.Explained},
+				"recoveries": {nil, r.Recoveries}, "unacknowledged_recoveries": {nil, r.Unacknowledged}}})
 	})
 	return r, err
 }

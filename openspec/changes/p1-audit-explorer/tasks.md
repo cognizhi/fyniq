@@ -309,7 +309,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 10. Restore behind the anchors (slice 10)
 
-- [ ] 10.1 Anchor epochs, `fyniq.audit_recovery` and the recovery step (D8), run by the nightly verification and as
+- [x] 10.1 Anchor epochs, `fyniq.audit_recovery` and the recovery step (D8), run by the nightly verification and as
   `make audit-recover`. A restore simulated behind published anchors writes a signed recovery event, starts a new
   epoch, raises the alert, the ✖ check and the notifications, and verification reports the gap as explained.
   - G4-071: a purge followed by a restore behind the last anchor verifies the rest from the boundary and explains the
@@ -317,9 +317,35 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - The runbook is `docs/runbooks/audit-restore.md`.
 
   `// req: AUD-09`, `// req: AUD-03`, `// req: G4-071`
-- [ ] 10.2 The erasure register re-applied by the recovery step (G4-070's audit part). Test: details erased, a backup
+- [x] 10.2 The erasure register re-applied by the recovery step (G4-070's audit part). Test: details erased, a backup
   from before simulated, the register re-applied, and the erased details gone again before the copy opens.
   `// req: AUD-09`, `// req: G4-070`
+  - As built (9 Nov 2026, rev 0.239):
+    - **The database (000293).** `fyniq.audit_recovery`: the epoch it starts (the next one only), the restored head
+      and its hash, the range no longer proven, when it was found and its signed copy; it never changes or goes
+      (FY306). Its acknowledgement is a row of its own, once (`fyniq.audit_recovery_acknowledgement`), so both stay
+      append-only as the trail is (AUD-08); each is audited (`audit.restored`, `audit.restore_acknowledged`, named so
+      as not to read as an account's recovery, a security event).
+    - **The recovery step** (`audit.Recover`, `RecoverAll`; `jobs audit-recover`, `make audit-recover`; first in
+      `audit.Nightly`, the nightly `audit-verify`). It compares the chain with the current epoch's anchors from the
+      latest purge boundary on: the restored head is the last anchored event that matches, the range runs from the
+      next to the last anchored. A chain that does not link, or an anchor whose signature does not verify, is left to
+      verification as tampering. The signed recovery goes first to `audit-anchors/<org>/recovery/<epoch>.json`.
+      The nightly job fails after recovering, so the ops alert is raised.
+    - **Epochs.** `AnchorAll` writes under the current epoch (`e<n>/`); verification and Verify integrity check every
+      anchor of the current epoch and each earlier epoch's up to its recovery's restored head, and count the rest as
+      explained; a range over a lost range is explained by the recovery.
+    - **The notice and the check.** `security.audit_recovered` (security, critical, emailed at once) to the Owners
+      and DPOs. The check of the audit trail (C.2 #3) fails, naming each recovery waiting, until the Owner
+      acknowledges it (`acknowledgeAuditRecovery`, A on "Audit trail" by the Owner, signed in, with If-Match;
+      `listAuditRecoveries`, V). The check now reads the trail's latest verification when none came since its last
+      run, so an acknowledgement clears it at once.
+    - **Tests:** `TestARestoreBehindTheAnchorsIsRecovered`, `TestAPurgeThenARestoreBehindTheLastAnchor` (G4-071),
+      `TestTheErasureRegisterIsReapplied` (G4-070), `TestAttackARecoveryKeepsItsRules`,
+      `TestARecoveryFailsTheAuditCheckUntilAcknowledged`, `TestARecoveryIsListedAndAcknowledgedByTheOwner` and the
+      matrix rows. The restore is simulated by an anchor published for events the database no longer holds.
+    - **Not checked here:** a real point-in-time restore in the cloud and the bucket's retention lock
+      (`[live-verify]`); the screen's view of recoveries waits for slice 11.
 
 ## 11. The screen (slice 11)
 
@@ -331,6 +357,8 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - A component test with axe covers each state of the inventory: verifying, verified, failed and explained gap.
   - The ledger's boundaries listed for it (`GET /v1/ledger/boundaries`), and each document's view saying when its
     postings were purged after retention (`Ledger.PurgedOfSource`, slice 9).
+  - The recoveries from restores behind the anchors, each waiting one with the Owner's acknowledgement
+    (`listAuditRecoveries`, `acknowledgeAuditRecovery`, slice 10).
 
   `// req: FR-CTL-03`, `// req: AUD-07`, `// req: AUD-03`
 - [ ] 11.2 The fragment `AuditTrail.html` checked against the build, and the compliance canvas republished where they

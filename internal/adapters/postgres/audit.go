@@ -3,14 +3,17 @@ package postgres
 import (
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -280,4 +283,68 @@ func boundaryOf(id uuid.UUID, seq int64, hash []byte, at time.Time, approval str
 	out := storage.AuditBoundary{ID: id, NewAuditBoundary: storage.NewAuditBoundary{LastSeq: seq, LastHash: hash, LastOccurredAt: at, Approval: approval,
 		AnchorKey: key, WrittenAt: written}}
 	return out, json.Unmarshal(counts, &out.Counts)
+}
+
+func (r auditTrail) Recoveries(ctx context.Context) ([]storage.AuditRecovery, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListAuditRecoveries(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AuditRecovery, len(rows))
+	for i, x := range rows {
+		out[i] = recoveryOf(sqlcdb.InsertAuditRecoveryRow{ID: x.ID, Epoch: x.Epoch, RestoredSeq: x.RestoredSeq, RestoredHash: x.RestoredHash,
+			MissingFrom: x.MissingFrom, MissingTo: x.MissingTo, DetectedAt: x.DetectedAt, AnchorKey: x.AnchorKey})
+		out[i].AcknowledgedBy, out[i].AcknowledgedAt = x.AcknowledgedBy, x.AcknowledgedAt
+	}
+	return out, nil
+}
+
+func (r auditTrail) RecordRecovery(ctx context.Context, n storage.NewAuditRecovery) (storage.AuditRecovery, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AuditRecovery{}, err
+	}
+	if n.Epoch < 1 || n.Epoch > math.MaxInt32 {
+		return storage.AuditRecovery{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("epoch %d is out of range", n.Epoch)}
+	}
+	row, err := r.u.q.InsertAuditRecovery(ctx, sqlcdb.InsertAuditRecoveryParams{Epoch: int32(n.Epoch), RestoredSeq: n.RestoredSeq,
+		RestoredHash: n.RestoredHash, MissingFrom: n.MissingFrom, MissingTo: n.MissingTo, DetectedAt: n.DetectedAt, AnchorKey: n.AnchorKey})
+	if err != nil {
+		return storage.AuditRecovery{}, mapError(err)
+	}
+	out := recoveryOf(row)
+	return out, r.u.event(ctx, "audit.restored", "audit_recovery", out.ID, nil, map[string][2]any{"epoch": {nil, n.Epoch},
+		"restored_seq": {nil, n.RestoredSeq}, "restored_hash": {nil, hex.EncodeToString(n.RestoredHash)}, "missing_from": {nil, n.MissingFrom},
+		"missing_to": {nil, n.MissingTo}, "anchor_key": {nil, n.AnchorKey}})
+}
+
+func (r auditTrail) AcknowledgeRecovery(ctx context.Context, id, by uuid.UUID, at time.Time) (storage.AuditRecovery, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AuditRecovery{}, err
+	}
+	ack, err := r.u.q.AcknowledgeAuditRecovery(ctx, sqlcdb.AcknowledgeAuditRecoveryParams{RecoveryID: id, AcknowledgedBy: by, AcknowledgedAt: at})
+	if err != nil {
+		return storage.AuditRecovery{}, mapError(err) // no row: acknowledged already (ports.ErrNotFound)
+	}
+	if err := r.u.event(ctx, "audit.restore_acknowledged", "audit_recovery_acknowledgement", ack, nil, map[string][2]any{
+		"recovery_id": {nil, id.String()}, "acknowledged_by": {nil, by.String()}, "acknowledged_at": {nil, at.UTC().Format(time.RFC3339Nano)}}); err != nil {
+		return storage.AuditRecovery{}, err
+	}
+	recs, err := r.Recoveries(ctx)
+	if err != nil {
+		return storage.AuditRecovery{}, err
+	}
+	for _, x := range recs {
+		if x.ID == id {
+			return x, nil
+		}
+	}
+	return storage.AuditRecovery{}, ports.ErrNotFound
+}
+
+func recoveryOf(x sqlcdb.InsertAuditRecoveryRow) storage.AuditRecovery {
+	return storage.AuditRecovery{ID: x.ID, NewAuditRecovery: storage.NewAuditRecovery{Epoch: int(x.Epoch), RestoredSeq: x.RestoredSeq,
+		RestoredHash: x.RestoredHash, MissingFrom: x.MissingFrom, MissingTo: x.MissingTo, DetectedAt: x.DetectedAt, AnchorKey: x.AnchorKey}}
 }

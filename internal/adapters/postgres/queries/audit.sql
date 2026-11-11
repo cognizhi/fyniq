@@ -60,3 +60,25 @@ SELECT id, last_seq, last_hash, last_occurred_at, approval, counts, anchor_key, 
 
 -- name: PurgeAudit :one
 SELECT fyniq.audit_purge($1)::bigint AS purged;
+
+-- name: ListAuditRecoveries :many
+-- The trail's recoveries from restores behind its anchors, oldest first, with their acknowledgements (AUD-09, design D8).
+SELECT r.id, r.epoch, r.restored_seq, r.restored_hash, r.missing_from, r.missing_to, r.detected_at, r.anchor_key,
+       a.acknowledged_by, a.acknowledged_at
+FROM fyniq.audit_recovery r
+LEFT JOIN fyniq.audit_recovery_acknowledgement a ON a.organisation_id = r.organisation_id AND a.recovery_id = r.id
+ORDER BY r.epoch;
+
+-- name: InsertAuditRecovery :one
+-- A recovery, which starts the next anchor epoch: the worker only (000293).
+INSERT INTO fyniq.audit_recovery (epoch, restored_seq, restored_hash, missing_from, missing_to, detected_at, anchor_key)
+VALUES (sqlc.arg(epoch), sqlc.arg(restored_seq), sqlc.arg(restored_hash), sqlc.arg(missing_from), sqlc.arg(missing_to),
+        sqlc.arg(detected_at), sqlc.arg(anchor_key))
+RETURNING id, epoch, restored_seq, restored_hash, missing_from, missing_to, detected_at, anchor_key;
+
+-- name: AcknowledgeAuditRecovery :one
+-- A recovery acknowledged, once (000293): no row when it was already.
+INSERT INTO fyniq.audit_recovery_acknowledgement (recovery_id, acknowledged_by, acknowledged_at)
+VALUES (sqlc.arg(recovery_id), sqlc.arg(acknowledged_by), sqlc.arg(acknowledged_at))
+ON CONFLICT (organisation_id, recovery_id) DO NOTHING
+RETURNING id;

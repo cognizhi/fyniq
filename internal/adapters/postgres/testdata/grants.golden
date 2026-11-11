@@ -47,6 +47,9 @@ fyniq_api       SELECT    audit_chain
 fyniq_api       EXECUTE   audit_chain_head()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    audit_event
+fyniq_api       SELECT    audit_recovery
+fyniq_api       INSERT    audit_recovery_acknowledgement (acknowledged_at, acknowledged_by, recovery_id)
+fyniq_api       SELECT    audit_recovery_acknowledgement
 fyniq_api       INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_api       SELECT    audit_request_detail
 fyniq_api       SELECT    balance
@@ -397,6 +400,8 @@ fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
 fyniq_executor  EXECUTE   audit_chain_head()
 fyniq_executor  INSERT    audit_event (body, id)
+fyniq_executor  SELECT    audit_recovery
+fyniq_executor  SELECT    audit_recovery_acknowledgement
 fyniq_executor  INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
@@ -489,6 +494,8 @@ fyniq_readonly  SELECT    audit_boundary
 fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  EXECUTE   audit_chain_head()
 fyniq_readonly  SELECT    audit_event
+fyniq_readonly  SELECT    audit_recovery
+fyniq_readonly  SELECT    audit_recovery_acknowledgement
 fyniq_readonly  SELECT    audit_request_detail
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
@@ -624,6 +631,9 @@ fyniq_worker    EXECUTE   audit_erase_details()
 fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event
 fyniq_worker    EXECUTE   audit_purge()
+fyniq_worker    INSERT    audit_recovery (anchor_key, detected_at, epoch, missing_from, missing_to, restored_hash, restored_seq)
+fyniq_worker    SELECT    audit_recovery
+fyniq_worker    SELECT    audit_recovery_acknowledgement
 fyniq_worker    INSERT    audit_request_detail (id, ip, occurred_at, user_agent)
 fyniq_worker    SELECT    audit_request_detail
 fyniq_worker    SELECT    balance

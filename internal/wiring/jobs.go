@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"slices"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
@@ -42,7 +46,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"audit.verify": func(ctx context.Context) error {
-			_, err := audit.VerifyAll(ctx, k.Store, k.Blobs, k.Signer, k.Keyed())
+			_, _, err := audit.Nightly(ctx, k.Store, k.Blobs, k.Signer, k.Keyed(), k.TellRecovery(clock), clock) // the recovery step first (D8)
 			return err
 		},
 		"audit.erase": func(ctx context.Context) error { // AUD-06: security events' details after their retention
@@ -222,6 +226,29 @@ func (k *Kit) JobDead(clock ports.Clock) outbox.Dead {
 }
 
 // dispatcher queues work through the kit's outbox.
+// TellRecovery tells the Owner and the DPO that a restore landed behind the audit trail's anchors (AUD-09, design D8).
+func (k *Kit) TellRecovery(clock ports.Clock) audit.Tell {
+	d := k.dispatcher(clock)
+	return func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, r storage.AuditRecovery) error {
+		members, err := u.Members().List(ctx, clock.Now())
+		if err != nil {
+			return err
+		}
+		var users []uuid.UUID
+		for _, m := range members {
+			if slices.ContainsFunc(m.Roles, func(a storage.RoleAssignment) bool {
+				return a.Role == string(authz.Owner) || a.Role == string(authz.DPO)
+			}) {
+				users = append(users, m.UserID)
+			}
+		}
+		_, err = notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AuditRecoveredType, RecordType: "audit_recovery", RecordID: &r.ID,
+			Title: fmt.Sprintf("A restore landed behind the audit trail's anchors: events %d to %d are no longer proven. Follow the restore runbook, then acknowledge it",
+				r.MissingFrom, r.MissingTo), Link: "/compliance/audit-trail", Audience: notify.Audience{Users: users}, At: clock.Now()})
+		return err
+	}
+}
+
 func (k *Kit) dispatcher(clock ports.Clock) outbox.Dispatcher {
 	return outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}
 }

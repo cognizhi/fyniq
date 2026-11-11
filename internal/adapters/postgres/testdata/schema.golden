@@ -198,6 +198,20 @@ audit_event | created_xact | bigint | not null |
 audit_event | action | text | null | ((body)::jsonb ->> 'action'::text)
 audit_event | object_type | text | null | (((body)::jsonb -> 'object'::text) ->> 'type'::text)
 audit_event | object_id | uuid | null | ((((body)::jsonb -> 'object'::text) ->> 'id'::text))::uuid
+audit_recovery | organisation_id | uuid | not null | current_org()
+audit_recovery | id | uuid | not null | uuidv7()
+audit_recovery | epoch | integer | not null | 
+audit_recovery | restored_seq | bigint | not null | 
+audit_recovery | restored_hash | bytea | not null | 
+audit_recovery | missing_from | bigint | not null | 
+audit_recovery | missing_to | bigint | not null | 
+audit_recovery | detected_at | timestamp with time zone | not null | 
+audit_recovery | anchor_key | text | not null | 
+audit_recovery_acknowledgement | organisation_id | uuid | not null | current_org()
+audit_recovery_acknowledgement | id | uuid | not null | uuidv7()
+audit_recovery_acknowledgement | recovery_id | uuid | not null | 
+audit_recovery_acknowledgement | acknowledged_by | uuid | not null | 
+audit_recovery_acknowledgement | acknowledged_at | timestamp with time zone | not null | 
 audit_request_detail | organisation_id | uuid | not null | current_org()
 audit_request_detail | id | uuid | not null | 
 audit_request_detail | occurred_at | timestamp with time zone | not null | 
@@ -1935,6 +1949,32 @@ audit_event | audit_event_prev_hash_not_null | NOT NULL prev_hash
 audit_event | audit_event_seq_key | UNIQUE (organisation_id, seq)
 audit_event | audit_event_seq_not_null | NOT NULL seq
 audit_event | audit_event_seq_positive | CHECK ((seq > 0))
+audit_recovery | audit_recovery_anchor_key_not_null | NOT NULL anchor_key
+audit_recovery | audit_recovery_detected_at_not_null | NOT NULL detected_at
+audit_recovery | audit_recovery_epoch_key | UNIQUE (organisation_id, epoch)
+audit_recovery | audit_recovery_epoch_not_null | NOT NULL epoch
+audit_recovery | audit_recovery_epoch_positive | CHECK ((epoch > 0))
+audit_recovery | audit_recovery_hash_sha256 | CHECK ((length(restored_hash) = 32))
+audit_recovery | audit_recovery_id_not_null | NOT NULL id
+audit_recovery | audit_recovery_key_length | CHECK (((length(anchor_key) >= 1) AND (length(anchor_key) <= 300)))
+audit_recovery | audit_recovery_missing_from_not_null | NOT NULL missing_from
+audit_recovery | audit_recovery_missing_to_not_null | NOT NULL missing_to
+audit_recovery | audit_recovery_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+audit_recovery | audit_recovery_organisation_id_not_null | NOT NULL organisation_id
+audit_recovery | audit_recovery_pkey | PRIMARY KEY (organisation_id, id)
+audit_recovery | audit_recovery_range | CHECK (((restored_seq >= 0) AND (missing_from = (restored_seq + 1)) AND (missing_to >= missing_from)))
+audit_recovery | audit_recovery_restored_hash_not_null | NOT NULL restored_hash
+audit_recovery | audit_recovery_restored_seq_not_null | NOT NULL restored_seq
+audit_recovery | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_acknowledged_at_not_null | NOT NULL acknowledged_at
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_acknowledged_by_not_null | NOT NULL acknowledged_by
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_id_not_null | NOT NULL id
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_once | UNIQUE (organisation_id, recovery_id)
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_organisation_id_not_null | NOT NULL organisation_id
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_pkey | PRIMARY KEY (organisation_id, id)
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_recovery_fkey | FOREIGN KEY (organisation_id, recovery_id) REFERENCES audit_recovery(organisation_id, id)
+audit_recovery_acknowledgement | audit_recovery_acknowledgement_recovery_id_not_null | NOT NULL recovery_id
+audit_recovery_acknowledgement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 audit_request_detail | audit_request_detail_agent_length | CHECK ((length(user_agent) <= 1000))
 audit_request_detail | audit_request_detail_event_fkey | FOREIGN KEY (organisation_id, id) REFERENCES audit_event(organisation_id, id)
 audit_request_detail | audit_request_detail_id_not_null | NOT NULL id
@@ -4296,6 +4336,10 @@ CREATE UNIQUE INDEX audit_boundary_seq_key ON fyniq.audit_boundary USING btree (
 CREATE UNIQUE INDEX audit_chain_pkey ON fyniq.audit_chain USING btree (organisation_id)
 CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
+CREATE UNIQUE INDEX audit_recovery_acknowledgement_once ON fyniq.audit_recovery_acknowledgement USING btree (organisation_id, recovery_id)
+CREATE UNIQUE INDEX audit_recovery_acknowledgement_pkey ON fyniq.audit_recovery_acknowledgement USING btree (organisation_id, id)
+CREATE UNIQUE INDEX audit_recovery_epoch_key ON fyniq.audit_recovery USING btree (organisation_id, epoch)
+CREATE UNIQUE INDEX audit_recovery_pkey ON fyniq.audit_recovery USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_request_detail_pkey ON fyniq.audit_request_detail USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
@@ -4547,6 +4591,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.accountant_review_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.break_glass_use DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'break_glass_id')
@@ -4688,6 +4734,10 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_guard()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER audit_recovery_acknowledgement_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_recovery_acknowledgement FOR EACH ROW EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER audit_recovery_acknowledgement_no_truncate BEFORE TRUNCATE ON fyniq.audit_recovery_acknowledgement FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER audit_recovery_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.audit_recovery FOR EACH ROW EXECUTE FUNCTION audit_recovery_guard()
+CREATE TRIGGER audit_recovery_no_truncate BEFORE TRUNCATE ON fyniq.audit_recovery FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_request_detail_guard BEFORE DELETE OR UPDATE ON fyniq.audit_request_detail FOR EACH ROW EXECUTE FUNCTION audit_request_detail_guard()
 CREATE TRIGGER audit_request_detail_no_truncate BEFORE TRUNCATE ON fyniq.audit_request_detail FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
@@ -4932,6 +4982,8 @@ approval_signature | tenant_isolation | * | (organisation_id = current_org()) | 
 audit_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+audit_recovery | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+audit_recovery_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5078,6 +5130,7 @@ audit_event_append() → trigger | security definer | v | search_path=pg_catalog
 audit_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 575215a6a315686b1069b99ebd4db910
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 audit_purge(p_last_seq bigint) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d72747db4e3930a148d3c4075dca432c
+audit_recovery_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | cc6e63a491b0b40d589054b85e13ed19
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082

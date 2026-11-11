@@ -52,6 +52,8 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listChecks cursor", "getCheck cursor")
 	// A review names the item's version itself and changes nothing of the check (rev 0.164).
 	want = append(want, "reviewCheckItem If-Match")
+	// A trail's recoveries are one per restore behind its anchors, read whole (AUD-09, design D8).
+	want = append(want, "listAuditRecoveries cursor")
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

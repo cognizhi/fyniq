@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acknowledged_at": {
+      "description": "When; null while it waits.",
+      "examples": [
+        "2026-11-10T09:12:00Z"
+      ],
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "acknowledged_by": {
+      "description": "The Owner who acknowledged it; null while it waits, and the check of the audit trail (C.2 #3) fails.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "anchor_key": {
+      "description": "Where its signed copy is in the anchors' write-once bucket.",
+      "examples": [
+        "audit-anchors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10/recovery/1.json"
+      ],
+      "type": "string"
+    },
+    "detected_at": {
+      "description": "When the recovery step found the restore.",
+      "examples": [
+        "2026-11-10T02:00:04Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "epoch": {
+      "description": "The anchor epoch it started: anchors written since are under this epoch.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The recovery's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "missing_from": {
+      "description": "The first event the anchors signed that the chain no longer proves.",
+      "examples": [
+        4121
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "missing_to": {
+      "description": "The last such event: verification explains the range from missing_from to it.",
+      "examples": [
+        4388
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "restored_seq": {
+      "description": "The restored head: the last event whose hash matches every anchor; the chain continues from it.",
+      "examples": [
+        4120
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "runbook": {
+      "description": "What to follow before acknowledging it.",
+      "examples": [
+        "docs/runbooks/audit-restore.md"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "epoch",
+    "restored_seq",
+    "missing_from",
+    "missing_to",
+    "detected_at",
+    "anchor_key",
+    "runbook",
+    "acknowledged_by",
+    "acknowledged_at"
+  ],
+  "title": "AuditRecovery",
+  "type": "object"
+}

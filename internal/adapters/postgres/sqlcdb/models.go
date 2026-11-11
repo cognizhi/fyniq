@@ -262,6 +262,26 @@ type FyniqAuditEvent struct {
 	ObjectID       *uuid.UUID
 }
 
+type FyniqAuditRecovery struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Epoch          int32
+	RestoredSeq    int64
+	RestoredHash   []byte
+	MissingFrom    int64
+	MissingTo      int64
+	DetectedAt     time.Time
+	AnchorKey      string
+}
+
+type FyniqAuditRecoveryAcknowledgement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RecoveryID     uuid.UUID
+	AcknowledgedBy uuid.UUID
+	AcknowledgedAt time.Time
+}
+
 type FyniqAuditRequestDetail struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -1448,7 +1448,12 @@ var (
 	ListAuditEvents         = Policy{Operation: "listAuditEvents", Capability: AuditTrail, Need: View}
 	GetAuditEvent           = Policy{Operation: "getAuditEvent", Capability: AuditTrail, Need: View}
 	RequestAuditTrailExport = Policy{Operation: "requestAuditTrailExport", Capability: AuditTrail, Need: View}
-	WhatIfCashProjection    = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	// Restores behind the anchors (AUD-09, design D8): the recoveries read on the row; acknowledged by the Owner, as nobody
+	// holds A on it yet (the design's open question).
+	ListAuditRecoveries      = Policy{Operation: "listAuditRecoveries", Capability: AuditTrail, Need: View}
+	AcknowledgeAuditRecovery = Policy{Operation: "acknowledgeAuditRecovery", Capability: AuditTrail, Need: Approve, OwnerMay: true,
+		Note: "Nobody holds A on \"Audit trail\" yet, so the Owner acknowledges (p1-audit-explorer design D8)."}
+	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 )
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
@@ -1659,7 +1664,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

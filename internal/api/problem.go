@@ -211,6 +211,7 @@ var codeFacts = map[string]struct {
 	balance.CodeTooManyLines:      {422, "Too many lines for one report"},
 	balance.CodeCrossesYear:       {422, "The range crosses a financial year"},
 	balance.CodePurged:            {409, "The ledger before that was purged after retention"},
+	audit.CodeAcknowledged:        {409, "The recovery was acknowledged already"},
 	CodeNoPeriod:                  {422, "No period for the month"},
 	CodeLaterRevision:             {422, "A revision later than the ledger"},
 	CodeExportNotReady:            {409, "The export is not ready"},
