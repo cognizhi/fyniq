@@ -191,6 +191,96 @@ func (q *Queries) AccountLinesAfter(ctx context.Context, arg AccountLinesAfterPa
 	return items, nil
 }
 
+const accountLinesWithAmount = `-- name: AccountLinesWithAmount :many
+SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
+FROM fyniq.journal_line l
+JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
+LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
+WHERE l.account_id = $1 AND l.posting_date BETWEEN $2 AND $3
+  AND l.currency = $4 AND l.amount = $5::numeric
+ORDER BY l.posting_date, e.ledger_revision, l.line_no
+LIMIT $6
+`
+
+type AccountLinesWithAmountParams struct {
+	AccountID uuid.UUID
+	DateFrom  time.Time
+	DateTo    time.Time
+	Currency  string
+	Amount    string
+	RowLimit  int32
+}
+
+type AccountLinesWithAmountRow struct {
+	EntryID           uuid.UUID
+	LedgerRevision    int64
+	PostingDate       time.Time
+	SourceType        string
+	SourceID          string
+	SourceVersion     int32
+	Memo              *string
+	ReversesEntryID   *uuid.UUID
+	LineNo            int32
+	Currency          string
+	Amount            string
+	BaseAmount        string
+	Description       *string
+	Number            *string
+	PartyID           *uuid.UUID
+	DimensionValueIds []uuid.UUID
+	InstrumentID      *uuid.UUID
+}
+
+// AccountLines in a currency of exactly an amount (NFR-PERF-04): what a bank line may be the money of, on the account's
+// index by the line's own date.
+func (q *Queries) AccountLinesWithAmount(ctx context.Context, arg AccountLinesWithAmountParams) ([]AccountLinesWithAmountRow, error) {
+	rows, err := q.db.Query(ctx, accountLinesWithAmount,
+		arg.AccountID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.Currency,
+		arg.Amount,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AccountLinesWithAmountRow
+	for rows.Next() {
+		var i AccountLinesWithAmountRow
+		if err := rows.Scan(
+			&i.EntryID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.Memo,
+			&i.ReversesEntryID,
+			&i.LineNo,
+			&i.Currency,
+			&i.Amount,
+			&i.BaseAmount,
+			&i.Description,
+			&i.Number,
+			&i.PartyID,
+			&i.DimensionValueIds,
+			&i.InstrumentID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dimensionSetOf = `-- name: DimensionSetOf :one
 SELECT id FROM fyniq.dimension_set WHERE value_ids = $1::uuid[]
 `
@@ -203,34 +293,60 @@ func (q *Queries) DimensionSetOf(ctx context.Context, valueIds []uuid.UUID) (uui
 	return id, err
 }
 
-const entryIDsAfter = `-- name: EntryIDsAfter :many
-SELECT id, ledger_revision FROM fyniq.journal_entry
+const entriesAfter = `-- name: EntriesAfter :many
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
 WHERE ledger_revision > $1
 ORDER BY ledger_revision
 LIMIT $2
 `
 
-type EntryIDsAfterParams struct {
+type EntriesAfterParams struct {
 	AfterRevision int64
 	PageSize      int32
 }
 
-type EntryIDsAfterRow struct {
-	ID             uuid.UUID
-	LedgerRevision int64
+type EntriesAfterRow struct {
+	ID              uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	PeriodID        uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	RuleVersion     string
+	ReversesEntryID *uuid.UUID
+	Memo            *string
+	RecordedAt      time.Time
 }
 
-// The entries after a ledger revision, in revision order, a page at a time: the replay walks them (ENG-06, QA-ENG-06).
-func (q *Queries) EntryIDsAfter(ctx context.Context, arg EntryIDsAfterParams) ([]EntryIDsAfterRow, error) {
-	rows, err := q.db.Query(ctx, entryIDsAfter, arg.AfterRevision, arg.PageSize)
+// The entries after a ledger revision, in revision order, a page at a time, without their lines, which LinesOfEntries
+// reads for the whole page at once (NFR-PERF-02): the replay (ENG-06, QA-ENG-06) and the statements' movements walk them.
+func (q *Queries) EntriesAfter(ctx context.Context, arg EntriesAfterParams) ([]EntriesAfterRow, error) {
+	rows, err := q.db.Query(ctx, entriesAfter, arg.AfterRevision, arg.PageSize)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []EntryIDsAfterRow
+	var items []EntriesAfterRow
 	for rows.Next() {
-		var i EntryIDsAfterRow
-		if err := rows.Scan(&i.ID, &i.LedgerRevision); err != nil {
+		var i EntriesAfterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.PeriodID,
+			&i.PostingIdentity,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.RuleVersion,
+			&i.ReversesEntryID,
+			&i.Memo,
+			&i.RecordedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -504,4 +620,66 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 		arg.InstrumentIds,
 	)
 	return err
+}
+
+const linesOfEntries = `-- name: LinesOfEntries :many
+SELECT l.entry_id, l.id, l.line_no, l.account_id, l.currency, l.amount, l.fx_rate, l.fx_rate_source, l.base_currency,
+       l.base_amount, l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
+FROM fyniq.journal_line l
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
+WHERE l.entry_id = ANY($1::uuid[])
+ORDER BY l.entry_id, l.line_no
+`
+
+type LinesOfEntriesRow struct {
+	EntryID           uuid.UUID
+	ID                uuid.UUID
+	LineNo            int32
+	AccountID         uuid.UUID
+	Currency          string
+	Amount            string
+	FxRate            string
+	FxRateSource      string
+	BaseCurrency      string
+	BaseAmount        string
+	Description       *string
+	PartyID           *uuid.UUID
+	DimensionValueIds []uuid.UUID
+	InstrumentID      *uuid.UUID
+}
+
+// The lines of a page of entries, each entry's in line order: one read for the page, as GetEntryLines reads one entry's.
+func (q *Queries) LinesOfEntries(ctx context.Context, entryIds []uuid.UUID) ([]LinesOfEntriesRow, error) {
+	rows, err := q.db.Query(ctx, linesOfEntries, entryIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LinesOfEntriesRow
+	for rows.Next() {
+		var i LinesOfEntriesRow
+		if err := rows.Scan(
+			&i.EntryID,
+			&i.ID,
+			&i.LineNo,
+			&i.AccountID,
+			&i.Currency,
+			&i.Amount,
+			&i.FxRate,
+			&i.FxRateSource,
+			&i.BaseCurrency,
+			&i.BaseAmount,
+			&i.Description,
+			&i.PartyID,
+			&i.DimensionValueIds,
+			&i.InstrumentID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

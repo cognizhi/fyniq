@@ -21,6 +21,7 @@ type Options struct {
 	Readers  int
 	Out      string
 	SkipGrow bool
+	Only     string
 }
 
 // run runs the harness: set by the local build (perf_local.go).
@@ -36,6 +37,7 @@ func main() {
 		fs.IntVar(&o.Readers, "readers", 100, "how many read at once (NFR-SCALE-01)")
 		fs.StringVar(&o.Out, "out", ".data/perf", "where the report goes")
 		fs.BoolVar(&o.SkipGrow, "skip-grow", false, "measure the ledger as it is, adding nothing")
+		fs.StringVar(&o.Only, "only", "", "measure only these budgets, comma-separated: a requirement such as NFR-PERF-02, or reads, reports, posting, import, export")
 		if err := fs.Parse(args); err != nil {
 			return err
 		}

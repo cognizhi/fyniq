@@ -981,17 +981,31 @@ func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]
 	if limit < 1 || limit > 10000 {
 		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d entries", limit), Hint: "Ask for 1 to 10,000"}
 	}
-	ids, err := r.u.q.EntryIDsAfter(ctx, sqlcdb.EntryIDsAfterParams{AfterRevision: afterRevision, PageSize: int32(limit)})
+	// The page's entries, then all their lines in one read: two queries a page, not two an entry (NFR-PERF-02).
+	rows, err := r.u.q.EntriesAfter(ctx, sqlcdb.EntriesAfterParams{AfterRevision: afterRevision, PageSize: int32(limit)}) // #nosec G115 -- 1 to 10,000
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := make([]storage.Entry, 0, len(ids))
-	for _, x := range ids {
-		e, err := r.Entry(ctx, x.ID)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, e)
+	out := make([]storage.Entry, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	at := make(map[uuid.UUID]int, len(rows))
+	for _, x := range rows {
+		at[x.ID] = len(out)
+		ids = append(ids, x.ID)
+		out = append(out, toEntry(sqlcdb.GetEntryRow(x)))
+	}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	lines, err := r.u.q.LinesOfEntries(ctx, ids)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	for _, l := range lines {
+		e := &out[at[l.EntryID]]
+		e.Lines = append(e.Lines, toEntryLine(sqlcdb.GetEntryLinesRow{ID: l.ID, LineNo: l.LineNo, AccountID: l.AccountID, Currency: l.Currency,
+			Amount: l.Amount, FxRate: l.FxRate, FxRateSource: l.FxRateSource, BaseCurrency: l.BaseCurrency, BaseAmount: l.BaseAmount,
+			Description: l.Description, PartyID: l.PartyID, DimensionValueIds: l.DimensionValueIds, InstrumentID: l.InstrumentID}))
 	}
 	return out, nil
 }
@@ -1004,29 +1018,38 @@ func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) 
 	if err != nil {
 		return storage.Entry{}, mapError(err)
 	}
+	e := toEntry(row)
+	lines, err := r.u.q.GetEntryLines(ctx, id)
+	if err != nil {
+		return storage.Entry{}, mapError(err)
+	}
+	for _, l := range lines {
+		e.Lines = append(e.Lines, toEntryLine(l))
+	}
+	return e, nil
+}
+
+func toEntry(row sqlcdb.GetEntryRow) storage.Entry {
 	e := storage.Entry{ID: row.ID, LedgerRevision: row.LedgerRevision, PostingDate: row.PostingDate, PeriodID: row.PeriodID,
 		PostingIdentity: row.PostingIdentity, Source: storage.Source{Type: row.SourceType, ID: row.SourceID, Version: int(row.SourceVersion)},
 		RuleVersion: row.RuleVersion, ReversesEntryID: row.ReversesEntryID, RecordedAt: row.RecordedAt}
 	if row.Memo != nil {
 		e.Memo = *row.Memo
 	}
-	lines, err := r.u.q.GetEntryLines(ctx, id)
-	if err != nil {
-		return storage.Entry{}, mapError(err)
+	return e
+}
+
+func toEntryLine(l sqlcdb.GetEntryLinesRow) storage.Line {
+	line := storage.Line{ID: l.ID, LineNo: int(l.LineNo), AccountID: l.AccountID, Currency: l.Currency,
+		Amount: storage.Decimal(l.Amount), FXRate: storage.Decimal(l.FxRate), FXRateSource: l.FxRateSource,
+		BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID, InstrumentID: l.InstrumentID}
+	if l.Description != nil {
+		line.Description = *l.Description
 	}
-	for _, l := range lines {
-		line := storage.Line{ID: l.ID, LineNo: int(l.LineNo), AccountID: l.AccountID, Currency: l.Currency,
-			Amount: storage.Decimal(l.Amount), FXRate: storage.Decimal(l.FxRate), FXRateSource: l.FxRateSource,
-			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID, InstrumentID: l.InstrumentID}
-		if l.Description != nil {
-			line.Description = *l.Description
-		}
-		if len(l.DimensionValueIds) > 0 {
-			line.DimensionValues = l.DimensionValueIds
-		}
-		e.Lines = append(e.Lines, line)
+	if len(l.DimensionValueIds) > 0 {
+		line.DimensionValues = l.DimensionValueIds
 	}
-	return e, nil
+	return line
 }
 
 func (r ledger) ByIdentity(ctx context.Context, postingIdentity string) (storage.Entry, error) {
@@ -1093,6 +1116,23 @@ func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to ti
 	out := make([]storage.AccountLine, len(rows))
 	for i, x := range rows {
 		out[i] = toAccountLine(x)
+	}
+	return out, nil
+}
+
+func (r ledger) AccountLinesWithAmount(ctx context.Context, account uuid.UUID, from, to time.Time, currency string, amount storage.Decimal,
+	limit int) ([]storage.AccountLine, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AccountLinesWithAmount(ctx, sqlcdb.AccountLinesWithAmountParams{AccountID: account, DateFrom: dateOf(from), DateTo: dateOf(to),
+		Currency: currency, Amount: string(amount), RowLimit: int32(min(max(limit, 1), 100000))}) // 1 to 100,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AccountLine, len(rows))
+	for i, x := range rows {
+		out[i] = toAccountLine(sqlcdb.AccountLinesRow(x))
 	}
 	return out, nil
 }
