@@ -209,6 +209,19 @@ decisions of the same day (PRD-001 rev 0.230):
   stays;
 - open question 38's purge is built in full, the ledger's part included. Its balances are carried forward at the
   boundary, as the new AUD-10 states.
+It was built on 9 Nov 2026, in #506 to #517 (PRD-001 rev 0.231 to 0.239). The parts:
+- proofs of sensitive values and the security events' details, with their erasure;
+- every sensitive read and export audited;
+- signed close snapshots;
+- Verify integrity;
+- the explorer and its export;
+- both purges, with the ledger's carry-forward checked against the oracle;
+- the recovery from a restore behind the anchors;
+- Compliance › Audit trail.
+
+Two things wait:
+- the republished compliance canvas (task 11.2), for the design account;
+- the cloud's keys, bucket grants, retention lock and a real point-in-time restore, tagged `[live-verify]`.
 
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 

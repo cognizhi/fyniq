@@ -392,7 +392,7 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
 
 ## 12. Threat model and as built (slice 12)
 
-- [ ] 12.1 The threat model `docs/security/threat-models/audit-trail.md` covers:
+- [x] 12.1 The threat model `docs/security/threat-models/audit-trail.md` covers:
   - fingerprints and their key;
   - the details beside the chain and their erasure;
   - the audit hook;
@@ -401,8 +401,20 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   - restore and recovery.
 
   Each threat has its control and its test.
-- [ ] 12.2 `make test` and `make up` pass on the last slice, `make differential` is clean, and `make check` passes. The
+  - As built (9 Nov 2026): 15 threats (T1 to T15) across the person, API, worker, bucket and operator boundaries,
+    each with its control and the tests that prove it. What remains: the `[live-verify]` keys, grants and retention
+    lock; a real point-in-time restore; holds on records; nobody holding A on "Audit trail"; the cohort keys of
+    `p1-pdpa-retention`; and the other records' pages without the purge note.
+- [x] 12.2 `make test` and `make up` pass on the last slice, `make differential` is clean, and `make check` passes. The
   build plan's p1-audit-explorer paragraph says what was built.
+  - As built (9 Nov 2026):
+    - **`make differential`** is clean: 4 passed, `purge` among its sources.
+    - **`make check`** passes.
+    - **`make test`** first failed in `TestAuthorisationMatrix`, locally and in CI on #515: the test database ran out of
+      connections (SQLSTATE 53300). Each worker store the matrix opened stayed open until it ended. `workerStore`
+      now keeps one per test, fixed on #515's branch, and the whole API suite passes.
+    - **`make up`** is checked by CI's local smoke job (QA-LOCAL-01) on this pull request. Locally, another worktree's
+      stack holds the compose project `fyniq`, and starting this one would have replaced it.
 
 ## Workflow follow-up
 
