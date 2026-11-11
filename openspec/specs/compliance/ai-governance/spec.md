@@ -39,6 +39,10 @@ Source: PRD-001 §14.4 · Priority M · Phase P1
 - **WHEN** a model, endpoint, prompt, tool version, data category or owner changes
 - **THEN** the AI inventory and the DPIA are updated to match
 
+#### Scenario: Built with the AI (rev 0.240)
+- **WHEN** the AI inventory and the DPIA are built
+- **THEN** they are built with `p1-ai-providers`, where models, endpoints and prompts first exist (the owner's decision of 9 Nov 2026)
+
 ### Requirement: CMP-AI-03 Gated AI changes
 A model, prompt or tool change SHALL require the eval suite to pass and a dual-approved change record.
 
@@ -56,3 +60,7 @@ Source: PRD-001 §14.4 · Priority M · Phase P1
 - **GIVEN** the eval suite passes and the change record is dual-approved
 - **WHEN** the model, prompt or tool change is applied
 - **THEN** it takes effect
+
+#### Scenario: Built with the AI (rev 0.240)
+- **WHEN** the gate on model, prompt and tool changes is built
+- **THEN** it is built with `p1-ai-providers`, where models, endpoints and prompts first exist (the owner's decision of 9 Nov 2026)

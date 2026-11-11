@@ -71,7 +71,7 @@ ch("p1-dashboard-kpis", F1, 5, "The default Home and Dashboard and the workbook 
 ch("p1-planning", F1, 5, "Budgets, the driver-based forecast and its outputs, the 13-week and short-term cash forecasts, the feasibility calculator, sandboxed forecasts", ["p1-reports"], "—", "—", "—", "Launch")
 ch("p1-checks", F1, 5, "The checks engine, books health and the user access review page; the workbook checks (Appendix C.1) and platform checks (C.2) of the modules built, each later module building its own on the engine (owner, 29 Oct 2026)", ["p1-reports"], "—", "—", "Accountant", "Launch")
 ch("p1-audit-explorer", F1, 5, "Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain, the ledger's purge with carried-forward balances", ["p1-general-ledger-close"], "—", "—", "Security (#4)", "Launch")
-ch("p1-compliance-center", F1, 5, "The control dashboard, statutory calendar view, attestations, PDPA registers, risk register, policy library; the control rows of Appendix F (F.1, F.3, F.7), each closed when its check runs, and AI governance", ["p1-checks"], "Evidence from local runs; cloud evidence at the cloud gate", "—", "Security (#4)", "Launch")
+ch("p1-compliance-center", F1, 5, "The control dashboard, attestations, the risk register and the policy library; the control rows of Appendix F whose modules are built, each closed when its check runs; the AI write-grant control test", ["p1-checks"], "Evidence from local runs; cloud evidence at the cloud gate", "—", "Security (#4)", "Launch")
 ch("p1-pdpa-retention", F1, 5, "The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding", ["p1-documents-evidence", "p1-audit-explorer"], "—", "Counsel confirms before payroll data is loaded (Q39)", "Security (#4)", "Launch (before payroll data)")
 # Wave 6: AI and MCP (security boundary)
 ch("p1-ai-providers", F1, 6, "One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources", ["p1-connector-framework"], "Replay mode offline; live local tests through DEV-09's adapters or an API key", "A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09)", "Security (#4)", "After go-live")
@@ -208,6 +208,19 @@ BY_ID.update({
     "FR-PPL-02": "p1-nemura-fyniq-link", "FR-PPL-03": "p1-nemura-fyniq-link", "FR-PPL-10": "p1-nemura-fyniq-link",
     "FR-PPL-15": "p1-nemura-fyniq-link", "FR-PPL-18": "p1-nemura-fyniq-link", "NM-ONB-02": "p1-nemura-self-service-letters",
     "DEV-09": "p1-ai-providers",
+    # The owner's decision of 9 Nov 2026 (PRD-001 rev 0.240): the AI inventory and gated AI changes come with the AI;
+    # the control rows whose checks need a later module move to it (each row is built with the module it guards).
+    "CMP-AI-02": "p1-ai-providers", "CMP-AI-03": "p1-ai-providers", "CTL-AI-05": "p1-ai-providers",
+    "CTL-AI-02": "p1-ai-proposals", "CTL-AI-03": "p1-ai-proposals", "CTL-AI-04": "p1-ai-proposals", "CTL-AI-07": "p1-ai-proposals",
+    "CTL-AI-06": "p1-ai-assistant", "CTL-AI-08": "p1-knowledge-base", "CTL-AI-09": "p1-scheduled-agents",
+    "CTL-MCP-01": "p1-mcp-first-party", "CTL-MCP-02": "p1-mcp-first-party", "CTL-MCP-03": "p1-mcp-first-party",
+    "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
+    "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
+    "CTL-RES-02": "p1-operations-dr",
+    # Found while building p1-compliance-center (PRD-001 rev 0.241): rows whose cloud configuration is not built yet move
+    # to the changes that build it.
+    "CTL-AUD-03": "p1-operations-dr", "CTL-AUD-04": "p1-operations-dr", "CTL-RES-03": "p1-operations-dr",
+    "CTL-RES-05": "p1-operations-dr", "CTL-CHG-04": "p1-security-hardening", "CTL-CHG-05": "p1-security-hardening",
 })
 # The checks of Appendix C are built with the module each guards, on the checks engine of p1-checks (the owner's
 # decision of 29 Oct 2026, PRD-001 rev 0.162): those of modules after p1-checks sit with those modules' changes.

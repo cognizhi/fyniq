@@ -3366,29 +3366,34 @@
    "kind": "page",
    "phase": "P1",
    "roles": [
-    "Compliance officer",
     "Owner",
+    "Administrator",
     "Controller",
-    "Auditor"
+    "Accountant",
+    "Auditor",
+    "Compliance officer"
    ],
    "mode": "expert",
    "requirements": [
     "CMP-01",
     "CMP-04",
     "FR-CTL-05",
-    "SEC-33"
+    "SEC-33",
+    "CMP-AI-01"
    ],
    "purpose": "See every control's status, last run, evidence and owner, filtered by framework.",
    "content": [
     "Control list: ID, description, status (pass, fail, overdue, not applicable, not assessed with the missing input named), last run, evidence link, owner",
-    "Framework filter: Singapore statute, PDPA, ISO 27001, SOC 2, CSA Cyber Essentials / Cyber Trust, IMDA agentic AI, OWASP",
+    "Framework filter: Singapore statute, PDPA, ISO 27001, SOC 2, CSA Cyber Essentials / Cyber Trust, IMDA agentic AI, OWASP, COSO",
+    "A control's checks: CI checks passed in the release the platform runs, with links to the evidence attached to the release (rev 0.240); the organisation's catalogue checks, platform jobs and attestations with their latest result",
     "Nightly ledger and audit-chain verification results; cloud posture findings",
     "P2: evidence export per framework and period"
    ],
    "states": [
     "all passing",
     "failing control",
-    "not assessed"
+    "not assessed",
+    "development build (CI checks not assessed)"
    ]
   },
   {
@@ -3402,9 +3407,11 @@
    "phase": "P1",
    "roles": [
     "Owner",
+    "Administrator",
     "Controller",
-    "Compliance officer",
-    "Accountant"
+    "Accountant",
+    "Auditor",
+    "Compliance officer"
    ],
    "mode": "both",
    "requirements": [
@@ -3415,10 +3422,11 @@
    ],
    "purpose": "Carry out the recurring human reviews: weekly self-approval review, journal review, access review and policy acknowledgements.",
    "content": [
-    "Due attestations with owner and due date",
+    "Due attestations with owner role, period, due date, last sign-off and evidence",
     "Weekly review (Founder mode): self-approved and high-risk items, auto-reconciled sample, AI anomaly flags, break-glass post-review; mark reviewed",
     "Quarterly access review: done in Settings › Access review (rev 0.162), listed here with its due date and attestation",
-    "Sign-off with evidence"
+    "Accountant reviews (journal review) and the monthly close sign-off, each linking to where it is signed off",
+    "Policy acknowledgements, signed off here, and risk reviews (rev 0.240)"
    ],
    "states": [
     "overdue (⚠ older than 14 days)",
@@ -3484,9 +3492,9 @@
    ],
    "purpose": "Keep risks reviewed and policies versioned and acknowledged by staff.",
    "content": [
-    "Risks tab: risk, owner, rating, mitigation, review date",
-    "Policies tab: information security, acceptable use, access control, incident response, backup, change management, AI use, data protection; version and acknowledgement rate",
-    "Staff view: 'Acknowledge policy' card"
+    "Risks tab: risk, owner role, likelihood and impact, mitigation, review date; R1–R19 in the installation's operator organisation only (rev 0.240)",
+    "Policies tab: information security, acceptable use, access control, incident response, backup, change management, AI use, data protection; each starts as Fyniq's draft from official sources, which the Owner or the DPO publishes (rev 0.240); version and acknowledgement rate",
+    "Staff view: 'Acknowledge policy' card, due within 30 days of a version's publication"
    ],
    "states": [
     "review overdue",

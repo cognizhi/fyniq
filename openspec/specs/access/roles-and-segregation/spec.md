@@ -1414,6 +1414,24 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the Compliance Center
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Policy library
+In Standard mode, each role SHALL hold only the rights over the policy library that the permission matrix gives it: every member reads and acknowledges the published policies, and C/A publishes a version (rev 0.240).
+
+Source: PRD-001 §D
+
+#### Scenario: Create and approve
+- **WHEN** a role acts on the policy library
+- **THEN** the Owner and the Compliance officer / DPO can draft and publish a policy version (C/A)
+
+#### Scenario: View and acknowledge
+- **WHEN** a role acts on the policy library
+- **THEN** the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent and the Board viewer can read the published policies (V)
+- **AND** every member acknowledges each published version for themselves
+
+#### Scenario: No access
+- **WHEN** a role acts on the policy library
+- **THEN** the AI assistant has no right over it (—)
+
 ### Requirement: Permission matrix: Statutory calendar
 In Standard mode, each role SHALL hold only the rights over the statutory calendar, its deadlines and the filings recorded as done, that the permission matrix gives it (rev 0.211).
 
