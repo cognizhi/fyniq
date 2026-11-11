@@ -135,7 +135,7 @@ module tests on mock providers and tagged `[live-verify]`.
   entries read with its lines in two queries. Measured at 1 M lines: p95 116 ms (from 1.8 s).
 - [x] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09` The harness now sends the ETag back as it
   came. Building found Caddy names the encoding in the tag (`"1-draft-gzip"`), so that is accepted too (rev 0.251).
-- [ ] 13.7 The threat model and the build plan say what was built.
+- [x] 13.7 The threat model and the build plan say what was built. The threat model gains T19 to T21.
 - [x] 13.8 The bank import within NFR-PERF-04 at 1 M lines: auto-reconcile reads only the ledger lines of a bank line's
   currency and amount. Measured: 1m55s to 14s at 200,000 lines, 26s at 1 M. `// req: NFR-PERF-04`
 - [x] 13.9 Global search on a trigram index (the PRD's design for FR-UX-02): a stored search text per document version,
