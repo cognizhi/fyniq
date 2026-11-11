@@ -125,6 +125,13 @@ expires = 2027-04-15
 
 [[waiver]]
 tool = "checkov"
+rule = "CKV_GCP_62"
+path = "infra/gcp/modules/db-export/main.tf"
+reason = "No usage-log bucket for the weekly export's buckets: data-access audit logs are on for Cloud Storage in the buckets' project (the anchors module's google_project_iam_audit_config in fyniq-audit, and in staging's own project), recording every read and write with the caller; a usage-log bucket would duplicate them."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
 rule = "CKV_GCP_125"
 path = "infra/gcp/modules/ci-identity/main.tf"
 reason = "The rule wants an exact `assertion.sub` match. The condition checks the repository by name and by ID, its owner by ID, and the ref (main or a tag), which is stricter; an exact sub would refuse jobs that run in a GitHub environment (their sub names the environment), which the production apply needs for its manual approval. The module's tofu test pins the condition."
