@@ -84,6 +84,43 @@ USER 65532:65532
 EXPOSE 8080
 ENTRYPOINT ["/app"]
 
+# ---- the clamd sidecar of the scanner service (--target clamd) ----------------------------------------------
+# PRD-001 rev 0.247 (FR-DOC-08, SEC-24): Debian's clamd and freshclam (bookworm, with its security updates) and only the
+# packages whose libraries they link against (ldd of both; the C runtime is distroless/cc's), downloaded for the target
+# platform from snapshot.debian.org at DEBIAN_SNAPSHOT (over HTTP, as apt checks the archive's signatures and the slim
+# image has no CA certificates), so the same commit builds the same image (NFR-IMG-07), and unpacked without running their scripts (what a package puts in /lib goes to /usr/lib: Debian 12 is merged-usr). Each
+# package's record and file list go into /var/lib/dpkg/status.d, as distroless keeps its own, so syft and grype see
+# every library as its Debian package (SEC-21). Move DEBIAN_SNAPSHOT forward to take security updates.
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS clamav
+ARG TARGETARCH
+ARG DEBIAN_SNAPSHOT=20261110T000000Z
+RUN set -eu; \
+    rm -f /etc/apt/sources.list.d/debian.sources; \
+    for suite in "debian bookworm" "debian bookworm-updates" "debian-security bookworm-security"; do \
+      set -- $suite; echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/$1/${DEBIAN_SNAPSHOT} $2 main"; \
+    done > /etc/apt/sources.list; \
+    dpkg --add-architecture "${TARGETARCH}"; \
+    apt-get -o Acquire::Retries=5 update -qq; \
+    mkdir -p /debs /out/var/lib/dpkg/status.d; cd /debs; \
+    apt-get -o Acquire::Retries=5 download -qq $(for p in clamav-daemon clamav-freshclam libclamav12 libbrotli1 libbz2-1.0 libcap2 libcom-err2 libcurl4 libffi8 libgcrypt20 libgmp10 libgnutls30 libgpg-error0 libgssapi-krb5-2 libhogweed6 libicu72 libidn2-0 libjson-c5 libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 libldap-2.5-0 liblz4-1 liblzma5 libmspack0 libnettle8 libnghttp2-14 libp11-kit0 libpcre2-8-0 libpsl5 librtmp1 libsasl2-2 libssh2-1 libssl3 libsystemd0 libtasn1-6 libunistring2 libxml2 libzstd1 zlib1g; do echo "$p:${TARGETARCH}"; done); \
+    for d in *.deb; do \
+      dpkg-deb -x "$d" /out; \
+      n="$(dpkg-deb -f "$d" Package)"; \
+      { dpkg-deb -f "$d"; echo "Status: install ok installed"; } > "/out/var/lib/dpkg/status.d/$n"; \
+      dpkg-deb -I "$d" md5sums 2>/dev/null | sed 's|  lib/|  usr/lib/|' > "/out/var/lib/dpkg/status.d/$n.md5sums" || true; \
+    done; \
+    rm -rf /out/usr/share /out/etc /out/lib/systemd /out/usr/lib/systemd; \
+    cp -a /out/lib/. /out/usr/lib/; rm -rf /out/lib
+
+FROM gcr.io/distroless/cc-debian12:nonroot@sha256:9dac0a79194e45a7da0158a9c6da57b217585af0786db3845d1f0ec1a0dd182f AS clamd
+COPY --from=clamav --chown=0:0 --chmod=0755 /out/usr/sbin/clamd /usr/sbin/clamd
+COPY --from=clamav --chown=0:0 --chmod=0755 /out/usr/bin/freshclam /usr/bin/freshclam
+COPY --from=clamav --chown=0:0 /out/usr/lib/ /usr/lib/
+COPY --from=clamav --chown=0:0 /out/var/lib/dpkg/status.d/ /var/lib/dpkg/status.d/
+COPY --from=build --chown=0:0 --chmod=0755 /out/app /app
+USER 65532:65532
+ENTRYPOINT ["/app"]
+
 # ---- every other service (the default target) ---------------------------------------------------
 # CA certificates and the nonroot user; no shell, no package manager (NFR-IMG-01).
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS service

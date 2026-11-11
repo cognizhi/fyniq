@@ -14,6 +14,7 @@
 # req: SEC-30
 # req: SEC-31
 # req: SEC-33
+# req: FR-DOC-08
 # req: CTL-RES-04
 
 mock_provider "google" {
@@ -80,8 +81,8 @@ run "each_service_is_its_own_identity" {
   command = plan
   variables { spec = run.spec.spec }
   assert {
-    condition     = length(distinct(values(output.accounts))) == length(output.accounts) && length(output.accounts) == 15
-    error_message = "8 services, 3 jobs, 3 invokers and the Scheduler: each its own account (SEC-03)"
+    condition     = length(distinct(values(output.accounts))) == length(output.accounts) && length(output.accounts) == 16
+    error_message = "9 services, 3 jobs, 3 invokers and the Scheduler: each its own account (SEC-03)"
   }
   assert {
     condition     = !anytrue([for a in google_secret_manager_secret_iam_member.access : contains(["serviceAccount:run-mcp@fyniq-staging.iam.gserviceaccount.com", "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"], a.member)])
@@ -470,5 +471,35 @@ run "the_jobs_read_the_posture" {
   assert {
     condition     = contains(local.apis, "securitycenter")
     error_message = "Security Command Center's API is on"
+  }
+}
+
+# The scanner service (PRD-001 rev 0.247): private, invoked by the api and the worker only, with clamd as its sidecar,
+# its CPU always allocated so the signatures update in the background, ready only once clamd answers; one instance warm in
+# production; its callers find it in FYNIQ_GCP.
+run "only_the_api_and_the_worker_scan" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (google_cloud_run_v2_service.services["scanner"].ingress == "INGRESS_TRAFFIC_INTERNAL_ONLY" &&
+      !contains(keys(google_cloud_run_v2_service_iam_member.public), "scanner") &&
+    toset([for m in google_cloud_run_v2_service_iam_member.scanner_invoker : m.member]) == toset(["serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com", "serviceAccount:run-worker@fyniq-staging.iam.gserviceaccount.com"]))
+    error_message = "the scanner takes internal traffic from the api and the worker only"
+  }
+  assert {
+    condition = (length(google_cloud_run_v2_service.services["scanner"].template[0].containers) == 2 &&
+      google_cloud_run_v2_service.services["scanner"].template[0].containers[1].name == "clamd" &&
+      !google_cloud_run_v2_service.services["scanner"].template[0].containers[1].resources[0].cpu_idle &&
+      google_cloud_run_v2_service.services["scanner"].template[0].containers[0].depends_on == tolist(["clamd"]) &&
+    google_cloud_run_v2_service.services["scanner"].template[0].containers[0].startup_probe[0].http_get[0].path == "/readyz")
+    error_message = "clamd runs beside the scanner's front, which starts after it and is ready only once clamd answers"
+  }
+  assert {
+    condition     = length(google_cloud_run_v2_service.services["api"].template[0].containers) == 1 && google_cloud_run_v2_service.services["scanner"].template[0].scaling[0].min_instance_count == 0
+    error_message = "no other service has a sidecar; staging keeps no scanner warm"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).scanner.audience == jsondecode(output.gcp_config).scanner.url && toset(jsondecode(output.gcp_config).scanner.service_accounts) == toset(["run-api@fyniq-staging.iam.gserviceaccount.com", "run-worker@fyniq-staging.iam.gserviceaccount.com"])
+    error_message = "the scanner accepts the api's and the worker's ID tokens for its own audience"
   }
 }

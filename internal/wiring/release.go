@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/scanservice"
 )
 
 // Config is the Google Cloud wiring the deployment writes (p0-infra-opentofu) as JSON in FYNIQ_GCP; the
@@ -43,7 +44,7 @@ type Config struct {
 		MACKeyVersion string `json:"mac_key_version"` // projects/…/cryptoKeys/…/cryptoKeyVersions/N
 	} `json:"fields"`
 	// Evidence names the unlocked staging bucket and the retention-locked evidence bucket (FR-DOC-13, DR-07);
-	// optional until the ClamAV service arrives: without them, and a scanner, no file can be attached.
+	// without them, and a scanner, no file can be attached.
 	Evidence struct {
 		Staging string `json:"staging"`
 		Bucket  string `json:"bucket"`
@@ -51,6 +52,9 @@ type Config struct {
 	// Render is the private render service (PRD-001 §12.3, rev 0.96): its URL, its audience and its callers' accounts;
 	// optional until the deployment adds it: without it no preview renders and no template with IRAS particulars publishes.
 	Render gcp.Callers `json:"render"`
+	// Scanner is the private scanner service, clamd behind an HTTP front (FR-DOC-08, SEC-24; PRD-001 rev 0.247): its URL,
+	// its audience and its callers' accounts; without it, or FYNIQ_CLAMD_ADDR, no file can be attached.
+	Scanner gcp.Callers `json:"scanner"`
 	// PlatformRanges are the platform's own networks (its subnet and the range its database is peered on), which no
 	// registered private endpoint reaches (SEC-37).
 	PlatformRanges []string `json:"platform_ranges"`
@@ -119,8 +123,12 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil),
 			HTTP: platform.Bounded(64<<20, 2*time.Minute).For(egress.HostOf(c.Render.URL))}
 	}
-	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" { // clamd beside the service (SEC-24)
-		kit.Scanner = clamav.Scanner{Addr: addr}
+	switch {
+	case strings.HasPrefix(c.Scanner.URL, "https://") && c.Scanner.Audience != "": // the scanner service, as the service's own account
+		kit.Scanner = &scanservice.Client{URL: c.Scanner.URL, Token: gcp.IdentityTokens(c.Scanner.Audience, nil),
+			HTTP: platform.Bounded(64<<10, 2*time.Minute).For(egress.HostOf(c.Scanner.URL))}
+	case os.Getenv("FYNIQ_CLAMD_ADDR") != "": // clamd beside the service (SEC-24)
+		kit.Scanner = clamav.Scanner{Addr: os.Getenv("FYNIQ_CLAMD_ADDR")}
 	}
 	// The connectors (FR-INT-20, rev 0.139): their keys in Secret Manager, only the secrets FYNIQ_CONNECTOR_SECRETS names
 	// and the organisations' connector secrets; their traffic through the egress guard, never to the platform's own

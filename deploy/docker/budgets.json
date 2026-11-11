@@ -9,6 +9,8 @@
     "jobs": 30,
     "migrate": 30,
     "render": 90,
+    "scanner": 30,
+    "clamd": 60,
     "web": 25
   }
 }

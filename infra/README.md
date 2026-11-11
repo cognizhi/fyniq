@@ -178,6 +178,9 @@ assumptions, not facts.
   days are confirmed).
 - `[live-verify]` The posture: Security Command Center's Standard tier on the projects, and the jobs' account listing
   findings (`roles/securitycenter.findingsViewer`) and reading the services' logs (`roles/logging.viewer`).
+- `[live-verify]` The scanner service (rev 0.247): Cloud Run's sidecar start order and the front's readiness waiting for
+  clamd's signatures (up to 5 minutes), clamd's memory while it reloads them (3 GiB given), freshclam reaching
+  database.clamav.net through Cloud NAT within ClamAV's rate limits, and the warm instance's cost.
 - `[live-verify]` The non-production scan in staging: the Scheduler's export as `scan-export` with only
   `cloudsql.instances.export`, the instance's account writing to the export bucket, the Sensitive Data Protection
   infoType names, and its summary reaching Security Command Center.

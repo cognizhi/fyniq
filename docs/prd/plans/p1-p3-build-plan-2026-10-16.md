@@ -11,8 +11,8 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,378 requirements:
-- 113 belong to the P0 changes, which built them or hold them for the cloud gate;
+That is all 1,379 requirements:
+- 114 belong to the P0 changes, which built them or hold them for the cloud gate;
 - the other 1,265 are spread over 65 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
@@ -311,13 +311,15 @@ By the owner's decisions of the same day (PRD-001 rev 0.246):
 
 Its cloud parts are code with module tests, verified in the dev cloud later.
 
-It was built on 10 and 11 Nov 2026, in #543 to #555, one pull request per slice, stacked on #540. The parts:
+It was built on 10 and 11 Nov 2026, in #543 to #555 and #557, one pull request per slice, stacked on #540. The parts:
 - the release workflow: keyless signatures, the SBOM and SLSA provenance verified before the Binary Authorization
   attestation, made as an attester only a version tag reaches;
 - reproducible images, checked daily;
 - one egress client, and registered private endpoints with pinned keys and dual control;
 - the edge with Cloud Armor, the client's headers trusted only from the load balancer, and per-IP limits;
-- 5-minute signed downloads of evidence;
+- 5-minute signed downloads of evidence, and ClamAV in the cloud as a private scanner service: an HTTP front with clamd
+  as its sidecar, since a Cloud Run service takes no raw TCP (the owner's decision of 11 Nov 2026, rev 0.247), its clamd
+  image Debian's packages on distroless/cc, and the image scan blocking only what a patch exists for (rev 0.248);
 - SEC-31's security alerts;
 - the central log store, cloud posture (the SLA of 7 days for a Critical finding and 30 for a High one, the owner's
   decision of 11 Nov 2026, rev 0.247), the daily log scan and staging's weekly scan for production data;
@@ -329,11 +331,7 @@ It was built on 10 and 11 Nov 2026, in #543 to #555, one pull request per slice,
 - the incident runbook and register;
 - the threat model `docs/security/threat-models/security-hardening.md`.
 
-Two things wait:
-- ClamAV in the cloud (task 7.2): a Cloud Run service takes no raw TCP, so by the owner's decision of 11 Nov 2026
-  (rev 0.247) it is a private scanner service, an HTTP front with clamd as a sidecar, built in the slice after this
-  one; locally the stack's clamd scans every upload;
-- `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
+One thing waits: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
 
 <!-- roadmap:track P1 Fyniq -->
 
