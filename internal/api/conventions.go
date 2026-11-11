@@ -224,7 +224,7 @@ func applied[B any](w written[B]) string {
 
 // IfMatchHeader is the precondition of a command that changes a versioned record.
 type IfMatchHeader struct {
-	IfMatch string `header:"If-Match" doc:"The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it)." example:"\"1-draft\""`
+	IfMatch string `header:"If-Match" doc:"The record's ETag from your last read, sent back as it came, even if a proxy made it weak (W/); the command runs only if the record has not changed since (412 otherwise; 428 without it)." example:"\"1-draft\""`
 }
 
 // etag is a strong entity tag over a record's version and, for documents, its status.
@@ -236,15 +236,17 @@ func etag(parts ...any) string {
 	return `"` + strings.Join(s, "-") + `"`
 }
 
-// checkIfMatch compares an If-Match header with the record's current ETag (RFC 9110 §13.1.1: strong
-// comparison; "*" matches any current record).
+// checkIfMatch compares an If-Match header with the record's current ETag (RFC 9110 §13.1.1; "*" matches any
+// current record). A tag may come back weak, W/"…": a proxy that compresses the answer marks the API's own ETag so
+// (Caddy's encode does). The tag names the record's version, the same in every encoding, so the prefix is dropped
+// before the strong comparison (FR-INT-09, rev 0.250); any other tag is still stale.
 func checkIfMatch(header, current string) error {
 	if strings.TrimSpace(header) == "" {
 		return problem(CodeIfMatchRequired, "This command changes a versioned record, so it needs If-Match.",
 			"Read the record and send its ETag in If-Match.")
 	}
 	for _, tag := range strings.Split(header, ",") {
-		tag = strings.TrimSpace(tag)
+		tag = strings.TrimPrefix(strings.TrimSpace(tag), "W/")
 		if tag == "*" || tag == current {
 			return nil
 		}

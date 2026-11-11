@@ -237,10 +237,10 @@ func (m Measurer) posting(ctx context.Context, g GrowReport) Result {
 			first = cmpErr(first, fmt.Errorf("the draft's answer names no journal: %s", draft.body))
 			continue
 		}
-		// If-Match from the draft's version and status, as the web app sends it: a proxy that compresses the answer may
-		// weaken its ETag header.
+		// If-Match is the draft's ETag sent back, as an integrator would: Caddy's compression may have made it weak, which
+		// the API takes (FR-INT-09, rev 0.250).
 		_, d2, err := m.postJSON(ctx, "/v1/journals/"+created.ID+"/post", map[string]any{},
-			map[string]string{"If-Match": fmt.Sprintf(`"%d-%s"`, created.Version, created.Status)})
+			map[string]string{"If-Match": draft.header.Get("ETag")})
 		if err != nil {
 			first = cmpErr(first, err)
 			continue

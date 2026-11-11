@@ -187,3 +187,30 @@ func TestPreferReturnPreview(t *testing.T) {
 		}
 	}
 }
+
+// If-Match compares the record's own tag strongly, and takes it back weak too: a proxy that compresses the answer marks
+// the ETag W/, and the tag names the record's version, the same in every encoding (rev 0.250). A list of tags matches
+// when one does, "*" matches any record, and any other tag, weak or not, is stale.
+// req: FR-INT-09
+func TestIfMatchTakesOurOwnTagWeakOrStrong(t *testing.T) {
+	for header, ok := range map[string]bool{
+		`"3-draft"`:              true,
+		`W/"3-draft"`:            true,
+		` W/"3-draft" `:          true,
+		`"2-draft", W/"3-draft"`: true,
+		`*`:                      true,
+		`"2-draft"`:              false,
+		`W/"2-draft"`:            false,
+		`"3-posted"`:             false,
+		`w/"3-draft"`:            false, // the prefix is case-sensitive (RFC 9110 §8.8.3)
+		`W/W/"3-draft"`:          false,
+	} {
+		err := checkIfMatch(header, `"3-draft"`)
+		if (err == nil) != ok {
+			t.Errorf("If-Match %s against \"3-draft\": %v", header, err)
+		}
+	}
+	if err := checkIfMatch("", `"3-draft"`); err == nil {
+		t.Error("no If-Match was accepted")
+	}
+}

@@ -142,8 +142,8 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 			w.WriteHeader(http.StatusCreated)
 			_, _ = io.WriteString(w, `{"id":"`+uuid.NewString()+`","version":1,"status":"draft"}`)
 		case strings.HasSuffix(r.URL.Path, "/post"):
-			if r.Header.Get("If-Match") != `"1-draft"` {
-				bad("posted without the draft's version and status")
+			if r.Header.Get("If-Match") != `W/"1-draft"` { // the draft's ETag sent back as it came (FR-INT-09, rev 0.250)
+				bad("posted without the draft's ETag")
 			}
 			_, _ = io.WriteString(w, `{}`)
 		case r.URL.Path == "/api/v1/money-accounts":

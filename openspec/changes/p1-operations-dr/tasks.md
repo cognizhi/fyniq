@@ -124,7 +124,8 @@ module tests on mock providers and tagged `[live-verify]`.
 - [ ] 13.4 The general ledger export streamed a page at a time with no limit, its figures checked against the
   on-screen report and the oracle's, and the harness's NFR-PERF-05 at 1 M lines. `// req: NFR-PERF-05`
 - [ ] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02`
-- [ ] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09`
+- [x] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09` The harness now sends the ETag back as it
+  came.
 - [ ] 13.7 The threat model and the build plan say what was built.
 
 ## Workflow follow-up
