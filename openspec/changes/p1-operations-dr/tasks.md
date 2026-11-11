@@ -130,10 +130,29 @@ module tests on mock providers and tagged `[live-verify]`.
   resumable upload in 8 MiB chunks. The on-screen general ledger is the reference the export is checked against: the
   oracle's general ledger source compares postings and trial balances, not the report's running balances. Measured
   locally at 200,000 lines: 200,158 rows in 1m26s; the 1 M run is the weekly job's.
-- [ ] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02`
+- [x] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02` Built: a period's
+  balances as at a revision read from the cache when nothing later is in the period (migration 000320), and a page of
+  entries read with its lines in two queries. Measured at 1 M lines: p95 116 ms (from 1.8 s).
 - [x] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09` The harness now sends the ETag back as it
   came. Building found Caddy names the encoding in the tag (`"1-draft-gzip"`), so that is accepted too (rev 0.251).
 - [ ] 13.7 The threat model and the build plan say what was built.
+- [x] 13.8 The bank import within NFR-PERF-04 at 1 M lines: auto-reconcile reads only the ledger lines of a bank line's
+  currency and amount. Measured: 1m55s to 14s at 200,000 lines, 26s at 1 M. `// req: NFR-PERF-04`
+- [x] 13.9 Global search on a trigram index (the PRD's design for FR-UX-02): a stored search text per document version,
+  trigram indexes on it and on document numbers, documents found by party through their own index; the same matches.
+  `// req: NFR-PERF-01`, `// req: FR-UX-02` Built: migrations 000321 and 000322; search p95 57 ms at 1 M lines (from
+  1.6 s).
+- [x] 13.10 Lists of documents ordered by date on an index, not by sorting every document's JSON. `// req: NFR-PERF-01`
+  List p95 13 ms at 1 M lines (from 0.8 s).
+- [x] 13.11 The checks refresh at most once a minute during a burst of changes, so a 10,000-line import does not walk the
+  ledger over and over. `// req: FR-CTL-01`, `// req: NFR-PERF-01` Built: `checks.Runner.Paced`.
+- [x] 13.12 The balance sheet's movement in equity read from balances and the equity accounts' lines, not every entry.
+  `// req: NFR-PERF-02`, `// req: INV-11` The full differential agrees with the oracle; balance sheet p95 118 ms at 1 M
+  lines (from 1.9 s).
+- [ ] 13.13 At 10 M lines the harness exports a 1 M-line range (NFR-PERF-05's size); the local 1 M and 10 M runs meet
+  every gated budget. `// req: QA-PERF-01` Building found the local stack's services each kept their own data directory
+  in a 64 MB tmpfs: an export of 1 M lines did not fit, a file one service wrote the other could not read, and each made
+  its own keys. They now share a volume, and a key is made once (`loadOrCreateSeed`). The 1 M run met every gated budget.
 
 ## Workflow follow-up
 

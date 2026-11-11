@@ -212,3 +212,14 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 		t.Errorf("the cold start is reported from staging: %+v", r)
 	}
 }
+
+// The export is NFR-PERF-05's size: the whole grown ledger up to 1 M lines, and above it the latest months that hold
+// about 1 M, so a 10 M-line run does not export ten times the requirement's ledger.
+// req: NFR-PERF-05
+func TestTheExportIsTheRequirementsSize(t *testing.T) {
+	for lines, want := range map[int]int{1000: Months, 1_000_000: Months, 2_000_000: 12, 10_000_000: 3, 100_000_000: 1} {
+		if got := exportMonths(lines); got != want {
+			t.Errorf("a %d-line ledger exports %d months, want %d", lines, got, want)
+		}
+	}
+}

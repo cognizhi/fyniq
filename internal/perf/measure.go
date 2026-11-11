@@ -29,7 +29,7 @@ var (
 	Throughput = Budget{ID: "NFR-SCALE-01", What: "the same reads, 100 at once, back to back: throughput", Limit: 300 * time.Millisecond, Each: true}
 	Posting    = Budget{ID: "NFR-PERF-03", What: "save and post a 50-line journal", Limit: 500 * time.Millisecond, Each: true, Gated: true}
 	Imports    = Budget{ID: "NFR-PERF-04", What: "import a 10,000-line bank statement", Limit: time.Minute, Gated: true}
-	Exports    = Budget{ID: "NFR-PERF-05", What: "export the general ledger of the grown months to CSV", Limit: 5 * time.Minute, Gated: true}
+	Exports    = Budget{ID: "NFR-PERF-05", What: "export about 1 M lines of the general ledger to CSV", Limit: 5 * time.Minute, Gated: true}
 	Cold       = Budget{ID: "NFR-PERF-06", What: "the first request after the API starts from idle", Limit: 2300 * time.Millisecond}
 )
 
@@ -239,6 +239,18 @@ func each(per map[string][]time.Duration, kinds []string) string {
 }
 
 // lastMonths are the twelve months that end with the last whole month, as YYYY-MM.
+// ExportLines is the size of NFR-PERF-05's export: a 1 M-line general ledger.
+const ExportLines = 1_000_000
+
+// exportMonths is how many of the grown months, the latest, hold about ExportLines lines: every one up to 1 M lines, as
+// growth spreads them evenly, and fewer above, so a 10 M-line run exports NFR-PERF-05's size, not the whole ledger.
+func exportMonths(lines int) int {
+	if lines <= ExportLines {
+		return Months
+	}
+	return max(1, (ExportLines*Months+lines-1)/lines)
+}
+
 func (m Measurer) lastMonths() (from, to string) {
 	now := m.Clock.Now().UTC()
 	last := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
@@ -395,7 +407,7 @@ func (m Measurer) importing(ctx context.Context, g GrowReport) Result {
 func (m Measurer) exporting(ctx context.Context) Result {
 	now := m.Clock.Now().UTC()
 	this := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	from, to := this.AddDate(0, -Months, 0), this.AddDate(0, 0, -1)
+	from, to := this.AddDate(0, -exportMonths(m.Lines), 0), this.AddDate(0, 0, -1)
 	start := m.Clock.Now()
 	a, _, err := m.postJSON(ctx, "/v1/report-exports", map[string]any{"report": "general_ledger", "format": "csv",
 		"from": from.Format(time.DateOnly), "to": to.Format(time.DateOnly)}, nil)
