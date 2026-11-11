@@ -80,8 +80,11 @@ module tests on mock providers and tagged `[live-verify]`.
 - [x] 8.1 `cmd/perf` and `make perf` (D7): the synthetic organisation grown through the engine, every budget timed
   through the local stack's API, 100 concurrent readers, the report in `.data/perf/`. `// req: NFR-PERF-01` to
   `// req: NFR-PERF-06`, `// req: NFR-SCALE-01`
-- [ ] 8.2 `.github/workflows/perf.yml`: weekly at 1 M lines, and at 10 M on the release pull request with the report
+- [x] 8.2 `.github/workflows/perf.yml`: weekly at 1 M lines, and at 10 M on the release pull request with the report
   attached to the release (`release-assets.json`); QA-PERF-01's evidence. `// req: QA-PERF-01`
+  - As built: the 10 M run is on the release commit (release-please's `chore(release)` pushed to main), not the release
+    pull request, because the release's evidence is read from the release commit's push runs; the evidence job waits
+    up to 5¾ hours `[verify a 10 M run fits GitHub's six]`.
 
 ## 9. Browsers (slice 9)
 
