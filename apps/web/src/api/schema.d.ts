@@ -7941,6 +7941,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ledger/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a ledger entry and its source
+         * @description A ledger entry with its lines and where it comes from (FR-UX-04, the Trace panel): its source's type, ID and the version that posted it, and, when the source is a document, its type, number, status, date, customer or supplier and version now. Read as the general ledger is, so it needs an unqualified view of the reports; an entry the purge after retention removed is not found (AUD-10). The document's history is the audit trail's, for those who may read it (listAuditEvents with record_type=document and its ID). Read-only; no side effects.
+         */
+        get: operations["getLedgerEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/bank-changes": {
         parameters: {
             query?: never;
@@ -11706,7 +11726,7 @@ export interface paths {
         };
         /**
          * Get the general ledger report
-         * @description The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
+         * @description The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision, the latest or as_at_revision's (FR-RPT-08). At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
          */
         get: operations["getGeneralLedger"];
         put?: never;
@@ -31082,6 +31102,131 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        LedgerEntryLine: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description In the line's currency: debit positive, credit negative. */
+            amount: components["schemas"]["Money"];
+            /** @description In the base currency, as posted. */
+            base: components["schemas"]["Money"];
+            /**
+             * @description The account's code.
+             * @example 6120
+             */
+            code: string;
+            /**
+             * @description The line's description.
+             * @example GitHub Team, September
+             */
+            description?: string;
+            /** @description The line's dimension values (listDimensionValues). */
+            dimension_value_ids?: string[] | null;
+            /**
+             * Format: int64
+             * @description Its place in the entry.
+             * @example 1
+             */
+            line_no: number;
+            /**
+             * @description The account's name.
+             * @example Software subscriptions
+             */
+            name: string;
+        };
+        LedgerEntrySource: {
+            /**
+             * Format: int64
+             * @description The document's version now: later than version when it was changed and posted again since.
+             * @example 1
+             */
+            current_version?: number;
+            /**
+             * Format: date
+             * @description The document's date.
+             * @example 2026-09-05
+             */
+            date?: string;
+            /**
+             * @description The document's type, when the source is a document; absent otherwise.
+             * @example bill
+             */
+            document_type?: string;
+            /**
+             * @description The source's ID, to open it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            id: string;
+            /**
+             * @description Where the document opens in the web app, when it has a page.
+             * @example /purchases/bills/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            link?: string;
+            /**
+             * @description The document's number, once it has one.
+             * @example BILL-0905
+             */
+            number?: string;
+            /**
+             * @description The customer's or supplier's name, for a document that names one.
+             * @example GitHub, Inc.
+             */
+            party?: string;
+            /**
+             * @description The document's status now.
+             * @example posted
+             */
+            status?: string;
+            /**
+             * @description The source type (ENG-03), such as manual_journal, bill or bank_transaction.
+             * @example bill
+             */
+            type: string;
+            /**
+             * Format: int64
+             * @description The source's version that posted the entry.
+             * @example 1
+             */
+            version: number;
+        };
+        LedgerEntryView: {
+            /**
+             * Format: uuid
+             * @description The entry.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it made (ENG-46).
+             * @example 18402
+             */
+            ledger_revision: number;
+            /** @description Its lines, in order. */
+            lines: components["schemas"]["LedgerEntryLine"][];
+            /**
+             * @description Its memo.
+             * @example GitHub Team, September
+             */
+            memo?: string;
+            /**
+             * Format: date
+             * @description The date it posted on.
+             * @example 2026-09-05
+             */
+            posting_date: string;
+            /**
+             * Format: uuid
+             * @description The entry it reverses, for a reversing entry.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d81
+             */
+            reverses?: string;
+            /** @description Where it comes from. */
+            source: components["schemas"]["LedgerEntrySource"];
         };
         LedgerLine: {
             /** @description In the line's currency: debit positive, credit negative. */
@@ -106506,6 +106651,93 @@ export interface operations {
             };
         };
     };
+    getLedgerEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The entry, as a general ledger line names it (entry_id). */
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createMyBankChange: {
         parameters: {
             query?: never;
@@ -134798,6 +135030,8 @@ export interface operations {
                 to: string;
                 /** @description Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter. */
                 dimension_value_id?: string[] | null;
+                /** @description Read as at this ledger revision (FR-RPT-08), such as a statement's, so a figure traces to the lines it was read from (FR-UX-04): the opening balance and the lines are those the ledger held then. Left out, the ledger as it stands. */
+                as_at_revision?: number;
             };
             header?: never;
             path?: never;
@@ -134845,7 +135079,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year; `REPORT-04` A revision later than the ledger. */
             422: {
                 headers: {
                     [name: string]: unknown;

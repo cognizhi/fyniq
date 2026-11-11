@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useRouter, useSearch } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, CircleX, Download, Info, TriangleAlert } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { createContext, useContext, useId, useMemo, useRef, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
@@ -11,6 +11,7 @@ import { formatAmount } from "../../format/amount";
 import { date, month, timeZone } from "../../format/date";
 import { hasHelpText, helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { TracePanel, type TraceFigure } from "../../shell/Trace";
 import { Icon, problemOf } from "../../ui";
 import { Chart } from "../../components/chart/Chart";
 import { listPeriods, type Period } from "../accounting/data";
@@ -73,22 +74,51 @@ function columnLabel(c: Column): string {
   return from === to ? month(from) : `${month(from)}–${month(to)}`;
 }
 
-// Figure is a figure that opens the general ledger of its accounts over its column's run (FR-UX-04), of the column's
-// dimension value and the statement's own when it has them (FR-DIM-02); one of more than 20 accounts, which the general
-// ledger does not take at once, a computed one, or one of the lines with no value of a dimension, which the general
-// ledger cannot pick out, does not; nor does the budget's, which is no ledger figure.
-function Figure({ amount, accounts, column, only }: { amount: string; accounts: readonly string[]; column: Column; only?: string }) {
-  if (accounts.length === 0 || accounts.length > 20 || column.key === "none" || column.key === "budget") return <>{formatAmount(amount)}</>;
-  const values = [only, column.key.startsWith("value:") ? column.key.slice(6) : ""].filter((v): v is string => !!v);
+// TraceOpen opens the Trace panel at a figure: its column's index and its row's key.
+const TraceOpen = createContext<((col: number, key: string) => void) | null>(null);
+
+// Figure is a figure that opens the Trace panel (FR-UX-04): its accounts, their ledger lines over its column's run as at
+// the statement's revision, of the column's dimension value and the statement's own when it has them (FR-DIM-02), then
+// a line's source and its history. A computed one, or one of the lines with no value of a dimension, which the general
+// ledger cannot pick out, does not open; nor does the budget's, which is no ledger figure.
+function Figure({ amount, accounts, column, col, traceKey }: { amount: string; accounts: readonly string[]; column: Column; col: number; traceKey: string }) {
+  const open = useContext(TraceOpen);
+  if (!open || accounts.length === 0 || column.key === "none" || column.key === "budget") return <>{formatAmount(amount)}</>;
   return (
-    <Link
-      to="/reports/general-ledger"
-      search={{ account_id: [...accounts], from: column.from, to: column.to, ...(values.length ? { dimension_value_id: values } : {}) }}
-      className="text-inherit no-underline hover:underline"
-    >
+    <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-inherit hover:underline" onClick={() => open(col, traceKey)}
+      title={helpText("statement.trace").tooltip}>
       {formatAmount(amount)}
-    </Link>
+    </button>
   );
+}
+
+// valuesOf are the dimension values a column's figures are of: the statement's own and the column's (FR-DIM-02).
+function valuesOf(column: Column, only?: string): string[] {
+  return [only, column.key.startsWith("value:") ? column.key.slice(6) : ""].filter((v): v is string => !!v);
+}
+
+// figureOf is the figure a trace names, "<column>~<key>": a line's (a:<account>), a group's total (g:<block>:<group>) or
+// a block's total (b:<block>), from the statement shown; undefined when it names none.
+export function figureOf(s: Statement, trace: string | undefined, name: string, only?: string): TraceFigure | undefined {
+  if (!trace) return undefined;
+  const at = trace.indexOf("~");
+  const col = Number(trace.slice(0, at));
+  const key = trace.slice(at + 1);
+  const column = s.columns[col];
+  if (at < 0 || !Number.isInteger(col) || !column) return undefined;
+  const base = { currency: s.currency, context: `${name}, ${columnLabel(column)}`, from: column.from, to: column.to, revision: s.ledger_revision, values: valuesOf(column, only) };
+  const accountsOf = (lines: Block["groups"][number]["lines"]) => lines.map((l) => ({ id: l.account_id, code: l.code, name: l.name, amount: l.amounts[col]?.amount }));
+  for (const b of s.blocks) {
+    if (key === `b:${b.key}` && !b.measure) {
+      return { ...base, title: `Total ${b.title.toLowerCase()}`, amount: b.totals[col]?.amount ?? "", accounts: b.groups.flatMap((g) => accountsOf(g.lines)) };
+    }
+    for (const g of b.groups) {
+      if (key === `g:${b.key}:${g.name}` && g.lines.length > 0) return { ...base, title: g.name, amount: g.totals[col]?.amount ?? "", accounts: accountsOf(g.lines) };
+      const l = g.lines.find((x) => key === `a:${x.account_id}`);
+      if (l) return { ...base, title: l.name, amount: l.amounts[col]?.amount ?? "", accounts: accountsOf([l]) };
+    }
+  }
+  return undefined;
 }
 
 // Explanation is Basic mode's plain words under a section (FR-UX-23), from the help texts.
@@ -114,16 +144,16 @@ function forecastOf(s: Statement, section?: string): string {
   return x ? formatAmount(x.amount.amount) : "";
 }
 
-function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: boolean; only?: string }) {
+function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean }) {
   const [open, setOpen] = useState(true);
   const id = useId();
   const span = s.columns.length + 1 + (percent ? 1 : 0) + (s.forecast ? 1 : 0);
   // section is the block a total row closes, whose forecast figure it shows; the forecast has none for a line.
-  const cells = (amounts: { amount: string }[], percents: string[], accounts: readonly string[], section?: string) => (
+  const cells = (amounts: { amount: string }[], percents: string[], accounts: readonly string[], traceKey: string, section?: string) => (
     <>
       {amounts.map((m, i) => (
         <td key={i} className={i === 0 ? "fy-num" : "fy-num fy-expert-only"}>
-          {s.columns[i] ? <Figure amount={m.amount} accounts={accounts} column={s.columns[i]} only={only} /> : formatAmount(m.amount)}
+          {s.columns[i] ? <Figure amount={m.amount} accounts={accounts} column={s.columns[i]} col={i} traceKey={traceKey} /> : formatAmount(m.amount)}
         </td>
       ))}
       {s.forecast && <td className="fy-num fy-expert-only">{forecastOf(s, section)}</td>}
@@ -135,7 +165,7 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
       <>
         <tr className="fy-strong">
           <th scope="row">{b.title}</th>
-          {cells(b.totals, b.percents, [], b.key)}
+          {cells(b.totals, b.percents, [], "", b.key)}
         </tr>
         <Explanation k={b.key} span={span} />
       </>
@@ -157,7 +187,7 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
           g.lines.length === 0 ? (
             <tr key={g.name} id={id}>
               <td className="fy-sub">{g.name}</td>
-              {cells(g.totals, g.percents, [])}
+              {cells(g.totals, g.percents, [], "")}
             </tr>
           ) : (
             [
@@ -167,13 +197,13 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
                     <span className="fy-mono fy-muted fy-expert-only">{l.code} </span>
                     {l.name}
                   </td>
-                  {cells(l.amounts, l.percents, [l.account_id])}
+                  {cells(l.amounts, l.percents, [l.account_id], `a:${l.account_id}`)}
                 </tr>
               )),
               b.groups.length > 1 && g.lines.length > 1 ? (
                 <tr key={`${g.name}-total`} className="fy-expert-only">
                   <td className="fy-sub fy-muted">{g.name}</td>
-                  {cells(g.totals, g.percents, g.lines.map((l) => l.account_id))}
+                  {cells(g.totals, g.percents, g.lines.map((l) => l.account_id), `g:${b.key}:${g.name}`)}
                 </tr>
               ) : null,
             ]
@@ -181,7 +211,7 @@ function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: b
         )}
       <tr className="fy-strong">
         <th scope="row">Total {b.title.toLowerCase()}</th>
-        {cells(b.totals, b.percents, all, b.key)}
+        {cells(b.totals, b.percents, all, `b:${b.key}`, b.key)}
       </tr>
       <Explanation k={b.key} span={span} />
     </>
@@ -271,6 +301,25 @@ export function FinancialStatement() {
   const exp = helpText("statement.export");
   const [exporting, setExporting] = useState(false);
   const name = statementNames[kind] ?? "Financial statement";
+  // The Trace panel (FR-UX-04): the figure the trace search parameter names, so Back closes it and the report keeps its
+  // choices and place; one the person opened here closes by going back, one a link opened by dropping the parameter.
+  const navigate = useNavigate();
+  const router = useRouter();
+  const search = useSearch({ strict: false }) as { trace?: string };
+  const opened = useRef(false);
+  const figure = s ? figureOf(s, search.trace, name, pl ? only || undefined : undefined) : undefined;
+  const openTrace = (col: number, key: string) => {
+    opened.current = true;
+    void navigate({ to: ".", search: (prev: Record<string, unknown>) => ({ ...prev, trace: `${col}~${key}` }) } as never);
+  };
+  const closeTrace = () => {
+    if (opened.current) {
+      opened.current = false;
+      router.history.back();
+      return;
+    }
+    void navigate({ to: ".", replace: true, search: ({ trace: _, ...rest }: Record<string, unknown>) => rest } as never);
+  };
   // shown is what the statement shows, as the export dialog names it.
   const shown = s
     ? `${date(s.from)} to ${date(s.to)}${
@@ -447,7 +496,7 @@ export function FinancialStatement() {
                 </span>
               )}
             </h2>
-            <span className="fy-small fy-muted">Select a figure to see the lines behind it</span>
+            <span className="fy-small fy-muted">Select a figure to trace it to its lines, its source and its history</span>
           </div>
           {compared === "budget" && !s.columns.some((c) => c.key === "budget") && (
             <p className="fy-small fy-secondary fy-expert-only">No budget column: a month of this period is in a financial year with no approved budget.</p>
@@ -481,9 +530,11 @@ export function FinancialStatement() {
                 </tr>
               </thead>
               <tbody>
-                {s.blocks.map((b) => (
-                  <BlockRows key={b.key} b={b} s={s} percent={kind === "pl"} only={pl ? only || undefined : undefined} />
-                ))}
+                <TraceOpen.Provider value={openTrace}>
+                  {s.blocks.map((b) => (
+                    <BlockRows key={b.key} b={b} s={s} percent={kind === "pl"} />
+                  ))}
+                </TraceOpen.Provider>
               </tbody>
             </table>
           </div>
@@ -509,6 +560,7 @@ export function FinancialStatement() {
               </ul>
             </section>
           )}
+          {figure && <TracePanel figure={figure} onClose={closeTrace} />}
           <p className="fy-small fy-muted">
             Read at ledger revision {s.ledger_revision}: the same revision always gives the same figures.
             {mode === "expert" ? " Laid out from each account's report group, function and cash-flow line in the chart of accounts." : ""}

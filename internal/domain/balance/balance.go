@@ -51,6 +51,9 @@ func At(revision int64) Snapshot { return Snapshot{at: true, revision: revision}
 // Revision is the revision s reads as at, and whether it reads at one.
 func (s Snapshot) Revision() (int64, bool) { return s.revision, s.at }
 
+// after says whether a line of revision was posted after the revision s reads as at, and so is not read.
+func (s Snapshot) after(revision int64) bool { return s.at && revision > s.revision }
+
 // Only is s reading only the lines whose dimension values keep accepts (FR-DIM-02), as a set's values are held: once
 // each, in ascending order, nil for none.
 func (s Snapshot) Only(keep func(values []uuid.UUID) bool) Snapshot {
@@ -243,7 +246,18 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 // its opening balance and its lines are of those lines alone. nil reads every line.
 func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
 	only func(values []uuid.UUID) bool) (AccountLedger, error) {
-	out, err := opening(ctx, u, base, account, from, to, only)
+	return GeneralLedgerAt(ctx, u, base, Current, account, from, to, only)
+}
+
+// GeneralLedgerAt is GeneralLedgerOnly read through a snapshot: as at a revision, its opening balance and its lines are
+// those the ledger held then, so a figure a report read as at that revision traces to the lines it was read from
+// (FR-RPT-08, FR-UX-04). A revision later than the ledger's, or before its purge, is refused, as TrialAt's is.
+func GeneralLedgerAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, account uuid.UUID, from, to time.Time,
+	only func(values []uuid.UUID) bool) (AccountLedger, error) {
+	if err := s.check(ctx, u); err != nil {
+		return AccountLedger{}, err
+	}
+	out, err := opening(ctx, u, base, s, account, from, to, only)
 	if err != nil {
 		return AccountLedger{}, err
 	}
@@ -256,7 +270,7 @@ func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Cur
 	}
 	out.Lines = make([]LedgerLine, 0, len(lines))
 	for _, l := range lines {
-		if only != nil && !only(l.DimensionValues) {
+		if only != nil && !only(l.DimensionValues) || s.after(l.LedgerRevision) {
 			continue
 		}
 		line, err := out.add(l, base)
@@ -275,7 +289,7 @@ var LedgerPage = 5000
 // 0.250): its balance before from, with no lines and nothing added yet. A range that crosses a financial year's start is
 // refused, as GeneralLedger's is (CrossesYear).
 func Opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time) (AccountLedger, error) {
-	return opening(ctx, u, base, account, from, to, nil)
+	return opening(ctx, u, base, Current, account, from, to, nil)
 }
 
 // Walk reads the account's lines dated from..to in posting order, a page of LedgerPage at a time and with no limit of
@@ -306,7 +320,7 @@ func (gl *AccountLedger) Walk(ctx context.Context, u storage.UnitOfWork, base mo
 }
 
 // opening is the account's ledger over from..to with its opening balance and nothing added yet.
-func opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
+func opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, account uuid.UUID, from, to time.Time,
 	only func(values []uuid.UUID) bool) (AccountLedger, error) {
 	if err := CheckDay(ctx, u, from); err != nil {
 		return AccountLedger{}, err
@@ -318,7 +332,7 @@ func opening(ctx context.Context, u storage.UnitOfWork, base money.Currency, acc
 	if ys := y.start(to); !ys.IsZero() && from.Before(ys) && !y.start(from).IsZero() {
 		return AccountLedger{}, &CrossesYear{YearStart: ys}
 	}
-	o, err := before(ctx, u, base, y, account, from, only)
+	o, err := before(ctx, u, base, s, y, account, from, only)
 	if err != nil {
 		return AccountLedger{}, err
 	}
@@ -357,7 +371,7 @@ func (gl *AccountLedger) add(l storage.AccountLine, base money.Currency) (Ledger
 // (INV-08), and the lines of the period that holds it dated before it. Year-end applies (FR-GL-10): a revenue or expense
 // account counts only the periods of the financial year that holds the day, and the retained-earnings account also
 // counts the profit or loss of every earlier year.
-func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y yearEnd, account uuid.UUID, day time.Time,
+func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, y yearEnd, account uuid.UUID, day time.Time,
 	only func(values []uuid.UUID) bool) (money.Money, error) {
 	ys := y.start(day)
 	total := money.Zero(base)
@@ -375,7 +389,7 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 	for _, p := range periods {
 		switch {
 		case p.EndsOn.Before(day):
-			rows, err := Current.Only(only).forPeriod(ctx, u, p.ID)
+			rows, err := s.Only(only).forPeriod(ctx, u, p.ID)
 			if err != nil {
 				return total, err
 			}
@@ -395,7 +409,7 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 				return total, err
 			}
 			for _, l := range lines {
-				if only != nil && !only(l.DimensionValues) {
+				if only != nil && !only(l.DimensionValues) || s.after(l.LedgerRevision) {
 					continue
 				}
 				if err := add(l.BaseAmount); err != nil {

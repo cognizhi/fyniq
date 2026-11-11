@@ -65,6 +65,7 @@ type generalLedgerInput struct {
 	From      string   `query:"from" required:"true" format:"date" doc:"The first day." example:"2026-10-01"`
 	To        string   `query:"to" required:"true" format:"date" doc:"The last day." example:"2026-10-31"`
 	ValueIDs  []string `query:"dimension_value_id,explode" maxItems:"10" doc:"Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91"`
+	Revision  int64    `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), such as a statement's, so a figure traces to the lines it was read from (FR-UX-04): the opening balance and the lines are those the ledger held then. Left out, the ledger as it stands." example:"42"`
 }
 
 type generalLedgerOutput struct {
@@ -78,13 +79,13 @@ func registerReports(a *API) {
 		Description: "The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, " +
 			"provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the " +
 			"running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one " +
-			"ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. " +
+			"ledger revision, the latest or as_at_revision's (FR-RPT-08). At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. " +
 			"Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the " +
 			"retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a " +
 			"range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). " +
 			"Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack " +
 			"does not reach every line. Read-only; no side effects.",
-	}, []string{CodeInvalid, CodeNotFound, balance.CodeTooManyLines, balance.CodeCrossesYear}, func(ctx context.Context, in *generalLedgerInput) (*generalLedgerOutput, error) {
+	}, []string{CodeInvalid, CodeNotFound, CodeLaterRevision, balance.CodeTooManyLines, balance.CodeCrossesYear}, func(ctx context.Context, in *generalLedgerInput) (*generalLedgerOutput, error) {
 		p, _ := authn.From(ctx)
 		var bad []FieldProblem
 		from, err := time.Parse(time.DateOnly, in.From)
@@ -147,12 +148,20 @@ func registerReports(a *API) {
 			if out.Body.Revision, err = u.Ledger().Revision(ctx); err != nil {
 				return err
 			}
+			s := balance.Current
+			if in.Revision != 0 {
+				if in.Revision > out.Body.Revision {
+					return invalid([]FieldProblem{{Code: CodeLaterRevision, Field: "as_at_revision", Message: "is later than the ledger's revision",
+						Fix: "Send a revision a statement recorded, or leave it out to read the ledger as it stands"}})
+				}
+				s, out.Body.Revision = balance.At(in.Revision), in.Revision
+			}
 			for _, id := range ids {
 				acc, err := u.Accounts().Get(ctx, id)
 				if err != nil {
 					return err
 				}
-				gl, err := balance.GeneralLedgerOnly(ctx, u, base, id, from, to, only)
+				gl, err := balance.GeneralLedgerAt(ctx, u, base, s, id, from, to, only)
 				if err != nil {
 					return err
 				}

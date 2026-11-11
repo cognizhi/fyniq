@@ -10386,6 +10386,25 @@ The workbook's KPI set for a month (FR-KPI-02), each with its definition, versio
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
 
+### `GET /v1/ledger/entries/{entry_id}`
+
+**Get a ledger entry and its source** (`getLedgerEntry`)
+
+A ledger entry with its lines and where it comes from (FR-UX-04, the Trace panel): its source's type, ID and the version that posted it, and, when the source is a document, its type, number, status, date, customer or supplier and version now. Read as the general ledger is, so it needs an unqualified view of the reports; an entry the purge after retention removed is not found (AUD-10). The document's history is the audit trail's, for those who may read it (listAuditEvents with record_type=document and its ID). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `entry_id` (path, required): The entry, as a general ledger line names it (entry_id).
+- **Responses:**
+  - `200` OK [`LedgerEntryView`](../../contracts/schemas/LedgerEntryView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ### `GET /v1/report-exports`
 
 **List my exports** (`listReportExports`)
@@ -10496,7 +10515,7 @@ The year's budget against the books for months of one financial year (FR-RPT-03,
 
 **Get the general ledger report** (`getGeneralLedger`)
 
-The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
+The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision, the latest or as_at_revision's (FR-RPT-08). At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
 - **Parameters:**
@@ -10504,15 +10523,16 @@ The general ledger of one to 20 accounts over a range of dates, in the base curr
   - `from` (query, required): The first day.
   - `to` (query, required): The last day.
   - `dimension_value_id` (query): Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), such as a statement's, so a figure traces to the lines it was read from (FR-UX-04): the opening balance and the lines are those the ledger held then. Left out, the ledger as it stands.
 - **Responses:**
   - `200` OK [`GeneralLedgerReport`](../../contracts/schemas/GeneralLedgerReport.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year; `REPORT-04` A revision later than the ledger.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-01`, `REPORT-02`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-01`, `REPORT-02`, `REPORT-04`
 
 ### `GET /v1/reports/sales-by-customer`
 

@@ -511,3 +511,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/general-ledger.md, docs/user-guide/financial-statements.md → reports.general-ledger, reports.statements (the general ledger export has no limit of lines, NFR-PERF-05)
 
 ## [2026-11-11] compile | docs/user-guide/checks.md → checks.books-health (the checks run at most once a minute through a burst of changes)
+
+## [2026-11-12] compile | docs/user-guide/financial-statements.md → reports.statements (the Trace panel: a figure's breakdown, ledger lines as at the statement's revision, source and history; FR-UX-04)

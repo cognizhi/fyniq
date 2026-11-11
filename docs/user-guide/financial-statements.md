@@ -3,7 +3,7 @@ key: reports.statements
 title: Read the financial statements
 mode: basic
 roles: [owner, administrator, controller, accountant, bookkeeper, auditor, tax_agent, dpo]
-requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-08, INV-10, INV-11, NFR-PERF-05]
+requirements: [FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-08, FR-UX-04, INV-10, INV-11, NFR-PERF-05]
 status: draft            # written with the statements (P1); the layout waits for the accountant's confirmation
 ---
 
@@ -83,11 +83,26 @@ in Expert mode:
 The balance sheet, the cash flow and the trial balance show the whole company: a department's lines
 are one side of their entries, so its own figures would not balance.
 
-## See the lines behind a figure
+## Trace a figure to its source
 
-Select an account's figure, or a group's total, to open the general ledger at its lines for the
-same months, and of the column's value or the value chosen. A computed figure, such as gross profit,
-does not open, nor does a figure of the lines with no value of a dimension.
+Select an account's figure, or a group's or a section's total, to open the **Trace** panel beside the
+statement. It follows the figure in four steps:
+
+1. **Breakdown**: the accounts a total is made of, each with its figure. An account's own figure
+   starts at its lines.
+2. **Ledger lines**: the account's lines for the same months, and of the column's value or the value
+   chosen, with the balance before and after them. They are read at the statement's ledger revision,
+   so they are the lines the figure was read from, even if something was posted since.
+3. **Source**: the entry a line belongs to and the document it came from: its number, its customer
+   or supplier, its date and its status now, with a link to open it. In Expert mode the entry's
+   lines show too.
+4. **History**: what happened to that document, from the audit trail. It shows only to people whose
+   roles read the audit trail; others are told so.
+
+The path at the top takes you back a step; **Back**, or closing the panel, returns to the statement
+as you left it. **Open as a full page** shows the account's lines in the general ledger report. A
+computed figure, such as gross profit, does not open, nor does a figure of the lines with no value
+of a dimension, nor a budget's.
 
 ## Export a statement
 

@@ -25937,6 +25937,169 @@ components:
         - platform_version
         - kpis
       type: object
+    LedgerEntryLine:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "In the line's currency: debit positive, credit negative."
+        base:
+          $ref: "#/components/schemas/Money"
+          description: In the base currency, as posted.
+        code:
+          description: The account's code.
+          examples:
+            - "6120"
+          type: string
+        description:
+          description: The line's description.
+          examples:
+            - GitHub Team, September
+          type: string
+        dimension_value_ids:
+          description: The line's dimension values (listDimensionValues).
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          type:
+            - array
+            - "null"
+        line_no:
+          description: Its place in the entry.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        name:
+          description: The account's name.
+          examples:
+            - Software subscriptions
+          type: string
+      required:
+        - line_no
+        - account_id
+        - code
+        - name
+        - amount
+        - base
+      type: object
+    LedgerEntrySource:
+      additionalProperties: false
+      properties:
+        current_version:
+          description: "The document's version now: later than version when it was changed and posted again since."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        date:
+          description: The document's date.
+          examples:
+            - "2026-09-05"
+          format: date
+          type: string
+        document_type:
+          description: The document's type, when the source is a document; absent otherwise.
+          examples:
+            - bill
+          type: string
+        id:
+          description: The source's ID, to open it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          type: string
+        link:
+          description: Where the document opens in the web app, when it has a page.
+          examples:
+            - /purchases/bills/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          type: string
+        number:
+          description: The document's number, once it has one.
+          examples:
+            - BILL-0905
+          type: string
+        party:
+          description: The customer's or supplier's name, for a document that names one.
+          examples:
+            - GitHub, Inc.
+          type: string
+        status:
+          description: The document's status now.
+          examples:
+            - posted
+          type: string
+        type:
+          description: The source type (ENG-03), such as manual_journal, bill or bank_transaction.
+          examples:
+            - bill
+          type: string
+        version:
+          description: The source's version that posted the entry.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - type
+        - id
+        - version
+      type: object
+    LedgerEntryView:
+      additionalProperties: false
+      properties:
+        id:
+          description: The entry.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+          format: uuid
+          type: string
+        ledger_revision:
+          description: The ledger revision it made (ENG-46).
+          examples:
+            - 18402
+          format: int64
+          type: integer
+        lines:
+          description: Its lines, in order.
+          items:
+            $ref: "#/components/schemas/LedgerEntryLine"
+          type: array
+        memo:
+          description: Its memo.
+          examples:
+            - GitHub Team, September
+          type: string
+        posting_date:
+          description: The date it posted on.
+          examples:
+            - "2026-09-05"
+          format: date
+          type: string
+        reverses:
+          description: The entry it reverses, for a reversing entry.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d81
+          format: uuid
+          type: string
+        source:
+          $ref: "#/components/schemas/LedgerEntrySource"
+          description: Where it comes from.
+      required:
+        - id
+        - posting_date
+        - ledger_revision
+        - source
+        - lines
+      type: object
     LedgerLine:
       additionalProperties: false
       properties:
@@ -128748,6 +128911,113 @@ paths:
         capability: Reports, dashboards
         note: A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused.
         right: V
+  /v1/ledger/entries/{entry_id}:
+    get:
+      description: "A ledger entry with its lines and where it comes from (FR-UX-04, the Trace panel): its source's type, ID and the version that posted it, and, when the source is a document, its type, number, status, date, customer or supplier and version now. Read as the general ledger is, so it needs an unqualified view of the reports; an entry the purge after retention removed is not found (AUD-10). The document's history is the audit trail's, for those who may read it (listAuditEvents with record_type=document and its ID). Read-only; no side effects."
+      operationId: getLedgerEntry
+      parameters:
+        - description: The entry, as a general ledger line names it (entry_id).
+          in: path
+          name: entry_id
+          required: true
+          schema:
+            description: The entry, as a general ledger line names it (entry_id).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntryView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a ledger entry and its source
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+        right: V
   /v1/me/bank-changes:
     post:
       description: "Saves a draft change of your own bank account for reimbursements (FR-AP-22; PRD-001 rev 0.154): a Singapore bank's account in SGD, with the full number, which is sealed (SEC-11) and kept with its last four characters and a keyed fingerprint. Nothing changes until the change is asked for and someone who holds A on \"Payment batches\", never you, approves it: attach a screenshot of your banking app or your statement's header (evidence type bank_app_screenshot or bank_statement) and ask with requestMyBankChangeApproval. Side effects: the change, its sealed number and their audit events, which carry the last four characters and the fingerprint only (AUD-02). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -166541,7 +166811,7 @@ paths:
         right: V
   /v1/reports/general-ledger:
     get:
-      description: "The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects."
+      description: "The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision, the latest or as_at_revision's (FR-RPT-08). At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects."
       operationId: getGeneralLedger
       parameters:
         - description: The accounts, one to 20, each as its own account_id parameter.
@@ -166595,6 +166865,17 @@ paths:
             type:
               - array
               - "null"
+        - description: "Read as at this ledger revision (FR-RPT-08), such as a statement's, so a figure traces to the lines it was read from (FR-UX-04): the opening balance and the lines are those the ledger held then. Left out, the ledger as it stands."
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: "Read as at this ledger revision (FR-RPT-08), such as a statement's, so a figure traces to the lines it was read from (FR-UX-04): the opening balance and the lines are those the ledger held then. Left out, the ledger as it stands."
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
       responses:
         "200":
           content:
@@ -166638,7 +166919,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year; `REPORT-04` A revision later than the ledger."
         "429":
           content:
             application/problem+json:
@@ -166685,6 +166966,7 @@ paths:
         - API-RATE-01
         - REPORT-01
         - REPORT-02
+        - REPORT-04
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
