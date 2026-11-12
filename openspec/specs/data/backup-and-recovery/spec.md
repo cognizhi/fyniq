@@ -208,7 +208,7 @@ Source: PRD-001 §11.9
 - **THEN** it is deleted automatically
 
 ### Requirement: Personal data in immutable records is crypto-shredded at the end of retention
-Personal data inside immutable records (payroll, audit `changes`) SHALL still be removed when its retention period ends (PDPA s25), by destroying the encryption key of its person and retention cohort, without breaking the hash chain. Confirm the approach with counsel (open question 39).
+Personal data inside immutable records (payroll, audit `changes`) SHALL still be removed when its retention period ends (PDPA s25), by destroying the encryption key of its person and retention cohort, without breaking the hash chain. Confirm the approach with counsel (open question 39). (rev 0.244) In Fyniq: the audit trail's personal values.
 
 Source: PRD-001 §11.8
 
@@ -232,14 +232,36 @@ Source: PRD-001 §11.8
 - **WHEN** a key is destroyed
 - **THEN** the destruction is recorded with the key ID, the time and the approver
 
+#### Scenario: The DPO approves each run
+- **GIVEN** the owner's decision of 9 Nov 2026 (rev 0.244)
+- **WHEN** a weekly job lists the cohorts whose retention has ended
+- **THEN** nothing is shredded until the DPO approves the list, stepped up
+- **AND** each shredding is recorded with the DPO as its approver
+
 #### Scenario: No erasure on request alone
 - **WHEN** a person asks for their data to be erased while its retention obligation continues
 - **THEN** the data is not shredded on that basis, because the PDPA gives no general right to erasure on request
 
+#### Scenario: What is shreddable in Fyniq
+- **GIVEN** the owner's decision of 9 Nov 2026 (rev 0.244)
+- **WHEN** an audit event's before or after value is a name, an email address, a phone number or an address of a member or of an individual among the contacts
+- **THEN** it is encrypted under that person's key for the event's financial year
+- **AND** identifiers and pay stay proofs (AUD-02), and issued documents stay as issued until their own purge
+
+#### Scenario: Payroll joins later
+- **WHEN** Nemura's pay data arrives (PRD-002)
+- **THEN** payroll's personal values go under the same keys
+
 ### Requirement: Shredded keys do not survive in backups or exports
-Wrapped keys SHALL NOT outlive their destruction in backups or the weekly export: either the key-encryption key in Cloud KMS is per cohort and its versions are destroyed, or a restore re-applies a shredding and anonymisation register, kept outside the database backup, before the restored copy is opened.
+Wrapped keys SHALL NOT outlive their destruction in backups or the weekly export: either the key-encryption key in Cloud KMS is per cohort and its versions are destroyed, or a restore re-applies a shredding and anonymisation register, kept outside the database backup, before the restored copy is opened. (rev 0.244) The register approach is used.
 
 Source: PRD-001 §11.8
+
+#### Scenario: The register approach is used
+- **GIVEN** the owner's decision of 9 Nov 2026 (rev 0.244)
+- **WHEN** a cohort is shredded
+- **THEN** its data key is deleted from the database
+- **AND** a signed entry is first written to the shredding and anonymisation register in the write-once bucket, as the audit trail's erasure register is (AUD-06)
 
 #### Scenario: Restore re-applies the shredding register
 - **GIVEN** the shredding and anonymisation register approach is used
