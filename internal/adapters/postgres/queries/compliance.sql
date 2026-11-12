@@ -197,3 +197,21 @@ SELECT id, quarter, reviewed_by, reviewed_at, note FROM fyniq.data_inventory_rev
 INSERT INTO fyniq.data_inventory_review (quarter, reviewed_by, reviewed_at, note)
 VALUES (sqlc.arg(quarter), sqlc.arg(reviewed_by), sqlc.arg(reviewed_at), sqlc.narg(note))
 RETURNING id, quarter, reviewed_by, reviewed_at, note;
+
+-- name: ListDPIAVersions :many
+-- Every version of the organisation's impact assessments, by key and version (CMP-PD-08).
+SELECT id, key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at FROM fyniq.dpia_version ORDER BY key, version;
+
+-- name: InsertDPIAVersion :one
+INSERT INTO fyniq.dpia_version (key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at)
+VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(title), sqlc.arg(body), sha256(convert_to(sqlc.arg(body)::text, 'UTF8')), sqlc.arg(from_draft),
+  sqlc.narg(entry_id), sqlc.arg(saved_by), sqlc.arg(saved_at))
+RETURNING id, key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at;
+
+-- name: ListDPIAApprovals :many
+SELECT id, key, version, approved_by, approved_at FROM fyniq.dpia_approval ORDER BY key, version;
+
+-- name: InsertDPIAApproval :one
+INSERT INTO fyniq.dpia_approval (key, version, approved_by, approved_at)
+VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(approved_by), sqlc.arg(approved_at))
+RETURNING id, key, version, approved_by, approved_at;

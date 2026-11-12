@@ -517,3 +517,36 @@ func TestTheDataInventory(t *testing.T) {
 		t.Errorf("NRIC and card data are not said to be not held: %v", inv.NotHeld)
 	}
 }
+
+// Fyniq's DPIA drafts (CMP-PD-08, rev 0.244; p1-pdpa-retention D4): the payroll link's and the AI assistant's, each from
+// official sources with the sections of the PDPC's guide, marking the clauses that bear on the law for counsel, each due
+// once a feature switch is on.
+// req: CMP-PD-08
+func TestTheDPIADrafts(t *testing.T) {
+	drafts, err := DPIADrafts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	for _, d := range drafts {
+		keys = append(keys, d.Key)
+		if d.Draft != "fyniq-dpia-draft@1" || !strings.HasPrefix(d.Body, "# "+d.Title) || !strings.Contains(d.Body, "[counsel to confirm]") ||
+			DPIAFeatures[d.Key] == "" {
+			t.Errorf("%s: %+v", d.Key, d)
+		}
+		for _, section := range []string{"## The processing", "## Personal data and how it flows", "## Necessity and proportionality",
+			"## Risks to the people concerned", "## Measures", "## Residual risk and decision", "## Approval and review"} {
+			if !strings.Contains(d.Body, section) {
+				t.Errorf("%s has no section %q", d.Key, section)
+			}
+		}
+		for _, s := range d.Sources {
+			if host := strings.Split(strings.TrimPrefix(s.URL, "https://"), "/")[0]; !strings.HasSuffix(host, ".gov.sg") {
+				t.Errorf("%s: %s is not an official Singapore source", d.Key, s.URL)
+			}
+		}
+	}
+	if !slices.Equal(keys, DPIAKeys) {
+		t.Errorf("the DPIAs are %v, want %v", keys, DPIAKeys)
+	}
+}

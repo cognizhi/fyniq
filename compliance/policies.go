@@ -54,6 +54,16 @@ func PolicyDrafts() ([]PolicyDraft, error) { return drafts("policies", PolicyKey
 // NoticeDrafts are Fyniq's starting drafts of the privacy notices (fyniq-notice-draft@1), in the order of NoticeKeys.
 func NoticeDrafts() ([]PolicyDraft, error) { return drafts("notices", NoticeKeys) }
 
+// DPIAKeys are the data protection impact assessments Fyniq drafts (PRD-001 CMP-PD-08, rev 0.244; p1-pdpa-retention
+// design D4): the payroll link's and the AI assistant's, each due once its feature is switched on.
+var DPIAKeys = []string{"payroll", "ai-assistant"}
+
+// DPIAFeatures are the feature switches that make each of Fyniq's DPIAs due.
+var DPIAFeatures = map[string]string{"payroll": "features.payroll", "ai-assistant": "features.ai_assistant"}
+
+// DPIADrafts are Fyniq's starting drafts of the DPIAs (fyniq-dpia-draft@1), in the order of DPIAKeys.
+func DPIADrafts() ([]PolicyDraft, error) { return drafts("dpias", DPIAKeys) }
+
 // LibraryDrafts are every starting draft of the library, in the order of LibraryKeys.
 func LibraryDrafts() ([]PolicyDraft, error) {
 	ps, err := PolicyDrafts()

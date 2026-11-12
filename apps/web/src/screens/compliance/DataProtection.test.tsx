@@ -21,6 +21,7 @@ const inventory = {
 // req: CMP-PD-02
 // req: CMP-05
 // req: CMP-PD-09
+// req: CMP-PD-08
 describe("Compliance › Data protection", () => {
   it("shows the inventory, what is never held, the schedule and the review overdue; axe finds nothing", async () => {
     answer({ "GET /v1/compliance/data-inventory": { status: 200, body: inventory } });
@@ -73,5 +74,29 @@ describe("Compliance › Data protection", () => {
     expect(screen.getByText(/up to 10% of its annual turnover in Singapore when that is above S\$10/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /The privacy notices/ }).getAttribute("href")).toBe("/compliance/privacy/notices");
     await noViolations();
+  });
+
+  it("lists the impact assessments, one switched on and not approved, and lets the Compliance officer approve Fyniq's draft; axe finds nothing", async () => {
+    const payroll = { key: "payroll", title: "Data protection impact assessment of the payroll link", required: true, why: "Required now: the payroll link is switched on (features.payroll).",
+      version: 0, from: "fyniq-dpia-draft@1", unapproved: true };
+    const ai = { key: "ai-assistant", title: "Data protection impact assessment of the AI assistant", required: false, why: "Required before the AI assistant is switched on (features.ai_assistant).",
+      version: 0, from: "fyniq-dpia-draft@1", unapproved: true };
+    const seen = answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/dpias": { status: 200, body: { items: [payroll, ai] } },
+      "GET /v1/compliance/dpias/payroll": { status: 200, body: { ...payroll, body: "# Data protection impact assessment of the payroll link\n\n[counsel to confirm] ...", sources: [] } },
+      "POST /v1/compliance/dpias/payroll/approvals": { status: 201, body: { ...payroll, version: 1, unapproved: false, approved: { version: 1, by: "user:u-1", at: "2026-11-09T02:00:00Z" } } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Impact assessments" }));
+    const list = await screen.findByRole("list", { name: "Impact assessments" });
+    const [first] = within(list).getAllByRole("listitem");
+    expect(within(first!).getByText("Needs approving")).toBeTruthy();
+    await noViolations();
+    fireEvent.click(within(first!).getByRole("button", { name: /Open Data protection impact assessment of the payroll link/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Approve Fyniq's draft" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/dpias/payroll/approvals")).toBe(true));
+    expect(seen.find((x) => x.path === "/v1/compliance/dpias/payroll/approvals")?.headers.get("If-Match")).toBe('"v0"');
   });
 });

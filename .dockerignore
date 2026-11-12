@@ -17,6 +17,7 @@
 !compliance/data-inventory.yaml
 !compliance/policies/
 !compliance/notices/
+!compliance/dpias/
 !compliance/controls/
 !packs/
 !connectors/

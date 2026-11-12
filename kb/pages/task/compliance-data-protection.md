@@ -2,9 +2,9 @@
 key: compliance.data-protection
 type: task
 title: Keep the data protection registers
-summary: The PDPA programme - the personal-data inventory and retention schedule, entries for data held outside Fyniq, the quarterly review, the DPO and the penalty
+summary: The PDPA programme - the personal-data inventory and schedule, the quarterly review, impact assessments, the DPO and the penalty
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:3f9ccb1fb4601f4b121afa34a300eb39c0fe695cd4637f96f018e526d4b0d535
+  - docs/user-guide/compliance-data-protection.md sha256:2c22fdd216e428ad671594e61a09b883c2d8adf6d0701098abe53494c0cad258
 data_class: general
 taint: trusted
 status: published
@@ -13,6 +13,8 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-09
 aliases:
+  - DPIA
+  - impact assessment
   - data inventory
   - personal data inventory
   - retention schedule
@@ -49,6 +51,14 @@ aliases:
 - The review also shows on **Reviews and attestations** ([[compliance.reviews]]).
 
 (src: docs/user-guide/compliance-data-protection.md#review-the-inventory-each-quarter)
+
+## Impact assessments
+
+- The **Impact assessments** tab lists Fyniq's drafts for the **payroll link** and the **AI assistant**, each required once its feature is switched on, and the company's own for any other processing, such as an inventory entry that needs one.
+- The Compliance officer edits and selects **Save the next version**, or **Write one**, and approves the latest version with **Approve**, confirming it is them; approving Fyniq's draft adopts it, and a later change needs approving again. Clauses marked [counsel to confirm] need counsel first.
+- A processing without an approved assessment shows as overdue on **Reviews and attestations** ([[compliance.reviews]]).
+
+(src: docs/user-guide/compliance-data-protection.md#impact-assessments)
 
 ## The Data Protection Officer
 

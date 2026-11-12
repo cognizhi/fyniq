@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "Fyniq's two assessments, then the organisation's own, oldest first.",
+      "items": {
+        "$ref": "DPIAView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "DpiasOutputBody",
+  "type": "object"
+}

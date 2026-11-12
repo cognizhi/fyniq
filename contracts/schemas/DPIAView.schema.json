@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "$ref": "DPIAApprovalRef.schema.json",
+      "description": "Its latest approval; none before the first."
+    },
+    "body": {
+      "description": "With getDPIA: the latest version's text, or Fyniq's draft, as Markdown.",
+      "examples": [
+        "# Data protection impact assessment of the payroll link\n..."
+      ],
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The inventory entry it assesses, if any.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "from": {
+      "description": "What the latest version came from: fyniq-dpia-draft@1, or organisation.",
+      "examples": [
+        "organisation"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The assessment: payroll, ai-assistant, or other-\u003cuuid\u003e for the organisation's own.",
+      "examples": [
+        "payroll"
+      ],
+      "type": "string"
+    },
+    "required": {
+      "description": "true when the processing it assesses goes on now: its feature is switched on, or the inventory entry it assesses is open and needs one.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "sources": {
+      "description": "With getDPIA: the official sources Fyniq's draft was written from.",
+      "items": {
+        "$ref": "PolicySourceView.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Data protection impact assessment of the payroll link"
+      ],
+      "type": "string"
+    },
+    "unapproved": {
+      "description": "true while its latest version (or Fyniq's draft) is not approved.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "version": {
+      "description": "Its latest version; 0 while it is Fyniq's draft. The ETag carries it for If-Match.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "why": {
+      "description": "Why it is required, or when it will be.",
+      "examples": [
+        "Payroll is switched on."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "required",
+    "why",
+    "version",
+    "from",
+    "unapproved"
+  ],
+  "title": "DPIAView",
+  "type": "object"
+}

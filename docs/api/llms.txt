@@ -184,6 +184,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/data-inventory/entries` (createDataInventoryEntry): Add an entry to the personal-data inventory
 - `PUT /v1/compliance/data-inventory/entries/{entry_id}` (reviseDataInventoryEntry): Change an entry of the personal-data inventory
 - `POST /v1/compliance/data-inventory/reviews` (reviewDataInventory): Record the inventory's quarterly review
+- `GET /v1/compliance/dpias` (listDPIAs): List the data protection impact assessments
+- `POST /v1/compliance/dpias` (createDPIA): Write an impact assessment for other processing
+- `GET /v1/compliance/dpias/{key}` (getDPIA): Get a data protection impact assessment
+- `PUT /v1/compliance/dpias/{key}` (saveDPIA): Save an impact assessment's next version
+- `POST /v1/compliance/dpias/{key}/approvals` (approveDPIA): Approve an impact assessment
 - `GET /v1/compliance/filings` (listStatutoryFilings): List the filing records
 - `POST /v1/compliance/filings` (createStatutoryFiling): Draft a filing record
 - `GET /v1/compliance/filings/{filing_id}` (getStatutoryFiling): Get a filing record

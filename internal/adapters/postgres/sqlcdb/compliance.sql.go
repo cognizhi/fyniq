@@ -401,6 +401,103 @@ func (q *Queries) InsertControlState(ctx context.Context, arg InsertControlState
 	return i, err
 }
 
+const insertDPIAApproval = `-- name: InsertDPIAApproval :one
+INSERT INTO fyniq.dpia_approval (key, version, approved_by, approved_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id, key, version, approved_by, approved_at
+`
+
+type InsertDPIAApprovalParams struct {
+	Key        string
+	Version    int32
+	ApprovedBy string
+	ApprovedAt time.Time
+}
+
+type InsertDPIAApprovalRow struct {
+	ID         uuid.UUID
+	Key        string
+	Version    int32
+	ApprovedBy string
+	ApprovedAt time.Time
+}
+
+func (q *Queries) InsertDPIAApproval(ctx context.Context, arg InsertDPIAApprovalParams) (InsertDPIAApprovalRow, error) {
+	row := q.db.QueryRow(ctx, insertDPIAApproval,
+		arg.Key,
+		arg.Version,
+		arg.ApprovedBy,
+		arg.ApprovedAt,
+	)
+	var i InsertDPIAApprovalRow
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.Version,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
+	)
+	return i, err
+}
+
+const insertDPIAVersion = `-- name: InsertDPIAVersion :one
+INSERT INTO fyniq.dpia_version (key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at)
+VALUES ($1, $2, $3, $4, sha256(convert_to($4::text, 'UTF8')), $5,
+  $6, $7, $8)
+RETURNING id, key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at
+`
+
+type InsertDPIAVersionParams struct {
+	Key       string
+	Version   int32
+	Title     string
+	Body      string
+	FromDraft string
+	EntryID   *uuid.UUID
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+type InsertDPIAVersionRow struct {
+	ID        uuid.UUID
+	Key       string
+	Version   int32
+	Title     string
+	Body      string
+	Sha256    []byte
+	FromDraft string
+	EntryID   *uuid.UUID
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+func (q *Queries) InsertDPIAVersion(ctx context.Context, arg InsertDPIAVersionParams) (InsertDPIAVersionRow, error) {
+	row := q.db.QueryRow(ctx, insertDPIAVersion,
+		arg.Key,
+		arg.Version,
+		arg.Title,
+		arg.Body,
+		arg.FromDraft,
+		arg.EntryID,
+		arg.SavedBy,
+		arg.SavedAt,
+	)
+	var i InsertDPIAVersionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.Version,
+		&i.Title,
+		&i.Body,
+		&i.Sha256,
+		&i.FromDraft,
+		&i.EntryID,
+		&i.SavedBy,
+		&i.SavedAt,
+	)
+	return i, err
+}
+
 const insertDataInventoryEntry = `-- name: InsertDataInventoryEntry :exec
 INSERT INTO fyniq.data_inventory_entry (entry_id, version, what, why, where_held, who, retention, transfers, needs_dpia, state, saved_by, saved_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7,
@@ -930,6 +1027,93 @@ func (q *Queries) ListControlStates(ctx context.Context) ([]FyniqControlState, e
 			&i.RunAt,
 			&i.ChangedAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDPIAApprovals = `-- name: ListDPIAApprovals :many
+SELECT id, key, version, approved_by, approved_at FROM fyniq.dpia_approval ORDER BY key, version
+`
+
+type ListDPIAApprovalsRow struct {
+	ID         uuid.UUID
+	Key        string
+	Version    int32
+	ApprovedBy string
+	ApprovedAt time.Time
+}
+
+func (q *Queries) ListDPIAApprovals(ctx context.Context) ([]ListDPIAApprovalsRow, error) {
+	rows, err := q.db.Query(ctx, listDPIAApprovals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDPIAApprovalsRow
+	for rows.Next() {
+		var i ListDPIAApprovalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Key,
+			&i.Version,
+			&i.ApprovedBy,
+			&i.ApprovedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDPIAVersions = `-- name: ListDPIAVersions :many
+SELECT id, key, version, title, body, sha256, from_draft, entry_id, saved_by, saved_at FROM fyniq.dpia_version ORDER BY key, version
+`
+
+type ListDPIAVersionsRow struct {
+	ID        uuid.UUID
+	Key       string
+	Version   int32
+	Title     string
+	Body      string
+	Sha256    []byte
+	FromDraft string
+	EntryID   *uuid.UUID
+	SavedBy   string
+	SavedAt   time.Time
+}
+
+// Every version of the organisation's impact assessments, by key and version (CMP-PD-08).
+func (q *Queries) ListDPIAVersions(ctx context.Context) ([]ListDPIAVersionsRow, error) {
+	rows, err := q.db.Query(ctx, listDPIAVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDPIAVersionsRow
+	for rows.Next() {
+		var i ListDPIAVersionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Key,
+			&i.Version,
+			&i.Title,
+			&i.Body,
+			&i.Sha256,
+			&i.FromDraft,
+			&i.EntryID,
+			&i.SavedBy,
+			&i.SavedAt,
 		); err != nil {
 			return nil, err
 		}

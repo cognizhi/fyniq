@@ -2036,6 +2036,14 @@
       "label": "What the company holds outside Fyniq",
       "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
     },
+    "data-protection.dpias": {
+      "label": "Impact assessments",
+      "tooltip": "The data protection impact assessments: payroll's and the AI assistant's before they are switched on, and one for each new processing."
+    },
+    "data-protection.dpia-approve": {
+      "label": "Approve the assessment",
+      "tooltip": "The Compliance officer approves the latest version, stepped up; a later change needs approving again."
+    },
     "data-protection.review": {
       "label": "Record the review",
       "tooltip": "Each quarter the Compliance officer checks that the inventory still says what the company holds, within 14 days of the quarter's end."

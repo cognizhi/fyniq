@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -41,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -148,6 +149,23 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	ownEntries, err := u.Compliance().InventoryEntries(ctx)
+	if err != nil {
+		return nil, err
+	}
+	dpias, approvals, err := u.Compliance().DPIAs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	features := map[string]bool{}
+	for key, setting := range registry.DPIAFeatures {
+		def, _ := settings.Lookup(setting)
+		changes, err := u.Settings().Changes(ctx, setting)
+		if err != nil {
+			return nil, err
+		}
+		features[key] = settings.On(def, changes, today).Value == "true"
+	}
 	closeOf := func(p storage.Period) (*storage.PeriodClose, error) {
 		c, err := u.Closes().Latest(ctx, p.ID)
 		if errors.Is(err, ports.ErrNotFound) {
@@ -168,6 +186,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		policyAcknowledgements(lib, members, now),
 		riskReviews(risks, today),
 		inventoryReview(members, inventory, today),
+		dpiaReview(features, ownEntries, dpias, approvals),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -177,7 +196,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
-	"data-inventory": "quarterly"}
+	"data-inventory": "quarterly", "dpia": "each processing"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -446,5 +465,51 @@ func inventoryReview(members []storage.Member, reviews []storage.InventoryReview
 		r.Detail = fmt.Sprintf("The personal-data inventory's review of %s waits for the Compliance officer, due by %s.", r.Period, dayOf(*r.DueOn))
 	}
 	r.settle("No quarter's inventory review waits.")
+	return r
+}
+
+
+// DPIAName is how people say each of Fyniq's impact assessments' processing.
+var DPIAName = map[string]string{"payroll": "the payroll link", "ai-assistant": "the AI assistant"}
+
+// Impact assessments (CMP-PD-08, rev 0.244): each processing that needs one has an approved assessment: Fyniq's
+// payroll link and AI assistant once their features are switched on, and each open inventory entry marked as needing
+// one. The processing goes on already, so one without an approved assessment is overdue.
+func dpiaReview(features map[string]bool, entries []storage.InventoryEntry, versions []storage.DPIAVersion, approvals []storage.DPIAApproval) Review {
+	r := Review{Kind: "dpia", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each approved assessment's version, with its text's SHA-256, who approved it and when"}
+	approved := map[string]bool{}
+	for _, a := range approvals {
+		approved[a.Key] = true
+		r.signed(a.ApprovedBy, a.ApprovedAt)
+	}
+	var missing []string
+	for _, key := range registry.DPIAKeys {
+		if features[key] && !approved[key] {
+			missing = append(missing, DPIAName[key])
+		}
+	}
+	for _, e := range entries {
+		if !e.NeedsDPIA || e.State != "open" {
+			continue
+		}
+		covered := false
+		for _, v := range versions {
+			if v.EntryID != nil && *v.EntryID == e.EntryID && approved[v.Key] {
+				covered = true
+			}
+		}
+		if !covered {
+			missing = append(missing, strings.ToLower(e.What[:1])+e.What[1:])
+		}
+	}
+	for range missing {
+		r.Waiting++
+		r.Overdue++
+	}
+	if len(missing) > 0 {
+		r.Detail = fmt.Sprintf("%d processing(s) go on without an approved impact assessment: %s.", len(missing), strings.Join(missing, "; "))
+	}
+	r.settle("Every processing that needs an impact assessment has an approved one.")
 	return r
 }
