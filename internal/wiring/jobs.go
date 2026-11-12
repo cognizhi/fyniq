@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
@@ -19,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -114,6 +116,14 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return err
 			}
 			return notify.DomainChecks(ctx, k.Store, k.Store, k.dispatcher(clock), results, clock.Now()) // FR-NTF-01
+		},
+		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released
+			want, err := postgres.ReleaseGuards()
+			if err != nil {
+				return err
+			}
+			_, err = controls.VerifySchema(ctx, k.Store, want)
+			return err
 		},
 		"compliance.evidence": func(ctx context.Context) error {
 			_, err := compliance.RecordEvidence(ctx, k.Store, k.Blobs, clock.Now())

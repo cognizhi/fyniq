@@ -14,6 +14,6 @@ checks:
     how: "make test"
     evidence: "grant snapshot and attack suites (QA-ENG-05); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
+    status: running
     how: "job schema.verify"
-    arrives: "p1-compliance-center (slice 3: the nightly grant snapshot and immutability verification, §10.7)"
+    evidence: "the job's run in the platform's job slots: the database's grants, guard triggers and row-level security against the snapshots the release carries; a difference fails the run, naming the role, table and privilege, and raises the absence alert"

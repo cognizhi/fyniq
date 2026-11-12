@@ -10,9 +10,18 @@ evidence: "Grant snapshot"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-compliance-center (slice 3: CMP-AI-01's tests of the database grants, the AI service account and the tool registry)"
+    status: running
+    how: "test TestTheAIRoleHoldsNoWritePrivilege"
+    evidence: "fyniq_ai holds no write privilege on any table, view or sequence and executes no function of fyniq's (CMP-AI-01); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "make infra-check"
+    evidence: "the environment module's test the_ai_service_account_writes_nothing: the AI orchestrator's account holds no key, secret, queue, project or job role (CMP-AI-01); the Infrastructure CI job's log"
+  - frequency: CI
+    status: running
+    how: "test TestTheAIToolsAreReadOnly"
+    evidence: "every tool of the AI tool registry is read-only; it passes, saying so, until p1-ai-assistant adds the registry; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
+    status: running
     how: "job schema.verify"
-    arrives: "p1-compliance-center (slice 3: the nightly grant snapshot)"
+    evidence: "the job's run in the platform's job slots: the database's grants, guard triggers and row-level security against the snapshots the release carries; a difference fails the run, naming the role, table and privilege, and raises the absence alert"

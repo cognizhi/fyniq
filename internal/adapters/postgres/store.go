@@ -254,3 +254,13 @@ func (s *Store) inTx(ctx context.Context, fn func(tx pgx.Tx, q *sqlcdb.Queries) 
 	}
 	return nil
 }
+
+// Guards reads the database's guards (storage.Catalogue), in a read-only transaction it rolls back.
+func (s *Store) Guards(ctx context.Context) (storage.Guards, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return storage.Guards{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	return ReadGuards(ctx, tx)
+}

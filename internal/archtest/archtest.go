@@ -329,3 +329,82 @@ func ASVSViolations(filename string, src []byte, valid map[string]bool) []string
 	}
 	return out
 }
+
+// AuthCode is the code that signs people in, steps them up or recovers their accounts (CTL-DP-04): whole packages, and
+// the API's and the store's files for them. None of it may read an NRIC or FIN.
+var AuthCode = struct {
+	Packages []string
+	Files    *regexp.Regexp
+}{
+	Packages: []string{"internal/authn", "internal/signin", "internal/passkey", "internal/oauthflow"},
+	Files:    regexp.MustCompile(`^internal/(api/(session|signin_methods|passkeys|recovery|setup|oauth[a-z_]*)|adapters/postgres/(passkey|session|signin[a-z_]*|recovery[a-z_]*|identity[a-z_]*))\.go$`),
+}
+
+var (
+	nricWord     = regexp.MustCompile(`(?i)nric`)
+	passwordWord = regexp.MustCompile(`(?i)password|passphrase`)
+)
+
+// nric reports whether a name or a string names an NRIC or FIN: NRIC in any case, or FIN as a word of its own.
+func nric(s string) bool {
+	return nricWord.MatchString(s) || s == "FIN" || s == "Fin" || s == "fin" || strings.HasSuffix(s, "FIN") ||
+		strings.HasPrefix(s, "fin_") || strings.HasSuffix(s, "_fin")
+}
+
+// NRICUses returns each name or string in src that names an NRIC or FIN (CTL-DP-04, CMP-PD-07): comments aside.
+func NRICUses(filename string, src []byte) ([]string, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filename, src, parser.SkipObjectResolution)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	ast.Inspect(f, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.Ident:
+			if nric(x.Name) {
+				out = append(out, fmt.Sprintf("%s: %s", fset.Position(x.Pos()), x.Name))
+			}
+		case *ast.BasicLit:
+			if v, err := strconv.Unquote(x.Value); x.Kind == token.STRING && err == nil && nric(v) {
+				out = append(out, fmt.Sprintf("%s: %s", fset.Position(x.Pos()), x.Value))
+			}
+		}
+		return true
+	})
+	return out, nil
+}
+
+// NRICPasswords returns each function in src that handles both an NRIC or FIN and a password: a password or a file
+// password derived from an NRIC (CTL-DP-04, CMP-PD-07).
+func NRICPasswords(filename string, src []byte) ([]string, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filename, src, parser.SkipObjectResolution)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, d := range f.Decls {
+		fn, ok := d.(*ast.FuncDecl)
+		if !ok || fn.Body == nil {
+			continue
+		}
+		var hasNRIC, hasPassword bool
+		ast.Inspect(fn, func(n ast.Node) bool {
+			var s string
+			switch x := n.(type) {
+			case *ast.Ident:
+				s = x.Name
+			case *ast.BasicLit:
+				s, _ = strconv.Unquote(x.Value)
+			}
+			hasNRIC = hasNRIC || nric(s)
+			hasPassword = hasPassword || passwordWord.MatchString(s)
+			return true
+		})
+		if hasNRIC && hasPassword {
+			out = append(out, fmt.Sprintf("%s: %s handles an NRIC or FIN and a password", fset.Position(fn.Pos()), fn.Name.Name))
+		}
+	}
+	return out, nil
+}

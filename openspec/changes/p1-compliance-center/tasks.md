@@ -103,21 +103,53 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 3. The database and AI checks (slice 3)
 
-- [ ] 3.1 `schema.verify` (platform job, nightly, worker; D4). It compares live grants, RLS and guard triggers with the
+- [x] 3.1 `schema.verify` (platform job, nightly, worker; D4). It compares live grants, RLS and guard triggers with the
   embedded snapshot that `TestEachRoleHoldsExactlyItsGrants` keeps, and records its evidence. Tests:
   - a clean database passes;
   - a grant added by hand, a dropped `require_audit` trigger and an INSERT granted to `fyniq_ai` each fail, naming
     the role, table and privilege.
 
   `// req: CTL-FIN-02`, `// req: CTL-AUD-01`, `// req: CTL-AI-01`
-- [ ] 3.2 CMP-AI-01 in CI. Each part has its own test:
+
+  **What building added:**
+    - **One reader.** The grants query and the snapshot's trigger and policy queries moved from the tests into the
+      adapter (`catalogue.go`), so the tests write the goldens and the job reads the database the same way. The
+      grants golden is unchanged. The schema snapshot gains a section, "row-level security": each table, enabled or
+      not and forced or not.
+    - **The release's snapshots** are the goldens, embedded in the build (`postgres.ReleaseGuards`).
+    - **search_path.** The catalogue qualifies function names by the session's search_path, so the job reads the
+      guards with the tests' path (schema fyniq), in a read-only transaction that `store.go` opens.
+    - **Read as the worker.** The test reads the guards as `fyniq_worker`. It plants each change in a transaction that
+      rolls back (GRANT, DROP TRIGGER and ALTER TABLE are transactional), so the shared database never changes.
+    - **Schedule.** Nightly at 03:10, before the night's control evidence. C.2 #12 watches it like every scheduled
+      job, and `compliance.evidence` records it.
+    - [live-verify] The first run against the dev cloud's database, whose catalogue may carry grants of Cloud SQL's own
+      roles.
+- [x] 3.2 CMP-AI-01 in CI. Each part has its own test:
   - `fyniq_ai` holds no write privilege on any table;
   - the `infra/` environment module's test shows the AI service account holds no role that writes data;
   - the AI tool registry, once it exists, holds only read-only tools; until then the test passes and says why.
 
   `// req: CMP-AI-01`, `// req: CTL-AI-01`
-- [ ] 3.3 CTL-DP-04's archtest: no sign-in, step-up or recovery package reads an NRIC or FIN field, and no export
+
+  **What building added:**
+    - **Database.** `TestTheAIRoleHoldsNoWritePrivilege` asks PostgreSQL itself (`has_table_privilege` and its kin), so
+      a privilege through PUBLIC or a role counts too. It covers every table, view and sequence, the functions of
+      schema fyniq, and CREATE on any schema. (`btree_gist`'s operator support in `fyniq_ext` is PUBLIC's by default and
+      writes nothing; `fyniq_ai` has no USAGE there.)
+    - **Infrastructure.** The environment module's test `the_ai_service_account_writes_nothing`: the AI orchestrator's
+      account holds no key, secret, queue, project, invoker or job role.
+    - **Tool registry.** The test reads `contracts/ai/tools/*.json` and requires `annotations.readOnlyHint`, as MCP
+      annotates tools. `p1-ai-assistant` puts its registry there.
+- [x] 3.3 CTL-DP-04's archtest: no sign-in, step-up or recovery package reads an NRIC or FIN field, and no export
   password derives from one. `// req: CTL-DP-04`
+
+  **What building added:**
+    - **Scope.** The packages `authn`, `signin`, `passkey` and `oauthflow`, and the API's and the store's session,
+      sign-in, passkey, recovery and setup files, may not name an NRIC or FIN in any identifier or string; comments
+      may.
+    - **Passwords.** No function anywhere names both an NRIC or FIN and a password or passphrase. No export password
+      exists yet; Nemura's payslip delivery (PRD-002 NM-PAY-04) is where one will.
 
 ## 4. Verifications per organisation, and notices (slice 4)
 

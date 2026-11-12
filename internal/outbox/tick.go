@@ -45,6 +45,9 @@ var PlatformSchedules = []Schedule{
 	// Nightly at 02:45, every stored entry posted again under the rule version that posted it (ENG-06, QA-ENG-06; rev 0.67).
 	{Job: "ledger.replay", Every: 24 * time.Hour, Offset: 18*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Nightly at 03:10, the database's grants, guard triggers and row-level security against the release's snapshots
+	// (CTL-FIN-02, CTL-AUD-01, CTL-AI-01; p1-compliance-center D4), before the night's control evidence.
+	{Job: "schema.verify", Every: 24 * time.Hour, Offset: 19*time.Hour + 10*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:15, every check of every organisation, after the night's verifications whose outcomes some of them read
 	// (FR-CTL-01, FR-CTL-05; p1-checks design D5).

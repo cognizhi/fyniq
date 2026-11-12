@@ -552,3 +552,121 @@ func TestTheRenderServiceCarriesNoDatabaseCode(t *testing.T) {
 		}
 	}
 }
+
+// goSources calls fn with each non-test Go file under internal/ and cmd/, by its path from the repository's root.
+func goSources(t *testing.T, fn func(rel string, src []byte)) {
+	t.Helper()
+	root := repoRoot(t)
+	for _, dir := range []string{"internal", "cmd"} {
+		err := filepath.WalkDir(filepath.Join(root, dir), func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() && (d.Name() == "testdata" || d.Name() == "node_modules") {
+				return filepath.SkipDir
+			}
+			if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+			rel, _ := filepath.Rel(root, path)
+			src, err := os.ReadFile(path)
+			if err == nil {
+				fn(filepath.ToSlash(rel), src)
+			}
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// An NRIC or FIN is never an authenticator or a file password (CTL-DP-04, CMP-PD-07): no code that signs people in,
+// steps them up or recovers their accounts names one, and no function anywhere handles both one and a password.
+// req: CTL-DP-04
+// req: CMP-PD-07
+// req: SEC-01
+// asvs: V6.2.1
+func TestNoNRICAuthenticatesOrLocksAFile(t *testing.T) {
+	var found []string
+	auth := 0
+	goSources(t, func(rel string, src []byte) {
+		inAuth := AuthCode.Files.MatchString(rel)
+		for _, p := range AuthCode.Packages {
+			inAuth = inAuth || strings.HasPrefix(rel, p+"/")
+		}
+		if inAuth {
+			auth++
+			uses, err := NRICUses(rel, src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, u := range uses {
+				found = append(found, u+": sign-in, step-up and recovery code never reads an NRIC or FIN")
+			}
+		}
+		if strings.HasPrefix(rel, "internal/archtest/") {
+			return // the rules themselves name both
+		}
+		mixed, err := NRICPasswords(rel, src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found = append(found, mixed...)
+	})
+	if auth < 15 {
+		t.Fatalf("only %d files of sign-in, step-up and recovery code found: has AuthCode drifted from the code?", auth)
+	}
+	if len(found) > 0 {
+		t.Fatalf("an NRIC or FIN near authentication or a password:\n%s", strings.Join(found, "\n"))
+	}
+	for planted, want := range map[string]int{
+		"package p\nfunc f(u User) bool { return u.NRIC == given }":                             1,
+		"package p\nfunc f(r Row) string { return r.Get(\"id_fin\") + r.Get(\"nric_number\") }": 2,
+		"package p\nfunc fin(x int) {}":                                                         1,
+		"package p\n// an NRIC in a comment is words\nfunc f(finding, refine string) {}":        0,
+		"package p\nfunc lock(p Person) { zip.SetPassword(p.NRIC[len(p.NRIC)-4:]) }":            2,
+	} {
+		if got, _ := NRICUses("planted.go", []byte(planted)); len(got) != want {
+			t.Errorf("NRICUses(%q) = %q, want %d", planted, got, want)
+		}
+	}
+	if got, _ := NRICPasswords("planted.go", []byte("package p\nfunc lock(p Person) { zip.SetPassword(p.NRIC[len(p.NRIC)-4:]) }")); len(got) != 1 {
+		t.Errorf("a file password from an NRIC was not found: %q", got)
+	}
+	if got, _ := NRICPasswords("planted.go", []byte("package p\nfunc lock(p Person) { zip.SetPassword(p.Token) }\nfunc mask(p Person) string { return p.NRIC[5:] }")); len(got) != 0 {
+		t.Errorf("a password and an NRIC in different functions were reported: %q", got)
+	}
+}
+
+// CMP-AI-01: every tool of the AI tool registry is read-only (readOnlyHint, as MCP annotates tools). The registry
+// arrives with p1-ai-assistant in contracts/ai/tools/; until it exists the test passes and says why.
+// req: CMP-AI-01
+// req: CTL-AI-01
+func TestTheAIToolsAreReadOnly(t *testing.T) {
+	tools, _ := filepath.Glob(filepath.Join(repoRoot(t), "contracts", "ai", "tools", "*.json"))
+	if len(tools) == 0 {
+		t.Log("no AI tool registry yet (contracts/ai/tools/*.json): p1-ai-assistant adds it, and from then every tool must be read-only")
+		return
+	}
+	for _, path := range tools {
+		var tool struct {
+			Name        string `json:"name"`
+			Annotations struct {
+				ReadOnlyHint *bool `json:"readOnlyHint"`
+			} `json:"annotations"`
+		}
+		b, err := os.ReadFile(path)
+		if err == nil {
+			err = json.Unmarshal(b, &tool)
+		}
+		if err != nil {
+			t.Errorf("%s: %v", path, err)
+			continue
+		}
+		if tool.Annotations.ReadOnlyHint == nil || !*tool.Annotations.ReadOnlyHint {
+			t.Errorf("%s (%s): an AI tool is read-only (annotations.readOnlyHint true); the AI writes only by a proposal (CMP-AI-01, AI-P2)",
+				filepath.Base(path), tool.Name)
+		}
+	}
+}

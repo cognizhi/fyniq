@@ -5091,6 +5091,160 @@ team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisa
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
+## row-level security
+access_review_attestation | enabled | forced
+account | enabled | forced
+account_recovery | disabled | not forced
+accountant_review | enabled | forced
+accountant_review_journal | enabled | forced
+accountant_review_query | enabled | forced
+accounting_framework | enabled | forced
+accounting_policy | enabled | forced
+allocation | enabled | forced
+announcement | enabled | forced
+announcement_dismissal | enabled | forced
+app_user | disabled | not forced
+approval_policy | enabled | forced
+approval_request | enabled | forced
+approval_signature | enabled | forced
+audit_boundary | enabled | forced
+audit_chain | enabled | forced
+audit_event | enabled | forced
+audit_recovery | enabled | forced
+audit_recovery_acknowledgement | enabled | forced
+audit_request_detail | enabled | forced
+balance | enabled | forced
+bank_feed | enabled | forced
+bank_gap | enabled | forced
+bank_line | enabled | forced
+bank_match | enabled | forced
+bank_reconciliation | enabled | forced
+bank_rule | enabled | forced
+bank_signal | enabled | forced
+bank_statement | enabled | forced
+bank_transfer | enabled | forced
+bill_payment_plan | enabled | forced
+brand_version | enabled | forced
+break_glass | enabled | forced
+break_glass_use | enabled | forced
+capture_address | enabled | forced
+capture_name | disabled | not forced
+capture_sender | enabled | forced
+check_owner | enabled | forced
+check_review | enabled | forced
+check_run | enabled | forced
+check_state | enabled | forced
+claim_category | enabled | forced
+claim_place | enabled | forced
+close_checklist_entry | enabled | forced
+close_checklist_template | enabled | forced
+connector_route | disabled | not forced
+contact | enabled | forced
+contact_document_template | enabled | forced
+conversion_step | enabled | forced
+currency | disabled | not forced
+customer_group | enabled | forced
+dimension | enabled | forced
+dimension_set | enabled | forced
+dimension_value | enabled | forced
+document | enabled | forced
+document_link | enabled | forced
+document_link_token | disabled | not forced
+document_number | enabled | forced
+document_send | enabled | forced
+document_sequence | enabled | forced
+document_template | enabled | forced
+document_template_default | enabled | forced
+document_template_version | enabled | forced
+document_version | enabled | forced
+email_event | enabled | forced
+email_message | enabled | forced
+email_sender | enabled | forced
+email_suppression | enabled | forced
+equity_step | enabled | forced
+evidence | enabled | forced
+fixed_asset_source | enabled | forced
+fx_feed_rate | disabled | not forced
+fx_rate | enabled | forced
+gst_registration | enabled | forced
+heartbeat | disabled | not forced
+holding_movement | enabled | forced
+idempotency_key | enabled | forced
+inbound_file | enabled | forced
+inbound_message | enabled | forced
+installation | disabled | not forced
+installation_announcement | disabled | not forced
+installation_change | disabled | not forced
+installation_connector | disabled | not forced
+installation_connector_secret | disabled | not forced
+invitation_code | disabled | not forced
+item | enabled | forced
+item_price | enabled | forced
+job_slot | disabled | not forced
+join_domain | disabled | not forced
+join_request | enabled | forced
+journal_entry | enabled | forced
+journal_line | enabled | forced
+kpi_input | enabled | forced
+ledger_boundary | enabled | forced
+ledger_purged_entry | enabled | forced
+ledger_revision | enabled | forced
+member_invitation | enabled | forced
+money_account | enabled | forced
+money_account_source | enabled | forced
+notification | enabled | forced
+notification_digest | enabled | forced
+notification_event | enabled | forced
+notification_preference | enabled | forced
+opening_balance | enabled | forced
+operation | enabled | forced
+organisation | enabled | forced
+organisation_connector | enabled | forced
+organisation_connector_secret | enabled | forced
+organisation_setting | enabled | forced
+outbox | enabled | forced
+owner_succession | enabled | forced
+payee_bank_account | enabled | forced
+payment_batch_payment | enabled | forced
+payment_batch_release | enabled | forced
+period | enabled | forced
+period_close | enabled | forced
+period_close_check | enabled | forced
+period_reopen | enabled | forced
+period_variance_explanation | enabled | forced
+quote_outcome | enabled | forced
+rate_limit_window | enabled | forced
+recovery_confirmation | disabled | not forced
+recurring_bill | enabled | forced
+recurring_bill_version | enabled | forced
+recurring_invoice | enabled | forced
+recurring_invoice_version | enabled | forced
+recurring_journal | enabled | forced
+recurring_journal_version | enabled | forced
+report_export | enabled | forced
+review_log_entry | enabled | forced
+review_log_review | enabled | forced
+role_assignment | enabled | forced
+sales_reminder | enabled | forced
+share_issue | enabled | forced
+sign_in_method | disabled | not forced
+sod_override | enabled | forced
+statement_mapping | enabled | forced
+statutory_pack_activation | enabled | forced
+statutory_pack_row | disabled | not forced
+statutory_pack_version | disabled | not forced
+super_admin | disabled | not forced
+super_admin_grant | disabled | not forced
+team_mode | enabled | forced
+tenant_directory | disabled | not forced
+user_identity | disabled | not forced
+user_membership | enabled | forced
+user_recovery_code | disabled | not forced
+user_session | disabled | not forced
+webauthn_challenge | disabled | not forced
+webauthn_credential | disabled | not forced
+withholding_decision | enabled | forced
+
 ## functions
 accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0a7ef4066d7183445a4c9e1fb7bd9ff0
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
