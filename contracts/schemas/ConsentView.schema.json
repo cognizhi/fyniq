@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "When the person gave or withdrew it, as recorded.",
+      "examples": [
+        "2026-11-09T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "event": {
+      "description": "Given, or withdrawn.",
+      "enum": [
+        "given",
+        "withdrawn"
+      ],
+      "examples": [
+        "given"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The record's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "How it was given or withdrawn, such as the email it came in.",
+      "examples": [
+        "Asked by email on 8 Nov 2026."
+      ],
+      "type": "string"
+    },
+    "person": {
+      "description": "Whose consent: member:\u003cuser id\u003e or contact:\u003ccontact id\u003e.",
+      "examples": [
+        "contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "type": "string"
+    },
+    "purpose_id": {
+      "description": "The purpose.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "purpose_id",
+    "person",
+    "event",
+    "at",
+    "recorded_by"
+  ],
+  "title": "ConsentView",
+  "type": "object"
+}

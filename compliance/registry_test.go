@@ -417,3 +417,36 @@ func TestThePolicyDrafts(t *testing.T) {
 		}
 	}
 }
+
+// The privacy notices' drafts (CMP-PD-03, rev 0.244; p1-pdpa-retention D2): the members' and the contacts', each from
+// official sources, marking the clauses that bear on the law for counsel. Members acknowledge the members' notice, not
+// the contacts'; the contacts' summary is its first paragraph, and it names the Data Protection Officer.
+// req: CMP-PD-03
+func TestTheNoticeDrafts(t *testing.T) {
+	drafts, err := NoticeDrafts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	for _, d := range drafts {
+		keys = append(keys, d.Key)
+		if d.Title == "" || d.Draft != "fyniq-notice-draft@1" || len(d.Sources) == 0 || !strings.HasPrefix(d.Body, "# "+d.Title) ||
+			!strings.Contains(d.Body, "[counsel to confirm]") || !strings.Contains(strings.SplitN(strings.SplitN(d.Body, "\n\n", 3)[1], "\n\n", 2)[0], "Data Protection Officer") {
+			t.Errorf("%s: %+v", d.Key, d)
+		}
+		for _, s := range d.Sources {
+			if host := strings.Split(strings.TrimPrefix(s.URL, "https://"), "/")[0]; !strings.HasSuffix(host, ".gov.sg") || s.Retrieved == "" {
+				t.Errorf("%s: %s is not an official Singapore source with its day", d.Key, s.URL)
+			}
+		}
+	}
+	if !slices.Equal(keys, NoticeKeys) {
+		t.Errorf("the notices are %v, want %v", keys, NoticeKeys)
+	}
+	if all, err := LibraryDrafts(); err != nil || len(all) != 10 || all[8].Key != "notice-members" {
+		t.Errorf("the library's drafts: %d %v", len(all), err)
+	}
+	if !Acknowledged("backup") || !Acknowledged("notice-members") || Acknowledged("notice-contacts") || IsNotice("backup") || !IsNotice("notice-contacts") {
+		t.Error("who acknowledges what")
+	}
+}

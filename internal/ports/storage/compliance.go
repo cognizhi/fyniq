@@ -169,6 +169,32 @@ type PolicyLibrary struct {
 	Acknowledgements []PolicyAcknowledgement
 }
 
+// CodeConsent is the database's refusal of a consent given twice, withdrawn when none stands, for a person the purpose is
+// not for, or any change or deletion of a purpose or a record (FY311).
+const CodeConsent = "STORAGE-CONSENT-01"
+
+// ConsentPurpose is a purpose of the organisation's, saying whether it needs consent (CMP-PD-03, design D2).
+type ConsentPurpose struct {
+	ID           uuid.UUID
+	Name         string
+	Description  string
+	Audience     string // members or contacts
+	NeedsConsent bool
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+// ConsentRecord is a consent given or withdrawn, for a member (member:<user id>) or a contact (contact:<contact id>).
+type ConsentRecord struct {
+	ID         uuid.UUID
+	PurposeID  uuid.UUID
+	Person     string
+	Event      string // given or withdrawn
+	At         time.Time
+	RecordedBy string
+	Note       string
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -179,6 +205,15 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// ConsentPurposes are the organisation's consent purposes, oldest first (CMP-PD-03).
+	ConsentPurposes(ctx context.Context) ([]ConsentPurpose, error)
+	// CreateConsentPurpose adds a purpose, audited as consent_purpose.created.
+	CreateConsentPurpose(ctx context.Context, p ConsentPurpose) (ConsentPurpose, error)
+	// Consents are every consent given or withdrawn, oldest first.
+	Consents(ctx context.Context) ([]ConsentRecord, error)
+	// RecordConsent records a consent given or withdrawn, audited as consent.given or consent.withdrawn; CodeConsent when
+	// it does not follow the person's last.
+	RecordConsent(ctx context.Context, r ConsentRecord) (ConsentRecord, error)
 	// Risks are the organisation's risks at their latest versions, in the order of their references (CMP-06).
 	Risks(ctx context.Context) ([]Risk, error)
 	// CreateRisk adds a risk at version 1, audited as risk.saved.

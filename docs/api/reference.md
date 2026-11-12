@@ -12360,6 +12360,95 @@ Every filing and payment deadline due in a window of at most 18 months, with eac
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `CAL-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/compliance/consent-purposes`
+
+**List the consent purposes** (`listConsentPurposes`)
+
+The purposes the organisation defined for members' or contacts' data, each saying whether it needs consent and how many people's consent stands for it (CMP-PD-03). None is defined by default: Fyniq uses the data for the work, the business relationship and the law's records. Read-only; no side effects.
+
+- **Permission:** View on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Responses:**
+  - `200` OK [`ConsentPurposesOutputBody`](../../contracts/schemas/ConsentPurposesOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/consent-purposes`
+
+**Add a consent purpose** (`createConsentPurpose`)
+
+Adds a purpose for members' or contacts' data, saying whether it needs consent (CMP-PD-03). A purpose never changes; add another instead. Side effects: the purpose, the audit event consent_purpose.created. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ConsentPurposeInput`](../../contracts/schemas/ConsentPurposeInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ConsentPurposeView`](../../contracts/schemas/ConsentPurposeView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-CONSENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/consents`
+
+**List the consents given and withdrawn** (`listConsents`)
+
+Every consent given or withdrawn for the organisation's purposes, oldest first, by purpose or person (CMP-PD-03). A person's last record says whether their consent stands. Read-only; no side effects.
+
+- **Permission:** View on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `purpose_id` (query): Only this purpose's records.
+  - `person` (query): Only this person's records.
+- **Responses:**
+  - `200` OK [`ConsentsOutputBody`](../../contracts/schemas/ConsentsOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/consents`
+
+**Record a consent given or withdrawn** (`recordConsent`)
+
+Records that a person gave or withdrew their consent for a purpose that needs it (CMP-PD-03). A consent is given only when none stands for that person and purpose, and withdrawn only when one does; withdrawal stops further use. Side effects: the record, the audit event consent.given or consent.withdrawn. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ConsentInput`](../../contracts/schemas/ConsentInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ConsentView`](../../contracts/schemas/ConsentView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-CONSENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/controls`
 
 **List the controls and their status** (`listControls`)
@@ -12582,9 +12671,11 @@ Whether the organisation must register for GST, tested today (FR-TAX-05, design 
 
 **List the policy library** (`listPolicies`)
 
-The eight policies of the library (CMP-07): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, and the draft its next version would be published from. Read-only; no side effects.
+The eight policies of the library (CMP-07), or with kind the two privacy notices (CMP-PD-03): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, a notice's summary, and the draft its next version would be published from. Read-only; no side effects.
 
 - **Permission:** View on Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)
+- **Parameters:**
+  - `kind` (query): policy (the default): the eight policies; notice: the two privacy notices; all: both.
 - **Responses:**
   - `200` OK [`Policies`](../../contracts/schemas/Policies.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.

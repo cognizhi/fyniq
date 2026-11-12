@@ -27,10 +27,23 @@
         "backup",
         "change-management",
         "ai-use",
-        "data-protection"
+        "data-protection",
+        "notice-members",
+        "notice-contacts"
       ],
       "examples": [
         "data-protection"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "policy: one of CMP-07's eight policies, which every member acknowledges. notice: a privacy notice (CMP-PD-03): the members' notice, which every member acknowledges, or the contacts' notice, whose summary goes in what Fyniq sends to contacts.",
+      "enum": [
+        "policy",
+        "notice"
+      ],
+      "examples": [
+        "policy"
       ],
       "type": "string"
     },
@@ -44,7 +57,7 @@
     },
     "mine": {
       "$ref": "MyPolicyAcknowledgement.schema.json",
-      "description": "The caller's acknowledgement of the current version; none before one is published."
+      "description": "The caller's acknowledgement of the current version; none before one is published, and none for the contacts' notice, which members do not acknowledge."
     },
     "sources": {
       "description": "With getPolicy: the official sources Fyniq's starting draft was written from.",
@@ -55,6 +68,13 @@
         "array",
         "null"
       ]
+    },
+    "summary": {
+      "description": "A notice's summary: the first paragraph of its version in force. The contacts' summary ends every email Fyniq sends to a contact.",
+      "examples": [
+        "We keep the names, email addresses and phone numbers of the people we deal with at our customers and suppliers..."
+      ],
+      "type": "string"
     },
     "title": {
       "description": "Its title.",
@@ -76,6 +96,7 @@
   },
   "required": [
     "key",
+    "kind",
     "title",
     "members",
     "draft"

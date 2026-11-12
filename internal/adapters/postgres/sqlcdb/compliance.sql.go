@@ -216,6 +216,100 @@ func (q *Queries) GetControlState(ctx context.Context, control string) (FyniqCon
 	return i, err
 }
 
+const insertConsentPurpose = `-- name: InsertConsentPurpose :one
+INSERT INTO fyniq.consent_purpose (name, description, audience, needs_consent, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, name, description, audience, needs_consent, created_by, created_at
+`
+
+type InsertConsentPurposeParams struct {
+	Name         string
+	Description  string
+	Audience     string
+	NeedsConsent bool
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+type InsertConsentPurposeRow struct {
+	ID           uuid.UUID
+	Name         string
+	Description  string
+	Audience     string
+	NeedsConsent bool
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+func (q *Queries) InsertConsentPurpose(ctx context.Context, arg InsertConsentPurposeParams) (InsertConsentPurposeRow, error) {
+	row := q.db.QueryRow(ctx, insertConsentPurpose,
+		arg.Name,
+		arg.Description,
+		arg.Audience,
+		arg.NeedsConsent,
+		arg.CreatedBy,
+		arg.CreatedAt,
+	)
+	var i InsertConsentPurposeRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Audience,
+		&i.NeedsConsent,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertConsentRecord = `-- name: InsertConsentRecord :one
+INSERT INTO fyniq.consent_record (purpose_id, person, event, at, recorded_by, note)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, purpose_id, person, event, at, recorded_by, note
+`
+
+type InsertConsentRecordParams struct {
+	PurposeID  uuid.UUID
+	Person     string
+	Event      string
+	At         time.Time
+	RecordedBy string
+	Note       *string
+}
+
+type InsertConsentRecordRow struct {
+	ID         uuid.UUID
+	PurposeID  uuid.UUID
+	Person     string
+	Event      string
+	At         time.Time
+	RecordedBy string
+	Note       *string
+}
+
+func (q *Queries) InsertConsentRecord(ctx context.Context, arg InsertConsentRecordParams) (InsertConsentRecordRow, error) {
+	row := q.db.QueryRow(ctx, insertConsentRecord,
+		arg.PurposeID,
+		arg.Person,
+		arg.Event,
+		arg.At,
+		arg.RecordedBy,
+		arg.Note,
+	)
+	var i InsertConsentRecordRow
+	err := row.Scan(
+		&i.ID,
+		&i.PurposeID,
+		&i.Person,
+		&i.Event,
+		&i.At,
+		&i.RecordedBy,
+		&i.Note,
+	)
+	return i, err
+}
+
 const insertControlRun = `-- name: InsertControlRun :one
 INSERT INTO fyniq.control_run (control, frequency, check_how, since, ran_at, ok, item_count, items, detail)
 VALUES ($1, $2, $3, $4, $5, $6,
@@ -637,6 +731,92 @@ func (q *Queries) LatestRiskReviews(ctx context.Context) ([]FyniqRiskReview, err
 			&i.ReviewedAt,
 			&i.Note,
 			&i.NextReviewOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConsentPurposes = `-- name: ListConsentPurposes :many
+SELECT id, name, description, audience, needs_consent, created_by, created_at FROM fyniq.consent_purpose ORDER BY created_at, id
+`
+
+type ListConsentPurposesRow struct {
+	ID           uuid.UUID
+	Name         string
+	Description  string
+	Audience     string
+	NeedsConsent bool
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+// The organisation's consent purposes, oldest first (CMP-PD-03).
+func (q *Queries) ListConsentPurposes(ctx context.Context) ([]ListConsentPurposesRow, error) {
+	rows, err := q.db.Query(ctx, listConsentPurposes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListConsentPurposesRow
+	for rows.Next() {
+		var i ListConsentPurposesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Audience,
+			&i.NeedsConsent,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConsentRecords = `-- name: ListConsentRecords :many
+SELECT id, purpose_id, person, event, at, recorded_by, note FROM fyniq.consent_record ORDER BY at, id
+`
+
+type ListConsentRecordsRow struct {
+	ID         uuid.UUID
+	PurposeID  uuid.UUID
+	Person     string
+	Event      string
+	At         time.Time
+	RecordedBy string
+	Note       *string
+}
+
+// Every consent given or withdrawn, oldest first (CMP-PD-03).
+func (q *Queries) ListConsentRecords(ctx context.Context) ([]ListConsentRecordsRow, error) {
+	rows, err := q.db.Query(ctx, listConsentRecords)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListConsentRecordsRow
+	for rows.Next() {
+		var i ListConsentRecordsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PurposeID,
+			&i.Person,
+			&i.Event,
+			&i.At,
+			&i.RecordedBy,
+			&i.Note,
 		); err != nil {
 			return nil, err
 		}

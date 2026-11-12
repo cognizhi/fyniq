@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audience": {
+      "description": "Whose data it uses: the organisation's members, or its contacts.",
+      "enum": [
+        "members",
+        "contacts"
+      ],
+      "examples": [
+        "contacts"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-09T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "created_by": {
+      "description": "Who added it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What it means for the person.",
+      "examples": [
+        "A monthly email about our products, to customers' contacts who ask for it."
+      ],
+      "type": "string"
+    },
+    "given": {
+      "description": "How many people's consent stands for it now.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The purpose's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "What the data is used for, in a few words.",
+      "examples": [
+        "Newsletter"
+      ],
+      "type": "string"
+    },
+    "needs_consent": {
+      "description": "Whether the purpose needs each person's consent; one that does is used only for those whose consent stands.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "description",
+    "audience",
+    "needs_consent",
+    "created_by",
+    "created_at",
+    "given"
+  ],
+  "title": "ConsentPurposeView",
+  "type": "object"
+}

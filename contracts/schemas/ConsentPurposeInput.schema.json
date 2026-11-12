@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audience": {
+      "description": "Whose data it uses.",
+      "enum": [
+        "members",
+        "contacts"
+      ],
+      "examples": [
+        "contacts"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What it means for the person.",
+      "examples": [
+        "A monthly email about our products, to customers' contacts who ask for it."
+      ],
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "name": {
+      "description": "What the data is used for, in a few words.",
+      "examples": [
+        "Newsletter"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "needs_consent": {
+      "description": "Whether it needs each person's consent.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "audience",
+    "needs_consent"
+  ],
+  "title": "ConsentPurposeInput",
+  "type": "object"
+}

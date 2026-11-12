@@ -2760,6 +2760,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/consent-purposes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the consent purposes
+         * @description The purposes the organisation defined for members' or contacts' data, each saying whether it needs consent and how many people's consent stands for it (CMP-PD-03). None is defined by default: Fyniq uses the data for the work, the business relationship and the law's records. Read-only; no side effects.
+         */
+        get: operations["listConsentPurposes"];
+        put?: never;
+        /**
+         * Add a consent purpose
+         * @description Adds a purpose for members' or contacts' data, saying whether it needs consent (CMP-PD-03). A purpose never changes; add another instead. Side effects: the purpose, the audit event consent_purpose.created. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createConsentPurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the consents given and withdrawn
+         * @description Every consent given or withdrawn for the organisation's purposes, oldest first, by purpose or person (CMP-PD-03). A person's last record says whether their consent stands. Read-only; no side effects.
+         */
+        get: operations["listConsents"];
+        put?: never;
+        /**
+         * Record a consent given or withdrawn
+         * @description Records that a person gave or withdrew their consent for a purpose that needs it (CMP-PD-03). A consent is given only when none stands for that person and purpose, and withdrawn only when one does; withdrawal stops further use. Side effects: the record, the audit event consent.given or consent.withdrawn. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/controls": {
         parameters: {
             query?: never;
@@ -2965,7 +3013,7 @@ export interface paths {
         };
         /**
          * List the policy library
-         * @description The eight policies of the library (CMP-07): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, and the draft its next version would be published from. Read-only; no side effects.
+         * @description The eight policies of the library (CMP-07), or with kind the two privacy notices (CMP-PD-03): each with its version in force, how many members acknowledged it, the caller's own acknowledgement and when it falls due, a notice's summary, and the draft its next version would be published from. Read-only; no side effects.
          */
         get: operations["listPolicies"];
         put?: never;
@@ -19514,6 +19562,148 @@ export interface components {
             scopes: string[] | null;
             webhooks: string[] | null;
         };
+        ConsentInput: {
+            /**
+             * @description given: a consent the person gave; withdrawn: one they withdrew.
+             * @example given
+             * @enum {string}
+             */
+            event: "given" | "withdrawn";
+            /**
+             * @description How it was given or withdrawn.
+             * @example Asked by email on 8 Nov 2026.
+             */
+            note?: string;
+            /**
+             * @description Whose consent: member:<user id> for a purpose for members, contact:<contact id> for one for contacts.
+             * @example contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The purpose, from listConsentPurposes.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            purpose_id: string;
+        };
+        ConsentPurposeInput: {
+            /**
+             * @description Whose data it uses.
+             * @example contacts
+             * @enum {string}
+             */
+            audience: "members" | "contacts";
+            /**
+             * @description What it means for the person.
+             * @example A monthly email about our products, to customers' contacts who ask for it.
+             */
+            description: string;
+            /**
+             * @description What the data is used for, in a few words.
+             * @example Newsletter
+             */
+            name: string;
+            /**
+             * @description Whether it needs each person's consent.
+             * @example true
+             */
+            needs_consent: boolean;
+        };
+        ConsentPurposeView: {
+            /**
+             * @description Whose data it uses: the organisation's members, or its contacts.
+             * @example contacts
+             * @enum {string}
+             */
+            audience: "members" | "contacts";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-09T02:00:00Z
+             */
+            created_at: string;
+            /**
+             * @description Who added it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            created_by: string;
+            /**
+             * @description What it means for the person.
+             * @example A monthly email about our products, to customers' contacts who ask for it.
+             */
+            description: string;
+            /**
+             * Format: int64
+             * @description How many people's consent stands for it now.
+             * @example 12
+             */
+            given: number;
+            /**
+             * Format: uuid
+             * @description The purpose's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /**
+             * @description What the data is used for, in a few words.
+             * @example Newsletter
+             */
+            name: string;
+            /**
+             * @description Whether the purpose needs each person's consent; one that does is used only for those whose consent stands.
+             * @example true
+             */
+            needs_consent: boolean;
+        };
+        ConsentPurposesOutputBody: {
+            /** @description The organisation's purposes, oldest first. None is defined by default. */
+            items: components["schemas"]["ConsentPurposeView"][];
+        };
+        ConsentView: {
+            /**
+             * Format: date-time
+             * @description When the person gave or withdrew it, as recorded.
+             * @example 2026-11-09T02:00:00Z
+             */
+            at: string;
+            /**
+             * @description Given, or withdrawn.
+             * @example given
+             * @enum {string}
+             */
+            event: "given" | "withdrawn";
+            /**
+             * Format: uuid
+             * @description The record's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+             */
+            id: string;
+            /**
+             * @description How it was given or withdrawn, such as the email it came in.
+             * @example Asked by email on 8 Nov 2026.
+             */
+            note?: string;
+            /**
+             * @description Whose consent: member:<user id> or contact:<contact id>.
+             * @example contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The purpose.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            purpose_id: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+        };
+        ConsentsOutputBody: {
+            /** @description Every consent given or withdrawn, oldest first. */
+            items: components["schemas"]["ConsentView"][];
+        };
         Contact: {
             /**
              * @description An inactive contact is kept for its history and offered for nothing new.
@@ -32593,7 +32783,7 @@ export interface components {
             month: string;
         };
         Policies: {
-            /** @description The eight policies of CMP-07, in the library's order. */
+            /** @description The policies of CMP-07, the privacy notices of CMP-PD-03, or both, as kind asks, in the library's order. */
             items: components["schemas"]["PolicyView"][];
         };
         PolicyDraftInputBody: {
@@ -32715,17 +32905,28 @@ export interface components {
              * @example data-protection
              * @enum {string}
              */
-            key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection";
+            key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection" | "notice-members" | "notice-contacts";
+            /**
+             * @description policy: one of CMP-07's eight policies, which every member acknowledges. notice: a privacy notice (CMP-PD-03): the members' notice, which every member acknowledges, or the contacts' notice, whose summary goes in what Fyniq sends to contacts.
+             * @example policy
+             * @enum {string}
+             */
+            kind: "policy" | "notice";
             /**
              * Format: int64
              * @description How many members the current version applies to.
              * @example 4
              */
             members: number;
-            /** @description The caller's acknowledgement of the current version; none before one is published. */
+            /** @description The caller's acknowledgement of the current version; none before one is published, and none for the contacts' notice, which members do not acknowledge. */
             mine?: components["schemas"]["MyPolicyAcknowledgement"];
             /** @description With getPolicy: the official sources Fyniq's starting draft was written from. */
             sources?: components["schemas"]["PolicySourceView"][] | null;
+            /**
+             * @description A notice's summary: the first paragraph of its version in force. The contacts' summary ends every email Fyniq sends to a contact.
+             * @example We keep the names, email addresses and phone numbers of the people we deal with at our customers and suppliers...
+             */
+            summary?: string;
             /**
              * @description Its title.
              * @example Data protection policy
@@ -60524,6 +60725,461 @@ export interface operations {
             };
         };
     };
+    listConsentPurposes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurposesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createConsentPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentPurposeInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurposeView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listConsents: {
+        parameters: {
+            query?: {
+                /** @description Only this purpose's records. */
+                purpose_id?: string;
+                /** @description Only this person's records. */
+                person?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordConsent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CONSENT-01` A consent follows the person's last for its purpose; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listControls: {
         parameters: {
             query?: {
@@ -62200,7 +62856,10 @@ export interface operations {
     };
     listPolicies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description policy (the default): the eight policies; notice: the two privacy notices; all: both. */
+                kind?: "policy" | "notice" | "all";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -62297,7 +62956,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The policy's key. */
-                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection";
+                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection" | "notice-members" | "notice-contacts";
             };
             cookie?: never;
         };
@@ -62410,7 +63069,7 @@ export interface operations {
             };
             path: {
                 /** @description The policy's key. */
-                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection";
+                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection" | "notice-members" | "notice-contacts";
             };
             cookie?: never;
         };
@@ -62575,7 +63234,7 @@ export interface operations {
             };
             path: {
                 /** @description The policy's key. */
-                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection";
+                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection" | "notice-members" | "notice-contacts";
             };
             cookie?: never;
         };
@@ -62736,7 +63395,7 @@ export interface operations {
             };
             path: {
                 /** @description The policy's key. */
-                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection";
+                key: "information-security" | "acceptable-use" | "access-control" | "incident-response" | "backup" | "change-management" | "ai-use" | "data-protection" | "notice-members" | "notice-contacts";
                 /** @description The version. */
                 version: number;
             };

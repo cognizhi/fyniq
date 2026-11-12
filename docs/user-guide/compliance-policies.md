@@ -17,6 +17,9 @@ reads and accepts for themselves.
 It sits under **Compliance** › **Risks and policies**, below the risk register. Each policy shows its version in force,
 when it was published, and how many members have acknowledged it.
 
+The same library holds the company's two privacy notices, which **Compliance** › **Privacy notices and consent** lists.
+The members' notice is acknowledged as a policy is.
+
 ## Acknowledge a policy
 
 When a policy is published, or a new version of it, every member acknowledges it within 30 days: 30 days after it was

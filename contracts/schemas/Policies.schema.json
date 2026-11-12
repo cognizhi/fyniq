@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "items": {
-      "description": "The eight policies of CMP-07, in the library's order.",
+      "description": "The policies of CMP-07, the privacy notices of CMP-PD-03, or both, as kind asks, in the library's order.",
       "items": {
         "$ref": "PolicyView.schema.json"
       },

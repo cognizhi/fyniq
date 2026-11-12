@@ -1468,6 +1468,11 @@ var (
 	// The control dashboard (CMP-01; p1-compliance-center D9): everyone with a right on the Compliance Center reads it.
 	ListControls = Policy{Operation: "listControls", Capability: ComplianceCenter, Need: View}
 	GetControl   = Policy{Operation: "getControl", Capability: ComplianceCenter, Need: View}
+	// Consent where a purpose needs it (CMP-PD-03; p1-pdpa-retention D2): the DPO keeps it under Data protection (PDPA).
+	ListConsentPurposes  = Policy{Operation: "listConsentPurposes", Capability: DataProtection, Need: View}
+	CreateConsentPurpose = Policy{Operation: "createConsentPurpose", Capability: DataProtection, Need: Create}
+	ListConsents         = Policy{Operation: "listConsents", Capability: DataProtection, Need: View}
+	RecordConsent        = Policy{Operation: "recordConsent", Capability: DataProtection, Need: Create}
 	// The recurring reviews and attestations (CMP-03; p1-compliance-center D6): read by everyone with a right on the
 	// Compliance Center; each is signed off on its own page.
 	ListComplianceReviews = Policy{Operation: "listComplianceReviews", Capability: ComplianceCenter, Need: View}
@@ -1696,7 +1701,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

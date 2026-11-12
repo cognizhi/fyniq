@@ -58,6 +58,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listRisks cursor")                         // the risk register (CMP-06)
 	want = append(want, "listComplianceReviews cursor")             // the recurring reviews (CMP-03)
 	want = append(want, "listPolicies cursor", "getPolicy cursor")  // the policy library (CMP-07)
+	want = append(want, "listConsentPurposes cursor", "listConsents cursor") // consent (CMP-PD-03)
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

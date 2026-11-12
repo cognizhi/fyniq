@@ -2024,6 +2024,18 @@
       "label": "Reviews and attestations",
       "tooltip": "The recurring reviews people sign off: what is due, what is overdue and when each was last signed off, with where to sign it."
     },
+    "compliance.privacy-notices": {
+      "label": "Privacy notices and consent",
+      "tooltip": "The notices that tell members and contacts what the company does with their personal data, and consent for the purposes that need it."
+    },
+    "consent.purpose": {
+      "label": "Purposes and consent",
+      "tooltip": "A use of members' or contacts' data beyond the work and the records, saying whether it needs each person's consent."
+    },
+    "consent.record": {
+      "label": "Record consent",
+      "tooltip": "Record that a person gave or withdrew their consent for a purpose; withdrawal stops further use."
+    },
     "compliance.risks": {
       "label": "Risks and policies",
       "tooltip": "The risk register, each risk with its owner, rating, mitigation and review date; and the policy library, each policy in force with who acknowledged it."

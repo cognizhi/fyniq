@@ -4,7 +4,7 @@ type: task
 title: Read, acknowledge and publish the policies
 summary: The policy library - the eight company policies, acknowledging the version in force within 30 days, and drafting and publishing a new version
 sources:
-  - docs/user-guide/compliance-policies.md sha256:4e4e3f56820d2cd7515f2b38d33058fbf87fba1d311a09b9129fd9b96358de88
+  - docs/user-guide/compliance-policies.md sha256:80c8adb91d8d6b1a77a5d328d12dc5673760a2597b0afbe82c5970b7808392a4
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,7 @@ aliases:
 - The policy library holds eight policies: information security, acceptable use, access control, incident response, backup, change management, AI use and data protection.
 - Each policy has a version in force, which every member reads and accepts for themselves.
 - It sits under **Compliance** › **Risks and policies**, below the risk register ([[compliance.risks]]), with each policy's version in force, when it was published and how many members acknowledged it.
+- The same library holds the two privacy notices, listed on **Compliance** › **Privacy notices and consent**; the members' notice is acknowledged as a policy is ([[compliance.privacy-notices]]).
 
 (src: docs/user-guide/compliance-policies.md#what-it-is)
 

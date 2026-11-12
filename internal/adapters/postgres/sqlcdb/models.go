@@ -678,6 +678,28 @@ type FyniqConnectorRoute struct {
 	State       string
 }
 
+type FyniqConsentPurpose struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Description    string
+	Audience       string
+	NeedsConsent   bool
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
+type FyniqConsentRecord struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PurposeID      uuid.UUID
+	Person         string
+	Event          string
+	At             time.Time
+	RecordedBy     string
+	Note           *string
+}
+
 type FyniqContact struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID

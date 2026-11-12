@@ -119,6 +119,10 @@ fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, 
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_account_recovery()
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
+fyniq_api       INSERT    consent_purpose (audience, created_at, created_by, description, name, needs_consent)
+fyniq_api       SELECT    consent_purpose
+fyniq_api       INSERT    consent_record (at, event, note, person, purpose_id, recorded_by)
+fyniq_api       SELECT    consent_record
 fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
 fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
@@ -538,6 +542,8 @@ fyniq_readonly  SELECT    claim_category
 fyniq_readonly  SELECT    claim_place
 fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
+fyniq_readonly  SELECT    consent_purpose
+fyniq_readonly  SELECT    consent_record
 fyniq_readonly  SELECT    contact
 fyniq_readonly  SELECT    contact_document_template
 fyniq_readonly  SELECT    control_run
@@ -702,6 +708,8 @@ fyniq_worker    SELECT    claim_category
 fyniq_worker    SELECT    claim_place
 fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
+fyniq_worker    SELECT    consent_purpose
+fyniq_worker    SELECT    consent_record
 fyniq_worker    SELECT    contact
 fyniq_worker    SELECT    contact_document_template
 fyniq_worker    INSERT    control_run (check_how, control, detail, frequency, item_count, items, ok, ran_at, since)

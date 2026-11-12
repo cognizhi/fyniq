@@ -192,6 +192,7 @@ var fyCodes = map[string]string{
 	"FY308": storage.CodeCheck,           // a control's state written other than at version 1, changed out of order, or deleted (000295)
 	"FY309": storage.CodeRisk,            // a risk's version out of order, a review of an earlier version or with no later date, or either changed (000296)
 	"FY310": storage.CodePolicy,          // a policy draft or version out of order, or anything of the library changed or deleted (000297)
+	"FY311": storage.CodeConsent,         // a consent given twice, withdrawn when none stands, for someone the purpose is not for, or any change (000302)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

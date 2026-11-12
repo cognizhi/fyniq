@@ -412,3 +412,69 @@ func (c compliance) AcknowledgePolicy(ctx context.Context, a storage.PolicyAckno
 	return c.u.event(ctx, "policy.acknowledged", "policy_acknowledgement", row.ID, nil, map[string][2]any{"key": {nil, row.Key},
 		"version": {nil, int(row.Version)}})
 }
+
+func (c compliance) ConsentPurposes(ctx context.Context) ([]storage.ConsentPurpose, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListConsentPurposes(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ConsentPurpose, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.ConsentPurpose{ID: r.ID, Name: r.Name, Description: r.Description, Audience: r.Audience,
+			NeedsConsent: r.NeedsConsent, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt})
+	}
+	return out, nil
+}
+
+func (c compliance) CreateConsentPurpose(ctx context.Context, p storage.ConsentPurpose) (storage.ConsentPurpose, error) {
+	if err := c.u.check(); err != nil {
+		return storage.ConsentPurpose{}, err
+	}
+	r, err := c.u.q.InsertConsentPurpose(ctx, sqlcdb.InsertConsentPurposeParams{Name: p.Name, Description: p.Description, Audience: p.Audience,
+		NeedsConsent: p.NeedsConsent, CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt})
+	if err != nil {
+		return storage.ConsentPurpose{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "consent_purpose.created", "consent_purpose", r.ID, nil, map[string][2]any{"name": {nil, r.Name},
+		"audience": {nil, r.Audience}, "needs_consent": {nil, r.NeedsConsent}}); err != nil {
+		return storage.ConsentPurpose{}, err
+	}
+	return storage.ConsentPurpose{ID: r.ID, Name: r.Name, Description: r.Description, Audience: r.Audience, NeedsConsent: r.NeedsConsent,
+		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}, nil
+}
+
+func (c compliance) Consents(ctx context.Context) ([]storage.ConsentRecord, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListConsentRecords(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ConsentRecord, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.ConsentRecord{ID: r.ID, PurposeID: r.PurposeID, Person: r.Person, Event: r.Event, At: r.At,
+			RecordedBy: r.RecordedBy, Note: str(r.Note)})
+	}
+	return out, nil
+}
+
+func (c compliance) RecordConsent(ctx context.Context, rec storage.ConsentRecord) (storage.ConsentRecord, error) {
+	if err := c.u.check(); err != nil {
+		return storage.ConsentRecord{}, err
+	}
+	r, err := c.u.q.InsertConsentRecord(ctx, sqlcdb.InsertConsentRecordParams{PurposeID: rec.PurposeID, Person: rec.Person, Event: rec.Event,
+		At: rec.At, RecordedBy: rec.RecordedBy, Note: opt(rec.Note)})
+	if err != nil {
+		return storage.ConsentRecord{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "consent."+r.Event, "consent_record", r.ID, nil, map[string][2]any{"purpose_id": {nil, r.PurposeID},
+		"person": {nil, r.Person}, "event": {nil, r.Event}}); err != nil {
+		return storage.ConsentRecord{}, err
+	}
+	return storage.ConsentRecord{ID: r.ID, PurposeID: r.PurposeID, Person: r.Person, Event: r.Event, At: r.At, RecordedBy: r.RecordedBy,
+		Note: str(r.Note)}, nil
+}

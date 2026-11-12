@@ -15,6 +15,20 @@ import (
 var PolicyKeys = []string{"information-security", "acceptable-use", "access-control", "incident-response", "backup",
 	"change-management", "ai-use", "data-protection"}
 
+// NoticeKeys are the privacy notices the library also holds (PRD-001 CMP-PD-03, rev 0.244; p1-pdpa-retention design
+// D2): the members' and the contacts'. They are drafted, published and versioned as the policies are.
+var NoticeKeys = []string{"notice-members", "notice-contacts"}
+
+// LibraryKeys are every key of the library: the policies, then the notices.
+var LibraryKeys = append(append([]string{}, PolicyKeys...), NoticeKeys...)
+
+// Acknowledged reports whether every member acknowledges each published version of key: each policy, and the members'
+// notice. The contacts' notice is given to contacts, in what Fyniq sends them, and no member acknowledges it.
+func Acknowledged(key string) bool { return key != "notice-contacts" }
+
+// IsNotice reports whether key is a privacy notice rather than a policy.
+func IsNotice(key string) bool { return strings.HasPrefix(key, "notice-") }
+
 // PolicySource is an official source a draft was written from, with the day it was read.
 type PolicySource struct {
 	Title     string `yaml:"title"`
@@ -34,10 +48,25 @@ type PolicyDraft struct {
 	SHA256   string         `yaml:"-"`
 }
 
-// PolicyDrafts are Fyniq's starting drafts, in the order of PolicyKeys.
-func PolicyDrafts() ([]PolicyDraft, error) {
+// PolicyDrafts are Fyniq's starting drafts of the policies, in the order of PolicyKeys.
+func PolicyDrafts() ([]PolicyDraft, error) { return drafts("policies", PolicyKeys) }
+
+// NoticeDrafts are Fyniq's starting drafts of the privacy notices (fyniq-notice-draft@1), in the order of NoticeKeys.
+func NoticeDrafts() ([]PolicyDraft, error) { return drafts("notices", NoticeKeys) }
+
+// LibraryDrafts are every starting draft of the library, in the order of LibraryKeys.
+func LibraryDrafts() ([]PolicyDraft, error) {
+	ps, err := PolicyDrafts()
+	if err != nil {
+		return nil, err
+	}
+	ns, err := NoticeDrafts()
+	return append(ps, ns...), err
+}
+
+func drafts(dir string, keys []string) ([]PolicyDraft, error) {
 	var out []PolicyDraft
-	err := fs.WalkDir(files, "policies", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(files, dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
@@ -62,7 +91,7 @@ func PolicyDrafts() ([]PolicyDraft, error) {
 		return nil
 	})
 	order := map[string]int{}
-	for i, k := range PolicyKeys {
+	for i, k := range keys {
 		order[k] = i
 	}
 	sort.Slice(out, func(i, j int) bool { return order[out[i].Key] < order[out[j].Key] })
