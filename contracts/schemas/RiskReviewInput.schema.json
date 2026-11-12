@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "What the reviewer noted.",
+      "examples": [
+        "Mitigations hold; no new exposure."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    }
+  },
+  "title": "RiskReviewInput",
+  "type": "object"
+}

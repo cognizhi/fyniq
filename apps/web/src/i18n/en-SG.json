@@ -2016,6 +2016,18 @@
       "label": "Controls",
       "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."
     },
+    "compliance.risks": {
+      "label": "Risks and policies",
+      "tooltip": "The risk register: each risk with its owner, rating, mitigation and review date, reviewed by its review date."
+    },
+    "risk.save": {
+      "label": "Add or change a risk",
+      "tooltip": "The Compliance officer adds a risk, or saves its next version; earlier versions are kept."
+    },
+    "risk.review": {
+      "label": "Review a risk",
+      "tooltip": "Record that the risk was reviewed; its next review falls its review interval after today."
+    },
     "controls.filter": {
       "label": "Framework",
       "tooltip": "Show only the controls mapped to one framework, such as SOC 2 or PDPA."

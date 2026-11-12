@@ -55,6 +55,7 @@ func TestConventionExemptions(t *testing.T) {
 	// A trail's recoveries are one per restore behind its anchors, read whole (AUD-09, design D8).
 	want = append(want, "listAuditRecoveries cursor", "listAuditPurges cursor")
 	want = append(want, "listControls cursor", "getControl cursor") // the control dashboard (CMP-01)
+	want = append(want, "listRisks cursor")                         // the risk register (CMP-06)
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

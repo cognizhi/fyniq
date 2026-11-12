@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "description": "More about it.",
+      "examples": [
+        "§19 rates its likelihood Certain."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The risk's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "impact": {
+      "description": "How much it would hurt.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "last_review": {
+      "$ref": "RiskReviewView.schema.json",
+      "description": "Its latest review; none before the first."
+    },
+    "likelihood": {
+      "description": "How likely it is.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "low"
+      ],
+      "type": "string"
+    },
+    "mitigation": {
+      "description": "How it is reduced.",
+      "examples": [
+        "Encryption, masking, least privilege, monitoring, breach runbook"
+      ],
+      "type": "string"
+    },
+    "next_review_on": {
+      "description": "When it is next due for review.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "owner": {
+      "description": "The role that answers for it.",
+      "enum": [
+        "owner",
+        "administrator",
+        "controller",
+        "accountant",
+        "dpo",
+        "auditor"
+      ],
+      "examples": [
+        "dpo"
+      ],
+      "type": "string"
+    },
+    "ref": {
+      "description": "Its reference in the register.",
+      "examples": [
+        "R7"
+      ],
+      "type": "string"
+    },
+    "review_months": {
+      "description": "How many months after a review the next one falls due: 3 is each quarter.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "maximum": 12,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "review_overdue": {
+      "description": "true once its review date has passed without a review.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "saved_at": {
+      "description": "When.",
+      "examples": [
+        "2027-01-05T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "saved_by": {
+      "description": "Who saved the latest version, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "open, or closed: kept in the register, no longer reviewed.",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The risk, in a sentence.",
+      "examples": [
+        "Data breach of payroll or personal data"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its latest version; the ETag carries it for If-Match.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "ref",
+    "title",
+    "owner",
+    "likelihood",
+    "impact",
+    "mitigation",
+    "review_months",
+    "next_review_on",
+    "review_overdue",
+    "state",
+    "version",
+    "saved_by",
+    "saved_at"
+  ],
+  "title": "RiskView",
+  "type": "object"
+}

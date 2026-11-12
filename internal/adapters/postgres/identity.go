@@ -149,6 +149,12 @@ func (s *Store) CompleteSetup(ctx context.Context, n storage.NewSetup) (storage.
 		if _, err := uc.Members().Assign(actx, m.ID, "owner", nil); err != nil {
 			return err
 		}
+		for _, r := range n.Risks { // CMP-06: the operator's starting register
+			r.SavedBy = "user:" + uid.String()
+			if _, err := uc.Compliance().CreateRisk(actx, r); err != nil {
+				return err
+			}
+		}
 		if err := uc.flush(actx); err != nil {
 			return err
 		}

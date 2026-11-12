@@ -477,3 +477,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-controls.md → compliance.controls (new: Compliance › Controls, p1-compliance-center slice 5)
 
 ## [2026-11-09] compile | docs/user-guide/checks.md → checks.overview (links the nightly verification to Compliance › Controls)
+
+## [2026-11-09] compile | docs/user-guide/compliance-risks-policies.md → compliance.risks (new: the risk register, p1-compliance-center slice 6)
+
+## [2026-11-09] compile | docs/user-guide/compliance-controls.md → compliance.controls (links the risk register)

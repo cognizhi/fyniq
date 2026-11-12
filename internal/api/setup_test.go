@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/members"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -55,6 +56,7 @@ func freshInstallation(t *testing.T) (*env, *pgtest.DB) {
 }
 
 // req: FR-ADM-06
+// req: CMP-06
 // req: CTL-IAM-07
 // req: SEC-02
 // asvs: V8.2.1, V15.4.2, V2.3.4
@@ -135,6 +137,39 @@ func TestFirstRunSetup(t *testing.T) {
 		roles, err := u.Members().Roles(ctx, user, e.clock.Now())
 		if err != nil || len(roles) != 1 || roles[0].Role != "owner" {
 			t.Errorf("the Super admin's roles in the first organisation: %+v, %v", roles, err)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// CMP-06 (the owner's decision of 9 Nov 2026): the first organisation's register starts with §19's risks, each with an
+	// owner role and its first review at the end of the next quarter; another organisation's starts empty.
+	if err := st.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		risks, err := u.Compliance().Risks(ctx)
+		if err != nil {
+			return err
+		}
+		if len(risks) != 22 || risks[0].Ref != "R1" || risks[21].Ref != "R22" {
+			t.Fatalf("the operator's register: %d risks", len(risks))
+		}
+		for _, r := range risks {
+			if r.Owner == "" || r.Version != 1 || r.State != "open" || r.SavedBy != "user:"+user.String() ||
+				!r.NextReviewOn.Equal(controls.NextQuarterEnd(e.clock.Now())) {
+				t.Errorf("%s: %+v", r.Ref, r)
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second, err := st.CreateOrganisation(ctx, storage.NewOrganisation{Name: "Another Pte Ltd", BaseCurrency: "SGD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Do(ctx, second.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+		risks, err := u.Compliance().Risks(ctx)
+		if err == nil && len(risks) != 0 {
+			t.Errorf("another organisation's register: %d risks, want none", len(risks))
 		}
 		return err
 	}); err != nil {

@@ -10,6 +10,8 @@
 !compliance/evidence.go
 !compliance/control.schema.json
 !compliance/release-assets.json
+!compliance/risks.yaml
+!compliance/risks.go
 !compliance/controls/
 !packs/
 !connectors/

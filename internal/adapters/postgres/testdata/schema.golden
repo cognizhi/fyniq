@@ -1441,6 +1441,33 @@ review_log_review | entry_id | uuid | not null |
 review_log_review | reviewed_by | uuid | not null | 
 review_log_review | reviewed_at | timestamp with time zone | not null | 
 review_log_review | note | text | null | 
+risk | organisation_id | uuid | not null | current_org()
+risk | id | uuid | not null | uuidv7()
+risk | ref | text | not null | 
+risk | created_at | timestamp with time zone | not null | 
+risk_review | organisation_id | uuid | not null | current_org()
+risk_review | id | uuid | not null | uuidv7()
+risk_review | risk_id | uuid | not null | 
+risk_review | version | integer | not null | 
+risk_review | reviewed_by | text | not null | 
+risk_review | reviewed_at | timestamp with time zone | not null | 
+risk_review | note | text | not null | ''::text
+risk_review | next_review_on | date | not null | 
+risk_version | organisation_id | uuid | not null | current_org()
+risk_version | id | uuid | not null | uuidv7()
+risk_version | risk_id | uuid | not null | 
+risk_version | version | integer | not null | 
+risk_version | title | text | not null | 
+risk_version | description | text | not null | ''::text
+risk_version | owner_role | text | not null | 
+risk_version | likelihood | text | not null | 
+risk_version | impact | text | not null | 
+risk_version | mitigation | text | not null | 
+risk_version | review_months | smallint | not null | 3
+risk_version | next_review_on | date | not null | 
+risk_version | state | text | not null | 'open'::text
+risk_version | saved_by | text | not null | 
+risk_version | saved_at | timestamp with time zone | not null | 
 role_assignment | organisation_id | uuid | not null | current_org()
 role_assignment | id | uuid | not null | uuidv7()
 role_assignment | membership_id | uuid | not null | 
@@ -3967,6 +3994,57 @@ review_log_review | review_log_review_organisation_id_not_null | NOT NULL organi
 review_log_review | review_log_review_pkey | PRIMARY KEY (organisation_id, id)
 review_log_review | review_log_review_reviewed_at_not_null | NOT NULL reviewed_at
 review_log_review | review_log_review_reviewed_by_not_null | NOT NULL reviewed_by
+risk | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+risk | risk_created_at_not_null | NOT NULL created_at
+risk | risk_id_not_null | NOT NULL id
+risk | risk_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+risk | risk_organisation_id_not_null | NOT NULL organisation_id
+risk | risk_pkey | PRIMARY KEY (organisation_id, id)
+risk | risk_ref_format | CHECK ((ref ~ '^R[0-9]{1,4}$'::text))
+risk | risk_ref_key | UNIQUE (organisation_id, ref)
+risk | risk_ref_not_null | NOT NULL ref
+risk_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+risk_review | risk_review_by_format | CHECK ((reviewed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+risk_review | risk_review_id_not_null | NOT NULL id
+risk_review | risk_review_next_review_on_not_null | NOT NULL next_review_on
+risk_review | risk_review_note_length | CHECK ((length(note) <= 2000))
+risk_review | risk_review_note_not_null | NOT NULL note
+risk_review | risk_review_organisation_id_not_null | NOT NULL organisation_id
+risk_review | risk_review_pkey | PRIMARY KEY (organisation_id, id)
+risk_review | risk_review_reviewed_at_not_null | NOT NULL reviewed_at
+risk_review | risk_review_reviewed_by_not_null | NOT NULL reviewed_by
+risk_review | risk_review_risk_id_not_null | NOT NULL risk_id
+risk_review | risk_review_version_fkey | FOREIGN KEY (organisation_id, risk_id, version) REFERENCES risk_version(organisation_id, risk_id, version)
+risk_review | risk_review_version_not_null | NOT NULL version
+risk_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+risk_version | risk_version_description_length | CHECK ((length(description) <= 4000))
+risk_version | risk_version_description_not_null | NOT NULL description
+risk_version | risk_version_id_not_null | NOT NULL id
+risk_version | risk_version_impact_known | CHECK ((impact = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))
+risk_version | risk_version_impact_not_null | NOT NULL impact
+risk_version | risk_version_likelihood_known | CHECK ((likelihood = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))
+risk_version | risk_version_likelihood_not_null | NOT NULL likelihood
+risk_version | risk_version_mitigation_length | CHECK (((length(btrim(mitigation)) >= 1) AND (length(btrim(mitigation)) <= 4000)))
+risk_version | risk_version_mitigation_not_null | NOT NULL mitigation
+risk_version | risk_version_next_review_on_not_null | NOT NULL next_review_on
+risk_version | risk_version_once | UNIQUE (organisation_id, risk_id, version)
+risk_version | risk_version_organisation_id_not_null | NOT NULL organisation_id
+risk_version | risk_version_owner_known | CHECK ((owner_role = ANY (ARRAY['owner'::text, 'administrator'::text, 'controller'::text, 'accountant'::text, 'dpo'::text, 'auditor'::text])))
+risk_version | risk_version_owner_role_not_null | NOT NULL owner_role
+risk_version | risk_version_pkey | PRIMARY KEY (organisation_id, id)
+risk_version | risk_version_positive | CHECK ((version > 0))
+risk_version | risk_version_review_months | CHECK (((review_months >= 1) AND (review_months <= 12)))
+risk_version | risk_version_review_months_not_null | NOT NULL review_months
+risk_version | risk_version_risk_fkey | FOREIGN KEY (organisation_id, risk_id) REFERENCES risk(organisation_id, id)
+risk_version | risk_version_risk_id_not_null | NOT NULL risk_id
+risk_version | risk_version_saved_at_not_null | NOT NULL saved_at
+risk_version | risk_version_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+risk_version | risk_version_saved_by_not_null | NOT NULL saved_by
+risk_version | risk_version_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'closed'::text])))
+risk_version | risk_version_state_not_null | NOT NULL state
+risk_version | risk_version_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 300)))
+risk_version | risk_version_title_not_null | NOT NULL title
+risk_version | risk_version_version_not_null | NOT NULL version
 role_assignment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 role_assignment | role_assignment_created_at_not_null | NOT NULL created_at
 role_assignment | role_assignment_expiry_after_creation | CHECK ((expires_at > created_at))
@@ -4354,6 +4432,7 @@ CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree 
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
+CREATE INDEX risk_review_risk_idx ON fyniq.risk_review USING btree (organisation_id, risk_id, reviewed_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
 CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
 CREATE INDEX share_issue_settlement ON fyniq.share_issue USING btree (organisation_id, settlement_id)
@@ -4597,6 +4676,11 @@ CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USI
 CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btree (organisation_id, entry_id)
 CREATE UNIQUE INDEX review_log_review_pkey ON fyniq.review_log_review USING btree (organisation_id, id)
+CREATE UNIQUE INDEX risk_pkey ON fyniq.risk USING btree (organisation_id, id)
+CREATE UNIQUE INDEX risk_ref_key ON fyniq.risk USING btree (organisation_id, ref)
+CREATE UNIQUE INDEX risk_review_pkey ON fyniq.risk_review USING btree (organisation_id, id)
+CREATE UNIQUE INDEX risk_version_once ON fyniq.risk_version USING btree (organisation_id, risk_id, version)
+CREATE UNIQUE INDEX risk_version_pkey ON fyniq.risk_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
@@ -4699,6 +4783,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
@@ -5006,6 +5093,12 @@ CREATE TRIGGER report_export_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.re
 CREATE TRIGGER report_export_no_truncate BEFORE TRUNCATE ON fyniq.report_export FOR EACH STATEMENT EXECUTE FUNCTION report_export_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
+CREATE TRIGGER risk_immutable BEFORE DELETE OR UPDATE ON fyniq.risk FOR EACH ROW EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER risk_no_truncate BEFORE TRUNCATE ON fyniq.risk FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER risk_review_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.risk_review FOR EACH ROW EXECUTE FUNCTION risk_register_guard()
+CREATE TRIGGER risk_review_no_truncate BEFORE TRUNCATE ON fyniq.risk_review FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER risk_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.risk_version FOR EACH ROW EXECUTE FUNCTION risk_register_guard()
+CREATE TRIGGER risk_version_no_truncate BEFORE TRUNCATE ON fyniq.risk_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER role_assignment_voids AFTER INSERT OR UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION role_assignment_voids()
 CREATE TRIGGER round_scenario_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION round_scenario_guard()
@@ -5155,6 +5248,9 @@ recurring_journal_version | tenant_isolation | * | (organisation_id = current_or
 report_export | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+risk | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+risk_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+risk_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5300,6 +5396,9 @@ recurring_journal_version | enabled | forced
 report_export | enabled | forced
 review_log_entry | enabled | forced
 review_log_review | enabled | forced
+risk | enabled | forced
+risk_review | enabled | forced
+risk_version | enabled | forced
 role_assignment | enabled | forced
 sales_reminder | enabled | forced
 share_issue | enabled | forced
@@ -5574,6 +5673,7 @@ require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, p
 require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
 review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d14270820b2454b3e0adc48a2572e959
+risk_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 912ceee772033bee08e29ff38cf3dc48
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
 round_scenario_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4641ddf455a04fbcd7e96e3203bcbdb2
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7

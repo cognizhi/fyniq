@@ -20,7 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-//go:embed controls/*.yaml control.schema.json release-assets.json
+//go:embed controls/*.yaml control.schema.json release-assets.json risks.yaml
 var files embed.FS
 
 // Control is one control of the registry.

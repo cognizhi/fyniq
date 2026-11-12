@@ -48,6 +48,9 @@ type NewSetup struct {
 	// RecoveryCodeHashes are the SHA-256 of the Super admin's ten printed recovery codes.
 	RecoveryCodeHashes [][]byte
 	Now                time.Time
+	// Risks are the operator's starting risk register, loaded into the first organisation in the same transaction, saved
+	// by the first user (CMP-06, the owner's decision of 9 Nov 2026).
+	Risks []NewRisk
 }
 
 // Setup is what first-run setup created.

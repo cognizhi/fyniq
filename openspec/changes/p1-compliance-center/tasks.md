@@ -268,7 +268,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 6. The risk register (slice 6)
 
-- [ ] 6.1 `fyniq.risk`, `fyniq.risk_version` and `fyniq.risk_review` (D7), with attack tests, and the operations
+- [x] 6.1 `fyniq.risk`, `fyniq.risk_version` and `fyniq.risk_review` (D7), with attack tests, and the operations
   `listRisks`, `createRisk`, `reviseRisk` (If-Match) and `reviewRisk` on the "Compliance Center" row, with matrix
   rows. Tests:
   - a risk saved, revised and reviewed, each audited;
@@ -276,13 +276,42 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   - a Controller refused a write.
 
   `// req: CMP-06`
-- [ ] 6.2 The seed. First-run setup loads R1–R19 from `compliance/risks.yaml` into the organisation it creates. A
+
+  **What building added:**
+    - **References** are R and a number, unique in the organisation: a new risk takes one more than the highest used.
+    - **Reviewers** are named as records name actors (`user:<id>`), as the saver is: there is no foreign key to the
+      installation's users.
+    - **The next review.** A review of a risk's latest version sets when the next one falls due, and that date is the
+      risk's until a later version sets another. `review_overdue` comes from it, and a closed risk is never overdue.
+    - **Rights.** Appendix D gives only the Compliance officer C/A on "Compliance Center": the DPO adds, changes
+      (C) and reviews (A) risks; everyone else with V reads them. Matrix rows are added.
+    - **The database.** Versions and reviews are insert-only, and a risk row never changes (FY309, `audit_immutable`).
+      Each write is audited on the risk (`risk.saved`, `risk.reviewed`), and the API refuses a stale version (If-Match).
+- [x] 6.2 The seed. First-run setup loads R1–R19 from `compliance/risks.yaml` into the organisation it creates. A
   migration does the same for an installation already set up. A second organisation starts empty. Tests: setup seeds
   19 risks with owner roles and review dates, and a second organisation has none. `// req: CMP-06`
-- [ ] 6.3 The Risks tab of Compliance › Risks and policies (Expert, `/compliance/risks`): the list with owner,
+
+  **What building added:**
+    - **Rev 0.243.** The seed is §19's risks, R1–R22 today. CMP-06's "R1–R19" was written before R20–R22.
+    - **Setup.** The seed is `compliance/risks.yaml`, with §19's qualified ratings ("High (yearly)", "Certain",
+      "Low–Medium") kept in each description. `CompleteSetup` creates the risks in the same transaction as the first
+      organisation, saved by the first user.
+    - **Not built:** the migration for an installation set up before this change. The installation does not record
+      which organisation setup created, and no installation exists yet outside a developer's own database, which
+      `make reset` sets up again.
+- [x] 6.3 The Risks tab of Compliance › Risks and policies (Expert, `/compliance/risks`): the list with owner,
   rating, mitigation and review date, review overdue, and the review action. It has help keys and the guide page
   `compliance-risks-policies.md`, compiled into `kb/`. A component test with axe covers review overdue.
   `// req: CMP-06`
+
+  **What building added:**
+    - **The page** is `/compliance/risks`, and the Compliance page lists it. Until the policy library (slice 7) adds
+      its tab, it shows the register alone.
+    - **Each risk** is rated high, medium or low from its likelihood times its impact (high from 6, medium from 3),
+      and the register lists the highest first.
+    - **The Compliance officer** adds and changes risks in a dialog, and reviews one with a note; other roles only read.
+    - **The guide page** `compliance-risks-policies.md` is compiled into `kb/pages/task/compliance-risks.md`. The
+      Controls guide links to it.
 
 ## 7. The policy library (slice 7)
 

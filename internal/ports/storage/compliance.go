@@ -81,8 +81,63 @@ type ControlState struct {
 	Version      int
 }
 
+// CodeRisk is the database's refusal of a risk version out of order, a review of an earlier version or setting no later
+// review date, and of a version or review changed or deleted (FY309).
+const CodeRisk = "STORAGE-RISK-01"
+
+// RiskFields are what a version of a risk says (CMP-06, design D7).
+type RiskFields struct {
+	Title, Description string
+	Owner              string // the role that answers for it: owner, administrator, controller, accountant, dpo or auditor
+	Likelihood, Impact string // low, medium or high
+	Mitigation         string
+	ReviewMonths       int
+	NextReviewOn       time.Time // a date
+	State              string    // open or closed
+}
+
+// NewRisk is a risk to add at version 1: its reference (empty: the next, R and one more than the highest used), what it
+// says, and who saved it when.
+type NewRisk struct {
+	Ref string
+	RiskFields
+	SavedBy string // the actor, as records name it: user:<id>
+	At      time.Time
+}
+
+// RiskReview is a review of a risk's version: who reviewed it, when, a note, and the next review date it set.
+type RiskReview struct {
+	Version      int
+	ReviewedBy   string // the actor, as records name it: user:<id>
+	ReviewedAt   time.Time
+	Note         string
+	NextReviewOn time.Time
+}
+
+// Risk is a risk at its latest version, with its latest review. Its NextReviewOn is the review date the latest review
+// of that version set, or else the version's own.
+type Risk struct {
+	ID        uuid.UUID
+	Ref       string
+	CreatedAt time.Time
+	Version   int
+	RiskFields
+	SavedBy    string
+	SavedAt    time.Time
+	LastReview *RiskReview
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
+	// Risks are the organisation's risks at their latest versions, in the order of their references (CMP-06).
+	Risks(ctx context.Context) ([]Risk, error)
+	// CreateRisk adds a risk at version 1, audited as risk.saved.
+	CreateRisk(ctx context.Context, n NewRisk) (Risk, error)
+	// ReviseRisk saves a risk's next version over version, audited as risk.saved; CodeVersion when version is not its
+	// latest.
+	ReviseRisk(ctx context.Context, id uuid.UUID, f RiskFields, savedBy string, at time.Time, version int) (Risk, error)
+	// ReviewRisk records a review of the risk's latest version, which must be version, audited as risk.reviewed.
+	ReviewRisk(ctx context.Context, id uuid.UUID, r RiskReview) (Risk, error)
 	// States are the controls' latest states.
 	States(ctx context.Context) ([]ControlState, error)
 	// SaveState writes a control's state at version (0: its first), auditing a change of status (AUD-01):
