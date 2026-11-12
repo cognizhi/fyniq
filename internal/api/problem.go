@@ -644,6 +644,7 @@ var codeFacts = map[string]struct {
 	storage.CodeIdentity:        {409, "That sign-in cannot be removed"},
 	storage.CodeIdentityStepUp:  {403, "Confirm it's you first"},
 	storage.CodeSignInMethod:    {409, "That would leave a Super admin no way to sign in"},
+	storage.CodePrivateEndpoint: {422, "That private endpoint cannot be registered"},
 	storage.CodeRecovery:        {409, "The recovery is not valid"},
 	storage.CodeCoolingOff:      {403, "Held while your account cools off after its recovery"},
 	storage.CodeJoin:            {409, "The request to join cannot be made or decided"},

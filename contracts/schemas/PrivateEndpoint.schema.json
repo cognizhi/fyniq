@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The private address or range, in CIDR notation.",
+      "examples": [
+        "10.20.0.0/28"
+      ],
+      "type": "string"
+    },
+    "change_id": {
+      "description": "The installation change the other Super admin approved, when there were two.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e42"
+      ],
+      "type": "string"
+    },
+    "credential": {
+      "description": "The credential bound to it: for a connector, the organisation's connector. Only requests with that credential reach it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e60"
+      ],
+      "type": "string"
+    },
+    "organisation_id": {
+      "description": "The organisation it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e00"
+      ],
+      "type": "string"
+    },
+    "port": {
+      "description": "The port it is reached on, over TLS only.",
+      "examples": [
+        443
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reason": {
+      "description": "Why this version was registered.",
+      "examples": [
+        "Acme's ledger API inside its own network"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "examples": [
+        "2026-11-10T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "The Super admin who registered this version.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "type": "string"
+    },
+    "retired": {
+      "description": "true once retired: nothing reaches it, and it is final.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "service": {
+      "description": "What it is for: a connector inside an organisation's network, or a self-hosted model (AI-79).",
+      "enum": [
+        "connector",
+        "ai_model"
+      ],
+      "examples": [
+        "connector"
+      ],
+      "type": "string"
+    },
+    "tls_pin": {
+      "description": "The base64 SHA-256 of the SubjectPublicKeyInfo its TLS certificate must present.",
+      "examples": [
+        "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for If-Match when it is changed or retired.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "address",
+    "port",
+    "tls_pin",
+    "service",
+    "organisation_id",
+    "credential",
+    "retired",
+    "reason",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "title": "PrivateEndpoint",
+  "type": "object"
+}

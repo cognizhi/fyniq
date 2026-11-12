@@ -159,6 +159,9 @@ locals {
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
     # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
     render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
+    # The platform's own networks: its subnet and the range its database is peered on, which no registered private
+    # endpoint reaches (SEC-37, internal/egress).
+    platform_ranges = [google_compute_subnetwork.run.ip_cidr_range, "${google_compute_global_address.services.address}/${google_compute_global_address.services.prefix_length}"]
   })
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
   wired       = toset(["api", "worker", "executor", "jobs", "render"])

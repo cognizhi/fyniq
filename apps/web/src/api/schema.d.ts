@@ -6768,6 +6768,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/installation/private-endpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the registered private endpoints
+         * @description Every registered private endpoint (SEC-37), at its current version, retired ones included: its private address or range, its port, the key its TLS certificate must present, the organisation and service it is for, and the credential bound to it. Only requests with that credential reach it, over TLS with that key; an address an organisation's user types never reaches a private network. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+         */
+        get: operations["listPrivateEndpoints"];
+        put?: never;
+        /**
+         * Register, change or retire a private endpoint
+         * @description Registers a private endpoint (SEC-37), or with replaces and If-Match a new version of one, or retires it: a private address or range (no wider than a /24 or a /64, outside the platform's own networks), its port, the base64 SHA-256 of the key its TLS certificate must present, the organisation and service it is for, and the credential bound to it. Only that credential's requests reach it, over TLS with that key; it follows no redirect, and the metadata service and the platform's own services stay refused. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it applies at once. Side effects: the new version, or the change request, its event in the installation's trail and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing.
+         */
+        post: operations["registerPrivateEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/installation/sign-in-methods": {
         parameters: {
             query?: never;
@@ -28478,11 +28502,11 @@ export interface components {
              */
             status: "pending" | "approved" | "rejected" | "expired";
             /**
-             * @description The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08).
+             * @description The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08); private_endpoint a private endpoint's registration, whose connector is private-endpoint:<id> (SEC-37).
              * @example resume
              * @enum {string}
              */
-            step: "install" | "configure" | "secret" | "enable" | "resume" | "disable" | "uninstall" | "order" | "consent" | "sign_in";
+            step: "install" | "configure" | "secret" | "enable" | "resume" | "disable" | "uninstall" | "order" | "consent" | "sign_in" | "private_endpoint";
             /** @example Resume Zoho ZeptoMail */
             summary: string;
         };
@@ -34631,6 +34655,133 @@ export interface components {
             period_id: string;
             /** @description The balance an e-statement shows at the period's end, entered: refused in Founder mode, where it comes only from an imported statement or feed (FM-5). Left out, the closing balance of the latest statement imported up to the period's end. */
             statement_balance?: components["schemas"]["Money"];
+        };
+        PrivateEndpoint: {
+            /**
+             * @description The private address or range, in CIDR notation.
+             * @example 10.20.0.0/28
+             */
+            address: string;
+            /**
+             * @description The installation change the other Super admin approved, when there were two.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e42
+             */
+            change_id?: string;
+            /**
+             * @description The credential bound to it: for a connector, the organisation's connector. Only requests with that credential reach it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            credential: string;
+            /** @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e60 */
+            id: string;
+            /**
+             * @description The organisation it is for.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e00
+             */
+            organisation_id: string;
+            /**
+             * Format: int64
+             * @description The port it is reached on, over TLS only.
+             * @example 443
+             */
+            port: number;
+            /**
+             * @description Why this version was registered.
+             * @example Acme's ledger API inside its own network
+             */
+            reason: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-10T09:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description The Super admin who registered this version.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41
+             */
+            recorded_by: string;
+            /**
+             * @description true once retired: nothing reaches it, and it is final.
+             * @example false
+             */
+            retired: boolean;
+            /**
+             * @description What it is for: a connector inside an organisation's network, or a self-hosted model (AI-79).
+             * @example connector
+             * @enum {string}
+             */
+            service: "connector" | "ai_model";
+            /**
+             * @description The base64 SHA-256 of the SubjectPublicKeyInfo its TLS certificate must present.
+             * @example n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=
+             */
+            tls_pin: string;
+            /**
+             * Format: int64
+             * @description Its version, for If-Match when it is changed or retired.
+             * @example 1
+             */
+            version: number;
+        };
+        PrivateEndpointPage: {
+            items: components["schemas"]["PrivateEndpoint"][] | null;
+            /**
+             * @description The cursor of the next page; absent on the last.
+             * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
+             */
+            next_cursor?: string;
+        };
+        PrivateEndpointRequest: {
+            /**
+             * @description The private address, or the narrowest range the service listens on: within 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10 or fc00::/7, no wider than a /24 or a /64, and outside the platform's own networks.
+             * @example 10.20.0.0/28
+             */
+            address: string;
+            /**
+             * Format: uuid
+             * @description The credential bound to it: for a connector, the organisation's connector (its ID in listOrganisationConnectors).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            credential: string;
+            /**
+             * Format: uuid
+             * @description The organisation it is for.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e00
+             */
+            organisation_id: string;
+            /**
+             * Format: int64
+             * @description The port it listens on; only TLS connections are made to it.
+             * @example 443
+             */
+            port: number;
+            /**
+             * @description Why it is registered, changed or retired: the installation's trail keeps it.
+             * @example Acme's ledger API inside its own network
+             */
+            reason: string;
+            /**
+             * Format: uuid
+             * @description The endpoint this is a new version of, with If-Match; absent: a new endpoint.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e60
+             */
+            replaces?: string;
+            /**
+             * @description With replaces: retire the endpoint. Nothing reaches it afterwards, and it is final.
+             * @example false
+             */
+            retired?: boolean;
+            /**
+             * @description What it is for: a connector inside an organisation's network, or a self-hosted model (AI-79).
+             * @example connector
+             * @enum {string}
+             */
+            service: "connector" | "ai_model";
+            /**
+             * @description The base64 SHA-256 of the SubjectPublicKeyInfo its TLS certificate must present: openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64.
+             * @example n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=
+             */
+            tls_pin: string;
         };
         Problem: {
             /**
@@ -95430,6 +95581,294 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPrivateEndpoints: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateEndpointPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerPrivateEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+                /** @description With replaces: the endpoint's version as listed, quoted. */
+                "If-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateEndpointRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateEndpoint"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateEndpoint"];
+                };
+            };
+            /** @description Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. */
+            202: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallationChange"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-EGRESS-01` That private endpoint cannot be registered. */
             422: {
                 headers: {
                     [name: string]: unknown;

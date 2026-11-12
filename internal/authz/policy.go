@@ -1209,6 +1209,13 @@ var (
 		Note: superAdminNote + " With two Super admins a change waits for the other's approval."}
 )
 
+// Registered private endpoints (SEC-37): a Super admin's, the other one approving a registration once there are two.
+var (
+	ListPrivateEndpoints    = Policy{Operation: "listPrivateEndpoints", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	RegisterPrivateEndpoint = Policy{Operation: "registerPrivateEndpoint", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: superAdminNote + " With two Super admins a registration waits for the other's approval."}
+)
+
 // Account recovery (SEC-35, rev 0.198): a person's own recovery codes; the confirmation an Owner or Administrator gives
 // after speaking to them; the recovery itself, open to a session that passed no second factor, since that is what it
 // gives back.
@@ -1707,7 +1714,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
-	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
+	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
 	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation,
 	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,

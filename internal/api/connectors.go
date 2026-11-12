@@ -222,7 +222,7 @@ type InstallationChange struct {
 	ID           uuid.UUID  `json:"id" example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e42"`
 	ConnectorID  *uuid.UUID `json:"connector_id,omitempty" doc:"The installed connector; absent for an install." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
 	Connector    string     `json:"connector" example:"zeptomail"`
-	Step         string     `json:"step" enum:"install,configure,secret,enable,resume,disable,uninstall,order,consent,sign_in" doc:"The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08)." example:"resume"`
+	Step         string     `json:"step" enum:"install,configure,secret,enable,resume,disable,uninstall,order,consent,sign_in,private_endpoint" doc:"The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08); private_endpoint a private endpoint's registration, whose connector is private-endpoint:<id> (SEC-37)." example:"resume"`
 	Summary      string     `json:"summary" example:"Resume Zoho ZeptoMail"`
 	Status       string     `json:"status" enum:"pending,approved,rejected,expired" example:"pending"`
 	Envelope     string     `json:"envelope" doc:"The RFC 8785 envelope the other Super admin signs." example:"{\"change\":{\"step\":\"resume\"}}"`
@@ -878,6 +878,17 @@ func registerConnectors(a *API) {
 				changes[i].Status = "approved"
 				return out, a.tellOfDecision(ctx, u, changes[i])
 			}
+			if i := slices.IndexFunc(changes, func(c storage.InstallationChange) bool { return c.ID == id && c.Step == stepPrivateEndpoint }); i >= 0 {
+				if changes[i].Status != "pending" {
+					return nil, &connector.Error{Code: connector.CodeChange, Message: "the change is " + changes[i].Status + " and cannot be approved"}
+				}
+				out, err := a.approvePrivateEndpointChange(ctx, u, by, p.StepUpAt, changes[i], hash)
+				if err != nil {
+					return nil, err
+				}
+				changes[i].Status = "approved"
+				return out, a.tellOfDecision(ctx, u, changes[i])
+			}
 			if err := a.connectorsReady(); err != nil {
 				return nil, err
 			}
@@ -1207,7 +1218,11 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 				}
 				var result storage.ConnectorTest
 				if b.BankData != nil { // a bank-data connector lists the accounts it reads (FR-BNK-15)
-					result = a.deps.Connectors.Runtime.TestBankData(ctx, c, secrets)
+					eps, err := a.deps.Connectors.Runtime.Endpoints(ctx, u, c) // its registered private endpoints (SEC-37)
+					if err != nil {
+						return nil, err
+					}
+					result = a.deps.Connectors.Runtime.TestBankData(ctx, c, secrets, eps)
 				} else {
 					result = a.deps.Connectors.Runtime.TestEmail(ctx, c, secrets, to, a.deps.Mail.From)
 				}

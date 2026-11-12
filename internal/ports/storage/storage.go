@@ -82,6 +82,9 @@ type UnitOfWork interface {
 	Recoveries() Recoveries
 	// SignInMethods changes the sign-in providers' switches: in a unit of work of the installation organisation only.
 	SignInMethods() SignInMethodWriter
+	// PrivateEndpoints keeps the registered private endpoints (SEC-37): written in a unit of work of the installation
+	// organisation only, read by an organisation for its own credentials.
+	PrivateEndpoints() PrivateEndpoints
 	ReviewLog() ReviewLog
 	Packs() Packs
 	EmailMessages() EmailMessages
@@ -883,6 +886,9 @@ const (
 	// CodeSignInMethod is a provider's switch that leaves a Super admin no way to sign in, or a domain that is not one
 	// (FR-ADM-08, rev 0.197).
 	CodeSignInMethod = "STORAGE-SIGNIN-01"
+	// CodePrivateEndpoint is a private endpoint refused: retired, an address that is not a private range of at most /24
+	// or /64, a pin that is not one, or an organisation that does not exist (SEC-37).
+	CodePrivateEndpoint = "STORAGE-EGRESS-01"
 	// CodeRecovery is an account recovery refused: codes made without a recent second factor, a confirmation of one's
 	// own recovery, or a recovery code or confirmation wrong, used or expired (SEC-35, rev 0.198).
 	CodeRecovery = "STORAGE-RECOVERY-01"

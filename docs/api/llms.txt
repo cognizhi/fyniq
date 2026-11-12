@@ -428,6 +428,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/installation/connectors/{connector_id}/secrets/{secret}` (setInstallationConnectorSecret): Set a secret of one of the installation's connectors
 - `POST /v1/installation/connectors/{connector_id}/steps` (stepInstallationConnector): Take a step of an installation connector's lifecycle
 - `POST /v1/installation/connectors/{connector_id}/test` (testInstallationConnector): Test one of the installation's connectors
+- `GET /v1/installation/private-endpoints` (listPrivateEndpoints): List the registered private endpoints
+- `POST /v1/installation/private-endpoints` (registerPrivateEndpoint): Register, change or retire a private endpoint
 - `GET /v1/installation/sign-in-methods` (listSignInMethods): List the sign-in providers and their switches
 - `PATCH /v1/installation/sign-in-methods/{provider}` (changeSignInMethod): Turn a sign-in provider on or off, or set its domains
 - `POST /v1/instrument-template-enablements/{enablement_id}/approval` (requestInstrumentTemplateApproval): Ask for approval to enable a template

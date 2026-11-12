@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The private address, or the narrowest range the service listens on: within 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10 or fc00::/7, no wider than a /24 or a /64, and outside the platform's own networks.",
+      "examples": [
+        "10.20.0.0/28"
+      ],
+      "maxLength": 43,
+      "type": "string"
+    },
+    "credential": {
+      "description": "The credential bound to it: for a connector, the organisation's connector (its ID in listOrganisationConnectors).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "organisation_id": {
+      "description": "The organisation it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e00"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "port": {
+      "description": "The port it listens on; only TLS connections are made to it.",
+      "examples": [
+        443
+      ],
+      "format": "int64",
+      "maximum": 65535,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "reason": {
+      "description": "Why it is registered, changed or retired: the installation's trail keeps it.",
+      "examples": [
+        "Acme's ledger API inside its own network"
+      ],
+      "maxLength": 500,
+      "minLength": 3,
+      "type": "string"
+    },
+    "replaces": {
+      "description": "The endpoint this is a new version of, with If-Match; absent: a new endpoint.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "retired": {
+      "description": "With replaces: retire the endpoint. Nothing reaches it afterwards, and it is final.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "service": {
+      "description": "What it is for: a connector inside an organisation's network, or a self-hosted model (AI-79).",
+      "enum": [
+        "connector",
+        "ai_model"
+      ],
+      "examples": [
+        "connector"
+      ],
+      "type": "string"
+    },
+    "tls_pin": {
+      "description": "The base64 SHA-256 of the SubjectPublicKeyInfo its TLS certificate must present: openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64.",
+      "examples": [
+        "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="
+      ],
+      "maxLength": 44,
+      "type": "string"
+    }
+  },
+  "required": [
+    "address",
+    "port",
+    "tls_pin",
+    "service",
+    "organisation_id",
+    "credential",
+    "reason"
+  ],
+  "title": "PrivateEndpointRequest",
+  "type": "object"
+}

@@ -5,6 +5,7 @@
 package sqlcdb
 
 import (
+	"net/netip"
 	"time"
 
 	"github.com/google/uuid"
@@ -1930,6 +1931,22 @@ type FyniqPolicyVersion struct {
 	FromDraft      string
 	PublishedBy    string
 	PublishedAt    time.Time
+}
+
+type FyniqPrivateEndpoint struct {
+	ID         uuid.UUID
+	Version    int32
+	Address    netip.Prefix
+	Port       int32
+	TlsPin     string
+	Service    string
+	Serves     uuid.UUID
+	Credential uuid.UUID
+	Retired    bool
+	Reason     string
+	RecordedBy uuid.UUID
+	RecordedAt time.Time
+	ChangeID   *uuid.UUID
 }
 
 type FyniqQuoteOutcome struct {

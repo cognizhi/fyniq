@@ -8,6 +8,7 @@
 # req: CMP-AI-01
 # req: CTL-AI-01
 # req: SEC-22
+# req: SEC-37
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -384,6 +385,16 @@ run "a_secrets_project_is_a_project_id" {
 }
 
 # Every service and job is held to the project's Binary Authorization policy, with no breakglass (SEC-22).
+# The services know the platform's own networks, which no registered private endpoint reaches (SEC-37).
+run "the_services_know_the_platforms_own_networks" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = contains(jsondecode(output.gcp_config).platform_ranges, "10.10.0.0/24") && length(jsondecode(output.gcp_config).platform_ranges) == 2
+    error_message = "FYNIQ_GCP must name the subnet and the database's peered range as the platform's own networks"
+  }
+}
+
 run "every_image_passes_binary_authorization" {
   command = plan
   variables { spec = run.spec.spec }

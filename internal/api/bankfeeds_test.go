@@ -190,7 +190,7 @@ func TestBankFeedsSyncThroughTheirConnector(t *testing.T) {
 	t.Cleanup(worker.Close)
 	s := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: e.clock}
 
-	if r := e.api.deps.Connectors.Runtime.TestBankData(context.Background(), c, nil); !r.Passed || !strings.Contains(r.Reason, "account(s) in SGD") {
+	if r := e.api.deps.Connectors.Runtime.TestBankData(context.Background(), c, nil, nil); !r.Passed || !strings.Contains(r.Reason, "account(s) in SGD") {
 		t.Fatalf("the connector's test: %+v", r)
 	}
 	got, err := s.Sync(context.Background(), e.books.Org, c.ID)

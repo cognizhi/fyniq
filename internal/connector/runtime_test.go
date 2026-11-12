@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -325,5 +326,54 @@ func TestConnectorWorkIsAuditedAsItsOwnPrincipal(t *testing.T) {
 	a := storage.AuditFrom(ctx)
 	if a.Actor == nil || a.Actor.String() != "integration:connector/01928f6e-0000-7000-8000-000000000001" || a.OnBehalfOf == nil || a.OnBehalfOf.ID != "u-1" {
 		t.Fatalf("%+v", a)
+	}
+}
+
+// privateUnit is a unit of work that holds only the private endpoints registered for the organisation.
+type privateUnit struct {
+	storage.UnitOfWork
+	eps privateEndpoints
+}
+
+func (u privateUnit) PrivateEndpoints() storage.PrivateEndpoints { return u.eps }
+
+type privateEndpoints struct {
+	storage.PrivateEndpoints
+	registered []storage.PrivateEndpoint
+}
+
+func (p privateEndpoints) For(_ context.Context, service string, credential uuid.UUID) ([]storage.PrivateEndpoint, error) {
+	var out []storage.PrivateEndpoint
+	for _, e := range p.registered {
+		if e.Service == service && e.Credential == credential {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+// An organisation's connector reaches the private endpoints registered for it, the credential they are bound to, and no
+// other; an installation connector, and a registration that cannot be read as one, reach none.
+// req: SEC-37
+// asvs: V1.3.6
+func TestAConnectorReachesOnlyTheEndpointsRegisteredForIt(t *testing.T) {
+	mine, theirs := uuid.New(), uuid.New()
+	pin := egress.PinOf([]byte("the endpoint's SubjectPublicKeyInfo"))
+	u := privateUnit{eps: privateEndpoints{registered: []storage.PrivateEndpoint{
+		{Service: storage.PrivateEndpointConnector, Credential: mine, Address: netip.MustParsePrefix("10.20.0.0/28"), Port: 8443, Pin: pin},
+		{Service: storage.PrivateEndpointConnector, Credential: mine, Address: netip.MustParsePrefix("10.20.0.32/28"), Port: 8443, Pin: "not a pin"},
+		{Service: storage.PrivateEndpointConnector, Credential: theirs, Address: netip.MustParsePrefix("10.30.0.0/28"), Port: 443, Pin: pin},
+		{Service: storage.PrivateEndpointAIModel, Credential: mine, Address: netip.MustParsePrefix("10.40.0.0/28"), Port: 443, Pin: pin},
+	}}}
+	r := &connector.Runtime{Egress: &egress.Guard{}}
+	eps, err := r.Endpoints(context.Background(), u, storage.InstalledConnector{ID: mine})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(eps) != 1 || eps[0].Prefix != netip.MustParsePrefix("10.20.0.0/28") || eps[0].Port != 8443 {
+		t.Fatalf("the connector's endpoints: %+v", eps)
+	}
+	if eps, _ := r.Endpoints(context.Background(), u, storage.InstalledConnector{ID: mine, Installation: true}); len(eps) != 0 {
+		t.Fatalf("an installation connector reached %+v", eps)
 	}
 }

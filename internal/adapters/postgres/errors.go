@@ -200,6 +200,9 @@ var fyCodes = map[string]string{
 	"FY316": storage.CodeTransfer,        // a transfer's version out of order, a changed flow, or any change (000307)
 	"FY317": storage.CodeShredding,       // a person key changed, or deleted outside its approved run (000308, 000309)
 	"FY318": storage.CodeShredding,       // a shredding run out of order, or an anonymisation not recorded first (000309)
+	"FY319": storage.CodePrivateEndpoint, // a private endpoint retired, not a private range, a bad pin or no such organisation (000310)
+	"FY320": storage.CodeVersion,         // a private endpoint changed since it was read (000310)
+	"FY321": storage.CodeImmutable,       // a private endpoint's version changed or removed (000310)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

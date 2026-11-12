@@ -1490,6 +1490,19 @@ policy_version | sha256 | bytea | not null |
 policy_version | from_draft | text | not null | 
 policy_version | published_by | text | not null | 
 policy_version | published_at | timestamp with time zone | not null | 
+private_endpoint | id | uuid | not null | 
+private_endpoint | version | integer | not null | 
+private_endpoint | address | cidr | not null | 
+private_endpoint | port | integer | not null | 
+private_endpoint | tls_pin | text | not null | 
+private_endpoint | service | text | not null | 
+private_endpoint | serves | uuid | not null | 
+private_endpoint | credential | uuid | not null | 
+private_endpoint | retired | boolean | not null | false
+private_endpoint | reason | text | not null | 
+private_endpoint | recorded_by | uuid | not null | 
+private_endpoint | recorded_at | timestamp with time zone | not null | 
+private_endpoint | change_id | uuid | null | 
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -3420,7 +3433,7 @@ installation_change | installation_change_requested_by_not_null | NOT NULL reque
 installation_change | installation_change_requester_mfa_at_not_null | NOT NULL requester_mfa_at
 installation_change | installation_change_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'expired'::text])))
 installation_change | installation_change_status_not_null | NOT NULL status
-installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text])))
+installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text, 'private_endpoint'::text])))
 installation_change | installation_change_step_not_null | NOT NULL step
 installation_change | installation_change_summary_length | CHECK (((length(summary) >= 1) AND (length(summary) <= 300)))
 installation_change | installation_change_summary_not_null | NOT NULL summary
@@ -4265,6 +4278,27 @@ policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 
 policy_version | policy_version_title_not_null | NOT NULL title
 policy_version | policy_version_version_not_null | NOT NULL version
 policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+private_endpoint | private_endpoint_address_not_null | NOT NULL address
+private_endpoint | private_endpoint_change_fkey | FOREIGN KEY (change_id) REFERENCES installation_change(id)
+private_endpoint | private_endpoint_credential_not_null | NOT NULL credential
+private_endpoint | private_endpoint_id_not_null | NOT NULL id
+private_endpoint | private_endpoint_pin_format | CHECK ((tls_pin ~ '^[A-Za-z0-9+/]{43}=$'::text))
+private_endpoint | private_endpoint_pkey | PRIMARY KEY (id, version)
+private_endpoint | private_endpoint_port_not_null | NOT NULL port
+private_endpoint | private_endpoint_port_range | CHECK (((port >= 1) AND (port <= 65535)))
+private_endpoint | private_endpoint_private_address | CHECK (private_endpoint_address_ok(address))
+private_endpoint | private_endpoint_reason_given | CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500)))
+private_endpoint | private_endpoint_reason_not_null | NOT NULL reason
+private_endpoint | private_endpoint_recorded_at_not_null | NOT NULL recorded_at
+private_endpoint | private_endpoint_recorded_by_fkey | FOREIGN KEY (recorded_by) REFERENCES app_user(user_id)
+private_endpoint | private_endpoint_recorded_by_not_null | NOT NULL recorded_by
+private_endpoint | private_endpoint_retired_not_null | NOT NULL retired
+private_endpoint | private_endpoint_serves_not_null | NOT NULL serves
+private_endpoint | private_endpoint_service_known | CHECK ((service = ANY (ARRAY['connector'::text, 'ai_model'::text])))
+private_endpoint | private_endpoint_service_not_null | NOT NULL service
+private_endpoint | private_endpoint_tls_pin_not_null | NOT NULL tls_pin
+private_endpoint | private_endpoint_version_not_null | NOT NULL version
+private_endpoint | private_endpoint_version_positive | CHECK ((version >= 1))
 quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
 quote_outcome | quote_outcome_id_not_null | NOT NULL id
@@ -4903,6 +4937,7 @@ CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
+CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
@@ -5160,6 +5195,7 @@ CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
@@ -5639,6 +5675,7 @@ CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pol
 CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
@@ -5977,6 +6014,7 @@ person_key | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
+private_endpoint | disabled | not forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
 recovery_confirmation | disabled | not forced
@@ -6251,6 +6289,10 @@ period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalo
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1fbad8774b781c2cf93169089adca3e3
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
+private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
+private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
+private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
+private_endpoints_for(p_service text, p_credential uuid) → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 85ce4fe273b1eba64231e49b57ed690b
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
@@ -6264,6 +6306,7 @@ recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer t
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
+register_private_endpoint(p_by uuid, p_change uuid, p_id uuid, p_version integer, p_address text, p_port integer, p_pin text, p_service text, p_serves uuid, p_credential uuid, p_retired boolean, p_reason text, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 6f97f5b6914a8244dc0db0544427c701
 release_join_domain(p_org uuid, p_domain text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2eaf866e51b2dbac145aa151e2ef88e9
 remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
 remittance_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f9c42f700a81ca6d6d0fd3fc96e9ba53

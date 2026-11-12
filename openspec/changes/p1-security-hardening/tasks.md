@@ -42,7 +42,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 5. Private endpoints (slice 5)
 
-- [ ] 5.1 `private_endpoint` (D3) with attack tests. `listPrivateEndpoints` and `registerPrivateEndpoint` are the
+- [x] 5.1 `private_endpoint` (D3) with attack tests. `listPrivateEndpoints` and `registerPrivateEndpoint` are the
   Super admin's and audited. The guard admits a registered private address only for its organisation and credential,
   and checks the TLS key. A typed private address is refused. `// req: SEC-37`
 

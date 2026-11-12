@@ -448,6 +448,15 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPatch, "/v1/installation/sign-in-methods/matrix", tok, map[string]any{"enabled": false, "allowed_domains": []string{}},
 			"If-Match", `"0"`), nil
 	},
+	// The registered private endpoints (SEC-37): the matrix's Super admin names an organisation that does not exist (422).
+	"listPrivateEndpoints": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/private-endpoints", tok, nil), nil
+	},
+	"registerPrivateEndpoint": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/private-endpoints", tok, map[string]any{"address": "10.20.0.5", "port": 443,
+			"tls_pin": "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=", "service": "connector", "organisation_id": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4eff",
+			"credential": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61", "reason": "the matrix"}), nil
+	},
 	"listInstallationChanges": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/installation/changes", tok, nil), nil
 	},

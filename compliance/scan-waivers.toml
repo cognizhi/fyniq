@@ -38,6 +38,20 @@ expires = 2027-04-15
 [[waiver]]
 tool = "gitleaks"
 rule = "generic-api-key"
+path = "internal/api/private_endpoints_test.go"
+reason = "A made-up UUID in the field named credential: the ID of the organisation's connector a private endpoint is bound to (SEC-37), never a secret."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "internal/api/matrix_test.go"
+reason = "The authorisation matrix's made-up UUID in the field named credential: the ID of an organisation's connector (SEC-37), never a secret."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
 path = "internal/logging/logging_test.go"
 reason = "A made-up key the SEC-15 test feeds to the logger to prove it is masked; it was never a credential."
 expires = 2027-04-15

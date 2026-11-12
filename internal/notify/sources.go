@@ -51,6 +51,10 @@ const RecoveryType = "security.recovery"
 // (FR-ADM-08, rev 0.197).
 const SignInProviderType = "security.sign_in_provider"
 
+// PrivateEndpointType is the notice to every Super admin that a private endpoint was registered, changed or retired
+// (SEC-37): a security type, so it is always on and emailed at once.
+const PrivateEndpointType = "security.private_endpoint"
+
 // SignInMethodType tells a person a sign-in with a provider was linked to their account, or removed (FR-ADM-08, rev 0.196).
 const SignInMethodType = "security.sign_in_methods"
 
