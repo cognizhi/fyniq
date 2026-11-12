@@ -316,6 +316,7 @@ var codeFacts = map[string]struct {
 	approval.CodePending:          {409, "A change to it is waiting for approval already"},
 	approval.CodeReason:           {422, "A rejection needs its reason"},
 	approval.CodeSteps:            {422, "The policy's steps cannot be signed"},
+	approval.CodeRules:            {422, "The policy's rules cannot be applied"},
 	approval.CodeFixed:            {409, "This approval policy is fixed"},
 	approval.CodeAuthority:        {409, "An earlier approver no longer holds the right: nothing was changed"},
 	approval.CodeNotYourStep:      {403, "The request's current step needs someone else"},
