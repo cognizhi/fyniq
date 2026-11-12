@@ -269,8 +269,12 @@ fyniq_api       EXECUTE   member_names()
 fyniq_api       EXECUTE   member_sign_ins()
 fyniq_api       INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
 fyniq_api       SELECT    migration_file
+fyniq_api       INSERT    migration_mapping (made_at, made_by, mapping, mapping_sha256, run_id, step_id, version)
+fyniq_api       SELECT    migration_mapping
 fyniq_api       INSERT    migration_run (started_at, started_by)
 fyniq_api       SELECT    migration_run
+fyniq_api       INSERT    migration_signoff (mapping_id, run_id, signed_at, signed_by, subject, subject_sha256)
+fyniq_api       SELECT    migration_signoff
 fyniq_api       INSERT    migration_step (run_id, started_at, started_by, state, step, workbook_file_id)
 fyniq_api       SELECT    migration_step
 fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
@@ -650,7 +654,9 @@ fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    migration_file
+fyniq_readonly  SELECT    migration_mapping
 fyniq_readonly  SELECT    migration_run
+fyniq_readonly  SELECT    migration_signoff
 fyniq_readonly  SELECT    migration_step
 fyniq_readonly  SELECT    money_account
 fyniq_readonly  SELECT    money_account_source
@@ -883,7 +889,10 @@ fyniq_worker    EXECUTE   member_sign_ins()
 fyniq_worker    EXECUTE   members_second_factor()
 fyniq_worker    INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
 fyniq_worker    SELECT    migration_file
+fyniq_worker    INSERT    migration_mapping (made_at, made_by, mapping, mapping_sha256, run_id, step_id, version)
+fyniq_worker    SELECT    migration_mapping
 fyniq_worker    SELECT    migration_run
+fyniq_worker    SELECT    migration_signoff
 fyniq_worker    SELECT    migration_step
 fyniq_worker    UPDATE    migration_step (checks_file_id, errors, report, report_sha256, state, validated_at, warnings)
 fyniq_worker    SELECT    money_account

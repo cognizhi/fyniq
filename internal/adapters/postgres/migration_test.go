@@ -169,3 +169,125 @@ func TestAttackTheMigrationRecordKeepsItsRules(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The migration's mapping and its sign-offs keep their rules (migration 000327, FY326): a version follows the one
+// before and maps a valid workbook of its own migration; a sign-off signs the latest version over its hash, once;
+// nothing changes or goes; the worker proposes versions and signs none; another organisation sees none of it.
+// req: data/migration Set-up import and mapping review (M2)
+// req: AUD-01
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackTheMigrationMappingKeepsItsRules(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Mapping A Pte Ltd"), books(t, "Mapping B Pte Ltd")
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	hash := func(c string) string { return strings.Repeat(c, 64) }
+	var run storage.MigrationRun
+	var step, pending storage.MigrationStep
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if run, err = u.Migrations().Start(ctx, "user:x", now); err != nil {
+			return err
+		}
+		step, _, err = u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, migrationFile(run.ID, a.Org, "Hub.xlsx", now))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	checks := migrationFile(run.ID, a.Org, "checks.csv", now)
+	checks.MediaType, checks.DataClass, checks.AddedBy = "text/csv", storage.ClassGeneral, "system:migration.validate"
+	var v1 storage.MigrationMapping
+	if err := worker.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if _, err = u.Migrations().Validated(ctx, step.ID, checks, storage.MigrationReport{State: storage.StepValid, Report: []byte(`{}`),
+			ReportSHA256: hash("b"), ValidatedAt: now}); err != nil {
+			return err
+		}
+		v1, err = u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 1, StepID: step.ID, Mapping: []byte(`{"v":1}`), SHA256: hash("c"),
+			MadeBy: "system:migration.validate", MadeAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var v2 storage.MigrationMapping
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if v2, err = u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 2, StepID: step.ID, Mapping: []byte(`{"v":2}`), SHA256: hash("d"),
+			MadeBy: "user:x", MadeAt: now}); err != nil {
+			return err
+		}
+		if latest, err := u.Migrations().Mapping(ctx, run.ID); err != nil || latest.ID != v2.ID {
+			t.Errorf("the latest mapping: %+v %v", latest, err)
+		}
+		_, err = u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v2.ID, SubjectSHA256: v2.SHA256,
+			SignedBy: "user:y", SignedAt: now})
+		if err != nil {
+			return err
+		}
+		// A workbook validating: no mapping of it until it is valid.
+		pending, _, err = u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, migrationFile(run.ID, a.Org, "Again.xlsx", now))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for what, fn := range map[string]func(u storage.UnitOfWork) error{
+		"a version out of order": func(u storage.UnitOfWork) error {
+			_, err := u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 4, StepID: step.ID, Mapping: []byte(`{}`), SHA256: hash("e"), MadeBy: "user:x", MadeAt: now})
+			return err
+		},
+		"a version of a workbook still validating": func(u storage.UnitOfWork) error {
+			_, err := u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 3, StepID: pending.ID, Mapping: []byte(`{}`), SHA256: hash("e"), MadeBy: "user:x", MadeAt: now})
+			return err
+		},
+		"signing an earlier version": func(u storage.UnitOfWork) error {
+			_, err := u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v1.ID, SubjectSHA256: v1.SHA256,
+				SignedBy: "user:y", SignedAt: now})
+			return err
+		},
+		"signing another hash": func(u storage.UnitOfWork) error {
+			_, err := u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v2.ID, SubjectSHA256: hash("f"),
+				SignedBy: "user:y", SignedAt: now})
+			return err
+		},
+	} {
+		err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(u) })
+		if !storageCode(err, storage.CodeMigration) {
+			t.Errorf("%s: %v", what, err)
+		}
+	}
+	err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v2.ID, SubjectSHA256: v2.SHA256,
+			SignedBy: "user:z", SignedAt: now})
+		return err
+	})
+	if !storageCode(err, storage.CodeDuplicate) {
+		t.Errorf("signing a version twice: %v", err)
+	}
+	for _, c := range []struct {
+		what, role, stmt string
+		args             []any
+		states           []string
+	}{
+		{"the worker signing", "fyniq_worker", `INSERT INTO fyniq.migration_signoff (run_id, subject, mapping_id, subject_sha256, signed_by, signed_at)
+		  VALUES ($1, 'mapping', $2, $3, 'system:x', now())`, []any{run.ID, v2.ID, v2.SHA256}, []string{"42501"}},
+		{"a sign-off of nothing", "fyniq_api", `INSERT INTO fyniq.migration_signoff (run_id, subject, mapping_id, subject_sha256, signed_by, signed_at)
+		  VALUES ($1, 'mapping', NULL, $2, 'user:x', now())`, []any{run.ID, v2.SHA256}, []string{"23514", "FY326"}},
+		{"the API changing a version", "fyniq_api", `UPDATE fyniq.migration_mapping SET mapping = '{}'`, nil, []string{"42501"}},
+		{"the owner changing a version", "fyniq_migrator", `UPDATE fyniq.migration_mapping SET mapping = '{}'`, nil, []string{"FY326"}},
+		{"the owner withdrawing a sign-off", "fyniq_migrator", `DELETE FROM fyniq.migration_signoff`, nil, []string{"FY326"}},
+		{"the owner emptying the mappings", "fyniq_migrator", `TRUNCATE fyniq.migration_mapping CASCADE`, nil, []string{"FY060", "FY061"}},
+	} {
+		err := asOrg(ctx, conn(t, c.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt, c.args...); return err })
+		wantState(t, c.what, err, c.states...)
+	}
+	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Migrations().Mapping(ctx, run.ID); err == nil {
+			t.Error("another organisation reads the mapping")
+		}
+		offs, err := u.Migrations().SignOffs(ctx, run.ID)
+		if err == nil && len(offs) != 0 {
+			t.Errorf("another organisation sees %d sign-offs", len(offs))
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}

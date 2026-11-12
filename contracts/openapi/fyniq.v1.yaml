@@ -26649,6 +26649,109 @@ components:
       required:
         - role
       type: object
+    MigrationAccountMap:
+      additionalProperties: false
+      properties:
+        action:
+          description: "existing: Fyniq's chart has it; create: the set-up creates it."
+          enum:
+            - existing
+            - create
+          examples:
+            - existing
+          type: string
+        cash_flow_line:
+          description: "An account to create: its cash-flow line."
+          examples:
+            - Operating
+          type: string
+        default_gst_code:
+          description: "An account to create: its default GST code."
+          examples:
+            - SR
+          type: string
+        function:
+          description: "An account to create: its function (COGS, R&D, S&M, G&A or Other)."
+          examples:
+            - Other
+          type: string
+        fyniq:
+          description: The Fyniq account it maps onto, or is created as, by code.
+          examples:
+            - "4030"
+          maxLength: 20
+          minLength: 1
+          type: string
+        money_account:
+          description: "An account to create: whether money moves through it."
+          examples:
+            - false
+          type: boolean
+        name:
+          description: The workbook's name for it; ignored in a change.
+          examples:
+            - AI project & solution revenue
+          type: string
+        report_group:
+          description: "An account to create: its report group."
+          examples:
+            - Services & project revenue
+          type: string
+        row:
+          description: Its row on the Accounts sheet; ignored in a change.
+          examples:
+            - 36
+          format: int64
+          type: integer
+        type:
+          description: "Fyniq's type: asset, liability, equity, revenue or expense; the workbook's Cost of Sales, Other Expense and Tax are expense and Other Income revenue."
+          examples:
+            - revenue
+          type: string
+        workbook:
+          description: "The workbook's account code: the entry's key."
+          examples:
+            - "4030"
+          maxLength: 20
+          minLength: 1
+          type: string
+        workbook_type:
+          description: The workbook's type, such as Cost of Sales; ignored in a change.
+          examples:
+            - Revenue
+          type: string
+      required:
+        - workbook
+        - fyniq
+        - action
+      type: object
+    MigrationCodeMap:
+      additionalProperties: false
+      properties:
+        fyniq:
+          description: The sg-gst pack's code.
+          examples:
+            - SR
+          maxLength: 10
+          minLength: 1
+          type: string
+        row:
+          description: Its row on the Lists sheet; ignored in a change.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        workbook:
+          description: "The workbook's GST code: the entry's key."
+          examples:
+            - SR
+          maxLength: 10
+          minLength: 1
+          type: string
+      required:
+        - workbook
+        - fyniq
+      type: object
     MigrationFileView:
       additionalProperties: false
       properties:
@@ -26722,6 +26825,176 @@ components:
         - data_class
         - added_by
         - added_at
+      type: object
+    MigrationLineMap:
+      additionalProperties: false
+      properties:
+        account:
+          description: The revenue or expense account its amounts go to, by code.
+          examples:
+            - "4010"
+          maxLength: 20
+          type: string
+        line:
+          description: "The Budget sheet's P&L line: the entry's key."
+          examples:
+            - Subscription revenue
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - line
+        - account
+      type: object
+    MigrationMappingChange:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: Accounts to map again, by the workbook's code.
+          items:
+            $ref: "#/components/schemas/MigrationAccountMap"
+          type:
+            - array
+            - "null"
+        bank_rules:
+          description: Bank rules to map again, by their order.
+          items:
+            $ref: "#/components/schemas/MigrationRuleMap"
+          type:
+            - array
+            - "null"
+        budget_lines:
+          description: Budget lines to map again, by the line.
+          items:
+            $ref: "#/components/schemas/MigrationLineMap"
+          type:
+            - array
+            - "null"
+        departments:
+          description: Departments to map again, by the workbook's name.
+          items:
+            $ref: "#/components/schemas/MigrationValueMap"
+          type:
+            - array
+            - "null"
+        gst_codes:
+          description: GST codes to map again, by the workbook's code.
+          items:
+            $ref: "#/components/schemas/MigrationCodeMap"
+          type:
+            - array
+            - "null"
+        projects:
+          description: Projects to map again, by the workbook's name.
+          items:
+            $ref: "#/components/schemas/MigrationValueMap"
+          type:
+            - array
+            - "null"
+      type: object
+    MigrationMappingView:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: Each workbook account, in the sheet's order.
+          items:
+            $ref: "#/components/schemas/MigrationAccountMap"
+          type: array
+        bank_rules:
+          description: The bank rules, in order.
+          items:
+            $ref: "#/components/schemas/MigrationRuleMap"
+          type: array
+        budget_lines:
+          description: Each P&L line of the Budget sheet.
+          items:
+            $ref: "#/components/schemas/MigrationLineMap"
+          type: array
+        departments:
+          description: Each department of the Employees sheet, as a value of the Department dimension (rev 0.254).
+          items:
+            $ref: "#/components/schemas/MigrationValueMap"
+          type: array
+        errors:
+          description: The errors.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        gst_codes:
+          description: Each workbook GST code.
+          items:
+            $ref: "#/components/schemas/MigrationCodeMap"
+          type: array
+        made_at:
+          description: When.
+          examples:
+            - "2026-11-13T09:05:20Z"
+          format: date-time
+          type: string
+        made_by:
+          description: "Who made the version: the validation, or a person."
+          examples:
+            - system:migration.validate
+          type: string
+        problems:
+          description: "What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off."
+          items:
+            $ref: "#/components/schemas/MigrationProblem"
+          type: array
+        projects:
+          description: Each project the records name, as a value of the Project dimension (rev 0.254).
+          items:
+            $ref: "#/components/schemas/MigrationValueMap"
+          type: array
+        sha256:
+          description: "The SHA-256 of the version as kept: what the sign-off names."
+          examples:
+            - 5d1e…
+          type: string
+        signed:
+          description: Whether the Accountant signed this version; a later version needs its own sign-off.
+          examples:
+            - false
+          type: boolean
+        signed_at:
+          description: When.
+          examples:
+            - "2026-11-13T10:00:00Z"
+          format: date-time
+          type: string
+        signed_by:
+          description: Who signed it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        step_id:
+          description: The M1 step whose workbook it maps.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+          format: uuid
+          type: string
+        version:
+          description: "The version: the validation proposes one from each valid workbook, and each change makes the next."
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - version
+        - step_id
+        - sha256
+        - made_by
+        - made_at
+        - signed
+        - accounts
+        - gst_codes
+        - departments
+        - projects
+        - budget_lines
+        - bank_rules
+        - problems
+        - errors
       type: object
     MigrationProblem:
       additionalProperties: false
@@ -26881,6 +27154,37 @@ components:
         - errors
         - warnings
       type: object
+    MigrationRuleMap:
+      additionalProperties: false
+      properties:
+        account:
+          description: The account it categorises to, by code.
+          examples:
+            - "1050"
+          maxLength: 20
+          type: string
+        contains:
+          description: The text a bank description contains; ignored in a change.
+          examples:
+            - STRIPE
+          type: string
+        gst:
+          description: The GST code it gives, if any.
+          examples:
+            - SR
+          maxLength: 10
+          type: string
+        order:
+          description: "Its place among the rules, first match first: the entry's key."
+          examples:
+            - 1
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - order
+        - account
+      type: object
     MigrationSheetCount:
       additionalProperties: false
       properties:
@@ -27015,6 +27319,36 @@ components:
       required:
         - step
         - file
+      type: object
+    MigrationValueMap:
+      additionalProperties: false
+      properties:
+        action:
+          description: "existing: Fyniq has the value; create: the set-up creates it."
+          enum:
+            - existing
+            - create
+          examples:
+            - create
+          type: string
+        code:
+          description: The dimension value's code.
+          examples:
+            - PRODUCT-ENGINEERING
+          maxLength: 30
+          minLength: 1
+          type: string
+        workbook:
+          description: "The workbook's name for it: the entry's key."
+          examples:
+            - Product & Engineering
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - workbook
+        - code
+        - action
       type: object
     MigrationView:
       additionalProperties: false
@@ -134527,6 +134861,526 @@ paths:
       x-fyniq-permission:
         capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
         right: V
+  /v1/migrations/{migration_id}/mapping:
+    get:
+      description: "M2 (§17.1, design D4): the workbook's set-up mapped onto Fyniq's, as its latest version. Accounts map by code onto the organisation's chart (or the standard chart a new organisation loads), the workbook's 7040 onto Fyniq's 7050, and an account Fyniq lacks is created from the Accounts sheet; GST codes onto the sg-gst pack's; departments and projects as dimension values (rev 0.254); budget lines onto their report group's first account; bank rules in their order. Each problem against the organisation's set-up now is an error that stops the Accountant's sign-off. A valid workbook proposes a version, keeping the choices of the one before. Read-only; no side effects."
+      operationId: getMigrationMapping
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationMappingView"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The version and whether it is signed, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the mapping
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        right: V
+    patch:
+      description: "Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: changeMigrationMapping
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MigrationMappingChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationMappingView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The version and whether it is signed, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MIGRATION-11` The mapping does not fit the organisation's set-up."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change the mapping
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - MIGRATION-11
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-MIGRATION-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        right: C
+  /v1/migrations/{migration_id}/mapping/sign-off:
+    post:
+      description: "The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off. Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: signMigrationMapping
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationMappingView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The version and whether it is signed, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MIGRATION-11` The mapping does not fit the organisation's set-up."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Sign the mapping
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - MIGRATION-11
+        - MIGRATION-12
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-MIGRATION-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)"
+        note: A person signed in to Fyniq, stepped up in the last 5 minutes.
+        right: A
   /v1/migrations/{migration_id}/report:
     get:
       description: "M1's latest validation report (FR-MIG-01, design D2): the workbook's company, base currency and dates, each sheet's rows the import reads, and every problem with its sheet, row and column, what is wrong and how to fix it. An error stops the commit; a row the workbook did not post (✖) is a warning and is not imported. While the workbook is validating, the state says so: poll the operation, then read again. Before a workbook is uploaded there is none to read. Read-only; no side effects."

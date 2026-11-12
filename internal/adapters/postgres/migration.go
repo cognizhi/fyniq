@@ -185,3 +185,70 @@ func (m migrations) Validated(ctx context.Context, id uuid.UUID, checks storage.
 		"step_id": {nil, s.ID.String()}, "state": {before.State, s.State}, "errors": {nil, s.Errors}, "warnings": {nil, s.Warnings},
 		"report_sha256": {nil, s.ReportSHA256}, "checks_file_id": {nil, file.ID.String()}, "checks_sha256": {nil, file.SHA256}})
 }
+
+func toMigrationMapping(r sqlcdb.FyniqMigrationMapping) storage.MigrationMapping {
+	return storage.MigrationMapping{ID: r.ID, RunID: r.RunID, Version: int(r.Version), StepID: r.StepID, Mapping: r.Mapping, SHA256: r.MappingSha256,
+		MadeBy: r.MadeBy, MadeAt: r.MadeAt}
+}
+
+func toMigrationSignOff(r sqlcdb.FyniqMigrationSignoff) storage.MigrationSignOff {
+	return storage.MigrationSignOff{ID: r.ID, RunID: r.RunID, Subject: r.Subject, MappingID: r.MappingID, SubjectSHA256: r.SubjectSha256,
+		SignedBy: r.SignedBy, SignedAt: r.SignedAt}
+}
+
+func (m migrations) Mapping(ctx context.Context, run uuid.UUID) (storage.MigrationMapping, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationMapping{}, err
+	}
+	r, err := m.u.q.LatestMigrationMapping(ctx, run)
+	if err != nil {
+		return storage.MigrationMapping{}, mapError(err)
+	}
+	return toMigrationMapping(r), nil
+}
+
+func (m migrations) Map(ctx context.Context, x storage.MigrationMapping) (storage.MigrationMapping, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationMapping{}, err
+	}
+	r, err := m.u.q.InsertMigrationMapping(ctx, sqlcdb.InsertMigrationMappingParams{RunID: x.RunID, Version: int32(min(max(x.Version, 1), 1<<30)), // #nosec G115 -- bounded
+		StepID: x.StepID, Mapping: x.Mapping, MappingSha256: x.SHA256, MadeBy: x.MadeBy, MadeAt: x.MadeAt})
+	if err != nil {
+		return storage.MigrationMapping{}, mapError(err)
+	}
+	out := toMigrationMapping(r)
+	return out, m.u.event(ctx, "migration.mapped", "migration_run", out.RunID, nil, map[string][2]any{"mapping_version": {nil, out.Version},
+		"mapping_sha256": {nil, out.SHA256}, "step_id": {nil, out.StepID.String()}})
+}
+
+func (m migrations) SignOffs(ctx context.Context, run uuid.UUID) ([]storage.MigrationSignOff, error) {
+	if err := m.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := m.u.q.ListMigrationSignoffs(ctx, run)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MigrationSignOff, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toMigrationSignOff(r))
+	}
+	return out, nil
+}
+
+func (m migrations) SignOff(ctx context.Context, s storage.MigrationSignOff) (storage.MigrationSignOff, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationSignOff{}, err
+	}
+	r, err := m.u.q.InsertMigrationSignoff(ctx, sqlcdb.InsertMigrationSignoffParams{RunID: s.RunID, Subject: s.Subject, MappingID: s.MappingID,
+		SubjectSha256: s.SubjectSHA256, SignedBy: s.SignedBy, SignedAt: s.SignedAt})
+	if err != nil {
+		return storage.MigrationSignOff{}, mapError(err)
+	}
+	out := toMigrationSignOff(r)
+	changes := map[string][2]any{"subject": {nil, out.Subject}, "subject_sha256": {nil, out.SubjectSHA256}, "signed_by": {nil, out.SignedBy}}
+	if out.MappingID != nil {
+		changes["mapping_id"] = [2]any{nil, out.MappingID.String()}
+	}
+	return out, m.u.event(ctx, "migration."+out.Subject+"_signed", "migration_run", out.RunID, nil, changes)
+}

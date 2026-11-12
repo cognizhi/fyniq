@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "Accounts to map again, by the workbook's code.",
+      "items": {
+        "$ref": "MigrationAccountMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "bank_rules": {
+      "description": "Bank rules to map again, by their order.",
+      "items": {
+        "$ref": "MigrationRuleMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "budget_lines": {
+      "description": "Budget lines to map again, by the line.",
+      "items": {
+        "$ref": "MigrationLineMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "departments": {
+      "description": "Departments to map again, by the workbook's name.",
+      "items": {
+        "$ref": "MigrationValueMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "gst_codes": {
+      "description": "GST codes to map again, by the workbook's code.",
+      "items": {
+        "$ref": "MigrationCodeMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "projects": {
+      "description": "Projects to map again, by the workbook's name.",
+      "items": {
+        "$ref": "MigrationValueMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "title": "MigrationMappingChange",
+  "type": "object"
+}

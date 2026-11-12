@@ -7,8 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// CodeMigration is the database's refusal of a migration's change (FY325): a migration started in an organisation with
-// a posted entry, a step added to a closed migration, a step's report changed, or anything removed.
+// CodeMigration is the database's refusal of a migration's change (FY325, FY326): a migration started in an
+// organisation with a posted entry, a step added to a closed migration, a step's report changed, a mapping version out of
+// order, a sign-off of anything but the latest version, or anything removed.
 const CodeMigration = "STORAGE-MIGRATION-01"
 
 // The migration's steps (PRD-001 §17.1) and a step's states (p1-workbook-migration design D11).
@@ -80,6 +81,33 @@ type MigrationReport struct {
 	ValidatedAt  time.Time
 }
 
+// MigrationMapping is a version of a migration's mapping (§17.1 M2): the workbook's set-up mapped onto Fyniq's, as
+// JSON, with the M1 step whose workbook it maps.
+type MigrationMapping struct {
+	ID      uuid.UUID
+	RunID   uuid.UUID
+	Version int
+	StepID  uuid.UUID
+	Mapping []byte
+	SHA256  string
+	MadeBy  string
+	MadeAt  time.Time
+}
+
+// The things a migration's sign-off signs.
+const SignOffMapping = "mapping" // M2
+
+// MigrationSignOff is a sign-off of a migration's mapping, over the SHA-256 of the version signed (rev 0.256).
+type MigrationSignOff struct {
+	ID            uuid.UUID
+	RunID         uuid.UUID
+	Subject       string
+	MappingID     *uuid.UUID
+	SubjectSHA256 string
+	SignedBy      string
+	SignedAt      time.Time
+}
+
 // Migrations keep the organisation's migration from the workbook; every change is audited on its run (AUD-01).
 type Migrations interface {
 	// Posted says whether the organisation holds a posted entry: a migration starts only in one that holds none.
@@ -104,4 +132,14 @@ type Migrations interface {
 	// Validated keeps a validating step's report with the Checks export made for it, audited as migration.validated;
 	// CodeMigration when the step is no longer validating.
 	Validated(ctx context.Context, id uuid.UUID, checks MigrationFile, r MigrationReport) (MigrationStep, error)
+	// Mapping is a migration's latest mapping: ports.ErrNotFound when it has none yet.
+	Mapping(ctx context.Context, run uuid.UUID) (MigrationMapping, error)
+	// Map keeps the mapping's next version, audited as migration.mapped: CodeMigration when m.Version is not the next,
+	// or its step not a valid workbook of the migration.
+	Map(ctx context.Context, m MigrationMapping) (MigrationMapping, error)
+	// SignOffs are a migration's sign-offs, oldest first.
+	SignOffs(ctx context.Context, run uuid.UUID) ([]MigrationSignOff, error)
+	// SignOff keeps a sign-off, audited as migration.<subject>_signed: CodeMigration when it does not sign the latest
+	// version over its hash.
+	SignOff(ctx context.Context, s MigrationSignOff) (MigrationSignOff, error)
 }

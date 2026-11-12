@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -83,7 +84,7 @@ func (v Validator) Work() func(ctx context.Context, org uuid.UUID, row storage.O
 		if err != nil || step.State != storage.StepValidating {
 			return err
 		}
-		report, checks, err := v.validate(ctx, org, file)
+		report, checks, proposal, err := v.validate(ctx, org, step.RunID, file)
 		if err != nil {
 			return err
 		}
@@ -106,7 +107,11 @@ func (v Validator) Work() func(ctx context.Context, org uuid.UUID, row storage.O
 				Size: int64(len(checks)), SHA256: hash, OriginalSHA256: hash, StorageKey: key, DataClass: storage.ClassGeneral,
 				AddedBy: Actor.Type + ":" + Actor.ID, AddedAt: now},
 				storage.MigrationReport{State: state, Report: sealed, ReportSHA256: sum, Errors: report.Errors, Warnings: report.Warnings, ValidatedAt: now})
-			return err
+			if err != nil || state != storage.StepValid || proposal == nil {
+				return err
+			}
+			// A valid workbook's mapping is proposed as the mapping's next version, for the Accountant to review and sign (M2).
+			return remap(ctx, u, step.RunID, step.ID, *proposal, Actor.Type+":"+Actor.ID, now)
 		})
 		if err != nil {
 			_ = v.Files.Delete(context.WithoutCancel(ctx), key) // no row names it
@@ -124,45 +129,86 @@ func hashOf(b []byte) string {
 	return hex.EncodeToString(s[:])
 }
 
-// validate reads the workbook as kept and checks it: its report, and the Checks export made from it.
-func (v Validator) validate(ctx context.Context, org uuid.UUID, file storage.MigrationFile) (Report, []byte, error) {
+// validate reads the workbook as kept and checks it: its report, the Checks export made from it, and the mapping it
+// proposes.
+func (v Validator) validate(ctx context.Context, org, run uuid.UUID, file storage.MigrationFile) (Report, []byte, *Mapping, error) {
 	empty := (&Workbook{}).ChecksExport()
 	rc, err := v.Files.Get(ctx, file.StorageKey)
 	if err != nil {
-		return Report{}, nil, err
+		return Report{}, nil, nil, err
 	}
 	data, err := io.ReadAll(io.LimitReader(rc, MaxBytes+1))
 	_ = rc.Close()
 	if err != nil {
-		return Report{}, nil, err
+		return Report{}, nil, nil, err
 	}
 	if hashOf(data) != file.SHA256 {
 		return Unreadable(file.FileName, file.SHA256, Problem{Severity: Error, Code: CodeWorkbook,
 			Message: "the workbook kept is not the one uploaded: its SHA-256 differs",
-			Fix:     "Upload the workbook again"}), empty, nil
+			Fix:     "Upload the workbook again"}), empty, nil, nil
 	}
 	w, err := Read(data)
 	if re := (*sheet.ReadError)(nil); errors.As(err, &re) {
-		return Unreadable(file.FileName, file.SHA256, Problem{Severity: Error, Code: CodeWorkbook, Message: re.Message, Fix: re.Fix}), empty, nil
+		return Unreadable(file.FileName, file.SHA256, Problem{Severity: Error, Code: CodeWorkbook, Message: re.Message, Fix: re.Fix}), empty, nil, nil
 	}
 	if err != nil {
-		return Report{}, nil, err
+		return Report{}, nil, nil, err
 	}
 	w.Freeze()
 	// Checked against the organisation inside a transaction that rolls back: validating commits nothing (design D2).
-	err = v.Store.Do(storage.WithPreview(ctx), org, func(ctx context.Context, u storage.UnitOfWork) error { return w.Against(ctx, u) })
+	var proposal *Mapping
+	err = v.Store.Do(storage.WithPreview(ctx), org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		proposal, err = w.Against(ctx, u, run)
+		return err
+	})
 	if err != nil && !errors.Is(err, storage.ErrPreviewed) {
-		return Report{}, nil, err
+		return Report{}, nil, nil, err
 	}
-	return w.Report(file.FileName, file.SHA256), w.ChecksExport(), nil
+	return w.Report(file.FileName, file.SHA256), w.ChecksExport(), proposal, nil
+}
+
+// remap keeps m as the migration's next mapping version, of the workbook step validated.
+func remap(ctx context.Context, u storage.UnitOfWork, run, step uuid.UUID, m Mapping, by string, at time.Time) error {
+	version := 1
+	latest, err := u.Migrations().Mapping(ctx, run)
+	switch {
+	case err == nil:
+		version = latest.Version + 1
+	case !errors.Is(err, ports.ErrNotFound):
+		return err
+	}
+	sealed, sum, err := m.Sealed()
+	if err != nil {
+		return err
+	}
+	_, err = u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run, Version: version, StepID: step, Mapping: sealed, SHA256: sum, MadeBy: by, MadeAt: at})
+	return err
+}
+
+// LatestMapping is a migration's latest mapping and its version, or nil when it has none yet.
+func LatestMapping(ctx context.Context, u storage.UnitOfWork, run uuid.UUID) (*Mapping, storage.MigrationMapping, error) {
+	latest, err := u.Migrations().Mapping(ctx, run)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil, latest, nil
+	}
+	if err != nil {
+		return nil, latest, err
+	}
+	var m Mapping
+	if err := json.Unmarshal(latest.Mapping, &m); err != nil {
+		return nil, latest, err
+	}
+	return &m, latest, nil
 }
 
 // Against checks the workbook against the organisation it goes into: one without a posted entry (rev 0.254), with the
-// workbook's base currency. The mapping (M2) and each record's command preview add their checks here as they are built.
-func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork) error {
+// workbook's base currency; and proposes its mapping onto the organisation's set-up (M2), keeping the choices of the
+// migration's mapping before it. What the mapping gets wrong is reported as a warning, fixed in the mapping before
+// the Accountant signs it. Each record's command preview adds its checks here as it is built.
+func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.UUID) (*Mapping, error) {
 	posted, err := u.Migrations().Posted(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if posted {
 		w.Problems = append(w.Problems, Problem{Severity: Error, Code: CodePosted, Message: "the organisation holds posted entries",
@@ -170,12 +216,25 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork) error {
 	}
 	o, err := u.Organisation(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if b := w.Settings.BaseCurrency; b != "" && o.BaseCurrency != b {
 		w.Problems = append(w.Problems, Problem{Sheet: "Settings", Column: "Base (reporting) currency", Severity: Error, Code: CodeOrganisation,
 			Message: fmt.Sprintf("the workbook's base currency is %s; the organisation's is %s", b, o.BaseCurrency),
 			Fix:     fmt.Sprintf("Import the workbook into an organisation whose base currency is %s", b)})
 	}
-	return nil
+	target, err := TargetOf(ctx, u, w.Settings.BooksStart)
+	if err != nil {
+		return nil, err
+	}
+	previous, _, err := LatestMapping(ctx, u, run)
+	if err != nil {
+		return nil, err
+	}
+	m := w.Propose(target, previous)
+	for _, p := range m.Check(target) {
+		p.Severity, p.Fix = Warning, p.Fix+", in the mapping before it is signed"
+		w.Problems = append(w.Problems, p)
+	}
+	return &m, nil
 }

@@ -122,6 +122,47 @@ func (q *Queries) InsertMigrationFile(ctx context.Context, arg InsertMigrationFi
 	return i, err
 }
 
+const insertMigrationMapping = `-- name: InsertMigrationMapping :one
+INSERT INTO fyniq.migration_mapping (run_id, version, step_id, mapping, mapping_sha256, made_by, made_at)
+VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
+RETURNING organisation_id, id, run_id, version, step_id, mapping, mapping_sha256, made_by, made_at
+`
+
+type InsertMigrationMappingParams struct {
+	RunID         uuid.UUID
+	Version       int32
+	StepID        uuid.UUID
+	Mapping       []byte
+	MappingSha256 string
+	MadeBy        string
+	MadeAt        time.Time
+}
+
+func (q *Queries) InsertMigrationMapping(ctx context.Context, arg InsertMigrationMappingParams) (FyniqMigrationMapping, error) {
+	row := q.db.QueryRow(ctx, insertMigrationMapping,
+		arg.RunID,
+		arg.Version,
+		arg.StepID,
+		arg.Mapping,
+		arg.MappingSha256,
+		arg.MadeBy,
+		arg.MadeAt,
+	)
+	var i FyniqMigrationMapping
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.Version,
+		&i.StepID,
+		&i.Mapping,
+		&i.MappingSha256,
+		&i.MadeBy,
+		&i.MadeAt,
+	)
+	return i, err
+}
+
 const insertMigrationRun = `-- name: InsertMigrationRun :one
 INSERT INTO fyniq.migration_run (started_by, started_at) VALUES ($1, $2)
 RETURNING organisation_id, id, status, started_by, started_at
@@ -141,6 +182,44 @@ func (q *Queries) InsertMigrationRun(ctx context.Context, arg InsertMigrationRun
 		&i.Status,
 		&i.StartedBy,
 		&i.StartedAt,
+	)
+	return i, err
+}
+
+const insertMigrationSignoff = `-- name: InsertMigrationSignoff :one
+INSERT INTO fyniq.migration_signoff (run_id, subject, mapping_id, subject_sha256, signed_by, signed_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING organisation_id, id, run_id, subject, mapping_id, subject_sha256, signed_by, signed_at
+`
+
+type InsertMigrationSignoffParams struct {
+	RunID         uuid.UUID
+	Subject       string
+	MappingID     *uuid.UUID
+	SubjectSha256 string
+	SignedBy      string
+	SignedAt      time.Time
+}
+
+func (q *Queries) InsertMigrationSignoff(ctx context.Context, arg InsertMigrationSignoffParams) (FyniqMigrationSignoff, error) {
+	row := q.db.QueryRow(ctx, insertMigrationSignoff,
+		arg.RunID,
+		arg.Subject,
+		arg.MappingID,
+		arg.SubjectSha256,
+		arg.SignedBy,
+		arg.SignedAt,
+	)
+	var i FyniqMigrationSignoff
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.Subject,
+		&i.MappingID,
+		&i.SubjectSha256,
+		&i.SignedBy,
+		&i.SignedAt,
 	)
 	return i, err
 }
@@ -183,6 +262,27 @@ func (q *Queries) InsertMigrationStep(ctx context.Context, arg InsertMigrationSt
 		&i.StartedBy,
 		&i.StartedAt,
 		&i.ValidatedAt,
+	)
+	return i, err
+}
+
+const latestMigrationMapping = `-- name: LatestMigrationMapping :one
+SELECT organisation_id, id, run_id, version, step_id, mapping, mapping_sha256, made_by, made_at FROM fyniq.migration_mapping WHERE run_id = $1 ORDER BY version DESC LIMIT 1
+`
+
+func (q *Queries) LatestMigrationMapping(ctx context.Context, runID uuid.UUID) (FyniqMigrationMapping, error) {
+	row := q.db.QueryRow(ctx, latestMigrationMapping, runID)
+	var i FyniqMigrationMapping
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.Version,
+		&i.StepID,
+		&i.Mapping,
+		&i.MappingSha256,
+		&i.MadeBy,
+		&i.MadeAt,
 	)
 	return i, err
 }
@@ -245,6 +345,39 @@ func (q *Queries) ListMigrationRuns(ctx context.Context) ([]FyniqMigrationRun, e
 			&i.Status,
 			&i.StartedBy,
 			&i.StartedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMigrationSignoffs = `-- name: ListMigrationSignoffs :many
+SELECT organisation_id, id, run_id, subject, mapping_id, subject_sha256, signed_by, signed_at FROM fyniq.migration_signoff WHERE run_id = $1 ORDER BY signed_at, id
+`
+
+func (q *Queries) ListMigrationSignoffs(ctx context.Context, runID uuid.UUID) ([]FyniqMigrationSignoff, error) {
+	rows, err := q.db.Query(ctx, listMigrationSignoffs, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqMigrationSignoff
+	for rows.Next() {
+		var i FyniqMigrationSignoff
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.RunID,
+			&i.Subject,
+			&i.MappingID,
+			&i.SubjectSha256,
+			&i.SignedBy,
+			&i.SignedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -42,3 +42,19 @@ UPDATE fyniq.migration_step
        validated_at = sqlc.arg(validated_at)
  WHERE id = sqlc.arg(id) AND state = 'validating'
 RETURNING *;
+
+-- name: LatestMigrationMapping :one
+SELECT * FROM fyniq.migration_mapping WHERE run_id = sqlc.arg(run_id) ORDER BY version DESC LIMIT 1;
+
+-- name: InsertMigrationMapping :one
+INSERT INTO fyniq.migration_mapping (run_id, version, step_id, mapping, mapping_sha256, made_by, made_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(version), sqlc.arg(step_id), sqlc.arg(mapping)::jsonb, sqlc.arg(mapping_sha256), sqlc.arg(made_by), sqlc.arg(made_at))
+RETURNING *;
+
+-- name: ListMigrationSignoffs :many
+SELECT * FROM fyniq.migration_signoff WHERE run_id = sqlc.arg(run_id) ORDER BY signed_at, id;
+
+-- name: InsertMigrationSignoff :one
+INSERT INTO fyniq.migration_signoff (run_id, subject, mapping_id, subject_sha256, signed_by, signed_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(subject), sqlc.narg(mapping_id), sqlc.arg(subject_sha256), sqlc.arg(signed_by), sqlc.arg(signed_at))
+RETURNING *;

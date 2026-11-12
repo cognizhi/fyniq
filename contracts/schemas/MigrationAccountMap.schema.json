@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "description": "existing: Fyniq's chart has it; create: the set-up creates it.",
+      "enum": [
+        "existing",
+        "create"
+      ],
+      "examples": [
+        "existing"
+      ],
+      "type": "string"
+    },
+    "cash_flow_line": {
+      "description": "An account to create: its cash-flow line.",
+      "examples": [
+        "Operating"
+      ],
+      "type": "string"
+    },
+    "default_gst_code": {
+      "description": "An account to create: its default GST code.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "function": {
+      "description": "An account to create: its function (COGS, R\u0026D, S\u0026M, G\u0026A or Other).",
+      "examples": [
+        "Other"
+      ],
+      "type": "string"
+    },
+    "fyniq": {
+      "description": "The Fyniq account it maps onto, or is created as, by code.",
+      "examples": [
+        "4030"
+      ],
+      "maxLength": 20,
+      "minLength": 1,
+      "type": "string"
+    },
+    "money_account": {
+      "description": "An account to create: whether money moves through it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "The workbook's name for it; ignored in a change.",
+      "examples": [
+        "AI project \u0026 solution revenue"
+      ],
+      "type": "string"
+    },
+    "report_group": {
+      "description": "An account to create: its report group.",
+      "examples": [
+        "Services \u0026 project revenue"
+      ],
+      "type": "string"
+    },
+    "row": {
+      "description": "Its row on the Accounts sheet; ignored in a change.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "type": {
+      "description": "Fyniq's type: asset, liability, equity, revenue or expense; the workbook's Cost of Sales, Other Expense and Tax are expense and Other Income revenue.",
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    },
+    "workbook": {
+      "description": "The workbook's account code: the entry's key.",
+      "examples": [
+        "4030"
+      ],
+      "maxLength": 20,
+      "minLength": 1,
+      "type": "string"
+    },
+    "workbook_type": {
+      "description": "The workbook's type, such as Cost of Sales; ignored in a change.",
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "workbook",
+    "fyniq",
+    "action"
+  ],
+  "title": "MigrationAccountMap",
+  "type": "object"
+}
