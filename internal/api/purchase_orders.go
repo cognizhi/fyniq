@@ -721,10 +721,14 @@ func registerPurchaseOrders(a *API) {
 				if o.Supplier != nil && o.Supplier.Name != "" {
 					name += " to " + o.Supplier.Name
 				}
+				facts, err := orderFacts(o) // FR-APR-01: its amount in the base currency, accounts and supplier for the policy's rules
+				if err != nil {
+					return Approval{}, err
+				}
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectOrder, ObjectKey: doc.ID.String(), Operation: approval.OpOrderApprove,
 					Summary: fmt.Sprintf("Approve %s, total %s %s", name, o.Total.Amount, o.Total.Currency),
 					Execute: map[string]any{"purchase_order_id": doc.ID.String(), "version": fmt.Sprint(doc.Version)},
-					Diff:    []ApprovalDiff{{Field: "status", Before: "draft", After: "approved"}, {Field: "total", After: o.TotalBase.Amount}}})
+					Diff:    []ApprovalDiff{{Field: "status", Before: "draft", After: "approved"}, {Field: "total", After: o.TotalBase.Amount}}, Facts: facts})
 			})
 			if err != nil {
 				return nil, err
