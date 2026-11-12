@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -45,7 +46,8 @@ type ApprovalStepChange struct {
 type ApprovalPolicyVersion struct {
 	Version   string         `json:"version" doc:"The version string the requests made under it record." example:"organisation_setting/v1"`
 	Number    int            `json:"number" doc:"Its number, from 1." example:"1"`
-	Steps     []ApprovalStep `json:"steps" doc:"Its ordered steps."`
+	Steps     []ApprovalStep `json:"steps" doc:"Its ordered default steps."`
+	Rules     []ApprovalRule `json:"rules" doc:"Its rules, in order: the first whose conditions hold decided a request's steps (rev 0.178)."`
 	RequestID string         `json:"request_id" format:"uuid" doc:"The approved request that made it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
 	ChangedBy string         `json:"changed_by" format:"uuid" doc:"Who asked for it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	ChangedAt time.Time      `json:"changed_at" doc:"When it took effect: when its request was approved." example:"2026-10-20T09:30:00Z"`
@@ -59,7 +61,8 @@ type ApprovalPolicy struct {
 	Number     int            `json:"number" doc:"The organisation's version of it; 0 while the built-in policy applies." example:"0"`
 	BuiltIn    bool           `json:"built_in" doc:"true while the built-in policy applies: one step with a quorum of one." example:"true"`
 	Fixed      bool           `json:"fixed" doc:"true for the policy for approval policies, which no organisation changes, so a change can never lock it out (FR-APR-09)." example:"false"`
-	Steps      []ApprovalStep `json:"steps" doc:"Its ordered steps: each needs its quorum before the next is signed (FR-APR-01)."`
+	Steps      []ApprovalStep `json:"steps" doc:"Its ordered default steps: each needs its quorum before the next is signed (FR-APR-01)."`
+	Rules      []ApprovalRule `json:"rules" doc:"Its rules, in order: the first whose conditions all hold decides a request's steps instead of the default steps (rev 0.178). Empty for none."`
 }
 
 // ApprovalPolicyDetail is one policy in force, with the organisation's versions of it.
@@ -76,7 +79,8 @@ type ApprovalPolicyPage struct {
 
 // ApprovalPolicyChange asks for a policy's next version.
 type ApprovalPolicyChange struct {
-	Steps []ApprovalStepChange `json:"steps" minItems:"1" maxItems:"5" doc:"The ordered steps: 1 to 5."`
+	Steps []ApprovalStepChange `json:"steps" minItems:"1" maxItems:"5" doc:"The ordered default steps: 1 to 5."`
+	Rules []ApprovalRuleChange `json:"rules,omitempty" maxItems:"10" doc:"The rules, in order, up to 10: the first whose conditions all hold decides a request's steps; when none does, the default steps apply (rev 0.178). Leave it out for none."`
 }
 
 // ApprovalPolicyPath names a policy by the object type it covers.
@@ -111,7 +115,7 @@ type approvalPolicyChangeOutput struct {
 }
 
 // PolicyCodes are the policy rules.
-var PolicyCodes = []string{approval.CodeSteps, approval.CodeFixed}
+var PolicyCodes = []string{approval.CodeSteps, approval.CodeFixed, approval.CodeRules}
 
 func domainSteps(steps []storage.ApprovalStep) []approval.Step {
 	out := make([]approval.Step, len(steps))
@@ -171,7 +175,7 @@ func (a *API) policyFor(ctx context.Context, u storage.UnitOfWork, objectType st
 	}
 	last := versions[len(versions)-1]
 	return approval.Policy{ObjectType: objectType, Version: approval.Label(objectType, last.Version), Number: last.Version,
-		Steps: domainSteps(last.Steps)}, versions, nil
+		Steps: domainSteps(last.Steps), Rules: domainRules(last.Rules)}, versions, nil
 }
 
 // checkSteps checks steps as the next policy for objectType against the active members now (FR-APR-01).
@@ -191,26 +195,61 @@ func (a *API) checkSteps(ctx context.Context, u storage.UnitOfWork, objectType s
 	}, members), nil
 }
 
-func policyOf(p approval.Policy) ApprovalPolicy {
+func policyOf(p approval.Policy, base string) ApprovalPolicy {
 	out := ApprovalPolicy{ObjectType: p.ObjectType, Row: approval.Rows[p.ObjectType], Version: p.Version, Number: p.Number, BuiltIn: p.Number == 0,
-		Fixed: p.Fixed, Steps: []ApprovalStep{}}
+		Fixed: p.Fixed, Steps: []ApprovalStep{}, Rules: []ApprovalRule{}}
 	for _, s := range storageSteps(p.Steps) {
 		out.Steps = append(out.Steps, apiStep(s))
+	}
+	for _, r := range storageRules(p.Rules) {
+		out.Rules = append(out.Rules, apiRule(r, base))
 	}
 	return out
 }
 
-func policyDetailOf(p approval.Policy, versions []storage.ApprovalPolicy) ApprovalPolicyDetail {
-	out := ApprovalPolicyDetail{ApprovalPolicy: policyOf(p), History: []ApprovalPolicyVersion{}}
+func policyDetailOf(p approval.Policy, versions []storage.ApprovalPolicy, base string) ApprovalPolicyDetail {
+	out := ApprovalPolicyDetail{ApprovalPolicy: policyOf(p, base), History: []ApprovalPolicyVersion{}}
 	for _, v := range versions {
-		h := ApprovalPolicyVersion{Version: approval.Label(v.ObjectType, v.Version), Number: v.Version, Steps: []ApprovalStep{},
+		h := ApprovalPolicyVersion{Version: approval.Label(v.ObjectType, v.Version), Number: v.Version, Steps: []ApprovalStep{}, Rules: []ApprovalRule{},
 			RequestID: v.RequestID.String(), ChangedBy: v.CreatedBy.String(), ChangedAt: v.CreatedAt.UTC()}
 		for _, s := range v.Steps {
 			h.Steps = append(h.Steps, apiStep(s))
 		}
+		for _, r := range v.Rules {
+			h.Rules = append(h.Rules, apiRule(r, base))
+		}
 		out.History = append(out.History, h)
 	}
 	return out
+}
+
+// baseCode is the organisation's base currency's code.
+func baseCode(ctx context.Context, u storage.UnitOfWork) (string, error) {
+	o, err := u.Organisation(ctx)
+	return o.BaseCurrency, err
+}
+
+// parseSteps reads the steps asked for at field, every problem at once.
+func parseSteps(in []ApprovalStepChange, field string) ([]approval.Step, []FieldProblem) {
+	steps := make([]approval.Step, len(in))
+	var bad []FieldProblem
+	for i, s := range in {
+		steps[i] = approval.Step{Quorum: s.Quorum}
+		for _, r := range s.Roles {
+			steps[i].Roles = append(steps[i].Roles, string(r))
+		}
+		for j, ref := range s.Users {
+			raw := string(ref)
+			id, err := uuid.Parse(raw)
+			if err != nil || id.String() != strings.ToLower(raw) {
+				bad = append(bad, FieldProblem{Code: approval.CodeSteps, Field: fmt.Sprintf("%s[%d].users[%d]", field, i, j),
+					Message: "a member is named by their user ID, a UUID", Fix: "Send the member's user_id from the members list"})
+				continue
+			}
+			steps[i].Users = append(steps[i].Users, id)
+		}
+	}
+	return steps, bad
 }
 
 // lookupPolicy is the object type a path names, or the problem.
@@ -238,12 +277,16 @@ func registerApprovalPolicies(a *API) {
 				types = append(types, t)
 			}
 			slices.Sort(types)
+			base, err := baseCode(ctx, u)
+			if err != nil {
+				return err
+			}
 			for _, t := range types {
 				pol, _, err := a.policyFor(ctx, u, t)
 				if err != nil {
 					return err
 				}
-				all = append(all, policyOf(pol))
+				all = append(all, policyOf(pol, base))
 			}
 			return nil
 		})
@@ -270,7 +313,11 @@ func registerApprovalPolicies(a *API) {
 		var out approvalPolicyReadOutput
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			pol, versions, err := a.policyFor(ctx, u, in.ObjectType)
-			out.Body, out.ETag = policyDetailOf(pol, versions), etag(pol.Number)
+			if err != nil {
+				return err
+			}
+			base, err := baseCode(ctx, u)
+			out.Body, out.ETag = policyDetailOf(pol, versions, base), etag(pol.Number)
 			return err
 		})
 		return &out, err
@@ -279,8 +326,10 @@ func registerApprovalPolicies(a *API) {
 	register(a, authz.ChangeApprovalPolicy, huma.Operation{
 		OperationID: "changeApprovalPolicy", Method: http.MethodPatch, Path: "/v1/approval-policies/{object_type}", Tags: []string{"Approvals"},
 		Summary: "Ask to change an approval policy", DefaultStatus: http.StatusAccepted,
-		Description: "Asks for the policy's next version: its ordered steps, each a quorum of 1 to 5 people who hold the approval right (A) on " +
-			"the object's Appendix D row, narrowed to roles or to named members, never both (FR-APR-01). A policy never adds anyone Appendix D " +
+		Description: "Asks for the policy's next version: its ordered default steps, each a quorum of 1 to 5 people who hold the approval right " +
+			"(A) on the object's Appendix D row, narrowed to roles or to named members, never both (FR-APR-01); and up to 10 rules, in order, " +
+			"each with conditions (an amount at or above, in the base currency; departments; accounts; vendors) and its own steps: the " +
+			"first rule whose conditions all hold decides a request's steps, else the default steps apply (rev 0.178). A policy never adds anyone Appendix D " +
 			"does not, and its steps must be ones the members can sign (APR-08). The change is never made at once: the answer is 202 with an " +
 			"approval request, which a member who holds A on \"Approval policies, AI catalogue\" (the Owner or the Controller) and is not the " +
 			"requester approves (FR-APR-09, SOD-8). On its approval the version is added, and every pending request of that kind restarts: " +
@@ -298,24 +347,7 @@ func registerApprovalPolicies(a *API) {
 				return nil, problem(approval.CodeFixed, "The policy for approval policies is fixed, so no change can lock the organisation out of changing its policies.",
 					"Change the policy of another kind of change")
 			}
-			steps := make([]approval.Step, len(in.Body.Steps))
-			var bad []FieldProblem
-			for i, s := range in.Body.Steps {
-				steps[i] = approval.Step{Quorum: s.Quorum}
-				for _, r := range s.Roles {
-					steps[i].Roles = append(steps[i].Roles, string(r))
-				}
-				for j, ref := range s.Users {
-					raw := string(ref)
-					id, err := uuid.Parse(raw)
-					if err != nil || id.String() != strings.ToLower(raw) {
-						bad = append(bad, FieldProblem{Code: approval.CodeSteps, Field: fmt.Sprintf("body.steps[%d].users[%d]", i, j),
-							Message: "a member is named by their user ID, a UUID", Fix: "Send the member's user_id from the members list"})
-						continue
-					}
-					steps[i].Users = append(steps[i].Users, id)
-				}
-			}
+			steps, bad := parseSteps(in.Body.Steps, "body.steps")
 			if len(bad) > 0 {
 				return nil, invalid(bad)
 			}
@@ -334,16 +366,41 @@ func registerApprovalPolicies(a *API) {
 				for _, x := range fps {
 					bad = append(bad, FieldProblem{Code: x.Code, Field: x.Field, Message: x.Message, Fix: x.Fix})
 				}
+				code, err := baseCode(ctx, u)
+				if err != nil {
+					return Approval{}, err
+				}
+				base, err := money.Lookup(code)
+				if err != nil {
+					return Approval{}, err
+				}
+				rules, rfps := parseRules(in.Body.Rules, base)
+				bad = append(bad, rfps...)
+				if len(rfps) == 0 {
+					more, err := a.rulesProblems(ctx, u, in.ObjectType, rules, base)
+					if err != nil {
+						return Approval{}, err
+					}
+					bad = append(bad, more...)
+				}
 				if len(bad) > 0 {
 					return Approval{}, invalid(bad)
 				}
-				next := storageSteps(steps)
+				next, nextRules := storageSteps(steps), storageRules(rules)
 				before, after := describeSteps(storageSteps(current.Steps)), describeSteps(next)
+				diff := []ApprovalDiff{{Field: "steps", Before: before, After: after}}
+				if b, a := describeRules(storageRules(current.Rules)), describeRules(nextRules); b != a {
+					diff = append(diff, ApprovalDiff{Field: "rules", Before: b, After: a})
+				}
+				summary := fmt.Sprintf("Change who approves %s: %s", strings.ReplaceAll(in.ObjectType, "_", " "), after)
+				if len(nextRules) > 0 {
+					summary += fmt.Sprintf(", with %d rule(s) before them", len(nextRules))
+				}
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPolicy, ObjectKey: in.ObjectType,
-					Operation: approval.OpPolicyChange,
-					Summary:   fmt.Sprintf("Change who approves %s: %s", strings.ReplaceAll(in.ObjectType, "_", " "), after),
-					Execute:   map[string]any{"object_type": in.ObjectType, "version": current.Number + 1, "steps": stepsValue(next)},
-					Diff:      []ApprovalDiff{{Field: "steps", Before: before, After: after}}})
+					Operation: approval.OpPolicyChange, Summary: summary,
+					Execute: map[string]any{"object_type": in.ObjectType, "version": current.Number + 1, "steps": stepsValue(next),
+						"rules": rulesValue(nextRules)},
+					Diff: diff})
 			})
 			if err != nil {
 				return nil, err
