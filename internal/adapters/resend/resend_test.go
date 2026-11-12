@@ -36,7 +36,7 @@ func TestASendIsTheDocumentedRequest(t *testing.T) {
 		_, _ = w.Write([]byte(`{"id":"49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"}`))
 	}))
 	defer srv.Close()
-	r, err := resend.New(srv.URL, "re_key").Send(context.Background(), message)
+	r, err := resend.New(srv.URL, "re_key", http.DefaultClient).Send(context.Background(), message)
 	if err != nil || r.ProviderID != "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794" {
 		t.Fatalf("%+v, %v", r, err)
 	}
@@ -68,7 +68,7 @@ func TestResendsAnswersAreRefusalsOnlyWhenNothingWasTaken(t *testing.T) {
 				_, _ = w.Write([]byte(c.body))
 			}))
 			defer srv.Close()
-			_, err := resend.New(srv.URL, "k").Send(context.Background(), message)
+			_, err := resend.New(srv.URL, "k", http.DefaultClient).Send(context.Background(), message)
 			if err == nil || errors.Is(err, ports.ErrEmailRefused) != c.refused || !strings.Contains(err.Error(), c.says) {
 				t.Fatalf("%v; want refused=%v, saying %q", err, c.refused, c.says)
 			}
@@ -89,7 +89,7 @@ func TestStatusSendsAgainUnderTheKeyWithinTheWindow(t *testing.T) {
 		_, _ = w.Write([]byte(`{"id":"first-answer"}`))
 	}))
 	defer srv.Close()
-	s := resend.New(srv.URL, "k")
+	s := resend.New(srv.URL, "k", http.DefaultClient)
 	r, err := s.Status(context.Background(), message, message.Date.Add(-22*time.Hour))
 	if err != nil || r.ProviderID != "first-answer" || len(keys) != 1 || keys[0] != message.Key {
 		t.Fatalf("within the window: %+v, %v, keys %v", r, err, keys)
@@ -111,7 +111,7 @@ func TestTheReferenceGoesAsATag(t *testing.T) {
 	defer srv.Close()
 	m := message
 	m.Reference = "org_message"
-	if _, err := resend.New(srv.URL, "k").Send(context.Background(), m); err != nil {
+	if _, err := resend.New(srv.URL, "k", http.DefaultClient).Send(context.Background(), m); err != nil {
 		t.Fatal(err)
 	}
 	tags, _ := got["tags"].([]any)
@@ -147,8 +147,8 @@ func TestReceivedMailIsReadFromResendsReceivingAPI(t *testing.T) {
 		}
 	}))
 	defer api.Close()
-	r := resend.NewReceiving(api.URL, "re_key")
-	r.HTTP = cdn.Client() // trusts the test CDN's certificate, and reaches the plain API
+	r := resend.NewReceiving(api.URL, "re_key", http.DefaultClient, http.DefaultClient)
+	r.HTTP, r.Downloads = cdn.Client(), cdn.Client() // trust the test CDN's certificate, and reach the plain API
 	mail, err := r.Fetch(context.Background(), "e-1")
 	if err != nil || mail.From != "ar@supplier.example" || mail.Text != "See attached." || mail.DMARC != "pass" || len(mail.Attachments) != 1 ||
 		mail.Attachments[0].FileName != "INV.pdf" || mail.Attachments[0].Size != 16 {
@@ -161,7 +161,7 @@ func TestReceivedMailIsReadFromResendsReceivingAPI(t *testing.T) {
 	if _, err := r.Attachment(context.Background(), "e-1", mail.Attachments[0], 10); !errors.Is(err, ports.ErrTooLarge) {
 		t.Fatalf("beyond the limit: %v", err)
 	}
-	if _, err := resend.NewReceiving(api.URL, "wrong").Fetch(context.Background(), "e-1"); err == nil {
+	if _, err := resend.NewReceiving(api.URL, "wrong", http.DefaultClient, http.DefaultClient).Fetch(context.Background(), "e-1"); err == nil {
 		t.Fatal("a refused fetch read nothing, but no error")
 	}
 }
@@ -182,14 +182,14 @@ func TestAnAttachmentIsTheDocumentedField(t *testing.T) {
 	defer srv.Close()
 	m := message
 	m.Attachments = []ports.EmailAttachment{{Name: "INV-0001.pdf", ContentType: "application/pdf", Content: []byte("%PDF-1.7")}}
-	if _, err := resend.New(srv.URL, "re_key").Send(context.Background(), m); err != nil {
+	if _, err := resend.New(srv.URL, "re_key", http.DefaultClient).Send(context.Background(), m); err != nil {
 		t.Fatal(err)
 	}
 	if b, _ := json.Marshal(got["attachments"]); string(b) != `[{"content":"JVBERi0xLjc=","filename":"INV-0001.pdf"}]` {
 		t.Errorf("the attachments: %s", b)
 	}
 	m.Attachments = []ports.EmailAttachment{{Name: "run.sh", ContentType: "text/x-shellscript", Content: []byte("echo")}}
-	if _, err := resend.New(srv.URL, "re_key").Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) || calls != 1 {
+	if _, err := resend.New(srv.URL, "re_key", http.DefaultClient).Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) || calls != 1 {
 		t.Errorf("a file that is not a PDF: %v, %d calls", err, calls)
 	}
 }

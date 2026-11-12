@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -18,6 +19,7 @@ import (
 type HTTPJobs struct {
 	URL    string
 	Tokens ports.TaskTokens
+	HTTP   *http.Client // nil: through the local flavour's egress guard, to URL's host only
 }
 
 var _ ports.JobRunner = HTTPJobs{}
@@ -35,7 +37,11 @@ func (j HTTPJobs) Start(ctx context.Context, job string, slot time.Time) (string
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	client := j.HTTP
+	if client == nil {
+		client = (&egress.Guard{Local: true}).For(egress.HostOf(j.URL))
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("start job %s: %w", job, err)
 	}

@@ -89,13 +89,13 @@ func TestKMSSignsAndVerifiesAnchors(t *testing.T) {
 	tokens := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "service-token"})
 	ctx := context.Background()
 
-	old := NewKMS(srv.URL, keyName+"/cryptoKeyVersions/1", tokens, nil)
+	old := NewKMS(srv.URL, keyName+"/cryptoKeyVersions/1", tokens, http.DefaultClient)
 	anchor := []byte(`{"org":"0192f1a0-0000-7000-8000-000000000001","seq":42,"head":"ab12"}`)
 	sig1, err := old.Sign(ctx, anchor)
 	if err != nil || f.auth != "Bearer service-token" {
 		t.Fatalf("Sign: %v (auth %q)", err, f.auth)
 	}
-	k := NewKMS(srv.URL, keyName+"/cryptoKeyVersions/2", tokens, nil) // after a rotation
+	k := NewKMS(srv.URL, keyName+"/cryptoKeyVersions/2", tokens, http.DefaultClient) // after a rotation
 	sig2, err := k.Sign(ctx, anchor)
 	if err != nil {
 		t.Fatal(err)

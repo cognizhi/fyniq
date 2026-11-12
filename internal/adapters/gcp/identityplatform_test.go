@@ -122,8 +122,8 @@ func upstreamToken(claims map[string]any) string {
 var zohoUS = IdentityProvider{ID: "zoho", Name: "Zoho", IdP: "oidc.zoho", Issuer: "https://accounts.zoho.com", ClientID: "1000.FYNIQ"}
 
 func newPlatform(f *fakeToolkit, srv *httptest.Server, c ports.Clock) *IdentityPlatform {
-	return &IdentityPlatform{Endpoint: srv.URL, APIKey: "test-api-key", Project: f.project, Federated: []IdentityProvider{zohoUS},
-		Keys: &CertKeys{URL: srv.URL + "/certs", Clock: c}, Clock: c}
+	return &IdentityPlatform{Endpoint: srv.URL, Client: http.DefaultClient, APIKey: "test-api-key", Project: f.project, Federated: []IdentityProvider{zohoUS},
+		Keys: &CertKeys{URL: srv.URL + "/certs", Clock: c, Client: http.DefaultClient}, Clock: c}
 }
 
 func (f *fakeToolkit) answer(t *testing.T, platform, upstream map[string]any, extra map[string]any) {
@@ -250,7 +250,7 @@ func TestCertKeysCacheByMaxAge(t *testing.T) {
 	now := time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)
 	f, srv := newFake(t, now)
 	c := clock.NewFrozen(now)
-	keys := &CertKeys{URL: srv.URL + "/certs", Clock: c}
+	keys := &CertKeys{URL: srv.URL + "/certs", Clock: c, Client: http.DefaultClient}
 	good := f.platformToken(t, f.platformClaims())
 	for range 3 {
 		if _, err := keys.VerifySignature(ctx, good); err != nil {

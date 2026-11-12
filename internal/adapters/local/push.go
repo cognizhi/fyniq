@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -36,8 +37,15 @@ var _ ports.Queue = (*Push)(nil)
 
 // NewPush delivers to targets (worker class → base URL such as http://localhost:8084), retrying a
 // delivery up to attempts times with backoff doubling from base.
+// It reaches only the targets' hosts, through the local flavour's egress guard; a handler may work for up to 30 minutes,
+// as Cloud Tasks waits.
 func NewPush(targets map[string]string, tokens ports.TaskTokens, attempts int, base time.Duration) *Push {
-	return &Push{targets: targets, tokens: tokens, client: &http.Client{}, attempts: max(attempts, 1), backoff: base, seen: map[string]bool{}}
+	hosts := make([]string, 0, len(targets))
+	for _, u := range targets {
+		hosts = append(hosts, egress.HostOf(u))
+	}
+	client := (&egress.Guard{Local: true}).Bounded(0, 31*time.Minute).For(hosts...)
+	return &Push{targets: targets, tokens: tokens, client: client, attempts: max(attempts, 1), backoff: base, seen: map[string]bool{}}
 }
 
 // Enqueue implements ports.Queue: it accepts the task and delivers it in the background.

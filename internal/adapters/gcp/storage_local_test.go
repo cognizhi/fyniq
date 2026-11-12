@@ -55,7 +55,7 @@ func startFakeGCS(t *testing.T) string {
 // asvs: V16.4.2
 func TestStorageAgainstTheEmulator(t *testing.T) {
 	ctx := context.Background()
-	s := NewStorage(startFakeGCS(t), "anchors", nil, nil)
+	s := NewStorage(startFakeGCS(t), "anchors", nil, http.DefaultClient)
 	key := "audit-anchors/0192f1a0-0000-7000-8000-000000000001/00000000000000000042.json"
 	if err := s.Create(ctx, key, strings.NewReader(`{"seq":42}`)); err != nil {
 		t.Fatalf("Create: %v", err)
@@ -101,7 +101,7 @@ func TestStorageAgainstTheEmulator(t *testing.T) {
 // asvs: V14.2.7
 func TestStorageRetentionAgainstTheEmulator(t *testing.T) {
 	ctx := context.Background()
-	s := NewStorage(startFakeGCS(t), "anchors", nil, nil)
+	s := NewStorage(startFakeGCS(t), "anchors", nil, http.DefaultClient)
 	now := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
 	c := clock.NewFrozen(now)
 	s.Clock = c

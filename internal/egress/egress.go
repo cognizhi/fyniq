@@ -6,8 +6,9 @@
 // nothing; it follows no redirect; and it bounds time and the size of an answer. The local flavour lets the local
 // substitutes through (Mailpit, Prism), on loopback and the Docker network, never the metadata service.
 //
-// p1-connector-framework puts connector traffic through it; p1-security-hardening moves every other outbound request
-// onto it.
+// p1-connector-framework put connector traffic through it; p1-security-hardening moved every other outbound request onto
+// it (clients.go): each configured connection reaches only its own hosts, and an architecture test refuses any other
+// HTTP client outside this package.
 package egress
 
 import (
@@ -165,6 +166,11 @@ func (g *Guard) DialContext(ctx context.Context, network, addr string) (net.Conn
 // Client is an HTTP client through the guard for the hosts allow accepts (a connector's consented destinations); nil
 // accepts any host the guard allows. It follows no redirect and reads at most MaxBody of an answer.
 func (g *Guard) Client(allow func(host string, port int) bool) *http.Client {
+	return g.client(allow, "is not one of the connector's destinations")
+}
+
+// client is Client, with the words that say why a host is not allowed.
+func (g *Guard) client(allow func(host string, port int) bool, notAllowed string) *http.Client {
 	max := g.MaxBody
 	if max <= 0 {
 		max = 1 << 20
@@ -177,7 +183,7 @@ func (g *Guard) Client(allow func(host string, port int) bool) *http.Client {
 			}
 			p, _ := strconv.Atoi(port)
 			if allow != nil && !allow(strings.ToLower(host), p) {
-				return nil, fmt.Errorf("%w: %s is not one of the connector's destinations", ErrRefused, host)
+				return nil, fmt.Errorf("%w: %s %s", ErrRefused, host, notAllowed)
 			}
 			return g.DialContext(ctx, network, addr)
 		},

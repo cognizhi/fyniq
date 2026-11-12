@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
+	"github.com/cognizhi/fyniq/internal/egress"
 )
 
 // Class is the token class the render service accepts: its callers ask for a token of it (ports.TaskTokens).
@@ -70,7 +71,7 @@ type Renderer interface {
 type Client struct {
 	URL   string
 	Token func(ctx context.Context) (string, error)
-	HTTP  *http.Client // http.DefaultClient when nil
+	HTTP  *http.Client // through the egress guard (wiring); egress.Public when nil
 }
 
 var _ Renderer = (*Client)(nil)
@@ -93,7 +94,7 @@ func (c *Client) Render(ctx context.Context, r Request) (Response, error) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	h := c.HTTP
 	if h == nil {
-		h = http.DefaultClient
+		h = egress.Public()
 	}
 	resp, err := h.Do(req)
 	if err != nil {

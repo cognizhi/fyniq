@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
@@ -39,7 +38,7 @@ func main() {
 		s.AddReadiness("database", kit.Store.Ping)
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
-			kinds[tokens.Kind] = tokens.Work(hydra.New(admin)) // AI-38: revoke a user's tokens after a change
+			kinds[tokens.Kind] = tokens.Work(wiring.Hydra(admin)) // AI-38: revoke a user's tokens after a change
 		}
 		if c, ok := kit.Committer(deps.Clock); ok { // FR-DOC-13: commit a final record's files to the locked store
 			kinds[evidence.CommitKind] = func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {

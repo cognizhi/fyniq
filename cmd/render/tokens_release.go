@@ -13,6 +13,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
 )
@@ -29,5 +30,12 @@ func callers(clock ports.Clock) (ports.TaskTokens, error) {
 	if !strings.HasPrefix(c.Render.Audience, "https://") || len(c.Render.ServiceAccounts) == 0 {
 		return nil, errors.New("FYNIQ_GCP lacks render (its audience and its callers' service accounts)")
 	}
-	return &gcp.CallerTokens{Class: render.Class, Callers: c.Render, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock}, nil
+	return &gcp.CallerTokens{Class: render.Class, Callers: c.Render, Keys: googleKeys(), Clock: clock}, nil
+}
+
+// googleKeys are Google's signing keys for the callers' ID tokens, fetched through the egress guard from Google's
+// certificate host only (SEC-36).
+func googleKeys() oidc.KeySet {
+	client := (&egress.Guard{}).For(egress.HostOf(gcp.GoogleCerts))
+	return oidc.NewRemoteKeySet(oidc.ClientContext(context.Background(), client), gcp.GoogleCerts)
 }

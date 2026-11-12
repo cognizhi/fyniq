@@ -24,10 +24,6 @@ func Binding() (connector.Binding, error) {
 		if err != nil {
 			return nil, err
 		}
-		s := adapter.New(c.String("url", adapter.DefaultURL), key)
-		if c.HTTP != nil {
-			s.HTTP = c.HTTP
-		}
-		return s, nil
+		return adapter.New(c.String("url", adapter.DefaultURL), key, c.HTTP), nil // the connector's client, through the guard
 	}}, nil
 }

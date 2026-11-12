@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -22,12 +22,16 @@ const DefaultBase = "https://api.resend.com"
 type Receiving struct {
 	Base string       // the API, DefaultBase
 	Key  string       // the API key
-	HTTP *http.Client // nil: one with a 60-second limit
+	HTTP *http.Client // the API, through the egress guard to Base's host only (SEC-36); egress.Public when nil
+	// Downloads fetches an attachment from the download_url the API gives, whose host the API chooses: through the
+	// egress guard, public addresses only and never the platform's own services; egress.Public when nil.
+	Downloads *http.Client
 }
 
-// NewReceiving returns the receiving adapter of base with the API key key.
-func NewReceiving(base, key string) *Receiving {
-	return &Receiving{Base: base, Key: key, HTTP: &http.Client{Timeout: 60 * time.Second}}
+// NewReceiving returns the receiving adapter of base with the API key key, calling the API through api and fetching
+// attachments through downloads (wiring: the egress guard).
+func NewReceiving(base, key string, api, downloads *http.Client) *Receiving {
+	return &Receiving{Base: base, Key: key, HTTP: api, Downloads: downloads}
 }
 
 // Name implements ports.InboundMail.
@@ -35,9 +39,16 @@ func (r *Receiving) Name() string { return "resend" }
 
 func (r *Receiving) client() *http.Client {
 	if r.HTTP == nil {
-		return &http.Client{Timeout: 60 * time.Second}
+		return egress.Public()
 	}
 	return r.HTTP
+}
+
+func (r *Receiving) downloads() *http.Client {
+	if r.Downloads == nil {
+		return egress.Public()
+	}
+	return r.Downloads
 }
 
 // get reads the API's JSON answer at path into out.
@@ -111,7 +122,7 @@ func (r *Receiving) Attachment(ctx context.Context, id string, a ports.InboundAt
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.client().Do(req)
+	res, err := r.downloads().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("resend receiving: %w", err)
 	}

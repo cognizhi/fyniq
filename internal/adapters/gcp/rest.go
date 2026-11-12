@@ -13,6 +13,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/egress"
 )
 
 // The Google Cloud adapters call the services' REST APIs over HTTP rather than the client libraries:
@@ -37,7 +38,7 @@ func (metadata) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 	req.Header.Set("Metadata-Flavor", "Google")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := egress.Metadata().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("the metadata server did not answer: %w", err)
 	}
@@ -95,7 +96,7 @@ func (r *rest) do(ctx context.Context, method, url, contentType string, body io.
 	}
 	client := r.client
 	if client == nil {
-		client = http.DefaultClient
+		client = egress.Public()
 	}
 	resp, err := client.Do(req)
 	if err != nil {

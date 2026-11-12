@@ -65,6 +65,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
+	renderURL := cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086")
 	kit := &Kit{
 		// The connectors' keys in files under .data/secrets; their traffic through the guard, which lets the local
 		// substitutes (Mailpit, Prism) through on loopback and the Docker network, never the metadata service.
@@ -85,7 +86,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
-		Render: &render.Client{URL: cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086"),
+		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
 	}
 	kit.watchChanges(clock)
@@ -119,3 +120,7 @@ func mailEnv(env func(string) string) func(string) string {
 	defaults := map[string]string{"FYNIQ_EMAIL_PROVIDERS": "smtp", "FYNIQ_SMTP_ADDR": "localhost:1025", "FYNIQ_MAIL_DOMAIN": "fyniq.local"}
 	return func(name string) string { return cmp.Or(env(name), defaults[name]) }
 }
+
+// PlatformEgress is the guard of the platform's own outbound connections; the local flavour lets the local stand-ins
+// (Hydra, the render service, Mailpit) through on loopback and the Docker network, never the metadata service.
+func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true} }

@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+
+	"github.com/cognizhi/fyniq/internal/egress"
 )
 
 // metadataIdentityURL mints an ID token of the service's own account for an audience.
@@ -23,7 +25,7 @@ const metadataIdentityURL = "http://metadata.google.internal/computeMetadata/v1/
 // which accepts its callers' accounts only (CallerTokens).
 func IdentityTokens(audience string, client *http.Client) func(ctx context.Context) (string, error) {
 	if client == nil {
-		client = http.DefaultClient
+		client = egress.Metadata()
 	}
 	src := oauth2.ReuseTokenSourceWithExpiry(nil, identity{audience: audience, client: client, endpoint: metadataIdentityURL}, time.Minute)
 	return func(context.Context) (string, error) {

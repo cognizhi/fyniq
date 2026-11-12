@@ -36,7 +36,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 4. One egress client (slice 4)
 
-- [ ] 4.1 `egress.Client` with a host allow-list per connection (D3). Every adapter, OIDC discovery and token calls,
+- [x] 4.1 `egress.Client` with a host allow-list per connection (D3). Every adapter, OIDC discovery and token calls,
   webhooks and test-connection actions move to it. An archtest refuses any other HTTP client outside
   `internal/egress` and tests. `// req: SEC-36`, `// req: QA-SEC-04`
 

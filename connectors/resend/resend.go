@@ -26,21 +26,15 @@ func Binding() (connector.Binding, error) {
 			if err != nil {
 				return nil, err
 			}
-			s := adapter.New(c.String("url", adapter.DefaultURL), key)
-			if c.HTTP != nil {
-				s.HTTP = c.HTTP
-			}
-			return s, nil
+			return adapter.New(c.String("url", adapter.DefaultURL), key, c.HTTP), nil // the connector's client, through the guard
 		},
 		InboundEmail: func(c connector.Config) (ports.InboundMail, error) {
 			key, err := c.Secret("api_key")
 			if err != nil {
 				return nil, err
 			}
-			r := adapter.NewReceiving(c.String("api_base", adapter.DefaultBase), key)
-			if c.HTTP != nil {
-				r.HTTP = c.HTTP
-			}
-			return r, nil
+			// Attachments too go only to the manifest's destinations. [verify the host of Resend's download_url and add it
+			// to the manifest if it is not api.resend.com]
+			return adapter.NewReceiving(c.String("api_base", adapter.DefaultBase), key, c.HTTP, c.HTTP), nil
 		}}, nil
 }

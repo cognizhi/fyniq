@@ -36,7 +36,7 @@ func TestASendIsTheDocumentedRequest(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":[{"code":"EM_104","additional_info":[],"message":"Email request received"}],"message":"OK","request_id":"req-42"}`))
 	}))
 	defer srv.Close()
-	r, err := zeptomail.New(srv.URL, "token-1").Send(context.Background(), message)
+	r, err := zeptomail.New(srv.URL, "token-1", http.DefaultClient).Send(context.Background(), message)
 	if err != nil || r.ProviderID != "req-42" {
 		t.Fatalf("%+v, %v; want req-42", r, err)
 	}
@@ -69,7 +69,7 @@ func TestZeptoMailsAnswersAreRefusalsOnlyWhenNothingWasTaken(t *testing.T) {
 				_, _ = w.Write([]byte(c.body))
 			}))
 			defer srv.Close()
-			_, err := zeptomail.New(srv.URL, "t").Send(context.Background(), message)
+			_, err := zeptomail.New(srv.URL, "t", http.DefaultClient).Send(context.Background(), message)
 			if err == nil || errors.Is(err, ports.ErrEmailRefused) != c.refused || !strings.Contains(err.Error(), c.says) {
 				t.Fatalf("%v; want refused=%v, saying %q", err, c.refused, c.says)
 			}
@@ -79,18 +79,18 @@ func TestZeptoMailsAnswersAreRefusalsOnlyWhenNothingWasTaken(t *testing.T) {
 		l, _ := net.Listen("tcp", "127.0.0.1:0")
 		addr := l.Addr().String()
 		_ = l.Close()
-		if _, err := zeptomail.New("http://"+addr+"/v1.1/email", "t").Send(context.Background(), message); !errors.Is(err, ports.ErrEmailRefused) {
+		if _, err := zeptomail.New("http://"+addr+"/v1.1/email", "t", http.DefaultClient).Send(context.Background(), message); !errors.Is(err, ports.ErrEmailRefused) {
 			t.Fatalf("%v; want a refusal: nothing was sent", err)
 		}
 	})
 	t.Run("a sender that is not an address", func(t *testing.T) {
 		m := message
 		m.From = "nobody"
-		if _, err := zeptomail.New("http://127.0.0.1:1", "t").Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) {
+		if _, err := zeptomail.New("http://127.0.0.1:1", "t", http.DefaultClient).Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) {
 			t.Fatalf("%v; want a refusal", err)
 		}
 	})
-	if _, err := zeptomail.New("http://127.0.0.1:1", "t").Status(context.Background(), message, message.Date); !errors.Is(err, ports.ErrEmailUnknown) {
+	if _, err := zeptomail.New("http://127.0.0.1:1", "t", http.DefaultClient).Status(context.Background(), message, message.Date); !errors.Is(err, ports.ErrEmailUnknown) {
 		t.Fatalf("Status: %v; want unknown", err)
 	}
 }
@@ -107,7 +107,7 @@ func TestTheReferenceGoesAsClientReference(t *testing.T) {
 	defer srv.Close()
 	m := message
 	m.Reference = "org_message"
-	if _, err := zeptomail.New(srv.URL, "t").Send(context.Background(), m); err != nil || got["client_reference"] != "org_message" {
+	if _, err := zeptomail.New(srv.URL, "t", http.DefaultClient).Send(context.Background(), m); err != nil || got["client_reference"] != "org_message" {
 		t.Fatalf("client_reference %v, %v", got["client_reference"], err)
 	}
 }
@@ -128,14 +128,14 @@ func TestAnAttachmentIsTheDocumentedField(t *testing.T) {
 	defer srv.Close()
 	m := message
 	m.Attachments = []ports.EmailAttachment{{Name: "INV-0001.pdf", ContentType: "application/pdf", Content: []byte("%PDF-1.7")}}
-	if _, err := zeptomail.New(srv.URL, "token-1").Send(context.Background(), m); err != nil {
+	if _, err := zeptomail.New(srv.URL, "token-1", http.DefaultClient).Send(context.Background(), m); err != nil {
 		t.Fatal(err)
 	}
 	if b, _ := json.Marshal(got["attachments"]); string(b) != `[{"content":"JVBERi0xLjc=","mime_type":"application/pdf","name":"INV-0001.pdf"}]` {
 		t.Errorf("the attachments: %s", b)
 	}
 	m.Attachments = []ports.EmailAttachment{{Name: "run.sh", ContentType: "text/x-shellscript", Content: []byte("echo")}}
-	if _, err := zeptomail.New(srv.URL, "token-1").Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) || calls != 1 {
+	if _, err := zeptomail.New(srv.URL, "token-1", http.DefaultClient).Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) || calls != 1 {
 		t.Errorf("a file that is not a PDF: %v, %d calls", err, calls)
 	}
 }
