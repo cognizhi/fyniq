@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cadence": {
+      "description": "How often it falls due.",
+      "enum": [
+        "weekly",
+        "quarterly",
+        "monthly",
+        "each use",
+        "each version",
+        "by review date"
+      ],
+      "examples": [
+        "quarterly"
+      ],
+      "type": "string"
+    },
+    "controls": {
+      "description": "The controls whose attestation check reads it.",
+      "items": {
+        "description": "A control's ID, as listControls names it.",
+        "examples": [
+          "CTL-IAM-02"
+        ],
+        "pattern": "^CTL-[A-Z]+-[0-9]{2}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "detail": {
+      "description": "What waits, or that nothing does, in a sentence.",
+      "examples": [
+        "The access review of Q3 2026 waits for an Owner's attestation, due by 14 Oct 2026."
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When the earliest waiting item falls due; for the risk reviews, the next review date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "What each sign-off keeps.",
+      "examples": [
+        "Each quarter's attestation, with the report attested and its SHA-256, and a CSV of it"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "The review.",
+      "enum": [
+        "review-log",
+        "access-review",
+        "accountant-review",
+        "close-signoff",
+        "break-glass-review",
+        "policy-acknowledgement",
+        "risk-review"
+      ],
+      "examples": [
+        "access-review"
+      ],
+      "type": "string"
+    },
+    "last_sign_off": {
+      "$ref": "ComplianceSignOff.schema.json",
+      "description": "The latest sign-off; none before the first."
+    },
+    "overdue": {
+      "description": "How many of them are past their time.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "owner": {
+      "description": "The role that signs it off; member when each member signs for themselves.",
+      "enum": [
+        "owner",
+        "controller",
+        "accountant",
+        "dpo",
+        "member"
+      ],
+      "examples": [
+        "owner"
+      ],
+      "type": "string"
+    },
+    "period": {
+      "description": "The period that waits, as people say it.",
+      "examples": [
+        "Q3 2026"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "overdue: something waits past its time; due: something waits within it; signed: nothing waits and it was signed off before; nothing_due: nothing waits and nothing was ever signed off; not_applicable: the team mode does not call for it.",
+      "enum": [
+        "signed",
+        "due",
+        "overdue",
+        "nothing_due",
+        "not_applicable"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What it is, in a sentence.",
+      "examples": [
+        "An Owner attests the access review (each quarter)"
+      ],
+      "type": "string"
+    },
+    "waiting": {
+      "description": "How many items wait for their sign-off.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "where": {
+      "description": "The web app's page where it is signed off.",
+      "examples": [
+        "/settings/access-review"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "title",
+    "owner",
+    "cadence",
+    "status",
+    "waiting",
+    "overdue",
+    "detail",
+    "where",
+    "evidence",
+    "controls"
+  ],
+  "title": "ComplianceReview",
+  "type": "object"
+}

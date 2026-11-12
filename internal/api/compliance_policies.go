@@ -24,9 +24,8 @@ import (
 // CodeUnknownPolicy: the library has no such policy, or no such version of it.
 const CodeUnknownPolicy = "COMPLIANCE-03"
 
-// AcknowledgeWithin is how long a member has to acknowledge a published version: 30 days after the later of its
-// publication and their joining (CMP-07, the owner's decision of 9 Nov 2026).
-const AcknowledgeWithin = 30 * 24 * time.Hour
+// AcknowledgeWithin is how long a member has to acknowledge a published version (CMP-07): the domain's rule.
+const AcknowledgeWithin = controls.AcknowledgeWithin
 
 // PolicyVersionView is a published version of a policy.
 type PolicyVersionView struct {
@@ -188,11 +187,7 @@ func (a *API) policyViews(ctx context.Context, u storage.UnitOfWork, full bool) 
 		}
 		v.Draft.Unpublished = current == nil || hex.EncodeToString(current.SHA256) != v.Draft.SHA256
 		if current != nil {
-			due := current.PublishedAt
-			if joined.After(due) {
-				due = joined
-			}
-			due = due.Add(AcknowledgeWithin)
+			due := controls.AcknowledgeBy(current.PublishedAt, joined)
 			mine := &MyPolicyAcknowledgement{Version: current.Version, DueOn: controls.Day(due).Format(time.DateOnly)}
 			for _, ack := range lib.Acknowledgements {
 				if ack.Key == current.Key && ack.Version == current.Version && ack.By == me {

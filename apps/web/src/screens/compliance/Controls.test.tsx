@@ -119,15 +119,16 @@ describe("the Compliance page", () => {
   it("lists the Basic pages in Basic mode", async () => {
     renderPage(Compliance, { path: "/compliance", mode: "basic" });
     const nav = await screen.findByRole("navigation", { name: "Compliance pages" });
-    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/compliance/calendar"]);
+    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/compliance/calendar", "/compliance/attestations"]);
   });
 
-  it("lists the controls, GST, evidence and the audit trail in Expert mode", async () => {
+  it("lists the controls, the reviews, the risks, GST, evidence and the audit trail in Expert mode", async () => {
     renderPage(Compliance, { path: "/compliance", mode: "expert" });
     const nav = await screen.findByRole("navigation", { name: "Compliance pages" });
     expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
       "/compliance/calendar",
       "/compliance/controls",
+      "/compliance/attestations",
       "/compliance/risks",
       "/compliance/gst",
       "/compliance/evidence",

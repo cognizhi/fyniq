@@ -388,16 +388,62 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 8. Reviews and attestations (slice 8)
 
-- [ ] 8.1 `listComplianceReviews` (D6), with V on "Compliance Center" and matrix rows. It covers the review log, the
+- [x] 8.1 `listComplianceReviews` (D6), with V on "Compliance Center" and matrix rows. It covers the review log, the
   access review, the accountant reviews, the close sign-off, break-glass post-reviews, policy acknowledgements and
   risk reviews, each with its period, due date, owner role, last sign-off, evidence and where it is signed off. The
   `attestation` checks of the registry read from it. Tests: each source due, overdue and signed, from fixtures.
   `// req: CMP-03`, `// req: FR-CTL-06`, `// req: SEC-06`, `// req: FM-3`
-- [ ] 8.2 The screen Compliance › Reviews and attestations (Basic and Expert, `/compliance/attestations`): due,
+
+  **What building added:**
+    - **One reading.** The reviews are the domain's `compliance.Reviews`, which reads each source's own records in one
+      unit of work, under the rule its Checks entry applies (C.2 #4, #7, #18, #53 and #61; CMP-06; CMP-07). Both
+      `listComplianceReviews` and `compliance.run` read them.
+    - **Each review** has its kind, the role that signs it off, its cadence, its status, the period that waits, the
+      earliest due date, how many items wait and how many are overdue, and the latest sign-off with the signer's name.
+      It also says in a sentence what waits, the page where it is signed off, what the sign-off keeps as evidence, and
+      the controls that read it.
+    - **The statuses** are `overdue`, `due`, `signed`, `nothing_due` (nothing has fallen due yet) and `not_applicable`.
+    - **The accountant's review** follows FM-7: each quarter, in Founder mode, overdue 60 days after the quarter ends.
+      D6 said "monthly". The registry's words for it are corrected.
+    - **Team mode.** The review log and the accountant's review do not apply outside Founder mode.
+    - **Risk reviews.** A risk waits only once its review date has passed; until then the screen shows the next date.
+    - **Policy acknowledgements** fall due per member. The rule (`AcknowledgeBy`) moves to the domain, and the policy
+      library reads it from there.
+    - **The attestation checks** are on:
+      - CTL-FIN-07 (W): the review log and the break-glass reviews;
+      - CTL-IAM-02 (Q): the access review;
+      - CTL-FIN-10 (M): the accountant's review;
+      - CTL-FIN-09 (E): the close's sign-off.
+
+      An overdue review makes its check overdue, and a review that does not apply makes it not applicable; anything
+      else passes. Each night `compliance.run` reads the reviews, so a review that falls overdue tells its control's
+      owner once (D5). No Appendix F control covers the policy acknowledgements or the risk reviews, so no check reads
+      them.
+    - **Tests:**
+      - `TestEachReviewReadsItsOwnSource`: each source due, overdue and signed off, plus nothing due or not
+        applicable;
+      - `TestAControlTakesTheWorstOfItsChecks`: the attestation rows;
+      - `TestTheRecurringReviews`: the API, against a real database;
+      - the matrix row.
+- [x] 8.2 The screen Compliance › Reviews and attestations (Basic and Expert, `/compliance/attestations`): due,
   overdue (⚠ older than 14 days) and signed, linking to where each is signed off. Policy acknowledgements are signed
   here. The Inbox's Compliance section shows the reviews due for the viewer's roles. It has help keys and the guide
   page `compliance-reviews.md`, compiled into `kb/`. A component test with axe covers nothing due, overdue and signed
   off. `// req: CMP-03`
+
+  **What building added:**
+    - **The page** `/compliance/attestations` (Basic) lists the reviews, overdue first.
+      - A banner counts the overdue reviews.
+      - **Over 14 days** marks a review more than 14 days past its due date.
+      - Each review shows its owner role, cadence, period, due date (the next date for risk reviews), what waits and
+        its last sign-off, and links to the page where it is signed off.
+      - Expert mode adds the evidence and the controls.
+    - **Policy acknowledgements.** The reader's own are listed at the top of the page, to read and accept.
+    - **The Inbox** has "Reviews to sign off": the due or overdue reviews that the viewer's roles sign off. Policy
+      acknowledgements stay on their own card.
+    - **The Compliance page** lists it.
+    - **Help.** The help keys are `compliance.attestations` and `inbox.reviews`. The guide page `compliance-reviews.md`
+      is compiled into `kb/pages/task/compliance-reviews.md`, and the policy page links to it.
 
 ## 9. The canvas (slice 9)
 

@@ -483,3 +483,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-controls.md → compliance.controls (links the risk register)
 
 ## [2026-11-09] compile | docs/user-guide/compliance-policies.md (new), compliance-risks-policies.md → compliance.policies (new), compliance.risks (the policy library, CMP-07)
+
+## [2026-11-09] compile | docs/user-guide/compliance-reviews.md (new), compliance-policies.md → compliance.reviews (new), compliance.policies (the recurring reviews, CMP-03)

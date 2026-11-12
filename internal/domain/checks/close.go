@@ -39,7 +39,7 @@ var (
 
 // The thresholds of slice 3's own checks.
 const (
-	unclosedAfter = 15            // days after a month's end it is to be closed by (C.2 #18)
+	UnclosedAfter = 15            // days after a month's end it is to be closed by (C.2 #18); the close's sign-off reads it too
 	syncStale     = 3 * time.Hour // a feed not synced within it is late: the hourly bank.sync's own Stale (C.2 #43)
 	runwayMonths  = "6"           // months of runway below which it warns (C.1 #36)
 )
@@ -391,7 +391,7 @@ func revaluedLastMonthEnd(ctx context.Context, u storage.UnitOfWork, e *Env) (Re
 // monthsUnclosed: months still open more than 15 days after they ended (C.2 #18).
 func monthsUnclosed(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error) {
 	var items []Item
-	limit := e.Today.AddDate(0, 0, -unclosedAfter)
+	limit := e.Today.AddDate(0, 0, -UnclosedAfter)
 	for _, p := range e.Periods {
 		if p.Status != storage.PeriodClosed && p.EndsOn.Before(limit) {
 			days := int(e.Today.Sub(p.EndsOn).Hours() / 24)
@@ -401,9 +401,9 @@ func monthsUnclosed(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, er
 		}
 	}
 	if len(items) == 0 {
-		return Fine(fmt.Sprintf("Every month that ended more than %d days ago is closed", unclosedAfter)), nil
+		return Fine(fmt.Sprintf("Every month that ended more than %d days ago is closed", UnclosedAfter)), nil
 	}
-	return Found(Warning, items, fmt.Sprintf("%d month(s) open more than %d days after their end", len(items), unclosedAfter),
+	return Found(Warning, items, fmt.Sprintf("%d month(s) open more than %d days after their end", len(items), UnclosedAfter),
 		"Close each in Accounting › Periods and close, earliest first"), nil
 }
 

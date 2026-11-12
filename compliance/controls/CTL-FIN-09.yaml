@@ -17,3 +17,7 @@ checks:
     status: running
     how: "check close.month-unclosed"
     evidence: "no month stays open more than 15 days after its end (C.2 #18); the check's latest result for each organisation, on Checks"
+  - frequency: E
+    status: running
+    how: "attestation close-signoff"
+    evidence: "each month's close attestation, who gave it and when; on Compliance › Reviews and attestations, the close record on Periods and close"

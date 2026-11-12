@@ -10,8 +10,8 @@ import (
 )
 
 // Each kind of check reads its own source (design D1): CI from the release, a job from its latest slot, a catalogue check
-// from its state, a verification from its latest run; planned, cloud and attestation checks are not assessed, naming
-// why. A control takes the worst, in the order fail, overdue, not assessed, pass.
+// from its state, a verification from its latest run, an attestation from its review; planned and cloud checks are not
+// assessed, naming why. A control takes the worst, in the order fail, overdue, not assessed, pass.
 // req: CMP-01
 // req: compliance/compliance-center The Compliance Center shows controls and raises tasks
 func TestAControlTakesTheWorstOfItsChecks(t *testing.T) {
@@ -31,6 +31,11 @@ func TestAControlTakesTheWorstOfItsChecks(t *testing.T) {
 			"controls.review-log-overdue": {Key: "controls.review-log-overdue", Status: "warning", Detail: "2 actions wait"},
 			"close.checklist":             {Key: "close.checklist", Status: "error", Detail: "3 tasks open"},
 			"gst.return-due":              {Key: "gst.return-due", Status: "not_assessed", Needs: "the GST registration"},
+		},
+		Reviews: map[string]Review{
+			"access-review": {Kind: "access-review", Status: ReviewOverdue, Detail: "The access review of Jul–Sep 2098 waits for an Owner's attestation"},
+			"close-signoff": {Kind: "close-signoff", Status: ReviewSigned, Detail: "Every month that ended is closed."},
+			"review-log":    {Kind: "review-log", Status: ReviewNotApplicable, Detail: "Standard mode: approvals before the action replace the weekly review."},
 		},
 		Runs: map[string]storage.ControlRun{
 			RunKey("CTL-X-01", "N", "verify payments.dual-control"): {RanAt: now.Add(-time.Hour), OK: false, Count: 1, Detail: "1 found"},
@@ -59,7 +64,10 @@ func TestAControlTakesTheWorstOfItsChecks(t *testing.T) {
 		{"CTL-X-12", []registry.Check{check("D", "check compliance.deadlines")}, NotAssessed, "has not run for this organisation"},
 		{"CTL-X-13", []registry.Check{{Frequency: "D", Status: "cloud", How: "tofu environment/spec"}, check("CI", "make test")}, NotAssessed, "Runs in the cloud"},
 		{"CTL-X-14", []registry.Check{{Frequency: "N", Status: "planned", Arrives: "p1-ai-proposals (the reconciliation)"}}, NotAssessed, "arrives with p1-ai-proposals."},
-		{"CTL-X-15", []registry.Check{check("Q", "attestation access-review")}, NotAssessed, "slice 8"},
+		{"CTL-X-15", []registry.Check{check("Q", "attestation access-review")}, Overdue, "waits for an Owner's attestation"},
+		{"CTL-X-18", []registry.Check{check("E", "attestation close-signoff")}, Pass, "Each of its 1 check(s) passed."},
+		{"CTL-X-19", []registry.Check{check("W", "attestation review-log")}, NotApplicable, "None of its checks applies here."},
+		{"CTL-X-20", []registry.Check{check("Q", "attestation risk-review")}, NotAssessed, "has not been read"},
 		{"CTL-X-16", nil, NotApplicable, "None of its checks applies here."},
 	} {
 		got := StatusOf(registry.Control{ID: c.id, Checks: c.checks}, in)

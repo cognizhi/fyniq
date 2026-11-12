@@ -3056,6 +3056,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the recurring reviews and attestations
+         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements and the risk reviews. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
+         */
+        get: operations["listComplianceReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/risks": {
         parameters: {
             query?: never;
@@ -19131,6 +19151,101 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71
              */
             line_id: string;
+        };
+        ComplianceReview: {
+            /**
+             * @description How often it falls due.
+             * @example quarterly
+             * @enum {string}
+             */
+            cadence: "weekly" | "quarterly" | "monthly" | "each use" | "each version" | "by review date";
+            /** @description The controls whose attestation check reads it. */
+            controls: string[];
+            /**
+             * @description What waits, or that nothing does, in a sentence.
+             * @example The access review of Q3 2026 waits for an Owner's attestation, due by 14 Oct 2026.
+             */
+            detail: string;
+            /**
+             * Format: date
+             * @description When the earliest waiting item falls due; for the risk reviews, the next review date.
+             * @example 2026-10-14
+             */
+            due_on?: string;
+            /**
+             * @description What each sign-off keeps.
+             * @example Each quarter's attestation, with the report attested and its SHA-256, and a CSV of it
+             */
+            evidence: string;
+            /**
+             * @description The review.
+             * @example access-review
+             * @enum {string}
+             */
+            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review";
+            /** @description The latest sign-off; none before the first. */
+            last_sign_off?: components["schemas"]["ComplianceSignOff"];
+            /**
+             * Format: int64
+             * @description How many of them are past their time.
+             * @example 0
+             */
+            overdue: number;
+            /**
+             * @description The role that signs it off; member when each member signs for themselves.
+             * @example owner
+             * @enum {string}
+             */
+            owner: "owner" | "controller" | "accountant" | "dpo" | "member";
+            /**
+             * @description The period that waits, as people say it.
+             * @example Q3 2026
+             */
+            period?: string;
+            /**
+             * @description overdue: something waits past its time; due: something waits within it; signed: nothing waits and it was signed off before; nothing_due: nothing waits and nothing was ever signed off; not_applicable: the team mode does not call for it.
+             * @example due
+             * @enum {string}
+             */
+            status: "signed" | "due" | "overdue" | "nothing_due" | "not_applicable";
+            /**
+             * @description What it is, in a sentence.
+             * @example An Owner attests the access review (each quarter)
+             */
+            title: string;
+            /**
+             * Format: int64
+             * @description How many items wait for their sign-off.
+             * @example 1
+             */
+            waiting: number;
+            /**
+             * @description The web app's page where it is signed off.
+             * @example /settings/access-review
+             */
+            where: string;
+        };
+        ComplianceReviews: {
+            /** @description The seven reviews, in the Compliance Center's order. */
+            items: components["schemas"]["ComplianceReview"][];
+        };
+        ComplianceSignOff: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-03T02:00:00Z
+             */
+            at: string;
+            /**
+             * @description Who signed off, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            by: string;
+            /**
+             * @description Their name, while they are a member.
+             * @example Ada Tan
+             */
+            by_name?: string;
         };
         ConfigureConnectorRequest: {
             /**
@@ -62693,6 +62808,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listComplianceReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceReviews"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

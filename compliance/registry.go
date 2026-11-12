@@ -121,7 +121,7 @@ var Verifications = map[string]string{
 var Attestations = map[string]string{
 	"review-log":             "Another founder reviews each logged action (Founder mode, weekly)",
 	"access-review":          "An Owner attests the access review (each quarter)",
-	"accountant-review":      "The accountant reviews the journals (monthly)",
+	"accountant-review":      "The external accountant reviews each quarter's books, journals and unusual entries (Founder mode)",
 	"close-signoff":          "Someone other than the preparer signs off the close (monthly)",
 	"break-glass-review":     "Each break-glass is reviewed after it ends",
 	"policy-acknowledgement": "Each member acknowledges each published policy version",

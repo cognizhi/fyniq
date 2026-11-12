@@ -27,6 +27,8 @@ published, or after they joined if that was later.
 2. Select **Read** beside a policy. The version in force opens.
 3. Read it, then select **I have read and accept it**. **Later** closes it without recording anything.
 
+The same list is at the top of **Compliance** › **Reviews and attestations**, beside the other recurring reviews.
+
 You acknowledge each version once, signed in as yourself. An integration or the AI assistant cannot acknowledge a
 policy for you. When a new version is published, the card asks you to acknowledge that version too.
 

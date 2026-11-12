@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The seven reviews, in the Compliance Center's order.",
+      "items": {
+        "$ref": "ComplianceReview.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ComplianceReviews",
+  "type": "object"
+}
