@@ -47,6 +47,10 @@
   `TestStepsAreSignedInOrderToTheirQuorum`, `TestAPolicysStepsCanBeSigned`, `TestAttackApprovalStepsAreSignedInOrder`,
   `TestStepsAreSignedInOrderAndRechecked`. **Left:** conditions (amount, entity, department, account, vendor, risk
   tier), with the first object types that carry them (wave 2's documents).)
+  (12 Nov 2026, PRD-001 rev 0.253, the owner's decision: conditional steps. Each step may carry conditions (an amount
+  above a threshold in the base currency; the vendor, account or department among those named; a risk tier at or above
+  one); a step whose conditions do not hold is skipped, the first always applies, and a request keeps the steps that
+  apply to it when it is made.)
 - [x] 2.2 Policy changes are approval-gated (SOD-8) and versioned; a pending approval keeps its version, and a change restarts it. Test `// req: FR-APR-09` (G4-057)
   (20 Oct 2026, provisional (PRD rev 0.40): `PATCH /v1/approval-policies/{object_type}` always answers 202 with an
   `approval_policy.change` request; the Administrator (C on "Approval policies, AI catalogue") asks, the Owner or the

@@ -44,6 +44,11 @@
   engine (`member.Bootstrap`, under a members' lock that joining takes too). **Left:** scopes (entity, department),
   invitation emails (`p1-templates-email`), the quarterly review of external users (SEC-06), listing the bootstrap's
   changes in FM-3's weekly review (with `p1-approval-engine` 3.2), the join and members screens (4.1).)
+  (12 Nov 2026: the quarterly review of external users (the access review, rev 0.165), FM-3's listing of the
+  bootstrap's changes (`founder_bootstrap`) and the join and members screens are built. PRD-001 rev 0.253, the owner's
+  decision: department scopes are built in P1, a role narrowed to department values reaching only those records, lines
+  and budgets under Appendix D's "dept" cells; entity scopes with multi-entity (P3). **Left:** department scopes and
+  invitation emails.)
 - [ ] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user
@@ -116,6 +121,8 @@
   the codes, notifies the person and every Owner, logs the weekly review and holds `authz.HeldInCoolingOff` for 24
   hours. Migrations 000242 and 000243. Tests `TestAccountRecovery` (G4-060), `TestTheCoolingOffHoldsRealOperations`,
   `recovery.test.tsx`. **Left:** the cooling-off's length as a setting.)
+  (12 Nov 2026, PRD-001 rev 0.253, the owner's decision: the organisation setting `security.recovery_cooling_off_hours`,
+  24 to 72 hours, 24 by default, under dual control; a person in several organisations is held for the longest.)
 
 ## 3. Clients, outputs and administration
 

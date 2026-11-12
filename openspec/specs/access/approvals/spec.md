@@ -19,6 +19,12 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **THEN** they can use the amount, entity, department, account, vendor and risk tier
 - **AND** the policy applies to the records of its object type that meet those conditions
 
+#### Scenario: Conditional steps (rev 0.253)
+- **GIVEN** a policy whose later step carries conditions: an amount above a threshold in the base currency, the vendor, the account or the department among those named, or a risk tier at or above one
+- **WHEN** a request is made whose object does not meet that step's conditions
+- **THEN** the step is skipped for that request, and the first step always applies
+- **AND** the request keeps the steps that apply to it when it is made; entity conditions come with multi-entity (P3)
+
 #### Scenario: Ordered steps with a quorum
 - **WHEN** the steps of an approval policy are set
 - **THEN** each step names a role or a named user and a quorum
