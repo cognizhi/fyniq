@@ -14765,6 +14765,12 @@ export interface components {
              * @enum {string}
              */
             proof?: "changed" | "changed_back" | "unchanged";
+            /**
+             * @description For a person's personal value, sealed under their key for the event's financial year (§11.8): opened, before and after are the values; shredded, the key is gone at the end of retention and the values read null.
+             * @example opened
+             * @enum {string}
+             */
+            sealed?: "opened" | "shredded";
         };
         AuditFilters: {
             /**
@@ -20329,6 +20335,11 @@ export interface components {
              */
             id: string;
             /**
+             * @description A natural person: their name, emails, phone and address in the audit trail are sealed under their own key and shredded at the end of retention (§11.8), as a director's are.
+             * @example false
+             */
+            individual: boolean;
+            /**
              * @description An investor: they hold a SAFE, a note or options, and no shares yet (FR-EQ-15). Shareholders and investors are the equity register's holders.
              * @example false
              */
@@ -20457,6 +20468,11 @@ export interface components {
              */
             discount_percent?: string;
             /**
+             * @description A natural person rather than a company (§11.8). Values already in the audit trail stay as they were written.
+             * @example true
+             */
+            individual?: boolean;
+            /**
              * @description An investor: a SAFE, note or option holder (FR-EQ-15).
              * @example false
              */
@@ -20565,6 +20581,11 @@ export interface components {
              * @example 2
              */
             discount_percent?: string;
+            /**
+             * @description A natural person rather than a company (§11.8): their personal values in the audit trail are sealed under their own key. A director is one already.
+             * @example false
+             */
+            individual?: boolean;
             /**
              * @description An investor: a SAFE, note or option holder with no shares yet (FR-EQ-15).
              * @example false

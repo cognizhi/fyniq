@@ -82,6 +82,13 @@
       ],
       "type": "string"
     },
+    "individual": {
+      "description": "A natural person rather than a company (§11.8): their personal values in the audit trail are sealed under their own key. A director is one already.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "investor": {
       "description": "An investor: a SAFE, note or option holder with no shares yet (FR-EQ-15).",
       "examples": [

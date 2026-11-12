@@ -78,7 +78,7 @@ func (q *Queries) ContactDuplicates(ctx context.Context, arg ContactDuplicatesPa
 }
 
 const contactOfMember = `-- name: ContactOfMember :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version FROM fyniq.contact WHERE member_user_id = $1
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version FROM fyniq.contact WHERE member_user_id = $1
 `
 
 type ContactOfMemberRow struct {
@@ -104,6 +104,7 @@ type ContactOfMemberRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -136,6 +137,7 @@ func (q *Queries) ContactOfMember(ctx context.Context, memberUserID *uuid.UUID) 
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,
@@ -144,7 +146,7 @@ func (q *Queries) ContactOfMember(ctx context.Context, memberUserID *uuid.UUID) 
 }
 
 const getContact = `-- name: GetContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version FROM fyniq.contact WHERE id = $1
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version FROM fyniq.contact WHERE id = $1
 `
 
 type GetContactRow struct {
@@ -170,6 +172,7 @@ type GetContactRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -201,6 +204,7 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,
@@ -209,12 +213,12 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 }
 
 const insertContact = `-- name: InsertContact :one
-INSERT INTO fyniq.contact (legal_name, is_customer, is_vendor, is_director, is_shareholder, is_investor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone,
+INSERT INTO fyniq.contact (legal_name, is_customer, is_vendor, is_director, is_shareholder, is_investor, individual, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone,
   address, country, tax_residence, currency, payment_terms_days, discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-  $9, $10, $11, $12, $13, $14, $15,
-  $16, $17::text::numeric, $18, $19, $20, $21)
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+  $10, $11, $12, $13, $14, $15, $16,
+  $17, $18::text::numeric, $19, $20, $21, $22)
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version
 `
 
 type InsertContactParams struct {
@@ -224,6 +228,7 @@ type InsertContactParams struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	UenOrTaxID       *string
 	PeppolID         *string
 	BillingEmail     *string
@@ -264,6 +269,7 @@ type InsertContactRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -277,6 +283,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		arg.IsDirector,
 		arg.IsShareholder,
 		arg.IsInvestor,
+		arg.Individual,
 		arg.UenOrTaxID,
 		arg.PeppolID,
 		arg.BillingEmail,
@@ -317,6 +324,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,
@@ -327,7 +335,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 const linkContactMember = `-- name: LinkContactMember :one
 UPDATE fyniq.contact SET member_user_id = $1, version = version + 1
 WHERE id = $2 AND version = $3
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version
 `
 
 type LinkContactMemberParams struct {
@@ -359,6 +367,7 @@ type LinkContactMemberRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -392,6 +401,7 @@ func (q *Queries) LinkContactMember(ctx context.Context, arg LinkContactMemberPa
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,
@@ -400,7 +410,7 @@ func (q *Queries) LinkContactMember(ctx context.Context, arg LinkContactMemberPa
 }
 
 const lockContact = `-- name: LockContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
 `
 
 type LockContactRow struct {
@@ -426,6 +436,7 @@ type LockContactRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -457,6 +468,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,
@@ -465,7 +477,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 }
 
 const pageContacts = `-- name: PageContacts :many
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version FROM fyniq.contact
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version FROM fyniq.contact
 WHERE id > $1::uuid
   AND ($2::text IS NULL OR ($2::text = 'customer' AND is_customer) OR ($2::text = 'vendor' AND is_vendor)
     OR ($2::text = 'director' AND (is_director OR is_shareholder))
@@ -502,6 +514,7 @@ type PageContactsRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -540,6 +553,7 @@ func (q *Queries) PageContacts(ctx context.Context, arg PageContactsParams) ([]P
 			&i.IsDirector,
 			&i.IsShareholder,
 			&i.IsInvestor,
+			&i.Individual,
 			&i.MemberUserID,
 			&i.IsActive,
 			&i.Version,
@@ -555,7 +569,7 @@ func (q *Queries) PageContacts(ctx context.Context, arg PageContactsParams) ([]P
 }
 
 const searchContacts = `-- name: SearchContacts :many
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version FROM fyniq.contact
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version FROM fyniq.contact
 WHERE strpos(lower(concat_ws(' ', legal_name, uen_or_tax_id, billing_email, remittance_email)), lower($1::text)) > 0
 ORDER BY lower(legal_name), id
 LIMIT $2
@@ -589,6 +603,7 @@ type SearchContactsRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -627,6 +642,7 @@ func (q *Queries) SearchContacts(ctx context.Context, arg SearchContactsParams) 
 			&i.IsDirector,
 			&i.IsShareholder,
 			&i.IsInvestor,
+			&i.Individual,
 			&i.MemberUserID,
 			&i.IsActive,
 			&i.Version,
@@ -643,14 +659,14 @@ func (q *Queries) SearchContacts(ctx context.Context, arg SearchContactsParams) 
 
 const updateContact = `-- name: UpdateContact :one
 UPDATE fyniq.contact SET legal_name = $1, is_customer = $2, is_vendor = $3,
-  is_director = $4, is_shareholder = $5, is_investor = $6,
-  uen_or_tax_id = $7, peppol_id = $8, billing_email = $9,
-  remittance_email = $10, phone = $11, address = $12, country = $13,
-  tax_residence = $14, currency = $15, payment_terms_days = $16,
-  discount_percent = $17::text::numeric, discount_days = $18, default_account_id = $19,
-  default_gst_code = $20, customer_group_id = $21, is_active = $22, version = version + 1
-WHERE id = $23
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, member_user_id, is_active, version
+  is_director = $4, is_shareholder = $5, is_investor = $6, individual = $7,
+  uen_or_tax_id = $8, peppol_id = $9, billing_email = $10,
+  remittance_email = $11, phone = $12, address = $13, country = $14,
+  tax_residence = $15, currency = $16, payment_terms_days = $17,
+  discount_percent = $18::text::numeric, discount_days = $19, default_account_id = $20,
+  default_gst_code = $21, customer_group_id = $22, is_active = $23, version = version + 1
+WHERE id = $24
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version
 `
 
 type UpdateContactParams struct {
@@ -660,6 +676,7 @@ type UpdateContactParams struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	UenOrTaxID       *string
 	PeppolID         *string
 	BillingEmail     *string
@@ -702,6 +719,7 @@ type UpdateContactRow struct {
 	IsDirector       bool
 	IsShareholder    bool
 	IsInvestor       bool
+	Individual       bool
 	MemberUserID     *uuid.UUID
 	IsActive         bool
 	Version          int32
@@ -715,6 +733,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		arg.IsDirector,
 		arg.IsShareholder,
 		arg.IsInvestor,
+		arg.Individual,
 		arg.UenOrTaxID,
 		arg.PeppolID,
 		arg.BillingEmail,
@@ -757,6 +776,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		&i.IsDirector,
 		&i.IsShareholder,
 		&i.IsInvestor,
+		&i.Individual,
 		&i.MemberUserID,
 		&i.IsActive,
 		&i.Version,

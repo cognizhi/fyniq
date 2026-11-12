@@ -828,6 +828,10 @@
       "label": "Contacts",
       "tooltip": "The customers and vendors the company deals with."
     },
+    "contacts.individual": {
+      "label": "A person, not a company",
+      "tooltip": "A customer, supplier or holder who is a natural person: their name, emails, phone and address in the audit trail are sealed under their own key and shredded when the records' retention ends. A director is one already."
+    },
     "contacts.record": {
       "label": "What this contact stands at",
       "tooltip": "What they owe the company and what it owes them today, by days past due, what was invoiced and billed this financial year, and their latest documents."

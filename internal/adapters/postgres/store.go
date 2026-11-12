@@ -20,6 +20,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/fieldseal"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -37,6 +38,8 @@ type Store struct {
 	changed     storage.Changed
 	// fingerprint proves a sensitive value in an audit event (AUD-02): ports.Cipher.Fingerprint.
 	fingerprint func(ctx context.Context, scope, value []byte) ([]byte, error)
+	// keys wraps and unwraps the person keys that seal personal values in audit events (§11.8): ports.Cipher.
+	keys ports.Cipher
 }
 
 var _ storage.Store = (*Store)(nil)
@@ -54,14 +57,15 @@ func WithClock(c ports.Clock) Option { return func(s *Store) { s.clock = c } }
 // database role the store connects as.
 func WithActor(a storage.Actor) Option { return func(s *Store) { s.actor = a } }
 
-// WithFingerprints sets the keyed hash that proves sensitive values in audit events (AUD-02, PRD-001 rev 0.230): the
-// deployment's ports.Cipher, whose fingerprint key is held in Cloud KMS, or locally in a key file. Without it a store
-// keys its fingerprints with a random key of its own: a value is still never kept, but proofs written by two stores, or
-// by one store before and after a restart, do not compare. The wiring always sets it.
+// WithFingerprints sets the deployment's ports.Cipher, whose keys are held in Cloud KMS, or locally in a key file: its
+// keyed hash proves sensitive values in audit events (AUD-02, PRD-001 rev 0.230), and it wraps the person keys that
+// seal personal values (§11.8, rev 0.244). Without it a store uses random keys of its own: a value is still never kept,
+// but proofs written by two stores do not compare, and values sealed before a restart no longer open. The wiring
+// always sets it.
 func WithFingerprints(c ports.Cipher) Option {
 	return func(s *Store) {
 		if c != nil {
-			s.fingerprint = c.Fingerprint
+			s.fingerprint, s.keys = c.Fingerprint, c
 		}
 	}
 }
@@ -105,7 +109,7 @@ func Connect(url string, opts ...Option) (*Store, error) {
 // New wraps an existing pool.
 func New(pool *pgxpool.Pool, opts ...Option) *Store {
 	s := &Store{pool: pool, lockTimeout: DefaultLockTimeout, clock: clock.System{},
-		actor: storage.Actor{Type: "service", ID: pool.Config().ConnConfig.User}, fingerprint: ownKey()}
+		actor: storage.Actor{Type: "service", ID: pool.Config().ConnConfig.User}, fingerprint: ownKey(), keys: ownKeys()}
 	for _, o := range opts {
 		o(s)
 	}
@@ -124,6 +128,13 @@ func ownKey() func(ctx context.Context, scope, value []byte) ([]byte, error) {
 		m.Write(value)
 		return m.Sum(nil), nil
 	}
+}
+
+// ownKeys is a store's own key-encryption key when the wiring gives none: random, kept in memory only.
+func ownKeys() ports.Cipher {
+	key := make([]byte, 32)
+	_, _ = rand.Read(key) // never fails (crypto/rand)
+	return fieldseal.Sealer{KEK: fieldseal.AESKEK{Name: "store-own", Key: key}}
 }
 
 // Close closes the pool.

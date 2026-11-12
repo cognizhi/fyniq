@@ -5,8 +5,9 @@ Anyone with the events and the anchors can verify an organisation's trail withou
 ## Events
 
 Each event's **body** is a JSON object in the format its `schema` names (AUD-01):
-- `fyniq-audit-event@2` ([`audit-event.v2.schema.json`](audit-event.v2.schema.json)) for events written since PRD-001
-  rev 0.230;
+- `fyniq-audit-event@3` ([`audit-event.v3.schema.json`](audit-event.v3.schema.json)) for events written since PRD-001
+  rev 0.244;
+- `fyniq-audit-event@2` ([`audit-event.v2.schema.json`](audit-event.v2.schema.json)) from rev 0.230;
 - `fyniq-audit-event@1` ([`audit-event.v1.schema.json`](audit-event.v1.schema.json)) before.
 
 The body is stored exactly as written and never changed. The database adds three values per event:
@@ -52,6 +53,25 @@ The fingerprint is the organisation's keyed hash of the value (SEC-11: Cloud KMS
 equal for equal values. So two proofs show whether a value changed, and whether it changed back, but not what it is.
 An identifier's proof keeps its last four characters as `hint`; a pay figure's has none. Version 1 events kept an
 identifier's last four characters only.
+
+## Personal values (version 3)
+
+From version 3 (§11.8), an event about a **person** keeps that person's own values sealed: a member (by their user), a
+person invited or asking to join before they are a member, and a contact who is a director or is marked as a person. The
+value of each field named as personal (a name, an email address, a phone number, an address, at any depth) is replaced
+by
+
+```json
+{"pk": "<the person key's ID>", "ct": "<unpadded standard base64>"}
+```
+
+`ct` is AES-256-GCM under the person's data key for the event's financial year: the 12-byte nonce, the ciphertext and its
+16-byte tag. Its associated data is `fyniq-audit-personal@1:<organisation>:<event>:<field>`, where a nested value's
+field is its path, such as `payee.name` or `emails[1]`, so a sealed value copied to another event or field does not open.
+The data key is wrapped by the deployment's key-encryption key (Cloud KMS; a key file locally) and kept in
+`fyniq.person_key`, one per person and financial year. When the records' retention for that year ends, the DPO approves
+the shredding of its keys: the values no longer open, while the events, their hashes and the anchors stay as they were,
+so the chain still verifies. A value is sealed after masking (SEC-15) and is never masked again.
 
 ## Security events' details
 

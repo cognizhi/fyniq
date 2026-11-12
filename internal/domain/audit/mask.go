@@ -84,6 +84,9 @@ func MaskValue(key string, v any) any {
 		if f, ok := x["fingerprint"].(string); ok && strings.HasPrefix(f, FingerprintPrefix) {
 			return x // a proof (AUD-02): its base64url could look like a token to the patterns below
 		}
+		if _, _, ok := SealedOf(x); ok {
+			return x // a sealed personal value (§11.8): its base64 could look like an NRIC to the patterns below
+		}
 		out := make(map[string]any, len(x))
 		for k, val := range x {
 			out[k] = MaskValue(k, val)

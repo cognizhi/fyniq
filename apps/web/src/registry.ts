@@ -309,6 +309,7 @@ export const actions = [
   { kind: "action", id: "review-banner", mode: "basic", help: "review.awaiting-verification", guide: "review.awaiting-verification" },
   { kind: "action", id: "contact.add", mode: "basic", help: "contact.add", guide: "contacts.manage#add-a-contact" },
   { kind: "action", id: "contact.templates", mode: "basic", help: "contact.templates", guide: "contacts.manage#their-own-templates" },
+  { kind: "action", id: "contact.individual", mode: "basic", help: "contacts.individual", guide: "contacts.manage#a-person-or-a-company" },
   { kind: "action", id: "contact.bank-details", mode: "basic", help: "contact.bank-details", guide: "contacts.manage#bank-details" },
   { kind: "action", id: "bank-details.change", mode: "basic", help: "bank-details.change", guide: "contacts.manage#change-a-suppliers-bank-details" },
   { kind: "action", id: "bank-details.ask", mode: "basic", help: "bank-details.ask", guide: "contacts.manage#change-a-suppliers-bank-details" },

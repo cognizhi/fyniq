@@ -35,6 +35,7 @@ type Contact struct {
 	Director           bool                `json:"director" doc:"A director of the company: they hold a director account on 2500 and 2120 (FR-EQ-01; PRD-001 rev 0.167)." example:"false"`
 	Shareholder        bool                `json:"shareholder" doc:"A shareholder: they hold a director account too, for money they lend the company (FR-EQ-01)." example:"false"`
 	Investor           bool                `json:"investor" doc:"An investor: they hold a SAFE, a note or options, and no shares yet (FR-EQ-15). Shareholders and investors are the equity register's holders." example:"false"`
+	Individual         bool                `json:"individual" doc:"A natural person: their name, emails, phone and address in the audit trail are sealed under their own key and shredded at the end of retention (§11.8), as a director's are." example:"false"`
 	MemberUserID       string              `json:"member_user_id,omitempty" format:"uuid" doc:"For a director or shareholder, the member who signs in as them: they see their own account (Money I put in), keep a claim as a loan, are repaid to their own approved bank account and never approve their own settlement (FR-EQ-01, FM-9). It changes only by linkContactMember, another person's approval." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	UENOrTaxID         string              `json:"uen_or_tax_id,omitempty" doc:"Its UEN, or a foreign contact's tax ID." example:"202312345K"`
 	PeppolID           string              `json:"peppol_id,omitempty" doc:"Its Peppol participant ID for InvoiceNow." example:"0195:SGUEN202312345K"`
@@ -65,6 +66,7 @@ type ContactDraft struct {
 	Director         bool   `json:"director,omitempty" doc:"A director of the company, who holds a director account (FR-EQ-01)." example:"false"`
 	Shareholder      bool   `json:"shareholder,omitempty" doc:"A shareholder, who holds a director account too (FR-EQ-01)." example:"false"`
 	Investor         bool   `json:"investor,omitempty" doc:"An investor: a SAFE, note or option holder with no shares yet (FR-EQ-15)." example:"false"`
+	Individual       bool   `json:"individual,omitempty" doc:"A natural person rather than a company (§11.8): their personal values in the audit trail are sealed under their own key. A director is one already." example:"false"`
 	UENOrTaxID       string `json:"uen_or_tax_id,omitempty" maxLength:"30" doc:"Its UEN or tax ID." example:"202312345K"`
 	PeppolID         string `json:"peppol_id,omitempty" maxLength:"70" doc:"Its Peppol participant ID." example:"0195:SGUEN202312345K"`
 	BillingEmail     string `json:"billing_email,omitempty" maxLength:"254" doc:"Where invoices go." example:"accounts@northwind.example"`
@@ -91,6 +93,7 @@ type ContactChanges struct {
 	Director         *bool   `json:"director,omitempty" doc:"A director. A contact with amounts on a director account stays a director or shareholder (STORAGE-PARTY-01)." example:"true"`
 	Shareholder      *bool   `json:"shareholder,omitempty" doc:"A shareholder." example:"true"`
 	Investor         *bool   `json:"investor,omitempty" doc:"An investor: a SAFE, note or option holder (FR-EQ-15)." example:"false"`
+	Individual       *bool   `json:"individual,omitempty" doc:"A natural person rather than a company (§11.8). Values already in the audit trail stay as they were written." example:"true"`
 	UENOrTaxID       *string `json:"uen_or_tax_id,omitempty" maxLength:"30" doc:"Its UEN or tax ID." example:"202312345K"`
 	PeppolID         *string `json:"peppol_id,omitempty" maxLength:"70" doc:"Its Peppol participant ID." example:"0195:SGUEN202312345K"`
 	BillingEmail     *string `json:"billing_email,omitempty" maxLength:"254" doc:"Where invoices go." example:"accounts@northwind.example"`
@@ -161,7 +164,7 @@ var ContactCodes = []string{contact.CodeName, contact.CodeRole, contact.CodeEmai
 
 func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, Director: c.Director,
-		Shareholder: c.Shareholder, Investor: c.Investor, MemberUserID: idOrEmpty(c.MemberUserID), UENOrTaxID: c.UENOrTaxID,
+		Shareholder: c.Shareholder, Investor: c.Investor, Individual: c.Individual, MemberUserID: idOrEmpty(c.MemberUserID), UENOrTaxID: c.UENOrTaxID,
 		PeppolID: c.PeppolID, BillingEmail: c.BillingEmail, RemittanceEmail: c.RemittanceEmail, Phone: c.Phone, Address: c.Address,
 		Country: c.Country, TaxResidence: c.TaxResidence, Currency: c.Currency, PaymentTermsDays: c.PaymentTermsDays, DefaultGSTCode: c.DefaultGSTCode,
 		DiscountPercent: c.DiscountPercent, DiscountDays: c.DiscountDays,
@@ -283,7 +286,7 @@ func registerContacts(a *API) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Contact, error) {
 				b := in.Body
 				d := storage.ContactDetails{LegalName: strings.TrimSpace(b.LegalName), Customer: b.Customer, Vendor: b.Vendor,
-					Director: b.Director, Shareholder: b.Shareholder, Investor: b.Investor,
+					Director: b.Director, Shareholder: b.Shareholder, Investor: b.Investor, Individual: b.Individual,
 					UENOrTaxID: strings.TrimSpace(b.UENOrTaxID), PeppolID: strings.TrimSpace(b.PeppolID), BillingEmail: strings.TrimSpace(b.BillingEmail),
 					RemittanceEmail: strings.TrimSpace(b.RemittanceEmail), Phone: strings.TrimSpace(b.Phone), Address: strings.TrimSpace(b.Address),
 					Country: b.Country, TaxResidence: b.TaxResidence, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode,
@@ -390,6 +393,9 @@ func registerContacts(a *API) {
 				}
 				if b.Investor != nil {
 					d.Investor = *b.Investor
+				}
+				if b.Individual != nil {
+					d.Individual = *b.Individual
 				}
 				if b.Active != nil {
 					active = *b.Active

@@ -123,9 +123,9 @@ fyniq_api       INSERT    consent_purpose (audience, created_at, created_by, des
 fyniq_api       SELECT    consent_purpose
 fyniq_api       INSERT    consent_record (at, event, note, person, purpose_id, recorded_by)
 fyniq_api       SELECT    consent_record
-fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, individual, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, individual, is_active, is_customer, is_director, is_investor, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
 fyniq_api       SELECT    control_run
@@ -325,6 +325,8 @@ fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id
 fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, kind, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
+fyniq_api       INSERT    person_key (cohort, person, wrapped)
+fyniq_api       SELECT    person_key
 fyniq_api       INSERT    policy_acknowledgement (acknowledged_at, acknowledged_by, key, version)
 fyniq_api       SELECT    policy_acknowledgement
 fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by, sha256)
@@ -498,6 +500,8 @@ fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
+fyniq_executor  INSERT    person_key (cohort, person, wrapped)
+fyniq_executor  SELECT    person_key
 fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
@@ -868,6 +872,8 @@ fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
 fyniq_worker    SELECT    period_reopen
 fyniq_worker    SELECT    period_variance_explanation
+fyniq_worker    INSERT    person_key (cohort, person, wrapped)
+fyniq_worker    SELECT    person_key
 fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version

@@ -70,6 +70,7 @@ type AuditFieldChange struct {
 	After  any    `json:"after" doc:"Its value after, the same way." example:"\"posted\""`
 	Proof  string `json:"proof,omitempty" enum:"changed,changed_back,unchanged" doc:"For a sensitive value: whether it changed, changed back to what it was before the field's previous change, or not (AUD-02)." example:"changed"`
 	Hint   string `json:"hint,omitempty" doc:"An identifier's last four characters." example:"******6789"`
+	Sealed string `json:"sealed,omitempty" enum:"opened,shredded" doc:"For a person's personal value, sealed under their key for the event's financial year (§11.8): opened, before and after are the values; shredded, the key is gone at the end of retention and the values read null." example:"opened"`
 }
 
 // AuditRequest is where an event came from.
@@ -296,6 +297,9 @@ func registerAuditEvents(a *API) {
 				}
 				v.Changes = append(v.Changes, AuditFieldChange{Field: c.Field, Before: c.Before, After: c.After, Proof: c.Proof, Hint: c.Hint})
 			}
+			if err := openSealed(ctx, u, x.ID, v.Changes); err != nil {
+				return err
+			}
 			out.Body = v
 			return nil
 		})
@@ -386,4 +390,48 @@ func orgZone(ctx context.Context, u storage.UnitOfWork) (*time.Location, error) 
 		return time.UTC, nil
 	}
 	return loc, nil
+}
+
+// openSealed replaces each personal value sealed in changes with what it opens to (§11.8, rev 0.244), and marks the
+// change opened, or shredded once the person's key is gone: the reader holds V on "Audit trail".
+func openSealed(ctx context.Context, u storage.UnitOfWork, event uuid.UUID, changes []AuditFieldChange) error {
+	var places []string // each sealed value's change, side and path, as "<change>/<side>/<path>"
+	var values []storage.SealedValue
+	place := func(i, side int, path string) string { return strconv.Itoa(i) + "/" + strconv.Itoa(side) + "/" + path }
+	for i, c := range changes {
+		for side, v := range []any{c.Before, c.After} {
+			audit.Unseal(c.Field, v, func(path string, key uuid.UUID, text []byte) any {
+				places = append(places, place(i, side, path))
+				values = append(values, storage.SealedValue{EventID: event, Field: path, Key: key, Text: text})
+				return nil
+			})
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	opened, err := u.Audit().OpenSealed(ctx, values)
+	if err != nil {
+		return err
+	}
+	at := make(map[string]storage.OpenedValue, len(opened))
+	for n, o := range opened {
+		at[places[n]] = o
+	}
+	for i := range changes {
+		for side, v := range []*any{&changes[i].Before, &changes[i].After} {
+			*v = audit.Unseal(changes[i].Field, *v, func(path string, _ uuid.UUID, _ []byte) any {
+				o := at[place(i, side, path)]
+				if o.Shredded {
+					changes[i].Sealed = "shredded"
+					return nil
+				}
+				if changes[i].Sealed == "" {
+					changes[i].Sealed = "opened"
+				}
+				return o.Value
+			})
+		}
+	}
+	return nil
 }

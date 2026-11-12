@@ -196,3 +196,43 @@ var matrixAuditEvents = map[string]func(e *env, tok string) (response, func() bo
 		return e.call(http.MethodPost, "/v1/audit/exports", tok, map[string]any{"from": "2026-10-01", "to": "2026-10-31", "format": "csv"}), nil
 	},
 }
+
+// The explorer opens a person's sealed values (§11.8, rev 0.244; p1-pdpa-retention D8): an individual contact's name,
+// email and phone are sealed in the trail, and getAuditEvent shows them to the Auditor, marked opened; a company's are
+// kept as written and marked nothing; the list gives no values.
+// req: FR-CTL-03
+// req: AUD-02
+// req: data/backup-and-recovery Personal data in immutable records is crypto-shredded at the end of retention
+func TestTheExplorerOpensSealedValues(t *testing.T) {
+	e := newEnv(t)
+	owner := e.as(authz.Accountant)
+	person := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Ada Tan", "customer": true, "individual": true,
+		"billing_email": "ada@example.com", "phone": "+65 9123 4567"})
+	company := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Northwind Pte Ltd", "vendor": true})
+	if person.Status != 201 || person.Body["individual"] != true || company.Status != 201 {
+		t.Fatalf("the contacts: %d %s %d", person.Status, person.Raw, company.Status)
+	}
+	auditor := e.as(authz.Auditor)
+	event := func(id string) map[string]map[string]any {
+		t.Helper()
+		l := e.call(http.MethodGet, "/v1/audit/events?record_type=contact&record_id="+id, auditor, nil)
+		items, _ := l.Body["items"].([]any)
+		if l.Status != 200 || len(items) != 1 || strings.Contains(l.Raw, "Ada") {
+			t.Fatalf("the contact's events: %d %s", l.Status, l.Raw)
+		}
+		r := e.call(http.MethodGet, "/v1/audit/events/"+items[0].(map[string]any)["id"].(string), auditor, nil)
+		out := map[string]map[string]any{}
+		for _, c := range r.Body["changes"].([]any) {
+			out[c.(map[string]any)["field"].(string)] = c.(map[string]any)
+		}
+		return out
+	}
+	p := event(person.str("id"))
+	if p["legal_name"]["after"] != "Ada Tan" || p["legal_name"]["sealed"] != "opened" || p["billing_email"]["after"] != "ada@example.com" ||
+		p["phone"]["after"] != "+65 9123 4567" || p["is_customer"]["sealed"] != nil {
+		t.Errorf("the person's event: %v", p)
+	}
+	if c := event(company.str("id")); c["legal_name"]["after"] != "Northwind Pte Ltd" || c["legal_name"]["sealed"] != nil {
+		t.Errorf("the company's event: %v", c)
+	}
+}

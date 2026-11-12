@@ -3148,6 +3148,14 @@ components:
           examples:
             - changed
           type: string
+        sealed:
+          description: "For a person's personal value, sealed under their key for the event's financial year (§11.8): opened, before and after are the values; shredded, the key is gone at the end of retention and the values read null."
+          enum:
+            - opened
+            - shredded
+          examples:
+            - opened
+          type: string
       required:
         - field
         - before
@@ -11235,6 +11243,11 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
           format: uuid
           type: string
+        individual:
+          description: "A natural person: their name, emails, phone and address in the audit trail are sealed under their own key and shredded at the end of retention (§11.8), as a director's are."
+          examples:
+            - false
+          type: boolean
         investor:
           description: "An investor: they hold a SAFE, a note or options, and no shares yet (FR-EQ-15). Shareholders and investors are the equity register's holders."
           examples:
@@ -11313,6 +11326,7 @@ components:
         - director
         - shareholder
         - investor
+        - individual
         - active
         - version
         - possible_duplicates
@@ -11383,6 +11397,11 @@ components:
           examples:
             - "2"
           type: string
+        individual:
+          description: A natural person rather than a company (§11.8). Values already in the audit trail stay as they were written.
+          examples:
+            - true
+          type: boolean
         investor:
           description: "An investor: a SAFE, note or option holder (FR-EQ-15)."
           examples:
@@ -11501,6 +11520,11 @@ components:
           examples:
             - "2"
           type: string
+        individual:
+          description: "A natural person rather than a company (§11.8): their personal values in the audit trail are sealed under their own key. A director is one already."
+          examples:
+            - false
+          type: boolean
         investor:
           description: "An investor: a SAFE, note or option holder with no shares yet (FR-EQ-15)."
           examples:

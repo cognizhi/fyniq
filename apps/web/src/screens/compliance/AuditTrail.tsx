@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, CircleCheck, CircleX, Download, History, Info, Link2, Search, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ChevronRight, CircleCheck, CircleX, Download, History, Info, Link2, Lock, Search, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -478,10 +478,26 @@ function Event({ eventId, onBack }: { eventId: string; onBack: () => void }) {
                           {c.hint && <span className="fy-mono ml-2">{c.hint}</span>}
                           <span className="fy-small fy-muted ml-2">A sensitive value: the trail keeps only a proof, never the value.</span>
                         </td>
+                      ) : c.sealed === "shredded" ? (
+                        <td colSpan={2}>
+                          <span className="fy-chip fy-chip--neutral">
+                            <Icon of={Lock} />
+                            Shredded
+                          </span>
+                          <span className="fy-small fy-muted ml-2">A person's value: their key was shredded when the records' retention ended.</span>
+                        </td>
                       ) : (
                         <>
                           <td className="fy-mono whitespace-normal">{value(c.before)}</td>
-                          <td className="fy-mono whitespace-normal">{value(c.after)}</td>
+                          <td className="fy-mono whitespace-normal">
+                            {value(c.after)}
+                            {c.sealed === "opened" && (
+                              <span className="fy-chip fy-chip--neutral ml-2" title="A person's value, sealed under their own key and shredded when the records' retention ends">
+                                <Icon of={Lock} />
+                                Sealed
+                              </span>
+                            )}
+                          </td>
                         </>
                       )}
                     </tr>

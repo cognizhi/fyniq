@@ -248,7 +248,7 @@ func TestSuperAdmins(t *testing.T) {
 	c := jsonschema.NewCompiler()
 	c.AssertFormat()
 	schemas := map[string]*jsonschema.Schema{}
-	for _, n := range []string{"1", "2"} { // each event matches the format its schema names (AUD-01: versioned)
+	for _, n := range []string{"1", "2", "3"} { // each event matches the format its schema names (AUD-01: versioned)
 		sc, err := c.Compile("../../contracts/audit/audit-event.v" + n + ".schema.json")
 		if err != nil {
 			t.Fatal(err)
