@@ -65,7 +65,7 @@ export function AuditTrail() {
   return (
     <div className="fy-page fy-enter">
       <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/compliance/calendar">Compliance</Link>
+        <Link to="/compliance">Compliance</Link>
         <Icon of={ChevronRight} />
         <span>Audit trail</span>
       </nav>

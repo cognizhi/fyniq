@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arrives": {
+      "description": "For a planned check, the change it arrives with.",
+      "examples": [
+        "p1-mcp-first-party"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "In plain words: what passed, what it found, or what is missing.",
+      "examples": [
+        "1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it"
+      ],
+      "type": "string"
+    },
+    "evidence": {
+      "description": "A link to its evidence, where there is one: a CI check's asset of the release the platform runs.",
+      "examples": [
+        "https://github.com/cognizhi/fyniq/releases/download/v1.2.0/test-report.zip"
+      ],
+      "format": "uri",
+      "type": "string"
+    },
+    "frequency": {
+      "description": "CI on every change, daily, nightly, weekly, monthly, quarterly, semi-annually, or on an event.",
+      "enum": [
+        "CI",
+        "D",
+        "N",
+        "W",
+        "M",
+        "Q",
+        "S",
+        "E"
+      ],
+      "examples": [
+        "N"
+      ],
+      "type": "string"
+    },
+    "how": {
+      "description": "What runs it: make \u003ctarget\u003e, test \u003cGo test\u003e or ci \u003cjob\u003e in CI; job \u003cplatform job\u003e; check \u003ccatalogue check\u003e; verify \u003cverification\u003e; attestation \u003creview\u003e; tofu \u003cmodule\u003e/\u003crun\u003e for a check that runs in the cloud.",
+      "examples": [
+        "verify payments.dual-control"
+      ],
+      "type": "string"
+    },
+    "keeps": {
+      "description": "What its evidence is and where it is kept, as the registry says.",
+      "examples": [
+        "the latest run for the organisation (fyniq.control_run)"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "ci: in CI, read from the release the platform runs. job: a platform job. check: a check of the catalogue (Appendix C). verify: a verification compliance.run makes nightly. attestation: a review a person signs off. cloud: it runs only in the cloud. none: nothing runs it yet.",
+      "enum": [
+        "ci",
+        "job",
+        "check",
+        "verify",
+        "attestation",
+        "cloud",
+        "none"
+      ],
+      "examples": [
+        "verify"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "running: it runs here. planned: it arrives with a later change, named in arrives. manual: checked by hand. cloud: built, run only in the cloud.",
+      "enum": [
+        "running",
+        "planned",
+        "manual",
+        "cloud"
+      ],
+      "examples": [
+        "running"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "What it last said.",
+      "enum": [
+        "pass",
+        "fail",
+        "overdue",
+        "not_applicable",
+        "not_assessed"
+      ],
+      "examples": [
+        "fail"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "frequency",
+    "kind",
+    "state",
+    "status",
+    "detail"
+  ],
+  "title": "ControlCheck",
+  "type": "object"
+}

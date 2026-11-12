@@ -221,14 +221,25 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 5. Compliance › Controls (slice 5)
 
-- [ ] 5.1 `listControls` (filters `framework` and `status`) and `getControl`, with V on "Compliance Center" and matrix
+- [x] 5.1 `listControls` (filters `framework` and `status`) and `getControl`, with V on "Compliance Center" and matrix
   rows. Each control comes with its checks, last runs, evidence links, owner and frameworks. Tests:
   - a control of each status;
   - the framework filter;
   - a Bookkeeper refused.
 
   `// req: CMP-01`, `// req: FR-CTL-05`
-- [ ] 5.2 The screen Compliance › Controls (Expert, `/compliance/controls`):
+
+  **What building added:**
+    - **The status shown** is the one `compliance.run` last saved (`control_state`), with each check's words and
+      evidence. Before the first run, every control and check is "Not worked out yet". The API never reads job slots
+      or GitHub.
+    - **The response** has each control's frameworks (`FrameworkKey`, an enum of the registry's ten), every framework
+      with how many controls it holds, and the release the platform runs (none in a development build).
+    - **Checks** carry their kind (ci, job, check, verify, attestation, cloud, none), their state in the registry, and,
+      for a planned check, the change it arrives with.
+    - **Errors.** An unknown control is COMPLIANCE-01 (404). Both operations are exempt from cursor paging, with
+      their reasons.
+- [x] 5.2 The screen Compliance › Controls (Expert, `/compliance/controls`):
   - the framework filter;
   - the list with statuses, as icon and label;
   - a control's checks and evidence;
@@ -238,6 +249,22 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
   failing controls for the viewer's roles. It has the registry entries, help keys and the guide page
   `compliance-controls.md`, compiled into `kb/`. A component test with axe covers all passing, a failing control and
   not assessed. `// req: CMP-01`, `// req: FR-UX-29`
+
+  **What building added:**
+    - **A Compliance page** (`/compliance`, Basic) lists the module's pages: the statutory calendar in Basic mode, and
+      the controls, GST, evidence and audit trail too in Expert mode. The navigation's **Compliance** opens it, and
+      the audit trail's breadcrumb leads to it.
+    - **The screen** follows the fragment, with three differences:
+      - the status counts are buttons that filter the list;
+      - only frameworks with controls get a filter;
+      - **Cloud posture** waits for `p1-security-hardening` (SEC-33).
+
+      **Nightly verification** reads CTL-FIN-01, CTL-FIN-04 and CTL-AUD-02. A development build says why its CI
+      checks are not assessed.
+    - **The Inbox's Compliance section** lists the failing or overdue controls whose owner role the viewer holds. It
+      asks the API only for roles that may read the Compliance Center.
+    - **The guide page** `compliance-controls.md` is compiled into `kb/pages/task/compliance-controls.md`. The Checks
+      guide now says where its nightly verification also shows, which links the two pages.
 
 ## 6. The risk register (slice 6)
 

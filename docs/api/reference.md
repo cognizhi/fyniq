@@ -12360,6 +12360,48 @@ Every filing and payment deadline due in a window of at most 18 months, with eac
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `CAL-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/compliance/controls`
+
+**List the controls and their status** (`listControls`)
+
+Every control of the registry (PRD-001 Appendix F) with its status for the organisation (CMP-01): pass, fail, overdue, not applicable, or not assessed naming what is missing; each check by frequency with what it last said and its evidence; its owner role and the frameworks it maps to. A control's status is the worst of its checks', as compliance.run last worked it out each night; a check that runs in CI reads the release the platform runs. Filter by framework or status. Read-only; no side effects.
+
+- **Permission:** View on Compliance Center
+- **Parameters:**
+  - `framework` (query): Only the controls mapped to this framework.
+  - `status` (query): Only the controls with this status.
+- **Responses:**
+  - `200` OK [`Controls`](../../contracts/schemas/Controls.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/controls/{control_id}`
+
+**Get a control and its status** (`getControl`)
+
+One control as listControls shows it. A control the registry does not hold is COMPLIANCE-01. Read-only; no side effects.
+
+- **Permission:** View on Compliance Center
+- **Parameters:**
+  - `control_id` (path, required): The control's ID.
+- **Responses:**
+  - `200` OK [`Control`](../../contracts/schemas/Control.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `COMPLIANCE-01` No such control.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `COMPLIANCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/filings`
 
 **List the filing records** (`listStatutoryFilings`)

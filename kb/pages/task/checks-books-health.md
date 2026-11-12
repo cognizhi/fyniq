@@ -4,7 +4,7 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:918a4740e52edeeeab774ab24df4701e251d786ff1b9f12e5db471bbd90e987f
+  - docs/user-guide/checks.md sha256:f7c709205d3fe7e567e1871bce346f0ac79b33ff871643e9a5c8bbf1de940c7f
 data_class: general
 taint: trusted
 status: draft
@@ -62,6 +62,7 @@ aliases:
 
 - Each night the books are worked out again from every entry and compared with what the person sees: the balances against their journal lines, and the audit trail's chain of events.
 - The **Nightly ledger verification** card shows how last night's run went.
+- In Expert mode, **Compliance** › **Controls** shows these verifications, and the checks that answer for a control, beside the rest of the controls ([[compliance.controls]]).
 
 (src: docs/user-guide/checks.md#nightly-ledger-verification)
 

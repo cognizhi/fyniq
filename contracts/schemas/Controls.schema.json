@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "frameworks": {
+      "description": "Every framework of the registry, in the order the dashboard lists them.",
+      "items": {
+        "$ref": "ControlFramework.schema.json"
+      },
+      "type": "array"
+    },
+    "items": {
+      "description": "The controls the filters keep, in the registry's order.",
+      "items": {
+        "$ref": "Control.schema.json"
+      },
+      "type": "array"
+    },
+    "release": {
+      "description": "The release the platform runs, whose evidence its CI checks read; none in a development build, where they are not assessed.",
+      "examples": [
+        "v1.2.0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "frameworks"
+  ],
+  "title": "Controls",
+  "type": "object"
+}

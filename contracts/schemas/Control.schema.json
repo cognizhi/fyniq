@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_at": {
+      "description": "When compliance.run last worked out its status; none before its first run.",
+      "examples": [
+        "2027-01-03T20:35:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "checks": {
+      "description": "Each check, by frequency, with what it last said.",
+      "items": {
+        "$ref": "ControlCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "control": {
+      "description": "What the control holds, as Appendix F words it.",
+      "examples": [
+        "Payments and payee bank changes are dual-controlled"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "In plain words, why: the worst check's words, or that each passed.",
+      "examples": [
+        "1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it"
+      ],
+      "type": "string"
+    },
+    "failing_since": {
+      "description": "While it fails or is overdue, since when.",
+      "examples": [
+        "2027-01-02T20:35:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "frameworks": {
+      "description": "The frameworks it maps to, as frameworks names them.",
+      "items": {
+        "description": "A framework's key, as Controls.frameworks lists them.",
+        "enum": [
+          "sg-statute",
+          "pdpa",
+          "iso27001",
+          "soc2",
+          "csa-ce",
+          "csa-ct",
+          "imda-ai",
+          "owasp",
+          "coso",
+          "isa"
+        ],
+        "examples": [
+          "soc2"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "frequency": {
+      "description": "How often it is checked, as Appendix F says.",
+      "examples": [
+        "CI, N"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The control's ID.",
+      "examples": [
+        "CTL-FIN-08"
+      ],
+      "type": "string"
+    },
+    "mapping": {
+      "description": "Its mapping to the frameworks, as Appendix F words it.",
+      "examples": [
+        "COSO P8; SOC2 CC6.1"
+      ],
+      "type": "string"
+    },
+    "owner": {
+      "description": "The role that answers for it, and that a notice of its failure goes to.",
+      "enum": [
+        "owner",
+        "administrator",
+        "controller",
+        "accountant",
+        "dpo",
+        "auditor"
+      ],
+      "examples": [
+        "controller"
+      ],
+      "type": "string"
+    },
+    "section": {
+      "description": "Its section of Appendix F.",
+      "examples": [
+        "F.1"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "The worst of its checks': fail, overdue, not assessed, pass; not applicable when none applies.",
+      "enum": [
+        "pass",
+        "fail",
+        "overdue",
+        "not_applicable",
+        "not_assessed"
+      ],
+      "examples": [
+        "fail"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "section",
+    "control",
+    "owner",
+    "frameworks",
+    "mapping",
+    "frequency",
+    "status",
+    "detail",
+    "checks"
+  ],
+  "title": "Control",
+  "type": "object"
+}

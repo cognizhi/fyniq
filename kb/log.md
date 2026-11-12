@@ -473,3 +473,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/audit-trail.md → compliance.audit-trail (new: Compliance › Audit trail, p1-audit-explorer slice 11)
 
 ## [2026-11-09] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (each purge is listed on the audit trail; links compliance.audit-trail)
+
+## [2026-11-09] compile | docs/user-guide/compliance-controls.md → compliance.controls (new: Compliance › Controls, p1-compliance-center slice 5)
+
+## [2026-11-09] compile | docs/user-guide/checks.md → checks.overview (links the nightly verification to Compliance › Controls)
