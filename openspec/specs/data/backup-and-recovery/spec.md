@@ -177,7 +177,7 @@ Source: PRD-001 §11.9
 - **AND** a restore re-applies it
 
 ### Requirement: Retention of AI conversations
-AI conversations SHALL be kept 1 year by default (configurable) and then removed by a purge job.
+AI conversations SHALL be kept 1 year by default (configurable) and then removed by a purge job. (rev 0.245) The purge is built with `p1-ai-assistant`, which keeps the conversations; the setting `retention.ai_conversations_days` (365) exists from `p1-pdpa-retention`.
 
 Source: PRD-001 §11.9
 

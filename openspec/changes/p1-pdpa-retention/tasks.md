@@ -475,22 +475,65 @@ event format.
 
 ## 11. NRIC, encryption, residency, logs and backups (slice 11)
 
-- [ ] 11.1 The archtest of D11: no NRIC, FIN, card number or CVV in a column, an API field or an event field.
+- [x] 11.1 The archtest of D11: no NRIC, FIN, card number or CVV in a column, an API field or an event field.
   `// req: CMP-PD-07`, `// req: SEC-14`
-- [ ] 11.2 HSTS from the API, with a test. The `infra/` retention of application logs (30 days) and of Cloud SQL's
+
+  **What building added:**
+    - **The rule.** `TestNoNRICOrCardDataIsHeld` refuses any column of the schema snapshot, any property of the API's
+      schemas, and any audit change key in the code (`"field": {…}`) named with the word nric, fin, cvv, cvc or pan,
+      or card number, security code or id number.
+    - **The exception.** A true-or-false flag about one is allowed: `evidence.nric_flagged` and the evidence views'
+      `unmasked_nric`. Those are the only matches today.
+    - **The inventory** already records NRIC and card data as not held (slice 4).
+- [x] 11.2 HSTS from the API, with a test. The `infra/` retention of application logs (30 days) and of Cloud SQL's
   backups, plus the monthly export, each with a module test, `[live-verify]`. `// req: SEC-10`, `// req: SEC-13`,
   and the unnumbered "Retention of application logs" and "Retention of backups".
-- [ ] 11.3 AI conversations' retention (Open Questions): decided when this slice is reached. Either a PRD revision moves
+
+  **What building added:**
+    - **HSTS.** The HTTP shell every service runs in (`internal/httpserver`) sets
+      `Strict-Transport-Security: max-age=63072000; includeSubDomains` on every answer: a route's, a probe's and a 404.
+      It has no `preload`. Test: `TestEveryAnswerCarriesHSTS`.
+    - **Backups.** Cloud SQL keeps daily backups 35 days (from 14), beside the 7 days of point-in-time recovery the
+      Enterprise edition has.
+    - **Application logs.** The `_Default` log bucket keeps 30 days (`logging.tf`).
+    - **Module tests.** Both have asserts in `environment.tftest.hcl`. `make infra-check` passes on mock providers;
+      the real buckets are `[live-verify]`.
+    - **Not built here: the monthly snapshot kept one year.** It is DR-04's monthly export, which `p1-operations-dr`
+      builds with its bucket.
+- [x] 11.3 AI conversations' retention (Open Questions): decided when this slice is reached. Either a PRD revision moves
   it to `p1-ai-assistant`, or the setting is built here. The unnumbered "Retention of AI conversations".
+
+  **Decided (the owner, 10 Nov 2026; PRD-001 rev 0.245):**
+    - **Moved.** The purge job is built with `p1-ai-assistant`, which keeps the conversations and can test the purge
+      on them. The plan maps the requirement there (`scripts/roadmap.py`).
+    - **What stays here.** The setting `retention.ai_conversations_days` (365), which this change built, and its row
+      in the retention schedule.
+    - **Not chosen:** a placeholder job here, or leaving the task open until the assistant lands.
 
 ## 12. Canvas, threat model and as built (slice 12)
 
 - [ ] 12.1 The fragments `DataProtection.html` and `PrivacyNotices.html` are checked against the build, and the
   canvases are republished where they differ. This waits for the design account. `python3 docs/design/screens/build.py
   check` passes.
-- [ ] 12.2 The threat model `docs/security/threat-models/pdpa-retention.md`. It covers the registers, the timers,
+- [x] 12.2 The threat model `docs/security/threat-models/pdpa-retention.md`. It covers the registers, the timers,
   personal keys, shredding, the register, the restore, anonymisation, notices and consent, and who may see what.
-- [ ] 12.3 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+
+  **What building added:** fifteen threats across six boundaries, each mapped to its control and the tests that prove
+  it. "What remains" lists:
+    - counsel;
+    - events about other objects keeping their values;
+    - the worker trusted with the restore;
+    - a restore within the hour of an anchor;
+    - `[live-verify]`;
+    - the AI connections abroad;
+    - documents after an anonymisation.
+- [x] 12.3 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+
+  **Done on 10 Nov 2026, on #539's branch:**
+    - `make test` passed in full, including the authorisation matrix (33 minutes) and the oracle;
+    - `scripts/local-smoke.sh` (QA-LOCAL-01) passed: `make up` from the local images on port 8090, since another
+      project held 8080 on this machine;
+    - the build plan's paragraph is written with slice 12.
 
 ## Workflow follow-up
 

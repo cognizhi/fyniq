@@ -50,3 +50,19 @@ func TestReadyzReportsAFailingDependency(t *testing.T) {
 		t.Fatalf("failing: %v", failing)
 	}
 }
+
+// Every answer carries HSTS (SEC-10, rev 0.244; p1-pdpa-retention D12): a route's, a probe's and a 404, so a browser
+// that reached a service over HTTPS never falls back to plain HTTP.
+// req: SEC-10
+// asvs: V12.1.1
+func TestEveryAnswerCarriesHSTS(t *testing.T) {
+	s := New(version.Info{Service: "api"})
+	s.HandleFunc("GET /v1/things", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	for _, path := range []string{"/v1/things", "/healthz", "/nowhere"} {
+		rec := httptest.NewRecorder()
+		s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if got := rec.Header().Get("Strict-Transport-Security"); got != "max-age=63072000; includeSubDomains" {
+			t.Errorf("%s answered %d with HSTS %q", path, rec.Code, got)
+		}
+	}
+}

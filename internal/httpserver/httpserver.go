@@ -62,8 +62,16 @@ func (s *Server) Routes() []string {
 	return append([]string(nil), s.routes...)
 }
 
-// ServeHTTP serves the routes.
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) { s.Mux.ServeHTTP(w, r) }
+// HSTS is the Strict-Transport-Security every answer carries (SEC-10, rev 0.244): a browser reaches Fyniq over HTTPS
+// only, for two years, subdomains included. TLS ends at Cloud Run and at Caddy locally; a browser ignores the header
+// over plain HTTP.
+const HSTS = "max-age=63072000; includeSubDomains"
+
+// ServeHTTP serves the routes, each answer with HSTS.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Strict-Transport-Security", HSTS)
+	s.Mux.ServeHTTP(w, r)
+}
 
 // AddReadiness registers a dependency that /readyz checks.
 func (s *Server) AddReadiness(name string, c Check) {
@@ -108,7 +116,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 // Serve runs the server on l until ctx is done, then shuts down gracefully.
 func (s *Server) Serve(ctx context.Context, l net.Listener) error {
-	srv := &http.Server{Handler: s.Mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: s, ReadHeaderTimeout: 10 * time.Second}
 	errc := make(chan error, 1)
 	go func() { errc <- srv.Serve(l) }()
 	select {
