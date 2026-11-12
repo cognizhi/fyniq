@@ -197,6 +197,7 @@ var fyCodes = map[string]string{
 	"FY313": storage.CodeDPIA,            // an impact assessment's version out of order, an approval of an earlier one, or any change (000304)
 	"FY314": storage.CodePDRequest,       // a request's step out of order, an extension late or to an earlier day, or any change (000305)
 	"FY315": storage.CodeBreach,          // a breach's step out of order, prescribed data decided not notifiable, or any change (000306)
+	"FY316": storage.CodeTransfer,        // a transfer's version out of order, a changed flow, or any change (000307)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

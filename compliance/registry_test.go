@@ -509,6 +509,26 @@ func TestTheDataInventory(t *testing.T) {
 			t.Errorf("%s looks personal, and the inventory does not say what it is: add it to a class or to not_personal", col)
 		}
 	}
+	keys := map[string]bool{}
+	for _, c := range inv.Classes {
+		keys[c.Key] = true
+	}
+	abroad := map[string]bool{}
+	for _, f := range inv.Flows {
+		if f.Key == "" || f.What == "" || f.Data == "" || f.Note == "" || len(f.Classes) == 0 || abroad[f.Key] {
+			t.Errorf("flow %q leaves something out, or comes twice: %+v", f.Key, f)
+		}
+		for _, c := range f.Classes {
+			if !keys[c] {
+				t.Errorf("flow %s names the class %s, which the inventory does not have", f.Key, c)
+			}
+		}
+		abroad[f.Key] = f.CrossBorder
+	}
+	// req: CMP-PD-06
+	if !abroad["sign-in"] || !abroad["email"] {
+		t.Errorf("sign-in and email leave Singapore (PRD-001 ADR-T2, FR-INT-21): %v", abroad)
+	}
 	held := map[string]bool{}
 	for _, n := range inv.NotHeld {
 		held[n.Key] = n.Why != ""

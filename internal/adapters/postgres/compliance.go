@@ -529,6 +529,62 @@ func (c compliance) SaveInventoryEntry(ctx context.Context, e storage.InventoryE
 	return e, nil
 }
 
+func (c compliance) Transfers(ctx context.Context) ([]storage.Transfer, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListTransfers(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	var out []storage.Transfer
+	for _, r := range rows { // by transfer, then version: the last of each transfer is its latest
+		t := storage.Transfer{TransferID: r.TransferID, Version: int(r.Version), Recipient: r.Recipient, Countries: r.Countries, Data: r.Data,
+			Purpose: r.Purpose, Basis: r.Basis, AssessedOn: r.AssessedOn, AssessedBy: r.AssessedBy, Evidence: r.Evidence,
+			NextReviewOn: r.NextReviewOn, State: r.State, SavedBy: r.SavedBy, SavedAt: r.SavedAt}
+		if r.Flow != nil {
+			t.Flow = *r.Flow
+		}
+		if n := len(out); n > 0 && out[n-1].TransferID == t.TransferID {
+			out[n-1] = t
+			continue
+		}
+		out = append(out, t)
+	}
+	slices.SortStableFunc(out, func(a, b storage.Transfer) int { return strings.Compare(a.TransferID.String(), b.TransferID.String()) }) // v7: by time
+	return out, nil
+}
+
+func (c compliance) SaveTransfer(ctx context.Context, t storage.Transfer) (storage.Transfer, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Transfer{}, err
+	}
+	if t.TransferID == uuid.Nil {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return storage.Transfer{}, err
+		}
+		t.TransferID = id
+	}
+	var flow *string
+	if t.Flow != "" {
+		flow = &t.Flow
+	}
+	if err := c.u.q.InsertTransfer(ctx, sqlcdb.InsertTransferParams{TransferID: t.TransferID,
+		Version: int32(min(max(t.Version, 1), 1<<30)), Flow: flow, // #nosec G115 -- bounded
+		Recipient: t.Recipient, Countries: t.Countries, Data: t.Data, Purpose: t.Purpose, Basis: t.Basis, AssessedOn: t.AssessedOn,
+		AssessedBy: t.AssessedBy, Evidence: t.Evidence, NextReviewOn: t.NextReviewOn, State: t.State, SavedBy: t.SavedBy, SavedAt: t.SavedAt}); err != nil {
+		return storage.Transfer{}, mapError(err)
+	}
+	v := t.Version
+	if err := c.u.event(ctx, "transfer.saved", "pd_transfer", t.TransferID, &v, map[string][2]any{"flow": {nil, flow}, "recipient": {nil, t.Recipient},
+		"countries": {nil, t.Countries}, "basis": {nil, t.Basis}, "assessed_on": {nil, t.AssessedOn.Format(time.DateOnly)},
+		"next_review_on": {nil, t.NextReviewOn.Format(time.DateOnly)}, "state": {nil, t.State}}); err != nil {
+		return storage.Transfer{}, err
+	}
+	return t, nil
+}
+
 func (c compliance) InventoryReviews(ctx context.Context) ([]storage.InventoryReview, error) {
 	if err := c.u.check(); err != nil {
 		return nil, err

@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -169,6 +169,14 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	transfers, err := u.Compliance().Transfers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catalogue, err := registry.LoadInventory()
+	if err != nil {
+		return nil, err
+	}
 	features := map[string]bool{}
 	for key, setting := range registry.DPIAFeatures {
 		def, _ := settings.Lookup(setting)
@@ -202,6 +210,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		requestsReview(requests, today),
 		breachReview(breaches, today),
 		tabletopReview(members, exercises, today),
+		transfersReview(catalogue.Flows, transfers, today),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -212,7 +221,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
 	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request",
-	"breach": "each breach", "breach-tabletop": "twice a year"}
+	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -654,5 +663,44 @@ func tabletopReview(members []storage.Member, exercises []storage.BreachExercise
 		r.DueOn = &due
 	}
 	r.settle(fmt.Sprintf("The next tabletop exercise is due by %s.", dayOf(due)))
+	return r
+}
+
+// TransferReviewWindow is how long before a transfer's next review it waits on the reviews list.
+const TransferReviewWindow = 30
+
+// The overseas transfers (CMP-PD-06, CTL-DP-07): each of Fyniq's flows that leaves Singapore needs an open transfer
+// assessment, and each open assessment is reviewed by its next review day, waiting from 30 days before. A flow without
+// one waits with no day; an assessment past its review is overdue.
+func transfersReview(flows []registry.Flow, transfers []storage.Transfer, today time.Time) Review {
+	r := Review{Kind: "transfers", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each overseas transfer with its recipient, countries, data, basis, assessment, evidence and next review"}
+	covered := map[string]bool{}
+	reviews := 0
+	for _, t := range transfers {
+		if t.State != "open" {
+			continue
+		}
+		r.signed(t.SavedBy, t.SavedAt)
+		if t.Flow != "" {
+			covered[t.Flow] = true
+		}
+		if !today.Before(t.NextReviewOn.AddDate(0, 0, -TransferReviewWindow)) {
+			r.wait(t.NextReviewOn, today.After(t.NextReviewOn))
+			reviews++
+		}
+	}
+	missing := 0
+	for _, f := range flows {
+		if f.CrossBorder && !covered[f.Key] {
+			r.Waiting++
+			missing++
+		}
+	}
+	if r.Waiting > 0 {
+		r.Detail = fmt.Sprintf("%d of Fyniq's flows abroad have no transfer assessment; %d assessment(s) are due for review, %d past it.", missing,
+			reviews, r.Overdue)
+	}
+	r.settle("Every flow abroad has a current transfer assessment.")
 	return r
 }

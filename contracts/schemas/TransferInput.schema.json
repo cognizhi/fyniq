@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assessed_by": {
+      "description": "Who assessed it.",
+      "examples": [
+        "Ann Lim, Data Protection Officer"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "assessed_on": {
+      "description": "When it was assessed.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "basis": {
+      "description": "What protects the data abroad.",
+      "enum": [
+        "contract",
+        "binding_corporate_rules",
+        "other_instrument",
+        "certification",
+        "consent"
+      ],
+      "examples": [
+        "contract"
+      ],
+      "type": "string"
+    },
+    "countries": {
+      "description": "Where the recipient processes it.",
+      "examples": [
+        "United States, India"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "data": {
+      "description": "The personal data transferred.",
+      "examples": [
+        "Recipients' names and email addresses, and the messages"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "evidence": {
+      "description": "Where the contract, rules or certificate are kept.",
+      "examples": [
+        "The provider's data processing addendum, in the shared drive"
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "flow": {
+      "description": "The catalogue flow it covers, from getTransfers' flows; leave it out for one of the company's own. A revision keeps the flow.",
+      "examples": [
+        "email"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,39}$",
+      "type": "string"
+    },
+    "next_review_on": {
+      "description": "When it is reviewed next: after the assessment.",
+      "examples": [
+        "2027-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "purpose": {
+      "description": "Why.",
+      "examples": [
+        "To deliver the company's email"
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "recipient": {
+      "description": "Who receives the data.",
+      "examples": [
+        "Zoho Corporation (ZeptoMail)"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "state": {
+      "description": "open, the default, or retired once the transfer stops.",
+      "enum": [
+        "open",
+        "retired"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "recipient",
+    "countries",
+    "data",
+    "purpose",
+    "basis",
+    "assessed_on",
+    "assessed_by",
+    "evidence",
+    "next_review_on"
+  ],
+  "title": "TransferInput",
+  "type": "object"
+}

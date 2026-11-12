@@ -499,3 +499,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-reviews.md → compliance.reviews (the impact assessments' and requests' reviews)
 
 ## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md, compliance-reviews.md → compliance.data-protection, compliance.reviews (breach register, PDPA timers and tabletop exercises, CMP-PD-05, CTL-DP-06)
+
+## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md, compliance-reviews.md → compliance.data-protection, compliance.reviews (overseas transfers, CMP-PD-06, CTL-DP-07)

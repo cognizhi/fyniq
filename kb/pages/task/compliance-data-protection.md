@@ -2,9 +2,9 @@
 key: compliance.data-protection
 type: task
 title: Keep the data protection registers
-summary: The PDPA programme - the data inventory and schedule, its quarterly review, impact assessments, access requests, breaches and their timers, the DPO
+summary: The PDPA programme - the data inventory and its quarterly review, impact assessments, access requests, breaches, overseas transfers and the DPO
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:5b146ce580b2e60265274aa3f82bedc4bd554fa4a683839b740bcbb024c8ad80
+  - docs/user-guide/compliance-data-protection.md sha256:671d32ac0ddf7a5cc454561d5e1dcb50cbb42e5056cf684de92a031832dbd0b1
 data_class: general
 taint: trusted
 status: published
@@ -24,6 +24,9 @@ aliases:
   - notify the PDPC
   - notifiable breach
   - tabletop exercise
+  - overseas transfer
+  - transfer limitation
+  - data leaving Singapore
 ---
 
 # Keep the data protection registers
@@ -83,6 +86,15 @@ aliases:
 - Rehearse the breach runbook twice a year under **Tabletop exercises**, with what it found and what changed; the next is due 6 months after the last.
 
 (src: docs/user-guide/compliance-data-protection.md#breaches)
+
+## Overseas transfers
+
+- Personal data that leaves Singapore must stay protected to the PDPA's standard there; **Transfers** records each transfer and what protects it: a contract, binding corporate rules, another law or binding instrument, a certification such as APEC CBPR, or the person's consent.
+- **Fyniq's flows abroad**: sign-in through the deployment's sign-in providers and email through its email providers, each **Assessed** or **Needs an assessment**; the Compliance officer selects **Record the assessment** (recipient, where they process it, why, the basis, when and by whom assessed, the evidence, the next review).
+- **Record a transfer** does the same for one the company makes outside Fyniq; **Change** saves the next version and **Retire it** marks it stopped; a transfer keeps the flow it covers.
+- A review is due from 30 days before its day; a flow without an assessment, or a transfer past its review, shows here and on **Reviews and attestations** ([[compliance.reviews]]).
+
+(src: docs/user-guide/compliance-data-protection.md#overseas-transfers)
 
 ## The Data Protection Officer
 

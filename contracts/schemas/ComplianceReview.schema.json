@@ -69,7 +69,8 @@
         "dpia",
         "pd-requests",
         "breach",
-        "breach-tabletop"
+        "breach-tabletop",
+        "transfers"
       ],
       "examples": [
         "access-review"

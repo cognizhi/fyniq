@@ -1778,6 +1778,26 @@ type FyniqPdRequestStep struct {
 	Outcome        *string
 }
 
+type FyniqPdTransfer struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TransferID     uuid.UUID
+	Version        int32
+	Flow           *string
+	Recipient      string
+	Countries      string
+	Data           string
+	Purpose        string
+	Basis          string
+	AssessedOn     time.Time
+	AssessedBy     string
+	Evidence       string
+	NextReviewOn   time.Time
+	State          string
+	SavedBy        string
+	SavedAt        time.Time
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

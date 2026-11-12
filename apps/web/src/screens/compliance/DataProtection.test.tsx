@@ -25,6 +25,7 @@ const inventory = {
 // req: CMP-PD-04
 // req: CMP-PD-05
 // req: CTL-DP-06
+// req: CMP-PD-06
 describe("Compliance › Data protection", () => {
   it("shows the inventory, what is never held, the schedule and the review overdue; axe finds nothing", async () => {
     answer({ "GET /v1/compliance/data-inventory": { status: 200, body: inventory } });
@@ -184,5 +185,60 @@ describe("Compliance › Data protection", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Record it" }));
     await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/breach-exercises")).toBe(true));
     expect(seen.find((x) => x.path === "/v1/compliance/breach-exercises" && x.method === "POST")?.body).toEqual({ held_on: "2026-11-06", scenario: "A lost laptop", findings: "Rotate keys sooner" });
+  });
+
+  it("lists Fyniq's flows abroad, records the assessment of one and changes a transfer; axe finds nothing", async () => {
+    const own = { transfer_id: "t-1", version: 1, recipient: "A payroll bureau", countries: "Malaysia", data: "Employees' names and pay", purpose: "Payroll",
+      basis: "contract", assessed_on: "2025-01-01", assessed_by: "Ann Lim", evidence: "The contract", next_review_on: "2026-01-01", review_due: true, overdue: true,
+      state: "open", saved_by: "user:u-1", saved_at: "2026-11-09T02:00:00Z" };
+    const register = {
+      flows: [
+        { key: "sign-in", what: "Sign-in through the deployment's sign-in providers", data: "Members' names and sign-in email addresses", classes: ["members"],
+          cross_border: true, note: "Zoho's sign-in runs in the United States", covered_by: "t-9" },
+        { key: "email", what: "Email sent through the deployment's email providers", data: "Recipients' names and email addresses", classes: ["members", "contacts"],
+          cross_border: true, note: "Outside Singapore" },
+      ],
+      transfers: [own],
+    };
+    const seen = answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/transfers": { status: 200, body: register },
+      "POST /v1/compliance/transfers": { status: 201, body: { ...own, transfer_id: "t-2", flow: "email" } },
+      "PUT /v1/compliance/transfers/t-1": { status: 200, body: { ...own, version: 2 } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Transfers" }));
+    const flows = await screen.findByRole("list", { name: "Fyniq's flows abroad" });
+    expect(within(flows).getByText("Assessed")).toBeTruthy();
+    expect(within(flows).getByText("Needs an assessment")).toBeTruthy();
+    const list = screen.getByRole("list", { name: "Transfers" });
+    expect(within(list).getByText("Review overdue")).toBeTruthy();
+    await noViolations();
+
+    fireEvent.click(within(flows).getByRole("button", { name: /Record the assessment of Email/ }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Who receives the data"), { target: { value: "Zoho Corporation (ZeptoMail)" } });
+    fireEvent.change(within(dialog).getByLabelText("Where they process it"), { target: { value: "United States" } });
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "To deliver email" } });
+    fireEvent.change(within(dialog).getByLabelText("What protects it abroad"), { target: { value: "certification" } });
+    fireEvent.change(within(dialog).getByLabelText("Assessed on"), { target: { value: "2026-11-01" } });
+    fireEvent.change(within(dialog).getByLabelText("Assessed by"), { target: { value: "Ann Lim" } });
+    fireEvent.change(within(dialog).getByLabelText("Where the contract, rules or certificate are kept"), { target: { value: "The DPA" } });
+    fireEvent.change(within(dialog).getByLabelText("Next review"), { target: { value: "2027-11-01" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record it" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/transfers")).toBe(true));
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/compliance/transfers")?.body).toEqual({
+      flow: "email", recipient: "Zoho Corporation (ZeptoMail)", countries: "United States", data: "Recipients' names and email addresses", purpose: "To deliver email",
+      basis: "certification", assessed_on: "2026-11-01", assessed_by: "Ann Lim", evidence: "The DPA", next_review_on: "2027-11-01" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(within(list).getByRole("button", { name: "Change A payroll bureau" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Next review"), { target: { value: "2027-01-01" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the change" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "PUT")).toBe(true));
+    const put = seen.find((x) => x.method === "PUT")!;
+    expect(put.headers.get("If-Match")).toBe('"v1"');
+    expect((put.body as { next_review_on: string }).next_review_on).toBe("2027-01-01");
   });
 });

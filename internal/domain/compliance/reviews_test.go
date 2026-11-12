@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	registry "github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -186,6 +187,22 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 			t.Errorf("the notifiable breach's timers: %v %v", a, p)
 		}
 		reviewIs(t, "all closed", breachReview([]storage.Breach{closed}, today), ReviewSigned, 0, 0, "No breach is open.")
+	})
+
+	t.Run("the transfers", func(t *testing.T) {
+		// req: CMP-PD-06
+		flows := []registry.Flow{{Key: "sign-in", CrossBorder: true}, {Key: "email", CrossBorder: true}, {Key: "bank", CrossBorder: false}}
+		signIn := storage.Transfer{Flow: "sign-in", State: "open", NextReviewOn: today.AddDate(1, 0, 0), SavedBy: "user:" + alice.String(), SavedAt: now}
+		reviewIs(t, "none recorded", transfersReview(flows, nil, today), ReviewDue, 2, 0, "2 of Fyniq's flows abroad")
+		email := storage.Transfer{Flow: "email", State: "open", NextReviewOn: today.AddDate(0, 0, 10), SavedAt: now}
+		reviewIs(t, "both, email's review near", transfersReview(flows, []storage.Transfer{signIn, email}, today), ReviewDue, 1, 0, "1 assessment(s) are due")
+		late := storage.Transfer{State: "open", NextReviewOn: today.AddDate(0, 0, -1), SavedAt: now}
+		reviewIs(t, "the company's own past its review", transfersReview(flows, []storage.Transfer{signIn, email, late}, today), ReviewOverdue, 2, 1,
+			"1 past it")
+		far := email
+		far.NextReviewOn = today.AddDate(1, 0, 0)
+		retired := storage.Transfer{State: "retired", NextReviewOn: today.AddDate(-1, 0, 0), SavedAt: now}
+		reviewIs(t, "all current", transfersReview(flows, []storage.Transfer{signIn, far, retired}, today), ReviewSigned, 0, 0, "Every flow abroad")
 	})
 
 	t.Run("the tabletop", func(t *testing.T) {

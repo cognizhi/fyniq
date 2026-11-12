@@ -278,6 +278,29 @@ type PDRequestStep struct {
 	Outcome  string     // an answer's: provided, corrected, partly or refused
 }
 
+// CodeTransfer is the database's refusal of a transfer's version out of order, of a version that changes the flow it
+// covers, or of any change (FY316).
+const CodeTransfer = "STORAGE-TRANSFER-01"
+
+// Transfer is a version of an overseas transfer of personal data, assessed and recorded (CMP-PD-06, design D7).
+type Transfer struct {
+	TransferID   uuid.UUID
+	Version      int
+	Flow         string // the catalogue flow it covers (compliance/data-inventory.yaml), or "" for one of the company's own
+	Recipient    string
+	Countries    string // where the recipient processes the data
+	Data         string
+	Purpose      string
+	Basis        string // contract, binding_corporate_rules, other_instrument, certification or consent
+	AssessedOn   time.Time
+	AssessedBy   string
+	Evidence     string
+	NextReviewOn time.Time
+	State        string // open or retired
+	SavedBy      string
+	SavedAt      time.Time
+}
+
 // CodeBreach is the database's refusal of a breach's step out of order, of a breach of prescribed data or of 500 or more
 // people decided not notifiable, of the PDPC notified of a breach not decided notifiable, or of any change (FY315).
 const CodeBreach = "STORAGE-BREACH-01"
@@ -328,6 +351,11 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// Transfers are the latest version of each of the organisation's overseas transfers, oldest first (CMP-PD-06).
+	Transfers(ctx context.Context) ([]Transfer, error)
+	// SaveTransfer saves a transfer at t.Version (1 for a new one), audited as transfer.saved; CodeTransfer when it does
+	// not follow the transfer's last or changes its flow.
+	SaveTransfer(ctx context.Context, t Transfer) (Transfer, error)
 	// Breaches are the organisation's breaches with their steps, oldest first (CMP-PD-05).
 	Breaches(ctx context.Context) ([]Breach, error)
 	// RecordBreach records a breach, its assessment due 30 days after awareness, audited as breach.recorded.

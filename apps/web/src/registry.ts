@@ -397,6 +397,7 @@ export const actions = [
   { kind: "action", id: "data-protection.dpias", mode: "expert", help: "data-protection.dpias", guide: "compliance.data-protection#impact-assessments" },
   { kind: "action", id: "data-protection.requests", mode: "expert", help: "data-protection.requests", guide: "compliance.data-protection#access-and-correction-requests" },
   { kind: "action", id: "data-protection.breaches", mode: "expert", help: "data-protection.breaches", guide: "compliance.data-protection#breaches" },
+  { kind: "action", id: "data-protection.transfers", mode: "expert", help: "data-protection.transfers", guide: "compliance.data-protection#overseas-transfers" },
   { kind: "action", id: "data-protection.tabletop", mode: "expert", help: "data-protection.tabletop", guide: "compliance.data-protection#breaches" },
   { kind: "action", id: "my-data.ask", mode: "basic", help: "my-data.ask", guide: "preferences.security#see-or-correct-your-personal-data" },
   { kind: "action", id: "data-protection.dpia-approve", mode: "expert", help: "data-protection.dpia-approve", guide: "compliance.data-protection#impact-assessments" },

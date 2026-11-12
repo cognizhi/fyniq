@@ -1,7 +1,9 @@
 # Fyniq's personal-data inventory (PRD-001 CMP-PD-02, rev 0.244; p1-pdpa-retention design D3): each class of personal
 # data Fyniq holds, what it is, why, where, who reads it, how long it is kept, how it is protected and where it goes
 # abroad. TestTheDataInventory keeps it complete: every column of the schema whose name looks personal is in a class or
-# in not_personal, with why. The organisation adds what it processes outside Fyniq in the app.
+# in not_personal, with why. The flows are how the data leaves Fyniq for a provider; each that leaves Singapore needs a
+# current transfer assessment in the organisation's register (CMP-PD-06). The organisation adds what it processes
+# outside Fyniq, and its own transfers, in the app.
 schema: fyniq-data-inventory@1
 classes:
   - key: members
@@ -11,7 +13,7 @@ classes:
     who: "Appendix D's Users, roles, team mode; every member sees colleagues' names; notifications reach their own member"
     retention: "While a member; their name stays in the records and the audit trail for the records' retention (retention.records_years)"
     protection: "The audit trail's personal values are shreddable per person and financial year (§11.8)"
-    transfers: "Emails go through the deployment's email provider [live-verify where it processes]"
+    transfers: "Emails go through the deployment's email provider, and sign-in through its sign-in providers: the flows email and sign-in"
     columns: [app_user.display_name, user_identity.email, user_session.email, member_invitation.display_name, join_request.display_name,
       join_request.email, notification.email, notification_preference.email]
   - key: sign-in-security
@@ -30,7 +32,7 @@ classes:
     who: "Appendix D's Contacts and items; the roles that send documents"
     retention: "The records' retention after the financial year's end (retention.records_years, 7 years), then purged with the documents"
     protection: "Mostly business contact information; an individual's values in the audit trail are shreddable (§11.8)"
-    transfers: "Emails go through the deployment's email provider [live-verify where it processes]"
+    transfers: "Emails go through the deployment's email provider: the flow email"
     columns: [contact.legal_name, contact.address, contact.billing_email, contact.remittance_email, contact.phone, document_send.recipient,
       email_message.recipient, email_event.recipient, email_suppression.address]
   - key: email-in
@@ -96,7 +98,22 @@ classes:
     protection: "A file that shows an NRIC or FIN in full is flagged when attached (FR-DOC-09)"
     transfers: "None"
     columns: [evidence.nric_flagged]
+flows:
+  - key: sign-in
+    what: "Sign-in through the deployment's sign-in providers: Google, Zoho or another OpenID Connect provider"
+    data: "Members' names and sign-in email addresses, and each sign-in"
+    classes: [members]
+    cross_border: true
+    note: "Zoho's sign-in runs in the United States (PRD-001 ADR-T2, option A); where each provider processes [live-verify]"
+  - key: email
+    what: "Email sent through the deployment's email providers: Zoho ZeptoMail or Resend"
+    data: "Recipients' names and email addresses, and the messages: notifications, documents and reminders"
+    classes: [members, contacts]
+    cross_border: true
+    note: "The email providers keep mail outside Singapore (FR-INT-21); where each processes [live-verify]"
 not_personal:
+  - column: pd_transfer.recipient
+    why: "The provider an overseas transfer goes to: an organisation"
   - column: claim_place.address
     why: "A place where claims are spent, such as a merchant"
   - column: email_sender.address

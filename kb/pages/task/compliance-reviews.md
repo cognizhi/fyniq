@@ -4,7 +4,7 @@ type: task
 title: Sign off the recurring reviews
 summary: Reviews and attestations - the recurring reviews, who signs each off, when each is overdue and where to sign it
 sources:
-  - docs/user-guide/compliance-reviews.md sha256:fb67128e1c8031b3ab3ff7f2965e2376993d1e734e0f4677d885ca14625f24d0
+  - docs/user-guide/compliance-reviews.md sha256:2e9166b95166d01f7eed6adac489c3296d60a4aa341eaa531bf42bd366f1ccc6
 data_class: general
 taint: trusted
 status: published
@@ -45,6 +45,7 @@ aliases:
 - **Access or correction request**: the Compliance officer; overdue 30 days after it was received, or the day its written extension names; on Compliance › Data protection.
 - **Breach**: the Compliance officer; overdue 30 days after the company became aware of it, then 3 calendar days after it was decided notifiable; on Compliance › Data protection.
 - **Breach tabletop exercise**: the Compliance officer; overdue 6 months after the last exercise; on Compliance › Data protection.
+- **Overseas transfers**: the Compliance officer; a flow abroad waits until it is assessed, and a transfer is overdue after its next review day; on Compliance › Data protection.
 - **Due** waits within its time; **Overdue** is past it, and more than 14 days past its due date it is also **Over 14 days**; **Signed off** means nothing waits; **Nothing due** means nothing has fallen due yet; **Not needed** means the team mode does not call for it (Standard and Enterprise modes approve before the action).
 
 (src: docs/user-guide/compliance-reviews.md#the-reviews)

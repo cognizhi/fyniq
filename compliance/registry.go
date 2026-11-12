@@ -131,6 +131,7 @@ var Attestations = map[string]string{
 	"pd-requests":            "Each access or correction request is answered within 30 days, or by the day its written extension names",
 	"breach":                 "Each breach is assessed within 30 days, and a notifiable one reported to the PDPC within 3 calendar days of the decision",
 	"breach-tabletop":        "The breach runbook is rehearsed in a tabletop exercise twice a year",
+	"transfers":              "Each flow of personal data abroad has a current transfer assessment, reviewed by its next review day",
 }
 
 // Framework is a framework a control may map to, and the words of Appendix F's Mapping cell that name it.

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "flows": {
+      "description": "Fyniq's flows of personal data to providers, from its catalogue: the same for every organisation.",
+      "items": {
+        "$ref": "TransferFlowView.schema.json"
+      },
+      "type": "array"
+    },
+    "transfers": {
+      "description": "The organisation's transfers at their latest versions, oldest first.",
+      "items": {
+        "$ref": "TransferView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "flows",
+    "transfers"
+  ],
+  "title": "TransferRegister",
+  "type": "object"
+}

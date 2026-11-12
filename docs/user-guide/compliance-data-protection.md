@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06, CTL-DP-07]
 ---
 
 # Keep the data protection registers
@@ -85,6 +85,22 @@ An assessment or a PDPC report past its day shows as overdue, here and on **Revi
 
 Rehearse the breach runbook twice a year, and record each rehearsal under **Tabletop exercises** with what it found and
 what changed. The next is due 6 months after the last.
+
+## Overseas transfers
+
+Personal data that leaves Singapore must stay protected to the PDPA's standard there. The **Transfers** tab records each
+transfer and what protects it: a contract with the recipient, binding corporate rules, another law or binding
+instrument, a certification such as APEC CBPR, or the person's consent.
+
+**Fyniq's flows abroad** lists the ways Fyniq's own data leaves Singapore: sign-in through the deployment's sign-in
+providers, and email through its email providers. Each shows **Assessed** once a transfer covers it, or **Needs an
+assessment**. The Compliance officer selects **Record the assessment** and says who receives the data, where they process
+it, why, what protects it, when it was assessed and by whom, where the evidence is kept, and when to review it next.
+**Record a transfer** does the same for a transfer the company makes outside Fyniq.
+
+**Change** saves a transfer's next version, such as its review with a new day, and **Retire it** marks it stopped. A
+transfer keeps the flow it covers. A review is due from 30 days before its day. A flow without an assessment, or a
+transfer past its review, shows here and on **Reviews and attestations**.
 
 ## The Data Protection Officer
 

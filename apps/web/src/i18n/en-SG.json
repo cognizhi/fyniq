@@ -2036,6 +2036,10 @@
       "label": "What the company holds outside Fyniq",
       "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
     },
+    "data-protection.transfers": {
+      "label": "Transfers",
+      "tooltip": "Each transfer of personal data out of Singapore, with what protects it there, when it was assessed and when it is reviewed next."
+    },
     "data-protection.breaches": {
       "label": "Breaches",
       "tooltip": "Each personal-data breach with its timers: assessed within 30 days, and a notifiable one reported to the PDPC within 3 calendar days of the decision."

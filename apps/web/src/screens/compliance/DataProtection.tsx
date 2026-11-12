@@ -30,7 +30,17 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpias" | "requests" | "breaches" | "dpo";
+type Tab = "inventory" | "dpias" | "requests" | "breaches" | "transfers" | "dpo";
+type Register = components["schemas"]["TransferRegister"];
+type Transfer = components["schemas"]["TransferView"];
+type TransferInput = components["schemas"]["TransferInput"];
+type Flow = Register["flows"][number];
+
+async function transfers() {
+  const { data, error } = await api.GET("/v1/compliance/transfers");
+  if (error) throw error;
+  return data;
+}
 type Breach = components["schemas"]["BreachView"];
 type BreachClass = Breach["classes"][number];
 
@@ -99,6 +109,9 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "breaches"} onClick={() => setTab("breaches")} title={helpText("data-protection.breaches").tooltip}>
           Breaches
         </button>
+        <button type="button" role="tab" aria-selected={tab === "transfers"} onClick={() => setTab("transfers")} title={helpText("data-protection.transfers").tooltip}>
+          Transfers
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
@@ -107,6 +120,7 @@ export function DataProtection() {
       {tab === "dpias" && <DPIAsTab />}
       {tab === "requests" && <RequestsTab />}
       {tab === "breaches" && <BreachesTab />}
+      {tab === "transfers" && <TransfersTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );
@@ -1127,6 +1141,211 @@ function ExerciseForm({ onClose }: { onClose: () => void }) {
           </Button>
           <Button variant="primary" type="submit" disabled={save.isPending || !form.held_on}>
             Record it
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+const basisWords: Record<Transfer["basis"], string> = {
+  contract: "A contract with the recipient", binding_corporate_rules: "Binding corporate rules", other_instrument: "Another law or binding instrument",
+  certification: "A certification such as APEC CBPR", consent: "The person's consent",
+};
+
+// TransfersTab is the register of overseas transfers (CMP-PD-06): Fyniq's flows that leave Singapore, each with the
+// assessment that covers it, and the company's own transfers, each reviewed by its next review day.
+function TransfersTab() {
+  const id = useId();
+  const { session } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const reg = useQuery({ queryKey: ["transfers"], queryFn: transfers });
+  const [editing, setEditing] = useState<{ transfer: Transfer | null; flow: Flow | null } | null>(null);
+  if (reg.isError) return <Refusal problem={problemOf(reg.error)} title="The transfers could not be shown" />;
+  if (!reg.data) return <p className="fy-small">Loading the transfers…</p>;
+  const abroad = reg.data.flows.filter((f) => f.cross_border);
+  return (
+    <>
+      <section className="fy-card" aria-labelledby={`${id}-flows`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-flows`}>
+            Fyniq's flows abroad
+          </h2>
+        </div>
+        <ul className="fy-list" aria-labelledby={`${id}-flows`}>
+          {abroad.map((f) => (
+            <li key={f.key} className="fy-list__item">
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">{f.what}</span>
+                <span className="fy-list__meta whitespace-normal">
+                  {f.data} · {f.note}
+                </span>
+              </span>
+              {f.covered_by ? (
+                <span className="fy-chip fy-chip--good">
+                  <Icon of={ShieldCheck} />
+                  Assessed
+                </span>
+              ) : (
+                <>
+                  <span className="fy-chip fy-chip--warning">
+                    <Icon of={TriangleAlert} />
+                    Needs an assessment
+                  </span>
+                  {officer && (
+                    <Button size="sm" variant="secondary" onClick={() => setEditing({ transfer: null, flow: f })} aria-label={`Record the assessment of ${f.what}`}>
+                      <Icon of={Plus} />
+                      Record the assessment
+                    </Button>
+                  )}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-transfers`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-transfers`}>
+            Transfers
+          </h2>
+          {officer && (
+            <Button size="sm" onClick={() => setEditing({ transfer: null, flow: null })}>
+              <Icon of={Plus} />
+              Record a transfer
+            </Button>
+          )}
+        </div>
+        {reg.data.transfers.length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">No transfer recorded. Record the assessment of each flow above, and of any transfer abroad the company makes outside Fyniq.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-transfers`}>
+            {reg.data.transfers.map((t) => (
+              <li key={t.transfer_id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">
+                    {t.recipient}, {t.countries}
+                  </span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {t.data} · {basisWords[t.basis]} · {t.state === "retired" ? "Retired" : `Review by ${date(t.next_review_on)}`}
+                  </span>
+                </span>
+                {t.overdue ? (
+                  <span className="fy-chip fy-chip--serious">
+                    <Icon of={ClockAlert} />
+                    Review overdue
+                  </span>
+                ) : (
+                  t.review_due && (
+                    <span className="fy-chip fy-chip--warning">
+                      <Icon of={ClockAlert} />
+                      Review due
+                    </span>
+                  )
+                )}
+                {officer && t.state === "open" && (
+                  <Button size="sm" variant="secondary" onClick={() => setEditing({ transfer: t, flow: null })} aria-label={`Change ${t.recipient}`}>
+                    <Icon of={Pencil} />
+                    Change
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {editing && <TransferForm transfer={editing.transfer} flow={editing.flow} onClose={() => setEditing(null)} />}
+    </>
+  );
+}
+
+// TransferForm records a transfer's assessment, for one of Fyniq's flows or the company's own, or saves its next
+// version: a review with its new day, or its retirement (CMP-PD-06).
+function TransferForm({ transfer, flow, onClose }: { transfer: Transfer | null; flow: Flow | null; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [form, setForm] = useState<TransferInput>(
+    transfer
+      ? { flow: transfer.flow, recipient: transfer.recipient, countries: transfer.countries, data: transfer.data, purpose: transfer.purpose, basis: transfer.basis,
+          assessed_on: transfer.assessed_on, assessed_by: transfer.assessed_by, evidence: transfer.evidence, next_review_on: transfer.next_review_on, state: transfer.state }
+      : { flow: flow?.key, recipient: "", countries: "", data: flow?.data ?? "", purpose: "", basis: "contract", assessed_on: "", assessed_by: "", evidence: "", next_review_on: "" },
+  );
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async (body: TransferInput) => {
+      const out = await guarded(confirm, () =>
+        transfer
+          ? api.PUT("/v1/compliance/transfers/{transfer_id}", { params: { path: { transfer_id: transfer.transfer_id }, header: { "Idempotency-Key": newKey(), "If-Match": `"v${transfer.version}"` } }, body })
+          : api.POST("/v1/compliance/transfers", { params: { header: { "Idempotency-Key": newKey() } }, body }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["transfers", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate(form);
+  };
+  const field = (key: "recipient" | "countries" | "data" | "purpose" | "assessed_by" | "evidence", label: string) => (
+    <div className="fy-field">
+      <label className="fy-label" htmlFor={`${id}-${key}`}>
+        {label}
+      </label>
+      <input className="fy-input" id={`${id}-${key}`} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+    </div>
+  );
+  const day = (key: "assessed_on" | "next_review_on", label: string) => (
+    <div className="fy-field">
+      <label className="fy-label" htmlFor={`${id}-${key}`}>
+        {label}
+      </label>
+      <input className="fy-input" type="date" id={`${id}-${key}`} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+    </div>
+  );
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow={flow?.what ?? transfer?.recipient ?? "Transfers"}
+      title={transfer ? "Change the transfer" : "Record a transfer"}
+      description="Personal data that leaves Singapore must stay protected to the PDPA's standard: say what protects it there. Each change is kept as a version.">
+      {problem && <Refusal problem={problem} title="The transfer was not saved" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        {field("recipient", "Who receives the data")}
+        {field("countries", "Where they process it")}
+        {field("data", "The personal data")}
+        {field("purpose", "Why")}
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-basis`}>
+            What protects it abroad
+          </label>
+          <select className="fy-select" id={`${id}-basis`} value={form.basis} onChange={(e) => setForm({ ...form, basis: e.target.value as Transfer["basis"] })}>
+            {(Object.keys(basisWords) as Transfer["basis"][]).map((b) => (
+              <option key={b} value={b}>
+                {basisWords[b]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {day("assessed_on", "Assessed on")}
+        {field("assessed_by", "Assessed by")}
+        {field("evidence", "Where the contract, rules or certificate are kept")}
+        {day("next_review_on", "Next review")}
+        <div className="fy-row justify-end gap-2">
+          {transfer && transfer.state === "open" && (
+            <Button variant="ghost" type="button" onClick={() => save.mutate({ ...form, state: "retired" })} disabled={save.isPending}>
+              <Icon of={Archive} />
+              Retire it
+            </Button>
+          )}
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
+            {transfer ? "Save the change" : "Record it"}
           </Button>
         </div>
       </form>

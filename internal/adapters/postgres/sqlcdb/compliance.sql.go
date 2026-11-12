@@ -1072,6 +1072,53 @@ func (q *Queries) InsertRiskVersion(ctx context.Context, arg InsertRiskVersionPa
 	return i, err
 }
 
+const insertTransfer = `-- name: InsertTransfer :exec
+INSERT INTO fyniq.pd_transfer (transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence,
+  next_review_on, state, saved_by, saved_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+  $8, $9, $10, $11, $12, $13,
+  $14, $15)
+`
+
+type InsertTransferParams struct {
+	TransferID   uuid.UUID
+	Version      int32
+	Flow         *string
+	Recipient    string
+	Countries    string
+	Data         string
+	Purpose      string
+	Basis        string
+	AssessedOn   time.Time
+	AssessedBy   string
+	Evidence     string
+	NextReviewOn time.Time
+	State        string
+	SavedBy      string
+	SavedAt      time.Time
+}
+
+func (q *Queries) InsertTransfer(ctx context.Context, arg InsertTransferParams) error {
+	_, err := q.db.Exec(ctx, insertTransfer,
+		arg.TransferID,
+		arg.Version,
+		arg.Flow,
+		arg.Recipient,
+		arg.Countries,
+		arg.Data,
+		arg.Purpose,
+		arg.Basis,
+		arg.AssessedOn,
+		arg.AssessedBy,
+		arg.Evidence,
+		arg.NextReviewOn,
+		arg.State,
+		arg.SavedBy,
+		arg.SavedAt,
+	)
+	return err
+}
+
 const latestControlRuns = `-- name: LatestControlRuns :many
 SELECT DISTINCT ON (r.control, r.frequency, r.check_how) r.organisation_id, r.id, r.control, r.frequency, r.check_how, r.since, r.ran_at, r.ok, r.item_count, r.items, r.detail
   FROM fyniq.control_run r
@@ -1823,6 +1870,67 @@ func (q *Queries) ListRisks(ctx context.Context) ([]ListRisksRow, error) {
 			&i.Impact,
 			&i.Mitigation,
 			&i.ReviewMonths,
+			&i.NextReviewOn,
+			&i.State,
+			&i.SavedBy,
+			&i.SavedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransfers = `-- name: ListTransfers :many
+SELECT transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence, next_review_on, state,
+  saved_by, saved_at
+FROM fyniq.pd_transfer ORDER BY transfer_id, version
+`
+
+type ListTransfersRow struct {
+	TransferID   uuid.UUID
+	Version      int32
+	Flow         *string
+	Recipient    string
+	Countries    string
+	Data         string
+	Purpose      string
+	Basis        string
+	AssessedOn   time.Time
+	AssessedBy   string
+	Evidence     string
+	NextReviewOn time.Time
+	State        string
+	SavedBy      string
+	SavedAt      time.Time
+}
+
+// Every version of the organisation's overseas transfers, by transfer and version (CMP-PD-06).
+func (q *Queries) ListTransfers(ctx context.Context) ([]ListTransfersRow, error) {
+	rows, err := q.db.Query(ctx, listTransfers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTransfersRow
+	for rows.Next() {
+		var i ListTransfersRow
+		if err := rows.Scan(
+			&i.TransferID,
+			&i.Version,
+			&i.Flow,
+			&i.Recipient,
+			&i.Countries,
+			&i.Data,
+			&i.Purpose,
+			&i.Basis,
+			&i.AssessedOn,
+			&i.AssessedBy,
+			&i.Evidence,
 			&i.NextReviewOn,
 			&i.State,
 			&i.SavedBy,

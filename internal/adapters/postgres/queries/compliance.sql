@@ -265,3 +265,16 @@ SELECT id, held_on, scenario, findings, recorded_by, recorded_at FROM fyniq.pd_b
 INSERT INTO fyniq.pd_breach_exercise (held_on, scenario, findings, recorded_by, recorded_at)
 VALUES (sqlc.arg(held_on), sqlc.arg(scenario), sqlc.arg(findings), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
 RETURNING id, held_on, scenario, findings, recorded_by, recorded_at;
+
+-- name: ListTransfers :many
+-- Every version of the organisation's overseas transfers, by transfer and version (CMP-PD-06).
+SELECT transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence, next_review_on, state,
+  saved_by, saved_at
+FROM fyniq.pd_transfer ORDER BY transfer_id, version;
+
+-- name: InsertTransfer :exec
+INSERT INTO fyniq.pd_transfer (transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence,
+  next_review_on, state, saved_by, saved_at)
+VALUES (sqlc.arg(transfer_id), sqlc.arg(version), sqlc.narg(flow), sqlc.arg(recipient), sqlc.arg(countries), sqlc.arg(data), sqlc.arg(purpose),
+  sqlc.arg(basis), sqlc.arg(assessed_on), sqlc.arg(assessed_by), sqlc.arg(evidence), sqlc.arg(next_review_on), sqlc.arg(state),
+  sqlc.arg(saved_by), sqlc.arg(saved_at));
