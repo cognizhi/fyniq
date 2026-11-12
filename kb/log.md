@@ -513,3 +513,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/checks.md → checks.books-health (the checks run at most once a minute through a burst of changes)
 
 ## [2026-11-12] compile | docs/user-guide/financial-statements.md → reports.statements (the Trace panel: a figure's breakdown, ledger lines as at the statement's revision, source and history; FR-UX-04)
+
+## [2026-11-12] compile | organisation-settings.md, members-and-roles.md, sign-in.md → settings.organisation, sign-in, members (the hold after an account recovery, 24 to 72 hours; SEC-35 rev 0.253)

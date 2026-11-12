@@ -114,8 +114,9 @@ email or a support request instead.
 
 - You cannot confirm your own recovery: another Owner or Administrator does.
 - The member and every Owner are told of each confirmation, in Fyniq and by email.
-- After recovering, the member cools off for 24 hours: approving, releasing payments, changing bank
-  details, roles or sign-ins, break-glass and confirming others' recoveries wait.
+- After recovering, the member cools off for 24 hours, or longer if an Owner set the organisation's
+  **Hold after an account recovery**: approving, releasing payments, changing bank details, roles or
+  sign-ins, break-glass and confirming others' recoveries wait.
 
 ## Email domains for joining
 

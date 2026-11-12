@@ -4,14 +4,14 @@ type: task
 title: Remove someone from the company, or give an external person a new end date
 summary: When an external person's roles end, removing a member with another Owner's approval, and succeeding an Owner who is permanently unavailable
 sources:
-  - docs/user-guide/members-and-roles.md sha256:844f7c14c68abc44b5c06fce47f45aea1f98ef72b45feedb3a8269d800c7bb40
+  - docs/user-guide/members-and-roles.md sha256:2a569805b4bc5b807d9fca3cd5f865d854d6d08eaa13d76d174b64194ded6942
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-12
 aliases:
   - remove a user
   - remove member
@@ -62,6 +62,6 @@ aliases:
 
 - A member who lost every authenticator gets their account back with one of their recovery codes and the confirmation of an Owner or Administrator; never an email or a support request ([[auth.sign-in]]).
 - Speak to them first, in person or on a call made to a number already known; then open the member, **Confirm the recovery**, confirm it's you, and read the confirmation to them: shown once, it works for 24 hours.
-- Nobody confirms their own recovery; the member and every Owner are told; after recovering, the member cools off for 24 hours, when approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait.
+- Nobody confirms their own recovery; the member and every Owner are told; after recovering, the member cools off for 24 hours, or longer if an Owner set the organisation's **Hold after an account recovery**, when approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait.
 
 (src: docs/user-guide/members-and-roles.md#confirm-a-members-recovery)

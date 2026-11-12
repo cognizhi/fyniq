@@ -114,7 +114,7 @@
   an Owner approves (a member with the Employee role) or rejects. Migrations 000244 and 000245. Tests
   `TestJoinByDomain`, `join.test.tsx`. Every P1 part is built; adding providers in the app (P2 or P3) and the Super
   admin console for organisations a Super admin is not a member of (P3) belong to later phases.)
-- [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
+- [x] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
   (7 Nov 2026, PRD-001 rev 0.198, on the owner's decisions of 6 Nov 2026: ten recovery codes per person on the profile,
   keyed hashes; a confirmation from an Owner or Administrator after speaking to the person (one-time, 24 hours); the
   recovery from a session without a second factor gives it one by recovery, ends other sessions and tokens, replaces
@@ -123,6 +123,9 @@
   `recovery.test.tsx`. **Left:** the cooling-off's length as a setting.)
   (12 Nov 2026, PRD-001 rev 0.253, the owner's decision: the organisation setting `security.recovery_cooling_off_hours`,
   24 to 72 hours, 24 by default, under dual control; a person in several organisations is held for the longest.)
+  (12 Nov 2026: built. The setting kind `hours`; migration 000324: `recovery_cooling_off` reads each of the person's
+  organisations' value in force and keeps the longest, and `recover_account` holds for it. Guide
+  `organisation-settings.md` (Hold after an account recovery). Test `TestTheHoldAfterARecoveryIsTheOrganisationsSetting`.)
 
 ## 3. Clients, outputs and administration
 

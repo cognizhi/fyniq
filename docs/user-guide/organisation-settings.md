@@ -335,6 +335,13 @@ whatever the invoice's month.
 - It can be set from 5 to 60 minutes. Changing it needs a second approver.
 - If you belong to several organisations, your session follows the organisation you are signed in to.
 
+## Hold after an account recovery
+
+- After a person recovers their account, they cannot approve, release payments, change bank details,
+  roles or sign-ins, use break-glass or confirm others' recoveries for 24 hours, by default.
+- It can be set from 24 to 72 hours. Changing it needs a second approver.
+- If they belong to several organisations, the longest hold of theirs applies.
+
 ## Evidence rules
 
 Some records need a file to show they are real before they post:

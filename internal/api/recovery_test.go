@@ -134,3 +134,28 @@ func TestAccountRecovery(t *testing.T) {
 		t.Errorf("an invitation after the cooling-off: %d %s", r.Status, r.Raw)
 	}
 }
+
+// The hold after an account recovery is the organisation's setting (SEC-35; rev 0.253, the owner's decision of 12 Nov
+// 2026): with "Hold after an account recovery" set to 48 hours, a recovered founder cools off for 48 hours, not the
+// default 24.
+// req: SEC-35
+// asvs: V6.4.1, V6.4.2
+func TestTheHoldAfterARecoveryIsTheOrganisationsSetting(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	s := startSessions(t)
+	desk, phone, org := s.founders(t)
+	if err := s.env.store.Do(ctx, uuid.MustParse(org), func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Settings().Record(ctx, "security.recovery_cooling_off_hours", "", "48", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), 1)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	codes, _ := phone.call(http.MethodPost, "/v1/session/recovery-codes", "same-origin", nil).Body["recovery_codes"].([]any)
+	lost := s.browser()
+	lost.signIn("founder-b", false)
+	confirmed := desk.call(http.MethodPost, "/v1/members/"+memberIDOf(desk, "Wei Jie Lim")+"/recovery-confirmations", "same-origin", nil)
+	done := lost.call(http.MethodPost, "/v1/session/recovery", "same-origin", map[string]any{"recovery_code": codes[0], "confirmation_code": confirmed.str("code")})
+	if want := s.clock.Now().Add(48 * time.Hour).UTC().Format(time.RFC3339); done.Status != 200 || done.str("cooling_off_until") != want {
+		t.Fatalf("recovering under a 48-hour hold: %d %s; want until %s", done.Status, done.Raw, want)
+	}
+}
