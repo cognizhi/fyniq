@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookCheck, FlaskConical, Plus, Save, Trash2 } from "lucide-react";
+import { BookCheck, ChevronDown, ChevronUp, FlaskConical, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -125,6 +125,11 @@ export function Forecast() {
     }
   }, [v, one.data]);
   const draft = !v || v.status === "draft";
+  // The plan folds once the forecast is recorded, so its results come first (PRD-001 rev 0.247); a draft or a new
+  // forecast shows it open. Choosing another forecast resets it.
+  const [planShown, setPlanShown] = useState<boolean | null>(null);
+  useEffect(() => setPlanShown(null), [selected]);
+  const planOpen = planShown ?? draft;
   const fieldError = (key: string) => problem?.errors?.find((e) => e.field === `body.${key}`);
   const refresh = async (newId: string) => {
     setSelected(newId);
@@ -218,11 +223,32 @@ export function Forecast() {
       )}
       {problem && <Refusal problem={problem} title="The forecast was not saved" />}
 
+      {results.isError && <Refusal problem={problemOf(results.error)} title="The forecast could not be worked out" />}
+      {res && names.length > 0 && (
+        <>
+          <nav className="fy-tabs" aria-label="Scenarios">
+            {names.map((n) => (
+              <button key={n} type="button" aria-current={n === shown ? "page" : undefined} onClick={() => setScenario(n)}>
+                {n}
+              </button>
+            ))}
+          </nav>
+          <ScenarioResults res={res} name={shown} id={id} />
+          <Comparison res={res} id={id} />
+        </>
+      )}
+
       <section className="fy-card fy-card--pad fy-stack fy-stack--4" aria-labelledby={`${id}-plan`}>
-        <h2 className="fy-h3" id={`${id}-plan`}>
-          Plan
-        </h2>
-        <fieldset disabled={!draft} className="fy-stack fy-stack--4">
+        <div className="fy-row fy-row--wrap items-center justify-between gap-2">
+          <h2 className="fy-h3" id={`${id}-plan`}>
+            Plan
+          </h2>
+          <Button variant="ghost" size="sm" aria-expanded={planOpen} aria-controls={`${id}-plan-body`} onClick={() => setPlanShown(!planOpen)}>
+            <Icon of={planOpen ? ChevronUp : ChevronDown} />
+            {planOpen ? "Hide the plan" : draft ? "Show the plan" : "Show the plan it was worked out from"}
+          </Button>
+        </div>
+        <fieldset id={`${id}-plan-body`} hidden={!planOpen} disabled={!draft} className="fy-stack fy-stack--4">
           <div className="fy-grid fy-grid--3">
             <TextField id={`${id}-name`} label="Name" value={plan.name} onChange={(x) => set("name", x)} error={fieldError("name")} />
             <TextField id={`${id}-horizon`} label="Months" hint="12 to 60" value={String(plan.horizon)} onChange={(x) => set("horizon", Number.parseInt(x || "0", 10))} error={fieldError("horizon")} />
@@ -363,20 +389,6 @@ export function Forecast() {
         </fieldset>
       </section>
 
-      {results.isError && <Refusal problem={problemOf(results.error)} title="The forecast could not be worked out" />}
-      {res && names.length > 0 && (
-        <>
-          <nav className="fy-tabs" aria-label="Scenarios">
-            {names.map((n) => (
-              <button key={n} type="button" aria-current={n === shown ? "page" : undefined} onClick={() => setScenario(n)}>
-                {n}
-              </button>
-            ))}
-          </nav>
-          <ScenarioResults res={res} name={shown} id={id} />
-          <Comparison res={res} id={id} />
-        </>
-      )}
     </div>
   );
 }
