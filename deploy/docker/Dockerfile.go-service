@@ -12,6 +12,9 @@
 # machine's own (arm64 on Apple silicon, amd64 on the CI runner); `--platform linux/amd64,linux/arm64`
 # builds both. The compiler runs on the build machine and cross-compiles, so no emulation is needed,
 # and each pinned digest is a multi-platform index, so every stage resolves for either platform.
+# Reproducible (NFR-IMG-07): the binary is built with -trimpath and no build ID or VCS stamp, every file the images copy
+# has a fixed owner and mode, and the release builds (scripts/images.py publish and repro) pass SOURCE_DATE_EPOCH, the
+# commit's time, and clamp every file's time in the layers to it, so the same commit gives the same digests.
 
 # ---- build stage ------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS build
@@ -72,8 +75,8 @@ RUN case "${TARGETARCH}" in \
 # PRD-001 §12.9 (rev 0.96): the Go binary and the pinned Typst binary on distroless/static, as both are static (the
 # musl build of Typst), so the image holds no C library or OpenSSL to patch; no shell, no package manager.
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS render
-COPY --from=build /out/app /app
-COPY --from=typst /out/typst /typst
+COPY --from=build --chown=0:0 --chmod=0755 /out/app /app
+COPY --from=typst --chown=0:0 --chmod=0755 /out/typst /typst
 ENV FYNIQ_TYPST=/typst
 USER 65532:65532
 EXPOSE 8080
@@ -82,7 +85,7 @@ ENTRYPOINT ["/app"]
 # ---- every other service (the default target) ---------------------------------------------------
 # CA certificates and the nonroot user; no shell, no package manager (NFR-IMG-01).
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS service
-COPY --from=build /out/app /app
+COPY --from=build --chown=0:0 --chmod=0755 /out/app /app
 USER 65532:65532
 EXPOSE 8080
 ENTRYPOINT ["/app"]
