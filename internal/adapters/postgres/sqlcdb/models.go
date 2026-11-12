@@ -733,6 +733,19 @@ type FyniqControlRun struct {
 	Detail         string
 }
 
+type FyniqControlState struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Control        string
+	Status         string
+	Detail         string
+	Checks         []byte
+	FailingSince   *time.Time
+	RunAt          time.Time
+	ChangedAt      time.Time
+	Version        int32
+}
+
 type FyniqConversionStep struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

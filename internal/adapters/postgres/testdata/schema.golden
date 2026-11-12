@@ -573,6 +573,16 @@ control_run | ok | boolean | not null |
 control_run | item_count | integer | not null | 
 control_run | items | jsonb | not null | '[]'::jsonb
 control_run | detail | text | not null | 
+control_state | organisation_id | uuid | not null | current_org()
+control_state | id | uuid | not null | uuidv7()
+control_state | control | text | not null | 
+control_state | status | text | not null | 
+control_state | detail | text | not null | 
+control_state | checks | jsonb | not null | '[]'::jsonb
+control_state | failing_since | timestamp with time zone | null | 
+control_state | run_at | timestamp with time zone | not null | 
+control_state | changed_at | timestamp with time zone | not null | 
+control_state | version | integer | not null | 1
 conversion_step | organisation_id | uuid | not null | current_org()
 conversion_step | id | uuid | not null | uuidv7()
 conversion_step | settlement_id | uuid | not null | 
@@ -2559,6 +2569,27 @@ control_run | control_run_pkey | PRIMARY KEY (organisation_id, id)
 control_run | control_run_ran_at_not_null | NOT NULL ran_at
 control_run | control_run_since_not_null | NOT NULL since
 control_run | control_run_window | CHECK ((since < ran_at))
+control_state | control_state_changed_at_not_null | NOT NULL changed_at
+control_state | control_state_checks_array | CHECK (((jsonb_typeof(checks) = 'array'::text) AND (jsonb_array_length(checks) <= 20)))
+control_state | control_state_checks_not_null | NOT NULL checks
+control_state | control_state_control_format | CHECK ((control ~ '^CTL-[A-Z]+-[0-9]{2}$'::text))
+control_state | control_state_control_not_null | NOT NULL control
+control_state | control_state_detail_length | CHECK (((length(btrim(detail)) >= 1) AND (length(btrim(detail)) <= 2000)))
+control_state | control_state_detail_not_null | NOT NULL detail
+control_state | control_state_failing | CHECK (((status = ANY (ARRAY['fail'::text, 'overdue'::text])) = (failing_since IS NOT NULL)))
+control_state | control_state_id_not_null | NOT NULL id
+control_state | control_state_one | UNIQUE (organisation_id, control)
+control_state | control_state_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+control_state | control_state_organisation_id_not_null | NOT NULL organisation_id
+control_state | control_state_pkey | PRIMARY KEY (organisation_id, id)
+control_state | control_state_run_at_not_null | NOT NULL run_at
+control_state | control_state_status_known | CHECK ((status = ANY (ARRAY['pass'::text, 'fail'::text, 'overdue'::text, 'not_applicable'::text, 'not_assessed'::text])))
+control_state | control_state_status_not_null | NOT NULL status
+control_state | control_state_times | CHECK (((changed_at <= run_at) AND ((failing_since IS NULL) OR (failing_since <= run_at))))
+control_state | control_state_version_not_null | NOT NULL version
+control_state | control_state_version_positive | CHECK ((version > 0))
+control_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+control_state | require_audit_status | TRIGGER DEFERRABLE INITIALLY DEFERRED
 conversion_step | conversion_step_id_not_null | NOT NULL id
 conversion_step | conversion_step_kind_known | CHECK ((kind = ANY (ARRAY['resolved'::text, 'approval_lodged'::text, 'agm_due'::text, 'allotment_lodged'::text])))
 conversion_step | conversion_step_kind_not_null | NOT NULL kind
@@ -4421,6 +4452,8 @@ CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_tem
 CREATE UNIQUE INDEX contact_member_once ON fyniq.contact USING btree (organisation_id, member_user_id) WHERE (member_user_id IS NOT NULL)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX control_run_pkey ON fyniq.control_run USING btree (organisation_id, id)
+CREATE UNIQUE INDEX control_state_one ON fyniq.control_state USING btree (organisation_id, control)
+CREATE UNIQUE INDEX control_state_pkey ON fyniq.control_state USING btree (organisation_id, id)
 CREATE UNIQUE INDEX conversion_step_pkey ON fyniq.conversion_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
@@ -4635,6 +4668,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.conversion_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'settlement_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_send DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_send', 'id')
@@ -4730,6 +4764,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_ad
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('check_state', 'id')
+CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER share_issue_entry_registered AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'share_issue'::text)) EXECUTE FUNCTION share_issue_entry_registered()
 CREATE CONSTRAINT TRIGGER share_issue_moved AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION share_issue_moved()
 CREATE TRIGGER access_review_attestation_guard BEFORE DELETE OR UPDATE ON fyniq.access_review_attestation FOR EACH ROW EXECUTE FUNCTION access_review_attestation_guard()
@@ -4815,6 +4850,8 @@ CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.co
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
 CREATE TRIGGER control_run_guard BEFORE DELETE OR UPDATE ON fyniq.control_run FOR EACH ROW EXECUTE FUNCTION control_run_guard()
 CREATE TRIGGER control_run_no_truncate BEFORE TRUNCATE ON fyniq.control_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER control_state_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.control_state FOR EACH ROW EXECUTE FUNCTION control_state_guard()
+CREATE TRIGGER control_state_no_truncate BEFORE TRUNCATE ON fyniq.control_state FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER controller_entry_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION controller_entry_guard()
 CREATE TRIGGER conversion_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.conversion_step FOR EACH ROW EXECUTE FUNCTION conversion_step_guard()
 CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_step FOR EACH STATEMENT EXECUTE FUNCTION conversion_step_guard()
@@ -5047,6 +5084,7 @@ close_checklist_template | tenant_isolation | * | (organisation_id = current_org
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 control_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+control_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 conversion_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5178,6 +5216,7 @@ connector_route | disabled | not forced
 contact | enabled | forced
 contact_document_template | enabled | forced
 control_run | enabled | forced
+control_state | enabled | forced
 conversion_step | enabled | forced
 currency | disabled | not forced
 customer_group | enabled | forced
@@ -5368,6 +5407,7 @@ connector_secret_named() → trigger | security definer | v | search_path=pg_cat
 contact_member_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0faf2bd332726b6037d87c0a8160e65b
 contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29b6cba43d21e49a9d9d42ebe0738728
 control_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 929292e05aad5f2537886f1e37766f67
+control_state_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29c24bddde9220de15ff64991fa92e47
 controller_entry_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 139b9dd919f3c7f5e7a30616a153d7b3
 conversion_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d31c236d9b87b88fff3de4ebae0ca66
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0

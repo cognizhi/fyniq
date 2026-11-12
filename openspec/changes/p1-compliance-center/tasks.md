@@ -189,7 +189,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
       work, over the last 25 hours, and records its run: what it found (the first 50 items), how many, and in words.
       Breaches are seeded in the test past the database's own guards (triggers off, as the superuser).
     - **Statuses and notices (4.2)** are their own pull request.
-- [ ] 4.2 Control statuses for an organisation (`internal/domain/compliance`; D1). Every kind of check is covered:
+- [x] 4.2 Control statuses for an organisation (`internal/domain/compliance`; D1). Every kind of check is covered:
   CI, job, `check`, `verify`, `attestation`, planned and `cloud`. The worst-of rule and not applicable are covered too.
   `compliance.run` sends `compliance.control_failed` (critical, emailed at once, to the owner role) once per failure,
   and writes `control.failed` and `control.recovered`. Tests cover:
@@ -199,6 +199,25 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
   `// req: CMP-01`, and the unnumbered "The Compliance Center shows controls and raises tasks" and "Failing controls
   block releases or page the owner".
+
+  **What building added:**
+    - **`fyniq.control_state`** (migration 000295) keeps one row per organisation and control, written by the worker
+      at version 1 and then only as its next version, never deleted (FY308). A change of status is audited on the row
+      (`require_audit_status`) as `control.failed`, `control.recovered` or `control.status_changed`. `failing_since` is
+      set exactly while the control fails or is overdue, and keeps when the failure began, so a failure is told once.
+    - **Reading each kind of check:**
+      - a job, through `JobOutcomeOf`, which the night's evidence uses too: one that never ran reads as overdue;
+      - a catalogue check: ⏰ due reads as overdue, like a warning, and `failed` as fail;
+      - a verification's latest run: one older than 26 hours reads as overdue;
+      - an attestation: not assessed until slice 8.
+
+      A passing control says that each of its checks passed.
+    - **Order.** `compliance.run` works out the statuses after each organisation's verifications, in one unit of work.
+    - **The notice.** `compliance.control_failed` is a security notice: critical, locked and emailed at once. It goes to
+      the members holding the control's owner role (the registry's owner, in lower case, is the role), and links to
+      `/compliance/controls?control=<ID>`, the screen of slice 5.
+    - **The release.** The worker and the jobs set the Kit's release from `version.Release`; the wiring never imports
+      `internal/version`.
 
 ## 5. Compliance › Controls (slice 5)
 

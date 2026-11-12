@@ -125,6 +125,7 @@ fyniq_api       UPDATE    contact (address, billing_email, country, currency, cu
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
 fyniq_api       SELECT    control_run
+fyniq_api       SELECT    control_state
 fyniq_api       INSERT    conversion_step (kind, on_date, recorded_at, recorded_by, reference, settlement_id)
 fyniq_api       SELECT    conversion_step
 fyniq_api       EXECUTE   count_super_admins()
@@ -528,6 +529,7 @@ fyniq_readonly  SELECT    close_checklist_template
 fyniq_readonly  SELECT    contact
 fyniq_readonly  SELECT    contact_document_template
 fyniq_readonly  SELECT    control_run
+fyniq_readonly  SELECT    control_state
 fyniq_readonly  SELECT    conversion_step
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
@@ -686,6 +688,9 @@ fyniq_worker    SELECT    contact
 fyniq_worker    SELECT    contact_document_template
 fyniq_worker    INSERT    control_run (check_how, control, detail, frequency, item_count, items, ok, ran_at, since)
 fyniq_worker    SELECT    control_run
+fyniq_worker    INSERT    control_state (changed_at, checks, control, detail, failing_since, run_at, status)
+fyniq_worker    SELECT    control_state
+fyniq_worker    UPDATE    control_state (changed_at, checks, detail, failing_since, run_at, status, version)
 fyniq_worker    SELECT    conversion_step
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()

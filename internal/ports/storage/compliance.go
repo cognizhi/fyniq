@@ -66,8 +66,29 @@ type UnreconciledRead struct {
 	Reason    string
 }
 
+// ControlState is a control's status for the organisation as compliance.run last worked it out (CMP-01, design D1): its
+// words, each check's status and words as JSON, when it last turned to fail or overdue (while it is), and when the run
+// was and the status last changed.
+type ControlState struct {
+	ID           uuid.UUID
+	Control      string
+	Status       string // pass, fail, overdue, not_applicable or not_assessed
+	Detail       string
+	Checks       []byte
+	FailingSince *time.Time
+	RunAt        time.Time
+	ChangedAt    time.Time
+	Version      int
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
+	// States are the controls' latest states.
+	States(ctx context.Context) ([]ControlState, error)
+	// SaveState writes a control's state at version (0: its first), auditing a change of status (AUD-01):
+	// control.failed when it turns to fail or overdue, control.recovered when it leaves them, control.status_changed
+	// otherwise.
+	SaveState(ctx context.Context, s ControlState, version int) (ControlState, error)
 	// RecordRun appends a verification's run; a run never changes (FY307).
 	RecordRun(ctx context.Context, r ControlRun) (ControlRun, error)
 	// LatestRuns are the latest run of each control's verifications.

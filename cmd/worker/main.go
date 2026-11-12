@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
+	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
@@ -23,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/tokens"
+	"github.com/cognizhi/fyniq/internal/version"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
@@ -33,6 +35,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "worker: serving without background work:", err)
 			return nil
 		}
+		kit.Release = controls.Release{Tag: version.Release, Repository: version.Repository} // CMP-01: the CI checks' release
 		s.AddReadiness("database", kit.Store.Ping)
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {

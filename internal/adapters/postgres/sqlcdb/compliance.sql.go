@@ -194,6 +194,28 @@ func (q *Queries) ExportsWithoutTheirRecords(ctx context.Context, arg ExportsWit
 	return items, nil
 }
 
+const getControlState = `-- name: GetControlState :one
+SELECT organisation_id, id, control, status, detail, checks, failing_since, run_at, changed_at, version FROM fyniq.control_state WHERE control = $1
+`
+
+func (q *Queries) GetControlState(ctx context.Context, control string) (FyniqControlState, error) {
+	row := q.db.QueryRow(ctx, getControlState, control)
+	var i FyniqControlState
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Control,
+		&i.Status,
+		&i.Detail,
+		&i.Checks,
+		&i.FailingSince,
+		&i.RunAt,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const insertControlRun = `-- name: InsertControlRun :one
 INSERT INTO fyniq.control_run (control, frequency, check_how, since, ran_at, ok, item_count, items, detail)
 VALUES ($1, $2, $3, $4, $5, $6,
@@ -242,6 +264,49 @@ func (q *Queries) InsertControlRun(ctx context.Context, arg InsertControlRunPara
 	return i, err
 }
 
+const insertControlState = `-- name: InsertControlState :one
+INSERT INTO fyniq.control_state (control, status, detail, checks, failing_since, run_at, changed_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7)
+RETURNING organisation_id, id, control, status, detail, checks, failing_since, run_at, changed_at, version
+`
+
+type InsertControlStateParams struct {
+	Control      string
+	Status       string
+	Detail       string
+	Checks       []byte
+	FailingSince *time.Time
+	RunAt        time.Time
+	ChangedAt    time.Time
+}
+
+func (q *Queries) InsertControlState(ctx context.Context, arg InsertControlStateParams) (FyniqControlState, error) {
+	row := q.db.QueryRow(ctx, insertControlState,
+		arg.Control,
+		arg.Status,
+		arg.Detail,
+		arg.Checks,
+		arg.FailingSince,
+		arg.RunAt,
+		arg.ChangedAt,
+	)
+	var i FyniqControlState
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Control,
+		&i.Status,
+		&i.Detail,
+		&i.Checks,
+		&i.FailingSince,
+		&i.RunAt,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const latestControlRuns = `-- name: LatestControlRuns :many
 SELECT DISTINCT ON (r.control, r.frequency, r.check_how) r.organisation_id, r.id, r.control, r.frequency, r.check_how, r.since, r.ran_at, r.ok, r.item_count, r.items, r.detail
   FROM fyniq.control_run r
@@ -270,6 +335,41 @@ func (q *Queries) LatestControlRuns(ctx context.Context) ([]FyniqControlRun, err
 			&i.ItemCount,
 			&i.Items,
 			&i.Detail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listControlStates = `-- name: ListControlStates :many
+SELECT organisation_id, id, control, status, detail, checks, failing_since, run_at, changed_at, version FROM fyniq.control_state ORDER BY control
+`
+
+func (q *Queries) ListControlStates(ctx context.Context) ([]FyniqControlState, error) {
+	rows, err := q.db.Query(ctx, listControlStates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqControlState
+	for rows.Next() {
+		var i FyniqControlState
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Control,
+			&i.Status,
+			&i.Detail,
+			&i.Checks,
+			&i.FailingSince,
+			&i.RunAt,
+			&i.ChangedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -320,4 +420,50 @@ func (q *Queries) MembersSecondFactor(ctx context.Context, since time.Time) ([]M
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateControlState = `-- name: UpdateControlState :one
+UPDATE fyniq.control_state
+   SET status = $1, detail = $2, checks = $3, failing_since = $4,
+       run_at = $5, changed_at = $6, version = version + 1
+ WHERE control = $7 AND version = $8
+RETURNING organisation_id, id, control, status, detail, checks, failing_since, run_at, changed_at, version
+`
+
+type UpdateControlStateParams struct {
+	Status       string
+	Detail       string
+	Checks       []byte
+	FailingSince *time.Time
+	RunAt        time.Time
+	ChangedAt    time.Time
+	Control      string
+	Version      int32
+}
+
+func (q *Queries) UpdateControlState(ctx context.Context, arg UpdateControlStateParams) (FyniqControlState, error) {
+	row := q.db.QueryRow(ctx, updateControlState,
+		arg.Status,
+		arg.Detail,
+		arg.Checks,
+		arg.FailingSince,
+		arg.RunAt,
+		arg.ChangedAt,
+		arg.Control,
+		arg.Version,
+	)
+	var i FyniqControlState
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Control,
+		&i.Status,
+		&i.Detail,
+		&i.Checks,
+		&i.FailingSince,
+		&i.RunAt,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
 }

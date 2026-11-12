@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -31,6 +32,40 @@ type Evidence struct {
 
 // fresh is how old a frequency's latest run may be when the evidence is recorded.
 var fresh = map[string]time.Duration{"D": 26 * time.Hour, "N": 26 * time.Hour, "W": 8 * 24 * time.Hour, "M": 32 * 24 * time.Hour}
+
+// JobOutcome is what a job's latest run says for a check of a frequency: its slot, state and detail, and the problem,
+// if any: it never ran, its latest run did not succeed, or ran too long ago for the frequency.
+type JobOutcome struct {
+	Slot                   time.Time
+	State, Detail, Problem string
+	Stale, Failed, Never   bool
+}
+
+// OK reports whether the job's latest run passed and is fresh.
+func (o JobOutcome) OK() bool { return o.Problem == "" }
+
+// JobOutcomeOf reads a job's slots for a check of the frequency, at now.
+func JobOutcomeOf(slots []storage.JobSlot, frequency string, now time.Time) JobOutcome {
+	slots = slices.Clone(slots)
+	sort.Slice(slots, func(i, j int) bool { return slots[i].Slot.Before(slots[j].Slot) })
+	var latest *storage.JobSlot
+	for i := len(slots) - 1; i >= 0; i-- {
+		if slots[i].State != "skipped" {
+			latest = &slots[i]
+			break
+		}
+	}
+	switch {
+	case latest == nil:
+		return JobOutcome{State: "never ran", Problem: "the job has never run", Never: true}
+	case latest.State != "done":
+		return JobOutcome{Slot: latest.Slot.UTC(), State: latest.State, Detail: latest.Detail, Problem: "the latest run did not succeed", Failed: true}
+	case fresh[frequency] > 0 && now.Sub(latest.Slot) > fresh[frequency]:
+		return JobOutcome{Slot: latest.Slot.UTC(), State: latest.State,
+			Problem: fmt.Sprintf("the latest run is %s old", now.Sub(latest.Slot).Round(time.Minute)), Stale: true}
+	}
+	return JobOutcome{Slot: latest.Slot.UTC(), State: latest.State, Detail: latest.Detail}
+}
 
 // RecordEvidence writes the evidence of every scheduled check that runs as a platform job, from the
 // job's latest slot, and returns them. It fails when a check's job did not run, failed, or ran too
@@ -58,25 +93,8 @@ func RecordEvidenceFor(ctx context.Context, controls []Control, p storage.Platfo
 			if err != nil {
 				return out, err
 			}
-			sort.Slice(slots, func(i, j int) bool { return slots[i].Slot.Before(slots[j].Slot) })
-			var latest *storage.JobSlot
-			for i := len(slots) - 1; i >= 0; i-- {
-				if slots[i].State != "skipped" {
-					latest = &slots[i]
-					break
-				}
-			}
-			switch {
-			case latest == nil:
-				e.State, e.Problem = "never ran", "the job has never run"
-			case latest.State != "done":
-				e.Slot, e.State, e.Detail, e.Problem = latest.Slot.UTC(), latest.State, latest.Detail, "the latest run did not succeed"
-			case fresh[ch.Frequency] > 0 && now.Sub(latest.Slot) > fresh[ch.Frequency]:
-				e.Slot, e.State, e.Problem = latest.Slot.UTC(), latest.State, fmt.Sprintf("the latest run is %s old", now.Sub(latest.Slot).Round(time.Minute))
-			default:
-				e.Slot, e.State, e.Detail = latest.Slot.UTC(), latest.State, latest.Detail
-			}
-			e.OK = e.Problem == ""
+			o := JobOutcomeOf(slots, ch.Frequency, now)
+			e.Slot, e.State, e.Detail, e.Problem, e.OK = o.Slot, o.State, o.Detail, o.Problem, o.OK()
 			b, err := json.MarshalIndent(e, "", " ")
 			if err != nil {
 				return out, err
