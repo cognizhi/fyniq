@@ -1247,3 +1247,38 @@ func TestPlanPinnedCases(t *testing.T) {
 		t.Error("a quotient of zero was given")
 	}
 }
+
+// RND-IMPORT's pinned cases (rev 0.255), worked by hand: the workbook's float artefacts read as the cents they stand
+// for, half away from zero, once; a negative that rounds to zero shows as 0; JPY to the yen.
+// req: RND-IMPORT
+func TestImportPinnedCases(t *testing.T) {
+	d := func(s string) *apd.Decimal {
+		x, _, err := apd.NewFromString(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	for _, c := range []struct{ in, want string }{
+		{"13080.000006", "13080.00"}, {"0.009999", "0.01"}, {"648.012461778111", "648.01"}, {"-180.00499999", "-180.00"},
+		{"-180.005", "-180.01"}, {"2.675", "2.68"}, {"-0.0049", "0.00"}, {"3000", "3000.00"},
+		// Read to 15 significant digits first: 1.00499999999999|99 is 1.00500000000000, then 1.01.
+		{"1.0049999999999999", "1.01"}, {"98.09999999999999", "98.10"},
+	} {
+		if got := Import(d(c.in), sgd).Text('f'); got != c.want {
+			t.Errorf("Import(%s): got %s, want %s", c.in, got, c.want)
+		}
+	}
+	if got := Import(d("1234.5"), jpy).Text('f'); got != "1235" {
+		t.Errorf("Import in JPY: got %s, want 1235", got)
+	}
+	// A typed amount reads to 15 significant digits and is never rounded further.
+	for _, c := range []struct{ in, want string }{
+		{"98.09999999999999", "98.1"}, {"0.30000000000000004", "0.3"}, {"1234.5678", "1234.5678"}, {"300", "300"},
+		{"-98.09999999999999", "-98.1"}, {"1.23456789012345678", "1.23456789012346"},
+	} {
+		if got := Saved(d(c.in)).Text('f'); got != c.want {
+			t.Errorf("Saved(%s): got %s, want %s", c.in, got, c.want)
+		}
+	}
+}

@@ -1,0 +1,38 @@
+{
+  "source": {
+    "repository": "cognizhi/zh-sheet-accounting",
+    "commit": "a705fd1446639eed84a764b49d8a6472e3808d8b",
+    "file": "dist/Cognizhi-Finance-Hub-Sample.xlsx",
+    "sha256": "4d8057dc71705410b9bf38e5cdd071c0f2a810fc81562cbe343c2c8a86c38e83"
+  },
+  "sheets": [
+    "Settings",
+    "Accounts",
+    "Items",
+    "Contacts",
+    "Employees",
+    "Lists",
+    "Transactions",
+    "Invoices",
+    "Bills",
+    "Quotes & Orders",
+    "Doc Lines",
+    "Payroll",
+    "Timesheets",
+    "Assets",
+    "Journal",
+    "Recurring",
+    "Bank Rec",
+    "Budget",
+    "Forecast",
+    "Funding",
+    "Trial Balance",
+    "Checks",
+    "Carry Forward"
+  ],
+  "fixture": {
+    "file": "workbook-sample.xlsx",
+    "sha256": "2dcf748747118c6d0d719017ce30e460781d273958c2dd51c871e681050c30c2"
+  },
+  "data": "synthetic (DEV-08): the workbook's sample company"
+}

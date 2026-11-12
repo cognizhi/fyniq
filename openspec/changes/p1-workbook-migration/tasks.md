@@ -4,17 +4,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 1. Reading the workbook and the validation report (FR-MIG-01, M1)
 
-- [ ] 1.1 `internal/sheet` reads named sheets with a workbook's bounds (design D1): shared and inline strings, each
+- [x] 1.1 `internal/sheet` reads named sheets with a workbook's bounds (design D1): shared and inline strings, each
   cell's cached value as exact decimal text, columns found by their header on row 5. A workbook saved without its
   calculated values is refused with how to fix it. Tests: the fixture's sheets read; a bomb over each bound stops at it;
   a sheet without cached values is refused. `// req: FR-MIG-01`
-- [ ] 1.2 `scripts/workbook_migration_fixture.py` writes `test/migration/workbook-sample.xlsx` from a pinned commit of
+- [x] 1.2 `scripts/workbook_migration_fixture.py` writes `test/migration/workbook-sample.xlsx` from a pinned commit of
   `zh-sheet-accounting`: the sheets the import reads, values only, with the commit recorded (design D12). Verified by
-  `make check`'s fixture check, which reads the recorded commit and the file's hash.
-- [ ] 1.3 The PRD names `RND-IMPORT` in §10.4 (the workbook's calculated figures rounded half away from zero to cents,
-  once), with a PRD revision. `internal/domain/rounding` gains it, with its pinned cases and the oracle's
+  `TestTheFixtureIsTheRecordedOne`, which checks the file against the hash and commit recorded beside it.
+- [x] 1.3 The PRD names `RND-IMPORT` in §10.4 (the workbook's calculated figures rounded half away from zero to cents,
+  once, after every saved number is read to a spreadsheet's 15 significant digits), with a PRD revision (rev 0.255). `internal/domain/rounding` gains it, with its pinned cases and the oracle's
   implementation. Tests `// req: RND-IMPORT` in Go and in the oracle.
-- [ ] 1.4 `internal/migration`'s typed model of every sheet the import reads (design D2, D5): dates from serial numbers,
+- [x] 1.4 `internal/migration`'s typed model of every sheet the import reads (design D2, D5): dates from serial numbers,
   codes from "code - name" labels, amounts exact; a row the workbook blocked (✖) is reported and kept out. Test
   `// req: FR-MIG-01` reads the fixture into the model and compares its counts and totals with the sheets' own.
 - [ ] 1.5 The migration record: migrations for `migration_run` and `migration_step` (organisation-keyed, forced

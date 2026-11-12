@@ -460,6 +460,24 @@ Source: PRD-001 §10.4
 - **WHEN** a rule decides the verdict, the buffer alert, break-even or the cash-out month
 - **THEN** it compares exact values, never rounded ones
 
+### Requirement: RND-IMPORT The workbook's calculated figures
+A figure the workbook calculated, read from its saved value by the workbook import, SHALL be rounded once to the currency's minor units, half away from zero; every saved number is first read to a spreadsheet's 15 significant digits, and an amount a person typed is never rounded (rev 0.255).
+
+Source: PRD-001 §10.4
+
+#### Scenario: A calculated cent saved as a float
+- **WHEN** the import reads a figure the workbook calculated, saved as 13080.000006 or 0.009999
+- **THEN** it reads 13080.00 or 0.01, rounded once, half away from zero, to the currency's minor units
+
+#### Scenario: A saved number reads to 15 significant digits
+- **WHEN** the import reads a number saved as 98.09999999999999, or a calculated figure saved as 1.0049999999999999
+- **THEN** it reads 98.1, the number the spreadsheet shows, and the calculated figure reads 1.005 and then 1.01
+
+#### Scenario: A typed amount is never rounded
+- **WHEN** the import reads an amount a person typed
+- **THEN** it is used as it reads, to 15 significant digits, and never rounded to the currency's minor units
+- **AND** one with more decimals than its currency's minor units is a validation error, not a rounding
+
 ### Requirement: RND-LINE Line amount
 A line's amount SHALL be round(quantity × unit price, the currency's minor units), half away from zero, computed exactly before its one rounding; part of a line taken after others SHALL be RND-LINE of all taken so far less RND-LINE of what was taken before (rev 0.87; provisional).
 
