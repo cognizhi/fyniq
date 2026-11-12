@@ -152,6 +152,8 @@ type UnitOfWork interface {
 	AccessReviews() AccessReviews
 	// Compliance is what the Compliance Center's verifications read and record (CMP-01).
 	Compliance() Compliance
+	// Migrations are the organisation's migration from the workbook (FR-MIG-01, §17.1).
+	Migrations() Migrations
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

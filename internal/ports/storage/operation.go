@@ -11,7 +11,7 @@ import (
 // polls it. Its status is its job's.
 type Operation struct {
 	ID          uuid.UUID
-	Kind        string // report_export or checks_run
+	Kind        string // report_export, checks_run or migration_validation
 	JobID       uuid.UUID
 	Resource    string // the path of what the work makes or changes, such as /v1/report-exports/{id}
 	RequestedBy string

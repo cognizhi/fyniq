@@ -1,7 +1,7 @@
 import { Dialog as Primitive } from "@base-ui/react/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, CircleX, Download, FileSpreadsheet, Hourglass, ListChecks, LoaderCircle, X, type LucideIcon } from "lucide-react";
+import { CircleCheck, CircleX, Download, FileCheck, FileSpreadsheet, Hourglass, ListChecks, LoaderCircle, X, type LucideIcon } from "lucide-react";
 import { useContext, useId, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
@@ -21,7 +21,13 @@ type Export = components["schemas"]["ReportExportOut"];
 const whileRunning = 5_000;
 const otherwise = 60_000;
 
-const kindIcon: Record<string, LucideIcon> = { report_export: FileSpreadsheet, checks_run: ListChecks };
+const kindIcon: Record<string, LucideIcon> = { report_export: FileSpreadsheet, checks_run: ListChecks, migration_validation: FileCheck };
+
+const runningNote: Record<string, string> = {
+  report_export: "You can keep working: a notification says when the file is ready.",
+  checks_run: "You can keep working: Checks updates once they have run.",
+  migration_validation: "You can keep working: the validation report is kept when it is done.",
+};
 
 async function listOperations() {
   const { data, error } = await api.GET("/v1/operations", { params: { query: { page_size: 50 } } });
@@ -38,6 +44,7 @@ function exportOf(o: Operation, exports: Export[] | undefined): Export | undefin
 
 function titleOf(o: Operation, x: Export | undefined): string {
   if (o.kind === "checks_run") return "Run every check";
+  if (o.kind === "migration_validation") return "Validate the workbook";
   return x ? `Export ${nameOf(x.report)} (${x.format.toUpperCase()})` : "Accountant export";
 }
 
@@ -96,7 +103,7 @@ function Item({ o, x, onClose }: { o: Operation; x: Export | undefined; onClose:
           <div className="fy-progress fy-progress--indeterminate" role="progressbar" aria-label={`${title}: running`}>
             <span />
           </div>
-          <span className="fy-small fy-muted">{o.kind === "report_export" ? "You can keep working: a notification says when the file is ready." : "You can keep working: Checks updates once they have run."}</span>
+          <span className="fy-small fy-muted">{runningNote[o.kind]}</span>
         </div>
       )}
       {o.status === "succeeded" && o.kind === "report_export" && x?.status === "ready" && (
@@ -121,7 +128,14 @@ function Item({ o, x, onClose }: { o: Operation; x: Export | undefined; onClose:
           See the checks
         </Link>
       )}
-      {o.status === "failed" && (
+      {o.status === "succeeded" && o.kind === "migration_validation" && <span className="fy-small fy-muted">Its validation report is ready.</span>}
+      {o.status === "failed" && o.kind === "migration_validation" && (
+        <p className="fy-error">
+          <Icon of={CircleX} />
+          <span>It stopped after its attempts. Upload the workbook again.</span>
+        </p>
+      )}
+      {o.status === "failed" && o.kind !== "migration_validation" && (
         <p className="fy-error">
           <Icon of={CircleX} />
           <span>
@@ -191,7 +205,7 @@ export function OperationsTray() {
                   {help.label}
                 </Primitive.Title>
                 <span className="fy-small fy-muted" id={`${id}-about`}>
-                  Exports and check runs keep running when you leave the page.
+                  Exports, check runs and workbook validations keep running when you leave the page.
                 </span>
               </span>
               <Primitive.Close className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label="Close operations">

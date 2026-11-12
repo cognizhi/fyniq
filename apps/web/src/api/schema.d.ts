@@ -8465,6 +8465,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/migrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the migrations
+         * @description The organisation's move from the workbook (FR-MIG-01, §17.1): at most one, with each attempt at its steps and the files they keep. Read-only; no side effects.
+         */
+        get: operations["listMigrations"];
+        put?: never;
+        /**
+         * Start the migration from the workbook
+         * @description Starts the organisation's move from the workbook (FR-MIG-01, §17.1), whose first step, M1, uploads the frozen workbook. An organisation has one migration: once started, this answers 200 with it. Only an organisation without a posted entry starts one (MIGRATION-09, rev 0.254): a failed or rejected import starts again in a new organisation, never in live books. Side effects: the migration, the audit event migration.started. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["startMigration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the migration
+         * @description The migration with each attempt at its steps and the files they keep (FR-MIG-01, §17.1). Read-only; no side effects.
+         */
+        get: operations["getMigration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the validation report
+         * @description M1's latest validation report (FR-MIG-01, design D2): the workbook's company, base currency and dates, each sheet's rows the import reads, and every problem with its sheet, row and column, what is wrong and how to fix it. An error stops the commit; a row the workbook did not post (✖) is a warning and is not imported. While the workbook is validating, the state says so: poll the operation, then read again. Before a workbook is uploaded there is none to read. Read-only; no side effects.
+         */
+        get: operations["getMigrationReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload the frozen workbook
+         * @description M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt. Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing.
+         */
+        post: operations["uploadMigrationWorkbook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/money-accounts": {
         parameters: {
             query?: never;
@@ -31613,6 +31697,328 @@ export interface components {
              */
             role: string;
         };
+        MigrationFileView: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T09:05:00Z
+             */
+            added_at: string;
+            /**
+             * @description Who added it: a person, or the validation.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            added_by: string;
+            /**
+             * @description payroll for a workbook, which holds the pay of each employee; general for a Checks export.
+             * @example payroll
+             * @enum {string}
+             */
+            data_class: "general" | "payroll";
+            /**
+             * @description As the uploader named it, or checks.csv.
+             * @example Cognizhi-Finance-Hub.xlsx
+             */
+            file_name: string;
+            /**
+             * Format: uuid
+             * @description The file.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a30
+             */
+            id: string;
+            /**
+             * @description workbook: as uploaded; checks: the Checks export made from one.
+             * @example workbook
+             * @enum {string}
+             */
+            kind: "workbook" | "checks";
+            /**
+             * @description Decided from the content.
+             * @example application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+             */
+            media_type: string;
+            /**
+             * @description The SHA-256 of the file as received.
+             * @example 4d8057dc…
+             */
+            original_sha256: string;
+            /**
+             * @description The SHA-256 of the file as kept.
+             * @example 4d8057dc…
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 6684378
+             */
+            size_bytes: number;
+        };
+        MigrationProblem: {
+            /**
+             * @description The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is.
+             * @example MIGRATION-04
+             */
+            code: string;
+            /**
+             * @description The column, by its header.
+             * @example Money out
+             */
+            column?: string;
+            /**
+             * @description How to fix it.
+             * @example Enter it with at most 2 decimals, as the currency has
+             */
+            fix: string;
+            /**
+             * @description What is wrong.
+             * @example 98.125 has more than 2 decimals
+             */
+            message: string;
+            /**
+             * Format: int64
+             * @description The sheet's row; absent for the sheet as a whole.
+             * @example 8
+             */
+            row?: number;
+            /**
+             * @description An error stops the commit; a warning does not.
+             * @example error
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+            /**
+             * @description The sheet; absent for the workbook or the organisation as a whole.
+             * @example Transactions
+             */
+            sheet?: string;
+        };
+        MigrationReportView: {
+            /**
+             * Format: date
+             * @description Its reports' as-of date: the cut-over a clean start carries forward to.
+             * @example 2026-09-30
+             */
+            as_of?: string;
+            /**
+             * @description Its base currency.
+             * @example SGD
+             */
+            base_currency?: string;
+            /**
+             * Format: date
+             * @description Its books start.
+             * @example 2026-01-01
+             */
+            books_start?: string;
+            /**
+             * Format: date
+             * @description The day its books are closed up to.
+             * @example 2026-08-31
+             */
+            closed_to?: string;
+            /**
+             * @description The company the workbook keeps, from its Settings.
+             * @example Cognizhi Pte. Ltd.
+             */
+            company?: string;
+            /**
+             * Format: int64
+             * @description The errors: any stops the commit.
+             * @example 0
+             */
+            errors: number;
+            /**
+             * @description The workbook's name as uploaded.
+             * @example Cognizhi-Finance-Hub.xlsx
+             */
+            file_name?: string;
+            /**
+             * @description The report's format.
+             * @example fyniq-migration-report@1
+             */
+            format?: string;
+            /** @description Every problem, by sheet and row. */
+            problems?: components["schemas"]["MigrationProblem"][] | null;
+            /**
+             * @description The SHA-256 of the report as kept.
+             * @example 9f2c4e…
+             */
+            report_sha256?: string;
+            /**
+             * @description The workbook's SHA-256.
+             * @example 4d8057dc…
+             */
+            sha256?: string;
+            /** @description Each sheet the import reads, in order. */
+            sheets?: components["schemas"]["MigrationSheetCount"][] | null;
+            /**
+             * @description validating: poll the operation, then read again; valid or invalid with the report.
+             * @example valid
+             * @enum {string}
+             */
+            state: "validating" | "valid" | "invalid";
+            /**
+             * Format: uuid
+             * @description The step that validated it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+             */
+            step_id: string;
+            /**
+             * Format: date-time
+             * @description When it was validated.
+             * @example 2026-11-13T09:05:20Z
+             */
+            validated_at?: string;
+            /**
+             * Format: int64
+             * @description The warnings.
+             * @example 1
+             */
+            warnings: number;
+            /**
+             * Format: date
+             * @description Its financial year's start.
+             * @example 2026-01-01
+             */
+            year_start?: string;
+        };
+        MigrationSheetCount: {
+            /**
+             * Format: int64
+             * @description Its errors.
+             * @example 0
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Its rows the import reads.
+             * @example 178
+             */
+            rows: number;
+            /**
+             * @description The sheet.
+             * @example Transactions
+             */
+            sheet: string;
+            /**
+             * Format: int64
+             * @description Its warnings.
+             * @example 1
+             */
+            warnings: number;
+        };
+        MigrationStepView: {
+            /**
+             * Format: uuid
+             * @description The Checks export made from the workbook, once validated: M1's evidence with the workbook.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a40
+             */
+            checks_file_id?: string;
+            /**
+             * Format: int64
+             * @description The report's errors, once validated: any stops the commit.
+             * @example 0
+             */
+            errors?: number;
+            /**
+             * Format: uuid
+             * @description The step.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+             */
+            id: string;
+            /**
+             * @description The SHA-256 of the validation report as kept, once validated: what a sign-off names.
+             * @example 9f2c4e…
+             */
+            report_sha256?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T09:05:00Z
+             */
+            started_at: string;
+            /**
+             * @description Who uploaded the workbook.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            started_by: string;
+            /**
+             * @description validating in the background; then valid, or invalid when its report holds an error.
+             * @example valid
+             * @enum {string}
+             */
+            state: "validating" | "valid" | "invalid";
+            /**
+             * @description §17.1's step: M1 is the frozen workbook uploaded and validated.
+             * @example M1
+             * @enum {string}
+             */
+            step: "M1" | "M2" | "M3" | "M4" | "M5" | "M6";
+            /**
+             * Format: date-time
+             * @description When it was validated; absent while validating.
+             * @example 2026-11-13T09:05:20Z
+             */
+            validated_at?: string;
+            /**
+             * Format: int64
+             * @description The report's warnings, once validated.
+             * @example 1
+             */
+            warnings?: number;
+            /**
+             * Format: uuid
+             * @description The workbook it validates.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a30
+             */
+            workbook_file_id: string;
+        };
+        MigrationUploadView: {
+            /** @description The workbook as kept. */
+            file: components["schemas"]["MigrationFileView"];
+            /**
+             * Format: uuid
+             * @description The operation that validates it: poll it, then read the report. Absent for a preview.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+             */
+            operation_id?: string;
+            /** @description The step, validating. */
+            step: components["schemas"]["MigrationStepView"];
+        };
+        MigrationView: {
+            /** @description The files the migration keeps, oldest first: each workbook as uploaded and each Checks export made from one. */
+            files: components["schemas"]["MigrationFileView"][];
+            /**
+             * Format: uuid
+             * @description The migration.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it started.
+             * @example 2026-11-13T09:00:00Z
+             */
+            started_at: string;
+            /**
+             * @description Who started it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            started_by: string;
+            /**
+             * @description open until M6 archives the workbook and closes it.
+             * @example open
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /** @description Each attempt at a step, oldest first: M1's are the workbooks uploaded and validated. */
+            steps: components["schemas"]["MigrationStepView"][];
+        };
+        MigrationsOutputBody: {
+            /** @description The organisation's migration: at most one. */
+            items: components["schemas"]["MigrationView"][];
+        };
         MileageLog: {
             /** @description Whose trips. */
             claimant: components["schemas"]["Person"];
@@ -32401,11 +32807,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks).
+             * @description What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks); migration_validation validates an uploaded workbook (uploadMigrationWorkbook).
              * @example report_export
              * @enum {string}
              */
-            kind: "report_export" | "checks_run";
+            kind: "report_export" | "checks_run" | "migration_validation";
             /**
              * Format: date-time
              * @description When it was asked for.
@@ -110332,6 +110738,613 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMigrations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    startMigration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationView"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-09` The organisation holds posted entries; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMigration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMigrationReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationReportView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    uploadMigrationWorkbook: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The frozen workbook: the published .xlsx, saved after make verify, up to 25 MB. Its type is decided from its content and it is scanned for malware, as evidence is.
+                     * @example PK… (the workbook's bytes)
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationUploadView"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationUploadView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

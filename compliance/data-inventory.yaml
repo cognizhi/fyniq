@@ -107,6 +107,15 @@ classes:
     protection: "A file that shows an NRIC or FIN in full is flagged when attached (FR-DOC-09)"
     transfers: "None"
     columns: [evidence.nric_flagged]
+  - key: workbook-migration
+    what: "The finance workbook uploaded for the move to Fyniq: its employees' names, departments and monthly pay, and its contacts and records"
+    why: "To import the books and prove the import against the workbook (FR-MIG-01, FR-MIG-02, §17.1)"
+    where: "The staging store, in Singapore, under the migration's own prefix; archived under retention as M1's evidence at go-live (M6)"
+    who: "Appendix D's Workbook import (migration): the Finance controller and the Accountant upload it; the Owner and the Auditor read the migration"
+    retention: "Until go-live archives it under the records' retention (retention.records_years); the per-employee rows are never imported (rev 0.254)"
+    protection: "Scanned for malware and hashed when uploaded (FR-DOC-08), marked payroll, and read only by the import's validation; the AI has no right on it"
+    transfers: "None"
+    columns: [migration_file.data_class]
 flows:
   - key: sign-in
     what: "Sign-in through the deployment's sign-in providers: Google, Zoho or another OpenID Connect provider"

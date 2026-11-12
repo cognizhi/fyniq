@@ -13950,6 +13950,122 @@ You ask for access to, or correction of, the personal data the company holds abo
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-PDREQUEST-01`, `STORAGE-RETRY-01`
 
+## Migration
+
+The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed.
+
+### `GET /v1/migrations`
+
+**List the migrations** (`listMigrations`)
+
+The organisation's move from the workbook (FR-MIG-01, §17.1): at most one, with each attempt at its steps and the files they keep. Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Responses:**
+  - `200` OK [`MigrationsOutputBody`](../../contracts/schemas/MigrationsOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/migrations`
+
+**Start the migration from the workbook** (`startMigration`)
+
+Starts the organisation's move from the workbook (FR-MIG-01, §17.1), whose first step, M1, uploads the frozen workbook. An organisation has one migration: once started, this answers 200 with it. Only an organisation without a posted entry starts one (MIGRATION-09, rev 0.254): a failed or rejected import starts again in a new organisation, never in live books. Side effects: the migration, the audit event migration.started. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MigrationView`](../../contracts/schemas/MigrationView.schema.json)
+  - `201` Created [`MigrationView`](../../contracts/schemas/MigrationView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-09` The organisation holds posted entries; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `MIGRATION-09`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/migrations/{migration_id}`
+
+**Get the migration** (`getMigration`)
+
+The migration with each attempt at its steps and the files they keep (FR-MIG-01, §17.1). Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+- **Responses:**
+  - `200` OK [`MigrationView`](../../contracts/schemas/MigrationView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/migrations/{migration_id}/report`
+
+**Get the validation report** (`getMigrationReport`)
+
+M1's latest validation report (FR-MIG-01, design D2): the workbook's company, base currency and dates, each sheet's rows the import reads, and every problem with its sheet, row and column, what is wrong and how to fix it. An error stops the commit; a row the workbook did not post (✖) is a warning and is not imported. While the workbook is validating, the state says so: poll the operation, then read again. Before a workbook is uploaded there is none to read. Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+- **Responses:**
+  - `200` OK [`MigrationReportView`](../../contracts/schemas/MigrationReportView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/migrations/{migration_id}/workbook`
+
+**Upload the frozen workbook** (`uploadMigrationWorkbook`)
+
+M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt. Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing.
+
+- **Permission:** Create on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MigrationUploadView`](../../contracts/schemas/MigrationUploadView.schema.json)
+  - `202` Accepted [`MigrationUploadView`](../../contracts/schemas/MigrationUploadView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`
+
 ## Planning
 
 Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08).

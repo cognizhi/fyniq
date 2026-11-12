@@ -19,6 +19,9 @@ const (
 	CodeUncalculated = "MIGRATION-05" // the workbook was saved without its calculated values
 	CodeBlocked      = "MIGRATION-06" // a row the workbook itself did not post (✖): kept out, as the workbook kept it
 	CodeArchived     = "MIGRATION-07" // a sheet or row kept in the archived workbook (rev 0.254), not imported
+	CodeChecks       = "MIGRATION-08" // the workbook's Checks show a ✖: M1 freezes a workbook with none (§17.1)
+	CodePosted       = "MIGRATION-09" // the organisation holds a posted entry (rev 0.254)
+	CodeOrganisation = "MIGRATION-10" // the organisation is not set up as the workbook is, such as another base currency
 )
 
 // Severity is how a problem weighs on the commit: an error stops it, a warning is reported and does not.
@@ -31,13 +34,13 @@ const (
 
 // Problem is one thing the validation report says about the workbook: where, what is wrong and how to fix it.
 type Problem struct {
-	Sheet    string
-	Row      int // the sheet's row; 0 for the sheet as a whole
-	Column   string
-	Severity Severity
-	Code     string
-	Message  string
-	Fix      string
+	Sheet    string   `json:"sheet,omitempty"`
+	Row      int      `json:"row,omitempty"` // the sheet's row; 0 for the sheet as a whole
+	Column   string   `json:"column,omitempty"`
+	Severity Severity `json:"severity"`
+	Code     string   `json:"code"`
+	Message  string   `json:"message"`
+	Fix      string   `json:"fix"`
 }
 
 // Status is a workbook status cell's kind.

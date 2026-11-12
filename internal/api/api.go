@@ -204,6 +204,7 @@ func Config(version string) huma.Config {
 		{Name: "Equity", Description: "The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17)."},
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
+		{Name: "Migration", Description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
@@ -377,6 +378,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBreaches(a)
 	registerIncidents(a)
 	registerRestoreDrills(a)
+	registerMigrations(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerShredding(a)

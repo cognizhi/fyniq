@@ -35,6 +35,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -374,6 +375,12 @@ func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 // Exports prepare the exports that run in the background in the staging store, and expire them (FR-RPT-09).
 func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
 	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock, Stamp: k.Stamp}
+}
+
+// Migrations validate uploaded workbooks in the background, keeping each report and Checks export in the staging store
+// (FR-MIG-01).
+func (k *Kit) Migrations(clock ports.Clock) migration.Validator {
+	return migration.Validator{Store: k.Store, Files: k.Staging, Clock: clock}
 }
 
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "files": {
+      "description": "The files the migration keeps, oldest first: each workbook as uploaded and each Checks export made from one.",
+      "items": {
+        "$ref": "MigrationFileView.schema.json"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The migration.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "started_at": {
+      "description": "When it started.",
+      "examples": [
+        "2026-11-13T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_by": {
+      "description": "Who started it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "open until M6 archives the workbook and closes it.",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "Each attempt at a step, oldest first: M1's are the workbooks uploaded and validated.",
+      "items": {
+        "$ref": "MigrationStepView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "started_by",
+    "started_at",
+    "steps",
+    "files"
+  ],
+  "title": "MigrationView",
+  "type": "object"
+}

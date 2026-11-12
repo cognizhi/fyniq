@@ -45,6 +45,23 @@ describe("the operations tray", () => {
     click.mockRestore();
   });
 
+  // req: FR-MIG-01
+  it("names a workbook's validation, says its report is ready, and how to try again when it failed", async () => {
+    const validating = { id: "op-5", kind: "migration_validation", status: "running", resource: "/v1/migrations/m-1/report", requested_at: "2026-11-13T02:00:00Z" };
+    const validated = { ...validating, id: "op-6", status: "succeeded", finished_at: "2026-11-13T02:00:20Z" };
+    const stopped = { ...validating, id: "op-7", status: "failed", finished_at: "2026-11-13T02:10:00Z" };
+    answer({ "GET /v1/operations": { status: 200, body: { items: [validating, validated, stopped] } } });
+    renderPage(OperationsTray);
+    fireEvent.click(await screen.findByRole("button", { name: "Operations, 1 running" }));
+    const sheet = await screen.findByRole("dialog");
+    expect(await within(sheet).findByRole("progressbar", { name: "Validate the workbook: running" })).toBeTruthy();
+    expect(within(sheet).getByText(/the validation report is kept when it is done/)).toBeTruthy();
+    expect(within(sheet).getByText("Its validation report is ready.")).toBeTruthy();
+    expect(within(sheet).getByText(/Upload the workbook again/)).toBeTruthy();
+    expect(calls()).not.toContain("GET /v1/report-exports");
+    await noViolations(document.body);
+  });
+
   it("shows no count when nothing runs, and says what shows there", async () => {
     answer({ "GET /v1/operations": { status: 200, body: { items: [] } } });
     renderPage(OperationsTray);

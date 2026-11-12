@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_of": {
+      "description": "Its reports' as-of date: the cut-over a clean start carries forward to.",
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "base_currency": {
+      "description": "Its base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "books_start": {
+      "description": "Its books start.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "closed_to": {
+      "description": "The day its books are closed up to.",
+      "examples": [
+        "2026-08-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "company": {
+      "description": "The company the workbook keeps, from its Settings.",
+      "examples": [
+        "Cognizhi Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "errors": {
+      "description": "The errors: any stops the commit.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "file_name": {
+      "description": "The workbook's name as uploaded.",
+      "examples": [
+        "Cognizhi-Finance-Hub.xlsx"
+      ],
+      "type": "string"
+    },
+    "format": {
+      "description": "The report's format.",
+      "examples": [
+        "fyniq-migration-report@1"
+      ],
+      "type": "string"
+    },
+    "problems": {
+      "description": "Every problem, by sheet and row.",
+      "items": {
+        "$ref": "MigrationProblem.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "report_sha256": {
+      "description": "The SHA-256 of the report as kept.",
+      "examples": [
+        "9f2c4e…"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The workbook's SHA-256.",
+      "examples": [
+        "4d8057dc…"
+      ],
+      "type": "string"
+    },
+    "sheets": {
+      "description": "Each sheet the import reads, in order.",
+      "items": {
+        "$ref": "MigrationSheetCount.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "state": {
+      "description": "validating: poll the operation, then read again; valid or invalid with the report.",
+      "enum": [
+        "validating",
+        "valid",
+        "invalid"
+      ],
+      "examples": [
+        "valid"
+      ],
+      "type": "string"
+    },
+    "step_id": {
+      "description": "The step that validated it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "validated_at": {
+      "description": "When it was validated.",
+      "examples": [
+        "2026-11-13T09:05:20Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "warnings": {
+      "description": "The warnings.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "year_start": {
+      "description": "Its financial year's start.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "step_id",
+    "state",
+    "errors",
+    "warnings"
+  ],
+  "title": "MigrationReportView",
+  "type": "object"
+}

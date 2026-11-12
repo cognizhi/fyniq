@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is.",
+      "examples": [
+        "MIGRATION-04"
+      ],
+      "type": "string"
+    },
+    "column": {
+      "description": "The column, by its header.",
+      "examples": [
+        "Money out"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Enter it with at most 2 decimals, as the currency has"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What is wrong.",
+      "examples": [
+        "98.125 has more than 2 decimals"
+      ],
+      "type": "string"
+    },
+    "row": {
+      "description": "The sheet's row; absent for the sheet as a whole.",
+      "examples": [
+        8
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "severity": {
+      "description": "An error stops the commit; a warning does not.",
+      "enum": [
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "error"
+      ],
+      "type": "string"
+    },
+    "sheet": {
+      "description": "The sheet; absent for the workbook or the organisation as a whole.",
+      "examples": [
+        "Transactions"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "severity",
+    "code",
+    "message",
+    "fix"
+  ],
+  "title": "MigrationProblem",
+  "type": "object"
+}
