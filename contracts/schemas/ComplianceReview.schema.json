@@ -12,7 +12,9 @@
         "each version",
         "by review date",
         "each processing",
-        "each request"
+        "each request",
+        "each breach",
+        "twice a year"
       ],
       "examples": [
         "quarterly"
@@ -65,7 +67,9 @@
         "risk-review",
         "data-inventory",
         "dpia",
-        "pd-requests"
+        "pd-requests",
+        "breach",
+        "breach-tabletop"
       ],
       "examples": [
         "access-review"

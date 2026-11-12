@@ -217,6 +217,164 @@ func (q *Queries) GetControlState(ctx context.Context, control string) (FyniqCon
 	return i, err
 }
 
+const insertBreach = `-- name: InsertBreach :one
+INSERT INTO fyniq.pd_breach (title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at)
+VALUES ($1, $2, $3, ($3::timestamptz AT TIME ZONE 'Asia/Singapore')::date + 30,
+  $4, $5::text[],
+  ($5::text[] && ARRAY['names', 'identification_numbers']::text[] AND $5::text[] && ARRAY['pay', 'bank_accounts', 'card_numbers']::text[])
+    OR 'credentials' = ANY($5::text[]),
+  $6, $7)
+RETURNING id, title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at
+`
+
+type InsertBreachParams struct {
+	Title       string
+	Description string
+	AwareAt     time.Time
+	Individuals int32
+	Classes     []string
+	RecordedBy  string
+	RecordedAt  time.Time
+}
+
+type InsertBreachRow struct {
+	ID              uuid.UUID
+	Title           string
+	Description     string
+	AwareAt         time.Time
+	AssessmentDueOn time.Time
+	Individuals     int32
+	Classes         []string
+	Prescribed      bool
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// Its assessment is due 30 days after awareness, and the database works out whether its data is prescribed.
+func (q *Queries) InsertBreach(ctx context.Context, arg InsertBreachParams) (InsertBreachRow, error) {
+	row := q.db.QueryRow(ctx, insertBreach,
+		arg.Title,
+		arg.Description,
+		arg.AwareAt,
+		arg.Individuals,
+		arg.Classes,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertBreachRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.AwareAt,
+		&i.AssessmentDueOn,
+		&i.Individuals,
+		&i.Classes,
+		&i.Prescribed,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
+const insertBreachExercise = `-- name: InsertBreachExercise :one
+INSERT INTO fyniq.pd_breach_exercise (held_on, scenario, findings, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, held_on, scenario, findings, recorded_by, recorded_at
+`
+
+type InsertBreachExerciseParams struct {
+	HeldOn     time.Time
+	Scenario   string
+	Findings   string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
+type InsertBreachExerciseRow struct {
+	ID         uuid.UUID
+	HeldOn     time.Time
+	Scenario   string
+	Findings   string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
+func (q *Queries) InsertBreachExercise(ctx context.Context, arg InsertBreachExerciseParams) (InsertBreachExerciseRow, error) {
+	row := q.db.QueryRow(ctx, insertBreachExercise,
+		arg.HeldOn,
+		arg.Scenario,
+		arg.Findings,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertBreachExerciseRow
+	err := row.Scan(
+		&i.ID,
+		&i.HeldOn,
+		&i.Scenario,
+		&i.Findings,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
+const insertBreachStep = `-- name: InsertBreachStep :one
+INSERT INTO fyniq.pd_breach_step (breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference)
+VALUES ($1, $2, $3, $4, $5, $6,
+  CASE WHEN $2::text = 'decided' AND $6::boolean THEN ($3::timestamptz AT TIME ZONE 'Asia/Singapore')::date + 3 END,
+  $7)
+RETURNING id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference
+`
+
+type InsertBreachStepParams struct {
+	BreachID   uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       *string
+	Notifiable *bool
+	Reference  *string
+}
+
+type InsertBreachStepRow struct {
+	ID         uuid.UUID
+	BreachID   uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       *string
+	Notifiable *bool
+	PdpcDueOn  pgtype.Date
+	Reference  *string
+}
+
+func (q *Queries) InsertBreachStep(ctx context.Context, arg InsertBreachStepParams) (InsertBreachStepRow, error) {
+	row := q.db.QueryRow(ctx, insertBreachStep,
+		arg.BreachID,
+		arg.Step,
+		arg.At,
+		arg.ByActor,
+		arg.Note,
+		arg.Notifiable,
+		arg.Reference,
+	)
+	var i InsertBreachStepRow
+	err := row.Scan(
+		&i.ID,
+		&i.BreachID,
+		&i.Step,
+		&i.At,
+		&i.ByActor,
+		&i.Note,
+		&i.Notifiable,
+		&i.PdpcDueOn,
+		&i.Reference,
+	)
+	return i, err
+}
+
 const insertConsentPurpose = `-- name: InsertConsentPurpose :one
 INSERT INTO fyniq.consent_purpose (name, description, audience, needs_consent, created_by, created_at)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -1012,6 +1170,141 @@ func (q *Queries) LatestRiskReviews(ctx context.Context) ([]FyniqRiskReview, err
 			&i.ReviewedAt,
 			&i.Note,
 			&i.NextReviewOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBreachExercises = `-- name: ListBreachExercises :many
+SELECT id, held_on, scenario, findings, recorded_by, recorded_at FROM fyniq.pd_breach_exercise ORDER BY held_on, id
+`
+
+type ListBreachExercisesRow struct {
+	ID         uuid.UUID
+	HeldOn     time.Time
+	Scenario   string
+	Findings   string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
+func (q *Queries) ListBreachExercises(ctx context.Context) ([]ListBreachExercisesRow, error) {
+	rows, err := q.db.Query(ctx, listBreachExercises)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBreachExercisesRow
+	for rows.Next() {
+		var i ListBreachExercisesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldOn,
+			&i.Scenario,
+			&i.Findings,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBreachSteps = `-- name: ListBreachSteps :many
+SELECT id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference FROM fyniq.pd_breach_step ORDER BY at, id
+`
+
+type ListBreachStepsRow struct {
+	ID         uuid.UUID
+	BreachID   uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       *string
+	Notifiable *bool
+	PdpcDueOn  pgtype.Date
+	Reference  *string
+}
+
+func (q *Queries) ListBreachSteps(ctx context.Context) ([]ListBreachStepsRow, error) {
+	rows, err := q.db.Query(ctx, listBreachSteps)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBreachStepsRow
+	for rows.Next() {
+		var i ListBreachStepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.BreachID,
+			&i.Step,
+			&i.At,
+			&i.ByActor,
+			&i.Note,
+			&i.Notifiable,
+			&i.PdpcDueOn,
+			&i.Reference,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBreaches = `-- name: ListBreaches :many
+SELECT id, title, description, aware_at, assessment_due_on, individuals, classes, prescribed, recorded_by, recorded_at FROM fyniq.pd_breach ORDER BY aware_at, id
+`
+
+type ListBreachesRow struct {
+	ID              uuid.UUID
+	Title           string
+	Description     string
+	AwareAt         time.Time
+	AssessmentDueOn time.Time
+	Individuals     int32
+	Classes         []string
+	Prescribed      bool
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// The organisation's breaches, oldest first (CMP-PD-05).
+func (q *Queries) ListBreaches(ctx context.Context) ([]ListBreachesRow, error) {
+	rows, err := q.db.Query(ctx, listBreaches)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBreachesRow
+	for rows.Next() {
+		var i ListBreachesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.AwareAt,
+			&i.AssessmentDueOn,
+			&i.Individuals,
+			&i.Classes,
+			&i.Prescribed,
+			&i.RecordedBy,
+			&i.RecordedAt,
 		); err != nil {
 			return nil, err
 		}

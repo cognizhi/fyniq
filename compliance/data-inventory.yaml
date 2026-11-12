@@ -69,6 +69,15 @@ classes:
     protection: "Read only by the Compliance officer, the Owner and the Auditor"
     transfers: "None"
     columns: [pd_request.requester, pd_request.subject, pd_request.details]
+  - key: breaches
+    what: "Personal-data breaches: what happened, how many people, the kinds of data involved, and each step taken"
+    why: "To assess and report each breach within the law's time, and to show it was (CMP-PD-05)"
+    where: "The database, in Singapore"
+    who: "Appendix D's Data protection (PDPA)"
+    retention: "The records' retention"
+    protection: "Read only by the Compliance officer, the Owner and the Auditor"
+    transfers: "None; a notifiable breach is reported to the PDPC outside Fyniq"
+    columns: [pd_breach.description]
   - key: organisation-contacts
     what: "The company's own published contacts, its Data Protection Officer's name and email among them"
     why: "To print them on documents and give them to people who ask about their personal data (PDPA s11(5))"

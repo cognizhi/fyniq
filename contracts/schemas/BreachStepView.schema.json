@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-10T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "by": {
+      "description": "Who, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What was found or done.",
+      "examples": [
+        "Significant harm likely: pay and names."
+      ],
+      "type": "string"
+    },
+    "notifiable": {
+      "description": "decided's: whether it is notifiable.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "reference": {
+      "description": "pdpc_notified's: the PDPC's reference.",
+      "examples": [
+        "DBN-2026-0123"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "The step.",
+      "enum": [
+        "assessed",
+        "decided",
+        "pdpc_notified",
+        "individuals_notified",
+        "contained",
+        "closed"
+      ],
+      "examples": [
+        "decided"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step",
+    "at",
+    "by"
+  ],
+  "title": "BreachStepView",
+  "type": "object"
+}

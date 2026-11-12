@@ -2036,6 +2036,14 @@
       "label": "What the company holds outside Fyniq",
       "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
     },
+    "data-protection.breaches": {
+      "label": "Breaches",
+      "tooltip": "Each personal-data breach with its timers: assessed within 30 days, and a notifiable one reported to the PDPC within 3 calendar days of the decision."
+    },
+    "data-protection.tabletop": {
+      "label": "Tabletop exercises",
+      "tooltip": "A rehearsal of the breach runbook, twice a year, with what it found."
+    },
     "data-protection.requests": {
       "label": "Requests",
       "tooltip": "Requests to see or correct personal data: each answered within 30 days, or by the day the requester was told in writing."

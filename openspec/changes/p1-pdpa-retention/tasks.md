@@ -281,11 +281,45 @@ event format.
 
 ## 7. The breach register and the tabletop (slice 7)
 
-- [ ] 7.1 `pd_breach` and its steps (D6): the assessment timer (30 days) and the PDPC timer (3 calendar days after the
+- [x] 7.1 `pd_breach` and its steps (D6): the assessment timer (30 days) and the PDPC timer (3 calendar days after the
   decision); the prescribed-data rule, checked against the Notification of Data Breaches Regulations 2021; critical
   notices. The tabletop record. The attestations `breach` and `breach-tabletop`, read by CTL-DP-06. Attack tests and
   matrix rows. `// req: CMP-PD-05`, `// req: CTL-DP-06`
-- [ ] 7.2 The Breaches tab, with its timers. Help keys, guide sections, component tests with axe. `// req: CMP-PD-05`
+
+  **What building added:**
+    - **Tables.** Migration 000306 adds `pd_breach`, `pd_breach_step` and `pd_breach_exercise`, insert-only (FY315) and
+      audited (`breach.recorded`, `breach.<step>`, `breach_exercise.recorded`).
+    - **The database's rules:**
+      - `assessment_due_on` is the day of awareness, in Singapore, plus 30;
+      - `prescribed` is worked out on insert: a name or an identification number together with pay, card or bank
+        account numbers, or with credentials (the Regulations' reg 3 and Schedule);
+      - each step comes once, nothing follows closing, and the decision follows the assessment;
+      - a breach of prescribed data, or of 500 or more people, is never decided not notifiable;
+      - a notifiable decision sets `pdpc_due_on` to its day plus 3; the PDPC step needs that decision and carries the
+        PDPC's reference;
+      - closing needs the decision and, for a notifiable breach, the PDPC step.
+    - **The API:** `listBreaches`, `recordBreach`, `stepBreach` (If-Match `"s<steps>"`), `listBreachExercises` and
+      `recordBreachExercise`, all under "Data protection (PDPA)".
+    - **Notices.** Recording a breach, and deciding it notifiable, send the locked critical notice `pdpa.breach` to the
+      DPO, the Owner and the Auditor. As for requests, no separate overdue emails: the reviews list and the DPO's Inbox
+      show the timers.
+    - **Reviews.** `breach` is overdue while an open breach is past its assessment day or its PDPC day.
+      `breach-tabletop` is due 6 months after the last exercise, or after the organisation's start, and waits from 30
+      days before. CTL-DP-06 reads both.
+    - **Inventory.** It gains the class `breaches`.
+    - **Tests:** `TestTheBreachRegister`, `TestAttackTheBreachRegisterKeepsItsRules`, the breach and tabletop cases of
+      `TestEachReviewReadsItsOwnSource`, and matrix rows.
+
+- [x] 7.2 The Breaches tab, with its timers. Help keys, guide sections, component tests with axe. `// req: CMP-PD-05`
+
+  **What building added:**
+    - **The tab.** Breaches lists each breach with its people, kinds of data, status and the day due next, a
+      **Prescribed data** chip and an overdue chip. It has **Record a breach** and **Next step**, which offers only the
+      steps the database accepts and disables "No" for a breach the law deems notifiable. **Tabletop exercises** lists
+      the rehearsals and has **Record an exercise**.
+    - **Help.** The help keys are `data-protection.breaches` and `data-protection.tabletop`. The guide gains the
+      section "Breaches" on Data protection and two rows of the reviews table, compiled into
+      `compliance.data-protection` and `compliance.reviews`.
 
 ## 8. Overseas transfers (slice 8)
 

@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-08, CMP-PD-09, CTL-DP-05]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06]
 ---
 
 # Keep the data protection registers
@@ -64,6 +64,27 @@ will be answered. **Data held** shows the personal data Fyniq holds about a memb
 is recorded in the audit trail. Corrections are made where the data lives, such as the contact's page.
 
 A request past its day shows as overdue, here and on **Reviews and attestations**.
+
+## Breaches
+
+Record a personal-data breach, or a suspected one, under the **Breaches** tab with **Record a breach** as soon as the
+company becomes aware of it: what happened, how many people it affects as best known, and the kinds of data involved.
+The Compliance officer, the Owner and the Auditor are told at once. Then the PDPA's timers run:
+
+- **Assess it** within 30 days of becoming aware of it.
+- **Decide whether it is notifiable.** A breach is notifiable when it is likely to cause significant harm to the people
+  affected, or when it affects 500 or more people. A name or an identification number together with pay, card or bank
+  account numbers, or with sign-in credentials, is prescribed data: a breach of it is deemed to cause significant harm.
+  Fyniq marks such a breach **Prescribed data** and does not let it be decided not notifiable.
+- **Notify the PDPC** within 3 calendar days of deciding that it is notifiable, and record the PDPC's reference. Tell
+  the people affected too when it is likely to cause them significant harm.
+
+Select **Next step** to record each step: assessed, decided, the PDPC notified, the people told, contained and closed.
+A notifiable breach closes only once the PDPC has been notified. Steps are only ever added, each in the audit trail.
+An assessment or a PDPC report past its day shows as overdue, here and on **Reviews and attestations**.
+
+Rehearse the breach runbook twice a year, and record each rehearsal under **Tabletop exercises** with what it found and
+what changed. The next is due 6 months after the last.
 
 ## The Data Protection Officer
 

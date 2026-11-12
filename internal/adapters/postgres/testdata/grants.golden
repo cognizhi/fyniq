@@ -302,6 +302,12 @@ fyniq_api       INSERT    payment_batch_payment (payment_id, release_id)
 fyniq_api       SELECT    payment_batch_payment
 fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, break_glass_id, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
 fyniq_api       SELECT    payment_batch_release
+fyniq_api       INSERT    pd_breach (assessment_due_on, aware_at, classes, description, individuals, prescribed, recorded_at, recorded_by, title)
+fyniq_api       SELECT    pd_breach
+fyniq_api       INSERT    pd_breach_exercise (findings, held_on, recorded_at, recorded_by, scenario)
+fyniq_api       SELECT    pd_breach_exercise
+fyniq_api       INSERT    pd_breach_step (at, breach_id, by_actor, note, notifiable, pdpc_due_on, reference, step)
+fyniq_api       SELECT    pd_breach_step
 fyniq_api       INSERT    pd_request (created_at, created_by, details, due_on, kind, received_on, requester, subject)
 fyniq_api       SELECT    pd_request
 fyniq_api       INSERT    pd_request_step (at, by_actor, new_due_on, note, outcome, request_id, step)
@@ -623,6 +629,9 @@ fyniq_readonly  SELECT    owner_succession
 fyniq_readonly  SELECT    payee_bank_account
 fyniq_readonly  SELECT    payment_batch_payment
 fyniq_readonly  SELECT    payment_batch_release
+fyniq_readonly  SELECT    pd_breach
+fyniq_readonly  SELECT    pd_breach_exercise
+fyniq_readonly  SELECT    pd_breach_step
 fyniq_readonly  SELECT    pd_request
 fyniq_readonly  SELECT    pd_request_step
 fyniq_readonly  SELECT    period
@@ -845,6 +854,9 @@ fyniq_worker    SELECT    owner_succession
 fyniq_worker    SELECT    payee_bank_account
 fyniq_worker    SELECT    payment_batch_payment
 fyniq_worker    SELECT    payment_batch_release
+fyniq_worker    SELECT    pd_breach
+fyniq_worker    SELECT    pd_breach_exercise
+fyniq_worker    SELECT    pd_breach_step
 fyniq_worker    SELECT    pd_request
 fyniq_worker    SELECT    pd_request_step
 fyniq_worker    SELECT    period

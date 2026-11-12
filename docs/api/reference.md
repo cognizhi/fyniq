@@ -12339,6 +12339,122 @@ The status of long work the caller asked for, which runs in the background (FR-I
 
 Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02).
 
+### `GET /v1/compliance/breach-exercises`
+
+**List the tabletop exercises** (`listBreachExercises`)
+
+The tabletop exercises of the breach runbook (CTL-DP-06), held twice a year. Read-only; no side effects.
+
+- **Permission:** View on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Responses:**
+  - `200` OK [`ExercisesOutputBody`](../../contracts/schemas/ExercisesOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/breach-exercises`
+
+**Record a tabletop exercise** (`recordBreachExercise`)
+
+Records a tabletop exercise of the breach runbook, with its scenario and findings (CTL-DP-06): the next is due 6 months on. Side effects: the exercise, the audit event breach_exercise.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`BreachExerciseInput`](../../contracts/schemas/BreachExerciseInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BreachExerciseView`](../../contracts/schemas/BreachExerciseView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-BREACH-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/breaches`
+
+**List the breach register** (`listBreaches`)
+
+Every personal-data breach (CMP-PD-05) with its PDPA timers: the assessment, due 30 days after awareness, and, once decided notifiable, the PDPC's notification, due 3 calendar days after the decision; whether its data is prescribed; and its steps. Read-only; no side effects.
+
+- **Permission:** View on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Responses:**
+  - `200` OK [`BreachesOutputBody`](../../contracts/schemas/BreachesOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/breaches`
+
+**Record a personal-data breach** (`recordBreach`)
+
+Records a breach, or a suspected one, as soon as the company becomes aware of it (CMP-PD-05): its assessment is due 30 days on. Fyniq works out whether its data is prescribed, which makes it notifiable. Side effects: the breach, the audit event breach.recorded, a critical notice to the Compliance officer, the Owner and the Auditor. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`BreachInput`](../../contracts/schemas/BreachInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BreachView`](../../contracts/schemas/BreachView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-BREACH-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/breaches/{breach_id}/steps`
+
+**Add a breach's next step** (`stepBreach`)
+
+Records that a breach was assessed, decided notifiable or not (a breach of prescribed data, or of 500 or more people, is notifiable), reported to the PDPC with its reference, told to the people affected, contained, or closed (CMP-PD-05). Deciding it notifiable starts the PDPC's 3 calendar days and sends a critical notice. Side effects: the step, the audit event breach.<step>. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)
+- **Parameters:**
+  - `breach_id` (path, required): The breach.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`BreachStepInput`](../../contracts/schemas/BreachStepInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BreachView`](../../contracts/schemas/BreachView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BREACH-01` A breach's steps come in order, and a breach of prescribed data is notifiable; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-BREACH-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/calendar`
 
 **Get the statutory calendar** (`getStatutoryCalendar`)
@@ -13116,7 +13232,7 @@ Records that the caller read and accepts the published version (CMP-07): each me
 
 **List the recurring reviews and attestations** (`listComplianceReviews`)
 
-Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments and the access and correction requests. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
+Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
 
 - **Permission:** View on Compliance Center
 - **Responses:**

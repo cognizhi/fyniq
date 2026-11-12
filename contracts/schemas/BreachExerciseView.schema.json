@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "description": "What it found and what changed.",
+      "examples": [
+        "The runbook now names who calls the PDPC."
+      ],
+      "type": "string"
+    },
+    "held_on": {
+      "description": "When it was held.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The exercise.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The breach it rehearsed.",
+      "examples": [
+        "A laptop with the payroll export is stolen."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "held_on",
+    "scenario",
+    "findings",
+    "recorded_by"
+  ],
+  "title": "BreachExerciseView",
+  "type": "object"
+}

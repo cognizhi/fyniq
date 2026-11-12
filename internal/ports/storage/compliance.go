@@ -231,15 +231,15 @@ const CodeDPIA = "STORAGE-DPIA-01"
 
 // DPIAVersion is a version of a data protection impact assessment (CMP-PD-08, design D4).
 type DPIAVersion struct {
-	Key       string // payroll, ai-assistant, or other-<uuid>
-	Version   int
-	Title     string
-	Body      string
-	SHA256    []byte
-	From      string     // fyniq-dpia-draft@1, or organisation
-	EntryID   *uuid.UUID // the inventory entry it assesses, if any
-	SavedBy   string
-	SavedAt   time.Time
+	Key     string // payroll, ai-assistant, or other-<uuid>
+	Version int
+	Title   string
+	Body    string
+	SHA256  []byte
+	From    string     // fyniq-dpia-draft@1, or organisation
+	EntryID *uuid.UUID // the inventory entry it assesses, if any
+	SavedBy string
+	SavedAt time.Time
 }
 
 // DPIAApproval is the Compliance officer's approval of an assessment's version.
@@ -278,6 +278,46 @@ type PDRequestStep struct {
 	Outcome  string     // an answer's: provided, corrected, partly or refused
 }
 
+// CodeBreach is the database's refusal of a breach's step out of order, of a breach of prescribed data or of 500 or more
+// people decided not notifiable, of the PDPC notified of a breach not decided notifiable, or of any change (FY315).
+const CodeBreach = "STORAGE-BREACH-01"
+
+// Breach is a personal-data breach (CMP-PD-05, design D6), with its steps.
+type Breach struct {
+	ID              uuid.UUID
+	Title           string
+	Description     string
+	AwareAt         time.Time
+	AssessmentDueOn time.Time // 30 days after awareness, in Singapore
+	Individuals     int
+	Classes         []string // names, identification_numbers, pay, bank_accounts, card_numbers, credentials, contact_details, other
+	Prescribed      bool     // deemed to cause significant harm (the Notification of Data Breaches Regulations 2021)
+	RecordedBy      string
+	RecordedAt      time.Time
+	Steps           []BreachStep // oldest first
+}
+
+// BreachStep is a breach's step: assessed, decided, pdpc_notified, individuals_notified, contained or closed.
+type BreachStep struct {
+	Step       string
+	At         time.Time
+	By         string
+	Note       string
+	Notifiable *bool      // decided's
+	PDPCDueOn  *time.Time // decided notifiable's: 3 calendar days on
+	Reference  string     // pdpc_notified's
+}
+
+// BreachExercise is a tabletop exercise of the breach runbook (CTL-DP-06).
+type BreachExercise struct {
+	ID         uuid.UUID
+	HeldOn     time.Time
+	Scenario   string
+	Findings   string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -288,6 +328,16 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// Breaches are the organisation's breaches with their steps, oldest first (CMP-PD-05).
+	Breaches(ctx context.Context) ([]Breach, error)
+	// RecordBreach records a breach, its assessment due 30 days after awareness, audited as breach.recorded.
+	RecordBreach(ctx context.Context, b Breach) (Breach, error)
+	// StepBreach adds a breach's step, audited as breach.<step>; CodeBreach when it is out of order.
+	StepBreach(ctx context.Context, id uuid.UUID, s BreachStep) error
+	// BreachExercises are the tabletop exercises, oldest first (CTL-DP-06).
+	BreachExercises(ctx context.Context) ([]BreachExercise, error)
+	// RecordBreachExercise records a tabletop exercise, audited as breach_exercise.recorded.
+	RecordBreachExercise(ctx context.Context, e BreachExercise) (BreachExercise, error)
 	// PDRequests are the organisation's access and correction requests with their steps, oldest first (CMP-PD-04).
 	PDRequests(ctx context.Context) ([]PDRequest, error)
 	// RecordPDRequest records a request, due 30 days after receipt, audited as pd_request.received.

@@ -4,7 +4,7 @@ type: task
 title: Sign off the recurring reviews
 summary: Reviews and attestations - the recurring reviews, who signs each off, when each is overdue and where to sign it
 sources:
-  - docs/user-guide/compliance-reviews.md sha256:883af3d02511503f82adf60c756fead23eb46880394f23f40c3956a9cf0e9635
+  - docs/user-guide/compliance-reviews.md sha256:fb67128e1c8031b3ab3ff7f2965e2376993d1e734e0f4677d885ca14625f24d0
 data_class: general
 taint: trusted
 status: published
@@ -43,6 +43,8 @@ aliases:
 - **Data inventory review**: the Compliance officer; overdue 14 days after the quarter ends; on Compliance › Data protection ([[compliance.data-protection]]).
 - **Impact assessment**: the Compliance officer; overdue as soon as a processing that needs one goes on without an approved one; on Compliance › Data protection.
 - **Access or correction request**: the Compliance officer; overdue 30 days after it was received, or the day its written extension names; on Compliance › Data protection.
+- **Breach**: the Compliance officer; overdue 30 days after the company became aware of it, then 3 calendar days after it was decided notifiable; on Compliance › Data protection.
+- **Breach tabletop exercise**: the Compliance officer; overdue 6 months after the last exercise; on Compliance › Data protection.
 - **Due** waits within its time; **Overdue** is past it, and more than 14 days past its due date it is also **Over 14 days**; **Signed off** means nothing waits; **Nothing due** means nothing has fallen due yet; **Not needed** means the team mode does not call for it (Standard and Enterprise modes approve before the action).
 
 (src: docs/user-guide/compliance-reviews.md#the-reviews)

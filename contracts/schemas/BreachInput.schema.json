@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aware_at": {
+      "description": "When the company became aware of it; left out, now. Never later than now.",
+      "examples": [
+        "2026-11-09T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "classes": {
+      "description": "The kinds of data involved.",
+      "items": {
+        "description": "A kind of data: a name or identification number with pay, card or bank account numbers, or credentials, is prescribed.",
+        "enum": [
+          "names",
+          "identification_numbers",
+          "pay",
+          "bank_accounts",
+          "card_numbers",
+          "credentials",
+          "contact_details",
+          "other"
+        ],
+        "examples": [
+          "pay"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "description": {
+      "description": "What happened, as known now.",
+      "examples": [
+        "The October payroll file went to a supplier's address."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "individuals": {
+      "description": "How many people, as best known.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "title": {
+      "description": "What happened, in a few words.",
+      "examples": [
+        "A payroll file emailed to the wrong person"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "individuals",
+    "classes"
+  ],
+  "title": "BreachInput",
+  "type": "object"
+}

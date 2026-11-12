@@ -23,6 +23,8 @@ const inventory = {
 // req: CMP-PD-09
 // req: CMP-PD-08
 // req: CMP-PD-04
+// req: CMP-PD-05
+// req: CTL-DP-06
 describe("Compliance › Data protection", () => {
   it("shows the inventory, what is never held, the schedule and the review overdue; axe finds nothing", async () => {
     answer({ "GET /v1/compliance/data-inventory": { status: 200, body: inventory } });
@@ -128,5 +130,59 @@ describe("Compliance › Data protection", () => {
     const step = seen.find((x) => x.path === "/v1/compliance/personal-data-requests/r-1/steps")!;
     expect(step.body).toEqual({ step: "answered", outcome: "corrected" });
     expect(step.headers.get("If-Match")).toBe('"s1"');
+  });
+
+  it("lists the breaches with their timers, records one and its decision, and records a tabletop exercise; axe finds nothing", async () => {
+    const breach = { id: "b-1", title: "Payroll file sent to the wrong address", description: "The October file went to a supplier.", aware_at: "2026-11-01T02:00:00Z", individuals: 12,
+      classes: ["names", "pay"], prescribed: true, assessment_due_on: "2026-12-01", assessment_overdue: false, pdpc_due_on: null, pdpc_overdue: false, status: "assessed",
+      steps: [{ step: "assessed", at: "2026-11-02T02:00:00Z", by: "user:u-1" }] };
+    const late = { ...breach, id: "b-2", title: "Laptop lost", classes: ["contact_details"], prescribed: false, individuals: 3, status: "decided", notifiable: true,
+      pdpc_due_on: "2026-11-05", pdpc_overdue: true, steps: [...breach.steps, { step: "decided", at: "2026-11-02T03:00:00Z", by: "user:u-1", notifiable: true }] };
+    const seen = answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/breaches": { status: 200, body: { items: [breach, late] } },
+      "GET /v1/compliance/breach-exercises": { status: 200, body: { items: [] } },
+      "POST /v1/compliance/breaches": { status: 201, body: breach },
+      "POST /v1/compliance/breaches/b-1/steps": { status: 201, body: late },
+      "POST /v1/compliance/breach-exercises": { status: 201, body: { id: "x-1", held_on: "2026-11-06", scenario: "A lost laptop", findings: "Rotate keys sooner", recorded_by: "user:u-1", recorded_at: "2026-11-06T02:00:00Z" } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Breaches" }));
+    const list = await screen.findByRole("list", { name: "Breach register" });
+    expect(within(list).getByText("Prescribed data")).toBeTruthy();
+    expect(within(list).getByText("PDPC overdue")).toBeTruthy();
+    expect(within(list).getByText(/Notify the PDPC by/)).toBeTruthy();
+    await noViolations();
+
+    fireEvent.click(screen.getByRole("button", { name: /Record a breach/ }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("What happened, in a few words"), { target: { value: "Payroll file sent to the wrong address" } });
+    fireEvent.change(within(dialog).getByLabelText("How many people, as best known"), { target: { value: "12" } });
+    fireEvent.click(within(dialog).getByLabelText("Names"));
+    fireEvent.click(within(dialog).getByLabelText("Pay"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record it" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/breaches")).toBe(true));
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/compliance/breaches")?.body).toEqual({
+      title: "Payroll file sent to the wrong address", description: "", individuals: 12, classes: ["names", "pay"] });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(within(list).getByRole("button", { name: "Next step for Payroll file sent to the wrong address" }));
+    dialog = await screen.findByRole("dialog");
+    expect((within(dialog).getByLabelText("No") as HTMLInputElement).disabled).toBe(true);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record the step" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/breaches/b-1/steps")).toBe(true));
+    const step = seen.find((x) => x.path === "/v1/compliance/breaches/b-1/steps")!;
+    expect(step.body).toEqual({ step: "decided", notifiable: true });
+    expect(step.headers.get("If-Match")).toBe('"s1"');
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: /Record an exercise/ }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Held on"), { target: { value: "2026-11-06" } });
+    fireEvent.change(within(dialog).getByLabelText("The breach rehearsed"), { target: { value: "A lost laptop" } });
+    fireEvent.change(within(dialog).getByLabelText("What it found and what changed"), { target: { value: "Rotate keys sooner" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record it" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/breach-exercises")).toBe(true));
+    expect(seen.find((x) => x.path === "/v1/compliance/breach-exercises" && x.method === "POST")?.body).toEqual({ held_on: "2026-11-06", scenario: "A lost laptop", findings: "Rotate keys sooner" });
   });
 });
