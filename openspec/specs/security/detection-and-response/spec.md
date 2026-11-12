@@ -27,13 +27,19 @@ Source: PRD-001 §13.4 · Priority M · Phase P1
 - **THEN** an alert is raised
 
 ### Requirement: SEC-31 Security alerting
-The system SHALL alert on impossible travel or new-device sign-ins for admins, vendor bank changes, mass exports, repeated authorisation failures, AI red-team pattern hits and audit-chain verification failures.
+The system SHALL alert on impossible travel or new-device sign-ins for admins, vendor bank changes, mass exports, repeated authorisation failures, AI red-team pattern hits and audit-chain verification failures. (rev 0.246) Location comes from the load balancer's country and region headers, a stand-in locally; no GeoIP database.
 
 Source: PRD-001 §13.4 · Priority M · Phase P1
 
 #### Scenario: Unusual admin sign-in
 - **WHEN** an admin signs in with impossible travel or from a new device
 - **THEN** an alert is raised
+
+#### Scenario: Where a sign-in came from
+- **GIVEN** the owner's decision of 10 Nov 2026 (rev 0.246)
+- **WHEN** an admin signs in behind the load balancer
+- **THEN** the sign-in's country and region are the ones the load balancer's geolocation headers give
+- **AND** a sign-in from another country sooner than travel allows is impossible travel
 
 #### Scenario: Vendor bank change or mass export
 - **WHEN** a vendor's bank details change or a mass export runs

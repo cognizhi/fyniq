@@ -292,6 +292,25 @@ The purge of AI conversations moved to `p1-ai-assistant`, which keeps the conver
 
 **Wave 7 · Hardening, migration and readiness.**
 
+`p1-security-hardening` is proposed (10 Nov 2026), ahead of wave 6, whose changes all come after go-live. It builds:
+- the release workflow that signs and attests what Binary Authorization admits;
+- reproducible images;
+- one egress client and private endpoints;
+- the edge with Cloud Armor, and per-IP limits;
+- signed downloads;
+- security alerts;
+- the central log store and cloud posture;
+- DAST;
+- the incident runbook and register;
+- the About dialog.
+
+By the owner's decisions of the same day (PRD-001 rev 0.246):
+- provenance and keyless signatures come from the GitHub Actions release workflow;
+- impossible travel is judged from the load balancer's geolocation headers;
+- the DAST baseline runs in CI against the local stack, and on staging once it exists.
+
+Its cloud parts are code with module tests, verified in the dev cloud later.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

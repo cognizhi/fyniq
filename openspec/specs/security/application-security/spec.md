@@ -41,7 +41,7 @@ Source: PRD-001 §13.3 · Priority M · Phase P0
 - **THEN** the change cannot be merged
 
 ### Requirement: SEC-22 Signed images with provenance and deploy-time enforcement
-Container images SHALL be signed with build provenance (Cloud Build produces SLSA level 3 provenance), and deployment SHALL be enforced with Binary Authorization (free for Cloud Run).
+Container images SHALL be signed with build provenance, and deployment SHALL be enforced with Binary Authorization (free for Cloud Run). (rev 0.246) The GitHub Actions release workflow signs keyless and attests SLSA Build L3 provenance (slsa-github-generator); Cloud Build's was not chosen.
 
 Source: PRD-001 §13.3 · Priority M · Phase P0 (signing) / P1 (SLSA provenance, Binary Authorization)
 
@@ -50,8 +50,9 @@ Source: PRD-001 §13.3 · Priority M · Phase P0 (signing) / P1 (SLSA provenance
 - **THEN** it is signed
 
 #### Scenario: SLSA level 3 provenance
-- **WHEN** Cloud Build builds an image
-- **THEN** it produces SLSA level 3 build provenance for it
+- **WHEN** the release workflow builds an image on a release tag
+- **THEN** it signs it keyless with the workflow's OIDC identity
+- **AND** it attests SLSA Build L3 provenance for it, naming the workflow and the repository
 
 #### Scenario: Binary Authorization at deploy time
 - **WHEN** an image is deployed

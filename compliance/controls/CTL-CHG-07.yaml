@@ -2,7 +2,7 @@
 # kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
 id: CTL-CHG-07
 section: "F.4"
-control: "Security tests mapped to ASVS IDs; DAST baseline scan on staging"
+control: "Security tests mapped to ASVS IDs; DAST baseline scan on staging. (rev 0.246, the owner's decision of 10 Nov 2026) In CI against the local stack built from the images, nightly on staging once it exists [live-verify]"
 mapping: "ISO 8.29; ASVS"
 automated_check: "CI / nightly"
 frequency: "CI, N"
