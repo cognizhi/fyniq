@@ -4,7 +4,7 @@ type: task
 title: Keep the data protection registers
 summary: The PDPA programme - the data inventory and its quarterly review, impact assessments, access requests, breaches, overseas transfers and the DPO
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:671d32ac0ddf7a5cc454561d5e1dcb50cbb42e5056cf684de92a031832dbd0b1
+  - docs/user-guide/compliance-data-protection.md sha256:08305624cf63173b430960db023547fd9687cd6d69e57fe47625db5db92c2477
 data_class: general
 taint: trusted
 status: published
@@ -27,6 +27,10 @@ aliases:
   - overseas transfer
   - transfer limitation
   - data leaving Singapore
+  - crypto-shredding
+  - shred personal data
+  - anonymise a contact
+  - right to be forgotten
 ---
 
 # Keep the data protection registers
@@ -95,6 +99,15 @@ aliases:
 - A review is due from 30 days before its day; a flow without an assessment, or a transfer past its review, shows here and on **Reviews and attestations** ([[compliance.reviews]]).
 
 (src: docs/user-guide/compliance-data-protection.md#overseas-transfers)
+
+## Shredding at the end of retention
+
+- A person's name, email addresses, phone and address in the audit trail are sealed under a key of their own for each financial year ([[compliance.audit-trail]]).
+- Once a year's records' retention has ended (**Records kept for**, at least 7 years after the year ends; [[settings.organisation]]), the year is listed under **Shredding** and the Compliance officer is told; nothing is shredded until they select **Approve**, confirming it is them.
+- The next daily run writes a signed entry to the shredding register, then deletes the year's keys: the values no longer open and show as **Shredded**, while the events and their proof stay and the trail still verifies. It cannot be undone; a restore from an older backup shreds them again.
+- When a request is honoured or a purpose ends, **Anonymise** on the answered request (under **Requests**) replaces the contact's emails and phone and sets their address to Anonymised, keeping their name and every issued document ([[contacts.manage]]); **Anonymised contacts** lists each one. A request alone does not shred the trail's values while their retention continues.
+
+(src: docs/user-guide/compliance-data-protection.md#shredding-at-the-end-of-retention)
 
 ## The Data Protection Officer
 

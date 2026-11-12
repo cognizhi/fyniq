@@ -21,10 +21,10 @@ import (
 
 // Personal values in the trail are sealed under the person's key (migration 000308, fyniq-audit-event@3; §11.8, design
 // D8): an individual contact's and an invitee's names, emails, phone and address never reach the body, while a
-// company's do; one key serves a person's events of a financial year; the values open with OpenSealed, and once the
-// key is gone they read as shredded; the chain still verifies; the API, the worker and the executor add and read keys
-// and none deletes one, a key never changes, the owner deletes none outside a shredding run, and another organisation
-// sees none.
+// company's do; one key serves a person's events of a financial year; the values open with OpenSealed; the chain
+// verifies; the API, the worker and the executor add and read keys and none deletes one, a key never changes, the owner
+// deletes none outside a shredding run, and another organisation sees none. The shredding itself is
+// TestAttackShreddingNeedsTheDPOAndTheRegister's.
 // req: AUD-02
 // req: SEC-11
 // req: QA-ENG-05
@@ -173,31 +173,4 @@ func TestPersonalValuesAreSealedUnderThePersonsKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Once the key is gone (as the shredding run deletes it), the values read as shredded and the chain still verifies.
-	if err := asOrg(ctx, conn(t, "fyniq_migrator"), a.Org, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `SELECT set_config('fyniq.shredding_run', $1, true)`, uuid.NewString()); err != nil {
-			return err
-		}
-		_, err := tx.Exec(ctx, `DELETE FROM fyniq.person_key WHERE id = $1`, keyID)
-		return err
-	}); err != nil {
-		t.Fatal(err)
-	}
-	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		opened, err = u.Audit().OpenSealed(ctx, sealed)
-		return err
-	}); err != nil {
-		t.Fatal(err)
-	}
-	for i, o := range opened {
-		switch {
-		case sealed[i].Key == keyID && (!o.Shredded || o.Value != ""):
-			t.Errorf("a value of the shredded year: %+v", o)
-		case sealed[i].Key != keyID && (o.Shredded || o.Value == ""):
-			t.Errorf("a value of the later year does not open: %+v", o)
-		}
-	}
-	if _, err := audit.Chain(events(t, a.Org)); err != nil {
-		t.Errorf("the chain after shredding: %v", err)
-	}
 }

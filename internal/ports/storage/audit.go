@@ -129,10 +129,13 @@ type SealedValue struct {
 	Text    []byte
 }
 
-// OpenedValue is a sealed value opened: the value, or Shredded once its person's key is gone at the end of retention.
+// OpenedValue is a sealed value opened: the value, or Shredded once its person's key is gone at the end of retention,
+// with the financial year (its last day) and the day its run shredded it, when a run did.
 type OpenedValue struct {
-	Value    string
-	Shredded bool
+	Value      string
+	Shredded   bool
+	Cohort     *time.Time
+	ShreddedOn *time.Time
 }
 
 // NewAuditRecovery is a recovery from a restore behind the anchors (design D8): the epoch it starts, the restored head

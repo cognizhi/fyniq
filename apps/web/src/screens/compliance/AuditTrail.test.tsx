@@ -87,7 +87,7 @@ describe("the audit trail", () => {
         status: 200,
         body: { ...view, ...person, changes: [
           { field: "legal_name", before: "Ada Tan", after: "Ada Lim", sealed: "opened" },
-          { field: "phone", before: null, after: null, sealed: "shredded" },
+          { field: "phone", before: null, after: null, sealed: "shredded", shredded_year: "2019-12-31", shredded_on: "2027-01-03T17:50:00Z" },
         ] },
       },
     });
@@ -97,6 +97,7 @@ describe("the audit trail", () => {
     expect(rows[1]!.textContent).toContain("Ada Lim");
     expect(within(rows[1]!).getByText("Sealed")).toBeTruthy();
     expect(within(rows[2]!).getByText("Shredded")).toBeTruthy();
+    expect(rows[2]!.textContent).toContain("year ending 31 Dec 2019");
     await noViolations(document.body);
   });
 

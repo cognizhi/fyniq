@@ -503,3 +503,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md, compliance-reviews.md → compliance.data-protection, compliance.reviews (overseas transfers, CMP-PD-06, CTL-DP-07)
 
 ## [2026-11-10] compile | docs/user-guide/contacts-and-items.md, audit-trail.md → contacts.manage, compliance.audit-trail (a person or a company; sealed and shredded personal values, §11.8)
+
+## [2026-11-10] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (shredding at the end of retention and anonymisation, §11.8, §11.9)

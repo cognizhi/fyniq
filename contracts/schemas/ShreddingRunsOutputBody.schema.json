@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The runs, by financial year.",
+      "items": {
+        "$ref": "ShreddingRunView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ShreddingRunsOutputBody",
+  "type": "object"
+}

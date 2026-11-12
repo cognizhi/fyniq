@@ -2040,6 +2040,14 @@
       "label": "What the company holds outside Fyniq",
       "tooltip": "Personal data the company processes elsewhere, such as job applicants' CVs; each change is kept as a version."
     },
+    "data-protection.shredding": {
+      "label": "Shredding",
+      "tooltip": "Each financial year past the records' retention: its people's keys wait for the DPO's approval, then go, so their personal values in the audit trail no longer open."
+    },
+    "data-protection.anonymise": {
+      "label": "Anonymise",
+      "tooltip": "Replace a person's contact details the records do not need, once their request is honoured or their purpose ends: their emails and phone go, their address reads Anonymised, their name stays."
+    },
     "data-protection.transfers": {
       "label": "Transfers",
       "tooltip": "Each transfer of personal data out of Singapore, with what protects it there, when it was assessed and when it is reviewed next."

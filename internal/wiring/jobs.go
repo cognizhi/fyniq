@@ -63,6 +63,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},
+		"pdpa.shred": func(ctx context.Context) error { // §11.8: years past their retention listed, approved runs shredded
+			_, err := audit.ShredAll(ctx, k.Store, k.Blobs, k.Signer, k.TellShredding(clock), clock)
+			return err
+		},
 		"idempotency.purge": func(ctx context.Context) error {
 			_, err := PurgeIdempotencyKeys(ctx, k.Store, clock.Now())
 			return err
@@ -269,6 +273,18 @@ func (k *Kit) TellRecovery(clock ports.Clock) audit.Tell {
 		_, err = notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AuditRecoveredType, RecordType: "audit_recovery", RecordID: &r.ID,
 			Title: fmt.Sprintf("A restore landed behind the audit trail's anchors: events %d to %d are no longer proven. Follow the restore runbook, then acknowledge it",
 				r.MissingFrom, r.MissingTo), Link: "/compliance/audit-trail", Audience: notify.Audience{Users: users}, At: clock.Now()})
+		return err
+	}
+}
+
+// TellShredding tells those who approve on "Data protection (PDPA)", the DPO, that a year's person keys wait for their
+// approval to be shredded (§11.8, design D9).
+func (k *Kit) TellShredding(clock ports.Clock) audit.TellShredding {
+	d := k.dispatcher(clock)
+	return func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, r storage.ShreddingRun) error {
+		_, err := notify.Emit(ctx, d, u, org, notify.Event{Type: notify.ShreddingDueType, RecordType: "pd_shredding_run", RecordID: &r.ID,
+			Title: fmt.Sprintf("The personal data of the year ending %s has passed its retention: approve its shredding", r.Cohort.Format("2 Jan 2006")),
+			Link:  "/compliance/data-protection", Audience: notify.Audience{Capability: string(authz.DataProtection), Need: "A"}, At: clock.Now()})
 		return err
 	}
 }

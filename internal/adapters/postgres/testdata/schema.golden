@@ -1326,6 +1326,15 @@ payment_batch_release | currency | text | not null |
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
 payment_batch_release | break_glass_id | uuid | null | 
+pd_anonymisation | organisation_id | uuid | not null | current_org()
+pd_anonymisation | id | uuid | not null | uuidv7()
+pd_anonymisation | contact_id | uuid | not null | 
+pd_anonymisation | request_id | uuid | null | 
+pd_anonymisation | reason | text | not null | 
+pd_anonymisation | register | text | not null | 
+pd_anonymisation | anonymised_by | text | not null | 
+pd_anonymisation | anonymised_at | timestamp with time zone | not null | 
+pd_anonymisation | reapplied | boolean | not null | false
 pd_breach | organisation_id | uuid | not null | current_org()
 pd_breach | id | uuid | not null | uuidv7()
 pd_breach | title | text | not null | 
@@ -1373,6 +1382,18 @@ pd_request_step | by_actor | text | not null |
 pd_request_step | note | text | null | 
 pd_request_step | new_due_on | date | null | 
 pd_request_step | outcome | text | null | 
+pd_shredding_run | organisation_id | uuid | not null | current_org()
+pd_shredding_run | id | uuid | not null | uuidv7()
+pd_shredding_run | cohort | date | not null | 
+pd_shredding_run | keys | uuid[] | not null | 
+pd_shredding_run | listed_at | timestamp with time zone | not null | 
+pd_shredding_run | status | text | not null | 'listed'::text
+pd_shredding_run | approved_by | text | null | 
+pd_shredding_run | approved_at | timestamp with time zone | null | 
+pd_shredding_run | register | text | null | 
+pd_shredding_run | done_at | timestamp with time zone | null | 
+pd_shredding_run | reapplied | boolean | not null | false
+pd_shredding_run | version | integer | not null | 1
 pd_transfer | organisation_id | uuid | not null | current_org()
 pd_transfer | id | uuid | not null | uuidv7()
 pd_transfer | transfer_id | uuid | not null | 
@@ -3953,6 +3974,21 @@ payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organi
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
 payment_batch_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_anonymisation | pd_anonymisation_anonymised_at_not_null | NOT NULL anonymised_at
+pd_anonymisation | pd_anonymisation_anonymised_by_not_null | NOT NULL anonymised_by
+pd_anonymisation | pd_anonymisation_by_format | CHECK ((anonymised_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_anonymisation | pd_anonymisation_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+pd_anonymisation | pd_anonymisation_contact_id_not_null | NOT NULL contact_id
+pd_anonymisation | pd_anonymisation_id_not_null | NOT NULL id
+pd_anonymisation | pd_anonymisation_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_anonymisation | pd_anonymisation_organisation_id_not_null | NOT NULL organisation_id
+pd_anonymisation | pd_anonymisation_pkey | PRIMARY KEY (organisation_id, id)
+pd_anonymisation | pd_anonymisation_reapplied_not_null | NOT NULL reapplied
+pd_anonymisation | pd_anonymisation_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 1000)))
+pd_anonymisation | pd_anonymisation_reason_not_null | NOT NULL reason
+pd_anonymisation | pd_anonymisation_register_format | CHECK ((register ~ '^pdpa-anonymisation/[0-9a-f-]{36}/[0-9a-f-]{36}\.json$'::text))
+pd_anonymisation | pd_anonymisation_register_not_null | NOT NULL register
+pd_anonymisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pd_breach | pd_breach_assessment_due | CHECK ((assessment_due_on = (((aware_at AT TIME ZONE 'Asia/Singapore'::text))::date + 30)))
 pd_breach | pd_breach_assessment_due_on_not_null | NOT NULL assessment_due_on
 pd_breach | pd_breach_aware_at_not_null | NOT NULL aware_at
@@ -4033,6 +4069,25 @@ pd_request_step | pd_request_step_request_fkey | FOREIGN KEY (organisation_id, r
 pd_request_step | pd_request_step_request_id_not_null | NOT NULL request_id
 pd_request_step | pd_request_step_step_not_null | NOT NULL step
 pd_request_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pd_shredding_run | pd_shredding_run_approval | CHECK ((((status = 'listed'::text) = (approved_by IS NULL)) AND ((approved_by IS NULL) = (approved_at IS NULL))))
+pd_shredding_run | pd_shredding_run_approved_by_format | CHECK ((approved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+pd_shredding_run | pd_shredding_run_cohort_not_null | NOT NULL cohort
+pd_shredding_run | pd_shredding_run_cohort_once | UNIQUE (organisation_id, cohort)
+pd_shredding_run | pd_shredding_run_done | CHECK ((((status = 'done'::text) = (done_at IS NOT NULL)) AND ((status <> 'done'::text) OR (register IS NOT NULL))))
+pd_shredding_run | pd_shredding_run_id_not_null | NOT NULL id
+pd_shredding_run | pd_shredding_run_keys_count | CHECK (((cardinality(keys) >= 1) AND (cardinality(keys) <= 1000000)))
+pd_shredding_run | pd_shredding_run_keys_not_null | NOT NULL keys
+pd_shredding_run | pd_shredding_run_listed_at_not_null | NOT NULL listed_at
+pd_shredding_run | pd_shredding_run_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+pd_shredding_run | pd_shredding_run_organisation_id_not_null | NOT NULL organisation_id
+pd_shredding_run | pd_shredding_run_pkey | PRIMARY KEY (organisation_id, id)
+pd_shredding_run | pd_shredding_run_reapplied_not_null | NOT NULL reapplied
+pd_shredding_run | pd_shredding_run_register_format | CHECK ((register ~ '^pdpa-shredding/[0-9a-f-]{36}/[0-9a-f-]{36}\.json$'::text))
+pd_shredding_run | pd_shredding_run_status_known | CHECK ((status = ANY (ARRAY['listed'::text, 'approved'::text, 'done'::text])))
+pd_shredding_run | pd_shredding_run_status_not_null | NOT NULL status
+pd_shredding_run | pd_shredding_run_version_not_null | NOT NULL version
+pd_shredding_run | pd_shredding_run_version_positive | CHECK ((version > 0))
+pd_shredding_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pd_transfer | pd_transfer_assessed_by_not_null | NOT NULL assessed_by
 pd_transfer | pd_transfer_assessed_on_not_null | NOT NULL assessed_on
 pd_transfer | pd_transfer_basis_known | CHECK ((basis = ANY (ARRAY['contract'::text, 'binding_corporate_rules'::text, 'other_instrument'::text, 'certification'::text, 'consent'::text])))
@@ -4840,6 +4895,7 @@ CREATE INDEX operation_job ON fyniq.operation USING btree (organisation_id, job_
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
+CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (organisation_id, contact_id)
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
@@ -5080,11 +5136,14 @@ CREATE UNIQUE INDEX payment_batch_payment_once ON fyniq.payment_batch_payment US
 CREATE UNIQUE INDEX payment_batch_payment_pkey ON fyniq.payment_batch_payment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payment_batch_release_once ON fyniq.payment_batch_release USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX payment_batch_release_pkey ON fyniq.payment_batch_release USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_anonymisation_pkey ON fyniq.pd_anonymisation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_exercise_pkey ON fyniq.pd_breach_exercise USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_pkey ON fyniq.pd_breach USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_step_pkey ON fyniq.pd_breach_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_pkey ON fyniq.pd_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_request_step_pkey ON fyniq.pd_request_step USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pd_shredding_run_cohort_once ON fyniq.pd_shredding_run USING btree (organisation_id, cohort)
+CREATE UNIQUE INDEX pd_shredding_run_pkey ON fyniq.pd_shredding_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_pkey ON fyniq.pd_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (organisation_id, transfer_id, version)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
@@ -5224,6 +5283,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_anonymisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_anonymisation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_exercise DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach_exercise', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'breach_id')
@@ -5299,6 +5359,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisa
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation_connector DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_connector', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_succession DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('owner_succession', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -5545,6 +5606,8 @@ CREATE TRIGGER payment_batch_payment_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER payment_batch_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_payment FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_payment_guard()
 CREATE TRIGGER payment_batch_release_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payment_batch_release FOR EACH ROW EXECUTE FUNCTION payment_batch_release_guard()
 CREATE TRIGGER payment_batch_release_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_release FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_release_guard()
+CREATE TRIGGER pd_anonymisation_immutable BEFORE DELETE OR UPDATE ON fyniq.pd_anonymisation FOR EACH ROW EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_anonymisation_no_truncate BEFORE TRUNCATE ON fyniq.pd_anonymisation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_breach_exercise_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach_exercise FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
 CREATE TRIGGER pd_breach_exercise_no_truncate BEFORE TRUNCATE ON fyniq.pd_breach_exercise FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_breach_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
@@ -5555,6 +5618,8 @@ CREATE TRIGGER pd_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_re
 CREATE TRIGGER pd_request_no_truncate BEFORE TRUNCATE ON fyniq.pd_request FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_request_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_request_step FOR EACH ROW EXECUTE FUNCTION pd_request_guard()
 CREATE TRIGGER pd_request_step_no_truncate BEFORE TRUNCATE ON fyniq.pd_request_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER pd_shredding_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_shredding_run FOR EACH ROW EXECUTE FUNCTION pd_shredding_run_guard()
+CREATE TRIGGER pd_shredding_run_no_truncate BEFORE TRUNCATE ON fyniq.pd_shredding_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_transfer FOR EACH ROW EXECUTE FUNCTION pd_transfer_guard()
 CREATE TRIGGER pd_transfer_no_truncate BEFORE TRUNCATE ON fyniq.pd_transfer FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -5730,11 +5795,13 @@ owner_succession | tenant_isolation | * | (organisation_id = current_org()) | (o
 payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_anonymisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach_exercise | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+pd_shredding_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5893,11 +5960,13 @@ owner_succession | enabled | forced
 payee_bank_account | enabled | forced
 payment_batch_payment | enabled | forced
 payment_batch_release | enabled | forced
+pd_anonymisation | enabled | forced
 pd_breach | enabled | forced
 pd_breach_exercise | enabled | forced
 pd_breach_step | enabled | forced
 pd_request | enabled | forced
 pd_request_step | enabled | forced
+pd_shredding_run | enabled | forced
 pd_transfer | enabled | forced
 period | enabled | forced
 period_close | enabled | forced
@@ -5963,6 +6032,7 @@ allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, 
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd
 announcement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aef10077836a4f9111749cb3181c5788
+anonymise_contact(p_contact uuid) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bc144a1441e6119c9a4ee33c0a82f3f6
 apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf2f3a845eb3f3f37b28ac86827d4dd0
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
@@ -6173,19 +6243,22 @@ payment_batch_payment_guard() → trigger | security invoker | v | search_path=p
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
+pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
-person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f52cd4d71e2e3351848a2036f044ce
+person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1fbad8774b781c2cf93169089adca3e3
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
+reapply_shredding(p_run uuid, p_cohort date, p_keys uuid[], p_listed_at timestamp with time zone, p_approved_by text, p_approved_at timestamp with time zone, p_register text) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 479b5993ee4000e36ae2f505d9db0fb9
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
+records_years(p_org uuid) → integer | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 4f27655173a76a57eef7a94256dbed4f
 recover_account(p_session bytea, p_code bytea, p_confirmation bytea, p_new_hashes bytea[], p_now timestamp with time zone, p_cooling interval) → TABLE(recovery_id uuid, user_id uuid, confirmed_by uuid, confirming_organisation uuid, cooling_off_until timestamp with time zone) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d5ee493ce9e9f93630d83a25c0231a9e
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
@@ -6227,6 +6300,7 @@ share_issue_class_guard() → trigger | security invoker | v | search_path=pg_ca
 share_issue_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ecc9f7f60072d3973908c00c944e5815
 share_issue_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61dc3a208f7d88e0269a6cd0b117c760
 share_issue_moved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69fbb43c50cf29d5e32fc52bdeb9618f
+shred_person_keys(p_run uuid) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa6acb69c20c0ee549290d69f35dc72f
 sign_in_counts(p_since timestamp with time zone) → TABLE(provider text, sign_ins bigint) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | bd1dcf44b95ec1a3f39deb1f8b3b033b
 sign_in_essential() → SETOF text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2f62a9dd9ba1a56c12f01dcb67b8312e
 sign_in_methods() → SETOF sign_in_method | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 378f6cc806a963fc9375668b924d1828

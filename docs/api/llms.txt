@@ -173,6 +173,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/compliance/anonymisations` (listAnonymisations): List the anonymised contacts
+- `POST /v1/compliance/anonymisations` (anonymiseContact): Anonymise a contact
 - `GET /v1/compliance/breach-exercises` (listBreachExercises): List the tabletop exercises
 - `POST /v1/compliance/breach-exercises` (recordBreachExercise): Record a tabletop exercise
 - `GET /v1/compliance/breaches` (listBreaches): List the breach register
@@ -219,6 +221,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/risks` (createRisk): Add a risk to the register
 - `PUT /v1/compliance/risks/{risk_id}` (reviseRisk): Change a risk
 - `POST /v1/compliance/risks/{risk_id}/reviews` (reviewRisk): Review a risk
+- `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
+- `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
 - `GET /v1/compliance/transfers` (getTransfers): Get the overseas transfers of personal data
 - `POST /v1/compliance/transfers` (createTransfer): Record an overseas transfer's assessment
 - `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer

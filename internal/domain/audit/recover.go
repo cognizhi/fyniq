@@ -220,6 +220,10 @@ func Recover(ctx context.Context, store storage.Store, blobs ports.BlobStore, si
 	if _, err := Reapply(ctx, store, blobs, signer, org); err != nil {
 		return &rec, fmt.Errorf("re-apply the erasure register after the recovery: %w", err)
 	}
+	// §11.8, §11.9 (rev 0.244): keys a backup brought back are shredded again, and contacts anonymised since, again.
+	if _, err := ReapplyPDPA(ctx, store, blobs, signer, org); err != nil {
+		return &rec, fmt.Errorf("re-apply the shredding and anonymisation registers after the recovery: %w", err)
+	}
 	return &rec, nil
 }
 
