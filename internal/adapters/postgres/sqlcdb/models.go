@@ -801,6 +801,32 @@ type FyniqCustomerGroup struct {
 	CreatedAt      time.Time
 }
 
+type FyniqDataInventoryEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EntryID        uuid.UUID
+	Version        int32
+	What           string
+	Why            string
+	WhereHeld      string
+	Who            string
+	Retention      string
+	Transfers      string
+	NeedsDpia      bool
+	State          string
+	SavedBy        string
+	SavedAt        time.Time
+}
+
+type FyniqDataInventoryReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Quarter        time.Time
+	ReviewedBy     string
+	ReviewedAt     time.Time
+	Note           *string
+}
+
 type FyniqDimension struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

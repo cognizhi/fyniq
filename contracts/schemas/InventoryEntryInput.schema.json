@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "needs_dpia": {
+      "description": "Whether it needs a data protection impact assessment.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "retention": {
+      "description": "How long it is kept.",
+      "examples": [
+        "6 months after the role is filled"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "state": {
+      "description": "open, the default, or retired once the processing stops.",
+      "enum": [
+        "open",
+        "retired"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "transfers": {
+      "description": "Where it goes abroad, or None.",
+      "examples": [
+        "None"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "what": {
+      "description": "What personal data.",
+      "examples": [
+        "Job applicants' CVs"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "where": {
+      "description": "Where it is held.",
+      "examples": [
+        "A shared drive in Singapore"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "who": {
+      "description": "Who reads it.",
+      "examples": [
+        "The founders"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "why": {
+      "description": "Why the organisation holds it.",
+      "examples": [
+        "To hire"
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "what",
+    "why",
+    "where",
+    "who",
+    "retention",
+    "transfers",
+    "needs_dpia"
+  ],
+  "title": "InventoryEntryInput",
+  "type": "object"
+}

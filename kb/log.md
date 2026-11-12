@@ -489,3 +489,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Data Protection Officer, CMP-PD-01)
 
 ## [2026-11-09] compile | docs/user-guide/compliance-privacy-notices.md (new), compliance-policies.md → compliance.privacy-notices (new), compliance.policies (the privacy notices and consent, CMP-PD-03)
+
+## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md (new), compliance-reviews.md → compliance.data-protection (new), compliance.reviews (the inventory and its quarterly review, CMP-PD-02, CMP-05)

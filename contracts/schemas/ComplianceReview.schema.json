@@ -60,7 +60,8 @@
         "close-signoff",
         "break-glass-review",
         "policy-acknowledgement",
-        "risk-review"
+        "risk-review",
+        "data-inventory"
       ],
       "examples": [
         "access-review"

@@ -178,3 +178,22 @@ SELECT id, purpose_id, person, event, at, recorded_by, note FROM fyniq.consent_r
 INSERT INTO fyniq.consent_record (purpose_id, person, event, at, recorded_by, note)
 VALUES (sqlc.arg(purpose_id), sqlc.arg(person), sqlc.arg(event), sqlc.arg(at), sqlc.arg(recorded_by), sqlc.narg(note))
 RETURNING id, purpose_id, person, event, at, recorded_by, note;
+
+-- name: ListDataInventoryEntries :many
+-- Every version of the organisation's inventory entries, by entry and version (CMP-PD-02).
+SELECT entry_id, version, what, why, where_held, who, retention, transfers, needs_dpia, state, saved_by, saved_at
+FROM fyniq.data_inventory_entry ORDER BY entry_id, version;
+
+-- name: InsertDataInventoryEntry :exec
+INSERT INTO fyniq.data_inventory_entry (entry_id, version, what, why, where_held, who, retention, transfers, needs_dpia, state, saved_by, saved_at)
+VALUES (sqlc.arg(entry_id), sqlc.arg(version), sqlc.arg(what), sqlc.arg(why), sqlc.arg(where_held), sqlc.arg(who), sqlc.arg(retention),
+  sqlc.arg(transfers), sqlc.arg(needs_dpia), sqlc.arg(state), sqlc.arg(saved_by), sqlc.arg(saved_at));
+
+-- name: ListDataInventoryReviews :many
+-- The inventory's quarterly reviews, oldest first (CTL-DP-05).
+SELECT id, quarter, reviewed_by, reviewed_at, note FROM fyniq.data_inventory_review ORDER BY quarter;
+
+-- name: InsertDataInventoryReview :one
+INSERT INTO fyniq.data_inventory_review (quarter, reviewed_by, reviewed_at, note)
+VALUES (sqlc.arg(quarter), sqlc.arg(reviewed_by), sqlc.arg(reviewed_at), sqlc.narg(note))
+RETURNING id, quarter, reviewed_by, reviewed_at, note;

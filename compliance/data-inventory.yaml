@@ -1,0 +1,104 @@
+# Fyniq's personal-data inventory (PRD-001 CMP-PD-02, rev 0.244; p1-pdpa-retention design D3): each class of personal
+# data Fyniq holds, what it is, why, where, who reads it, how long it is kept, how it is protected and where it goes
+# abroad. TestTheDataInventory keeps it complete: every column of the schema whose name looks personal is in a class or
+# in not_personal, with why. The organisation adds what it processes outside Fyniq in the app.
+schema: fyniq-data-inventory@1
+classes:
+  - key: members
+    what: "Members' names, sign-in email addresses, roles, invitations and requests to join, and the email addresses notifications go to"
+    why: "To let people sign in and do their work, to name who did what, and to tell them what waits for them"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "Appendix D's Users, roles, team mode; every member sees colleagues' names; notifications reach their own member"
+    retention: "While a member; their name stays in the records and the audit trail for the records' retention (retention.records_years)"
+    protection: "The audit trail's personal values are shreddable per person and financial year (§11.8)"
+    transfers: "Emails go through the deployment's email provider [live-verify where it processes]"
+    columns: [app_user.display_name, user_identity.email, user_session.email, member_invitation.display_name, join_request.display_name,
+      join_request.email, notification.email, notification_preference.email]
+  - key: sign-in-security
+    what: "Each sign-in's IP address and browser, sessions, passkeys and recovery codes"
+    why: "To keep accounts secure and to investigate a security event"
+    where: "The database, in Singapore; the IP address and browser beside the audit trail"
+    who: "The member themselves; the audit trail's readers see security events (Appendix D's Audit trail)"
+    retention: "IP addresses and browsers retention.security_events_days (400), then erased (AUD-06); sessions until they expire"
+    protection: "Erased with a signed register entry; recovery codes and passkeys are kept only as hashes and public keys"
+    transfers: "None"
+    columns: [audit_request_detail.ip, audit_request_detail.user_agent, user_session.user_agent]
+  - key: contacts
+    what: "The names, email addresses, phone numbers and addresses of customers' and suppliers' contacts, and of contacts who are individuals"
+    why: "To quote, invoice, pay and be paid, to remind and to keep the records the law requires"
+    where: "The database, in Singapore; issued documents in the document store, in Singapore"
+    who: "Appendix D's Contacts and items; the roles that send documents"
+    retention: "The records' retention after the financial year's end (retention.records_years, 7 years), then purged with the documents"
+    protection: "Mostly business contact information; an individual's values in the audit trail are shreddable (§11.8)"
+    transfers: "Emails go through the deployment's email provider [live-verify where it processes]"
+    columns: [contact.legal_name, contact.address, contact.billing_email, contact.remittance_email, contact.phone, document_send.recipient,
+      email_message.recipient, email_event.recipient, email_suppression.address]
+  - key: email-in
+    what: "The email addresses that send documents to the organisation's capture address"
+    why: "To accept bills and receipts only from known senders"
+    where: "The database, in Singapore"
+    who: "Appendix D's Organisation integrations"
+    retention: "While the sender is allowed"
+    protection: "None beyond the database's"
+    transfers: "None"
+    columns: [capture_sender.address]
+  - key: bank-accounts
+    what: "The bank accounts Fyniq pays people to: claimants, and individual suppliers"
+    why: "To repay expense claims and pay bills"
+    where: "The database, in Singapore"
+    who: "Appendix D's Vendor bank details and Payment batches; masked for everyone else"
+    retention: "The records' retention"
+    protection: "Sealed under the deployment's key (SEC-11), shown as the last four digits, proved by fingerprint in the audit trail (AUD-02)"
+    transfers: "The bank file goes to the organisation's bank, in Singapore"
+    columns: [payee_bank_account.number_sealed, payee_bank_account.number_last4, payee_bank_account.number_fingerprint]
+  - key: consent
+    what: "Who gave or withdrew consent for a purpose"
+    why: "To use personal data for a purpose that needs consent only while it stands (CMP-PD-03)"
+    where: "The database, in Singapore"
+    who: "Appendix D's Data protection (PDPA)"
+    retention: "The records' retention"
+    protection: "None beyond the database's"
+    transfers: "None"
+    columns: [consent_record.person]
+  - key: organisation-contacts
+    what: "The company's own published contacts, its Data Protection Officer's name and email among them"
+    why: "To print them on documents and give them to people who ask about their personal data (PDPA s11(5))"
+    where: "The database, in Singapore"
+    who: "Everyone who can read the organisation's profile"
+    retention: "While they are the company's"
+    protection: "Business contact information"
+    transfers: "None"
+    columns: [organisation.email, organisation.phone, organisation.dpo_name, organisation.dpo_email]
+  - key: files
+    what: "Receipts, bills and other files attached as evidence, which may show personal data"
+    why: "To support each record, as the law requires"
+    where: "The document store, in Singapore, each file retention-locked"
+    who: "Appendix D's Evidence"
+    retention: "Each file's retain-until, from the records' retention"
+    protection: "A file that shows an NRIC or FIN in full is flagged when attached (FR-DOC-09)"
+    transfers: "None"
+    columns: [evidence.nric_flagged]
+not_personal:
+  - column: claim_place.address
+    why: "A place where claims are spent, such as a merchant"
+  - column: email_sender.address
+    why: "The organisation's own sending address"
+  - column: email_sender.display_name
+    why: "The organisation's own sender name"
+  - column: organisation.legal_name
+    why: "The company's name"
+  - column: organisation.registered_address
+    why: "The company's registered office"
+  - column: organisation.mailing_address
+    why: "The company's mailing address"
+  - column: organisation.bank_account_name
+    why: "The company's own bank account"
+  - column: organisation.bank_account_number
+    why: "The company's own bank account"
+not_held:
+  - key: nric
+    what: "NRIC and FIN numbers"
+    why: "Fyniq collects none: payroll's live in Nemura (PRD-002). A holder record refuses one in full (FY285), and a file that shows one is flagged (FR-DOC-09)"
+  - key: card-data
+    what: "Payment card numbers and their security codes"
+    why: "Card payments go through a provider's hosted pages, so Fyniq holds no card data (SEC-14)"

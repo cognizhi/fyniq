@@ -13,6 +13,8 @@
 !compliance/risks.yaml
 !compliance/risks.go
 !compliance/policies.go
+!compliance/inventory.go
+!compliance/data-inventory.yaml
 !compliance/policies/
 !compliance/notices/
 !compliance/controls/

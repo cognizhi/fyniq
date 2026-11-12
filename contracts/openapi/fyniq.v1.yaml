@@ -10065,6 +10065,7 @@ components:
             - break-glass-review
             - policy-acknowledgement
             - risk-review
+            - data-inventory
           examples:
             - access-review
           type: string
@@ -10137,7 +10138,7 @@ components:
       additionalProperties: false
       properties:
         items:
-          description: The seven reviews, in the Compliance Center's order.
+          description: The recurring reviews, in the Compliance Center's order.
           items:
             $ref: "#/components/schemas/ComplianceReview"
           type: array
@@ -13179,6 +13180,92 @@ components:
       required:
         - refund
         - entry
+      type: object
+    DataClassView:
+      additionalProperties: false
+      properties:
+        key:
+          description: The class.
+          examples:
+            - members
+          type: string
+        protection:
+          description: How it is protected.
+          examples:
+            - Shreddable in the audit trail
+          type: string
+        retention:
+          description: How long it is kept.
+          examples:
+            - While a member
+          type: string
+        transfers:
+          description: Where it goes abroad, if anywhere.
+          examples:
+            - None
+          type: string
+        what:
+          description: What it is.
+          examples:
+            - Members' names, sign-in email addresses and roles
+          type: string
+        where:
+          description: Where it is held.
+          examples:
+            - The database, in Singapore
+          type: string
+        who:
+          description: Who reads it.
+          examples:
+            - Appendix D's Users, roles, team mode
+          type: string
+        why:
+          description: Why it is held.
+          examples:
+            - To let people sign in and do their work
+          type: string
+      required:
+        - key
+        - what
+        - why
+        - where
+        - who
+        - retention
+        - protection
+        - transfers
+      type: object
+    DataInventory:
+      additionalProperties: false
+      properties:
+        classes:
+          description: "What Fyniq itself holds, from its catalogue: the same for every organisation."
+          items:
+            $ref: "#/components/schemas/DataClassView"
+          type: array
+        entries:
+          description: What the organisation added, for its processing outside Fyniq, at their latest versions.
+          items:
+            $ref: "#/components/schemas/InventoryEntryView"
+          type: array
+        not_held:
+          description: What Fyniq never holds.
+          items:
+            $ref: "#/components/schemas/NotHeldView"
+          type: array
+        review:
+          $ref: "#/components/schemas/InventoryReviewState"
+          description: The quarterly review.
+        schedule:
+          description: The retention schedule, from the settings in force today.
+          items:
+            $ref: "#/components/schemas/RetentionRow"
+          type: array
+      required:
+        - classes
+        - not_held
+        - entries
+        - schedule
+        - review
       type: object
     DecideChangeRequest:
       additionalProperties: false
@@ -22393,6 +22480,219 @@ components:
         - denominator
         - price_decimals
       type: object
+    InventoryEntryInput:
+      additionalProperties: false
+      properties:
+        needs_dpia:
+          description: Whether it needs a data protection impact assessment.
+          examples:
+            - false
+          type: boolean
+        retention:
+          description: How long it is kept.
+          examples:
+            - 6 months after the role is filled
+          maxLength: 500
+          minLength: 1
+          type: string
+        state:
+          description: open, the default, or retired once the processing stops.
+          enum:
+            - open
+            - retired
+          examples:
+            - open
+          type: string
+        transfers:
+          description: Where it goes abroad, or None.
+          examples:
+            - None
+          maxLength: 500
+          minLength: 1
+          type: string
+        what:
+          description: What personal data.
+          examples:
+            - Job applicants' CVs
+          maxLength: 500
+          minLength: 1
+          type: string
+        where:
+          description: Where it is held.
+          examples:
+            - A shared drive in Singapore
+          maxLength: 500
+          minLength: 1
+          type: string
+        who:
+          description: Who reads it.
+          examples:
+            - The founders
+          maxLength: 500
+          minLength: 1
+          type: string
+        why:
+          description: Why the organisation holds it.
+          examples:
+            - To hire
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - what
+        - why
+        - where
+        - who
+        - retention
+        - transfers
+        - needs_dpia
+      type: object
+    InventoryEntryView:
+      additionalProperties: false
+      properties:
+        entry_id:
+          description: The entry.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        needs_dpia:
+          description: Whether the processing needs a data protection impact assessment (CMP-PD-08).
+          examples:
+            - false
+          type: boolean
+        retention:
+          description: How long it is kept.
+          examples:
+            - 6 months after the role is filled
+          type: string
+        saved_at:
+          description: When.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        saved_by:
+          description: Who saved this version, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        state:
+          description: open while the processing goes on; retired once it stops.
+          enum:
+            - open
+            - retired
+          examples:
+            - open
+          type: string
+        transfers:
+          description: Where it goes abroad, if anywhere.
+          examples:
+            - None
+          type: string
+        version:
+          description: Its version; the ETag carries it for If-Match.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        what:
+          description: What personal data.
+          examples:
+            - Job applicants' CVs
+          type: string
+        where:
+          description: Where it is held.
+          examples:
+            - A shared drive in Singapore
+          type: string
+        who:
+          description: Who reads it.
+          examples:
+            - The founders
+          type: string
+        why:
+          description: Why the organisation holds it.
+          examples:
+            - To hire
+          type: string
+      required:
+        - entry_id
+        - version
+        - what
+        - why
+        - where
+        - who
+        - retention
+        - transfers
+        - needs_dpia
+        - state
+        - saved_by
+        - saved_at
+      type: object
+    InventoryReviewInputBody:
+      additionalProperties: false
+      properties:
+        note:
+          description: What the review found or changed.
+          examples:
+            - Added the job applicants' CVs.
+          maxLength: 2000
+          type: string
+        quarter:
+          description: The quarter reviewed, by its first day, as review.quarter names it.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+      required:
+        - quarter
+      type: object
+    InventoryReviewState:
+      additionalProperties: false
+      properties:
+        due_by:
+          description: "The last day its review is on time: 14 days after the quarter ends."
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        label:
+          description: The quarter, as people say it.
+          examples:
+            - Q3 2026
+          type: string
+        last_quarter:
+          description: The latest quarter reviewed.
+          examples:
+            - "2026-04-01"
+          format: date
+          type: string
+        last_reviewed_at:
+          description: When.
+          examples:
+            - "2026-07-03T02:00:00Z"
+          format: date-time
+          type: string
+        last_reviewed_by:
+          description: Who reviewed it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        overdue:
+          description: true once that day has passed.
+          examples:
+            - false
+          type: boolean
+        quarter:
+          description: "The quarter waiting for its review: its first day; absent when none waits."
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+      required:
+        - overdue
+      type: object
     InvestorRightsDraft:
       additionalProperties: false
       properties:
@@ -26109,6 +26409,29 @@ components:
       required:
         - user_id
         - recovery_codes
+      type: object
+    NotHeldView:
+      additionalProperties: false
+      properties:
+        key:
+          description: What is not held.
+          examples:
+            - nric
+          type: string
+        what:
+          description: In words.
+          examples:
+            - NRIC and FIN numbers
+          type: string
+        why:
+          description: Why it is not held.
+          examples:
+            - Payroll's live in Nemura
+          type: string
+      required:
+        - key
+        - what
+        - why
       type: object
     NotRevaluedBalance:
       additionalProperties: false
@@ -32654,6 +32977,29 @@ components:
         - start
         - posted
         - end
+      type: object
+    RetentionRow:
+      additionalProperties: false
+      properties:
+        data:
+          description: The data.
+          examples:
+            - Security events' IP address and browser
+          type: string
+        deletion:
+          description: How it is deleted.
+          examples:
+            - Erased daily, with a signed register entry
+          type: string
+        retention:
+          description: How long it is kept, with the setting that says so.
+          examples:
+            - 400 days (retention.security_events_days)
+          type: string
+      required:
+        - data
+        - retention
+        - deletion
       type: object
     RevaluationItem:
       additionalProperties: false
@@ -68947,6 +69293,649 @@ paths:
       x-fyniq-permission:
         capability: Compliance Center
         right: V
+  /v1/compliance/data-inventory:
+    get:
+      description: "The personal-data inventory (CMP-PD-02, CMP-05): what Fyniq itself holds, from its catalogue, with what, why, where, who reads it, how long it is kept, how it is protected and where it goes abroad; what Fyniq never holds; what the organisation added for its processing outside Fyniq; the retention schedule from the settings in force; and the quarterly review (CTL-DP-05). Read-only; no side effects."
+      operationId: getDataInventory
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataInventory"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the personal-data inventory and retention schedule
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: The inventory is a handful of classes and entries, read whole as one register.
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: V
+  /v1/compliance/data-inventory/entries:
+    post:
+      description: "Adds personal data the organisation processes outside Fyniq to its inventory (CMP-PD-02), at version 1. Side effects: the entry, the audit event data_inventory_entry.saved. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createDataInventoryEntry
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryEntryInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryEntryView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The entry's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-INVENTORY-01` The inventory's entries and reviews are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Add an entry to the personal-data inventory
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-INVENTORY-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
+  /v1/compliance/data-inventory/entries/{entry_id}:
+    put:
+      description: "Saves the entry's next version (CMP-PD-02), or retires it when the processing stops. Earlier versions are kept. Side effects: the version, the audit event data_inventory_entry.saved. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: reviseDataInventoryEntry
+      parameters:
+        - description: The entry.
+          in: path
+          name: entry_id
+          required: true
+          schema:
+            description: The entry.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryEntryInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryEntryView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The entry's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-INVENTORY-01` The inventory's entries and reviews are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change an entry of the personal-data inventory
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-INVENTORY-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: C
+  /v1/compliance/data-inventory/reviews:
+    post:
+      description: "Records that the Compliance officer reviewed the whole personal-data inventory for the quarter waiting (CTL-DP-05), once a quarter. Side effects: the review, the audit event data_inventory.reviewed. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: reviewDataInventory
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryReviewInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryReviewState"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-INVENTORY-01` The inventory's entries and reviews are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record the inventory's quarterly review
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-INVENTORY-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+        right: A
   /v1/compliance/filings:
     get:
       description: The records of the calendar's items, drafts, recorded, withdrawn and withdrawals, the latest first, a page at a time, or one item's history by its key (FR-TAX-07). Read-only; no side effects.
@@ -71781,7 +72770,7 @@ paths:
         right: V
   /v1/compliance/reviews:
     get:
-      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements and the risk reviews. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
+      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews and the personal-data inventory's quarterly review. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
       operationId: listComplianceReviews
       responses:
         "200":
@@ -71879,7 +72868,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-exempt:
-        cursor: "The seven recurring reviews, read whole: one summary per kind, each worked out from its own records."
+        cursor: "The recurring reviews, eight of them, read whole: one summary per kind, each worked out from its own records."
       x-fyniq-permission:
         capability: Compliance Center
         right: V

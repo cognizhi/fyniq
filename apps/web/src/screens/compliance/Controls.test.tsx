@@ -130,6 +130,7 @@ describe("the Compliance page", () => {
       "/compliance/controls",
       "/compliance/attestations",
       "/compliance/risks",
+      "/compliance/data-protection",
       "/compliance/privacy/notices",
       "/compliance/gst",
       "/compliance/evidence",

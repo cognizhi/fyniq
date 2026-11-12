@@ -1,0 +1,382 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Archive, ChevronRight, ClockAlert, Pencil, Plus, ShieldCheck } from "lucide-react";
+import { useId, useState, type FormEvent } from "react";
+import { api, newKey } from "../../api/client";
+import type { components } from "../../api/schema";
+import { Refusal } from "../../components/Refusal";
+import { Button } from "../../components/ui/button";
+import { Dialog } from "../../components/ui/dialog";
+import { date } from "../../format/date";
+import { helpText } from "../../i18n";
+import { useSignedIn } from "../../session";
+import { guarded, useConfirm } from "../../stepup";
+import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { DPOContact } from "../settings/Organisation";
+
+type Inventory = components["schemas"]["DataInventory"];
+type Entry = components["schemas"]["InventoryEntryView"];
+type EntryInput = components["schemas"]["InventoryEntryInput"];
+
+async function inventory() {
+  const { data, error } = await api.GET("/v1/compliance/data-inventory");
+  if (error) throw error;
+  return data;
+}
+
+async function profile() {
+  const { data, error } = await api.GET("/v1/organisation/profile");
+  if (error) throw error;
+  return data;
+}
+
+type Tab = "inventory" | "dpo";
+
+// DataProtection is Compliance › Data protection (CMP-05, CMP-PD-01, CMP-PD-02, CMP-PD-09; rev 0.244): the PDPA programme's
+// registers. The inventory: what Fyniq holds and never holds, what the organisation adds, the retention schedule and the
+// quarterly review (CTL-DP-05). The DPO: their contact, the text for the website, the published policies and the penalty.
+export function DataProtection() {
+  const h = helpText("compliance.data-protection");
+  const [tab, setTab] = useState<Tab>("inventory");
+  return (
+    <div className="fy-page fy-enter">
+      <nav className="fy-breadcrumb" aria-label="Breadcrumb">
+        <Link to="/compliance">Compliance</Link>
+        <Icon of={ChevronRight} />
+        <span>{h.label}</span>
+      </nav>
+      <div className="fy-pagehead">
+        <div className="fy-pagehead__text">
+          <h1 className="fy-h1">{h.label}</h1>
+          <p className="fy-secondary">{h.tooltip}</p>
+        </div>
+      </div>
+      <div className="fy-tabs" role="tablist" aria-label="Data protection registers">
+        <button type="button" role="tab" aria-selected={tab === "inventory"} onClick={() => setTab("inventory")} title={helpText("data-protection.inventory").tooltip}>
+          Inventory
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
+          Data Protection Officer
+        </button>
+      </div>
+      {tab === "inventory" && <InventoryTab />}
+      {tab === "dpo" && <DPOTab />}
+    </div>
+  );
+}
+
+function InventoryTab() {
+  const id = useId();
+  const { session, mode } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const inv = useQuery({ queryKey: ["data-inventory"], queryFn: inventory });
+  const [editing, setEditing] = useState<Entry | "new" | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  if (inv.isError) return <Refusal problem={problemOf(inv.error)} title="The inventory could not be shown" />;
+  if (!inv.data) return <p className="fy-small">Loading the inventory…</p>;
+  const d: Inventory = inv.data;
+  return (
+    <>
+      {d.review.quarter && (
+        <div className={`fy-banner ${d.review.overdue ? "fy-banner--warning" : "fy-banner--info"}`} role="status">
+          <Icon of={ClockAlert} size={20} />
+          <div className="fy-banner__text">
+            <strong>
+              The inventory's review of {d.review.label} is {d.review.overdue ? "overdue" : "due"}, by {date(d.review.due_by)}
+            </strong>
+            <span className="fy-small">The Compliance officer checks that the inventory still says what the company holds, then records the review.</span>
+          </div>
+          {officer && (
+            <Button size="sm" onClick={() => setReviewing(true)} title={helpText("data-protection.review").tooltip}>
+              <Icon of={ShieldCheck} />
+              Record the review
+            </Button>
+          )}
+        </div>
+      )}
+      <section className="fy-card" aria-labelledby={`${id}-classes`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-classes`}>
+            What Fyniq holds
+          </h2>
+          <span className="fy-small fy-muted">
+            {d.review.last_quarter ? `Last reviewed for the quarter from ${date(d.review.last_quarter)}` : "Not reviewed yet"}
+          </span>
+        </div>
+        <ul className="fy-list" aria-labelledby={`${id}-classes`}>
+          {d.classes.map((c) => (
+            <li key={c.key} className="fy-list__item items-start">
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">{c.what}</span>
+                <span className="fy-list__meta whitespace-normal">Why: {c.why}</span>
+                <span className="fy-list__meta whitespace-normal">Kept: {c.retention}</span>
+                {mode === "expert" && (
+                  <span className="fy-list__meta whitespace-normal">
+                    Where: {c.where} · Who: {c.who} · Protection: {c.protection} · Abroad: {c.transfers}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-notheld`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-notheld`}>
+            What Fyniq never holds
+          </h2>
+        </div>
+        <ul className="fy-list" aria-labelledby={`${id}-notheld`}>
+          {d.not_held.map((n) => (
+            <li key={n.key} className="fy-list__item">
+              <span className="fy-list__main">
+                <span className="fy-list__title">{n.what}</span>
+                <span className="fy-list__meta whitespace-normal">{n.why}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-entries`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-entries`} title={helpText("data-protection.entry").tooltip}>
+            What the company holds outside Fyniq
+          </h2>
+          {officer && (
+            <Button size="sm" onClick={() => setEditing("new")}>
+              <Icon of={Plus} />
+              Add an entry
+            </Button>
+          )}
+        </div>
+        {d.entries.length === 0 ? (
+          <p className="fy-card__body fy-small fy-secondary">Nothing added. Add what the company keeps elsewhere, such as job applicants' CVs or a mailing list.</p>
+        ) : (
+          <ul className="fy-list" aria-labelledby={`${id}-entries`}>
+            {d.entries.map((e) => (
+              <li key={e.entry_id} className={`fy-list__item${e.state === "retired" ? " fy-muted" : ""}`}>
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">
+                    {e.what}
+                    {e.state === "retired" && " · retired"}
+                  </span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {e.why} · kept {e.retention} · {e.where} · abroad: {e.transfers}
+                    {e.needs_dpia && " · needs a DPIA"}
+                  </span>
+                </span>
+                {officer && (
+                  <Button size="sm" variant="ghost" onClick={() => setEditing(e)} aria-label={`Change ${e.what}`}>
+                    <Icon of={Pencil} />
+                    Change
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-schedule`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-schedule`}>
+            Retention schedule
+          </h2>
+          <span className="fy-small fy-muted">From the settings in force today</span>
+        </div>
+        <div className="fy-tablewrap">
+          <table className="fy-table fy-table--cards" aria-labelledby={`${id}-schedule`}>
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Kept for</th>
+                <th scope="col">Then</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.schedule.map((r) => (
+                <tr key={r.data}>
+                  <td data-label="Data">{r.data}</td>
+                  <td data-label="Kept for">{r.retention}</td>
+                  <td data-label="Then">{r.deletion}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {editing && <EntryForm entry={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+      {reviewing && d.review.quarter && <ReviewForm quarter={d.review.quarter} label={d.review.label ?? ""} onClose={() => setReviewing(false)} />}
+    </>
+  );
+}
+
+const blank: EntryInput = { what: "", why: "", where: "", who: "", retention: "", transfers: "None", needs_dpia: false };
+
+// EntryForm adds an entry to the inventory, or saves its next version, or retires it (CMP-PD-02).
+function EntryForm({ entry, onClose }: { entry: Entry | null; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [form, setForm] = useState<EntryInput>(entry ? { what: entry.what, why: entry.why, where: entry.where, who: entry.who, retention: entry.retention,
+    transfers: entry.transfers, needs_dpia: entry.needs_dpia, state: entry.state } : blank);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async (body: EntryInput) => {
+      const out = await guarded(confirm, () =>
+        entry
+          ? api.PUT("/v1/compliance/data-inventory/entries/{entry_id}", { params: { path: { entry_id: entry.entry_id }, header: { "Idempotency-Key": newKey(), "If-Match": `"v${entry.version}"` } }, body })
+          : api.POST("/v1/compliance/data-inventory/entries", { params: { header: { "Idempotency-Key": newKey() } }, body }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await queries.invalidateQueries({ queryKey: ["data-inventory"] });
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate(form);
+  };
+  const field = (key: "what" | "why" | "where" | "who" | "retention" | "transfers", label: string) => (
+    <div className="fy-field">
+      <label className="fy-label" htmlFor={`${id}-${key}`}>
+        {label}
+      </label>
+      <input className="fy-input" id={`${id}-${key}`} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+    </div>
+  );
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Data inventory"
+      title={entry ? "Change the entry" : "Add an entry"} description="Personal data the company processes outside Fyniq. Each change is kept as a version.">
+      {problem && <Refusal problem={problem} title="The entry was not saved" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        {field("what", "What personal data")}
+        {field("why", "Why the company holds it")}
+        {field("where", "Where it is held")}
+        {field("who", "Who reads it")}
+        {field("retention", "How long it is kept")}
+        {field("transfers", "Where it goes abroad")}
+        <label className="fy-check">
+          <input type="checkbox" checked={form.needs_dpia} onChange={(e) => setForm({ ...form, needs_dpia: e.target.checked })} />
+          It needs a data protection impact assessment
+        </label>
+        <div className="fy-row justify-end gap-2">
+          {entry && entry.state === "open" && (
+            <Button variant="ghost" type="button" onClick={() => save.mutate({ ...form, state: "retired" })} disabled={save.isPending}>
+              <Icon of={Archive} />
+              Retire it
+            </Button>
+          )}
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
+            {entry ? "Save the change" : "Add the entry"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// ReviewForm records the inventory's review of a quarter (CTL-DP-05).
+function ReviewForm({ quarter, label, onClose }: { quarter: string; label: string; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [note, setNote] = useState("");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/data-inventory/reviews", { params: { header: { "Idempotency-Key": newKey() } }, body: { quarter, note: note.trim() || undefined } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["data-inventory", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Data inventory" title={`Review ${label}`}
+      description="Confirm the inventory still says what the company holds, why, where and for how long.">
+      {problem && <Refusal problem={problem} title="The review was not recorded" />}
+      <div className="fy-stack fy-stack--3">
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-note`}>
+            Note (optional)
+          </label>
+          <textarea className="fy-textarea" id={`${id}-note`} value={note} onChange={(e) => setNote(e.target.value)} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => save.mutate()} disabled={save.isPending}>
+            Record the review
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function DPOTab() {
+  const id = useId();
+  const p = useQuery({ queryKey: ["profile", "dpo"], queryFn: profile });
+  const [status, setStatus] = useState("");
+  return (
+    <>
+      <p className="fy-small" role="status">
+        {status}
+      </p>
+      {p.isError && <Refusal problem={problemOf(p.error)} title="The DPO's contact could not be shown" />}
+      {p.data && <DPOContact profile={p.data} onCopied={setStatus} />}
+      <section className="fy-card" aria-labelledby={`${id}-published`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-published`}>
+            Published policies and notices
+          </h2>
+        </div>
+        <ul className="fy-list" aria-labelledby={`${id}-published`}>
+          <li>
+            <Link className="fy-list__item" to="/compliance/risks">
+              <span className="fy-list__main">
+                <span className="fy-list__title">The data protection policy</span>
+                <span className="fy-list__meta">In the policy library, under Risks and policies</span>
+              </span>
+              <Icon of={ChevronRight} />
+            </Link>
+          </li>
+          <li>
+            <Link className="fy-list__item" to="/compliance/privacy/notices">
+              <span className="fy-list__main">
+                <span className="fy-list__title">The privacy notices</span>
+                <span className="fy-list__meta">For members and for contacts, under Privacy notices and consent</span>
+              </span>
+              <Icon of={ChevronRight} />
+            </Link>
+          </li>
+        </ul>
+      </section>
+      <section className="fy-card" aria-labelledby={`${id}-penalty`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-penalty`}>
+            The penalty
+          </h2>
+        </div>
+        <p className="fy-card__body fy-small">
+          The PDPC may fine an organisation that breaches the PDPA's data protection provisions up to 10% of its annual turnover in Singapore when that is above S$10
+          million, otherwise up to S$1 million (PDPA s48J(3)). Keep a data protection risk in the{" "}
+          <Link to="/compliance/risks">risk register</Link>.
+        </p>
+      </section>
+    </>
+  );
+}

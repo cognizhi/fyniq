@@ -415,7 +415,7 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
 // DPOContact is the Data Protection Officer's business contact (CMP-PD-01, rev 0.244): the text the company publishes
 // on its website (PDPA s11(5)), which every email Fyniq sends also gives, and a warning when the member named does not
 // hold the Compliance officer role.
-function DPOContact({ profile: p, onCopied }: { profile: Profile; onCopied: (what: string) => void }) {
+export function DPOContact({ profile: p, onCopied }: { profile: Profile; onCopied: (what: string) => void }) {
   const h = helpText("organisation.dpo");
   const text = p.dpo_name && p.dpo_email ? `Data Protection Officer: ${p.dpo_name}, ${p.dpo_email}. Questions about how ${p.legal_name || "we"} handle${p.legal_name ? "s" : ""} personal data, or requests to access or correct it, go to the Data Protection Officer.` : "";
   const copy = async () => {

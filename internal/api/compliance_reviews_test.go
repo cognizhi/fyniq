@@ -53,6 +53,7 @@ func TestTheRecurringReviews(t *testing.T) {
 		"break-glass-review":     {"owner", "/break-glass", []string{"CTL-FIN-07"}},
 		"policy-acknowledgement": {"member", "/compliance/attestations", nil},
 		"risk-review":            {"dpo", "/compliance/risks", nil},
+		"data-inventory":         {"dpo", "/compliance/data-protection", []string{"CTL-DP-05"}},
 	} {
 		v := all[kind]
 		got := []string{}

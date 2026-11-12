@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "The class.",
+      "examples": [
+        "members"
+      ],
+      "type": "string"
+    },
+    "protection": {
+      "description": "How it is protected.",
+      "examples": [
+        "Shreddable in the audit trail"
+      ],
+      "type": "string"
+    },
+    "retention": {
+      "description": "How long it is kept.",
+      "examples": [
+        "While a member"
+      ],
+      "type": "string"
+    },
+    "transfers": {
+      "description": "Where it goes abroad, if anywhere.",
+      "examples": [
+        "None"
+      ],
+      "type": "string"
+    },
+    "what": {
+      "description": "What it is.",
+      "examples": [
+        "Members' names, sign-in email addresses and roles"
+      ],
+      "type": "string"
+    },
+    "where": {
+      "description": "Where it is held.",
+      "examples": [
+        "The database, in Singapore"
+      ],
+      "type": "string"
+    },
+    "who": {
+      "description": "Who reads it.",
+      "examples": [
+        "Appendix D's Users, roles, team mode"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "Why it is held.",
+      "examples": [
+        "To let people sign in and do their work"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "what",
+    "why",
+    "where",
+    "who",
+    "retention",
+    "protection",
+    "transfers"
+  ],
+  "title": "DataClassView",
+  "type": "object"
+}

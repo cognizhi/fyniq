@@ -4,7 +4,7 @@ type: task
 title: Sign off the recurring reviews
 summary: Reviews and attestations - the seven recurring reviews, who signs each off, when each is overdue and where to sign it
 sources:
-  - docs/user-guide/compliance-reviews.md sha256:8e1d8efbde55db0c927167da202b5ecf6fdc68cf90dff0e0a4f547e9871d1f47
+  - docs/user-guide/compliance-reviews.md sha256:891abf3ca0c246ad12075400b870db1f1d295b51846622a2a53111a99e4f8412
 data_class: general
 taint: trusted
 status: published
@@ -40,6 +40,7 @@ aliases:
 - **Break-glass review**: another Owner, or the Accountant from its due date; overdue 7 days after the break-glass ends ([[settings.team-mode]]).
 - **Policy acknowledgement**: every member for themselves; overdue 30 days after the version is published, or after they joined; on this page ([[compliance.policies]]).
 - **Risk review**: the Compliance officer; overdue after the risk's review date; on Compliance › Risks and policies ([[compliance.risks]]).
+- **Data inventory review**: the Compliance officer; overdue 14 days after the quarter ends; on Compliance › Data protection ([[compliance.data-protection]]).
 - **Due** waits within its time; **Overdue** is past it, and more than 14 days past its due date it is also **Over 14 days**; **Signed off** means nothing waits; **Nothing due** means nothing has fallen due yet; **Not needed** means the team mode does not call for it (Standard and Enterprise modes approve before the action).
 
 (src: docs/user-guide/compliance-reviews.md#the-reviews)

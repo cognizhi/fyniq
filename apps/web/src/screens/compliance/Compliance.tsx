@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, ChevronRight, ClipboardCheck, FileSearch, Megaphone, History, Landmark, ShieldCheck, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CalendarClock, ChevronRight, ClipboardCheck, FileSearch, Fingerprint, Megaphone, History, Landmark, ShieldCheck, TriangleAlert, type LucideIcon } from "lucide-react";
 import { helpText } from "../../i18n";
 import { routes } from "../../registry";
 import { useSignedIn } from "../../session";
@@ -10,6 +10,7 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/compliance/controls", help: "compliance.controls", icon: ShieldCheck },
   { to: "/compliance/attestations", help: "compliance.attestations", icon: ClipboardCheck },
   { to: "/compliance/risks", help: "compliance.risks", icon: TriangleAlert },
+  { to: "/compliance/data-protection", help: "compliance.data-protection", icon: Fingerprint },
   { to: "/compliance/privacy/notices", help: "compliance.privacy-notices", icon: Megaphone },
   { to: "/compliance/gst", help: "compliance.gst", icon: Landmark },
   { to: "/compliance/evidence", help: "compliance.evidence", icon: FileSearch },

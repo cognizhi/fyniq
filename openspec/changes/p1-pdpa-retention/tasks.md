@@ -141,15 +141,61 @@ event format.
 
 ## 4. The data inventory and retention schedule (slice 4)
 
-- [ ] 4.1 `compliance/data-inventory.yaml` (D3): every personal-data class Fyniq holds, with "NRIC/FIN" and "card data"
+- [x] 4.1 `compliance/data-inventory.yaml` (D3): every personal-data class Fyniq holds, with "NRIC/FIN" and "card data"
   as not held. A test reads the schema snapshot and fails on a personal-looking column no class names.
   `// req: CMP-PD-02`, `// req: SEC-14`
-- [ ] 4.2 `data_inventory_entry` (versioned, DPO C) for the organisation's own processing; the retention schedule from
+
+  **What building added:**
+    - **Eight classes:** members; sign-in security; contacts; email-in senders; the bank accounts people are paid to;
+      consent; the organisation's own published contacts; files.
+    - **`not_personal`** names eight columns whose names look personal but whose data is the company's own.
+    - **`not_held`** names NRIC and FIN numbers, and card data.
+    - **`TestTheDataInventory`** reads the schema snapshot. It fails on any column whose name looks personal that
+      neither a class nor `not_personal` names, and on a named column the schema does not hold. It found
+      `organisation.dpo_name`, missing from the first draft.
+
+- [x] 4.2 `data_inventory_entry` (versioned, DPO C) for the organisation's own processing; the retention schedule from
   the catalogue and the settings; the quarterly review as the attestation `data-inventory`, read by CTL-DP-05's Q
   check. Attack tests and matrix rows. `// req: CMP-PD-02`, `// req: CMP-05`, `// req: CTL-DP-05`
-- [ ] 4.3 The Inventory tab of Compliance › Data protection (Expert, `/compliance/data-protection`), with the retention
+
+  **What building added:**
+    - **Entries.** Migration 000303 adds `data_inventory_entry`: versions under an `entry_id`, retired rather than
+      deleted.
+    - **Reviews.** `data_inventory_review`: one per quarter, whose date must be a quarter's first day.
+    - **The database's rules.** Both are insert-only (FY312) and audited (`data_inventory_entry.saved`,
+      `data_inventory.reviewed`).
+    - **The API.** `getDataInventory` returns:
+      - the catalogue and what is not held;
+      - the entries;
+      - a retention schedule built from the settings in force: records, security details, AI conversations (whose
+        setting exists, 365 days), logs and backups;
+      - the review.
+
+      `createDataInventoryEntry`, `reviseDataInventoryEntry` (If-Match) and `reviewDataInventory` (A, for the quarter
+      waiting only) complete it.
+    - **The review** keeps the access review's timing: once a quarter ends, overdue 14 days after.
+    - **Reviews list.** It gains the attestation `data-inventory`, which CTL-DP-05's Q check now reads.
+    - **Tests:**
+      - `TestThePersonalDataInventory`;
+      - `TestAttackTheDataInventoryKeepsItsHistory`;
+      - the review in `TestEachReviewReadsItsOwnSource`;
+      - matrix rows.
+
+- [x] 4.3 The Inventory tab of Compliance › Data protection (Expert, `/compliance/data-protection`), with the retention
   schedule and the DPO tab (contact, website block, policies, penalty). Help keys, the guide page
   `compliance-data-protection.md`, component tests with axe. `// req: CMP-05`
+
+  **What building added:**
+    - **The screen.** Compliance › Data protection (Expert) has two tabs; later slices add theirs.
+      - **Inventory:** the review's banner with **Record the review**; what Fyniq holds (with where, who, protection and
+        abroad in Expert); what it never holds; the company's own entries with add, change and retire; the retention
+        schedule.
+      - **Data Protection Officer:** the contact card reused from Settings, links to the data protection policy and
+        the notices, and the penalty.
+    - **Navigation.** The Compliance page lists the screen.
+    - **Help.** The help keys are `compliance.data-protection`, `data-protection.inventory`, `data-protection.entry` and
+      `data-protection.review`. The guide page is compiled into `kb/`, and the reviews guide gains the inventory's
+      review.
 
 ## 5. DPIAs (slice 5)
 
