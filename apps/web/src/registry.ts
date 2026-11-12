@@ -386,6 +386,8 @@ export const actions = [
   { kind: "action", id: "inbox.controls", mode: "basic", help: "inbox.controls", guide: "compliance.controls#when-a-control-fails" },
   { kind: "action", id: "risk.save", mode: "expert", help: "risk.save", guide: "compliance.risks#add-or-change-a-risk" },
   { kind: "action", id: "risk.review", mode: "expert", help: "risk.review", guide: "compliance.risks#review-a-risk" },
+  { kind: "action", id: "policy.acknowledge", mode: "basic", help: "policy.acknowledge", guide: "compliance.policies#acknowledge-a-policy" },
+  { kind: "action", id: "policy.publish", mode: "expert", help: "policy.publish", guide: "compliance.policies#draft-and-publish-a-policy" },
   { kind: "action", id: "statutory-filing.attach-evidence", mode: "basic", help: "statutory-filing.attach-evidence", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "gst-forecast.attach-evidence", mode: "expert", help: "gst-forecast.attach-evidence", guide: "compliance.gst#record-a-forecast" },
   { kind: "action", id: "gst-forecast.draft", mode: "expert", help: "gst-forecast.draft", guide: "compliance.gst#record-a-forecast" },

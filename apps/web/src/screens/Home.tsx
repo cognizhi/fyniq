@@ -4,6 +4,7 @@ import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, T
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
+import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
@@ -224,6 +225,7 @@ function Workspace() {
         <>
           <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
+          <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
         </>
       )}

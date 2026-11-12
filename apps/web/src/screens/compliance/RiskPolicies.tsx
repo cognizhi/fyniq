@@ -12,6 +12,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { PolicyLibrary } from "./Policies";
 
 type Risk = components["schemas"]["RiskView"];
 type RiskInput = components["schemas"]["RiskInput"];
@@ -147,6 +148,7 @@ export function RiskPolicies() {
           )}
         </section>
       )}
+      <PolicyLibrary />
       {editing && <RiskForm risk={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
       {reviewing && <ReviewForm risk={reviewing} onClose={() => setReviewing(null)} />}
     </div>

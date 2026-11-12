@@ -4,7 +4,7 @@ type: task
 title: Keep the risk register
 summary: The risk register - each risk's owner, likelihood, impact, rating, mitigation and review date; adding, changing, closing and reviewing a risk
 sources:
-  - docs/user-guide/compliance-risks-policies.md sha256:37c6fa625c7b80a04d5ed76d38a51e647fef0a7aafb88d0fb985aa12d796e4a5
+  - docs/user-guide/compliance-risks-policies.md sha256:3bb0186140b6f11af34d47225494e9ed5040d0489d9d818335207e1c19d8121b
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,7 @@ aliases:
 - Each risk's rating, high, medium or low, comes from its likelihood and impact; the highest come first.
 - The Owner, the Administrator, the Controller, the Accountant, the Auditor and the Compliance officer see it; the Compliance officer adds, changes and reviews risks ([[members.roles]]).
 - A company that runs Fyniq for itself starts with the risks of building and running Fyniq; every other company starts with an empty register. Its controls are on [[compliance.controls]].
+- Below the register is the policy library, which every member reads and acknowledges and the Owner and the Compliance officer publish ([[compliance.policies]]).
 
 (src: docs/user-guide/compliance-risks-policies.md#what-it-is)
 

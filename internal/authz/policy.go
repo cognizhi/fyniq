@@ -1461,10 +1461,17 @@ var (
 	ListControls = Policy{Operation: "listControls", Capability: ComplianceCenter, Need: View}
 	GetControl   = Policy{Operation: "getControl", Capability: ComplianceCenter, Need: View}
 	// The risk register (CMP-06; p1-compliance-center D7): the Compliance officer saves and reviews risks.
-	ListRisks                = Policy{Operation: "listRisks", Capability: ComplianceCenter, Need: View}
-	CreateRisk               = Policy{Operation: "createRisk", Capability: ComplianceCenter, Need: Create}
-	ReviseRisk               = Policy{Operation: "reviseRisk", Capability: ComplianceCenter, Need: Create}
-	ReviewRisk               = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
+	ListRisks  = Policy{Operation: "listRisks", Capability: ComplianceCenter, Need: View}
+	CreateRisk = Policy{Operation: "createRisk", Capability: ComplianceCenter, Need: Create}
+	ReviseRisk = Policy{Operation: "reviseRisk", Capability: ComplianceCenter, Need: Create}
+	ReviewRisk = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
+	// The policy library (CMP-07; Appendix D "Policy library"): the Owner and the Compliance officer draft and publish;
+	// every member reads and acknowledges their own.
+	ListPolicies             = Policy{Operation: "listPolicies", Capability: PolicyLibrary, Need: View}
+	GetPolicy                = Policy{Operation: "getPolicy", Capability: PolicyLibrary, Need: View}
+	SavePolicyDraft          = Policy{Operation: "savePolicyDraft", Capability: PolicyLibrary, Need: Create}
+	PublishPolicyVersion     = Policy{Operation: "publishPolicyVersion", Capability: PolicyLibrary, Need: Approve}
+	AcknowledgePolicyVersion = Policy{Operation: "acknowledgePolicyVersion", Capability: PolicyLibrary, Need: View}
 	AcknowledgeAuditRecovery = Policy{Operation: "acknowledgeAuditRecovery", Capability: AuditTrail, Need: Approve, OwnerMay: true,
 		Note: "Nobody holds A on \"Audit trail\" yet, so the Owner acknowledges (p1-audit-explorer design D8)."}
 	WhatIfCashProjection = Policy{Operation: "whatIfCashProjection", Capability: Budgets, Need: View, Unqualified: true}
@@ -1678,7 +1685,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

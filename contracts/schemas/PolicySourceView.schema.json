@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "retrieved": {
+      "description": "The day it was read.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "title": {
+      "description": "The source.",
+      "examples": [
+        "PDPC, Guide on Managing and Notifying Data Breaches under the PDPA"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "Where it is.",
+      "examples": [
+        "https://www.pdpc.gov.sg/"
+      ],
+      "format": "uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "url",
+    "retrieved"
+  ],
+  "title": "PolicySourceView",
+  "type": "object"
+}

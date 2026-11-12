@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "Its text, as Markdown; only for those who may edit the library.",
+      "examples": [
+        "# Data protection policy\n\n## Purpose\n..."
+      ],
+      "type": "string"
+    },
+    "revision": {
+      "description": "The organisation's revision; 0 for Fyniq's draft. The draft's ETag carries it for If-Match.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sha256": {
+      "description": "The SHA-256 of its text.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "fyniq: Fyniq's starting draft, not edited yet. organisation: a revision of the organisation's own.",
+      "enum": [
+        "fyniq",
+        "organisation"
+      ],
+      "examples": [
+        "organisation"
+      ],
+      "type": "string"
+    },
+    "unpublished": {
+      "description": "true while it differs from the current version: publishing it makes the next version.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "source",
+    "revision",
+    "sha256",
+    "unpublished"
+  ],
+  "title": "PolicyDraftView",
+  "type": "object"
+}

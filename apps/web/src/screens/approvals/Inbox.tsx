@@ -8,6 +8,7 @@ import { date, dateTime } from "../../format/date";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
 import { ControlsFailing } from "../compliance/Controls";
+import { PoliciesToAcknowledge } from "../compliance/Policies";
 import { DeadlinesSoon } from "../compliance/DeadlinesSoon";
 import { recorders } from "../compliance/StatutoryCalendar";
 import { BillsToPay } from "../purchases/BillsBoard";
@@ -182,6 +183,7 @@ export function Inbox() {
       {(session.roles ?? []).some((r) => payers.includes(r)) && <BillsToPay />}
       {(session.roles ?? []).some((r) => recorders.includes(r)) && <DeadlinesSoon />}
       <ControlsFailing />
+      <PoliciesToAcknowledge />
       {review.data && (
         <section className="fy-card" aria-labelledby="weekly-review">
           <div className="fy-card__head">

@@ -20,6 +20,9 @@ Compliance officer adds, changes and reviews risks.
 A company that runs Fyniq for itself starts with the risks of building and running Fyniq already in its register; every
 other company starts with an empty one.
 
+Below the register is the policy library: the company's policies, which every member reads and acknowledges, and which
+the Owner and the Compliance officer publish.
+
 ## Add or change a risk
 
 1. Select **Add a risk**, or **Change** beside a risk.

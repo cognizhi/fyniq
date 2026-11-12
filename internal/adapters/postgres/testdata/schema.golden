@@ -1318,6 +1318,30 @@ period_variance_explanation | explanation | text | not null |
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
 period_variance_explanation | kind | text | not null | 'month'::text
+policy_acknowledgement | organisation_id | uuid | not null | current_org()
+policy_acknowledgement | id | uuid | not null | uuidv7()
+policy_acknowledgement | key | text | not null | 
+policy_acknowledgement | version | integer | not null | 
+policy_acknowledgement | acknowledged_by | text | not null | 
+policy_acknowledgement | acknowledged_at | timestamp with time zone | not null | 
+policy_draft | organisation_id | uuid | not null | current_org()
+policy_draft | id | uuid | not null | uuidv7()
+policy_draft | key | text | not null | 
+policy_draft | revision | integer | not null | 
+policy_draft | body | text | not null | 
+policy_draft | sha256 | bytea | not null | 
+policy_draft | saved_by | text | not null | 
+policy_draft | saved_at | timestamp with time zone | not null | 
+policy_version | organisation_id | uuid | not null | current_org()
+policy_version | id | uuid | not null | uuidv7()
+policy_version | key | text | not null | 
+policy_version | version | integer | not null | 
+policy_version | title | text | not null | 
+policy_version | body | text | not null | 
+policy_version | sha256 | bytea | not null | 
+policy_version | from_draft | text | not null | 
+policy_version | published_by | text | not null | 
+policy_version | published_at | timestamp with time zone | not null | 
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -3794,6 +3818,55 @@ period_variance_explanation | period_variance_explanation_previous_amount_not_nu
 period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
 period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
 period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+policy_acknowledgement | policy_acknowledgement_acknowledged_at_not_null | NOT NULL acknowledged_at
+policy_acknowledgement | policy_acknowledgement_acknowledged_by_not_null | NOT NULL acknowledged_by
+policy_acknowledgement | policy_acknowledgement_by_format | CHECK ((acknowledged_by ~ '^user:[!-~]{1,200}$'::text))
+policy_acknowledgement | policy_acknowledgement_id_not_null | NOT NULL id
+policy_acknowledgement | policy_acknowledgement_key_not_null | NOT NULL key
+policy_acknowledgement | policy_acknowledgement_once | UNIQUE (organisation_id, key, version, acknowledged_by)
+policy_acknowledgement | policy_acknowledgement_organisation_id_not_null | NOT NULL organisation_id
+policy_acknowledgement | policy_acknowledgement_pkey | PRIMARY KEY (organisation_id, id)
+policy_acknowledgement | policy_acknowledgement_version_fkey | FOREIGN KEY (organisation_id, key, version) REFERENCES policy_version(organisation_id, key, version)
+policy_acknowledgement | policy_acknowledgement_version_not_null | NOT NULL version
+policy_acknowledgement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+policy_draft | policy_draft_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 100000)))
+policy_draft | policy_draft_body_not_null | NOT NULL body
+policy_draft | policy_draft_id_not_null | NOT NULL id
+policy_draft | policy_draft_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text])))
+policy_draft | policy_draft_key_not_null | NOT NULL key
+policy_draft | policy_draft_once | UNIQUE (organisation_id, key, revision)
+policy_draft | policy_draft_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+policy_draft | policy_draft_organisation_id_not_null | NOT NULL organisation_id
+policy_draft | policy_draft_pkey | PRIMARY KEY (organisation_id, id)
+policy_draft | policy_draft_revision_not_null | NOT NULL revision
+policy_draft | policy_draft_revision_positive | CHECK ((revision > 0))
+policy_draft | policy_draft_saved_at_not_null | NOT NULL saved_at
+policy_draft | policy_draft_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+policy_draft | policy_draft_saved_by_not_null | NOT NULL saved_by
+policy_draft | policy_draft_sha256 | CHECK ((sha256 = sha256(convert_to(body, 'UTF8'::name))))
+policy_draft | policy_draft_sha256_not_null | NOT NULL sha256
+policy_draft | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+policy_version | policy_version_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 100000)))
+policy_version | policy_version_body_not_null | NOT NULL body
+policy_version | policy_version_from_draft_not_null | NOT NULL from_draft
+policy_version | policy_version_from_format | CHECK ((from_draft ~ '^(fyniq-policy-draft@[0-9]+|revision [0-9]+)$'::text))
+policy_version | policy_version_id_not_null | NOT NULL id
+policy_version | policy_version_key_known | CHECK ((key = ANY (ARRAY['information-security'::text, 'acceptable-use'::text, 'access-control'::text, 'incident-response'::text, 'backup'::text, 'change-management'::text, 'ai-use'::text, 'data-protection'::text])))
+policy_version | policy_version_key_not_null | NOT NULL key
+policy_version | policy_version_once | UNIQUE (organisation_id, key, version)
+policy_version | policy_version_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+policy_version | policy_version_organisation_id_not_null | NOT NULL organisation_id
+policy_version | policy_version_pkey | PRIMARY KEY (organisation_id, id)
+policy_version | policy_version_positive | CHECK ((version > 0))
+policy_version | policy_version_published_at_not_null | NOT NULL published_at
+policy_version | policy_version_published_by_format | CHECK ((published_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+policy_version | policy_version_published_by_not_null | NOT NULL published_by
+policy_version | policy_version_sha256 | CHECK ((sha256 = sha256(convert_to(body, 'UTF8'::name))))
+policy_version | policy_version_sha256_not_null | NOT NULL sha256
+policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+policy_version | policy_version_title_not_null | NOT NULL title
+policy_version | policy_version_version_not_null | NOT NULL version
+policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
 quote_outcome | quote_outcome_id_not_null | NOT NULL id
@@ -4656,6 +4729,12 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX policy_acknowledgement_once ON fyniq.policy_acknowledgement USING btree (organisation_id, key, version, acknowledged_by)
+CREATE UNIQUE INDEX policy_acknowledgement_pkey ON fyniq.policy_acknowledgement USING btree (organisation_id, id)
+CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organisation_id, key, revision)
+CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
+CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
+CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
@@ -4777,6 +4856,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_acknowledgement', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'recurring_invoice_id')
@@ -5082,6 +5164,12 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER policy_acknowledgement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_acknowledgement FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
+CREATE TRIGGER policy_acknowledgement_no_truncate BEFORE TRUNCATE ON fyniq.policy_acknowledgement FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_draft FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
+CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
+CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
@@ -5237,6 +5325,9 @@ period_close | tenant_isolation | * | (organisation_id = current_org()) | (organ
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5384,6 +5475,9 @@ period_close | enabled | forced
 period_close_check | enabled | forced
 period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
+policy_acknowledgement | enabled | forced
+policy_draft | enabled | forced
+policy_version | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
 recovery_confirmation | disabled | not forced
@@ -5648,6 +5742,7 @@ period_close_guard() → trigger | security invoker | v | search_path=pg_catalog
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
+policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa

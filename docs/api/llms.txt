@@ -187,6 +187,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/filings/{filing_id}/record` (recordStatutoryFiling): Record a filing record
 - `POST /v1/compliance/filings/{filing_id}/withdraw` (withdrawStatutoryFiling): Withdraw a filing record
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
+- `GET /v1/compliance/policies` (listPolicies): List the policy library
+- `GET /v1/compliance/policies/{key}` (getPolicy): Get a policy
+- `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
+- `POST /v1/compliance/policies/{key}/versions` (publishPolicyVersion): Publish a policy's next version
+- `POST /v1/compliance/policies/{key}/versions/{version}/acknowledgements` (acknowledgePolicyVersion): Acknowledge a policy
 - `GET /v1/compliance/risks` (listRisks): List the risk register
 - `POST /v1/compliance/risks` (createRisk): Add a risk to the register
 - `PUT /v1/compliance/risks/{risk_id}` (reviseRisk): Change a risk

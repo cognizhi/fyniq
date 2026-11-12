@@ -134,3 +134,29 @@ SELECT r.id, r.ref, r.created_at, v.version, v.title, v.description, v.owner_rol
 SELECT DISTINCT ON (y.risk_id) y.*
   FROM fyniq.risk_review y
  ORDER BY y.risk_id, y.reviewed_at DESC, y.id DESC;
+
+-- name: LatestPolicyDrafts :many
+-- Each policy's latest draft revision.
+SELECT DISTINCT ON (d.key) d.* FROM fyniq.policy_draft d ORDER BY d.key, d.revision DESC;
+
+-- name: ListPolicyVersions :many
+SELECT * FROM fyniq.policy_version ORDER BY key, version;
+
+-- name: ListPolicyAcknowledgements :many
+SELECT * FROM fyniq.policy_acknowledgement ORDER BY key, version, acknowledged_at;
+
+-- name: InsertPolicyDraft :one
+INSERT INTO fyniq.policy_draft (key, revision, body, sha256, saved_by, saved_at)
+VALUES (sqlc.arg(key), sqlc.arg(revision), sqlc.arg(body), sha256(convert_to(sqlc.arg(body)::text, 'UTF8')), sqlc.arg(saved_by), sqlc.arg(saved_at))
+RETURNING *;
+
+-- name: InsertPolicyVersion :one
+INSERT INTO fyniq.policy_version (key, version, title, body, sha256, from_draft, published_by, published_at)
+VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(title), sqlc.arg(body), sha256(convert_to(sqlc.arg(body)::text, 'UTF8')), sqlc.arg(from_draft),
+        sqlc.arg(published_by), sqlc.arg(published_at))
+RETURNING *;
+
+-- name: InsertPolicyAcknowledgement :one
+INSERT INTO fyniq.policy_acknowledgement (key, version, acknowledged_by, acknowledged_at)
+VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(acknowledged_by), sqlc.arg(acknowledged_at))
+RETURNING *;

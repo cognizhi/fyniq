@@ -2018,7 +2018,7 @@
     },
     "compliance.risks": {
       "label": "Risks and policies",
-      "tooltip": "The risk register: each risk with its owner, rating, mitigation and review date, reviewed by its review date."
+      "tooltip": "The risk register, each risk with its owner, rating, mitigation and review date; and the policy library, each policy in force with who acknowledged it."
     },
     "risk.save": {
       "label": "Add or change a risk",
@@ -2027,6 +2027,14 @@
     "risk.review": {
       "label": "Review a risk",
       "tooltip": "Record that the risk was reviewed; its next review falls its review interval after today."
+    },
+    "policy.acknowledge": {
+      "label": "Acknowledge policy",
+      "tooltip": "Read the version of a policy now in force and confirm you accept it, within 30 days of its publication or of joining."
+    },
+    "policy.publish": {
+      "label": "Draft and publish a policy",
+      "tooltip": "The Owner or the Compliance officer adopts Fyniq's draft or edits it, then publishes it as the policy's next version."
     },
     "controls.filter": {
       "label": "Framework",

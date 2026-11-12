@@ -127,8 +127,58 @@ type Risk struct {
 	LastReview *RiskReview
 }
 
+// CodePolicy is the database's refusal of a draft revision or a version out of order, an acknowledgement of a version
+// not published or given twice, and any change or deletion in the policy library (FY310).
+const CodePolicy = "STORAGE-POLICY-01"
+
+// PolicyDraft is a revision of the organisation's draft of a policy (CMP-07, design D8).
+type PolicyDraft struct {
+	Key      string
+	Revision int
+	Body     string
+	SHA256   []byte
+	SavedBy  string
+	SavedAt  time.Time
+}
+
+// PublishedPolicy is a published version of a policy: it never changes.
+type PublishedPolicy struct {
+	ID          uuid.UUID
+	Key         string
+	Version     int
+	Title, Body string
+	SHA256      []byte
+	From        string // fyniq-policy-draft@1, or "revision N" of the organisation's draft
+	PublishedBy string
+	PublishedAt time.Time
+}
+
+// PolicyAcknowledgement is a member's acknowledgement of a published version.
+type PolicyAcknowledgement struct {
+	Key     string
+	Version int
+	By      string // user:<id>
+	At      time.Time
+}
+
+// PolicyLibrary is the organisation's policy library: each policy's latest draft revision, every published version and
+// every acknowledgement.
+type PolicyLibrary struct {
+	Drafts           []PolicyDraft
+	Versions         []PublishedPolicy
+	Acknowledgements []PolicyAcknowledgement
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
+	// Policies is the policy library (CMP-07).
+	Policies(ctx context.Context) (PolicyLibrary, error)
+	// SavePolicyDraft saves revision of the policy's draft, audited as policy.draft_saved.
+	SavePolicyDraft(ctx context.Context, d PolicyDraft) (PolicyDraft, error)
+	// PublishPolicy publishes the policy's next version, audited as policy.published.
+	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
+	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
+	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
 	// Risks are the organisation's risks at their latest versions, in the order of their references (CMP-06).
 	Risks(ctx context.Context) ([]Risk, error)
 	// CreateRisk adds a risk at version 1, audited as risk.saved.

@@ -1,0 +1,70 @@
+package compliance
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io/fs"
+	"sort"
+	"strings"
+
+	"go.yaml.in/yaml/v3"
+)
+
+// PolicyKeys are the policies of the library (PRD-001 CMP-07), in the order the library lists them.
+var PolicyKeys = []string{"information-security", "acceptable-use", "access-control", "incident-response", "backup",
+	"change-management", "ai-use", "data-protection"}
+
+// PolicySource is an official source a draft was written from, with the day it was read.
+type PolicySource struct {
+	Title     string `yaml:"title"`
+	URL       string `yaml:"url"`
+	Retrieved string `yaml:"retrieved"`
+}
+
+// PolicyDraft is Fyniq's starting draft of a policy (design D8): its front matter, and its text as Markdown with its
+// SHA-256. The Owner or the DPO adopts it as it is, or edits it, and publishes a version.
+type PolicyDraft struct {
+	Key      string         `yaml:"key"`
+	Title    string         `yaml:"title"`
+	Draft    string         `yaml:"draft"` // fyniq-policy-draft@1
+	Sources  []PolicySource `yaml:"sources"`
+	Controls []string       `yaml:"controls"`
+	Body     string         `yaml:"-"`
+	SHA256   string         `yaml:"-"`
+}
+
+// PolicyDrafts are Fyniq's starting drafts, in the order of PolicyKeys.
+func PolicyDrafts() ([]PolicyDraft, error) {
+	var out []PolicyDraft
+	err := fs.WalkDir(files, "policies", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		b, err := files.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		text := string(b)
+		rest, ok := strings.CutPrefix(text, "---\n")
+		head, body, found := strings.Cut(rest, "\n---\n")
+		if !ok || !found {
+			return fmt.Errorf("%s has no front matter", path)
+		}
+		var p PolicyDraft
+		if err := yaml.Unmarshal([]byte(head), &p); err != nil {
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		p.Body = strings.TrimLeft(body, "\n")
+		sum := sha256.Sum256([]byte(p.Body))
+		p.SHA256 = hex.EncodeToString(sum[:])
+		out = append(out, p)
+		return nil
+	})
+	order := map[string]int{}
+	for i, k := range PolicyKeys {
+		order[k] = i
+	}
+	sort.Slice(out, func(i, j int) bool { return order[out[i].Key] < order[out[j].Key] })
+	return out, err
+}

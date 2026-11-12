@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "With getPolicy: the current version's text, as Markdown.",
+      "examples": [
+        "# Data protection policy\n\n## Purpose\n..."
+      ],
+      "type": "string"
+    },
+    "current": {
+      "$ref": "PolicyVersionView.schema.json",
+      "description": "The version in force; none before the first is published."
+    },
+    "draft": {
+      "$ref": "PolicyDraftView.schema.json",
+      "description": "The draft its next version is published from."
+    },
+    "key": {
+      "description": "The policy's key.",
+      "enum": [
+        "information-security",
+        "acceptable-use",
+        "access-control",
+        "incident-response",
+        "backup",
+        "change-management",
+        "ai-use",
+        "data-protection"
+      ],
+      "examples": [
+        "data-protection"
+      ],
+      "type": "string"
+    },
+    "members": {
+      "description": "How many members the current version applies to.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "mine": {
+      "$ref": "MyPolicyAcknowledgement.schema.json",
+      "description": "The caller's acknowledgement of the current version; none before one is published."
+    },
+    "sources": {
+      "description": "With getPolicy: the official sources Fyniq's starting draft was written from.",
+      "items": {
+        "$ref": "PolicySourceView.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Data protection policy"
+      ],
+      "type": "string"
+    },
+    "versions": {
+      "description": "With getPolicy: every published version, oldest first.",
+      "items": {
+        "$ref": "PolicyVersionView.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "members",
+    "draft"
+  ],
+  "title": "PolicyView",
+  "type": "object"
+}
