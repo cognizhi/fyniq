@@ -417,6 +417,67 @@ jobs:
 	}
 }
 
+// req: SEC-22
+// req: NFR-IMG-05
+// req: CTL-CHG-04
+// asvs: V15.2.4
+func TestTheReleaseWorkflowVerifiesBeforeItAttests(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := ReleaseWorkflowViolations(src); len(got) > 0 {
+		t.Fatalf("release.yml:\n%s", strings.Join(got, "\n"))
+	}
+	planted := []byte(`
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+jobs:
+  images:
+    steps:
+      - uses: google-github-actions/auth@0000000000000000000000000000000000000000
+        with:
+          service_account: ${{ vars.GCP_ATTESTER_SA }}
+      - run: python3 scripts/images.py publish --release "$TAG"
+      - run: cosign sign --key cosign.key "$IMAGE"
+  provenance:
+    needs: images
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@main
+  attest:
+    needs: images
+    steps:
+      - run: gcloud container binauthz attestations sign-and-create
+`)
+	// main as well as releases, publishing as the attester, no scan before publishing, the generator by branch, no admit
+	// as the attester, attesting before the provenance exists, and a key-signed image
+	if got := ReleaseWorkflowViolations(planted); len(got) != 7 {
+		t.Fatalf("want 7 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+	// Only the SLSA generator may be named by a tag, and only at a release.
+	tagged := []byte(`
+on:
+  push:
+    tags: ["v*"]
+permissions: {}
+jobs:
+  ok:
+    permissions: {}
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+  branch:
+    permissions: {}
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@main
+  other:
+    permissions: {}
+    uses: evil/actions/.github/workflows/build.yml@v1.0.0
+`)
+	if got := WorkflowViolations("tagged.yml", tagged); len(got) != 2 {
+		t.Fatalf("want the generator by branch and another workflow by tag refused, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}
+
 // req: REL-06
 func TestReleasePleaseRunsWithTheAppToken(t *testing.T) {
 	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release-please.yml"))

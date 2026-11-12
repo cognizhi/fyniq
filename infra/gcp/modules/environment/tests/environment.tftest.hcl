@@ -7,6 +7,7 @@
 # req: SEC-04
 # req: CMP-AI-01
 # req: CTL-AI-01
+# req: SEC-22
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -380,4 +381,17 @@ run "a_secrets_project_is_a_project_id" {
     secrets_project = "Not a project"
   }
   expect_failures = [var.secrets_project]
+}
+
+# Every service and job is held to the project's Binary Authorization policy, with no breakglass (SEC-22).
+run "every_image_passes_binary_authorization" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = alltrue(concat(
+      [for s in google_cloud_run_v2_service.services : s.binary_authorization[0].use_default && s.binary_authorization[0].breakglass_justification == null],
+      [for j in google_cloud_run_v2_job.jobs : j.binary_authorization[0].use_default && j.binary_authorization[0].breakglass_justification == null],
+    ))
+    error_message = "every Cloud Run service and job must use the default Binary Authorization policy, without breakglass"
+  }
 }
