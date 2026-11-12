@@ -27,7 +27,15 @@ var WriteJobs = map[string]struct {
 	"infra.yml/plan":                        {[]string{"id-token"}, "plans each environment through Workload Identity Federation, which trusts main and tags only (SEC-04, CTL-CHG-02)"},
 	"infra.yml/apply":                       {[]string{"id-token"}, "applies one environment through Workload Identity Federation, in a GitHub environment that holds production for approval (§12.4)"},
 	"release-evidence.yml/release-evidence": {[]string{"contents"}, "attaches a published release's CI evidence to it as assets; it reads runs and artefacts with actions: read (CMP-01, p1-compliance-center D3)"},
+	"release.yml/images":                    {[]string{"id-token"}, "pushes the release images through Workload Identity Federation, which trusts main and tags only, and signs them keyless with its OIDC identity (SEC-22)"},
+	"release.yml/provenance":                {[]string{"id-token", "packages"}, "the SLSA generator's reusable workflow signs the provenance keyless and pushes it as the publisher; its own job asks for packages, which nothing here uses (SEC-22)"},
+	"release.yml/attest":                    {[]string{"id-token"}, "creates the Binary Authorization attestations as the attester, reachable only from release.yml on a version tag (SEC-22, CTL-CHG-04)"},
+	"release.yml/publish":                   {[]string{"contents"}, "attaches the release's image digests to its GitHub release (SEC-22)"},
 }
+
+// slsaGenerator is the one reusable workflow a job may name by a release tag instead of a commit: slsa-verifier accepts
+// the SLSA generator's provenance only from a tagged release of it (SEC-22, p1-security-hardening design D1).
+var slsaGenerator = regexp.MustCompile(`^slsa-framework/slsa-github-generator/\.github/workflows/generator_container_slsa3\.yml@v\d+\.\d+\.\d+$`)
 
 var (
 	pinnedAction = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$`)
@@ -160,7 +168,10 @@ func WorkflowViolations(name string, src []byte) []string {
 				bad("job %s has a write token but its workflow runs for pull requests or unreviewed branches", id)
 			}
 		}
-		uses := []string{j.Uses}
+		var uses []string
+		if !slsaGenerator.MatchString(j.Uses) {
+			uses = append(uses, j.Uses)
+		}
 		for i, s := range j.Steps {
 			uses = append(uses, s.Uses)
 			shell := cmpOr(s.Shell, j.Defaults.Run.Shell, w.Defaults.Run.Shell)
@@ -262,5 +273,90 @@ func ReleaseAppTokenViolations(src []byte) []string {
 	if !used {
 		out = append(out, "the release-please job does not run googleapis/release-please-action")
 	}
+	return out
+}
+
+// ReleaseWorkflowViolations checks release.yml against SEC-22 and CTL-CHG-04 (p1-security-hardening design D1): it runs
+// only when a release is published, on its tag; the images job publishes as the publisher; the SLSA generator attests each digest the images
+// job pushed; the attest job, as the attester, verifies before it attests, and only after the provenance exists; and no
+// step signs with a key, so every signature is keyless and tied to the workflow's identity.
+func ReleaseWorkflowViolations(src []byte) []string {
+	type step struct {
+		Uses string            `yaml:"uses"`
+		Run  string            `yaml:"run"`
+		With map[string]string `yaml:"with"`
+	}
+	var w struct {
+		On   yaml.Node `yaml:"on"`
+		Jobs map[string]struct {
+			Needs yaml.Node         `yaml:"needs"`
+			Uses  string            `yaml:"uses"`
+			With  map[string]string `yaml:"with"`
+			Steps []step            `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(src, &w); err != nil {
+		return []string{fmt.Sprintf("not YAML: %v", err)}
+	}
+	var out []string
+	bad := func(format string, args ...any) { out = append(out, fmt.Sprintf(format, args...)) }
+	events, _ := triggers(w.On)
+	published := w.On.Kind == yaml.MappingNode && len(w.On.Content) == 2 && w.On.Content[1].Kind == yaml.MappingNode &&
+		len(w.On.Content[1].Content) == 2 && w.On.Content[1].Content[0].Value == "types" &&
+		len(w.On.Content[1].Content[1].Content) == 1 && w.On.Content[1].Content[1].Content[0].Value == "published"
+	if !slices.Equal(events, []string{"release"}) || !published {
+		bad("release.yml must run only when a release is published (release: types: [published]), not on %v", events)
+	}
+	needs := func(id string) []string {
+		n := w.Jobs[id].Needs
+		if n.Kind == yaml.ScalarNode {
+			return []string{n.Value}
+		}
+		var ids []string
+		for _, c := range n.Content {
+			ids = append(ids, c.Value)
+		}
+		return ids
+	}
+	runs := func(id, cmd string) bool {
+		for _, s := range w.Jobs[id].Steps {
+			if strings.Contains(s.Run, cmd) {
+				return true
+			}
+		}
+		return false
+	}
+	account := func(id string) string {
+		for _, s := range w.Jobs[id].Steps {
+			if strings.HasPrefix(s.Uses, "google-github-actions/auth@") {
+				return s.With["service_account"]
+			}
+		}
+		return ""
+	}
+	if !runs("images", "scripts/images.py publish") || account("images") != "${{ vars.GCP_PUBLISHER_SA }}" {
+		bad("the images job must publish (scripts/images.py publish) as the publisher")
+	}
+	if !runs("images", "make image-scan") {
+		bad("the images job must scan the release images (make image-scan) before it publishes them")
+	}
+	p := w.Jobs["provenance"]
+	if !slsaGenerator.MatchString(p.Uses) || p.With["digest"] != "${{ matrix.digest }}" || !slices.Contains(needs("provenance"), "images") {
+		bad("the provenance job must run the SLSA generator on each digest the images job pushed")
+	}
+	if !runs("attest", "scripts/images.py admit") || account("attest") != "${{ vars.GCP_ATTESTER_SA }}" {
+		bad("the attest job must verify, then attest (scripts/images.py admit), as the attester")
+	}
+	if !slices.Contains(needs("attest"), "provenance") {
+		bad("the attest job must wait for the provenance, which it verifies")
+	}
+	for id, j := range w.Jobs {
+		for _, s := range j.Steps {
+			if strings.Contains(s.Run, "--key ") || strings.Contains(s.Run, "--key=") || strings.Contains(s.Run, "COSIGN_PRIVATE_KEY") {
+				bad("job %s signs with a key: a release is signed keyless, with the workflow's identity", id)
+			}
+		}
+	}
+	sort.Strings(out)
 	return out
 }

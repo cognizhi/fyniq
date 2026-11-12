@@ -16,10 +16,11 @@ Infrastructure workflow does nothing.
 | `gcp/modules/ci-identity/` | `fyniq-ci`: Workload Identity Federation for this repository's `main` branch and tags only, Artifact Registry (immutable tags), and one service account per CI job. No keys |
 | `gcp/modules/environment/` | One environment: APIs, CMEK keys, a private network with Cloud NAT, Cloud SQL for PostgreSQL 18, secrets, one service account per service and job, Cloud Run services and jobs, Cloud Tasks queues, the Scheduler tick, and break-glass through Privileged Access Manager; and, in the environment's secrets project, the organisations' connector secrets, which only the api's account manages (`org_secrets.tf`, design D12 of `p1-bank-import-reconcile`) |
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
+| `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
 | `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors and budget |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
-| `gcp/shared/` | The organisation policies and CI's identity |
+| `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
 
 ## Check it locally
@@ -36,6 +37,7 @@ The tests check the controls on the planned configuration:
 | SEC-03 | Every service and job has its own service account. The MCP server and the AI orchestrator read no secret |
 | §12.11 | Only the api's account may create tasks or act as an invoker. The executor is invoked only by its own invoker |
 | SEC-04, CTL-IAM-04 | Workload Identity Federation names the repository and its owner by ID and allows only `main` and tags. There are no keys |
+| SEC-22, CTL-CHG-04 | Staging's and production's policies require the release attestation for every image and allow-list none; every Cloud Run service and job uses the policy, without breakglass; only `release.yml` on a version tag can reach the attester, which may sign attestations and read images, nothing more |
 | CTL-DP-01 | The database and secrets use rotated CMEK. Backups are pinned to Singapore with point-in-time recovery. The database has a private IP only |
 | CTL-DP-07 | No region outside Singapore, in the spec and anywhere in the code |
 | CTL-IAM-03 | No grant to a person or group. Break-glass needs another person's approval |
@@ -60,6 +62,9 @@ The tests check the controls on the planned configuration:
    - `GCP_WORKLOAD_IDENTITY_PROVIDER`
    - `TOFU_STATE_BUCKET`
    - `GCP_TOFU_SA_DEV`, `GCP_TOFU_SA_STAGING` and `GCP_TOFU_SA_PRODUCTION`
+   - for the release workflow (`.github/workflows/release.yml`): `GCP_PUBLISHER_SA` and `GCP_ATTESTER_SA`
+     (`service_accounts`), `ARTIFACT_REGISTRY` (the repository's URL,
+     `asia-southeast1-docker.pkg.dev/fyniq-ci/images`), and `BINAUTHZ_ATTESTOR` and `BINAUTHZ_KEY_VERSION` (`binauthz`)
    - `TOFU_TFVARS_DEV`, `TOFU_TFVARS_STAGING` and `TOFU_TFVARS_PRODUCTION`: each root's values as
      JSON, such as `billing_account`, `budget_emails` and `public_origin`.
 
@@ -109,6 +114,9 @@ The tests check the controls on the planned configuration:
    (rev 0.108).
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to
    `main` plan every environment, and the nightly run fails on drift.
+8. Binary Authorization starts as a dry run: the policies log every image without the release attestation and
+   block none, because the services start from the placeholder image. Once `cloud-first-deployment` deploys an
+   attested release, re-apply the shared root with `-var 'binauthz_enforced=["staging"]'`, then with production too.
 
 Values (billing account, emails) live only in GitHub variables, never in git. The workflow logs
 show which resources change and how, never their values, because this repository's logs are public.
@@ -149,3 +157,11 @@ assumptions, not facts.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
 - `[verify]` The production anchor retention, with the accountant (§14, AUD-06).
 - `[verify]` The project IDs.
+- `[live-verify]` The release workflow end to end on the first tag: keyless signatures and SBOM attestations in
+  Artifact Registry, the SLSA generator's provenance pushed as the publisher, `attribute.release` reaching the
+  attester from `release.yml` on a tag only, and `gcloud container binauthz attestations sign-and-create` with the
+  attestor and key version by full resource name.
+- `[live-verify]` Which digest Cloud Run checks for a multi-platform image: the release attests the index and each
+  platform's manifest.
+- `[live-verify]` That `run.allowedBinaryAuthorizationPolicies` = `default` refuses a service without the policy, and
+  an enforced policy refuses an image without the attestation.

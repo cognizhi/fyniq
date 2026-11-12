@@ -1,4 +1,5 @@
 # req: SEC-04
+# req: SEC-22
 # req: CTL-IAM-04
 
 mock_provider "google" {
@@ -53,5 +54,21 @@ run "ci_gets_credentials_only_from_main_and_tags" {
   assert {
     condition     = google_artifact_registry_repository.images.docker_config[0].immutable_tags
     error_message = "release image tags must be immutable: images deploy by digest (NFR-IMG-05)"
+  }
+}
+
+# The attester is impersonated only by release.yml on a version tag, never by the repository at large.
+run "only_the_release_workflow_attests" {
+  command = plan
+  assert {
+    condition = alltrue([for part in [
+      "assertion.ref_type == 'tag'",
+      "assertion.workflow_ref.startsWith('cognizhi/fyniq/.github/workflows/release.yml@refs/tags/v')",
+    ] : strcontains(google_iam_workload_identity_pool_provider.github.attribute_mapping["attribute.release"], part)])
+    error_message = "attribute.release must be yes only for release.yml on a version tag"
+  }
+  assert {
+    condition     = endswith(google_service_account_iam_member.attester.member, "/attribute.release/yes") && !contains(keys(google_service_account_iam_member.workload_identity), "attester")
+    error_message = "the attester must be reachable through attribute.release only"
   }
 }
