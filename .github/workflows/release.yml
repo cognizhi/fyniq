@@ -1,0 +1,142 @@
+# The release images (PRD-001 §12.9, §12.10; SEC-22, NFR-IMG-05, CTL-CHG-04; p1-security-hardening design D1). When
+# release-please publishes vX.Y.Z (with the release App's token, which starts workflows: REL-06), on that tag:
+#   1. images: check and scan the release images, then build them for linux/amd64 and linux/arm64, push them to
+#      Artifact Registry by digest (Workload Identity Federation, no key), scan each pushed image's SBOM, sign it
+#      keyless with this job's GitHub OIDC identity and attest the SBOM (cosign);
+#   2. provenance: slsa-github-generator's isolated reusable workflow attests SLSA Build L3 provenance for each digest;
+#   3. attest: as the attester, an identity only this workflow on a version tag can reach, verify each image's
+#      signature and SBOM against this workflow's identity and its provenance against the generator's for this
+#      repository and tag; only then create its Binary Authorization attestation with the Cloud KMS key;
+#   4. publish: the digests go to the GitHub release, beside release-evidence.yml's evidence.
+# Deploying by digest is cloud-first-deployment's. Inert until the founder's organisation exists: every job waits for
+# the repository variable GCP_WORKLOAD_IDENTITY_PROVIDER (infra/README.md lists the others) [live-verify].
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  images:
+    name: Build, push and sign the release images
+    if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation as the publisher (SEC-04), and cosign's keyless signature
+    outputs:
+      images: ${{ steps.publish.outputs.images }}
+    steps:
+      # actions/checkout v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+        with:
+          cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
+      - name: The release images pass the image checks and the scan (§12.9, NFR-IMG-05)
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          make images FLAVOURS=release RELEASE="$TAG" PLATFORM=linux/amd64
+          make image-scan
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_PUBLISHER_SA }}
+      - name: Push both platforms by digest, scan, sign keyless and attest the SBOMs
+        id: publish
+        env:
+          TAG: ${{ github.ref_name }}
+          REGISTRY: ${{ vars.ARTIFACT_REGISTRY }}
+        run: |
+          gcloud auth configure-docker "${REGISTRY%%/*}" --quiet
+          python3 scripts/images.py publish --release "$TAG" --registry "$REGISTRY" --github-output "$GITHUB_OUTPUT"
+      # actions/upload-artifact v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: release-images
+          path: .data/images/
+          if-no-files-found: ignore
+
+  provenance:
+    name: SLSA provenance
+    needs: images
+    permissions:
+      actions: read # the generator reads this run
+      id-token: write # its keyless signature, and Workload Identity Federation as the publisher
+      packages: write # the generator's own job asks for it (for ghcr.io); nothing here uses it
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.images.outputs.images) }}
+    # The generator is referenced by its release tag, as slsa-verifier requires of a builder; archtest allows only this
+    # reusable workflow by tag (SEC-28).
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ matrix.image }}
+      digest: ${{ matrix.digest }}
+      gcp-workload-identity-provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      gcp-service-account: ${{ vars.GCP_PUBLISHER_SA }}
+
+  attest:
+    name: Verify, then attest for Binary Authorization
+    needs: [images, provenance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation as the attester
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+        with:
+          cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_ATTESTER_SA }}
+      - name: Verify the signature, the SBOM and the provenance; attest only what verifies
+        env:
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+          IMAGES: ${{ needs.images.outputs.images }}
+          REGISTRY: ${{ vars.ARTIFACT_REGISTRY }}
+          ATTESTOR: ${{ vars.BINAUTHZ_ATTESTOR }}
+          KEY_VERSION: ${{ vars.BINAUTHZ_KEY_VERSION }}
+        run: |
+          gcloud auth configure-docker "${REGISTRY%%/*}" --quiet
+          python3 scripts/images.py admit --release "$TAG" --repository "$REPOSITORY" --images "$IMAGES" \
+            --attestor "$ATTESTOR" --key-version "$KEY_VERSION"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: release-admission
+          path: .data/images/admitted.json
+          if-no-files-found: ignore
+
+  publish:
+    name: The digests to the release
+    needs: [images, attest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # attach release-digests.json to the release
+    steps:
+      - env:
+          TAG: ${{ github.ref_name }}
+          IMAGES: ${{ needs.images.outputs.images }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s\n' "$IMAGES" > release-digests.json
+          gh release upload "$TAG" release-digests.json --clobber --repo "$REPO"

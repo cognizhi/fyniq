@@ -70,6 +70,8 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository" = "assertion.repository"
     "attribute.ref"        = "assertion.ref"
     "attribute.workflow"   = "assertion.workflow_ref"
+    # "yes" only for the release workflow running on a version tag: the attester is reachable from nothing else.
+    "attribute.release" = "assertion.ref_type == 'tag' && assertion.ref.startsWith('refs/tags/v') && assertion.workflow_ref.startsWith('${var.repository.name}/.github/workflows/release.yml@refs/tags/v') ? 'yes' : 'no'"
   }
   # Only this repository (by ID, not only by name), and only its main branch or a tag: a pull request,
   # a fork or another branch gets no Google credential at all.
@@ -93,11 +95,19 @@ resource "google_artifact_registry_repository" "images" {
   }
 }
 
-# One identity per CI job: publishing images, and planning or applying each environment.
+# One identity per CI job: publishing images, attesting them for Binary Authorization, and planning or applying
+# each environment.
 resource "google_service_account" "publisher" {
   project      = var.project
   account_id   = "ci-publisher"
   display_name = "CI: pushes release images"
+}
+
+# Its roles are on the attestor, its note and its key (the binauthz module).
+resource "google_service_account" "attester" {
+  project      = var.project
+  account_id   = "ci-attester"
+  display_name = "CI: attests verified release images (SEC-22)"
 }
 
 resource "google_service_account" "tofu" {
@@ -144,6 +154,14 @@ resource "google_service_account_iam_member" "workload_identity" {
   member             = local.principals
 }
 
+# Only release.yml on a version tag may attest (attribute.release): a workflow on main, or any other workflow on a
+# tag, gets no attester credential.
+resource "google_service_account_iam_member" "attester" {
+  service_account_id = google_service_account.attester.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.release/yes"
+}
+
 output "provider" {
   description = "The workload identity provider CI names (google-github-actions/auth's workload_identity_provider)."
   value       = google_iam_workload_identity_pool_provider.github.name
@@ -152,7 +170,7 @@ output "provider" {
 output "service_accounts" {
   description = "The CI service accounts by job."
   value = merge(
-    { publisher = google_service_account.publisher.email },
+    { publisher = google_service_account.publisher.email, attester = google_service_account.attester.email },
     { for env, sa in google_service_account.tofu : "tofu-${env}" => sa.email },
   )
 }

@@ -8,8 +8,8 @@ finding that no waiver covers, on an expired waiver, and on a waiver that no lon
     python3 scripts/scan.py --only gosec,licences
     python3 scripts/scan.py --self-test  # the waiver rules on planted findings (part of make check)
 
-What blocks (P0): gosec HIGH, Semgrep ERROR, any secret, grype Critical (NFR-IMG-05 adds High in P1),
-any failed Checkov check, actionlint errors, zizmor High, and a licence outside the allow-list. Every
+What blocks: gosec HIGH, Semgrep ERROR, any secret, grype Critical and High (NFR-IMG-05, p1-security-hardening
+2.3), any failed Checkov check, actionlint errors, zizmor High, and a licence outside the allow-list. Every
 other finding is reported, not blocking. The tools are pinned in mise.toml; `make setup` installs them.
 """
 
@@ -43,6 +43,9 @@ FONT_LICENCES = {"OFL-1.1"}
 FONT_PACKAGES = re.compile(r"^@fontsource(-variable)?/")
 # Licences no dependency may have, development tools included: strong copyleft and source-available.
 DENIED = re.compile(r"\b(A?GPL|LGPL|SSPL|EUPL|OSL|CPAL|BUSL|Commons-Clause|CC-BY-NC)", re.I)
+# The vulnerability severities that block, in the repository's dependencies and in the release images alike
+# (NFR-IMG-05: no unwaived Critical or High finding).
+BLOCKING_SEVERITIES = {"Critical", "High"}
 
 
 @dataclass
@@ -177,7 +180,7 @@ def grype() -> list[Finding]:
         v, a = m["vulnerability"], m["artifact"]
         fix = ", ".join(v.get("fix", {}).get("versions") or []) or "no fix yet"
         out.append(Finding("grype", v["id"], a["name"], f"{a['name']} {a['version']}: {v['severity']} (fixed in {fix})",
-                           v["severity"] == "Critical"))
+                           v["severity"] in BLOCKING_SEVERITIES))
     return out
 
 
@@ -235,6 +238,7 @@ SCAN_OF = {"actionlint": "workflows", "zizmor": "workflows"}
 
 # req: SEC-21
 # req: CTL-CHG-03
+# req: NFR-IMG-05
 def self_test() -> None:
     today = dt.date(2026, 10, 15)
     w = [Waiver("gosec", "G115", "internal/domain/money/*.go", "bounded by the ISO 4217 table", dt.date(2027, 1, 1)),
@@ -251,8 +255,12 @@ def self_test() -> None:
             raise SystemExit(f"✖ scan self-test: want a problem starting {p!r}, got {problems}")
     if len(problems) != 4 or f[0].waived_by == "" or f[2].waived_by != "":
         raise SystemExit(f"✖ scan self-test: {problems}, {f}")
+    # A High vulnerability blocks as a Critical one does; a Medium one is reported only (NFR-IMG-05).
+    vulns = [Finding("grype", f"CVE-{s}", "x", s, s in BLOCKING_SEVERITIES) for s in ("Critical", "High", "Medium", "Low")]
+    if [x.split(":")[1].strip() for x in judge(vulns, [], {"grype"}, today)] != ["CVE-Critical in x", "CVE-High in x"]:
+        raise SystemExit(f"✖ scan self-test: a High vulnerability must block as a Critical one does, a Medium one must not: {vulns}")
     load_waivers()  # the real file parses and every waiver has its fields
-    print("✔ scan waivers: the rules hold on planted findings, and compliance/scan-waivers.toml is well formed")
+    print("✔ scan waivers: the rules hold on planted findings, a High vulnerability blocks, and compliance/scan-waivers.toml is well formed")
 
 
 def main() -> int:

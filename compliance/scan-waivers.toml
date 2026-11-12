@@ -139,6 +139,13 @@ path = ".github/workflows/auto-approve.yml"
 reason = "pull_request_target runs main's copy of the auto-approval workflow, which never checks out or runs the pull request's code and reads no secret (archtest checks both). The workflow is removed before the first production deploy (CTL-CHG-01)."
 expires = 2027-01-31
 
+[[waiver]]
+tool = "zizmor"
+rule = "unpinned-uses"
+path = ".github/workflows/release.yml"
+reason = "The SLSA generator's reusable workflow is named by its release tag (v2.1.0), not a commit: slsa-verifier accepts provenance only from a tagged release of the builder, and the release workflow verifies the provenance's certificate against that tag. archtest allows only this workflow by a vX.Y.Z tag; every action is pinned by commit (SEC-28, SEC-22)."
+expires = 2027-05-31
+
 # ---------------------------------------------------------------- gosec, local build only
 
 [[waiver]]

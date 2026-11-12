@@ -13,7 +13,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 2. The release workflow and Binary Authorization (slice 2)
 
-- [ ] 2.1 `.github/workflows/release.yml` (D1), on a `v*` tag:
+- [x] 2.1 `.github/workflows/release.yml` (D1), when a release is published, on its `vX.Y.Z` tag:
   - build both platforms;
   - push by digest through Workload Identity Federation;
   - cosign keyless signature and SBOM attestation;
@@ -23,14 +23,14 @@ module tests on mock providers and tagged `[live-verify]`.
   - publish the digests to the release.
 
   The workflow archtest covers it. `// req: SEC-22`, `// req: NFR-IMG-05`
-- [ ] 2.2 `infra/gcp/modules/binauthz`: the KMS key, the attestor and the policy requiring it for Cloud Run, with a
+- [x] 2.2 `infra/gcp/modules/binauthz`: the KMS key, the attestor and the policy requiring it for Cloud Run, with a
   module test `[live-verify]`. CTL-CHG-04's check becomes `cloud`. `// req: CTL-CHG-04`
-- [ ] 2.3 The scans block High as well as Critical, unless waived (`scripts/scan.py`, `scripts/images.py`), with a
+- [x] 2.3 The scans block High as well as Critical, unless waived (`scripts/scan.py`, `scripts/images.py`), with a
   planted High finding refused. `// req: NFR-IMG-05`
 
 ## 3. Reproducible images (slice 3)
 
-- [ ] 3.1 `SOURCE_DATE_EPOCH` and normalised layers in both Dockerfiles. `scripts/images.py repro` and
+- [x] 3.1 `SOURCE_DATE_EPOCH` and normalised layers in both Dockerfiles. `scripts/images.py repro` and
   `make images-repro` build twice and compare digests, and a daily CI job runs them, as do changes to the images'
   inputs. `// req: NFR-IMG-07`
 

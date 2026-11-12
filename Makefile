@@ -19,8 +19,8 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
-# ten.
-GO_TEST_TIMEOUT := 45m
+# ten. With 630 operations it took 36 minutes on main and passed 45 on a slow runner (7 Nov 2026), so the limit is 90.
+GO_TEST_TIMEOUT := 90m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs"), and the forecasts
@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -160,8 +160,11 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the module tests on mock providers, and no keys, authoritative IAM, human grants or regions outside Singapore (NFR-PORT-05); downloads the providers
 	@$(MISE) python3 scripts/infra.py check
 
-image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical finding fails unless waived (SEC-21)
+image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical or high finding fails unless waived (SEC-21, NFR-IMG-05)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
+
+images-repro: ## Reproducible images (NFR-IMG-07): build every release image and the web image twice, for both platforms, with no cache, and compare the digests (daily in CI)
+	@$(MISE) python3 scripts/images.py repro
 
 image-sign: ## Push the release images by digest to a throwaway registry, sign them and attest their SBOMs (cosign), verify; a wrong key and an unsigned image must fail (NFR-IMG-05, SEC-22)
 	@$(MISE) python3 scripts/images.py sign --version $(VERSION)

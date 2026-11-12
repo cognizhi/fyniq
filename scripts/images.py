@@ -6,6 +6,9 @@
     python3 scripts/images.py scan --version 0.1.0     # SBOM and vulnerability scan (make image-scan)
     python3 scripts/images.py sign --version 0.1.0     # push by digest, sign, attest the SBOM, verify (make image-sign)
     python3 scripts/images.py self-test                # the checks on planted images (part of make check)
+    python3 scripts/images.py publish --release v1.2.0 --registry <AR repository URL>   # release.yml only
+    python3 scripts/images.py admit --release v1.2.0 --images '<publish's JSON>' --attestor … --key-version …
+    python3 scripts/images.py repro [--only api,web]   # two clean builds give the same digests (make images-repro)
 
 check (part of `make images`; Docker only):
   - the compressed size is within deploy/docker/budgets.json (NFR-IMG-04);
@@ -19,8 +22,8 @@ check (part of `make images`; Docker only):
 platforms (part of `make images`; needs the registries): every image pinned by digest in the Dockerfiles,
 the local stack, the dev container, the database tests and this script is a multi-platform index with
 linux/amd64 and linux/arm64, so neither platform needs emulation (NFR-IMG-08).
-scan (CI): an SPDX SBOM per release image (syft) and a grype scan; a Critical finding fails unless
-compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21). Reports go to .data/images/.
+scan (CI): an SPDX SBOM per release image (syft) and a grype scan; a Critical or High finding fails unless
+compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21, NFR-IMG-05). Reports go to .data/images/.
 sign (CI, after scan): pushes each release image to a registry, signs it by digest with cosign, attaches
 its SBOM as an SPDX attestation and verifies both, then shows that verification refuses a wrong key and an
 unsigned image (NFR-IMG-05, SEC-22, CTL-CHG-04). Without --registry and --key it starts a throwaway
@@ -28,6 +31,19 @@ registry and makes a key pair for the run, so a pull request proves the mechanis
 no OIDC token and nothing published. The release workflow signs keyless with GitHub OIDC and pushes to
 Artifact Registry (p0-ci-images-release design; with p0-infra-opentofu). The private key stays in a
 temporary directory; the evidence (signatures.json, cosign.pub) goes to .data/images/.
+publish (.github/workflows/release.yml, on a vX.Y.Z tag; SEC-22, NFR-IMG-05): builds every release image for both
+platforms, pushes it to Artifact Registry by digest with the tags vX.Y.Z and sha-<git sha>, writes its SBOM from the
+pushed image, scans that SBOM (a Critical or High finding stops it, unless waived), then signs the image keyless with
+the job's GitHub OIDC identity and attests the SBOM. It prints the digests as JSON for the provenance and attest jobs.
+admit (release.yml, as the attester): for each pushed image, verifies its signature and SBOM against release.yml's
+identity on the tag, and its SLSA provenance against slsa-github-generator's on this repository and tag; only then
+creates its Binary Authorization attestation (the index and each platform's manifest) with the Cloud KMS key. An image
+that fails any verification gets none, and the job fails (CTL-CHG-04).
+repro (make images-repro; daily in CI, and on changes to what the images are built from; NFR-IMG-07): builds every
+release image and the web image twice, for both platforms, each time with a new BuildKit builder and so no cache, and
+compares the digests. publish and repro run the same build command: SOURCE_DATE_EPOCH is the commit's time, every
+file's time in the layers is clamped to it (rewrite-timestamp), and the Dockerfiles fix the files' owner and mode, so
+the same commit gives the same digests. A difference names the image; .data/images/repro.json keeps both digests.
 """
 
 from __future__ import annotations
@@ -63,6 +79,15 @@ LOCAL_MARK = b"github.com/cognizhi/fyniq/internal/adapters/local"
 # registry of record. Dependabot does not read a pin in a script, so update this one by hand.
 REGISTRY_IMAGE = "registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e"
 SPDX = "https://spdx.dev/Document"   # the predicate type of `cosign attest --type spdxjson`
+SLSA_V02 = "https://slsa.dev/provenance/v0.2"   # slsa-github-generator's container provenance (`--type slsaprovenance`)
+# The keyless identities release.yml verifies: its own (signature and SBOM), and the SLSA generator's isolated
+# reusable workflow (provenance), which its certificate ties to this repository and tag. [live-verify]
+OIDC_ISSUER = "https://token.actions.githubusercontent.com"
+GENERATOR_IDENTITY = r"^https://github\.com/slsa-framework/slsa-github-generator/\.github/workflows/generator_container_slsa3\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$"
+RELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
+# The BuildKit `publish` builds both platforms with (no emulation: the Dockerfiles cross-compile). Dependabot does not
+# read a pin in a script, so update this one by hand.
+BUILDKIT_IMAGE = "moby/buildkit:v0.34.1@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c"
 # The platforms every image builds for (NFR-IMG-08), and the ELF e_machine of each one's binaries.
 PLATFORMS = ("linux/amd64", "linux/arm64")
 ELF_MACHINES = {62: "amd64", 183: "arm64"}   # EM_X86_64, EM_AARCH64
@@ -251,8 +276,47 @@ def self_test() -> None:
     if signed_digests(answer) != {"sha256:aa"} or attested(line(statement), SPDX) != {"sha256:bb"} \
             or attested(line({**statement, "predicateType": "https://slsa.dev/provenance/v1"}), SPDX):
         raise SystemExit("✖ images self-test: a signature or an attestation counted for the wrong digest or type")
+    # The release workflow (SEC-22): only release.yml on a version tag signs, only the SLSA generator's isolated workflow
+    # on this repository and tag vouches for the provenance, and only a platform's manifest is attested beside the index.
+    identity = release_identity("cognizhi/fyniq", "v1.2.0")
+    if identity != "https://github.com/cognizhi/fyniq/.github/workflows/release.yml@refs/tags/v1.2.0":
+        raise SystemExit(f"✖ images self-test: release.yml's identity is {identity}")
+    for bad in (("cognizhi/fyniq", "main"), ("cognizhi/fyniq", "v1.2"), ("cognizhi/fyniq", "v1.2.0-rc1"), ("evil", "v1.2.0")):
+        try:
+            release_identity(*bad)
+        except SystemExit:
+            continue
+        raise SystemExit(f"✖ images self-test: {bad} was accepted as a release")
+    gen = re.compile(GENERATOR_IDENTITY)
+    prov = verify_flags("cognizhi/fyniq", "v1.2.0")["provenance"]
+    if not gen.match("https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0") \
+            or gen.match("https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/heads/main") \
+            or gen.match("https://github.com/evil/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0") \
+            or prov[prov.index("--certificate-github-workflow-repository") + 1] != "cognizhi/fyniq" \
+            or prov[prov.index("--certificate-github-workflow-ref") + 1] != "refs/tags/v1.2.0":
+        raise SystemExit("✖ images self-test: the provenance must come from the SLSA generator at a release, for this repository and tag")
+    index = {"manifests": [{"digest": "sha256:a", "platform": {"os": "linux", "architecture": "amd64"}},
+                           {"digest": "sha256:b", "platform": {"os": "linux", "architecture": "arm64"}},
+                           {"digest": "sha256:c", "platform": {"os": "unknown", "architecture": "unknown"}}]}
+    provenance = {"predicateType": SLSA_V02, "subject": [{"digest": {"sha256": "cc"}}]}
+    if platform_digests(index) != ["sha256:a", "sha256:b"] or attested(line(provenance), SLSA_V02) != {"sha256:cc"} \
+            or attested(line(provenance), SPDX):
+        raise SystemExit("✖ images self-test: an attestation manifest was attested, or a provenance counted as an SBOM")
+    # Reproducible builds (NFR-IMG-07): publish and repro share one command, which fixes the time and clamps the layers.
+    cmd = build_command("api", "b", "1.2.0", "a" * 40, "v1.2.0", "1700000000", "type=oci,dest=x,rewrite-timestamp=true")
+    if "SOURCE_DATE_EPOCH=1700000000" not in cmd or "--provenance=false" not in cmd or "GIT_SHA=" + "a" * 12 not in cmd \
+            or cmd[cmd.index("--platform") + 1] != ",".join(PLATFORMS):
+        raise SystemExit(f"✖ images self-test: the reproducible build command is {cmd}")
+    for bad_epoch, bad_output in (("", "type=oci,dest=x,rewrite-timestamp=true"), ("1700000000", "type=oci,dest=x")):
+        try:
+            build_command("web", "b", "1.2.0", "a" * 40, "", bad_epoch, bad_output)
+        except SystemExit:
+            continue
+        raise SystemExit("✖ images self-test: a build without SOURCE_DATE_EPOCH or without clamped file times was accepted")
     print("✔ image checks: an over-budget image, a root user, a shell, a local adapter in release, the wrong platform"
-          " and a single-platform pin are each refused; a signature counts only for its digest")
+          " and a single-platform pin are each refused; a signature counts only for its digest; a release is attested only"
+          " after release.yml's signature and the SLSA generator's provenance for its tag; every reproducible build fixes"
+          " its time")
 
 
 def scan_images(version: str) -> int:
@@ -266,13 +330,13 @@ def scan_images(version: str) -> int:
         for m in json.loads(out).get("matches", []):
             v, a = m["vulnerability"], m["artifact"]
             findings.append(scan.Finding("grype-image", v["id"], image.split(":")[0],
-                                         f"{a['name']} {a['version']}: {v['severity']}", v["severity"] == "Critical"))
+                                         f"{a['name']} {a['version']}: {v['severity']}", v["severity"] in scan.BLOCKING_SEVERITIES))
     problems = scan.judge(findings, scan.load_waivers(), {"grype-image"}, dt.date.today())
     (REPORTS / "summary.json").write_text(json.dumps({"problems": problems, "findings": [f.__dict__ for f in findings]}, indent=1))
     if problems:
         print("✖ image scan (SEC-21):\n  " + "\n  ".join(problems))
         return 1
-    print(f"✔ release images: SBOMs written, {len(findings)} vulnerability finding(s), none critical unwaived; reports in .data/images/")
+    print(f"✔ release images: SBOMs written, {len(findings)} vulnerability finding(s), none critical or high unwaived; reports in .data/images/")
     return 0
 
 
@@ -401,14 +465,223 @@ def sign_images(version: str, registry: str, key: str) -> int:
     return 0
 
 
+def build_command(svc: str, builder: str, version: str, sha: str, release: str, epoch: str, output: str,
+                  extra: tuple[str, ...] = ()) -> list[str]:
+    """The one reproducible buildx command publish and repro run (NFR-IMG-07): both platforms, SOURCE_DATE_EPOCH from
+    the commit, file times in the layers clamped to it, OCI media types, and no attestation BuildKit would add with a
+    time of its own (the provenance and the SBOM are attested separately, signed)."""
+    if not re.fullmatch(r"\d+", epoch):
+        raise SystemExit(f"✖ SOURCE_DATE_EPOCH {epoch!r} is not a time in seconds")
+    if "rewrite-timestamp=true" not in output:
+        raise SystemExit("✖ a reproducible build clamps the layers' file times: its output needs rewrite-timestamp=true")
+    cmd = ["docker", "buildx", "build", "--builder", builder, "--platform", ",".join(PLATFORMS),
+           "--build-arg", f"SOURCE_DATE_EPOCH={epoch}", "--provenance=false", "--sbom=false", "--output", output]
+    if svc == "web":
+        cmd += ["-f", "deploy/docker/Dockerfile.web"]
+    else:
+        cmd += ["-f", "deploy/docker/Dockerfile.go-service", "--target", "render" if svc == "render" else "service",
+                "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
+                "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}"]
+    return [*cmd, *extra, "."]
+
+
+def commit_epoch() -> str:
+    """The commit's time, in seconds: every reproducible build's SOURCE_DATE_EPOCH."""
+    return sh("git", "log", "-1", "--format=%ct").strip()
+
+
+def new_builder(name: str) -> None:
+    """A BuildKit builder of its own, on the pinned BuildKit image, with nothing cached."""
+    run("docker", "buildx", "rm", "--force", name)
+    sh("docker", "buildx", "create", "--name", name, "--driver", "docker-container", "--driver-opt", f"image={BUILDKIT_IMAGE}")
+
+
+def oci_digest(archive: Path) -> str:
+    """The digest of the image (a multi-platform index) in an OCI archive."""
+    with tarfile.open(archive) as t:
+        f = t.extractfile("index.json")
+        if f is None:
+            raise SystemExit(f"✖ {archive.name}: no index.json")
+        manifests = json.load(f)["manifests"]
+    if len(manifests) != 1:
+        raise SystemExit(f"✖ {archive.name}: {len(manifests)} images in one archive")
+    return manifests[0]["digest"]
+
+
+# req: NFR-IMG-07
+def repro(only: list[str]) -> int:
+    images = only or [*GO_IMAGES, "web"]
+    if unknown := [i for i in images if i not in BUDGETS]:
+        raise SystemExit(f"✖ repro: no image {', '.join(unknown)}; the images are {', '.join(BUDGETS)}")
+    version, sha, epoch = (ROOT / "VERSION").read_text().strip(), sh("git", "rev-parse", "HEAD").strip(), commit_epoch()
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(prefix="fyniq-repro-"))
+    digests: dict[str, list[str]] = {i: [] for i in images}
+    try:
+        for attempt in (1, 2):
+            builder = f"fyniq-repro-{attempt}"
+            new_builder(builder)
+            try:
+                for svc in images:
+                    dest = tmp / f"{svc}-{attempt}.tar"
+                    p = run(*build_command(svc, builder, version, sha, "", epoch, f"type=oci,dest={dest},rewrite-timestamp=true"))
+                    if p.returncode:
+                        raise SystemExit(f"✖ build {svc} ({attempt}): {p.stderr.strip()[-1500:]}")
+                    digests[svc].append(oci_digest(dest))
+                    dest.unlink()
+                    print(f"  {svc} build {attempt}: {digests[svc][-1]}")
+            finally:
+                run("docker", "buildx", "rm", "--force", builder)   # with its cache: the next build starts from nothing
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    differ = [f"fyniq-{i}: {d[0]} then {d[1]}" for i, d in digests.items() if d[0] != d[1]]
+    (REPORTS / "repro.json").write_text(json.dumps({"git_sha": sha, "source_date_epoch": int(epoch), "buildkit": BUILDKIT_IMAGE,
+                                                   "platforms": list(PLATFORMS), "digests": digests, "differ": differ}, indent=1))
+    if differ:
+        print("✖ reproducible images (NFR-IMG-07): two clean builds of the same commit differ:\n  " + "\n  ".join(differ))
+        return 1
+    print(f"✔ {len(images)} images built twice from nothing for {' and '.join(PLATFORMS)}: the same digests; .data/images/repro.json")
+    return 0
+
+
+def release_identity(repository: str, release: str) -> str:
+    """The certificate identity of release.yml's keyless signatures on the release tag."""
+    if not RELEASE_TAG.match(release):
+        raise SystemExit(f"✖ {release!r} is not a release tag (vX.Y.Z)")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        raise SystemExit(f"✖ {repository!r} is not a GitHub repository (owner/name)")
+    return f"https://github.com/{repository}/.github/workflows/release.yml@refs/tags/{release}"
+
+
+def verify_flags(repository: str, release: str) -> dict[str, list[str]]:
+    """cosign's flags for each thing `admit` verifies: the signature, the SBOM and the provenance."""
+    mine = ["--certificate-identity", release_identity(repository, release), "--certificate-oidc-issuer", OIDC_ISSUER]
+    return {
+        "signature": mine,
+        "sbom": [*mine, "--type", "spdxjson"],
+        "provenance": ["--certificate-identity-regexp", GENERATOR_IDENTITY, "--certificate-oidc-issuer", OIDC_ISSUER,
+                       "--certificate-github-workflow-repository", repository,
+                       "--certificate-github-workflow-ref", f"refs/tags/{release}", "--type", "slsaprovenance"],
+    }
+
+
+def platform_digests(index: dict) -> list[str]:
+    """The digests of an index's platform manifests; an attestation manifest (platform unknown) is not one."""
+    return [m["digest"] for m in index.get("manifests", []) if m.get("platform", {}).get("os") == "linux"]
+
+
+# req: SEC-22
+# req: NFR-IMG-05
+def publish(release: str, registry: str, github_output: str) -> int:
+    if not RELEASE_TAG.match(release):
+        raise SystemExit(f"✖ {release!r} is not a release tag (vX.Y.Z)")
+    version = release[1:]
+    if (ROOT / "VERSION").read_text().strip() != version:
+        raise SystemExit(f"✖ VERSION is not {version}: publish runs on release-please's tag, whose commit sets it")
+    sha = sh("git", "rev-parse", "HEAD").strip()
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    builder, epoch = "fyniq-release", commit_epoch()
+    new_builder(builder)
+    tmp = Path(tempfile.mkdtemp(prefix="fyniq-publish-"))
+    rows, findings = [], []
+    try:
+        for svc in GO_IMAGES:
+            name, meta = f"{registry}/fyniq-{svc}", tmp / f"{svc}.json"
+            # The build repro checks: the same commit gives the same digests (NFR-IMG-07).
+            output = f'type=image,"name={name}:{release},{name}:sha-{sha}",push=true,oci-mediatypes=true,rewrite-timestamp=true'
+            p = run(*build_command(svc, builder, version, sha, release, epoch, output, ("--metadata-file", str(meta))))
+            if p.returncode:
+                raise SystemExit(f"✖ build and push fyniq-{svc}: {p.stderr.strip()[-1500:]}")
+            digest = json.loads(meta.read_text())["containerimage.digest"]
+            sbom = REPORTS / f"{svc}.spdx.json"
+            # The SBOM of the platform Cloud Run runs, read from the pushed image itself.
+            sh("syft", "scan", f"registry:{name}@{digest}", "--platform", "linux/amd64", "-q", "-o", f"spdx-json={sbom}")
+            out = sh("grype", f"sbom:{sbom}", "-q", "-o", "json")
+            (REPORTS / f"{svc}.grype.json").write_text(out)
+            for m in json.loads(out).get("matches", []):
+                v, a = m["vulnerability"], m["artifact"]
+                findings.append(scan.Finding("grype-image", v["id"], f"fyniq-{svc}", f"{a['name']} {a['version']}: {v['severity']}",
+                                             v["severity"] in scan.BLOCKING_SEVERITIES))
+            rows.append({"image": name, "digest": digest, "service": svc})
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # Nothing is signed while a blocking finding stands: an unsigned image cannot be attested, so it cannot deploy.
+    if problems := scan.judge(findings, scan.load_waivers(), {"grype-image"}, dt.date.today()):
+        print("✖ release images (NFR-IMG-05): pushed but not signed:\n  " + "\n  ".join(problems))
+        return 1
+    for r in rows:
+        ref = f"{r['image']}@{r['digest']}"
+        for step in (["sign", "--recursive"], ["attest", "--type", "spdxjson", "--predicate", str(REPORTS / f"{r['service']}.spdx.json")]):
+            if (p := run("cosign", step[0], "--yes", *step[1:], ref)).returncode:   # keyless: the job's OIDC identity
+                raise SystemExit(f"✖ cosign {step[0]} {ref}: {p.stderr.strip()[-1000:]}")
+    images = [{"image": r["image"], "digest": r["digest"]} for r in rows]
+    (REPORTS / "release.json").write_text(json.dumps({"release": release, "git_sha": sha, "images": images}, indent=1))
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write(f"images={json.dumps(images)}\n")
+    print(f"✔ {len(images)} release images pushed by digest for {' and '.join(PLATFORMS)}, scanned, signed keyless and their"
+          f" SBOMs attested; .data/images/release.json")
+    return 0
+
+
+# req: SEC-22
+# req: NFR-IMG-05
+# req: CTL-CHG-04
+def admit(release: str, repository: str, images_json: str, attestor: str, key_version: str) -> int:
+    flags = verify_flags(repository, release)
+    rows, problems = [], []
+    for i in json.loads(images_json):
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", i.get("digest", "")):
+            problems.append(f"{i}: not an image by digest")
+            continue
+        ref = f"{i['image']}@{i['digest']}"
+        v = run("cosign", "verify", *flags["signature"], ref)
+        a = run("cosign", "verify-attestation", *flags["sbom"], ref)
+        prov = run("cosign", "verify-attestation", *flags["provenance"], ref)
+        checks = {"signature": v.returncode == 0 and i["digest"] in signed_digests(v.stdout),
+                  "sbom": a.returncode == 0 and i["digest"] in attested(a.stdout, SPDX),
+                  "provenance": prov.returncode == 0 and i["digest"] in attested(prov.stdout, SLSA_V02)}
+        done = []
+        if failed := [k for k, ok in checks.items() if not ok]:
+            problems.append(f"{ref}: the {', '.join(failed)} did not verify, so it gets no attestation")
+        elif (raw := run("docker", "buildx", "imagetools", "inspect", "--raw", ref)).returncode:
+            problems.append(f"{ref}: cannot read its index: {raw.stderr.strip()[-300:]}")
+        else:
+            # The index and each platform's manifest, whichever digest Cloud Run resolves. [live-verify]
+            for d in [i["digest"], *platform_digests(json.loads(raw.stdout))]:
+                c = run("gcloud", "container", "binauthz", "attestations", "sign-and-create", f"--artifact-url={i['image']}@{d}",
+                        f"--attestor={attestor}", f"--keyversion={key_version}", "--quiet")
+                if c.returncode:
+                    problems.append(f"{i['image']}@{d}: the attestation failed: {c.stderr.strip()[-300:]}")
+                else:
+                    done.append(d)
+        rows.append({"image": i["image"], "digest": i["digest"], "verified": checks, "attested": done})
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    (REPORTS / "admitted.json").write_text(json.dumps({"release": release, "attestor": attestor, "images": rows,
+                                                       "problems": problems}, indent=1))
+    if problems:
+        print("✖ Binary Authorization (SEC-22, CTL-CHG-04):\n  " + "\n  ".join(problems))
+        return 1
+    print(f"✔ {len(rows)} release images verified (signature, SBOM, SLSA provenance) and attested for Binary Authorization;"
+          " .data/images/admitted.json")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "platforms", "scan", "sign", "self-test"])
+    ap.add_argument("command", choices=["check", "platforms", "scan", "sign", "self-test", "publish", "admit", "repro"])
     ap.add_argument("--version", default="0.0.0")
     ap.add_argument("--flavours", default="release local")
     ap.add_argument("--platform", default="", help="check: the platform the images were built for; default the Docker engine's")
     ap.add_argument("--registry", default="", help="sign: push here (host[:port][/path]); default a throwaway local registry")
     ap.add_argument("--key", default="", help="sign: a cosign key reference (a key file or a KMS URI); default a key pair made for the run")
+    ap.add_argument("--release", default="", help="publish, admit: the release tag (vX.Y.Z)")
+    ap.add_argument("--github-output", default="", help="publish: append images=<JSON> to this file ($GITHUB_OUTPUT)")
+    ap.add_argument("--repository", default="", help="admit: the GitHub repository (owner/name) whose release.yml signed")
+    ap.add_argument("--images", default="", help="admit: publish's JSON list of {image, digest}")
+    ap.add_argument("--attestor", default="", help="admit: the Binary Authorization attestor (projects/<p>/attestors/<a>)")
+    ap.add_argument("--key-version", default="", help="admit: the Cloud KMS key version that signs attestations")
+    ap.add_argument("--only", default="", help="repro: these images only (comma-separated), for a quicker local check")
     a = ap.parse_args()
     if a.command == "self-test":
         self_test()
@@ -419,6 +692,16 @@ def main() -> int:
         return platforms()
     if a.command == "sign":
         return sign_images(a.version, a.registry, a.key)
+    if a.command == "publish":
+        if not a.registry:
+            raise SystemExit("✖ publish needs --registry: Artifact Registry's repository URL")
+        return publish(a.release, a.registry, a.github_output)
+    if a.command == "repro":
+        return repro([i for i in a.only.split(",") if i])
+    if a.command == "admit":
+        if not (a.images and a.attestor and a.key_version):
+            raise SystemExit("✖ admit needs --images, --attestor and --key-version")
+        return admit(a.release, a.repository, a.images, a.attestor, a.key_version)
     return scan_images(a.version)
 
 

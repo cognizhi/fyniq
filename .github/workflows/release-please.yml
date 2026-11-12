@@ -44,8 +44,8 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
 
-  # P0 adds a job here, gated on needs.release-please.outputs.release_created,
-  # that builds, signs and publishes the images tagged vX.Y.Z and sha-<git sha> (§12.9), each a
-  # multi-platform index for linux/amd64 and linux/arm64 (NFR-IMG-08; Cloud Run runs the amd64 one).
-  # It builds them with `make images RELEASE=vX.Y.Z`, the only build that stamps version.Release, and a deploy waits
-  # for release-evidence.yml's job on that tag, so the release the platform runs holds its evidence (CMP-01).
+  # The tag this job creates starts .github/workflows/release.yml (the App token's push starts workflows): it builds,
+  # pushes by digest, signs and attests the release images tagged vX.Y.Z and sha-<git sha> (§12.9, SEC-22), each a
+  # multi-platform index for linux/amd64 and linux/arm64 (NFR-IMG-08; Cloud Run runs the amd64 one), stamped with
+  # version.Release. A deploy waits for release-evidence.yml's job on that tag, so the release the platform runs holds
+  # its evidence (CMP-01).

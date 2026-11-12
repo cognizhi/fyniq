@@ -25,6 +25,11 @@ resource "google_cloud_run_v2_service" "services" {
   location            = local.region
   ingress             = each.value.public ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_ONLY"
   deletion_protection = local.spec.environment == "production"
+  # Binary Authorization's project policy admits only images the release workflow attested (SEC-22, the binauthz
+  # module in the shared root). No breakglass justification, ever.
+  binary_authorization {
+    use_default = true
+  }
   template {
     service_account                  = local.email[each.key]
     timeout                          = contains(["worker", "executor"], each.key) ? "1800s" : "300s" # Cloud Tasks waits up to 30 minutes
@@ -93,6 +98,9 @@ resource "google_cloud_run_v2_job" "jobs" {
   name                = each.key
   location            = local.region
   deletion_protection = local.spec.environment == "production"
+  binary_authorization {
+    use_default = true # as the services (SEC-22)
+  }
   template {
     task_count = 1
     template {

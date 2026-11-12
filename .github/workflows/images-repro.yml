@@ -1,0 +1,47 @@
+# Reproducible images (PRD-001 §12.9, NFR-IMG-07; p1-security-hardening design D2): the same commit builds the same
+# digests. `make images-repro` builds every release image and the web image twice, for linux/amd64 and linux/arm64,
+# each time with a new BuildKit builder and no cache, as the release workflow builds them, and compares the digests.
+# Two builds are slow, so it runs daily and on a pull request that changes what the images are built from, not on
+# every pull request. Its report is the evidence.
+name: images-repro
+
+on:
+  schedule:
+    - cron: "23 19 * * *" # 03:23 in Singapore
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "deploy/docker/**"
+      - "scripts/images.py"
+      - "go.mod"
+      - "go.sum"
+      - "pnpm-lock.yaml"
+      - "apps/web/package.json"
+      - ".github/workflows/images-repro.yml"
+
+permissions: {}
+
+concurrency:
+  group: images-repro-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repro:
+    name: Reproducible images (make images-repro, NFR-IMG-07)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make images-repro
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: images-repro
+          path: .data/images/repro.json
+          retention-days: 90
+          if-no-files-found: ignore
