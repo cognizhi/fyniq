@@ -719,6 +719,20 @@ type FyniqContactDocumentTemplate struct {
 	SetAt          time.Time
 }
 
+type FyniqControlRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Control        string
+	Frequency      string
+	CheckHow       string
+	Since          time.Time
+	RanAt          time.Time
+	Ok             bool
+	ItemCount      int32
+	Items          []byte
+	Detail         string
+}
+
 type FyniqConversionStep struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

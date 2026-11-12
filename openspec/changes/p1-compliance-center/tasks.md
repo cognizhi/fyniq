@@ -153,15 +153,42 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 4. Verifications per organisation, and notices (slice 4)
 
-- [ ] 4.1 `fyniq.control_run` (insert-only, worker writes, RLS) and the `compliance.run` job (daily, after
+- [x] 4.1 `fyniq.control_run` (insert-only, worker writes, RLS) and the `compliance.run` job (daily, after
   `checks.run`), with the four `verify` checks (D4). Tests seed a breach of each and see it fail:
   - a batch released by its preparer outside the team mode's exception;
   - a session used without a second factor;
-  - an integration client without an owner or end date;
+  - ~~an integration client without an owner or end date~~ (rev 0.242: built with `p1-mcp-first-party`);
   - an export without its audit event.
 
   Attack tests cover the table. `// req: CTL-FIN-08`, `// req: CTL-IAM-01`, `// req: CTL-API-02`,
   `// req: CTL-AUD-05`
+
+  **What building added:**
+    - **Three verifications, not four.** Fyniq registers no integration client until Connected apps (AI-46), so
+      `integrations.owned` and CTL-API-02 move to `p1-mcp-first-party` (rev 0.242).
+    - **Payments' dual control** reads each approval of a payment batch or bank change decided in the window, and
+      each release. It finds:
+      - an approval nobody signed;
+      - an approval its preparer or requester signed;
+      - a release under such an approval;
+      - a release under a break-glass its Owner did not use for that batch.
+
+      The rule is Go's (`dualControlFindings`), over the facts the store reads.
+    - **The second factor.** Sessions are installation records that no role reads, so `fyniq.members_second_factor`
+      (SECURITY DEFINER, the worker only, the transaction's organisation only) answers per active member: passkeys,
+      sign-ins that passed a second factor, and sessions seen in the window that passed none. Audit events name the
+      OAuth client, not the session, so "used beyond reading itself" is read as "seen at all". This matches the PRD's
+      check, "users without MFA = 0".
+    - **Exports and reads.** Evidence openings and reveals have no record but their audit event, so the
+      reconciliation checks two things:
+      - each report export asked for has its `report_export.requested` event;
+      - the latest 1,000 events of each audited read keep their request details beside the chain (AUD-06).
+
+      `compliance.AuditedReads` must equal the API's `auditedReads` (`TestEveryAuditedReadIsReconciled`).
+    - **The run.** `compliance.run` runs daily at 04:35, after the checks. Each verification runs in its own unit of
+      work, over the last 25 hours, and records its run: what it found (the first 50 items), how many, and in words.
+      Breaches are seeded in the test past the database's own guards (triggers off, as the superuser).
+    - **Statuses and notices (4.2)** are their own pull request.
 - [ ] 4.2 Control statuses for an organisation (`internal/domain/compliance`; D1). Every kind of check is covered:
   CI, job, `check`, `verify`, `attestation`, planned and `cloud`. The worst-of rule and not applicable are covered too.
   `compliance.run` sends `compliance.control_failed` (critical, emailed at once, to the owner role) once per failure,

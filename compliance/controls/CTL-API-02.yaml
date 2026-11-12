@@ -12,8 +12,7 @@ checks:
   - frequency: N
     status: planned
     how: "verify integrations.owned"
-    arrives: "p1-compliance-center (slice 4)"
+    arrives: "p1-mcp-first-party (rev 0.242: Connected apps first registers integration clients, AI-46)"
   - frequency: Q
-    status: running
-    how: "check controls.access-review-overdue"
-    evidence: "the access review lists the integration clients with their owners and end dates, and an Owner attests it each quarter (FR-CTL-06); overdue 14 days after a quarter ends (C.2 #7); the check's latest result for each organisation, on Checks"
+    status: planned
+    arrives: "p1-mcp-first-party (rev 0.242: the access review lists integration clients once Connected apps registers them)"

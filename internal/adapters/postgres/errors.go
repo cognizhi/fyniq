@@ -188,6 +188,7 @@ var fyCodes = map[string]string{
 	"FY304": storage.CodeAudit,           // a purge with no boundary, switched off, too early, or a boundary changed (000291)
 	"FY305": storage.CodeLedgerPurge,     // a ledger boundary or purge outside its rules, or a carry-forward outside the purge (000292)
 	"FY306": storage.CodeAudit,           // a recovery out of its epoch order, or changed but for its acknowledgement (000293)
+	"FY307": storage.CodeCheck,           // a verification's run changed or deleted (000294)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

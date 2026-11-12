@@ -168,7 +168,8 @@ The registry is the plan's record of each control:
   - `verify members.second-factor` (CTL-IAM-01 N): no session of the last day was used beyond reading itself without a
     second factor (SEC-01), and every active member has one registered;
   - `verify integrations.owned` (CTL-API-02 N): every integration client has an owner, a class and an unexpired end
-    date, and holds only its class's scopes;
+    date, and holds only its class's scopes. (rev 0.242) Fyniq registers no integration client until Connected apps
+    (AI-46), so it is built with `p1-mcp-first-party`;
   - `verify audit.exports-reconciled` (CTL-AUD-05 N): every report export, evidence opening and reveal of the last day
     has its audit event, sampled up to 1,000 per kind.
 

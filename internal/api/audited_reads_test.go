@@ -1,12 +1,14 @@
 package api
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 )
 
 // Every operation that carries a file or reveals a full identifier is audited (AUD-05, p1-audit-explorer design D3):
@@ -84,5 +86,21 @@ func TestEveryFileAndRevealIsAudited(t *testing.T) {
 		if !ops[op] {
 			t.Errorf("unauditedFiles names %s, which is no operation", op)
 		}
+	}
+}
+
+// The nightly reconciliation of exports and reads reads every action the API audits, and no other (CTL-AUD-05,
+// p1-compliance-center D4): an audited read added here is reconciled too.
+// req: CTL-AUD-05
+func TestEveryAuditedReadIsReconciled(t *testing.T) {
+	var actions []string
+	for _, action := range auditedReads {
+		if !slices.Contains(actions, action) {
+			actions = append(actions, action)
+		}
+	}
+	slices.Sort(actions)
+	if want := slices.Sorted(slices.Values(compliance.AuditedReads)); !slices.Equal(actions, want) {
+		t.Errorf("the API audits %v; compliance.AuditedReads reconciles %v", actions, want)
 	}
 }

@@ -10,6 +10,6 @@ evidence: "Report"
 owner: Administrator
 checks:
   - frequency: N
-    status: planned
+    status: running
     how: "verify members.second-factor"
-    arrives: "p1-compliance-center (slice 4)"
+    evidence: "the latest run for the organisation (fyniq.control_run): every active member has a passkey or a sign-in that passed a second factor, and none was seen in a session that passed none; who is listed"
