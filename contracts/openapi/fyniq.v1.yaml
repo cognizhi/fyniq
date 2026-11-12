@@ -11839,7 +11839,7 @@ components:
             $ref: "#/components/schemas/ControlCheck"
           type: array
         control:
-          description: What the control holds, as Appendix F words it.
+          description: What the control holds, as Appendix F words it, without the PRD's revision tags.
           examples:
             - Payments and payee bank changes are dual-controlled
           type: string
@@ -11884,7 +11884,7 @@ components:
             - CTL-FIN-08
           type: string
         mapping:
-          description: Its mapping to the frameworks, as Appendix F words it.
+          description: Its mapping to the frameworks, as Appendix F words it, without the PRD's revision tags.
           examples:
             - COSO P8; SOC2 CC6.1
           type: string

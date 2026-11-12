@@ -83,6 +83,15 @@ body {
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
+/* A list row whose chips and buttons follow its text: on a narrow screen they wrap below the text instead of squeezing
+   it to a sliver (the 344 px foldable). */
+.fy-list__item--wrap {
+  flex-wrap: wrap;
+}
+.fy-list__item--wrap > .fy-list__main {
+  min-width: min(13.75rem, 100%);
+}
+
 /* Native radios and checkboxes take the brand colour (MASTER.md: teal for selection). */
 input[type="radio"],
 input[type="checkbox"] {
