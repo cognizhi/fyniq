@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d4616decfe1414cda6287283d7c6eaec8a05c6b8273faf37ea434fe4b13c6042
+  - docs/user-guide/organisation-settings.md sha256:025baefc7e7d2dec8c56c2bdbc8b825ec27df7b3d36c385e950ea23aafe349dc
 data_class: general
 taint: trusted
 status: draft
@@ -13,6 +13,8 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-09
 aliases:
+  - data protection officer
+  - DPO contact
   - GST registration
   - GST registration number
   - GST registration threshold
@@ -77,6 +79,14 @@ aliases:
 - The Owner, the Administrator and the Controller change them; others in the company can see them. How: [[settings.change]].
 
 (src: docs/user-guide/organisation-settings.md#what-it-is)
+
+## Data Protection Officer
+
+- The company names a Data Protection Officer (DPO) and makes their business contact public (PDPA). In **Edit the profile**, choose the member who is the DPO, normally the Compliance officer, and enter the name and business email the company publishes; for an outside firm, choose no member and enter its name and email.
+- Once saved, every email Fyniq sends ends with the contact, and documents give it in their footer when their template is the default or a version published after it was saved; issued documents stay as they were.
+- The **Data Protection Officer** card shows the text for the company's website, with **Copy the text**, and warns when the member named does not hold the Compliance officer role.
+
+(src: docs/user-guide/organisation-settings.md#data-protection-officer)
 
 ## GST registration
 

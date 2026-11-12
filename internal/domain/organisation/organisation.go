@@ -26,6 +26,7 @@ const (
 	CodePrefix    = "ORG-08" // a number sequence's prefix is not allowed
 	CodeNext      = "ORG-09" // a sequence's next number goes back, or is out of range
 	CodeDigits    = "ORG-10" // a sequence pads to too few or too many digits
+	CodeDPO       = "ORG-11" // a member is named the DPO without the contact the company publishes for them (CMP-PD-01)
 )
 
 // Problem is one rule that failed.
@@ -66,6 +67,8 @@ var limits = []struct {
 	{"bank_account_name", func(p storage.OrganisationProfile) string { return p.BankAccountName }, 140},
 	{"bank_account_number", func(p storage.OrganisationProfile) string { return p.BankAccountNumber }, 34},
 	{"document_footer", func(p storage.OrganisationProfile) string { return p.DocumentFooter }, 1000},
+	{"dpo_name", func(p storage.OrganisationProfile) string { return p.DPOName }, 200},
+	{"dpo_email", func(p storage.OrganisationProfile) string { return p.DPOEmail }, 254},
 }
 
 // Check returns every rule p breaks, or nil.
@@ -91,6 +94,15 @@ func Check(p storage.OrganisationProfile) Problems {
 		if a, err := mail.ParseAddress(p.Email); err != nil || a.Address != p.Email {
 			add(CodeEmail, "email", fmt.Sprintf("%q is not an email address", p.Email), "Enter one address, such as accounts@example.com")
 		}
+	}
+	if p.DPOEmail != "" {
+		if a, err := mail.ParseAddress(p.DPOEmail); err != nil || a.Address != p.DPOEmail {
+			add(CodeEmail, "dpo_email", fmt.Sprintf("%q is not an email address", p.DPOEmail), "Enter one address, such as dpo@example.com")
+		}
+	}
+	if p.DPOUserID != nil && (p.DPOName == "" || p.DPOEmail == "") {
+		add(CodeDPO, "dpo_email", "a member is named the Data Protection Officer without the contact the company publishes for them",
+			"Enter the DPO's name and business email address as the company publishes them (PDPA s11(5))")
 	}
 	if p.BankAccountNumber != "" && !bankAccount.MatchString(p.BankAccountNumber) {
 		add(CodeBank, "bank_account_number", "is not an account number", "Enter the digits as the bank prints them; spaces and hyphens may separate groups")
@@ -140,4 +152,13 @@ func CheckSequence(cur, next storage.SequenceSettings) Problems {
 		add(CodeDigits, "digits", fmt.Sprintf("%d is not 1 to 12", next.Digits), "Enter how many digits to pad the number to, 1 to 12")
 	}
 	return out
+}
+
+// PrivacyFooter is the line that gives the Data Protection Officer's business contact at the foot of every email Fyniq
+// sends (CMP-PD-01, rev 0.244): empty until the company names one.
+func PrivacyFooter(p storage.OrganisationProfile) string {
+	if p.DPOName == "" || p.DPOEmail == "" {
+		return ""
+	}
+	return fmt.Sprintf("Questions about your personal data: %s, Data Protection Officer, %s", p.DPOName, p.DPOEmail)
 }

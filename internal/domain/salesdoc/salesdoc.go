@@ -112,6 +112,8 @@ func (f fields) organisation(o storage.Organisation) {
 	f.text("organisation.address", pr.RegisteredAddress)
 	f.text("organisation.email", pr.Email)
 	f.text("organisation.phone", pr.Phone)
+	f.text("organisation.dpo_name", pr.DPOName)
+	f.text("organisation.dpo_email", pr.DPOEmail)
 	f.text("payment.bank_name", pr.BankName)
 	f.text("payment.account_name", pr.BankAccountName)
 	f.text("payment.account_number", pr.BankAccountNumber)

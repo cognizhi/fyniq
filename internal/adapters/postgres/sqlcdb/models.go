@@ -1516,6 +1516,9 @@ type FyniqOrganisation struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+	DpoUserID         *uuid.UUID
+	DpoName           *string
+	DpoEmail          *string
 }
 
 type FyniqOrganisationConnector struct {

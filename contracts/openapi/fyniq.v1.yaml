@@ -27027,6 +27027,27 @@ components:
           examples:
             - Thank you for your business.
           type: string
+        dpo_email:
+          description: The DPO's business email address, as the company publishes it (PDPA s11(5)); every email Fyniq sends gives it.
+          examples:
+            - dpo@northwind.example
+          type: string
+        dpo_holds_role:
+          description: "With a member named the DPO: whether they hold the Compliance officer role. false is a warning, not a refusal: a company of two may name the Owner."
+          examples:
+            - true
+          type: boolean
+        dpo_name:
+          description: The DPO's name, as the company publishes it.
+          examples:
+            - Ada Tan
+          type: string
+        dpo_user_id:
+          description: The member named the Data Protection Officer (CMP-PD-01); absent for an outsourced DPO, or before one is named.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
         email:
           description: The address documents give for questions.
           examples:
@@ -29975,6 +29996,23 @@ components:
           examples:
             - Thank you for your business.
           maxLength: 1000
+          type: string
+        dpo_email:
+          description: The DPO's business email address; "" clears it.
+          examples:
+            - dpo@northwind.example
+          maxLength: 254
+          type: string
+        dpo_name:
+          description: The DPO's name, as the company publishes it; "" clears it.
+          examples:
+            - Ada Tan
+          maxLength: 200
+          type: string
+        dpo_user_id:
+          description: The member to name the Data Protection Officer, by user ID; "" names none, as for an outsourced DPO.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
           type: string
         email:
           description: The address documents give; "" clears it.
@@ -140665,7 +140703,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `STORAGE-ORG-01` The organisation's details are not valid."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `ORG-11` The DPO has no published contact; `STORAGE-ORG-01` The organisation's details are not valid."
         "428":
           content:
             application/problem+json:
@@ -140734,6 +140772,7 @@ paths:
         - ORG-05
         - ORG-06
         - ORG-07
+        - ORG-11
         - PERIOD-04
         - STORAGE-LOCK-01
         - STORAGE-ORG-01

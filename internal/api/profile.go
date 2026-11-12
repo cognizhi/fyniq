@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -35,6 +37,10 @@ type OrganisationProfile struct {
 	BooksStart        string `json:"books_start,omitempty" format:"date" doc:"The date the books start: the first financial year begins on it." example:"2026-03-15"`
 	FirstYearEnd      string `json:"first_year_end,omitempty" format:"date" doc:"The last day of the first financial year: the day before a year starts, after the books start, so the first year may be shorter or longer than twelve months." example:"2027-03-31"`
 	TimeZone          string `json:"time_zone" doc:"The IANA time zone the organisation's days are counted in." example:"Asia/Singapore"`
+	DPOUserID         string `json:"dpo_user_id,omitempty" format:"uuid" doc:"The member named the Data Protection Officer (CMP-PD-01); absent for an outsourced DPO, or before one is named." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"`
+	DPOName           string `json:"dpo_name,omitempty" doc:"The DPO's name, as the company publishes it." example:"Ada Tan"`
+	DPOEmail          string `json:"dpo_email,omitempty" doc:"The DPO's business email address, as the company publishes it (PDPA s11(5)); every email Fyniq sends gives it." example:"dpo@northwind.example"`
+	DPOHoldsRole      *bool  `json:"dpo_holds_role,omitempty" doc:"With a member named the DPO: whether they hold the Compliance officer role. false is a warning, not a refusal: a company of two may name the Owner." example:"true"`
 	Version           int    `json:"version" doc:"The organisation's version; it also makes the ETag." example:"3"`
 }
 
@@ -56,6 +62,9 @@ type ProfileChanges struct {
 	BooksStart        *string `json:"books_start,omitempty" doc:"The date the books start, YYYY-MM-DD; \"\" clears it." example:"2026-03-15"`
 	FirstYearEnd      *string `json:"first_year_end,omitempty" doc:"The last day of the first financial year, YYYY-MM-DD; \"\" clears it." example:"2027-03-31"`
 	TimeZone          *string `json:"time_zone,omitempty" maxLength:"64" doc:"The IANA time zone." example:"Asia/Singapore"`
+	DPOUserID         *string `json:"dpo_user_id,omitempty" doc:"The member to name the Data Protection Officer, by user ID; \"\" names none, as for an outsourced DPO." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"`
+	DPOName           *string `json:"dpo_name,omitempty" maxLength:"200" doc:"The DPO's name, as the company publishes it; \"\" clears it." example:"Ada Tan"`
+	DPOEmail          *string `json:"dpo_email,omitempty" maxLength:"254" doc:"The DPO's business email address; \"\" clears it." example:"dpo@northwind.example"`
 }
 
 type profileOutput struct {
@@ -77,14 +86,43 @@ type updateProfileInput struct {
 
 // OrganisationCodes are the profile's rules (internal/domain/organisation).
 var OrganisationCodes = []string{organisation.CodeText, organisation.CodeUEN, organisation.CodeEmail, organisation.CodeTimeZone,
-	organisation.CodeYearStart, organisation.CodeFirstYear, organisation.CodeBank}
+	organisation.CodeYearStart, organisation.CodeFirstYear, organisation.CodeBank, organisation.CodeDPO}
 
 func profileOf(o storage.Organisation) OrganisationProfile {
 	p := o.Profile
 	return OrganisationProfile{LegalName: p.LegalName, UEN: p.UEN, RegisteredAddress: p.RegisteredAddress, MailingAddress: p.MailingAddress,
 		Email: p.Email, Phone: p.Phone, Website: p.Website, BankName: p.BankName, BankAccountName: p.BankAccountName,
 		BankAccountNumber: p.BankAccountNumber, PayNowUEN: p.PayNowUEN, DocumentFooter: p.DocumentFooter, FYStartMonth: p.FYStartMonth,
-		BooksStart: dayOrEmpty(p.BooksStart), FirstYearEnd: dayOrEmpty(p.FirstYearEnd), TimeZone: p.TimeZone, Version: o.Version}
+		BooksStart: dayOrEmpty(p.BooksStart), FirstYearEnd: dayOrEmpty(p.FirstYearEnd), TimeZone: p.TimeZone,
+		DPOUserID: userOf(p.DPOUserID), DPOName: p.DPOName, DPOEmail: p.DPOEmail, Version: o.Version}
+}
+
+// userOf is a user ID as the API writes it, or "" for none.
+func userOf(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
+}
+
+// dpoOf completes a profile's DPO from the members (CMP-PD-01): whether the member named holds the Compliance officer
+// role. It returns false, nil when the member named is not a member.
+func dpoOf(ctx context.Context, u storage.UnitOfWork, now time.Time, out *OrganisationProfile) (bool, error) {
+	if out.DPOUserID == "" {
+		return true, nil
+	}
+	ms, err := u.Members().List(ctx, now)
+	if err != nil {
+		return false, err
+	}
+	for _, m := range ms {
+		if m.UserID.String() == out.DPOUserID {
+			holds := slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == string(authz.DPO) })
+			out.DPOHoldsRole = &holds
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func dayOrEmpty(t *time.Time) string {
@@ -114,6 +152,8 @@ func applyChanges(p storage.OrganisationProfile, c ProfileChanges) (storage.Orga
 	set(&p.PayNowUEN, c.PayNowUEN)
 	set(&p.DocumentFooter, c.DocumentFooter)
 	set(&p.TimeZone, c.TimeZone)
+	set(&p.DPOName, c.DPOName)
+	set(&p.DPOEmail, c.DPOEmail)
 	if c.FYStartMonth != nil {
 		p.FYStartMonth = *c.FYStartMonth
 	}
@@ -134,6 +174,18 @@ func applyChanges(p storage.OrganisationProfile, c ProfileChanges) (storage.Orga
 	}
 	date("books_start", &p.BooksStart, c.BooksStart)
 	date("first_year_end", &p.FirstYearEnd, c.FirstYearEnd)
+	switch {
+	case c.DPOUserID == nil:
+	case strings.TrimSpace(*c.DPOUserID) == "":
+		p.DPOUserID = nil
+	default:
+		id, err := uuid.Parse(strings.TrimSpace(*c.DPOUserID))
+		if err != nil {
+			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "body.dpo_user_id", Message: "is not a user ID", Fix: "Send a member's user ID, from listMembers"})
+			break
+		}
+		p.DPOUserID = &id
+	}
 	return p, bad
 }
 
@@ -149,7 +201,11 @@ func registerProfile(a *API) {
 		var out profileReadOutput
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			o, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
 			out.Body, out.ETag = profileOf(o), etag(o.Version)
+			_, err = dpoOf(ctx, u, a.deps.Clock.Now(), &out.Body)
 			return err
 		})
 		return &out, err
@@ -190,7 +246,19 @@ func registerProfile(a *API) {
 					return OrganisationProfile{}, err
 				}
 				after, err := u.UpdateOrganisation(ctx, o.Version, p)
-				return profileOf(after), err
+				if err != nil {
+					return OrganisationProfile{}, err
+				}
+				out := profileOf(after)
+				member, err := dpoOf(ctx, u, a.deps.Clock.Now(), &out)
+				if err != nil {
+					return OrganisationProfile{}, err
+				}
+				if !member {
+					return OrganisationProfile{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.dpo_user_id",
+						Message: "is not a member of the organisation", Fix: "Name a member, or send \"\" and give an outsourced DPO's contact"}})
+				}
+				return out, nil
 			})
 			if err != nil {
 				return nil, err

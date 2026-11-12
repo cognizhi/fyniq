@@ -196,6 +196,7 @@ var codeFacts = map[string]struct {
 	organisation.CodeYearStart:    {422, "Not a month"},
 	organisation.CodeFirstYear:    {422, "The first financial year does not fit"},
 	organisation.CodeBank:         {422, "Not a bank account number"},
+	organisation.CodeDPO:          {422, "The DPO has no published contact"},
 	organisation.CodePrefix:       {422, "Not a prefix"},
 	organisation.CodeNext:         {422, "The next number does not fit"},
 	organisation.CodeDigits:       {422, "Not a number of digits"},

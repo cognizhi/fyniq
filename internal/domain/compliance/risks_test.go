@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,20 @@ func TestTheOperatorsStartingRisks(t *testing.T) {
 	}
 	if seed[13].Ref != "R14" || seed[13].Likelihood != "high" || seed[13].Description != "§19 rates its likelihood Certain." {
 		t.Errorf("R14 keeps §19's word for its likelihood: %+v", seed[13])
+	}
+}
+
+// The register records the PDPA penalty (CMP-PD-09, rev 0.244): on R7, the data breach, the figures of PDPA s48J(3)
+// and reg 10A, checked 9 Nov 2026.
+// req: CMP-PD-09
+func TestThePDPAPenaltyIsInTheRegister(t *testing.T) {
+	seed, err := registry.Risks()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r7 := seed[6]
+	if r7.Ref != "R7" || r7.Owner != "dpo" || !strings.Contains(r7.Description, "up to 10% of the organisation's annual turnover in Singapore when that is above S$10 million, otherwise up to S$1 million") {
+		t.Errorf("R7: %+v", r7)
 	}
 }
 

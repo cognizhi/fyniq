@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -46,6 +47,11 @@ func QueueWith(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, o
 	if err != nil {
 		return storage.EmailMessage{}, err
 	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return storage.EmailMessage{}, err
+	}
+	text = WithFooter(text, organisation.PrivacyFooter(o.Profile))
 	b, err := json.Marshal(payload{MessageID: m.ID, To: to, Subject: subject, Text: text, Attachments: files})
 	if err != nil {
 		return storage.EmailMessage{}, err
@@ -55,6 +61,15 @@ func QueueWith(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, o
 		return storage.EmailMessage{}, err
 	}
 	return m, nil
+}
+
+// WithFooter ends a message's text with the footer, below the plain-text signature line, when there is one: the
+// organisation's Data Protection Officer's contact (CMP-PD-01, rev 0.244).
+func WithFooter(text, footer string) string {
+	if footer == "" {
+		return text
+	}
+	return strings.TrimRight(text, "\n") + "\n\n-- \n" + footer + "\n"
 }
 
 // Reference is what a provider echoes in its webhooks for a message: its organisation and its ID.

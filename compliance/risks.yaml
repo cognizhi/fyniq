@@ -48,6 +48,7 @@ risks:
     likelihood: low
     impact: high
     mitigation: "Encryption, masking, least privilege, monitoring, breach runbook, PDPA programme (§13, §14)"
+    description: "The PDPA penalty for a breach of its data protection provisions is up to 10% of the organisation's annual turnover in Singapore when that is above S$10 million, otherwise up to S$1 million (CMP-PD-09; PDPA s48J(3) and reg 10A of the Enforcement Regulations 2021)."
   - ref: R8
     title: "Vendor lock-in to Google Cloud or one AI provider"
     owner: owner

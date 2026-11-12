@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, Hourglass, Lock, Pencil, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { CircleCheck, Copy, Hourglass, Lock, Pencil, RotateCcw, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -58,6 +58,12 @@ function today(): string {
 
 async function listSettings() {
   const { data, error } = await api.GET("/v1/organisation/settings", { params: { query: { page_size: 200 } } });
+  if (error) throw error;
+  return data.items ?? [];
+}
+
+async function listMembers() {
+  const { data, error } = await api.GET("/v1/members", { params: { query: { page_size: 200 } } });
   if (error) throw error;
   return data.items ?? [];
 }
@@ -275,7 +281,7 @@ function ChangeSetting({ setting, onClose, onDone }: { setting: Setting | null; 
   );
 }
 
-const profileFields: { key: keyof Profile; label: string; kind?: "date" | "month" | "long" }[] = [
+const profileFields: { key: keyof Profile; label: string; kind?: "date" | "month" | "long" | "member" }[] = [
   { key: "legal_name", label: "Legal name" },
   { key: "uen", label: "UEN" },
   { key: "registered_address", label: "Registered office address", kind: "long" },
@@ -292,12 +298,16 @@ const profileFields: { key: keyof Profile; label: string; kind?: "date" | "month
   { key: "books_start", label: "Books start", kind: "date" },
   { key: "first_year_end", label: "First financial year ends", kind: "date" },
   { key: "time_zone", label: "Time zone" },
+  { key: "dpo_user_id", label: "Data Protection Officer", kind: "member" },
+  { key: "dpo_name", label: "DPO's name, as published" },
+  { key: "dpo_email", label: "DPO's business email" },
 ];
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-function shown(f: (typeof profileFields)[number], p: Profile): string {
+function shown(f: (typeof profileFields)[number], p: Profile, names: Map<string, string>): string {
   const v = p[f.key];
+  if (f.kind === "member") return v ? (names.get(String(v)) ?? "A member") : p.dpo_name ? "Outsourced" : "Not named";
   if (v === undefined || v === "") return "Not set";
   if (f.kind === "month") return months[Number(v) - 1] ?? String(v);
   if (f.kind === "date") return date(String(v));
@@ -309,6 +319,7 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
   const confirm = useConfirm();
   const id = useId();
   const [draft, setDraft] = useState<Partial<Record<keyof Profile, string>>>({});
+  const members = useQuery({ queryKey: ["members", "dpo"], queryFn: listMembers, enabled: open });
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const close = () => {
@@ -358,6 +369,15 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
                   </label>
                   {f.kind === "long" ? (
                     <textarea className="fy-textarea" id={fid} value={v} onChange={(e) => set(e.target.value)} />
+                  ) : f.kind === "member" ? (
+                    <select className="fy-select" id={fid} value={v} onChange={(e) => set(e.target.value)} aria-describedby={`${fid}-help`}>
+                      <option value="">None: outsourced, or not named</option>
+                      {(members.data ?? []).map((m) => (
+                        <option key={m.user_id} value={m.user_id}>
+                          {m.display_name}
+                        </option>
+                      ))}
+                    </select>
                   ) : f.kind === "month" ? (
                     <select className="fy-select" id={fid} value={v} onChange={(e) => set(e.target.value)}>
                       {months.map((m, i) => (
@@ -368,6 +388,11 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
                     </select>
                   ) : (
                     <input className="fy-input" id={fid} type={f.kind === "date" ? "date" : "text"} value={v} onChange={(e) => set(e.target.value)} />
+                  )}
+                  {f.kind === "member" && (
+                    <span className="fy-help" id={`${fid}-help`}>
+                      Normally the member who holds the Compliance officer role. An outsourced DPO has a name and email and no member.
+                    </span>
                   )}
                 </div>
               );
@@ -387,6 +412,60 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
   );
 }
 
+// DPOContact is the Data Protection Officer's business contact (CMP-PD-01, rev 0.244): the text the company publishes
+// on its website (PDPA s11(5)), which every email Fyniq sends also gives, and a warning when the member named does not
+// hold the Compliance officer role.
+function DPOContact({ profile: p, onCopied }: { profile: Profile; onCopied: (what: string) => void }) {
+  const h = helpText("organisation.dpo");
+  const text = p.dpo_name && p.dpo_email ? `Data Protection Officer: ${p.dpo_name}, ${p.dpo_email}. Questions about how ${p.legal_name || "we"} handle${p.legal_name ? "s" : ""} personal data, or requests to access or correct it, go to the Data Protection Officer.` : "";
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      onCopied("The DPO's contact is copied.");
+    } catch {
+      onCopied("The text could not be copied: select it and copy it instead.");
+    }
+  };
+  return (
+    <section className="fy-card" aria-labelledby="dpo-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="dpo-title" title={h.tooltip}>
+          {h.label}
+        </h2>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--3">
+        {p.dpo_holds_role === false && (
+          <div className="fy-banner fy-banner--warning" role="status">
+            <Icon of={TriangleAlert} size={20} />
+            <div className="fy-banner__text">
+              <span className="fy-strong">The DPO does not hold the Compliance officer role</span>
+              <span className="fy-small">They can be the DPO, but they cannot keep the data protection registers until they hold it.</span>
+            </div>
+          </div>
+        )}
+        {text ? (
+          <>
+            <p className="fy-small fy-secondary">Publish this on the company's website. Every email Fyniq sends gives the same contact.</p>
+            <p className="fy-small whitespace-pre-wrap" id="dpo-text">
+              {text}
+            </p>
+            <div className="fy-row">
+              <Button size="sm" variant="secondary" onClick={copy} aria-describedby="dpo-text">
+                <Icon of={Copy} />
+                Copy the text
+              </Button>
+            </div>
+          </>
+        ) : (
+          <p className="fy-small fy-secondary">
+            <Icon of={UserRoundCheck} /> No Data Protection Officer is named. Name one, with the name and business email the company publishes, under Edit the profile.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // Organisation is Settings › Organisation (docs/design/screens OrganisationSettings; FR-ORG-01,
 // FR-ORG-03…08): the profile documents print, the GST registrations with their dates, the numbering of each
 // document type, and every setting with its recommended value, why, and whether it needs a second approver. A change takes effect from a day, today or later; a preview
@@ -395,6 +474,9 @@ export function Organisation() {
   const { session } = useSignedIn();
   const settings = useQuery({ queryKey: ["settings"], queryFn: listSettings });
   const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
+  const dpoMember = profile.data?.profile.dpo_user_id;
+  const members = useQuery({ queryKey: ["members", "dpo"], queryFn: listMembers, enabled: !!dpoMember });
+  const names = new Map((members.data ?? []).map((m) => [m.user_id, m.display_name] as const));
   const [editing, setEditing] = useState<Setting | null>(null);
   const [editProfile, setEditProfile] = useState(false);
   const [status, setStatus] = useState("");
@@ -445,12 +527,13 @@ export function Organisation() {
             {profileFields.map((f) => (
               <div key={f.key}>
                 <dt>{f.label}</dt>
-                <dd className={profile.data.profile[f.key] ? "" : "fy-muted"}>{shown(f, profile.data.profile)}</dd>
+                <dd className={profile.data.profile[f.key] ? "" : "fy-muted"}>{shown(f, profile.data.profile, names)}</dd>
               </div>
             ))}
           </dl>
         )}
       </section>
+      {profile.data && <DPOContact profile={profile.data.profile} onCopied={setStatus} />}
       <GSTRegistrations mayChange={mayChange} onDone={setStatus} />
       <Sequences mayChange={mayChange} onDone={setStatus} />
       {settings.isError && <Refusal problem={problemOf(settings.error)} title="The settings could not be shown" />}

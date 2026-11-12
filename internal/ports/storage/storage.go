@@ -384,6 +384,10 @@ type OrganisationProfile struct {
 	// The bank and PayNow details customers pay to: masked in logs and audit events (SEC-15).
 	BankName, BankAccountName, BankAccountNumber, PayNowUEN string
 	DocumentFooter                                          string
+	// The Data Protection Officer (CMP-PD-01, rev 0.244): the member named, nil for an outsourced DPO or none, and the
+	// business contact the company publishes for them.
+	DPOUserID         *uuid.UUID
+	DPOName, DPOEmail string
 	FYStartMonth                                            int        // the month a financial year starts in, 1 to 12
 	BooksStart, FirstYearEnd                                *time.Time // dates: the first financial year runs from one to the other
 	TimeZone                                                string     // an IANA time zone, such as Asia/Singapore

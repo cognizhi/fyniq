@@ -101,7 +101,8 @@ func Starter(s StarterTemplate, kind, documentType string) Content {
 			b.Texts = map[string]string{TextLabel: "Authorised signature"}
 			b.Shown = false
 		case BlockFooter:
-			b.Texts = map[string]string{TextBody: "{{organisation.name}} · UEN {{organisation.uen}}"}
+			// (rev 0.244) The DPO's contact (CMP-PD-01), left out while none is named; templates published earlier keep theirs.
+			b.Texts = map[string]string{TextBody: "{{organisation.name}} · UEN {{organisation.uen}} · Personal data: {{organisation.dpo_name}}, {{organisation.dpo_email}}"}
 		case BlockText:
 			b.Texts = map[string]string{TextBody: ""}
 			b.Shown = false

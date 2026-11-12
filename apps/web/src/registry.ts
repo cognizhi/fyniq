@@ -258,6 +258,7 @@ export const actions = [
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },
   { kind: "action", id: "approval-policy.change", mode: "expert", help: "approval-policy.change", guide: "approvals.policies#change-a-policy" },
   { kind: "action", id: "setting.change", mode: "expert", help: "setting.change", guide: "settings.organisation#change-a-setting" },
+  { kind: "action", id: "organisation.dpo", mode: "expert", help: "organisation.dpo", guide: "settings.organisation#data-protection-officer" },
   { kind: "action", id: "setting.reset", mode: "expert", help: "setting.reset", guide: "settings.organisation#change-a-setting" },
   { kind: "action", id: "gst.record", mode: "expert", help: "gst.record", guide: "settings.organisation#gst-registration" },
   { kind: "action", id: "gst.change", mode: "expert", help: "gst.change", guide: "settings.organisation#gst-registration" },

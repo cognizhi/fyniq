@@ -15,7 +15,8 @@ func Sample(documentType string) Data {
 	f := map[string]Value{
 		"organisation.name": text("Example Analytics Pte Ltd"), "organisation.uen": text("202400001A"), "organisation.gst_number": text("M90000001A"),
 		"organisation.address": text("1 Example Road #01-01, Singapore 000001"), "organisation.email": text("accounts@example.com"),
-		"organisation.phone": text("+65 6000 0000"), "document.date": day("2026-10-23"),
+		"organisation.phone": text("+65 6000 0000"), "organisation.dpo_name": text("Data Protection Officer"),
+		"organisation.dpo_email": text("dpo@example.com"), "document.date": day("2026-10-23"),
 		"document.currency": text("SGD"),
 		"customer.name":     text("Acme Trading Pte Ltd"), "customer.address": text("2 Sample Street, Singapore 000002"), "customer.uen": text("201900002B"),
 		"customer.email": text("ap@acme.example"),

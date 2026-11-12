@@ -26,13 +26,47 @@ event format.
 
 ## 2. The DPO and penalty awareness (slice 2)
 
-- [ ] 2.1 The organisation profile's `dpo_user_id`, `dpo_name` and `dpo_email` (D1). The profile's API saves and
+- [x] 2.1 The organisation profile's `dpo_user_id`, `dpo_name` and `dpo_email` (D1). The profile's API saves and
   audits them, with a warning when the member does not hold the Compliance officer role. Tests: saved and audited; a
   non-member refused; the warning. `// req: CMP-PD-01`
-- [ ] 2.2 The DPO's contact in the footer of every email Fyniq sends, and in the default templates' footer block for
+
+  **What building added:**
+    - **An outsourced DPO.** The PDPA allows one, so `dpo_user_id` is optional. A DPO with a name and an email but no
+      member is an outside firm.
+    - **ORG-11** refuses a member named without the published contact. Naming someone who is not a member is refused
+      on `dpo_user_id`.
+    - **The warning** is the response's `dpo_holds_role`: false when the member named does not hold the Compliance
+      officer role.
+    - **The database.** Migrations 000298 and 000299 add the three columns, with a check: a member named needs the
+      contact. Changes are audited as profile changes, on the organisation's row.
+    - **Tests:** `TestTheDPOsContact` (domain) and `TestTheDataProtectionOfficer` (API).
+
+- [x] 2.2 The DPO's contact in the footer of every email Fyniq sends, and in the default templates' footer block for
   new versions; the copy-ready website block. Tests: an email carries it; an issued document is unchanged.
   `// req: CMP-PD-01`
-- [ ] 2.3 R7's description states the penalty (D13), and a test pins the figures to CMP-PD-09. `// req: CMP-PD-09`
+
+  **What building added:**
+    - **Emails.** `email.QueueWith` reads the profile in the same unit of work and ends every message with the contact,
+      below a plain-text signature line: "Questions about your personal data: <name>, Data Protection Officer,
+      <email>". No line is added while no DPO is named.
+    - **Documents.** The template field catalogue gains `organisation.dpo_name` and `organisation.dpo_email`. The default
+      footer adds "Personal data: <name>, <email>", which is left out while both are empty. Templates already published
+      keep their own footer, and issued documents keep their PDFs.
+    - **The website text.** Settings › Organisation has a **Data Protection Officer** card with the text to publish and
+      **Copy the text**, and the warning about the role. The profile's dialog names the DPO from the members.
+    - **Help.** The help key is `organisation.dpo`, and the guide's new section "Data Protection Officer" is compiled
+      into `settings.organisation`.
+    - **Tests:**
+      - `TestTheLayoutFollowsTheTemplate`: the footer with and without the contact;
+      - `TestTheDataProtectionOfficer`: an email's footer;
+      - the screen's component tests, with axe.
+
+- [x] 2.3 R7's description states the penalty (D13), and a test pins the figures to CMP-PD-09. `// req: CMP-PD-09`
+
+  **What building added:**
+    - **R7's description** gives the figures and their source, PDPA s48J(3) and reg 10A.
+      `TestThePDPAPenaltyIsInTheRegister` pins them.
+    - **Every organisation** sees the penalty on the Data protection page, which slice 4 builds.
 
 ## 3. Privacy notices and consent (slice 3)
 
