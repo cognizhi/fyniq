@@ -1,0 +1,261 @@
+# Design
+
+## Context
+
+See proposal.md for why. What exists today and shapes the approach:
+
+- **The workbook** (`zh-sheet-accounting`, the synthetic sample at commit a705fd1) has 42 sheets. Each record and
+  set-up sheet has the same layout: row 4 marks the columns a person fills in (✍) and the calculated ones (⚙), row 5
+  holds the headers, and data starts at row 6. A dropdown cell holds "code - name", a date an Excel serial number, and
+  an amount a person typed is exact; calculated cells hold the binary float the workbook computed. The workbook also
+  carries its own engine:
+  - **Trial Balance**: each account's opening at the books start, its movement each month of the financial year and
+    its closing at each month end;
+  - **Checks**: each check by number with its status;
+  - **Carry Forward**: the balances and open invoices and bills at an "as of" date, for a clean start.
+- **Fyniq's import paths**: `internal/sheet` reads an `.xlsx`'s first sheet of values safely (bounded archive, exact
+  decimals) for the bank statement and budget imports. Every record has a domain command shared by the API, imports and
+  dry runs (ENG-22). Most commands preview a write (`Prefer: return=preview`, FR-INT-14).
+- **Built modules** the workbook's sheets map to:
+  - the organisation, its settings and the chart;
+  - dimensions (department and project kinds);
+  - contacts and items;
+  - FX rates and bank rules;
+  - money accounts, bank transactions, customer receipts and bill payments recorded by hand;
+  - invoices with spreads, bills, quotes and orders;
+  - journals, recurring invoices, bills and journals;
+  - the fixed-asset register;
+  - budgets, forecasts and the equity register.
+- **What is missing:**
+  - payroll, timesheets and employees (after go-live);
+  - opening open items (FR-GL-06's unbuilt part): opening balances are one base-currency document, so an invoice
+    unpaid at the books start cannot be paid and aged in Fyniq.
+- **Appendix D** has a "Tenant export" row (the Owner approves with a second approver, the Administrator prepares, the
+  DPO views) but none for the workbook import.
+
+## Goals / Non-Goals
+
+**Goals:**
+- One pass from the frozen workbook to reconciled books, every record entered through the command a person's entry
+  takes, so the imported books obey every rule the live ones do.
+- A validation report that says, row by row, what will be imported, what is kept in the archive and what must be fixed
+  first, before anything is written.
+- Parity by account and month to the cent with the workbook's own Trial Balance, every difference explained in the
+  register and signed by the accountant.
+- An export that a person outside Fyniq can read, check against its manifest and verify.
+- The migration path rehearsed end to end in a test on the synthetic sample workbook.
+
+**Non-Goals:**
+- Importing from Xero, QuickBooks Online or Zoho Books (P3).
+- Payroll records, timesheets and per-person employee records (after go-live; kept in the archive).
+- Merging a workbook into books that have posted entries (decided against, rev 0.254).
+- Bank reconciliations' history: the first reconciliation in Fyniq starts at the cut-over; the workbook's Bank Rec
+  sheet stays in the archive, and its balances appear in the parity report.
+
+## Decisions
+
+**D1. Read the workbook sheet by sheet, values only, within bounds of its own.**
+- `internal/sheet` gains a reader of named sheets. It reads the shared and inline strings and each cell's cached value,
+  as exact decimal text.
+- Its bounds are sized for a workbook rather than a statement: 256 MB uncompressed in all and 64 MB per sheet read.
+  It reads only the sheets the import needs.
+- Columns are found by their header text on row 5, not by position, so a column moved in a later workbook release
+  still reads.
+- A workbook saved without its calculated values, never opened in a spreadsheet application after a change, is
+  refused with how to fix it: open and save it, as M1's `make verify` does.
+- Alternative: a spreadsheet library. Rejected, as for the statement import: one reader of untrusted input, bounded
+  before decompression.
+
+**D2. A typed model, then a validation report as the dry run.**
+- Each sheet's rows become typed records:
+  - dates from serial numbers;
+  - "code - name" labels as codes;
+  - amounts a person typed as exact decimals;
+  - the workbook's calculated amounts rounded half away from zero to cents (`RND-IMPORT`, a new named policy).
+- Validation runs the mapping (D4) and each record's command in preview, within a transaction that rolls back.
+- The report lists each sheet's rows to import, its warnings (⚠, such as "kept in the archive") and its errors (✖,
+  each with its row, column, what is wrong and how to fix it).
+- A report with an error cannot be committed. A row the workbook itself blocked (its status ✖) is reported and not
+  imported, as the workbook did not post it.
+
+**D3. The target is an organisation with no posted entries (rev 0.254); the import is one approved operation.**
+- The migration record refuses an organisation holding a posted entry.
+- The commit is one request: prepared by the Controller or Accountant and committed by the Owner. Under FM-1 it waits
+  for a second approver when the organisation has another active Owner.
+- The commit runs in the background as an operation, posting as the migration principal on the Owner's behalf. Every
+  document carries the approval's ID and its workbook origin (sheet, row and key), so each figure traces back to its
+  row.
+- Each record has a business key from its row, so a commit that stopped part way resumes where it stopped. A rejected
+  import is abandoned with its organisation, never undone, since posted history is reversed, never deleted.
+- The weekly review lists the import as one entry (FM-3).
+- Alternative: an approval per document. Rejected: hundreds of approvals, and their thresholds were the workbook's
+  rules, not this import's.
+
+**D4. Mapping, reviewed and signed off (M2).**
+- Accounts map by code. The workbook's chart is the origin of Fyniq's standard chart, so most map one to one. An
+  account Fyniq lacks is created from the Accounts sheet: type, report group, cash-flow line, function, money account
+  and default GST code.
+- GST codes map by code to the `sg-gst` pack's codes.
+- Departments come from the Employees sheet and projects from the record sheets' Project column, as dimension values
+  (rev 0.254).
+- The Budget sheet's P&L lines map to accounts: each line to its report group's first account, which a person can
+  change.
+- Bank rules come from the Lists sheet, in their order (first match wins in both).
+- The mapping report is signed off by the Accountant, with step-up, before the commit.
+
+**D5. What each sheet becomes, in this order.**
+- Set-up:
+  - the organisation's profile and settings: name, UEN, financial year, books start, base currency, GST
+    registration;
+  - dimensions, chart, contacts and items;
+  - FX rates, by month from the Lists sheet;
+  - bank rules, and money accounts (the accounts marked "Money account?").
+- Then, by the founders' choice at M3, one of two paths.
+- **History** of the current financial year:
+  - opening balances at the books start, with opening open items (D6);
+  - in date order: invoices with their Doc Lines and spreads; bills; quotes and orders;
+  - Transactions:
+    - one that names an invoice becomes a customer receipt recorded by hand;
+    - one that names a bill becomes a bill payment recorded by hand;
+    - any other becomes a categorised bank transaction;
+  - journals;
+  - payroll, as one summary journal a month (D7);
+  - assets, with depreciation run for each past month.
+- **Clean start**: the Carry Forward sheet's balances as opening balances at the cut-over, and its open invoices and
+  bills as opening open items.
+- Both paths:
+  - active Recurring rows become recurring invoices, bills and journals from the cut-over on; recurring
+    transactions are reported as kept in the archive (bank feeds bring them);
+  - Budget becomes a budget version, approved;
+  - the Forecast drivers become a forecast document (fyniq-forecast@1, as `scripts/workbook_planning_fixture.py`
+    already reads them);
+  - Funding's cap table becomes the equity register's holders, classes and holdings at the cut-over
+    [accountant to confirm].
+- Timesheets and the per-person Employees rows are reported as kept in the archive (rev 0.254).
+
+**D6. Opening open items post through a clearing account [accountant to confirm].**
+- An invoice or bill marked "Opening balance item?" becomes a document of its kind flagged `opening_item`. It posts
+  under `opening_item@1`:
+  - an invoice: Dr Accounts receivable, Cr **Opening balance clearing**;
+  - a bill: Dr Opening balance clearing, Cr Accounts payable;
+  - each in its currency at its rate, with no revenue, cost or GST.
+- The opening balances then carry the receivable and payable totals on the clearing account instead. The clearing
+  nets to zero once both have posted, and a check says when it does not.
+- Every receivable and payable is then backed by a document, so INV-07's sub-ledgers agree from the books start, and
+  the items can be paid, aged and reminded.
+- Alternative: the workbook's way, where the item posts nothing and the account's opening balance carries it.
+  Rejected: Fyniq's sub-ledgers are read from postings by document, so the items could not be settled without a
+  manual adjustment.
+
+**D7. Payroll as one summary journal a month (rev 0.254).**
+- From the Payroll sheet's calculated columns, one manual journal per pay month, lines aggregated by account and
+  department:
+  - gross pay to each employee's salary account;
+  - employer CPF and SDL to their expense accounts;
+  - net pay to salaries payable;
+  - employee and employer CPF, SDL and SHG to the CPF payable.
+- The amounts are those paid and reported, as the workbook computed them. Where the workbook flagged a difference from
+  the statutory tables, that becomes a register item (FR-MIG-02), never a silent change.
+- Memo "Payroll <month> (imported from the workbook)"; approved under Journals (Appendix D's People and HR row).
+
+**D8. Reconciliation against the workbook's own engine (FR-MIG-02, QA-MIG-01).**
+- The workbook's Trial Balance sheet is the independent implementation the imported books must agree with: golden
+  rule 3, with the workbook as the second implementation.
+- For each account: its opening at the books start, and its movement and closing each month, from Fyniq's balance
+  service against the sheet's columns, to the cent after `RND-IMPORT`.
+- Each difference is a register line: account, month, both figures, its class (a cent allocation, b deliberate rule
+  change, c workbook defect) and a note. The class is proposed (a for spread and depreciation accounts within the
+  months' count in cents, b for revaluation and statutory accounts) and the Accountant decides.
+- The workbook's Checks rows, by their number, are compared with Fyniq's C.1 checks after a run. A different status
+  needs a register line or a fix.
+- The Accountant signs the parity report and the register together, with step-up, over their hash (M4).
+- G4-016 (open USD receivables) is a fixture case: the revaluation at month ends is register class b.
+
+**D9. Generic import (FR-MIG-03): the workbook's sheet is the template.**
+- One template per entity: accounts, contacts, items, opening balances, journals, invoices with lines, bills, FX
+  rates, bank rules and budgets (the budget import exists).
+- Each template is that entity's sheet's input columns, as CSV or XLSX, so one parser serves both imports.
+- A dry run gives the same report (D2). A commit enters each record through its command, with the approvals and limits
+  a person's entry has, in any organisation, unlike the workbook import.
+- Each entity needs its own Appendix D row's C.
+
+**D10. The full tenant export (FR-MIG-04).**
+- An approval object `tenant_export`: the Administrator or the Owner asks, and the Owner and a second approver sign
+  (Appendix D's "Tenant export").
+- The worker writes a ZIP:
+  - each table of the organisation as RFC 4180 CSV, with decimal strings, ISO dates and formula-safe cells;
+  - each document's versions as JSON;
+  - the evidence and attachments as their files;
+  - the audit trail as JSON lines with its hashes, verifiable outside Fyniq with `contracts/audit`;
+  - a `manifest.json`: each file's path, rows, SHA-256, the schema and platform versions, the ledger revision and the
+    audit chain's head;
+  - a README.
+- A catalogue in code names every table with `organisation_id` as exported or excluded with a reason: secrets, key
+  material, sessions, tokens, idempotency keys and the outbox are excluded. A test fails on a table in neither list.
+- Sealed values (bank account numbers, NRIC/FIN) are exported in clear, since the export exists for exit and
+  portability: the organisation's own data, dual controlled [counsel to confirm].
+- The file is downloaded by the requester for 24 hours and recorded as a sensitive export (AUD-05).
+
+**D11. The migration record and its steps (§17.1 M1 to M6).**
+- `migration_run` (the organisation, its status and the founders' M3 choice) with one `migration_step` per step:
+  status, evidence files, who signed and when, and the hash signed.
+- The steps:
+  - **M1**: the frozen workbook and its Checks export uploaded as evidence (FR-DOC-05), each hashed; the validation
+    report;
+  - **M2**: the mapping signed;
+  - **M3**: the commit;
+  - **M4**: the parity report and the register signed;
+  - **M5**: the workbook at the end of the parallel month uploaded and that month reconciled the same way, then
+    signed;
+  - **M6**: the frozen workbook archived as evidence under retention (FR-DOC-07's lock), the record closed and read
+    only.
+- A step opens only when the one before is signed.
+
+**D12. The sample workbook as a pinned fixture.**
+- `scripts/workbook_migration_fixture.py` writes `test/migration/workbook-sample.xlsx` from a checkout of
+  `zh-sheet-accounting` at a pinned commit: the sheets the import reads, values only, with the commit recorded. It is
+  synthetic data (DEV-08) and small.
+- The rehearsal test runs M1 to M6 on it in the local flavour. Its expected register (classes a and b only) and the
+  expected Checks comparison are committed beside it.
+
+**D13. Ports, audit and the threat model.**
+- No new port: the blob store keeps the uploaded workbook, the archive and the export; the outbox runs the validation,
+  the commit, the reconciliation and the export; the clock dates them.
+- An uploaded workbook passes the scanner service before it is read.
+- Audit events:
+  - `migration.started`, `migration.workbook_received`, `migration.validated`, `migration.mapping_signed`,
+    `migration.committed`, `migration.reconciled`, `migration.register_item_changed`, `migration.register_signed`,
+    `migration.parallel_signed`, `migration.archived`;
+  - `import.run`;
+  - `tenant_export.requested`, `tenant_export.completed`, `tenant_export.downloaded`.
+- `docs/security/threat-models/migration-and-export.md` covers:
+  - an untrusted workbook: bombs, formulas, oversized text, injected codes;
+  - a commit by the wrong person;
+  - an export taken by one person, a stale link or a leaked file.
+
+## Risks / Trade-offs
+
+- [A later workbook release moves or renames columns] → columns are found by header text; an unknown header is a
+  validation error naming the sheet and column, never a silent skip.
+- [The workbook's float arithmetic differs from exact decimals by a cent] → `RND-IMPORT` rounds its calculated figures
+  once, and the remaining cents are register class a, re-derived by `ALLOC-EVEN` as FR-MIG-02 says.
+- [A commit stops part way] → business keys per row make it resumable; an abandoned organisation is discarded, not
+  repaired.
+- [The clearing account of D6 is the accountant's to confirm] → it is provisional, like the other accounting choices,
+  and the parity report shows it at zero, so a change of method later is a posting rule's version, not a re-import.
+- [The export holds sealed values in clear] → it is dual controlled, single-requester, short-lived and audited; counsel
+  confirms before the first real export.
+- [The sample workbook may not show every real case] → the real workbook's own validation report and parity run in M1
+  and M4 on its copy before go-live, and the parallel month (M5) catches what the sample did not.
+
+## Migration Plan
+
+- Deployed as an ordinary release: additive migrations, no backfill.
+- The founders' migration itself is §17.1's path, run in Settings › Import on the real workbook in a fresh
+  organisation, after the rehearsal passes.
+- Rollback: before M6 the old workbook remains the books of record; abandoning the Fyniq organisation is the rollback.
+
+## Open Questions
+
+- Which month is the parallel month (M5), and whether the founders import history or start clean at M3: the founders'
+  choices at migration time; both paths are built.
