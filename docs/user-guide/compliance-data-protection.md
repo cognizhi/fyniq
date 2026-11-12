@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-08, CMP-PD-09, CTL-DP-05]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-08, CMP-PD-09, CTL-DP-05]
 ---
 
 # Keep the data protection registers
@@ -51,6 +51,19 @@ draft adopts it as it is. A later change needs approving again. Clauses marked [
 have counsel confirm them before you approve.
 
 A processing that goes on without an approved assessment shows as overdue on **Reviews and attestations**.
+
+## Access and correction requests
+
+People may ask to see the personal data the company holds about them, or to correct it. A member asks in **Settings** ›
+**Profile**; the Compliance officer records any other request under the **Requests** tab with **Record a request**. Each
+is due 30 days after it was received.
+
+For each request, the Compliance officer selects **Next step** to acknowledge it, extend it, answer it with its outcome,
+then close it. An extension is told to the requester in writing within the first 30 days, and names the later day it
+will be answered. **Data held** shows the personal data Fyniq holds about a member or a contact who asked; reading it
+is recorded in the audit trail. Corrections are made where the data lives, such as the contact's page.
+
+A request past its day shows as overdue, here and on **Reviews and attestations**.
 
 ## The Data Protection Officer
 

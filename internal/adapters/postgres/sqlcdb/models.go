@@ -1716,6 +1716,31 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPdRequest struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	Subject        string
+	Requester      *string
+	Details        string
+	ReceivedOn     time.Time
+	DueOn          time.Time
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
+type FyniqPdRequestStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RequestID      uuid.UUID
+	Step           string
+	At             time.Time
+	ByActor        string
+	Note           *string
+	NewDueOn       pgtype.Date
+	Outcome        *string
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

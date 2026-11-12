@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -157,6 +157,10 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	requests, err := u.Compliance().PDRequests(ctx)
+	if err != nil {
+		return nil, err
+	}
 	features := map[string]bool{}
 	for key, setting := range registry.DPIAFeatures {
 		def, _ := settings.Lookup(setting)
@@ -187,6 +191,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		riskReviews(risks, today),
 		inventoryReview(members, inventory, today),
 		dpiaReview(features, ownEntries, dpias, approvals),
+		requestsReview(requests, today),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -196,7 +201,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
-	"data-inventory": "quarterly", "dpia": "each processing"}
+	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -511,5 +516,41 @@ func dpiaReview(features map[string]bool, entries []storage.InventoryEntry, vers
 		r.Detail = fmt.Sprintf("%d processing(s) go on without an approved impact assessment: %s.", len(missing), strings.Join(missing, "; "))
 	}
 	r.settle("Every processing that needs an impact assessment has an approved one.")
+	return r
+}
+
+// RequestDue is when a request is to be answered: 30 days after receipt, or the day its written extension names.
+func RequestDue(r storage.PDRequest) time.Time {
+	due := r.DueOn
+	for _, s := range r.Steps {
+		if s.Step == "extended" && s.NewDueOn != nil {
+			due = *s.NewDueOn
+		}
+	}
+	return due
+}
+
+// Access and correction requests (CMP-PD-04, rev 0.244): each answered within 30 days of its receipt, or by the day
+// the requester was told in writing within those 30 days.
+func requestsReview(requests []storage.PDRequest, today time.Time) Review {
+	r := Review{Kind: "pd-requests", Owner: "dpo", Where: "/compliance/data-protection",
+		Evidence: "Each request with its steps: acknowledged, extended with the written notice, answered with its outcome, closed"}
+	for _, q := range requests {
+		answered := false
+		for _, s := range q.Steps {
+			if s.Step == "answered" {
+				answered = true
+				r.signed(s.By, s.At)
+			}
+		}
+		if !answered {
+			due := RequestDue(q)
+			r.wait(due, today.After(due))
+		}
+	}
+	if r.Waiting > 0 {
+		r.Detail = fmt.Sprintf("%d access or correction request(s) wait for their answer, %d of them past their day.", r.Waiting, r.Overdue)
+	}
+	r.settle("No access or correction request waits.")
 	return r
 }

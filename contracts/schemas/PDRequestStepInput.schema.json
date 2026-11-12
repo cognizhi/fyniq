@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "new_due_on": {
+      "description": "With extended: the day it will be answered, told to the requester in writing within the first 30 days.",
+      "examples": [
+        "2027-01-08"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "note": {
+      "description": "What was said or done; an extension's written notice.",
+      "examples": [
+        "Sent the report by email."
+      ],
+      "maxLength": 4000,
+      "type": "string"
+    },
+    "outcome": {
+      "description": "With answered: the outcome.",
+      "enum": [
+        "provided",
+        "corrected",
+        "partly",
+        "refused"
+      ],
+      "examples": [
+        "provided"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "The step.",
+      "enum": [
+        "acknowledged",
+        "extended",
+        "answered",
+        "closed"
+      ],
+      "examples": [
+        "answered"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step"
+  ],
+  "title": "PDRequestStepInput",
+  "type": "object"
+}

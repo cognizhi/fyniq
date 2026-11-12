@@ -614,3 +614,60 @@ func (c compliance) ApproveDPIA(ctx context.Context, a storage.DPIAApproval) err
 	ver := int(r.Version)
 	return c.u.event(ctx, "dpia.approved", "dpia_approval", r.ID, &ver, map[string][2]any{"key": {nil, r.Key}, "version": {nil, ver}})
 }
+
+func (c compliance) PDRequests(ctx context.Context) ([]storage.PDRequest, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListPDRequests(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	steps, err := c.u.q.ListPDRequestSteps(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PDRequest, 0, len(rows))
+	at := map[uuid.UUID]int{}
+	for _, r := range rows {
+		at[r.ID] = len(out)
+		out = append(out, storage.PDRequest{ID: r.ID, Kind: r.Kind, Subject: r.Subject, Requester: str(r.Requester), Details: r.Details,
+			ReceivedOn: r.ReceivedOn, DueOn: r.DueOn, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt})
+	}
+	for _, s := range steps {
+		if i, ok := at[s.RequestID]; ok {
+			out[i].Steps = append(out[i].Steps, storage.PDRequestStep{Step: s.Step, At: s.At, By: s.ByActor, Note: str(s.Note),
+				NewDueOn: nullDate(s.NewDueOn), Outcome: str(s.Outcome)})
+		}
+	}
+	return out, nil
+}
+
+func (c compliance) RecordPDRequest(ctx context.Context, r storage.PDRequest) (storage.PDRequest, error) {
+	if err := c.u.check(); err != nil {
+		return storage.PDRequest{}, err
+	}
+	row, err := c.u.q.InsertPDRequest(ctx, sqlcdb.InsertPDRequestParams{Kind: r.Kind, Subject: r.Subject, Requester: opt(r.Requester), Details: r.Details,
+		ReceivedOn: r.ReceivedOn, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt})
+	if err != nil {
+		return storage.PDRequest{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "pd_request.received", "pd_request", row.ID, nil, map[string][2]any{"kind": {nil, row.Kind}, "subject": {nil, row.Subject},
+		"received_on": {nil, row.ReceivedOn.Format(time.DateOnly)}, "due_on": {nil, row.DueOn.Format(time.DateOnly)}}); err != nil {
+		return storage.PDRequest{}, err
+	}
+	return storage.PDRequest{ID: row.ID, Kind: row.Kind, Subject: row.Subject, Requester: str(row.Requester), Details: row.Details,
+		ReceivedOn: row.ReceivedOn, DueOn: row.DueOn, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt}, nil
+}
+
+func (c compliance) StepPDRequest(ctx context.Context, id uuid.UUID, s storage.PDRequestStep) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	if _, err := c.u.q.InsertPDRequestStep(ctx, sqlcdb.InsertPDRequestStepParams{RequestID: id, Step: s.Step, At: s.At, ByActor: s.By, Note: opt(s.Note),
+		NewDueOn: pgDate(s.NewDueOn), Outcome: opt(s.Outcome)}); err != nil {
+		return mapError(err)
+	}
+	return c.u.event(ctx, "pd_request."+s.Step, "pd_request", id, nil, map[string][2]any{"step": {nil, s.Step}, "new_due_on": {nil, dayOf(s.NewDueOn)},
+		"outcome": {nil, nilIfEmpty(s.Outcome)}})
+}

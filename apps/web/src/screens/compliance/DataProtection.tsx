@@ -30,7 +30,15 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpias" | "dpo";
+type Tab = "inventory" | "dpias" | "requests" | "dpo";
+type Request = components["schemas"]["PDRequestView"];
+type Report = components["schemas"]["PersonalDataReport"];
+
+async function requests() {
+  const { data, error } = await api.GET("/v1/compliance/personal-data-requests");
+  if (error) throw error;
+  return data.items;
+}
 type DPIA = components["schemas"]["DPIAView"];
 
 async function dpias() {
@@ -71,12 +79,16 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "dpias"} onClick={() => setTab("dpias")} title={helpText("data-protection.dpias").tooltip}>
           Impact assessments
         </button>
+        <button type="button" role="tab" aria-selected={tab === "requests"} onClick={() => setTab("requests")} title={helpText("data-protection.requests").tooltip}>
+          Requests
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
       </div>
       {tab === "inventory" && <InventoryTab />}
       {tab === "dpias" && <DPIAsTab />}
+      {tab === "requests" && <RequestsTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );
@@ -491,6 +503,263 @@ function DPIAForm({ dpiaKey, officer, onClose }: { dpiaKey: string | null; offic
           )}
         </div>
       )}
+    </Dialog>
+  );
+}
+
+const nextSteps: Record<Request["status"], Request["steps"][number]["step"][]> = {
+  received: ["acknowledged", "extended", "answered"],
+  acknowledged: ["extended", "answered"],
+  extended: ["answered"],
+  answered: ["closed"],
+  closed: [],
+};
+const stepWords: Record<string, string> = { acknowledged: "Acknowledge it", extended: "Extend it, telling them in writing", answered: "Answer it", closed: "Close it" };
+
+// RequestsTab is the register of access and correction requests (CMP-PD-04): each due 30 days after receipt or by its
+// written extension, with its steps; the Compliance officer records one from outside, takes each step, and reads the
+// personal data held about its subject (an audited read).
+function RequestsTab() {
+  const id = useId();
+  const { session } = useSignedIn();
+  const officer = (session.roles ?? []).includes("dpo");
+  const list = useQuery({ queryKey: ["pd-requests"], queryFn: requests });
+  const [recording, setRecording] = useState(false);
+  const [stepping, setStepping] = useState<Request | null>(null);
+  const [report, setReport] = useState<{ request: Request; data: Report } | null>(null);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const readReport = async (r: Request) => {
+    const { data, error } = await api.GET("/v1/compliance/personal-data-requests/{request_id}/report", { params: { path: { request_id: r.id } } });
+    if (error) return setProblem(problemOf(error));
+    setReport({ request: r, data });
+  };
+  if (list.isError) return <Refusal problem={problemOf(list.error)} title="The requests could not be shown" />;
+  if (!list.data) return <p className="fy-small">Loading the requests…</p>;
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-requests`}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={`${id}-requests`}>
+          Access and correction requests
+        </h2>
+        {officer && (
+          <Button size="sm" onClick={() => setRecording(true)}>
+            <Icon of={Plus} />
+            Record a request
+          </Button>
+        )}
+      </div>
+      {problem && <Refusal problem={problem} title="The report could not be read" />}
+      {list.data.length === 0 ? (
+        <p className="fy-card__body fy-small fy-secondary">No request yet. Members ask in Settings › Profile; record one received by email or letter here.</p>
+      ) : (
+        <ul className="fy-list" aria-labelledby={`${id}-requests`}>
+          {list.data.slice().reverse().map((r) => (
+            <li key={r.id} className="fy-list__item">
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">
+                  {r.kind === "access" ? "Access" : "Correction"}: {r.details}
+                </span>
+                <span className="fy-list__meta whitespace-normal">
+                  {r.requester || r.subject} · received {date(r.received_on)} · {r.status} · due {date(r.due_on)}
+                </span>
+              </span>
+              {r.overdue && (
+                <span className="fy-chip fy-chip--serious">
+                  <Icon of={ClockAlert} />
+                  Overdue
+                </span>
+              )}
+              {officer && r.subject !== "person" && (
+                <Button size="sm" variant="ghost" onClick={() => readReport(r)} aria-label={`Read the data held for ${r.requester || r.subject}`}>
+                  Data held
+                </Button>
+              )}
+              {officer && nextSteps[r.status].length > 0 && (
+                <Button size="sm" variant="secondary" onClick={() => setStepping(r)} aria-label={`Next step for the request of ${date(r.received_on)}`}>
+                  <Icon of={ShieldCheck} />
+                  Next step
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {recording && <RequestForm onClose={() => setRecording(false)} />}
+      {stepping && <StepForm request={stepping} onClose={() => setStepping(null)} />}
+      {report && (
+        <Dialog open onOpenChange={(o) => !o && setReport(null)} eyebrow="Data held" title={report.request.requester || report.request.subject} description={report.data.note}>
+          {report.data.items.length === 0 ? (
+            <p className="fy-small">Fyniq holds no value about them in the inventory's classes.</p>
+          ) : (
+            <dl className="fy-dl">
+              {report.data.items.map((i) => (
+                <div key={i.class + i.field}>
+                  <dt>{i.field}</dt>
+                  <dd>{i.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </Dialog>
+      )}
+    </section>
+  );
+}
+
+// RequestForm records a request received from a contact or anyone else (CMP-PD-04).
+function RequestForm({ onClose }: { onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [form, setForm] = useState({ kind: "access" as Request["kind"], requester: "", details: "", received_on: "" });
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/personal-data-requests", { params: { header: { "Idempotency-Key": newKey() } },
+          body: { kind: form.kind, subject: "person", requester: form.requester.trim(), details: form.details.trim(), received_on: form.received_on || undefined } }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["pd-requests", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Requests" title="Record a request"
+      description="A request received by email, letter or in person. It is due 30 days after it was received.">
+      {problem && <Refusal problem={problem} title="The request was not recorded" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-kind`}>
+            They ask to
+          </label>
+          <select className="fy-select" id={`${id}-kind`} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as Request["kind"] })}>
+            <option value="access">See their personal data</option>
+            <option value="correction">Correct it</option>
+          </select>
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-requester`}>
+            Who asked, and how to reach them
+          </label>
+          <input className="fy-input" id={`${id}-requester`} value={form.requester} onChange={(e) => setForm({ ...form, requester: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-details`}>
+            What they ask for
+          </label>
+          <textarea className="fy-textarea" id={`${id}-details`} value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} />
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-received`}>
+            Received on (leave empty for today)
+          </label>
+          <input className="fy-input" type="date" id={`${id}-received`} value={form.received_on} onChange={(e) => setForm({ ...form, received_on: e.target.value })} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
+            Record it
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// StepForm adds a request's next step: acknowledged, extended with the day told in writing, answered with its outcome, or
+// closed after the answer.
+function StepForm({ request, onClose }: { request: Request; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const steps = nextSteps[request.status];
+  const [form, setForm] = useState({ step: steps[0]!, note: "", new_due_on: "", outcome: "provided" as NonNullable<Request["steps"][number]["outcome"]> });
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const body = { step: form.step, note: form.note.trim() || undefined, new_due_on: form.step === "extended" ? form.new_due_on : undefined,
+        outcome: form.step === "answered" ? form.outcome : undefined };
+      const out = await guarded(confirm, () =>
+        api.POST("/v1/compliance/personal-data-requests/{request_id}/steps", {
+          params: { path: { request_id: request.id }, header: { "Idempotency-Key": newKey(), "If-Match": `"s${request.steps.length}"` } }, body }),
+      );
+      if (out.error) throw out.error;
+      return out.data;
+    },
+    onSuccess: async () => {
+      await Promise.all(["pd-requests", "compliance-reviews"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      onClose();
+    },
+    onError: (e) => setProblem(problemOf(e)),
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()} dismissible={!save.isPending} eyebrow="Requests" title="Next step"
+      description={`Due by ${date(request.due_on)}. An extension is told to the requester in writing within the first 30 days.`}>
+      {problem && <Refusal problem={problem} title="The step was not recorded" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-step`}>
+            Step
+          </label>
+          <select className="fy-select" id={`${id}-step`} value={form.step} onChange={(e) => setForm({ ...form, step: e.target.value as typeof form.step })}>
+            {steps.map((s) => (
+              <option key={s} value={s}>
+                {stepWords[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {form.step === "extended" && (
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-due`}>
+              The day you told them
+            </label>
+            <input className="fy-input" type="date" id={`${id}-due`} value={form.new_due_on} onChange={(e) => setForm({ ...form, new_due_on: e.target.value })} />
+          </div>
+        )}
+        {form.step === "answered" && (
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-outcome`}>
+              Outcome
+            </label>
+            <select className="fy-select" id={`${id}-outcome`} value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value as typeof form.outcome })}>
+              <option value="provided">Their data was provided</option>
+              <option value="corrected">It was corrected</option>
+              <option value="partly">Partly met</option>
+              <option value="refused">Refused, with the reason given</option>
+            </select>
+          </div>
+        )}
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-note`}>
+            {form.step === "extended" ? "What you told them" : "Note (optional)"}
+          </label>
+          <textarea className="fy-textarea" id={`${id}-note`} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
+            Record the step
+          </Button>
+        </div>
+      </form>
     </Dialog>
   );
 }

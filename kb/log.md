@@ -493,3 +493,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md (new), compliance-reviews.md → compliance.data-protection (new), compliance.reviews (the inventory and its quarterly review, CMP-PD-02, CMP-05)
 
 ## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (impact assessments, CMP-PD-08)
+
+## [2026-11-09] compile | docs/user-guide/compliance-data-protection.md, profile-and-security.md → compliance.data-protection, preferences.security (access and correction requests, CMP-PD-04)
+
+## [2026-11-09] compile | docs/user-guide/compliance-reviews.md → compliance.reviews (the impact assessments' and requests' reviews)

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "details": {
+      "description": "What they asked for.",
+      "examples": [
+        "A copy of the personal data you hold about me."
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "description": "access or correction.",
+      "enum": [
+        "access",
+        "correction"
+      ],
+      "examples": [
+        "access"
+      ],
+      "type": "string"
+    },
+    "received_on": {
+      "description": "When it was received; left out, today. Never after today.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "requester": {
+      "description": "Who asked and how to reach them.",
+      "examples": [
+        "Ada Tan, ada@example.com"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "subject": {
+      "description": "Whose data: member:\u003cuser id\u003e, contact:\u003ccontact id\u003e, or person.",
+      "examples": [
+        "contact:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "pattern": "^((member|contact):[0-9a-f-]{36}|person)$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "subject",
+    "requester",
+    "details"
+  ],
+  "title": "PDRequestInput",
+  "type": "object"
+}

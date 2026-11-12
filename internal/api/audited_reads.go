@@ -15,6 +15,7 @@ var auditedReads = map[string]string{
 	"exportRelatedParties":      "report.exported",
 	"getEvidenceFile":           "evidence.opened",
 	"getPaymentBatchFile":       "payment_batch.file_downloaded",
+	"getPersonalDataReport":     "personal_data.exported",
 	"getReportExportFile":       "report_export.downloaded",
 	"requestReportExport":       "report_export.requested",
 	"requestAuditTrailExport":   "report_export.requested",

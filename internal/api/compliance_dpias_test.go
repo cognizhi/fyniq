@@ -65,8 +65,13 @@ func TestTheImpactAssessments(t *testing.T) {
 		t.Fatalf("an assessment of the entry: %d %s", c.Status, c.Raw)
 	}
 	reviews := e.call(http.MethodGet, "/v1/compliance/reviews", e.as(authz.Auditor), nil).Body["items"].([]any)
-	dpia := reviews[len(reviews)-1].(map[string]any)
-	if dpia["kind"] != "dpia" || dpia["status"] != "overdue" || dpia["waiting"] != float64(1) || !strings.Contains(dpia["detail"].(string), "a mailing list") {
+	var dpia map[string]any
+	for _, x := range reviews {
+		if x.(map[string]any)["kind"] == "dpia" {
+			dpia = x.(map[string]any)
+		}
+	}
+	if dpia == nil || dpia["status"] != "overdue" || dpia["waiting"] != float64(1) || !strings.Contains(dpia["detail"].(string), "a mailing list") {
 		t.Errorf("the reviews' DPIA line: %v", dpia)
 	}
 	if trail := auditTrail(t, e); !strings.Contains(trail, "dpia.approved") || !strings.Contains(trail, "dpia.saved") {

@@ -250,6 +250,34 @@ type DPIAApproval struct {
 	ApprovedAt time.Time
 }
 
+// CodePDRequest is the database's refusal of a request's step out of order: after closing, twice, closing before an
+// answer, or an extension late, after the answer or to an earlier day; or any change or deletion (FY314).
+const CodePDRequest = "STORAGE-PDREQUEST-01"
+
+// PDRequest is an access or correction request (CMP-PD-04, design D5), with its steps.
+type PDRequest struct {
+	ID         uuid.UUID
+	Kind       string // access or correction
+	Subject    string // member:<user id>, contact:<contact id>, or person
+	Requester  string // who asked and how to reach them, when not a member asking for themselves
+	Details    string
+	ReceivedOn time.Time
+	DueOn      time.Time // 30 days after receipt
+	CreatedBy  string
+	CreatedAt  time.Time
+	Steps      []PDRequestStep // oldest first
+}
+
+// PDRequestStep is a request's step: acknowledged, extended, answered or closed.
+type PDRequestStep struct {
+	Step     string
+	At       time.Time
+	By       string
+	Note     string
+	NewDueOn *time.Time // an extension's
+	Outcome  string     // an answer's: provided, corrected, partly or refused
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -260,6 +288,12 @@ type Compliance interface {
 	PublishPolicy(ctx context.Context, v PublishedPolicy) (PublishedPolicy, error)
 	// AcknowledgePolicy records a member's acknowledgement of a published version, audited as policy.acknowledged.
 	AcknowledgePolicy(ctx context.Context, a PolicyAcknowledgement) error
+	// PDRequests are the organisation's access and correction requests with their steps, oldest first (CMP-PD-04).
+	PDRequests(ctx context.Context) ([]PDRequest, error)
+	// RecordPDRequest records a request, due 30 days after receipt, audited as pd_request.received.
+	RecordPDRequest(ctx context.Context, r PDRequest) (PDRequest, error)
+	// StepPDRequest adds a request's step, audited as pd_request.<step>; CodePDRequest when it is out of order.
+	StepPDRequest(ctx context.Context, id uuid.UUID, s PDRequestStep) error
 	// DPIAs are every version of the organisation's impact assessments, by key and version, and every approval (CMP-PD-08).
 	DPIAs(ctx context.Context) ([]DPIAVersion, []DPIAApproval, error)
 	// SaveDPIA saves an assessment's version, audited as dpia.saved; CodeDPIA when it does not follow its last.

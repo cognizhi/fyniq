@@ -128,6 +128,7 @@ var Attestations = map[string]string{
 	"risk-review":            "Each risk is reviewed by its review date",
 	"data-inventory":         "The Compliance officer reviews the personal-data inventory (each quarter)",
 	"dpia":                   "Each processing that needs one has an approved data protection impact assessment",
+	"pd-requests":            "Each access or correction request is answered within 30 days, or by the day its written extension names",
 }
 
 // Framework is a framework a control may map to, and the words of Appendix F's Mapping cell that name it.

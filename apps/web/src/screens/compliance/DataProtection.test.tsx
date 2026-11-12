@@ -22,6 +22,7 @@ const inventory = {
 // req: CMP-05
 // req: CMP-PD-09
 // req: CMP-PD-08
+// req: CMP-PD-04
 describe("Compliance › Data protection", () => {
   it("shows the inventory, what is never held, the schedule and the review overdue; axe finds nothing", async () => {
     answer({ "GET /v1/compliance/data-inventory": { status: 200, body: inventory } });
@@ -98,5 +99,34 @@ describe("Compliance › Data protection", () => {
     fireEvent.click(await within(dialog).findByRole("button", { name: "Approve Fyniq's draft" }));
     await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/dpias/payroll/approvals")).toBe(true));
     expect(seen.find((x) => x.path === "/v1/compliance/dpias/payroll/approvals")?.headers.get("If-Match")).toBe('"v0"');
+  });
+
+  it("lists the requests, an overdue one marked, and lets the Compliance officer answer one and read the data held; axe finds nothing", async () => {
+    const req = { id: "r-1", kind: "correction", subject: "contact:k-1", requester: "Ada Tan, ada@example.com", details: "My address is wrong.", received_on: "2026-09-01",
+      due_on: "2026-10-01", status: "acknowledged", overdue: true, steps: [{ step: "acknowledged", at: "2026-09-02T02:00:00Z", by: "user:u-1" }] };
+    const seen = answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/personal-data-requests": { status: 200, body: { items: [req] } },
+      "GET /v1/compliance/personal-data-requests/r-1/report": { status: 200, body: { subject: "contact:k-1", note: "Records are kept.", items: [{ class: "contacts", field: "Name", value: "Ada Tan" }] } },
+      "POST /v1/compliance/personal-data-requests/r-1/steps": { status: 201, body: { ...req, status: "answered" } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Requests" }));
+    const list = await screen.findByRole("list", { name: "Access and correction requests" });
+    expect(within(list).getByText("Overdue")).toBeTruthy();
+    await noViolations();
+    fireEvent.click(within(list).getByRole("button", { name: /Read the data held/ }));
+    expect(await screen.findByText("Ada Tan", { selector: "dd" })).toBeTruthy();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(within(list).getByRole("button", { name: /Next step/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Step"), { target: { value: "answered" } });
+    fireEvent.change(within(dialog).getByLabelText("Outcome"), { target: { value: "corrected" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record the step" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/personal-data-requests/r-1/steps")).toBe(true));
+    const step = seen.find((x) => x.path === "/v1/compliance/personal-data-requests/r-1/steps")!;
+    expect(step.body).toEqual({ step: "answered", outcome: "corrected" });
+    expect(step.headers.get("If-Match")).toBe('"s1"');
   });
 });

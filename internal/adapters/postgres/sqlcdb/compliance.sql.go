@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const dualControlApprovals = `-- name: DualControlApprovals :many
@@ -572,6 +573,111 @@ func (q *Queries) InsertDataInventoryReview(ctx context.Context, arg InsertDataI
 		&i.ReviewedBy,
 		&i.ReviewedAt,
 		&i.Note,
+	)
+	return i, err
+}
+
+const insertPDRequest = `-- name: InsertPDRequest :one
+INSERT INTO fyniq.pd_request (kind, subject, requester, details, received_on, due_on, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $5::date + 30,
+  $6, $7)
+RETURNING id, kind, subject, requester, details, received_on, due_on, created_by, created_at
+`
+
+type InsertPDRequestParams struct {
+	Kind       string
+	Subject    string
+	Requester  *string
+	Details    string
+	ReceivedOn time.Time
+	CreatedBy  string
+	CreatedAt  time.Time
+}
+
+type InsertPDRequestRow struct {
+	ID         uuid.UUID
+	Kind       string
+	Subject    string
+	Requester  *string
+	Details    string
+	ReceivedOn time.Time
+	DueOn      time.Time
+	CreatedBy  string
+	CreatedAt  time.Time
+}
+
+func (q *Queries) InsertPDRequest(ctx context.Context, arg InsertPDRequestParams) (InsertPDRequestRow, error) {
+	row := q.db.QueryRow(ctx, insertPDRequest,
+		arg.Kind,
+		arg.Subject,
+		arg.Requester,
+		arg.Details,
+		arg.ReceivedOn,
+		arg.CreatedBy,
+		arg.CreatedAt,
+	)
+	var i InsertPDRequestRow
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.Subject,
+		&i.Requester,
+		&i.Details,
+		&i.ReceivedOn,
+		&i.DueOn,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertPDRequestStep = `-- name: InsertPDRequestStep :one
+INSERT INTO fyniq.pd_request_step (request_id, step, at, by_actor, note, new_due_on, outcome)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, request_id, step, at, by_actor, note, new_due_on, outcome
+`
+
+type InsertPDRequestStepParams struct {
+	RequestID uuid.UUID
+	Step      string
+	At        time.Time
+	ByActor   string
+	Note      *string
+	NewDueOn  pgtype.Date
+	Outcome   *string
+}
+
+type InsertPDRequestStepRow struct {
+	ID        uuid.UUID
+	RequestID uuid.UUID
+	Step      string
+	At        time.Time
+	ByActor   string
+	Note      *string
+	NewDueOn  pgtype.Date
+	Outcome   *string
+}
+
+func (q *Queries) InsertPDRequestStep(ctx context.Context, arg InsertPDRequestStepParams) (InsertPDRequestStepRow, error) {
+	row := q.db.QueryRow(ctx, insertPDRequestStep,
+		arg.RequestID,
+		arg.Step,
+		arg.At,
+		arg.ByActor,
+		arg.Note,
+		arg.NewDueOn,
+		arg.Outcome,
+	)
+	var i InsertPDRequestStepRow
+	err := row.Scan(
+		&i.ID,
+		&i.RequestID,
+		&i.Step,
+		&i.At,
+		&i.ByActor,
+		&i.Note,
+		&i.NewDueOn,
+		&i.Outcome,
 	)
 	return i, err
 }
@@ -1207,6 +1313,97 @@ func (q *Queries) ListDataInventoryReviews(ctx context.Context) ([]ListDataInven
 			&i.ReviewedBy,
 			&i.ReviewedAt,
 			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPDRequestSteps = `-- name: ListPDRequestSteps :many
+SELECT id, request_id, step, at, by_actor, note, new_due_on, outcome FROM fyniq.pd_request_step ORDER BY at, id
+`
+
+type ListPDRequestStepsRow struct {
+	ID        uuid.UUID
+	RequestID uuid.UUID
+	Step      string
+	At        time.Time
+	ByActor   string
+	Note      *string
+	NewDueOn  pgtype.Date
+	Outcome   *string
+}
+
+func (q *Queries) ListPDRequestSteps(ctx context.Context) ([]ListPDRequestStepsRow, error) {
+	rows, err := q.db.Query(ctx, listPDRequestSteps)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPDRequestStepsRow
+	for rows.Next() {
+		var i ListPDRequestStepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RequestID,
+			&i.Step,
+			&i.At,
+			&i.ByActor,
+			&i.Note,
+			&i.NewDueOn,
+			&i.Outcome,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPDRequests = `-- name: ListPDRequests :many
+SELECT id, kind, subject, requester, details, received_on, due_on, created_by, created_at FROM fyniq.pd_request ORDER BY received_on, id
+`
+
+type ListPDRequestsRow struct {
+	ID         uuid.UUID
+	Kind       string
+	Subject    string
+	Requester  *string
+	Details    string
+	ReceivedOn time.Time
+	DueOn      time.Time
+	CreatedBy  string
+	CreatedAt  time.Time
+}
+
+// The organisation's access and correction requests, oldest first (CMP-PD-04).
+func (q *Queries) ListPDRequests(ctx context.Context) ([]ListPDRequestsRow, error) {
+	rows, err := q.db.Query(ctx, listPDRequests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPDRequestsRow
+	for rows.Next() {
+		var i ListPDRequestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Subject,
+			&i.Requester,
+			&i.Details,
+			&i.ReceivedOn,
+			&i.DueOn,
+			&i.CreatedBy,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

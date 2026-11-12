@@ -237,11 +237,47 @@ event format.
 
 ## 6. Access and correction requests (slice 6)
 
-- [ ] 6.1 `pd_request` and its steps (D5): the 30-day timer and the written extension; a member's own request under
+- [x] 6.1 `pd_request` and its steps (D5): the 30-day timer and the written extension; a member's own request under
   "Own personal-data requests"; the DPO's report of a person's data from the catalogue. Notices at 7 days and overdue;
   the attestation `pd-requests`. Attack tests and matrix rows. `// req: CMP-PD-04`
-- [ ] 6.2 The Requests tab and Settings › My personal data (Basic). Help keys, guide sections, component tests with axe.
+
+  **What building added:**
+    - **Tables.** Migration 000305 adds `pd_request` and `pd_request_step`, insert-only (FY314) and audited
+      (`pd_request.received`, `pd_request.<step>`).
+    - **The database's rules:**
+      - `due_on` is the receipt day plus 30;
+      - a request about someone other than a member names who asked;
+      - each step comes once and in order, and nothing follows closing;
+      - closing needs an answer;
+      - an extension comes before the answer, within the first 30 days, and names a later day;
+      - an answer carries its outcome.
+    - **The API:**
+      - the DPO's register: `listPersonalDataRequests`, `createPersonalDataRequest` and `stepPersonalDataRequest`
+        (If-Match `"s<steps>"`);
+      - `getPersonalDataReport`, the subject's data from the inventory's classes;
+      - a member's own requests: `askAboutMyPersonalData`, signed in only, and `listMyPersonalDataRequests`, under
+        "Own personal-data requests".
+    - **The report is audited.** Reading it writes the security event `personal_data.exported` (AUD-05), which joins
+      both lists of audited reads.
+    - **Notices.** A new request sends the locked security notice `pdpa.request_received` to whoever holds C on "Data
+      protection (PDPA)".
+    - **Not built: separate day-7 and overdue emails.** The reviews list's attestation `pd-requests` and the DPO's
+      Inbox ("Reviews to sign off") show what is due and overdue.
+    - **Inventory.** It gains the class `pdpa-requests`.
+    - **Contract fixes.** The reviews' kind and cadence enums now name `dpia`, `pd-requests` and their cadences, which
+      slice 5 left out. `getDPIA`'s exemption has its full reason.
+    - **Tests:** `TestAccessAndCorrectionRequests`, `TestAttackRequestsKeepTheirSteps` and matrix rows.
+
+- [x] 6.2 The Requests tab and Settings › My personal data (Basic). Help keys, guide sections, component tests with axe.
   `// req: CMP-PD-04`
+
+  **What building added:**
+    - **The DPO's tab.** Requests shows each request with its status, due day and overdue chip. It has **Record a
+      request**, **Next step** (offering only the steps that may follow) and **Data held**, which reads the report.
+    - **The member's section.** "My personal data" is a section of Settings › Profile, beside the member's bank
+      account, rather than a page of its own. A member asks to see or correct their data and follows their requests.
+    - **Help.** The help keys are `data-protection.requests` and `my-data.ask`. The guides gain sections: the DPO's on
+      Data protection, the member's on Profile and security, and the two new rows of the reviews table.
 
 ## 7. The breach register and the tabletop (slice 7)
 

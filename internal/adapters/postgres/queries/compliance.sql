@@ -215,3 +215,21 @@ SELECT id, key, version, approved_by, approved_at FROM fyniq.dpia_approval ORDER
 INSERT INTO fyniq.dpia_approval (key, version, approved_by, approved_at)
 VALUES (sqlc.arg(key), sqlc.arg(version), sqlc.arg(approved_by), sqlc.arg(approved_at))
 RETURNING id, key, version, approved_by, approved_at;
+
+-- name: ListPDRequests :many
+-- The organisation's access and correction requests, oldest first (CMP-PD-04).
+SELECT id, kind, subject, requester, details, received_on, due_on, created_by, created_at FROM fyniq.pd_request ORDER BY received_on, id;
+
+-- name: InsertPDRequest :one
+INSERT INTO fyniq.pd_request (kind, subject, requester, details, received_on, due_on, created_by, created_at)
+VALUES (sqlc.arg(kind), sqlc.arg(subject), sqlc.narg(requester), sqlc.arg(details), sqlc.arg(received_on), sqlc.arg(received_on)::date + 30,
+  sqlc.arg(created_by), sqlc.arg(created_at))
+RETURNING id, kind, subject, requester, details, received_on, due_on, created_by, created_at;
+
+-- name: ListPDRequestSteps :many
+SELECT id, request_id, step, at, by_actor, note, new_due_on, outcome FROM fyniq.pd_request_step ORDER BY at, id;
+
+-- name: InsertPDRequestStep :one
+INSERT INTO fyniq.pd_request_step (request_id, step, at, by_actor, note, new_due_on, outcome)
+VALUES (sqlc.arg(request_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), sqlc.narg(note), sqlc.narg(new_due_on), sqlc.narg(outcome))
+RETURNING id, request_id, step, at, by_actor, note, new_due_on, outcome;

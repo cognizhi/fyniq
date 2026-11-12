@@ -3,7 +3,7 @@ key: preferences.security
 title: Your profile and security
 mode: basic
 roles: [all]
-requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, SEC-35, FR-AP-22, FM-1, SEC-11]
+requirements: [CMP-PD-04, FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, SEC-35, FR-AP-22, FM-1, SEC-11]
 status: draft            # written with the app shell's settings pages (P1); reviewed with the shell's screens
 ---
 
@@ -120,6 +120,13 @@ nobody checked.
 The card shows **Change waits for approval** until someone in finance approves it. To take the
 change back, select **Withdraw**: your account stays as it was, and payments to you are no longer
 held. Once approved, the new account replaces the old one for every payment from then on.
+
+## See or correct your personal data
+
+Under **My personal data** you can ask to see the personal data the company holds about you, or to correct it. Choose
+which, say what you want or what is wrong, and select **Send the request**. The company's Data Protection Officer is
+told, and answers within 30 days, or tells you in writing within 30 days when they will. Your requests stay listed
+there, with their status and the day each is due.
 
 ## Common problems
 

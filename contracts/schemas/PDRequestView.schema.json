@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "details": {
+      "description": "What they asked for.",
+      "examples": [
+        "A copy of the personal data you hold about me."
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When it is to be answered: 30 days after receipt, or the day the written extension names.",
+      "examples": [
+        "2026-12-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The request.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "access: to see their personal data; correction: to correct it.",
+      "enum": [
+        "access",
+        "correction"
+      ],
+      "examples": [
+        "access"
+      ],
+      "type": "string"
+    },
+    "overdue": {
+      "description": "true when it is not answered and its day has passed.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "received_on": {
+      "description": "When it was received.",
+      "examples": [
+        "2026-11-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "requester": {
+      "description": "Who asked and how to reach them, when not a member asking for themselves.",
+      "examples": [
+        "Ada Tan, ada@example.com"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its latest step.",
+      "enum": [
+        "received",
+        "acknowledged",
+        "extended",
+        "answered",
+        "closed"
+      ],
+      "examples": [
+        "acknowledged"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "Its steps, oldest first.",
+      "items": {
+        "$ref": "PDRequestStepView.schema.json"
+      },
+      "type": "array"
+    },
+    "subject": {
+      "description": "Whose data: member:\u003cuser id\u003e, contact:\u003ccontact id\u003e, or person for someone else.",
+      "examples": [
+        "member:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "subject",
+    "details",
+    "received_on",
+    "due_on",
+    "status",
+    "overdue",
+    "steps"
+  ],
+  "title": "PDRequestView",
+  "type": "object"
+}

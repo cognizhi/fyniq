@@ -68,6 +68,7 @@ var Catalogue = []Type{
 	{Key: OwnersType, Label: "An Owner is added, removed or succeeded", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: AuditRecoveredType, Label: "The audit trail was restored behind its anchors", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: ControlFailedType, Label: "A control of the Compliance Center failed or fell overdue", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
+	{Key: PDRequestType, Label: "Someone asked to see or correct their personal data", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
@@ -102,6 +103,10 @@ const AuditRecoveredType = "security.audit_recovered"
 // ControlFailedType is the notice to a control's owners that it newly failed or fell overdue through a check that runs
 // in Fyniq (CMP-01, §14.1; p1-compliance-center design D5): critical, always on and emailed at once, once per failure.
 const ControlFailedType = "compliance.control_failed"
+
+// PDRequestType is the notice to those who keep the PDPA registers that an access or correction request was received
+// (CMP-PD-04, rev 0.244): it is due 30 days after receipt.
+const PDRequestType = "pdpa.request_received"
 
 // PayeeBankType is the notice to every founder that a vendor's bank details are changing, and then changed (FR-CT-03):
 // a security type, so always on and emailed at once.
