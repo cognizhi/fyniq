@@ -237,6 +237,21 @@ Building its control map found six rows whose cloud configuration `infra/` does 
 records bucket's lock, the Data Access logs, the SLO alerts and the heartbeat alert move to `p1-operations-dr`, and
 Binary Authorization and the scan of non-production to `p1-security-hardening`. Integration clients' control (CTL-API-02) moves to
 `p1-mcp-first-party`, whose Connected apps first registers them (rev 0.242).
+It was built on 9 Nov 2026, in #518 and the pull requests stacked on it (PRD-001 rev 0.240 to 0.243). The parts:
+- the control map: 55 of 109 checks run, 10 in the cloud, the rest planned with their change;
+- CI evidence attached to each GitHub release;
+- `schema.verify` and the AI write-grant tests;
+- `compliance.run`, with three verifications, each control's status and a notice when one newly fails;
+- Compliance › Controls;
+- the risk register, with the operator's risks R1–R22 loaded at first-run setup;
+- the policy library, with Fyniq's eight drafts from official sources;
+- Reviews and attestations, read by four controls' attestation checks;
+- the threat model `docs/security/threat-models/compliance-center.md`.
+
+Three things wait:
+- the republished compliance canvas (task 9.1), for the design account;
+- the first release's evidence and `schema.verify` in the dev cloud, tagged `[live-verify]`;
+- counsel's review of the policy drafts' marked clauses.
 
 **Wave 6 · AI and MCP.** This wave is the security boundary.
 
