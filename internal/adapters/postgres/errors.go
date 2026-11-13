@@ -210,6 +210,7 @@ var fyCodes = map[string]string{
 	"FY328": storage.CodeMigration,       // a register decision before the commit, on a closed migration, out of its versions, or removed (000332)
 	"FY329": storage.CodeMigration,       // an archive copy before the parallel month's sign-off, of another file, or changed (000338)
 	"FY330": storage.CodeAIConnection,    // an AI connection removed, switched on at creation, a version skipped or unrecorded, or rewritten (000343)
+	"FY331": storage.CodeAIConnection,    // a data-class policy version out of order, changed or removed (000345)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -257,6 +258,8 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"journal_entry_posting_identity_key":        {storage.CodeDuplicate, "this posting was already made: its posting identity is in use"},
 	"migration_run_one":                         {storage.CodeDuplicate, "the organisation has a migration already"},
 	"ai_connection_name":                        {storage.CodeDuplicate, "the organisation has an AI connection of that name already"},
+	"ai_data_policy_version":                    {storage.CodeVersion, "the data-class policy changed since it was read"},
+	"ai_data_policy_no_restricted":              {storage.CodeAIConnection, "restricted data never goes to an AI provider"},
 	"migration_step_one_validating":             {storage.CodeDuplicate, "a workbook of this step is being validated already"},
 	"migration_mapping_version_key":             {storage.CodeVersion, "the mapping changed since it was read"},
 	"migration_signoff_mapping":                 {storage.CodeDuplicate, "that version of the mapping is signed already"},

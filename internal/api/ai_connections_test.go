@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -87,9 +89,15 @@ func TestAIConnectionsAreDualControlled(t *testing.T) {
 		t.Fatalf("getAIConnection: %d %v %s", get.Status, get.Header, get.Raw)
 	}
 
-	// Changed: a subscription with its quota, approved.
+	// Changed: a subscription with its quota, and its data handling: processed in the United States, with its inventory row
+	// and transfer assessment.
+	inventory, transfer := recordedFlow(e, "OpenAI")
 	changed := map[string]any{"name": "OpenAI plan", "auth": "api-key", "billing": map[string]any{"mode": "subscription",
-		"quota": map[string]any{"amount": 5000000, "unit": "tokens", "window": "month", "fee": "30.00", "currency": "USD"}}}
+		"quota": map[string]any{"amount": 5000000, "unit": "tokens", "window": "month", "fee": "30.00", "currency": "USD"}},
+		"data_handling": map[string]any{"inventory_id": inventory, "transfer_id": transfer, "handling": []any{map[string]any{"model": "*",
+			"endpoint": "api.openai.com", "feature": "*", "processed_in": []string{"US"}, "stored_in": []string{"US"}, "retention_days": 30,
+			"training": "no", "evidence": map[string]any{"kind": "source", "url": "https://platform.openai.com/docs/guides/your-data",
+				"title": "Data controls in the OpenAI platform", "checked_on": "2026-10-14"}}}}}
 	e.problemIs(e.call(http.MethodPut, "/v1/ai/connections/"+id, admin, changed), "changeAIConnection", 428, CodeIfMatchRequired)
 	approve(e.call(http.MethodPut, "/v1/ai/connections/"+id, admin, changed, "If-Match", `"1-disabled"`))
 
@@ -166,8 +174,16 @@ func matrixAIConnection(e *env, name string, on bool) string {
 		}
 		now := e.clock.Now()
 		approval := uuid.Must(uuid.NewV7())
+		entry, err := u.Compliance().SaveInventoryEntry(ctx, storage.InventoryEntry{What: "Prompts to " + name, Why: "The AI assistant", Where: "The provider",
+			Who: "The founders", Retention: "None", Transfers: "None", State: "open", SavedBy: "user:matrix", SavedAt: now, Version: 1})
+		if err != nil {
+			return err
+		}
+		handling := `{"inventory_id":"` + entry.EntryID.String() + `","handling":[{"model":"*","endpoint":"api.openai.com","feature":"*",` +
+			`"processed_in":["SG"],"training":"no","evidence":{"kind":"source","url":"https://example.com/sg","title":"A page","checked_on":"2026-10-01"}}]}`
 		c, err := u.AIConnections().Create(ctx, storage.AIConnection{Name: name, Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`),
-			Host: "api.openai.com", CredentialRef: "matrix/" + strings.ReplaceAll(name, " ", "-"), CredentialSetAt: &now, Billing: "usage", CreatedBy: "user:matrix", CreatedAt: now}, approval)
+			Host: "api.openai.com", CredentialRef: "matrix/" + strings.ReplaceAll(name, " ", "-"), CredentialSetAt: &now, Billing: "usage",
+			DataHandling: []byte(handling), CreatedBy: "user:matrix", CreatedAt: now}, approval)
 		if err != nil {
 			return err
 		}
@@ -214,4 +230,118 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix on", true)+"/disable", tok, nil,
 			"Prefer", "return=preview", "If-Match", "*"), nil
 	},
+	"getAIDataPolicy": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/data-policy", tok, nil), nil
+	},
+	"changeAIDataPolicy": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/ai/data-policy", steppedUp(e, tok), map[string]any{"exclude": map[string]any{"business-figures": []string{matrixAIConnection(e, "Matrix on", true)}}}, "Prefer", "return=preview", "If-Match", "*"), nil
+	},
+}
+
+// recordedFlow records, in the Compliance Center, the data inventory row and the transfer assessment of a flow to a
+// provider processing outside Singapore, and returns their IDs (SEC-13, CMP-PD-06).
+func recordedFlow(e *env, provider string) (inventory, transfer string) {
+	e.t.Helper()
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		now := e.clock.Now()
+		entry, err := u.Compliance().SaveInventoryEntry(ctx, storage.InventoryEntry{What: "Prompts to " + provider, Why: "The AI assistant",
+			Where: provider, Who: "The founders", Retention: "30 days at the provider", Transfers: "United States", State: "open", SavedBy: "user:dpo",
+			SavedAt: now, Version: 1})
+		if err != nil {
+			return err
+		}
+		assessed := now.Truncate(24 * time.Hour)
+		t, err := u.Compliance().SaveTransfer(ctx, storage.Transfer{Recipient: provider, Countries: "United States", Data: "Prompts with business figures",
+			Purpose: "The AI assistant", Basis: "contract", AssessedOn: assessed, AssessedBy: "The DPO", Evidence: "The provider's data processing addendum",
+			NextReviewOn: assessed.AddDate(1, 0, 0), State: "open", SavedBy: "user:dpo", SavedAt: now, Version: 1})
+		inventory, transfer = entry.EntryID.String(), t.TransferID.String()
+		return err
+	})
+	return inventory, transfer
+}
+
+// Where the AI may send which data (AI-75, AI-88, CMP-PD-06): a connection is switched on only with its data handling
+// declared, its data inventory row, and, when it processes outside Singapore, its transfer assessment. The data-class
+// policy starts at its defaults; an Administrator asks to widen it, the Owner approves, and it is the next version; it
+// never sends restricted data anywhere, nor personal data overseas on a connection whose transfer is not assessed.
+// req: AI-75
+// req: AI-88
+// req: CMP-PD-06
+// req: SEC-13
+// asvs: V8.2.1, V14.2.1
+func TestWhereTheAIMaySendData(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
+	approve := func(asked response) {
+		t.Helper()
+		if asked.Status != http.StatusAccepted {
+			t.Fatalf("asking: %d %s", asked.Status, asked.Raw)
+		}
+		if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+			t.Fatalf("approving: %d %s", d.Status, d.Raw)
+		}
+	}
+	us := func(inventory, transfer string) map[string]any {
+		return map[string]any{"inventory_id": inventory, "transfer_id": transfer, "handling": []any{map[string]any{"model": "*", "endpoint": "api.openai.com",
+			"feature": "*", "processed_in": []string{"US"}, "training": "no", "evidence": map[string]any{"kind": "source",
+				"url": "https://platform.openai.com/docs/guides/your-data", "title": "Data controls", "checked_on": "2026-10-14"}}}}
+	}
+	connect := func(name string, handling map[string]any) string {
+		t.Helper()
+		body := map[string]any{"name": name, "connector": "openai", "auth": "api-key", "billing": map[string]any{"mode": "usage"},
+			"credential": "sk-proj-" + "fixture0123456789abcdef"}
+		if handling != nil {
+			body["data_handling"] = handling
+		}
+		approve(e.call(http.MethodPost, "/v1/ai/connections", admin, body))
+		for _, x := range e.call(http.MethodGet, "/v1/ai/connections", admin, nil).Body["items"].([]any) {
+			if c := x.(map[string]any); c["name"] == name {
+				return c["id"].(string)
+			}
+		}
+		t.Fatalf("%s was not created", name)
+		return ""
+	}
+	inventory, transfer := recordedFlow(e, "OpenAI")
+
+	// A declaration that is not evidenced is refused before anything is asked.
+	bad := us(inventory, transfer)
+	bad["handling"].([]any)[0].(map[string]any)["evidence"].(map[string]any)["checked_on"] = "2027-01-01"
+	e.problemIs(e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Undated", "connector": "openai", "auth": "api-key",
+		"billing": map[string]any{"mode": "usage"}, "data_handling": bad}), "createAIConnection", 422, aipolicy.CodeDeclaration)
+
+	for name, handling := range map[string]map[string]any{
+		"Undeclared":           nil,
+		"Not in the inventory": us("", transfer),
+		"Overseas, unassessed": us(inventory, ""),
+	} {
+		id := connect(name, handling)
+		e.problemIs(e.call(http.MethodPost, "/v1/ai/connections/"+id+"/enable", admin, nil, "If-Match", `"1-disabled"`), "enableAIConnection", 422,
+			aipolicy.CodeDeclaration)
+	}
+	assessed := connect("Assessed", us(inventory, transfer))
+	approve(e.call(http.MethodPost, "/v1/ai/connections/"+assessed+"/enable", admin, nil, "If-Match", `"1-disabled"`))
+	if got := e.call(http.MethodGet, "/v1/ai/connections/"+assessed, admin, nil); got.str("state") != "enabled" ||
+		got.Body["data_handling"].(map[string]any)["transfer_id"] != transfer {
+		t.Fatalf("switched on with its transfer: %s", got.Raw)
+	}
+
+	policy := e.call(http.MethodGet, "/v1/ai/data-policy", admin, nil)
+	if policy.Status != http.StatusOK || policy.Body["version"].(float64) != 0 || policy.Header.Get("ETag") != `"0"` || policy.str("defaults") == "" {
+		t.Fatalf("the default policy: %d %s", policy.Status, policy.Raw)
+	}
+	unassessed := connect("Unassessed", us(inventory, ""))
+	e.problemIs(e.call(http.MethodPut, "/v1/ai/data-policy", admin, map[string]any{"allow": map[string]any{"personal-data": []string{unassessed}}},
+		"If-Match", `"0"`), "changeAIDataPolicy", 422, aipolicy.CodePolicy)
+	e.problemIs(e.call(http.MethodPut, "/v1/ai/data-policy", admin, map[string]any{"allow": map[string]any{"restricted": []string{assessed}}},
+		"If-Match", `"0"`), "changeAIDataPolicy", 422, aipolicy.CodePolicy)
+	approve(e.call(http.MethodPut, "/v1/ai/data-policy", admin, map[string]any{"allow": map[string]any{"personal-data": []string{assessed}},
+		"exclude": map[string]any{"business-figures": []string{unassessed}}}, "If-Match", `"0"`))
+	policy = e.call(http.MethodGet, "/v1/ai/data-policy", admin, nil)
+	if policy.Body["version"].(float64) != 1 || policy.Header.Get("ETag") != `"1"` ||
+		policy.Body["allow"].(map[string]any)["personal-data"].([]any)[0] != assessed {
+		t.Fatalf("the policy's next version: %s", policy.Raw)
+	}
+	e.problemIs(e.call(http.MethodPut, "/v1/ai/data-policy", admin, map[string]any{}, "If-Match", `"0"`), "changeAIDataPolicy", 412, CodeStale)
 }

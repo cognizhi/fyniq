@@ -89,7 +89,8 @@
         "budget",
         "migration_commit",
         "tenant_export",
-        "ai_connection"
+        "ai_connection",
+        "ai_data_policy"
       ],
       "examples": [
         "organisation_setting"

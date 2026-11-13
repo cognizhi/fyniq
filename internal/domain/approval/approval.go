@@ -167,7 +167,14 @@ const (
 	// person with C on "AI providers and model routes" asks to create, change, re-key or enable it, and the Owner, who
 	// holds its A, approves; its key is the connection's ID. Switching one off is never held back.
 	ObjectAIConnection = "ai_connection"
+	// ObjectAIDataPolicy is the organisation's data-class policy for the AI (AI-75, golden rule 6): which connections
+	// each class may go to beyond the defaults; a person with C on "AI providers and model routes" asks, the Owner
+	// approves; its key is AIDataPolicyKey.
+	ObjectAIDataPolicy = "ai_data_policy"
 )
+
+// AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
+const AIDataPolicyKey = "ai-data-policy"
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
 const TeamModeKey = "organisation"
@@ -284,6 +291,8 @@ const (
 	OpAIConnectionCredential = "ai_connection.credential"
 	// OpAIConnectionEnable switches it on (AI-72).
 	OpAIConnectionEnable = "ai_connection.enable"
+	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
+	OpAIDataPolicyChange = "ai_data_policy.change"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -330,6 +339,7 @@ var Operations = map[string]string{
 	OpAIConnectionChange:       ObjectAIConnection,
 	OpAIConnectionCredential:   ObjectAIConnection,
 	OpAIConnectionEnable:       ObjectAIConnection,
+	OpAIDataPolicyChange:       ObjectAIDataPolicy,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -442,6 +452,8 @@ var Dependencies = map[string][]string{
 	ObjectTenantExport: {},
 	// the connection's version and state ("new" before it exists): what is created, changed, re-keyed or enabled
 	ObjectAIConnection: {"status"},
+	// the policy's version: what it replaces
+	ObjectAIDataPolicy: {"version"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -501,6 +513,7 @@ var Rows = map[string]string{
 	ObjectMigrationCommit:     "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)",
 	ObjectTenantExport:        "Tenant export",
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 }
 
 // The limits of a policy.
@@ -589,6 +602,7 @@ var Policies = map[string]Policy{
 	ObjectMigrationCommit:     {ObjectType: ObjectMigrationCommit, Version: "founder/migration_commit@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
 	ObjectTenantExport:        {ObjectType: ObjectTenantExport, Version: "founder/tenant_export@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

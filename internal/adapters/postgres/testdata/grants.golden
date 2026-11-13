@@ -22,11 +22,13 @@ fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
 fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, written_by)
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
-fyniq_api       INSERT    ai_connection (auth, billing_mode, changed_at, changed_by, configuration, connector, created_at, created_by, credential_ref, credential_set_at, host, id, name, preset, quota, self_hosted)
+fyniq_api       INSERT    ai_connection (auth, billing_mode, changed_at, changed_by, configuration, connector, created_at, created_by, credential_ref, credential_set_at, data_handling, host, id, name, preset, quota, self_hosted)
 fyniq_api       SELECT    ai_connection
-fyniq_api       UPDATE    ai_connection (auth, billing_mode, changed_at, changed_by, configuration, credential_ref, credential_set_at, host, name, preset, quota, self_hosted, state, version)
+fyniq_api       UPDATE    ai_connection (auth, billing_mode, changed_at, changed_by, configuration, credential_ref, credential_set_at, data_handling, host, name, preset, quota, self_hosted, state, version)
 fyniq_api       INSERT    ai_connection_version (approval_id, connection_id, made_at, made_by, snapshot, step, version)
 fyniq_api       SELECT    ai_connection_version
+fyniq_api       INSERT    ai_data_policy (approval_id, made_at, made_by, policy, version)
+fyniq_api       SELECT    ai_data_policy
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
@@ -577,6 +579,7 @@ fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    ai_connection
 fyniq_readonly  SELECT    ai_connection_version
+fyniq_readonly  SELECT    ai_data_policy
 fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    announcement
 fyniq_readonly  SELECT    announcement_dismissal
@@ -753,6 +756,7 @@ fyniq_worker    SELECT    accounting_framework
 fyniq_worker    SELECT    accounting_policy
 fyniq_worker    SELECT    ai_connection
 fyniq_worker    SELECT    ai_connection_version
+fyniq_worker    SELECT    ai_data_policy
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal

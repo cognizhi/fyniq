@@ -127,7 +127,8 @@
         "budget",
         "migration_commit",
         "tenant_export",
-        "ai_connection"
+        "ai_connection",
+        "ai_data_policy"
       ],
       "examples": [
         "organisation_setting"
@@ -202,7 +203,8 @@
         "ai_connection.create",
         "ai_connection.change",
         "ai_connection.credential",
-        "ai_connection.enable"
+        "ai_connection.enable",
+        "ai_data_policy.change"
       ],
       "examples": [
         "organisation_setting.change"

@@ -65,6 +65,10 @@
     "credential": {
       "$ref": "AIConnectionCredentialState.schema.json"
     },
+    "data_handling": {
+      "$ref": "AIDataHandling.schema.json",
+      "description": "Where its prompts are processed and kept, per model, endpoint and feature, with evidence (AI-75, AI-88)."
+    },
     "host": {
       "description": "The one host its calls go to (SEC-36).",
       "examples": [
@@ -129,6 +133,7 @@
     "self_hosted",
     "credential",
     "billing",
+    "data_handling",
     "state",
     "version",
     "created_by",

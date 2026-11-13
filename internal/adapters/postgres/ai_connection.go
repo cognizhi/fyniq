@@ -29,6 +29,7 @@ func toAIConnection(r sqlcdb.FyniqAiConnection) storage.AIConnection {
 	if len(r.Quota) > 0 {
 		c.Quota = json.RawMessage(r.Quota)
 	}
+	c.DataHandling = json.RawMessage(r.DataHandling)
 	return c
 }
 
@@ -43,7 +44,7 @@ func optional(s string) *string {
 func snapshot(c storage.AIConnection) ([]byte, error) {
 	return json.Marshal(map[string]any{"name": c.Name, "connector": c.Connector, "preset": c.Preset, "auth": c.Auth,
 		"configuration": c.Configuration, "host": c.Host, "self_hosted": c.SelfHosted, "credential_ref": c.CredentialRef,
-		"billing_mode": c.Billing, "quota": c.Quota, "state": c.State})
+		"billing_mode": c.Billing, "quota": c.Quota, "data_handling": handling(c.DataHandling), "state": c.State})
 }
 
 // changes are an audit event's before and after of a connection; the audit trail masks the credential's reference
@@ -55,7 +56,7 @@ func changes(before *storage.AIConnection, after storage.AIConnection) map[strin
 		}
 		return map[string]any{"name": c.Name, "connector": c.Connector, "preset": c.Preset, "auth": c.Auth, "configuration": string(c.Configuration),
 			"host": c.Host, "self_hosted": c.SelfHosted, "credential_ref": c.CredentialRef, "billing_mode": c.Billing, "quota": string(c.Quota),
-			"state": c.State}
+			"data_handling": string(handling(c.DataHandling)), "state": c.State}
 	}
 	return map[string][2]any{"connection": {view(before), view(&after)}}
 }
@@ -108,7 +109,8 @@ func (r aiConnections) Create(ctx context.Context, c storage.AIConnection, appro
 	}
 	row, err := r.u.q.InsertAIConnection(ctx, sqlcdb.InsertAIConnectionParams{ID: c.ID, Name: c.Name, Connector: c.Connector, Preset: optional(c.Preset),
 		Auth: c.Auth, Configuration: c.Configuration, Host: c.Host, SelfHosted: c.SelfHosted, CredentialRef: optional(c.CredentialRef),
-		CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota, CreatedBy: c.CreatedBy, CreatedAt: c.CreatedAt})
+		CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota, DataHandling: handling(c.DataHandling), CreatedBy: c.CreatedBy,
+		CreatedAt: c.CreatedAt})
 	if err != nil {
 		return storage.AIConnection{}, mapError(err)
 	}
@@ -143,7 +145,8 @@ func (r aiConnections) Step(ctx context.Context, c storage.AIConnection, step st
 	}
 	row, err := r.u.q.UpdateAIConnection(ctx, sqlcdb.UpdateAIConnectionParams{ID: c.ID, Version: int32(c.Version), Name: c.Name, // #nosec G115 -- a version counts up from 1
 		Preset: optional(c.Preset), Auth: c.Auth, Configuration: c.Configuration, Host: c.Host, SelfHosted: c.SelfHosted,
-		CredentialRef: optional(c.CredentialRef), CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota, State: c.State,
+		CredentialRef: optional(c.CredentialRef), CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota,
+		DataHandling: handling(c.DataHandling), State: c.State,
 		ChangedBy: c.ChangedBy, ChangedAt: c.ChangedAt})
 	if err != nil {
 		return storage.AIConnection{}, mapError(err)
@@ -169,4 +172,57 @@ func (r aiConnections) Versions(ctx context.Context, id uuid.UUID) ([]storage.AI
 			Approval: row.ApprovalID, MadeBy: row.MadeBy, MadeAt: row.MadeAt})
 	}
 	return out, nil
+}
+
+// handling is a declaration as the database keeps it: {} until one is made.
+func handling(d json.RawMessage) []byte {
+	if len(d) == 0 {
+		return []byte(`{}`)
+	}
+	return d
+}
+
+func (u *unitOfWork) AIDataPolicies() storage.AIDataPolicies { return aiDataPolicies{u} }
+
+type aiDataPolicies struct{ u *unitOfWork }
+
+func toAIDataPolicy(r sqlcdb.FyniqAiDataPolicy) storage.AIDataPolicy {
+	return storage.AIDataPolicy{ID: r.ID, Version: int(r.Version), Policy: json.RawMessage(r.Policy), Approval: r.ApprovalID, MadeBy: r.MadeBy,
+		MadeAt: r.MadeAt}
+}
+
+func (r aiDataPolicies) Latest(ctx context.Context) (storage.AIDataPolicy, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIDataPolicy{}, err
+	}
+	row, err := r.u.q.LatestAIDataPolicy(ctx)
+	if notFound(err) {
+		return storage.AIDataPolicy{Policy: json.RawMessage(`{}`)}, nil
+	}
+	if err != nil {
+		return storage.AIDataPolicy{}, mapError(err)
+	}
+	return toAIDataPolicy(row), nil
+}
+
+func (r aiDataPolicies) Save(ctx context.Context, p storage.AIDataPolicy) (storage.AIDataPolicy, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIDataPolicy{}, err
+	}
+	latest, err := r.Latest(ctx)
+	if err != nil {
+		return storage.AIDataPolicy{}, err
+	}
+	if latest.Version != p.Version-1 {
+		return storage.AIDataPolicy{}, &storage.Error{Code: storage.CodeVersion, Message: "the data-class policy changed since it was read",
+			Hint: "Read it again and ask again"}
+	}
+	row, err := r.u.q.InsertAIDataPolicy(ctx, sqlcdb.InsertAIDataPolicyParams{Version: int32(p.Version), Policy: p.Policy, ApprovalID: p.Approval, // #nosec G115 -- a version counts up from 1
+		MadeBy: p.MadeBy, MadeAt: p.MadeAt})
+	if err != nil {
+		return storage.AIDataPolicy{}, mapError(err)
+	}
+	out := toAIDataPolicy(row)
+	return out, r.u.event(ctx, "ai_data_policy.changed", "ai_data_policy", out.ID, &out.Version, map[string][2]any{
+		"policy": {string(latest.Policy), string(out.Policy)}})
 }

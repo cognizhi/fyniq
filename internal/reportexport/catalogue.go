@@ -7,7 +7,7 @@ package reportexport
 // Exported are the tables the export writes, each as tables/<name>.csv.
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
-	"accounting_framework", "accounting_policy", "ai_connection", "ai_connection_version", "allocation", "announcement", "announcement_dismissal",
+	"accounting_framework", "accounting_policy", "ai_connection", "ai_connection_version", "ai_data_policy", "allocation", "announcement", "announcement_dismissal",
 	"approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement",

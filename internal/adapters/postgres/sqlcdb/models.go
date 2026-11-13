@@ -143,6 +143,7 @@ type FyniqAiConnection struct {
 	CreatedAt       time.Time
 	ChangedBy       string
 	ChangedAt       time.Time
+	DataHandling    []byte
 }
 
 type FyniqAiConnectionVersion struct {
@@ -153,6 +154,16 @@ type FyniqAiConnectionVersion struct {
 	Step           string
 	Snapshot       []byte
 	ApprovalID     *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+}
+
+type FyniqAiDataPolicy struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	Policy         []byte
+	ApprovalID     uuid.UUID
 	MadeBy         string
 	MadeAt         time.Time
 }
