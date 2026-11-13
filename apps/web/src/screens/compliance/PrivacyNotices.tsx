@@ -54,6 +54,11 @@ export function PrivacyNotices() {
   const [adding, setAdding] = useState(false);
   const [recording, setRecording] = useState<Purpose | null>(null);
   const names = new Map((list.data ?? []).map((p) => [p.id, p.name] as const));
+  // Each record names its person by reference; the members and the contacts give their names.
+  const recorded = (records.data?.length ?? 0) > 0;
+  const members = useQuery({ queryKey: ["consent-people", "members"], queryFn: () => people("members"), enabled: recorded, retry: false });
+  const contacts = useQuery({ queryKey: ["consent-people", "contacts"], queryFn: () => people("contacts"), enabled: recorded, retry: false });
+  const whom = new Map([...(members.data ?? []), ...(contacts.data ?? [])].map((p) => [p.ref, p.name] as const));
   return (
     <div className="fy-page fy-enter">
       <nav className="fy-breadcrumb" aria-label="Breadcrumb">
@@ -90,7 +95,7 @@ export function PrivacyNotices() {
         {list.data && list.data.length > 0 && (
           <ul className="fy-list" aria-labelledby={`${id}-purposes`}>
             {list.data.map((p) => (
-              <li key={p.id} className="fy-list__item">
+              <li key={p.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title">{p.name}</span>
                   <span className="fy-list__meta whitespace-normal">
@@ -137,7 +142,7 @@ export function PrivacyNotices() {
                       {c.event === "given" ? "Given" : "Withdrawn"}: {names.get(c.purpose_id) ?? "a purpose"}
                     </span>
                     <span className="fy-list__meta whitespace-normal">
-                      {c.person} · {date(c.at)}
+                      {whom.get(c.person) ?? (c.person.startsWith("member:") ? "A member" : "A contact")} · {date(c.at)}
                       {c.note && ` · ${c.note}`}
                     </span>
                   </span>
