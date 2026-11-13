@@ -350,6 +350,17 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	"reviewAIPrice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/prices/"+matrixAIPrice(e)+"/review", tok, map[string]any{"decision": "decline"}), nil
 	},
+	"getAIRoutes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/routes", tok, nil), nil
+	},
+	"getAIRoute": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/routes/chat", tok, nil), nil
+	},
+	"setAIRoute": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/ai/routes/chat", steppedUp(e, tok), map[string]any{"classes": []string{"business-figures"},
+			"steps": []any{map[string]any{"connection_id": matrixRouteConnection(e), "model": "gpt-6", "cache": true}}},
+			"Prefer", "return=preview", "If-Match", "*"), nil
+	},
 	"getAIDataPolicy": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/data-policy", tok, nil), nil
 	},

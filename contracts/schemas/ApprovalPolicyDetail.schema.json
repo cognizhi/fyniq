@@ -90,7 +90,8 @@
         "migration_commit",
         "tenant_export",
         "ai_connection",
-        "ai_data_policy"
+        "ai_data_policy",
+        "ai_route"
       ],
       "examples": [
         "organisation_setting"

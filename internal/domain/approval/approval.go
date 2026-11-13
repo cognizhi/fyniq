@@ -171,6 +171,10 @@ const (
 	// each class may go to beyond the defaults; a person with C on "AI providers and model routes" asks, the Owner
 	// approves; its key is AIDataPolicyKey.
 	ObjectAIDataPolicy = "ai_data_policy"
+	// ObjectAIRoute is an agent's route (AI-74, AI-26): a version that widens where the agent's data goes, its first
+	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
+	// row's A; its key is the agent's ID.
+	ObjectAIRoute = "ai_route"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -295,6 +299,8 @@ const (
 	OpAIConnectionAllowModel = "ai_connection.allow_model"
 	// OpAIConnectionPrice puts an Owner's price of a listed model in force, which no later read overwrites (AI-82).
 	OpAIConnectionPrice = "ai_connection.price"
+	// OpAIRouteChange makes the asked route its agent's next version (AI-74).
+	OpAIRouteChange = "ai_route.change"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
 )
@@ -346,6 +352,7 @@ var Operations = map[string]string{
 	OpAIDataPolicyChange:       ObjectAIDataPolicy,
 	OpAIConnectionAllowModel:   ObjectAIConnection,
 	OpAIConnectionPrice:        ObjectAIConnection,
+	OpAIRouteChange:            ObjectAIRoute,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -460,6 +467,8 @@ var Dependencies = map[string][]string{
 	ObjectAIConnection: {"status"},
 	// the policy's version: what it replaces
 	ObjectAIDataPolicy: {"version"},
+	// the route's version: what it replaces
+	ObjectAIRoute: {"version"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -520,6 +529,7 @@ var Rows = map[string]string{
 	ObjectTenantExport:        "Tenant export",
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 }
 
 // The limits of a policy.
@@ -609,6 +619,7 @@ var Policies = map[string]Policy{
 	ObjectTenantExport:        {ObjectType: ObjectTenantExport, Version: "founder/tenant_export@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

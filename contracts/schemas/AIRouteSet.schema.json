@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classes": {
+      "description": "The classes the agent handles on this route.",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "preset": {
+      "description": "The ADR-T2 preset it comes from, if any (AI-26).",
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ],
+      "examples": [
+        "A"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "The primary first, then at most four fallbacks.",
+      "items": {
+        "$ref": "AIRouteStepInput.schema.json"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "classes",
+    "steps"
+  ],
+  "title": "AIRouteSet",
+  "type": "object"
+}

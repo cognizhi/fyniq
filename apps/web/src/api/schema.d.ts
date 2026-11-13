@@ -700,6 +700,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get every agent's route
+         * @description Every agent of this release and its route in force (AI-74): the data classes it handles and its steps, the primary first, each with whether it can serve now and why not. An agent without a route does not run. Read-only; no side effects.
+         */
+        get: operations["getAIRoutes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/routes/{agent}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent's route and its versions
+         * @description An agent, its route in force with its ETag (0 before it has one), and its versions, newest first (AI-74). Read-only; no side effects.
+         */
+        get: operations["getAIRoute"];
+        /**
+         * Set an agent's route
+         * @description Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so. Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        put: operations["setAIRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -14233,6 +14277,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIAgentRoute: {
+            /** @example chat */
+            agent: string;
+            /** @example The assistant's chat and tool loop: questions, answers and the tools it reads with. */
+            description: string;
+            /** @description The classes it may ever handle: a route names some of them. */
+            handles: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * @description The model line its presets pin: classification for high-volume work (AI-26).
+             * @example main
+             * @enum {string}
+             */
+            line: "main" | "classification";
+            /** @example Assistant */
+            name: string;
+            /** @description Its route in force; absent until one is set, and then the agent does not run. */
+            route?: components["schemas"]["AIRoute"];
+        };
+        AIAgentRouteHistory: {
+            /** @example chat */
+            agent: string;
+            /** @example The assistant's chat and tool loop: questions, answers and the tools it reads with. */
+            description: string;
+            /** @description The classes it may ever handle: a route names some of them. */
+            handles: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * @description The model line its presets pin: classification for high-volume work (AI-26).
+             * @example main
+             * @enum {string}
+             */
+            line: "main" | "classification";
+            /** @example Assistant */
+            name: string;
+            /** @description Its route in force; absent until one is set, and then the agent does not run. */
+            route?: components["schemas"]["AIRoute"];
+            /** @description Its versions, newest first, at most 20. */
+            versions: components["schemas"]["AIRoute"][];
+        };
         AIConnection: {
             /**
              * @description How it authenticates: an API key, the service's own cloud account, or none for a self-hosted server on a registered private endpoint.
@@ -14963,6 +15045,110 @@ export interface components {
              * @enum {string}
              */
             decision: "confirm" | "decline";
+        };
+        AIRoute: {
+            /**
+             * Format: uuid
+             * @description The second approver's approval, for a version that widened where data goes.
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e
+             */
+            approval?: string;
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            made_at: string;
+            /** @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d */
+            made_by: string;
+            /**
+             * @description The ADR-T2 preset it was set from (AI-26).
+             * @example A
+             * @enum {string}
+             */
+            preset?: "A" | "B" | "C";
+            /** @description The primary first, then the fallbacks in order. */
+            steps: components["schemas"]["AIRouteStep"][];
+            /**
+             * Format: int64
+             * @example 2
+             */
+            version: number;
+        };
+        AIRouteChange: {
+            /** @description The approval request, when it widens where data goes: the Owner or a second approver approves it. */
+            approval?: components["schemas"]["Approval"];
+            /** @description The route's new version, when it only narrows where data goes. */
+            route?: components["schemas"]["AIRoute"];
+        };
+        AIRouteList: {
+            agents: components["schemas"]["AIAgentRoute"][];
+        };
+        AIRouteSet: {
+            /** @description The classes the agent handles on this route. */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[] | null;
+            /**
+             * @description The ADR-T2 preset it comes from, if any (AI-26).
+             * @example A
+             * @enum {string}
+             */
+            preset?: "A" | "B" | "C";
+            /** @description The primary first, then at most four fallbacks. */
+            steps: components["schemas"]["AIRouteStepInput"][] | null;
+        };
+        AIRouteStep: {
+            /** @example true */
+            cache: boolean;
+            /**
+             * @description The connection's name.
+             * @example Claude on Agent Platform
+             */
+            connection: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            connection_id: string;
+            /**
+             * @example high
+             * @enum {string}
+             */
+            effort?: "low" | "medium" | "high";
+            /** @example claude-opus-4-6 */
+            model: string;
+            /**
+             * @description It can serve now: its connection on, its model on the allow-list and callable, and priced where the connection bills by usage.
+             * @example true
+             */
+            serves: boolean;
+            /**
+             * @description Why it cannot serve now: the router skips it to the next step (AI-76).
+             * @example the model is no longer on the allow-list
+             */
+            why?: string;
+        };
+        AIRouteStepInput: {
+            /**
+             * @description Whether the stable prompt and tools are cached, where the connection proves caching (AI-27).
+             * @example true
+             */
+            cache: boolean;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            connection_id: string;
+            /**
+             * @description The thinking effort; absent for the model's default (AI-27).
+             * @example high
+             * @enum {string}
+             */
+            effort?: "low" | "medium" | "high";
+            /**
+             * @description A model on the connection's allow-list.
+             * @example claude-opus-4-6
+             */
+            model: string;
         };
         AccentOption: {
             /** @example #0F766E */
@@ -16286,13 +16472,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare" | "ai_connection.create" | "ai_connection.change" | "ai_connection.credential" | "ai_connection.enable" | "ai_data_policy.change" | "ai_connection.allow_model" | "ai_connection.price";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare" | "ai_connection.create" | "ai_connection.change" | "ai_connection.credential" | "ai_connection.enable" | "ai_data_policy.change" | "ai_connection.allow_model" | "ai_connection.price" | "ai_route.change";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -16429,7 +16615,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -16471,7 +16657,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -50544,6 +50730,342 @@ export interface operations {
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIRoutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIRouteList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The agent, as GET /v1/ai/routes lists it. */
+                agent: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIAgentRouteHistory"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setAIRoute: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description The agent, as GET /v1/ai/routes lists it. */
+                agent: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIRouteSet"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIRouteChange"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-PRICE-01` The model has no price in force on a usage-based connection; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-ROUTE-01` A route keeps each version as it was made, and names only allowed models; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-ROUTE-01` The route is not valid; `AI-ROUTE-02` A step of the route cannot serve it; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };
