@@ -27,7 +27,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   `// req: AI-71`.
 - [x] 2.4 The Gemini on Agent Platform adapter and `connectors/gemini`, with its conformance suite `[live-verify]` for
   the live endpoint. Test `// req: AI-71`.
-- [ ] 2.5 The OpenAI-compatible adapter and `connectors/openai-compatible`, with presets for Moonshot Kimi, xAI Grok,
+- [x] 2.5 The OpenAI-compatible adapter and `connectors/openai-compatible`, with presets for Moonshot Kimi, xAI Grok,
   OpenRouter, a LiteLLM gateway, vLLM, Ollama and LM Studio; capabilities it cannot prove count as absent. Test
   `// req: AI-71`.
 
