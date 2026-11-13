@@ -121,7 +121,16 @@
       "api-key",
       "workload-identity"
     ],
-    "list_models": "GET /v1/models on the Anthropic API; on Agent Platform, the publisher's models in the location [live-verify]"
+    "list_models": "GET /v1/models on the Anthropic API; on Agent Platform, the publisher's models in the location [live-verify]",
+    "price_catalogue": {
+      "api-key": {
+        "provider": "anthropic"
+      },
+      "workload-identity": {
+        "provider": "vertex_ai-anthropic_models",
+        "prefix": "vertex_ai/"
+      }
+    }
   },
   "health_check": "Counts the provider's refusals, rate limits and failed connections in recent calls, and the model list's last read.",
   "test_action": "Lists the connection's models, then asks the picked model a few tokens of synthetic text and reports what it answered with: its model, its usage and the capabilities it proved.",

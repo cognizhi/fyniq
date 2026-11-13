@@ -86,6 +86,10 @@ The daily exchange-rate feed (000070, FR-GL-05): `fx_feed_rate` (one rate per ba
 published and under `RND-RATE`), read by every service through `fx_feed_rates` and written only by the worker's feed
 job through `record_feed_rate`; a feed rate never changes or goes, and a different rate for a stored date is refused
 (`FY168`).
+The model price catalogue's downloads (000350, AI-82, AI-85): `ai_price_catalogue` (each download of LiteLLM's public
+catalogue, with its SHA-256, size, source, licence check and outcome; the document itself in the file store under its
+digest), read by every service through `ai_price_catalogues` and written only by the worker's daily read through
+`record_ai_price_catalogue`; no role holds a grant on the table, and a download never changes or goes.
 The registry of email-in address names (000102, FR-INT-22): `capture_name` (a name, its owning organisation for good,
 and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
 the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to

@@ -608,6 +608,23 @@ components:
           examples:
             - Claude Opus 4.6
           type: string
+        pending_price:
+          $ref: "#/components/schemas/AIPrice"
+          description: "A price waiting for the Owner's review: a normalised match, or a rate that fell by more than half (AI-85)."
+        price:
+          $ref: "#/components/schemas/AIPrice"
+          description: Its price in force, with its source (AI-82).
+        price_checked:
+          description: When its price was last looked for.
+          examples:
+            - "2026-11-14T06:15:00Z"
+          format: date-time
+          type: string
+        priced:
+          description: It has a price in force.
+          examples:
+            - true
+          type: boolean
         probe:
           $ref: "#/components/schemas/AIModelProbe"
           description: "The last probe on this connection: a few tokens of synthetic text (AI-80)."
@@ -620,6 +637,11 @@ components:
             maxLength: 200
             type: string
           type: array
+        serves:
+          description: "It may serve a route as far as its price goes: a usage-based connection's model needs a price in force, as its cost could not otherwise be budgeted; a subscription or a self-hosted server needs none (AI-82)."
+          examples:
+            - true
+          type: boolean
         shutdown:
           description: The provider's retirement or shutdown date (AI-84).
           examples:
@@ -637,6 +659,11 @@ components:
           examples:
             - available
           type: string
+        unpriced:
+          description: "Why the last look found no new price for it: never priced by a guess (AI-82)."
+          examples:
+            - no entry of anthropic names claude-test-9
+          type: string
       required:
         - model
         - state
@@ -644,6 +671,8 @@ components:
         - first_listed
         - last_listed
         - allowed
+        - priced
+        - serves
       type: object
     AIModelList:
       additionalProperties: false
@@ -765,6 +794,273 @@ components:
       required:
         - ok
         - at
+      type: object
+    AIPrice:
+      additionalProperties: false
+      properties:
+        catalogue:
+          description: The catalogue download it came from, which every estimate made with it is reproduced with (AI-85).
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+          format: uuid
+          type: string
+        catalogue_key:
+          description: The source's entry it matched.
+          examples:
+            - claude-opus-4-6
+          type: string
+        currency:
+          examples:
+            - USD
+          maxLength: 3
+          minLength: 3
+          type: string
+        decided_at:
+          examples:
+            - "2026-11-14T09:00:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: The Owner who confirmed or declined it.
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+          format: uuid
+          type: string
+        ignored:
+          description: The source's rates Fyniq does not price with.
+          items:
+            description: "A rate the source gives that Fyniq does not price with, as the source names it: batch, flex, priority, audio, search or per character. Shown, never used, as Fyniq makes no such request (AI-85)."
+            examples:
+              - input_cost_per_token_batches
+            maxLength: 200
+            type: string
+          type: array
+        match:
+          description: "exact: the source names this provider and model; normalised: only after removing a provider prefix or a version date, so an Owner confirms it; entered: an Owner's price."
+          enum:
+            - exact
+            - normalised
+            - entered
+          examples:
+            - exact
+          type: string
+        number:
+          description: The version of this model's price, from 1.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        rates:
+          items:
+            $ref: "#/components/schemas/AIPriceRate"
+          type: array
+        recorded_at:
+          examples:
+            - "2026-11-14T06:15:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          description: The system user for a read; the Owner for an entered price.
+          examples:
+            - system:ai.prices.read
+          type: string
+        review:
+          description: Why it waits, or waited, for an Owner's review.
+          enum:
+            - normalised
+            - drop
+          examples:
+            - drop
+          type: string
+        review_detail:
+          examples:
+            - input fell from 3 to 1.2
+          type: string
+        source:
+          description: Where the price came from (AI-82).
+          enum:
+            - provider_list
+            - google_billing
+            - litellm
+            - owner
+          examples:
+            - litellm
+          type: string
+        status:
+          description: "active: in force; pending: waiting for an Owner's review, the version before it staying in force."
+          enum:
+            - active
+            - pending
+            - superseded
+            - declined
+          examples:
+            - active
+          type: string
+      required:
+        - id
+        - number
+        - source
+        - match
+        - currency
+        - rates
+        - ignored
+        - status
+        - recorded_by
+        - recorded_at
+      type: object
+    AIPriceCatalogue:
+      additionalProperties: false
+      properties:
+        entries:
+          description: The chat models it prices.
+          examples:
+            - 2150
+          format: int64
+          type: integer
+        failure:
+          description: Why it was rejected.
+          examples:
+            - "the catalogue prices 12 chat models, fewer than 100: it is not a whole catalogue"
+          type: string
+        fetched_at:
+          examples:
+            - "2026-11-14T06:15:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+          format: uuid
+          type: string
+        licence:
+          description: What the licence check found; absent when it failed.
+          examples:
+            - MIT, outside enterprise/
+          type: string
+        licence_sha256:
+          examples:
+            - 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae
+          pattern: ^[0-9a-f]{64}$
+          type: string
+        licence_url:
+          examples:
+            - https://raw.githubusercontent.com/BerriAI/litellm/main/LICENSE
+          type: string
+        outcome:
+          description: Only a valid download prices anything; a rejected one changes no price.
+          enum:
+            - valid
+            - rejected
+          examples:
+            - valid
+          type: string
+        sha256:
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          pattern: ^[0-9a-f]{64}$
+          type: string
+        size:
+          description: Its size in bytes.
+          examples:
+            - 4072360
+          format: int64
+          type: integer
+        source:
+          enum:
+            - litellm
+          examples:
+            - litellm
+          type: string
+        url:
+          examples:
+            - https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json
+          type: string
+      required:
+        - id
+        - source
+        - url
+        - fetched_at
+        - sha256
+        - size
+        - licence_url
+        - licence_sha256
+        - outcome
+        - entries
+      type: object
+    AIPriceCataloguePage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AIPriceCatalogue"
+          type: array
+        next_cursor:
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
+      type: object
+    AIPriceRate:
+      additionalProperties: false
+      properties:
+        above:
+          description: The prompt length in tokens above which it applies; 0 for the base rate. A call above a tier the price gives is priced at that tier, or unpriced for a kind the tier lacks.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        amount:
+          description: An exact decimal, in the price's currency, read from the source's text, never as a binary float.
+          examples:
+            - "3"
+          pattern: ^[0-9]+(\.[0-9]{1,10})?$
+          type: string
+        kind:
+          description: What it prices; reasoning, when absent, is priced as output.
+          enum:
+            - input
+            - output
+            - cache_read
+            - cache_write
+            - cache_write_1h
+            - reasoning
+            - input_image
+            - request
+          examples:
+            - input
+          type: string
+        unit:
+          enum:
+            - per_million_tokens
+            - per_image
+            - per_request
+          examples:
+            - per_million_tokens
+          type: string
+      required:
+        - kind
+        - above
+        - unit
+        - amount
+      type: object
+    AIPriceReview:
+      additionalProperties: false
+      properties:
+        decision:
+          description: confirm puts the price in force; decline keeps the one before it.
+          enum:
+            - confirm
+            - decline
+          examples:
+            - confirm
+          type: string
+      required:
+        - decision
       type: object
     AccentOption:
       additionalProperties: false
@@ -50795,6 +51091,251 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: C
+  /v1/ai/price-catalogues:
+    get:
+      description: "Each daily download of LiteLLM's public model price catalogue, newest first (AI-85): the same for every organisation, with its SHA-256, size, source, licence check and whether it was valid or why it was refused. Only a valid download prices anything. A page at a time. Read-only; no side effects."
+      operationId: listAIPriceCatalogues
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIPriceCataloguePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the price catalogue's downloads
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: V
+  /v1/ai/prices/{price_id}/review:
+    post:
+      description: "The Owner confirms or declines a price a read could not put in force by itself (AI-82, AI-85): a match found only after removing a provider prefix or a version date, or a rate that fell by more than half. Confirm puts it in force; decline keeps the price before it. An Owner's own price is never replaced by a read. Side effects: the audit event ai_price.confirmed or ai_price.declined. On the never-list for the AI and MCP (§9.6)."
+      operationId: reviewAIPrice
+      parameters:
+        - description: The price version waiting for a review.
+          in: path
+          name: price_id
+          required: true
+          schema:
+            description: The price version waiting for a review.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIPriceReview"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIPrice"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-PRICE-02` The price is not waiting for that review; `STORAGE-AI-PRICE-01` A price is kept as recorded, and an Owner's price is never overwritten by a read; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Review a model's price waiting for the Owner
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-PRICE-02
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-AI-PRICE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: "A version is reviewed once: a second review is refused as no longer pending, so the request is idempotent by itself."
+        Prefer: A review decides one version, with nothing to preview.
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: A
   /v1/announcements:
     get:
       description: "Every banner the organisation published, newest first, with its status: scheduled, live or ended (FR-NTF-03). Read-only; no side effects."

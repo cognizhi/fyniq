@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "description": "confirm puts the price in force; decline keeps the one before it.",
+      "enum": [
+        "confirm",
+        "decline"
+      ],
+      "examples": [
+        "confirm"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "title": "AIPriceReview",
+  "type": "object"
+}

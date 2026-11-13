@@ -34,6 +34,8 @@ type Lister struct {
 	Provider func(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error)
 	Clock    ports.Clock
 	Cap      int // the page cap; 0: aimodel.DefaultPageCap
+	// Outbox dispatches the work a read queues, such as pricing the models it added; nil: the tick sends it.
+	Outbox *outbox.Dispatcher
 }
 
 // readable reports whether a connection's list can be read: it has its key, or needs none.
@@ -122,7 +124,18 @@ func (l Lister) Read(ctx context.Context, org, id uuid.UUID, trigger, by string)
 		Failure: failure(outcome, err), ReadBy: by, ReadAt: now}
 	models := fromDomain(id, merged)
 	err = l.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		read, err = u.AIModels().Record(ctx, read, models)
+		if read, err = u.AIModels().Record(ctx, read, models); err != nil || read.Added == 0 {
+			return err
+		}
+		// New models are priced from the latest catalogue at once, not on the next daily read (AI-82).
+		item, err := PriceItem(id, read.ID)
+		switch {
+		case err != nil:
+		case l.Outbox != nil:
+			_, err = l.Outbox.Enqueue(ctx, u, org, item)
+		default:
+			_, err = u.Outbox().Enqueue(ctx, item)
+		}
 		return err
 	})
 	return read, models, err

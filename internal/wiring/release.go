@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
+	"github.com/cognizhi/fyniq/internal/adapters/litellm"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
@@ -167,6 +168,8 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	kit.Egress = outbound
 	kit.ModelTokens = tokens // Claude and Gemini on Agent Platform, with the service's own account (AI-72)
+	// LiteLLM's public model price catalogue, from its one host through the platform's guard (AI-82, AI-85) [live-verify].
+	kit.Prices = litellm.Catalogue{HTTP: platform.Bounded(40<<20, 2*time.Minute).For(litellm.Host)}
 	// The weekly export (DR-02, DR-04) and the restore drill's copy (DR-06), as the jobs' account [live-verify].
 	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
 		sql := gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)

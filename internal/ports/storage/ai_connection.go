@@ -113,6 +113,9 @@ type AIModel struct {
 	ProbedAt      *time.Time // the last probe on this connection
 	ProbeOK       bool
 	ProbeDetail   string // what the probe answered with, or why it failed
+	// PriceCheckedAt is when its price was last looked for, and Unpriced why that found no new price for it (AI-82).
+	PriceCheckedAt *time.Time
+	Unpriced       string
 }
 
 // AIModelListRead is one read of a connection's model list (AI-84).
