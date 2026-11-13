@@ -117,9 +117,7 @@ type batchReleaseOutput struct {
 type batchFileOutput struct{ Body PaymentBatchFile }
 
 // batchAAD binds a release's sealed file to its batch in the organisation: copied to another, it does not open.
-func batchAAD(org, batch uuid.UUID) []byte {
-	return []byte("payment_batch_release:" + org.String() + ":" + batch.String())
-}
+func batchAAD(org, batch uuid.UUID) []byte { return paymentbatch.ReleaseAAD(org, batch) }
 
 // batchDependencies are a batch's version and status, its total in SGD, and each payee's account in force (G4-055).
 func (a *API) batchDependencies(ctx context.Context, u storage.UnitOfWork, key string) (int, map[string]any, error) {

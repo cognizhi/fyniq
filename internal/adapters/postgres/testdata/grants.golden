@@ -742,7 +742,11 @@ fyniq_worker    SELECT    account
 fyniq_worker    SELECT    accountant_review
 fyniq_worker    SELECT    accountant_review_journal
 fyniq_worker    SELECT    accountant_review_query
+fyniq_worker    SELECT    accounting_framework
+fyniq_worker    SELECT    accounting_policy
 fyniq_worker    SELECT    allocation
+fyniq_worker    SELECT    announcement
+fyniq_worker    SELECT    announcement_dismissal
 fyniq_worker    EXECUTE   anonymise_contact()
 fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
@@ -1005,6 +1009,8 @@ fyniq_worker    SELECT    statutory_pack_rows
 fyniq_worker    SELECT    statutory_pack_versions
 fyniq_worker    EXECUTE   super_admin_users()
 fyniq_worker    SELECT    team_mode
+fyniq_worker    EXECUTE   tenant_rows()
+fyniq_worker    EXECUTE   tenant_tables()
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    tick_drill
 fyniq_worker    SELECT    user_membership
