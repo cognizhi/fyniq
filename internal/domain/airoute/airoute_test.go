@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -94,9 +95,11 @@ func TestWideningNeedsASecondApprover(t *testing.T) {
 
 // A preset pins the newest allowed model of each line from the discovered list, never a model ID (AI-26): A in
 // Singapore, B on the global endpoint without personal data or payroll, C by the agent's classes; a dated model before
-// a moving alias; none when no connection on the target has a model of the lines.
+// a moving alias; only a model that passed the agent's evals (AI-78); none when no connection on the target has a model
+// of the lines.
 // req: AI-26
 // req: AI-74
+// req: AI-78
 func TestPresetsPinTheNewestModelOfTheirLine(t *testing.T) {
 	day := func(d int) *time.Time { t := time.Date(2026, 10, d, 0, 0, 0, 0, time.UTC); return &t }
 	sg, gl, other := uuid.New(), uuid.New(), uuid.New()
@@ -108,6 +111,13 @@ func TestPresetsPinTheNewestModelOfTheirLine(t *testing.T) {
 			{ID: "claude-opus-5-5", Created: day(5)}, {ID: "claude-haiku-5-5", Created: day(5)}}},
 		{Connection: other, Name: "OpenAI", Connector: "openai", Auth: "api-key", Models: []CandidateModel{{ID: "claude-opus-9"}}},
 	}
+	// Every model passed every agent's evals, but for a newer Opus in Singapore that passed none (AI-78).
+	for i := range cs {
+		for j := range cs[i].Models {
+			cs[i].Models[j].Qualified = []string{"chat", "bank_categorisation", "report_commentary", "payroll_only"}
+		}
+	}
+	cs[0].Models = append(cs[0].Models, CandidateModel{ID: "claude-opus-4-8", Created: day(20)})
 	classify := Agent{ID: "bank_categorisation", Name: "Bank categorisation", Classes: []string{"business-figures", "personal-data"}, Line: LineClassification}
 	report := Agent{ID: "report_commentary", Name: "Report commentary", Classes: []string{"business-figures"}, Line: LineMain}
 	payroll := Agent{ID: "payroll_only", Name: "Payroll", Classes: []string{"payroll"}, Line: LineMain}
@@ -155,6 +165,7 @@ func TestPresetsPinTheNewestModelOfTheirLine(t *testing.T) {
 // req: AI-76
 // req: AI-83
 // req: AI-87
+// req: AI-78
 func TestTheRoutersRules(t *testing.T) {
 	req := ports.ModelRequest{Tools: []ports.ModelTool{{Name: "x"}}, Output: &ports.ModelSchema{Name: "a"},
 		Messages: []ports.ModelMessage{{Parts: []ports.ModelPart{{Kind: ports.PartImage}, {Kind: ports.PartDocument}}}}}
@@ -166,7 +177,7 @@ func TestTheRoutersRules(t *testing.T) {
 	if n.Lacking(all) != "" || n.Lacking(ports.ModelCapabilities{Tools: true}) != "strict structured output" {
 		t.Error("lacking")
 	}
-	ok := StepState{Enabled: true, Allowed: true, Callable: true, Priced: true, Billing: "usage", Caps: all}
+	ok := StepState{Enabled: true, Allowed: true, Callable: true, Standing: aiqual.Qualified, Priced: true, Billing: "usage", Caps: all}
 	if why := Why([]string{"personal-data"}, n, ok, "m"); why != "" {
 		t.Errorf("an eligible step: %s", why)
 	}
@@ -179,6 +190,9 @@ func TestTheRoutersRules(t *testing.T) {
 		"not callable": {func(s StepState) StepState { s.Callable = false; return s }, "no longer listed"},
 		"the policy":   {func(s StepState) StepState { s.Policy = errors.New("no"); return s }, "data-class policy"},
 		"an alias":     {func(s StepState) StepState { s.Alias = true; return s }, "moving alias"},
+		"unqualified":  {func(s StepState) StepState { s.Standing = aiqual.Unqualified; return s }, "has not passed this agent's evals"},
+		"no standing":  {func(s StepState) StepState { s.Standing = ""; return s }, "has not passed this agent's evals"},
+		"out of date":  {func(s StepState) StepState { s.Standing = aiqual.OutOfDate; return s }, "qualification is out of date"},
 		"unpriced":     {func(s StepState) StepState { s.Priced = false; return s }, "no price"},
 		"unreachable":  {func(s StepState) StepState { s.Built = errors.New("no key"); return s }, "could not be reached"},
 		"no PDF":       {func(s StepState) StepState { s.Caps.PDF = false; return s }, "PDF input"},
@@ -191,6 +205,11 @@ func TestTheRoutersRules(t *testing.T) {
 	alias.Alias = true
 	if why := Why([]string{"business-figures"}, n, alias, "m"); why != "" {
 		t.Errorf("an alias for business figures: %q", why)
+	}
+	stale := ok
+	stale.Standing = aiqual.OutOfDate
+	if why := Why([]string{"business-figures"}, n, stale, "m"); why != "" {
+		t.Errorf("an out-of-date qualification for business figures: %q", why)
 	}
 	for _, tc := range []struct {
 		err       error

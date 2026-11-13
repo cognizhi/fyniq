@@ -30,6 +30,7 @@ COPY db ./db
 COPY compliance ./compliance
 COPY packs ./packs
 COPY connectors ./connectors
+COPY evals ./evals
 
 ARG SERVICE
 ARG FLAVOUR=release

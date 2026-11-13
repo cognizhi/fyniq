@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
-# `make evals`: run every AI eval suite under evals/ (PRD-001 §16.2). Replay mode by default;
-# FYNIQ_AI_LIVE=1 for live runs on synthetic data. The suites arrive in P1.
+# `make evals`: run every AI eval suite under evals/ with cmd/evals (PRD-001 §16.2, AI-78, CTL-AI-05). Replay mode by
+# default: each model's recorded answers in evals/cassettes, offline and with no credential (DEV-02). FYNIQ_AI_LIVE=1
+# with --model runs one model live on the suites' synthetic text and records its answers. Report: .data/evals/report.json.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-mode=replay
-[ "${FYNIQ_AI_LIVE:-0}" = 1 ] && mode=live
-# evals/cassettes holds the recorded answers the suites replay; it is not a suite.
-suites=$(find evals -mindepth 1 -maxdepth 1 -type d ! -name cassettes | sort)
-if [ -z "$suites" ]; then
-  echo "✔ evals ($mode): no suites yet; the golden, proposal and red-team suites arrive in P1"
-  exit 0
-fi
-echo "✖ evals: suites exist under evals/ but no runner is wired yet; add it with the first suite" >&2
-exit 1
+mise=""
+command -v mise >/dev/null 2>&1 && mise="mise exec --"
+exec $mise go run -tags local ./cmd/evals "$@"

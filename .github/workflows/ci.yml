@@ -206,7 +206,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: make evals   # replay mode; the suites arrive in P1
+      # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make evals   # CTL-AI-05: replay mode, offline; a recorded run below its threshold or an unsound suite fails
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: eval-report   # CTL-AI-05's evidence
+          path: .data/evals/report.json
+          retention-days: 90
 
   e2e:
     name: Web smoke test (make test-e2e)

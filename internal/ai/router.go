@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -78,6 +79,7 @@ type step struct {
 	rate       *apd.Decimal // the day's rate from the price's currency into the base currency; nil when there is none
 	provider   ports.ModelProvider
 	timeout    time.Duration
+	qualified  *storage.AIQualification // the model's latest qualification for the agent on this connection, if any
 }
 
 // load reads the agent's route and what each step needs to be judged and called.
@@ -125,6 +127,16 @@ func (r Router) load(ctx context.Context, org uuid.UUID, call Call) (storage.AIR
 					st.state.Callable = aimodel.Callable(aimodel.Model{ID: m.Model, Shutdown: m.Shutdown, Listed: m.Listed, NotCallableAt: m.NotCallableAt}, now)
 				}
 			}
+			quals, err := u.AIQualifications().Latest(ctx, c.ID)
+			if err != nil {
+				return err
+			}
+			for i, q := range quals {
+				if q.Model == s.Model && q.Agent == call.Agent {
+					st.qualified = &quals[i]
+				}
+			}
+			st.state.Standing = Standing(st.qualified, st.state.Alias, now)
 			if err := r.priceStep(ctx, u, &st); err != nil {
 				return err
 			}
@@ -225,6 +237,9 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 				return res, err
 			}
 			if err := r.record(ctx, org, &res, attempt); err != nil {
+				return res, err
+			}
+			if err := r.moved(ctx, org, s, resp.Version); err != nil {
 				return res, err
 			}
 			res.Response, res.Step, res.Connection = resp, s.position, s.connection.ID
@@ -416,6 +431,9 @@ func (r Router) readList(ctx context.Context, org, connection, run uuid.UUID) er
 // ProbeAgent is the agent a probe runs as (AI-80): its calls are outside any route, recorded as route version 0.
 const ProbeAgent = "probe"
 
+// EvalAgent is the agent the eval runner's calls run as (AI-78): outside any route too, recorded as route version 0.
+const EvalAgent = "eval_runner"
+
 // Probe asks a model a few tokens of synthetic text on its connection, outside any route (AI-80): like any call it
 // reserves against the budgets, settles and is recorded, as the probe agent's (AI-86).
 func (r Router) Probe(ctx context.Context, org uuid.UUID, c storage.AIConnection, provider ports.ModelProvider, req ports.ModelRequest,
@@ -424,6 +442,14 @@ func (r Router) Probe(ctx context.Context, org uuid.UUID, c storage.AIConnection
 	if err != nil {
 		return ports.ModelResponse{}, err
 	}
+	return r.Direct(ctx, org, run, ProbeAgent, c, provider, req, actor)
+}
+
+// Direct sends one request of synthetic text to a model on its connection outside any route, as agent (the probe's or
+// the eval runner's) in run: like any call it reserves against the budgets, settles and is recorded (AI-86). It carries
+// only know-how, never the organisation's data.
+func (r Router) Direct(ctx context.Context, org, run uuid.UUID, agent string, c storage.AIConnection, provider ports.ModelProvider,
+	req ports.ModelRequest, actor string) (ports.ModelResponse, error) {
 	s := step{position: 1, connection: c, model: req.Model, provider: provider, timeout: time.Minute, cache: false}
 	s.state.Caps = provider.Capabilities()
 	if err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -432,8 +458,8 @@ func (r Router) Probe(ctx context.Context, org uuid.UUID, c storage.AIConnection
 		return ports.ModelResponse{}, err
 	}
 	res := Result{Run: run}
-	call := Call{Agent: ProbeAgent, Classes: []string{aipolicy.KnowHow}, Request: req, Actor: actor}
-	attempt := storage.AICall{Run: run, Agent: ProbeAgent, Step: 1, ConnectionID: c.ID, ModelRequested: req.Model, Actor: actor,
+	call := Call{Agent: agent, Classes: []string{aipolicy.KnowHow}, Request: req, Actor: actor}
+	attempt := storage.AICall{Run: run, Agent: agent, Step: 1, ConnectionID: c.ID, ModelRequested: req.Model, Actor: actor,
 		Classes: call.Classes, StartedAt: r.Clock.Now()}
 	reservation, err := r.reserve(ctx, org, s, call, attempt)
 	if err != nil {
@@ -465,6 +491,28 @@ func (r Router) Probe(ctx context.Context, org uuid.UUID, c storage.AIConnection
 		return resp, err
 	}
 	return resp, callErr
+}
+
+// Standing is a model's qualification for an agent from its latest run on a connection, nil when it has none (AI-78,
+// AI-87).
+func Standing(q *storage.AIQualification, alias bool, now time.Time) string {
+	if q == nil {
+		return aiqual.Unqualified
+	}
+	return aiqual.Standing(&aiqual.Run{Passed: q.Result == aiqual.Pass, RanAt: q.RanAt, OutOfDate: q.OutOfDateAt != nil}, alias, now)
+}
+
+// moved puts a step's qualification out of date when the provider reports a version other than the one it was
+// qualified on (AI-87): from the next call the step carries no personal data or payroll until it is qualified again.
+func (r Router) moved(ctx context.Context, org uuid.UUID, s step, version string) error {
+	q := s.qualified
+	if q == nil || q.OutOfDateAt != nil || version == "" || version == q.Version {
+		return nil
+	}
+	why := fmt.Sprintf("%s answered as version %s, not %s, which passed the evals", s.model, version, cmp.Or(q.Version, "the unreported version"))
+	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.AIQualifications().OutOfDate(ctx, q.ID, why, r.Clock.Now())
+	})
 }
 
 // priceStep finds a step's price in force and the day's rate from its currency into the base currency.

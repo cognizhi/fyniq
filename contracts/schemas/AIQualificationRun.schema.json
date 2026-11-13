@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "description": "The agent whose evals it ran.",
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "cases": {
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "failed": {
+      "description": "The cases it failed, by ID.",
+      "items": {
+        "description": "A case of the suite, by its ID.",
+        "examples": [
+          "arithmetic"
+        ],
+        "maxLength": 60,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "out_of_date_at": {
+      "examples": [
+        "2026-11-15T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "out_of_date_why": {
+      "examples": [
+        "kimi-latest answered as version 2026-11-15, not 2026-11-01, which passed the evals"
+      ],
+      "type": "string"
+    },
+    "passed": {
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "ran_at": {
+      "examples": [
+        "2026-11-14T06:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ran_by": {
+      "description": "Who ran it: a person, or the daily job.",
+      "examples": [
+        "system:ai.qualify"
+      ],
+      "type": "string"
+    },
+    "result": {
+      "enum": [
+        "pass",
+        "fail"
+      ],
+      "examples": [
+        "pass"
+      ],
+      "type": "string"
+    },
+    "run": {
+      "description": "The eval run: its calls are in the AI activity log under it.",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a32"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "standing": {
+      "description": "qualified: it serves the agent; out_of_date: another version answered since, or a moving alias's week passed, so it carries no personal data or payroll and shows ⚠ until it is qualified again (AI-87); unqualified: its latest run failed, so it serves the agent nothing.",
+      "enum": [
+        "qualified",
+        "out_of_date",
+        "unqualified"
+      ],
+      "examples": [
+        "qualified"
+      ],
+      "type": "string"
+    },
+    "suite": {
+      "description": "The eval suite, as evals/\u003csuite\u003e/suite.json names it.",
+      "examples": [
+        "probe"
+      ],
+      "type": "string"
+    },
+    "suite_version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "threshold": {
+      "description": "The share of cases that must pass, as an exact decimal.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The model version the provider reported while it ran; absent when it reported none (AI-87).",
+      "examples": [
+        "2026-10-01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "failed",
+    "id",
+    "agent",
+    "standing",
+    "result",
+    "suite",
+    "suite_version",
+    "threshold",
+    "cases",
+    "passed",
+    "run",
+    "ran_by",
+    "ran_at"
+  ],
+  "title": "AIQualificationRun",
+  "type": "object"
+}

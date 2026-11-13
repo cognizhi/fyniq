@@ -45,6 +45,9 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
+fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
+fyniq_api       SELECT    ai_qualification
+fyniq_api       UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
 fyniq_api       SELECT    ai_reservation
 fyniq_api       EXECUTE   ai_reserve()
 fyniq_api       INSERT    ai_route (agent, approval_id, classes, made_at, made_by, preset, version)
@@ -612,6 +615,7 @@ fyniq_readonly  SELECT    ai_model_list_read
 fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
+fyniq_readonly  SELECT    ai_qualification
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
@@ -806,6 +810,9 @@ fyniq_worker    UPDATE    ai_price (status)
 fyniq_worker    SELECT    ai_price_catalogues
 fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
+fyniq_worker    INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
+fyniq_worker    SELECT    ai_qualification
+fyniq_worker    UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
 fyniq_worker    SELECT    ai_reservation
 fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route

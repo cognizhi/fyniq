@@ -39,8 +39,24 @@
       ],
       "type": "string"
     },
+    "qualification": {
+      "description": "The model's standing in the agent's evals on this connection (AI-78): out_of_date shows ⚠, and the step carries no personal data or payroll until it is qualified again (AI-87); unqualified, it serves nothing.",
+      "enum": [
+        "qualified",
+        "out_of_date",
+        "unqualified"
+      ],
+      "examples": [
+        "qualified"
+      ],
+      "type": "string"
+    },
+    "qualified": {
+      "$ref": "AIQualification.schema.json",
+      "description": "The model's latest run of the agent's evals on this connection."
+    },
     "serves": {
-      "description": "It can serve now: its connection on, its model on the allow-list and callable, and priced where the connection bills by usage.",
+      "description": "It can serve now: its connection on, its model on the allow-list, callable and qualified for the agent, and priced where the connection bills by usage.",
       "examples": [
         true
       ],
@@ -59,7 +75,8 @@
     "connection",
     "model",
     "cache",
-    "serves"
+    "serves",
+    "qualification"
   ],
   "title": "AIRouteStep",
   "type": "object"

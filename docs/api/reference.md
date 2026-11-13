@@ -14911,6 +14911,29 @@ Asks a model the connection's provider lists for a few tokens of synthetic text,
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `AI-BUDGET-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/ai/connections/{connection_id}/models/qualify`
+
+**Qualify a listed model for an agent** (`qualifyAIConnectionModel`)
+
+Runs an agent's eval suite against a model the connection's provider lists (AI-78, CMP-AI-03): synthetic cases only, nothing of the organisation's, each call reserved against the budgets and recorded under the run as the eval runner's (AI-86). The suite's threshold decides pass or fail, and the run is recorded with the version the provider reported. A model serves an agent only on a pass that is not out of date, and a route change that widens where data goes needs one for every step. A case the provider does not answer stops the run and records nothing. Side effects: the run and its audit event ai_qualification.recorded. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Request body:** [`AIModelQualify`](../../contracts/schemas/AIModelQualify.schema.json)
+- **Responses:**
+  - `200` OK [`AIQualificationRun`](../../contracts/schemas/AIQualificationRun.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-BUDGET-02` An AI budget is spent this month; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `AI-QUAL-01` The agent has no eval suite yet; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `502` Bad Gateway: `AI-QUAL-02` The provider did not answer the evals.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-BUDGET-02`, `AI-QUAL-01`, `AI-QUAL-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/ai/connections/{connection_id}/models/refresh`
 
 **Read an AI connection's model list from its provider now** (`refreshAIConnectionModels`)
@@ -15002,7 +15025,7 @@ Asks for the policy's next version (AI-75): per data class, the connections it m
 
 **Get the route presets** (`getAIPresets`)
 
-ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists, with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.
+ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists that passed the agent's evals there (AI-78), with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.
 
 - **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
 - **Responses:**
@@ -15121,7 +15144,7 @@ An agent, its route in force with its ETag (0 before it has one), and its versio
 
 **Set an agent's route** (`setAIRoute`)
 
-Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so. Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
+Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so, and only when every step's model has a passing, current run of the agent's evals on its connection, which the request carries (AI-78, CMP-AI-03). Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
 
 - **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
 - **Parameters:**
@@ -15137,12 +15160,12 @@ Sets an agent's route (AI-74, AI-26): the data classes it handles and one to fiv
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `AI-PRICE-01` The model has no price in force on a usage-based connection; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-ROUTE-01` A route keeps each version as it was made, and names only allowed models; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `AI-ROUTE-01` The route is not valid; `AI-ROUTE-02` A step of the route cannot serve it; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `422` Unprocessable Entity: `AI-QUAL-03` A step's model has not passed the agent's evals on its connection; `AI-ROUTE-01` The route is not valid; `AI-ROUTE-02` A step of the route cannot serve it; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `AI-PRICE-01`, `AI-ROUTE-01`, `AI-ROUTE-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `STORAGE-AI-ROUTE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `AI-PRICE-01`, `AI-QUAL-03`, `AI-ROUTE-01`, `AI-ROUTE-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `STORAGE-AI-ROUTE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/ai/usage`
 

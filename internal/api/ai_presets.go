@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -19,7 +20,7 @@ import (
 //
 // ADR-T2's options A (Singapore only), B (global) and C (by data class) as presets over the organisation's connections:
 // each names a provider, a region and a model line, and gives each agent the route that pins the newest allowed model of
-// its lines. The route is set as any other, with PUT /v1/ai/routes/{agent}.
+// its lines that passed the agent's evals (AI-78). The route is set as any other, with PUT /v1/ai/routes/{agent}.
 
 // PresetNote is what a preset leaves out of an agent's route, and why.
 type PresetNote string
@@ -65,7 +66,8 @@ type AIPresetList struct {
 type aiPresetListOutput struct{ Body AIPresetList }
 
 // candidates are the organisation's connections that are on, as a preset sees them: each with its location and the
-// models that could serve now (allowed, callable, and priced where it bills by usage).
+// models that could serve now (allowed, callable, and priced where it bills by usage), with the agents whose evals each
+// passed there and has not gone out of date for (AI-78).
 func candidates(s routeScene) []airoute.Candidate {
 	var out []airoute.Candidate
 	for _, c := range s.connections {
@@ -83,7 +85,13 @@ func candidates(s routeScene) []airoute.Candidate {
 		for _, m := range s.models[c.ID] {
 			callable := m.Allowed && aimodel.Callable(aimodel.Model{ID: m.Model, Shutdown: m.Shutdown, Listed: m.Listed, NotCallableAt: m.NotCallableAt}, s.now)
 			if callable && aiprice.Serves(c.Billing, c.SelfHosted, s.priced[c.ID][m.Model], m.Model) == nil {
-				cand.Models = append(cand.Models, airoute.CandidateModel{ID: m.Model, AliasOf: m.AliasOf, Created: m.Created})
+				cm := airoute.CandidateModel{ID: m.Model, AliasOf: m.AliasOf, Created: m.Created}
+				for agent := range s.quals[c.ID][m.Model] {
+					if st, _ := s.standing(agent, airoute.Step{Connection: c.ID, Model: m.Model}); st == aiqual.Qualified {
+						cm.Qualified = append(cm.Qualified, agent)
+					}
+				}
+				cand.Models = append(cand.Models, cm)
 			}
 		}
 		out = append(out, cand)
@@ -98,7 +106,8 @@ func registerAIPresets(a *API) {
 		Summary: "Get the route presets",
 		Description: "ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and " +
 			"payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives " +
-			"each agent the route that pins the newest allowed model of its lines from the connections' discovered lists, with what it leaves " +
+			"each agent the route that pins the newest allowed model of its lines from the connections' discovered lists that passed the " +
+			"agent's evals there (AI-78), with what it leaves " +
 			"out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.",
 	}, locks, func(ctx context.Context, _ *struct{}) (*aiPresetListOutput, error) {
 		p, _ := authn.From(ctx)

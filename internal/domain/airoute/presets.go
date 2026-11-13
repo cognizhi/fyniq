@@ -13,7 +13,7 @@ import (
 
 // Preset is one of ADR-T2's options as a route preset (AI-26, rev 0.12 and 0.13): it names a provider, a region and a
 // model line for each agent, never a model ID. Applying it pins the newest allowed, callable model of each line from the
-// connection's discovered list; qualification (task 5.4) narrows that to the qualified ones.
+// connection's discovered list that has passed the agent's evals there (AI-78).
 type Preset struct {
 	ID          string
 	Name        string
@@ -70,11 +70,13 @@ type Candidate struct {
 	Models     []CandidateModel
 }
 
-// CandidateModel is an allowed, callable model of a candidate, as its provider listed it.
+// CandidateModel is an allowed, callable model of a candidate, as its provider listed it, and the agents whose evals it
+// passed there and has not gone out of date for (AI-78).
 type CandidateModel struct {
-	ID      string
-	AliasOf string
-	Created *time.Time
+	ID        string
+	AliasOf   string
+	Created   *time.Time
+	Qualified []string
 }
 
 // Proposal is what a preset gives an agent: its route, or why it gives none, and what it leaves out.
@@ -122,7 +124,7 @@ func Apply(p Preset, a Agent, cs []Candidate) Proposal {
 				continue
 			}
 			for _, line := range lines {
-				m, ok := newest(c.Models, t.Lines[line])
+				m, ok := newest(qualified(c.Models, a.ID), t.Lines[line])
 				if !ok || len(out.Route.Steps) == MaxSteps ||
 					slices.ContainsFunc(out.Route.Steps, func(s Step) bool { return s.Connection == c.Connection && s.Model == m }) {
 					continue
@@ -136,13 +138,24 @@ func Apply(p Preset, a Agent, cs []Candidate) Proposal {
 		for _, t := range p.Targets {
 			where = append(where, t.Connector+" with "+t.Auth+" in "+t.Location)
 		}
-		out.Why = "no connection that is on (" + strings.Join(where, ", ") + ") has an allowed model of the lines preset " + p.ID + " pins"
+		out.Why = "no connection that is on (" + strings.Join(where, ", ") + ") has an allowed model of the lines preset " + p.ID + " pins that passed " + a.Name + "'s evals"
 	}
 	return out
 }
 
 // newest is the newest model whose ID starts with prefix: a dated model before a moving alias (AI-78), then the latest
 // the provider created, then the greatest ID.
+// qualified are the models qualified for agent.
+func qualified(ms []CandidateModel, agent string) []CandidateModel {
+	var out []CandidateModel
+	for _, m := range ms {
+		if slices.Contains(m.Qualified, agent) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
 func newest(ms []CandidateModel, prefix string) (string, bool) {
 	var best *CandidateModel
 	better := func(m, than CandidateModel) bool {

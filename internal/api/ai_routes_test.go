@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,8 +15,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// routable is an enabled connection whose data is processed in country, with models listed, probed and allowed, and
-// priced, as each step of a route needs (AI-72, AI-75, AI-82); unpriced models are allowed but have no price.
+// routable is an enabled connection whose data is processed in country, with models listed, probed, allowed and
+// qualified for every agent, and priced, as each step of a route needs (AI-72, AI-75, AI-78, AI-82); unpriced models are
+// allowed and qualified but have no price.
 func routable(e *env, name, country string, priced []string, unpriced ...string) uuid.UUID {
 	e.t.Helper()
 	return routableOn(e, storage.AIConnection{Name: name, Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`), Host: "api.openai.com"},
@@ -51,12 +53,21 @@ func routableOn(e *env, c storage.AIConnection, country string, priced []string,
 			Added: len(models), ReadBy: "user:routes", ReadAt: now}, models); err != nil {
 			return err
 		}
+		agents, err := u.AIRoutes().Agents(ctx)
+		if err != nil {
+			return err
+		}
 		for _, m := range models {
 			if _, err := u.AIModels().Probe(ctx, c.ID, m.Model, true, false, "answered", now); err != nil {
 				return err
 			}
 			if _, err := u.AIModels().Allow(ctx, c.ID, m.Model, true, &approval); err != nil {
 				return err
+			}
+			for _, ag := range agents {
+				if err := qualifiedIn(ctx, u, c.ID, m.Model, ag.ID, true, now); err != nil {
+					return err
+				}
 			}
 		}
 		c.State, c.ChangedBy, c.ChangedAt = "enabled", "user:routes", now
@@ -84,6 +95,19 @@ func routableOn(e *env, c storage.AIConnection, country string, priced []string,
 		e.t.Fatal(err)
 	}
 	return c.ID
+}
+
+// qualifiedIn records a run of a fixture suite of agent's evals against model on connection, passed or failed, on the
+// version stepModel reports (AI-78).
+func qualifiedIn(ctx context.Context, u storage.UnitOfWork, connection uuid.UUID, model, agent string, passed bool, at time.Time) error {
+	q := storage.AIQualification{Agent: agent, ConnectionID: connection, Model: model, Version: model + "-20261001", Suite: "fixture", SuiteVersion: 1,
+		Threshold: "1", Cases: 1,
+		Passed: 1, Result: "pass", Run: uuid.Must(uuid.NewV7()), RanBy: "user:routes", RanAt: at}
+	if !passed {
+		q.Passed, q.Result = 0, "fail"
+	}
+	_, err := u.AIQualifications().Record(ctx, q)
+	return err
 }
 
 // Every agent runs on a route set per agent (AI-74, AI-26): its first route, and any version that names a connection

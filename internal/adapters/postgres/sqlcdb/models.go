@@ -335,6 +335,26 @@ type FyniqAiPriceRate struct {
 	Amount         string
 }
 
+type FyniqAiQualification struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	ConnectionID   uuid.UUID
+	Model          string
+	Version        string
+	Suite          string
+	SuiteVersion   int32
+	Threshold      string
+	Cases          int32
+	Passed         int32
+	Result         string
+	RunID          uuid.UUID
+	RanBy          string
+	RanAt          time.Time
+	OutOfDateAt    *time.Time
+	OutOfDateWhy   *string
+}
+
 type FyniqAiReservation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
