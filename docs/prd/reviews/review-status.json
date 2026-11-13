@@ -16,8 +16,8 @@
    "id": "statutory",
    "title": "Statutory values and payroll",
    "reviewer": "an accountant or tax agent",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 5,
    "short": "Statutory and payroll rules await review by an accountant or tax agent",
    "message": "They follow our best current reading of the official guidance. Check the figures before you rely on them or file them.",
    "sections": [
