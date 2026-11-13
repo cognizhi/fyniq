@@ -20,7 +20,7 @@ enforced by architecture (no write credential, a separate executor identity), no
 | `contracts/ai/tools/*.yaml` | Read-tool definitions: name, description, input JSON Schema, semantic-layer query, scopes |
 | `contracts/ai/tasks/*.yaml` | Catalogue task types: schema, domain command, tier, limits, approver roles, expiry, version |
 | `contracts/ai/prompts/` | Versioned system prompts (`prompt_version`) |
-| `contracts/ai/evals/` | Golden questions (QA-AI-01), proposal scenarios (QA-AI-02), red-team corpus (QA-AI-03), replay cassettes |
+| `evals/` | Golden questions (QA-AI-01), proposal scenarios (QA-AI-02), red-team corpus (QA-AI-03), replay cassettes in `evals/cassettes/` (PRD §12.4) |
 | `cmd/ai` | The ai-orchestrator: tool loop, Agent Platform calls, numeric grounding; **no database write role** |
 | `cmd/executor` | The proposal executor: its own Cloud Run service at min instances 0, its own Cloud Tasks queue, service account and database role (§12.3, ADR-T7) |
 | `internal/semantic/` | Named measures and dimensions compiled to SQL by platform code (AI-03) |
@@ -66,7 +66,7 @@ input_schema:
           gst_code: { enum: [SR, ZR, ES, OS, TX, IM, ZP, BL, NR, EP, OP, NA] }
           dimensions: { type: object, additionalProperties: { type: string } }
           rationale: { type: string, maxLength: 500 }
-evals: [contracts/ai/evals/proposals/bank.categorise_lines/*.yaml]
+evals: [evals/proposals/bank.categorise_lines/*.yaml]
 ```
 
 ## Adding a read tool

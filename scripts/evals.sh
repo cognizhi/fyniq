@@ -5,7 +5,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mode=replay
 [ "${FYNIQ_AI_LIVE:-0}" = 1 ] && mode=live
-suites=$(find evals -mindepth 1 -maxdepth 1 -type d | sort)
+# evals/cassettes holds the recorded answers the suites replay; it is not a suite.
+suites=$(find evals -mindepth 1 -maxdepth 1 -type d ! -name cassettes | sort)
 if [ -z "$suites" ]; then
   echo "✔ evals ($mode): no suites yet; the golden, proposal and red-team suites arrive in P1"
   exit 0

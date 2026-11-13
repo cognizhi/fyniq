@@ -20,13 +20,19 @@ import (
 // Module is this repository's Go module path.
 const Module = "github.com/cognizhi/fyniq"
 
-// CloudSDKs are import-path prefixes of cloud provider SDKs.
+// CloudSDKs are import-path prefixes of cloud provider SDKs, and of model providers' SDKs, which likewise stay in their
+// adapters (AI-70).
 var CloudSDKs = []string{
 	"cloud.google.com/go",
 	"google.golang.org/api",
 	"firebase.google.com/",
 	"github.com/aws/",
 	"github.com/Azure/",
+	"github.com/anthropics/",
+	"github.com/openai/",
+	"google.golang.org/genai",
+	"github.com/sashabaranov/go-openai",
+	"github.com/liushuangls/go-anthropic",
 }
 
 // Pkg is the part of `go list -deps -json` the rules read.
