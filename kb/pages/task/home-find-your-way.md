@@ -1,17 +1,17 @@
 ---
 key: home.overview
 type: task
-title: The Home page, search and commands, Settings, and signing out
-summary: What Home shows (pulse card, tiles, charts, the plans, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
+title: The Home page, search and commands, Settings, the version, and signing out
+summary: What Home shows (pulse, tiles, charts, plans, what waits, set-up), Search and commands (Ctrl+K), Settings, the version (Help › About Fyniq), signing out
 sources:
-  - docs/user-guide/home.md sha256:42e92d06ea4d7a07e56fe6dc008c404ac1c74edca04d41c696fb986b50d7e497
+  - docs/user-guide/home.md sha256:c66e114127571895ed4f2743ff84ade1f11cc3f228430d53ed0d9426f1303104
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-08
+compiled_at: 2026-11-11
 aliases:
   - copy amounts to excel
   - paste an amount
@@ -31,9 +31,13 @@ aliases:
   - when do we run out of cash
   - budget vs actual on home
   - cash out month
+  - what version is this
+  - about fyniq
+  - git sha
+  - build number
 ---
 
-# The Home page, search and commands, Settings, and signing out
+# The Home page, search and commands, Settings, the version, and signing out
 
 ## What Home shows
 
@@ -100,6 +104,15 @@ aliases:
 - Most organisation settings are in Expert mode; in Basic mode Settings says how many more there are and offers to switch.
 
 (src: docs/user-guide/home.md#settings)
+
+## See which version you are on
+
+- Select **Help** (the question mark in the header), then **About Fyniq**.
+- It shows the version, the commit (the git SHA the services were built from), when they were built and, for a published release, its tag.
+- Quote the version and the commit when reporting a problem.
+- Every exported report names the same version and commit in its footer: the last line of a CSV or a spreadsheet, and the footer of a PDF.
+
+(src: docs/user-guide/home.md#see-which-version-you-are-on)
 
 ## Sign out
 

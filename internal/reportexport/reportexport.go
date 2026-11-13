@@ -106,7 +106,8 @@ func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org u
 func day(s string) (time.Time, error) { return time.Parse(time.DateOnly, s) }
 
 // Build reads the books for an export and writes its file.
-func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, created time.Time) (File, error) {
+// stamp is the platform version and build that prepare it, which its footer names (REL-05).
+func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, created time.Time, stamp string) (File, error) {
 	var p Parameters
 	if err := json.Unmarshal(x.Parameters, &p); err != nil {
 		return File{}, Refusal{"its parameters are not readable"}
@@ -173,6 +174,7 @@ func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, cr
 	for _, s := range sheets {
 		rows += len(s.Rows)
 	}
+	sheets = sheet.Footed(sheets, sheet.Prepared(stamp, created)+", read at ledger revision "+fmt.Sprint(revision))
 	name := strings.ReplaceAll(strings.ToLower(Names[x.Report]), " ", "-")
 	if Reports[x.Report] {
 		name += "-" + p.From + "-to-" + p.To
@@ -433,6 +435,9 @@ type Preparer struct {
 	Files  ports.BlobStore
 	Outbox outbox.Dispatcher
 	Clock  ports.Clock
+	// Stamp is the platform version and build that prepare the exports, which each one's footer names (REL-05):
+	// sheet.Stamp of the worker's version and commit.
+	Stamp string
 }
 
 // Work prepares one export: a pending one is built, its file kept, and it is marked ready and its requester told; one
@@ -454,7 +459,7 @@ func (p Preparer) Work() func(ctx context.Context, org uuid.UUID, row storage.Ou
 			if x, err = u.ReportExports().Get(ctx, job.ID); err != nil || x.Status != storage.ExportPending {
 				return err
 			}
-			f, err = Build(ctx, u, x, now)
+			f, err = Build(ctx, u, x, now, p.Stamp)
 			if r := (Refusal{}); errors.As(err, &r) {
 				refused, err = r, nil
 			}

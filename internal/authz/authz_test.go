@@ -172,8 +172,8 @@ func TestParseCell(t *testing.T) {
 }
 
 // Only the installation's operations (setup, Super admins), the caller's own session and joining an
-// organisation by invitation bypass the organisation, and only the setup status, the sign-in providers and the
-// online link's operations (whose token is the credential) need no credential.
+// organisation by invitation bypass the organisation, and only the setup status, the sign-in providers, the platform
+// version and the online link's operations (whose token is the credential) need no credential.
 // req: SEC-02
 // req: FR-AR-06
 // asvs: V8.2.1
@@ -186,7 +186,7 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink" ||
 			// An evidence file's download link: its signed, 5-minute token is the credential, to one file (SEC-24).
 			op == "getEvidenceDownload"
-		public := op == "getSetupStatus" || op == "listSignInProviders" || link
+		public := op == "getSetupStatus" || op == "listSignInProviders" || op == "getPlatformVersion" || link
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
 			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)

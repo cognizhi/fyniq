@@ -10645,6 +10645,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the platform version
+         * @description The platform version and the git commit this API was built from, as its /version answers (REL-05): the web app's About dialog shows them, and every exported report carries the same in its footer. Public: it needs no credential. Read-only; no side effects.
+         */
+        get: operations["getPlatformVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/pre-incorporation-costs": {
         parameters: {
             query?: never;
@@ -34103,6 +34123,38 @@ export interface components {
              * @example 2027-03
              */
             month: string;
+        };
+        PlatformVersion: {
+            /**
+             * @description When the build was made, RFC 3339.
+             * @example 2026-11-11T02:00:00Z
+             */
+            build_time: string;
+            /**
+             * @description The git commit the build is of: quote it with the version when you report a problem.
+             * @example 3f2c1a9d
+             */
+            commit: string;
+            /**
+             * @description The build's flavour: release, or local for local mode (ADR-T4).
+             * @example release
+             */
+            flavour: string;
+            /**
+             * @description The release tag, for the build of a published release only.
+             * @example v0.12.0
+             */
+            release?: string;
+            /**
+             * @description The service that answered: api.
+             * @example api
+             */
+            service: string;
+            /**
+             * @description The platform version, set by release-please (REL-02).
+             * @example 0.12.0
+             */
+            version: string;
         };
         Policies: {
             /** @description The policies of CMP-07, the privacy notices of CMP-PD-03, or both, as kind asks, in the library's order. */
@@ -126188,6 +126240,62 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPlatformVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformVersion"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

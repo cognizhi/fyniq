@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03]
+requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -115,6 +115,13 @@ Select **Settings** at the foot of the sidebar (on a phone, under **More**). It 
 settings first, such as [Your profile and security](profile-and-security.md), then the
 organisation's settings your roles let you see. Most of the organisation's settings are in Expert
 mode: in Basic mode, Settings says how many more there are and offers to switch.
+
+### See which version you are on
+
+Select **Help** (the question mark in the header), then **About Fyniq**. It shows the version, the commit (the git
+SHA the services were built from), when they were built and, for a published release, its tag. Quote the version and
+the commit when you report a problem. Every exported report names the same version and commit in its footer: the last
+line of a CSV or a spreadsheet, and the footer of a PDF.
 
 ### Sign out
 

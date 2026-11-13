@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/reportexport"
+	"github.com/cognizhi/fyniq/internal/sheet"
 	"github.com/cognizhi/fyniq/internal/tokens"
 	"github.com/cognizhi/fyniq/internal/version"
 	"github.com/cognizhi/fyniq/internal/wiring"
@@ -36,6 +37,8 @@ func main() {
 			return nil
 		}
 		kit.Release = controls.Release{Tag: version.Release, Repository: version.Repository} // CMP-01: the CI checks' release
+		// REL-05: every exported report names the version and the commit.
+		kit.Stamp = sheet.Stamp(version.Version, version.Commit)
 		s.AddReadiness("database", kit.Store.Ping)
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {

@@ -152,7 +152,7 @@ func registerRelatedParties(a *API) {
 				figures(r.Figures)...)})
 		}
 		sh.Rows = append(sh.Rows, sheet.Row{Cells: append([]sheet.Cell{sheet.Text("Total"), sheet.Text(""), sheet.Text("")}, figures(s.Totals)...)})
-		data, name := sheet.CSV(sh), "related-parties-"+s.AsAt+".csv"
+		data, name := sheet.CSV(a.footed(a.deps.Clock.Now(), sh)[0]), "related-parties-"+s.AsAt+".csv"
 		sum := sha256.Sum256(data)
 		id := uuid.Must(uuid.NewV7())
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {

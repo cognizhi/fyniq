@@ -124,6 +124,7 @@ func newEnv(t *testing.T) *env {
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
+		Build:   PlatformBuild{Commit: "3f2c1a9d", BuildTime: "2026-10-15T08:00:00Z", Flavour: "local"},
 		Staging: e.blobs, Evidence: e.blobs, Scanner: local.EICARScanner{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
 		Anchors: e.anchors, Signer: e.signer, Keyed: testFields(t).Fingerprint,
 		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},

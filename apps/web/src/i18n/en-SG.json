@@ -36,6 +36,14 @@
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
     },
+    "shell.help": {
+      "label": "Help",
+      "tooltip": "About Fyniq, and the version you are on."
+    },
+    "shell.about": {
+      "label": "About Fyniq",
+      "tooltip": "Quote the version and the commit when you report a problem. Every exported report names them in its footer."
+    },
     "shell.mode": {
       "label": "Experience mode",
       "tooltip": "Basic shows the essentials; Expert adds accounts, settings and every detail. It changes only what you see, never what you may do."

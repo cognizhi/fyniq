@@ -19,11 +19,14 @@ type Kit struct {
 	// Release is the release this build is, which the Compliance Center's CI checks read (CMP-01): the commands set it
 	// from version.Release. Zero: a development build.
 	Release controls.Release
-	Tokens  ports.TaskTokens
-	Queue   ports.Queue
-	Jobs    ports.JobRunner
-	Blobs   ports.BlobStore
-	Signer  ports.Signer
+	// Stamp is the platform version and the build's commit, which every exported report names (REL-05): the commands set
+	// it from version.Version and version.Commit. Empty: a development build.
+	Stamp  string
+	Tokens ports.TaskTokens
+	Queue  ports.Queue
+	Jobs   ports.JobRunner
+	Blobs  ports.BlobStore
+	Signer ports.Signer
 	// Fields seals the most sensitive fields (SEC-11): vendor bank account numbers. Nil: none can be kept.
 	Fields ports.Cipher
 	// Staging keeps uploads until their record is final; Evidence is the retention-locked store they are

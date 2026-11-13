@@ -99,3 +99,39 @@ func TestXLSXWritesNumberCellsAndInlineText(t *testing.T) {
 		}
 	}
 }
+
+// Every exported report names the platform version and the build's commit in its footer, after a blank row, in CSV and
+// XLSX alike; the commit is cut to 12 characters, and a build without one names the version alone (REL-05).
+// req: REL-05
+func TestAnExportsFooterNamesTheVersionAndCommit(t *testing.T) {
+	at := time.Date(2026, 11, 11, 2, 5, 0, 0, time.FixedZone("SGT", 8*3600))
+	line := Prepared(Stamp("0.12.0", "3f2c1a9d4e5b6c7d8e9f"), at)
+	if line != "Prepared by Fyniq 0.12.0 (3f2c1a9d4e5b) on 2026-11-10 18:05 UTC" {
+		t.Errorf("the line: %q", line)
+	}
+	if got := Prepared("", at); got != "Prepared by Fyniq on 2026-11-10 18:05 UTC" {
+		t.Errorf("a build with no stamp: %q", got)
+	}
+	for _, commit := range []string{"", "unknown"} {
+		if got := Stamp("0.0.0-dev", commit); got != "0.0.0-dev" {
+			t.Errorf("Stamp with commit %q = %q", commit, got)
+		}
+	}
+	one := Sheet{Name: "TB", Header: []string{"Code", "Amount"}, Rows: []Row{{Cells: []Cell{Text("4010"), Number("5.00", 2)}}}}
+	footed := Footed([]Sheet{one}, line)
+	if len(one.Footer) != 0 {
+		t.Error("Footed changed the sheet it was given")
+	}
+	if got := string(CSV(footed[0])); got != "\"Code\",\"Amount\"\r\n\"4010\",5.00\r\n\r\n\""+line+"\"\r\n" {
+		t.Errorf("the CSV: %q", got)
+	}
+	x, err := XLSX(footed, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// row 1 the header, row 2 the data, row 3 blank, row 4 the footer
+	if s := read(t, x, "xl/worksheets/sheet1.xml"); !strings.Contains(s, `<row r="4"><c r="A4" s="0" t="inlineStr"><is><t xml:space="preserve">`+line+`</t>`) ||
+		strings.Contains(s, `<row r="3">`) {
+		t.Errorf("the XLSX's footer: %s", s)
+	}
+}

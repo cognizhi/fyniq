@@ -9,6 +9,7 @@ import { setMode } from "../mode";
 import { nav, type Mode, type NavFeature } from "../registry";
 import { Icon } from "../ui";
 import { AppearanceMenu } from "./AppearanceMenu";
+import { HelpMenu } from "./HelpMenu";
 import { bottomBar, navFor } from "./navigation";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
@@ -160,6 +161,7 @@ export function AppFrame({ session, title, mode, bell, banners, logo, children }
           </Button>
           {bell}
           <AppearanceMenu />
+          <HelpMenu />
           <form method="post" action="/api/auth/signout">
             <button className={buttonVariants({ variant: "ghost", size: "icon" })} type="submit" aria-label={signOut.label} title={signOut.tooltip}>
               <Icon of={LogOut} size={20} />
