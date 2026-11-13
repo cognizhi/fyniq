@@ -430,7 +430,7 @@ function DPIAsTab() {
       </div>
       <ul className="fy-list" aria-labelledby={`${id}-dpias`}>
         {list.data.map((d: DPIA) => (
-          <li key={d.key} className="fy-list__item">
+          <li key={d.key} className="fy-list__item fy-list__item--wrap">
             <span className="fy-list__main">
               <span className="fy-list__title whitespace-normal">{d.title}</span>
               <span className="fy-list__meta whitespace-normal">
@@ -604,7 +604,7 @@ function RequestsTab() {
       ) : (
         <ul className="fy-list" aria-labelledby={`${id}-requests`}>
           {list.data.slice().reverse().map((r) => (
-            <li key={r.id} className="fy-list__item">
+            <li key={r.id} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">
                   {r.kind === "access" ? "Access" : "Correction"}: {r.details}
@@ -876,7 +876,7 @@ function BreachesTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-breaches`}>
             {list.data.slice().reverse().map((b) => (
-              <li key={b.id} className="fy-list__item">
+              <li key={b.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">{b.title}</span>
                   <span className="fy-list__meta whitespace-normal">
@@ -1199,7 +1199,7 @@ function TransfersTab() {
         </div>
         <ul className="fy-list" aria-labelledby={`${id}-flows`}>
           {abroad.map((f) => (
-            <li key={f.key} className="fy-list__item">
+            <li key={f.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">{f.what}</span>
                 <span className="fy-list__meta whitespace-normal">
@@ -1246,7 +1246,7 @@ function TransfersTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-transfers`}>
             {reg.data.transfers.map((t) => (
-              <li key={t.transfer_id} className="fy-list__item">
+              <li key={t.transfer_id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">
                     {t.recipient}, {t.countries}
@@ -1403,7 +1403,7 @@ function ShreddingTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-runs`}>
             {runs.data.map((r) => (
-              <li key={r.id} className="fy-list__item">
+              <li key={r.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title">The year ending {date(r.cohort)}</span>
                   <span className="fy-list__meta whitespace-normal">
