@@ -123,7 +123,7 @@
 - [x] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
   (6 Nov 2026, PRD-001 rev 0.186, for the outputs that exist: a notification by row (`notify.Sees`) shows, counts and
   is emailed only while its person's roles hold the right; the list pages past what they no longer see, a read by ID
-  answers not found, and the digest withdraws held email instead of sending it (migration 000237:
+  answers not found, and the digest withdraws held email instead of sending it (migration 000238:
   `notification.withdrawn_at`, once, never of sent email, the worker's alone; FY188). Exports, files, evidence and
   reports are checked at each request; every answer is `Cache-Control: no-store` and no report result is kept; sessions
   read the roles at each request and consented tokens are revoked within 60 seconds (`TestTokenLifecycle`). Tests
