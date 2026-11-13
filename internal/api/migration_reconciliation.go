@@ -22,6 +22,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payables"
+	"github.com/cognizhi/fyniq/internal/domain/receivables"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -35,7 +39,7 @@ type MigrationDifference struct {
 	Key        string                     `json:"key" doc:"The line's key in the difference register: the Fyniq account's code, the month (YYYY-MM) and the figure, or the code and opening." example:"6510.2026-03.movement"`
 	Account    string                     `json:"account" doc:"The Fyniq account's code; the workbook's accounts that map onto it are added." example:"6510"`
 	Name       string                     `json:"name" doc:"The account's name in Fyniq." example:"Depreciation"`
-	Kind       string                     `json:"kind" enum:"opening,movement,closing" doc:"opening: the balance at the books start; movement: the month's; closing: the balance at the month's end." example:"movement"`
+	Kind       string                     `json:"kind" enum:"opening,movement,closing,receivable,payable,payroll_net,payroll_statutory,payroll_cost" doc:"opening: the balance at the books start; movement: the month's; closing: the balance at the month's end; receivable or payable: what the contact owes or is owed at the as-of, by the AR & AP sheet (rev 0.267); payroll_net, payroll_statutory, payroll_cost: a month's net pay, what is due to the CPF Board (CPF, SDL, SHG) and the employer's cost, by the Payroll sheet." example:"movement"`
 	Month      string                     `json:"month,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month (YYYY-MM); absent for the opening." example:"2026-03"`
 	Fyniq      string                     `json:"fyniq" doc:"Fyniq's figure in the base currency, debit positive." example:"620.00"`
 	Workbook   string                     `json:"workbook" doc:"The workbook's, from its Trial Balance sheet after RND-IMPORT." example:"620.01"`
@@ -73,6 +77,16 @@ type MigrationCheckParity struct {
 	Decision *MigrationRegisterDecision `json:"decision,omitempty" doc:"The Accountant's decision on a different status; absent while undecided."`
 }
 
+// MigrationNotCompared is a part of M4's parity the report does not compare yet: gst_f5, the last GST F5 return against
+// the workbook's GST Return sheet, until Fyniq makes the F5 return (p1-gst; rev 0.267).
+type MigrationNotCompared string
+
+// Schema implements huma.SchemaProvider.
+func (MigrationNotCompared) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Enum: []any{"gst_f5"}, Examples: []any{"gst_f5"},
+		Description: "gst_f5: the last GST F5 return against the workbook's GST Return sheet, until Fyniq makes the F5 return (p1-gst)."}
+}
+
 // MigrationReconciliationSignOff is the latest sign-off of the parity report and its register (§17.1 M4).
 type MigrationReconciliationSignOff struct {
 	SignedBy string    `json:"signed_by" doc:"The Accountant who signed it, stepped up." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11"`
@@ -95,6 +109,7 @@ type MigrationReconciliation struct {
 	Checks       []MigrationCheckParity          `json:"checks" nullable:"false" doc:"The workbook's Checks rows against Fyniq's."`
 	ChecksRunAt  *time.Time                      `json:"checks_run_at,omitempty" doc:"When Fyniq's checks last ran; absent when they never did." example:"2026-11-13T09:00:00Z"`
 	ChecksDiffer int                             `json:"checks_differ" doc:"The workbook's checks whose status Fyniq's do not share." example:"0"`
+	NotCompared  []MigrationNotCompared          `json:"not_compared" nullable:"false" doc:"What M4's parity asks for that the report does not compare yet."`
 	Undecided    int                             `json:"undecided" doc:"The register's lines without a decision that counts: the differences, and the checks whose status differs. The sign-off needs none." example:"0"`
 	ReportSHA256 string                          `json:"sha256" doc:"The SHA-256 of the report's figures, checks and decisions (not its status, revision, run time or sign-off): what the Accountant's sign-off names, and the ETag (design D8)." example:"5d1e…"`
 	SignOff      *MigrationReconciliationSignOff `json:"sign_off,omitempty" doc:"The latest sign-off of the report and its register; absent before the first."`
@@ -112,7 +127,7 @@ type (
 	}
 	migrationRegisterInput struct {
 		MigrationPath
-		Line string `path:"line" pattern:"^([0-9A-Za-z_-]{1,20}\\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\\.(movement|closing))|check\\.[0-9]{1,3})$" doc:"The line's key, as the report gives it." example:"6610.2026-06.movement"`
+		Line string `path:"line" pattern:"^([0-9A-Za-z_-]{1,20}\\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\\.(movement|closing))|check\\.[0-9]{1,3}|a[rp]\\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|others)|payroll\\.[0-9]{4}-(0[1-9]|1[0-2])\\.(net|statutory|cost))$" doc:"The line's key, as the report gives it." example:"6610.2026-06.movement"`
 		KeyHeader
 		IfMatchHeader
 		PreferHeader
@@ -161,9 +176,9 @@ func cents(d *apd.Decimal, places int) string {
 // booksOf are Fyniq's figures for the parity at a revision (design D8), read through the balance service: each
 // account's opening, the entries of the opening rules, and its movement in each month from the books start through
 // through, the opening left out.
-func booksOf(ctx context.Context, u storage.UnitOfWork, start, through time.Time, revision int64) (migration.Books, error) {
+func booksOf(ctx context.Context, u storage.UnitOfWork, start, through time.Time, revision int64, payroll map[string]bool) (migration.Books, error) {
 	b := migration.Books{Opening: map[string]*apd.Decimal{}, Movement: map[string]map[time.Time]*apd.Decimal{}, Roles: map[string]string{},
-		Names: map[string]string{}}
+		Names: map[string]string{}, PayrollLines: map[time.Time]map[string]*apd.Decimal{}}
 	accounts, err := u.Accounts().List(ctx)
 	if err != nil {
 		return b, err
@@ -195,6 +210,17 @@ func booksOf(ctx context.Context, u storage.UnitOfWork, start, through time.Time
 		month := time.Date(e.PostingDate.Year(), e.PostingDate.Month(), 1, 0, 0, 0, 0, time.UTC)
 		for _, l := range e.Lines {
 			c := code[l.AccountID]
+			if payroll[e.Source.ID] { // an imported pay run's line (design D7)
+				if b.PayrollLines[month] == nil {
+					b.PayrollLines[month] = map[string]*apd.Decimal{}
+				}
+				if b.PayrollLines[month][c] == nil {
+					b.PayrollLines[month][c] = new(apd.Decimal)
+				}
+				if err := add(b.PayrollLines[month][c], l.BaseAmount); err != nil {
+					return err
+				}
+			}
 			var to *apd.Decimal
 			if openingRules[e.RuleVersion] {
 				if b.Opening[c] == nil {
@@ -232,7 +258,7 @@ type reconciliationSource struct {
 
 // notCommittedReport is the report of an import not committed yet: nothing to reconcile.
 func notCommittedReport() MigrationReconciliation {
-	return MigrationReconciliation{Status: "not_committed", Differences: []MigrationDifference{}, Checks: []MigrationCheckParity{}}
+	return MigrationReconciliation{Status: "not_committed", Differences: []MigrationDifference{}, Checks: []MigrationCheckParity{}, NotCompared: []MigrationNotCompared{}}
 }
 
 // sourceOf reads a migration's committed import: errNotCommitted before the commit.
@@ -305,11 +331,61 @@ func (r MigrationReconciliation) lineFigures(key string) (string, string, bool) 
 	return "", "", false
 }
 
+// openItemsOf are the open items at a day (§17.1 M4, rev 0.267): each customer's and each supplier's open documents'
+// carrying amounts, added, by the contact's ID, on the accounts receivable and payable, with each contact's name.
+func openItemsOf(ctx context.Context, u storage.UnitOfWork, b *migration.Books, base money.Currency, asAt time.Time) error {
+	b.Receivable, b.Payable, b.ContactNames = map[string]*apd.Decimal{}, map[string]*apd.Decimal{}, map[string]string{}
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return err
+	}
+	total := func(to map[string]*apd.Decimal, id uuid.UUID, items []subledger.Item) error {
+		for _, x := range items {
+			if to[id.String()] == nil {
+				to[id.String()] = new(apd.Decimal)
+			}
+			if _, err := apd.BaseContext.WithPrecision(40).Add(to[id.String()], to[id.String()], x.Carrying.Decimal()); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	for _, a := range accounts {
+		switch {
+		case a.Group || !a.Active:
+		case string(a.Role) == ledger.RoleAccountsReceivable:
+			l, err := receivables.Open(ctx, u, base, a.ID, asAt)
+			if err != nil {
+				return err
+			}
+			for _, c := range l.Customers {
+				b.ContactNames[c.ID.String()] = c.Name
+				if err := total(b.Receivable, c.ID, c.Items); err != nil {
+					return err
+				}
+			}
+		case string(a.Role) == ledger.RoleAccountsPayable:
+			l, err := payables.Open(ctx, u, base, a.ID, asAt)
+			if err != nil {
+				return err
+			}
+			for _, c := range l.Suppliers {
+				b.ContactNames[c.ID.String()] = c.Name
+				if err := total(b.Payable, c.ID, c.Items); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // reportIn is a committed import's parity report in u (design D8), at the ledger's current revision, with the
 // register's decisions and the latest sign-off.
 func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src reconciliationSource) (MigrationReconciliation, error) {
 	c, w, m := src.commit, src.w, src.m
-	out := MigrationReconciliation{Status: "ready", Path: c.Path, Differences: []MigrationDifference{}, Checks: []MigrationCheckParity{}}
+	out := MigrationReconciliation{Status: "ready", Path: c.Path, Differences: []MigrationDifference{}, Checks: []MigrationCheckParity{},
+		NotCompared: []MigrationNotCompared{"gst_f5"}}
 	base, err := baseOf(ctx, u)
 	if err != nil {
 		return out, err
@@ -330,8 +406,26 @@ func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src recon
 	if through.Before(start) {
 		through = start
 	}
-	books, err := booksOf(ctx, u, start, through, out.Revision)
+	// What the import made: its pay runs' journals, and the contacts by their rows' keys.
+	records, err := u.Migrations().Records(ctx, c.ID)
 	if err != nil {
+		return out, err
+	}
+	payroll, contacts := map[string]bool{}, map[string]string{}
+	for _, r := range records {
+		switch r.Kind {
+		case migration.KindPayroll:
+			payroll[r.RecordID.String()] = true
+		case migration.KindContact, migration.KindPerson:
+			contacts[r.Key] = r.RecordID.String()
+		}
+	}
+	books, err := booksOf(ctx, u, start, through, out.Revision, payroll)
+	if err != nil {
+		return out, err
+	}
+	books.Contacts = contacts
+	if err := openItemsOf(ctx, u, &books, base, through); err != nil {
 		return out, err
 	}
 	p := w.Reconcile(m, c.Path, books)
@@ -339,7 +433,7 @@ func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src recon
 	for _, f := range p.Differences {
 		d := MigrationDifference{Key: f.Key(), Account: f.Account, Name: f.Name, Kind: f.Kind, Fyniq: cents(f.Fyniq, base.MinorUnits),
 			Workbook: cents(f.Workbook, base.MinorUnits), Difference: cents(f.Difference, base.MinorUnits), Proposed: f.Proposed}
-		if f.Kind != migration.FigureOpening {
+		if !f.Month.IsZero() {
 			d.Month = f.Month.Format("2006-01")
 		}
 		if x, ok := decided[d.Key]; ok {

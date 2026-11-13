@@ -27142,11 +27142,16 @@ components:
             - 6510.2026-03.movement
           type: string
         kind:
-          description: "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end."
+          description: "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end; receivable or payable: what the contact owes or is owed at the as-of, by the AR & AP sheet (rev 0.267); payroll_net, payroll_statutory, payroll_cost: a month's net pay, what is due to the CPF Board (CPF, SDL, SHG) and the employer's cost, by the Payroll sheet."
           enum:
             - opening
             - movement
             - closing
+            - receivable
+            - payable
+            - payroll_net
+            - payroll_statutory
+            - payroll_cost
           examples:
             - movement
           type: string
@@ -27686,6 +27691,16 @@ components:
             - 4211
           format: int64
           type: integer
+        not_compared:
+          description: What M4's parity asks for that the report does not compare yet.
+          items:
+            description: "gst_f5: the last GST F5 return against the workbook's GST Return sheet, until Fyniq makes the F5 return (p1-gst)."
+            enum:
+              - gst_f5
+            examples:
+              - gst_f5
+            type: string
+          type: array
         path:
           description: "The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of."
           enum:
@@ -27734,6 +27749,7 @@ components:
         - differences
         - checks
         - checks_differ
+        - not_compared
         - undecided
         - sha256
       type: object
@@ -136814,7 +136830,7 @@ paths:
             description: The line's key, as the report gives it.
             examples:
               - 6610.2026-06.movement
-            pattern: ^([0-9A-Za-z_-]{1,20}\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\.(movement|closing))|check\.[0-9]{1,3})$
+            pattern: ^([0-9A-Za-z_-]{1,20}\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\.(movement|closing))|check\.[0-9]{1,3}|a[rp]\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|others)|payroll\.[0-9]{4}-(0[1-9]|1[0-2])\.(net|statutory|cost))$
             type: string
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
           in: header

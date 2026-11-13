@@ -32232,11 +32232,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description opening: the balance at the books start; movement: the month's; closing: the balance at the month's end.
+             * @description opening: the balance at the books start; movement: the month's; closing: the balance at the month's end; receivable or payable: what the contact owes or is owed at the as-of, by the AR & AP sheet (rev 0.267); payroll_net, payroll_statutory, payroll_cost: a month's net pay, what is due to the CPF Board (CPF, SDL, SHG) and the employer's cost, by the Payroll sheet.
              * @example movement
              * @enum {string}
              */
-            kind: "opening" | "movement" | "closing";
+            kind: "opening" | "movement" | "closing" | "receivable" | "payable" | "payroll_net" | "payroll_statutory" | "payroll_cost";
             /**
              * @description The month (YYYY-MM); absent for the opening.
              * @example 2026-03
@@ -32587,6 +32587,8 @@ export interface components {
              * @example 4211
              */
             ledger_revision: number;
+            /** @description What M4's parity asks for that the report does not compare yet. */
+            not_compared: "gst_f5"[];
             /**
              * @description The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of.
              * @example history

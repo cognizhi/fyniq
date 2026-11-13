@@ -26,12 +26,12 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 # The sheets the import reads (design D5), the ones it reports as kept in the archive, and the workbook's own engine
-# it reconciles with (design D8): Trial Balance, Checks and Carry Forward.
+# it reconciles with (design D8): AR & AP, Trial Balance, Checks and Carry Forward.
 SHEETS = [
     "Settings", "Accounts", "Items", "Contacts", "Employees", "Lists",
     "Transactions", "Invoices", "Bills", "Quotes & Orders", "Doc Lines", "Payroll", "Timesheets", "Assets", "Journal",
     "Recurring", "Bank Rec", "Budget", "Forecast", "Funding",
-    "Trial Balance", "Checks", "Carry Forward",
+    "AR & AP", "Trial Balance", "Checks", "Carry Forward",
 ]
 
 MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
