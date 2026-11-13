@@ -652,6 +652,7 @@ var codeFacts = map[string]struct {
 	connector.CodeState:         {409, "The connector cannot take that step now"},
 	connector.CodeNotInstalled:  {404, "No such installed connector"},
 	connector.CodeChange:        {409, "The change cannot be decided or applied now"},
+	connector.CodeModelProvider: {422, "A model provider is connected, not installed"},
 	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
 	storage.CodeIdentity:        {409, "That sign-in cannot be removed"},
 	storage.CodeIdentityStepUp:  {403, "Confirm it's you first"},

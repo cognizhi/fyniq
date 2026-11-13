@@ -119663,7 +119663,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "429":
           content:
             application/problem+json:
@@ -119732,6 +119732,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -119857,7 +119858,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "429":
           content:
             application/problem+json:
@@ -119926,6 +119927,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -120220,7 +120222,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "429":
           content:
             application/problem+json:
@@ -120289,6 +120291,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -120586,7 +120589,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -120663,6 +120666,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -120842,7 +120846,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -120919,6 +120923,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -121088,7 +121093,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -121165,6 +121170,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-CONNECTOR-01
         - STORAGE-CONNECTOR-02
         - STORAGE-LOCK-01
@@ -121281,7 +121287,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -121352,6 +121358,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - EML-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01
@@ -154157,7 +154164,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "429":
           content:
             application/problem+json:
@@ -154226,6 +154233,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-APPROVAL-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01
@@ -154518,7 +154526,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -154595,6 +154603,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-APPROVAL-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01
@@ -154773,7 +154782,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -154850,6 +154859,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-APPROVAL-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01
@@ -155018,7 +155028,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -155095,6 +155105,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - STORAGE-APPROVAL-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01
@@ -155210,7 +155221,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed."
         "428":
           content:
             application/problem+json:
@@ -155279,6 +155290,7 @@ paths:
         - CONNECTOR-06
         - CONNECTOR-07
         - CONNECTOR-08
+        - CONNECTOR-09
         - EML-01
         - STORAGE-CONNECTOR-01
         - STORAGE-LOCK-01

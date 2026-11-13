@@ -72,6 +72,8 @@ type ModelPart struct {
 	Tool      string          `json:"tool,omitempty"`
 	Input     json.RawMessage `json:"input,omitempty"`
 	IsError   bool            `json:"is_error,omitempty"`
+	// Raw is a reasoning part's block as its provider gave it, passed back to it unchanged.
+	Raw json.RawMessage `json:"raw,omitempty"`
 }
 
 // ModelTool is a tool the model may call: its name, its description for people and models alike, and its input as a
@@ -156,6 +158,22 @@ type ModelCapabilities struct {
 	ContextWindow int      `json:"context_window,omitempty"`
 	Regions       []string `json:"regions,omitempty"` // where it processes, as its connection declares and evidences (AI-88)
 }
+
+// PartReasoning is a provider's own reasoning block (its thinking and signature), kept opaque in Raw and passed back
+// unchanged in later turns to the same provider, which needs it in a tool loop; never shown, never sent elsewhere.
+const PartReasoning = "reasoning"
+
+// The errors a model provider's call ends in, so the router knows what to do (AI-76, AI-81).
+var (
+	// ErrModelNotFound is a model the provider does not know (any more): read its list again (AI-81).
+	ErrModelNotFound = errors.New("the provider does not know this model")
+	// ErrModelBusy is a rate limit, an overload or a server error: retry, or fail over to the route's next step (AI-76).
+	ErrModelBusy = errors.New("the provider is busy or rate limited")
+	// ErrModelAuth is a credential the provider refused: the connection needs a new one.
+	ErrModelAuth = errors.New("the provider refused the credential")
+	// ErrModelRequest is a request the provider refused as invalid.
+	ErrModelRequest = errors.New("the provider refused the request")
+)
 
 // ErrNoCassette is a replayed request no recorded answer matches: record it in live mode on synthetic data (§12.8).
 var ErrNoCassette = errors.New("no recorded answer for this request")

@@ -357,6 +357,13 @@ func TestOrganisationConnectorsGoThroughTheLifecycle(t *testing.T) {
 	}); code(err) != connector.CodeScope {
 		t.Fatalf("installing an installation-wide connector for an organisation: %v", err)
 	}
+	// A model provider is connected as an AI connection of its own, never installed (AI-72).
+	if err := w.do(t, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := connector.Organisations{Catalogue: real, Secrets: w.secrets, Clock: w.clock}.Install(ctx, u, "anthropic")
+		return err
+	}); code(err) != connector.CodeModelProvider {
+		t.Fatalf("installing a model provider: %v", err)
+	}
 	var c storage.InstalledConnector
 	apply := func(st string, in connector.Input) error {
 		return w.do(t, func(ctx context.Context, u storage.UnitOfWork) error {
