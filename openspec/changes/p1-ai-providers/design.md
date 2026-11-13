@@ -153,9 +153,17 @@ See proposal.md for why. What exists today:
 **D11. Where it runs; the AI writes nothing of the books (golden rule 5).**
 - The router runs wherever a model is called: the AI service for agents, the worker for list and price reads, probes
   and evals. Configuration is written by the API's role under the approvals.
-- `fyniq_ai` gains SELECT on the AI configuration and EXECUTE on `ai_reserve`, `ai_settle` and `ai_record_call`
+- `fyniq_ai` gains SELECT on the AI configuration and EXECUTE on `ai_reserve`, `ai_settle` and `record_ai_call`
   (`SECURITY DEFINER`, append-only, its own organisation), and nothing else: no business table, no configuration
   write. Security review #4 reviews it.
+- As built (task 5.2): **superseded in part, pending the owner's decision.** PRD-001's CMP-AI-01 (and its control test,
+  `TestTheAIRoleHoldsNoWritePrivilege`) lets the AI's role write nothing but proposals, through a function either, and
+  the PRD wins over this design. So `record_ai_call` (and, with task 5.3, `ai_reserve` and `ai_settle`) are granted to
+  the API and the worker only, and the router records and reserves as their roles. How the AI service records the calls
+  its agents make is an open owner decision, needed before `p1-ai-assistant` runs agents there: (a) the AI service asks
+  the API or the worker to run the router for it, keeping CMP-AI-01 as it is; (b) CMP-AI-01 widens to append-only
+  metering functions in the caller's organisation, a PRD revision with the AI-surface second review; (c) the AI service
+  connects with a separate metering role holding only those functions.
 
 **D12. Local mode (DEV-09, "Local AI in replay and live mode").**
 - Replay by default: a `replay` provider answers from cassettes in `evals/cassettes/` (beside the AI suites, as

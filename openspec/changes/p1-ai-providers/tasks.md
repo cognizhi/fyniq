@@ -63,9 +63,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 5.1 `ai_agent` and `ai_route` versions with ordered steps; presets A, B and C pinning the newest active,
   qualified model of a line from the discovered list; the approval object `ai_route` for a route that widens where
   data goes. The API's `/v1/ai/routes` and `/v1/ai/presets`. Tests `// req: AI-74`, `// req: AI-26`.
-- [ ] 5.2 The router (`internal/ai`): admission, the union of classes checked before each call and fallback, failover
+- [x] 5.2 The router (`internal/ai`): admission, the union of classes checked before each call and fallback, failover
   only to an eligible step, a plain stop with a code, strict schemas, thinking, caching and streaming where proven, the
-  call recorded with the model requested and reported (`ai_call`, append-only, through `ai_record_call`). Tests
+  call recorded with the model requested and reported (`ai_call`, append-only, through `record_ai_call`). Tests
   `// req: AI-76`, `// req: AI-83`, `// req: AI-87`, `// req: AI-27`.
 - [ ] 5.3 Budgets: `ai_budget`, `ai_reservation`, `ai_reserve` and `ai_settle` under row locks (the concurrent-spend
   scenario: S$5 left, ten calls of S$1, at most five admitted); unknown outcomes kept; probes, evals and retries

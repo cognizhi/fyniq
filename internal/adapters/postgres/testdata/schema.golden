@@ -100,6 +100,32 @@ ai_agents | description | text | null |
 ai_agents | classes | text[] | null | 
 ai_agents | line | text | null | 
 ai_agents | position | integer | null | 
+ai_call | organisation_id | uuid | not null | current_org()
+ai_call | id | uuid | not null | uuidv7()
+ai_call | run_id | uuid | not null | 
+ai_call | agent | text | not null | 
+ai_call | route_version | integer | not null | 
+ai_call | step | integer | not null | 
+ai_call | fell_back_from | integer | null | 
+ai_call | connection_id | uuid | not null | 
+ai_call | model_requested | text | not null | 
+ai_call | model_reported | text | null | 
+ai_call | version_reported | text | null | 
+ai_call | actor | text | not null | 
+ai_call | classes | text[] | not null | 
+ai_call | outcome | text | not null | 
+ai_call | detail | text | null | 
+ai_call | input_tokens | bigint | not null | 0
+ai_call | output_tokens | bigint | not null | 0
+ai_call | cache_read_tokens | bigint | not null | 0
+ai_call | cache_write_tokens | bigint | not null | 0
+ai_call | reasoning_tokens | bigint | not null | 0
+ai_call | cost | numeric(30,16) | null | 
+ai_call | currency | text | null | 
+ai_call | price_id | uuid | null | 
+ai_call | latency_ms | integer | not null | 0
+ai_call | started_at | timestamp with time zone | not null | 
+ai_call | recorded_at | timestamp with time zone | not null | now()
 ai_connection | organisation_id | uuid | not null | current_org()
 ai_connection | id | uuid | not null | uuidv7()
 ai_connection | name | text | not null | 
@@ -2307,6 +2333,40 @@ ai_agent | ai_agent_pkey | PRIMARY KEY (id)
 ai_agent | ai_agent_position | UNIQUE ("position")
 ai_agent | ai_agent_position_not_null | NOT NULL "position"
 ai_agent | ai_agent_text | CHECK ((((length(name) >= 1) AND (length(name) <= 80)) AND ((length(description) >= 1) AND (length(description) <= 300))))
+ai_call | ai_call_actor_format | CHECK ((actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_call | ai_call_actor_not_null | NOT NULL actor
+ai_call | ai_call_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
+ai_call | ai_call_agent_not_null | NOT NULL agent
+ai_call | ai_call_cache_read_tokens_not_null | NOT NULL cache_read_tokens
+ai_call | ai_call_cache_write_tokens_not_null | NOT NULL cache_write_tokens
+ai_call | ai_call_classes | CHECK ((classes <@ ARRAY['know-how'::text, 'business-figures'::text, 'personal-data'::text, 'payroll'::text]))
+ai_call | ai_call_classes_not_null | NOT NULL classes
+ai_call | ai_call_connection_fkey | FOREIGN KEY (organisation_id, connection_id) REFERENCES ai_connection(organisation_id, id)
+ai_call | ai_call_connection_id_not_null | NOT NULL connection_id
+ai_call | ai_call_cost | CHECK (((cost <> 'NaN'::numeric) AND (cost >= (0)::numeric) AND ((cost IS NULL) = (currency IS NULL)) AND ((cost IS NULL) OR (price_id IS NOT NULL))))
+ai_call | ai_call_currency_fkey | FOREIGN KEY (currency) REFERENCES currency(code)
+ai_call | ai_call_detail_length | CHECK ((length(detail) <= 500))
+ai_call | ai_call_id_not_null | NOT NULL id
+ai_call | ai_call_input_tokens_not_null | NOT NULL input_tokens
+ai_call | ai_call_latency | CHECK ((latency_ms >= 0))
+ai_call | ai_call_latency_ms_not_null | NOT NULL latency_ms
+ai_call | ai_call_model_requested_not_null | NOT NULL model_requested
+ai_call | ai_call_models | CHECK (((model_requested ~ '^[!-~]+$'::text) AND (length(model_requested) <= 200) AND (length(model_reported) <= 200) AND (length(version_reported) <= 200)))
+ai_call | ai_call_organisation_id_not_null | NOT NULL organisation_id
+ai_call | ai_call_outcome_known | CHECK ((outcome = ANY (ARRAY['ok'::text, 'skipped'::text, 'busy'::text, 'timeout'::text, 'not_found'::text, 'refused'::text, 'failed'::text, 'stopped'::text])))
+ai_call | ai_call_outcome_not_null | NOT NULL outcome
+ai_call | ai_call_output_tokens_not_null | NOT NULL output_tokens
+ai_call | ai_call_pkey | PRIMARY KEY (organisation_id, id)
+ai_call | ai_call_price_fkey | FOREIGN KEY (organisation_id, price_id) REFERENCES ai_price(organisation_id, id)
+ai_call | ai_call_reasoning_tokens_not_null | NOT NULL reasoning_tokens
+ai_call | ai_call_recorded_at_not_null | NOT NULL recorded_at
+ai_call | ai_call_route_version_not_null | NOT NULL route_version
+ai_call | ai_call_run_id_not_null | NOT NULL run_id
+ai_call | ai_call_served | CHECK ((((outcome = 'ok'::text) = (model_reported IS NOT NULL)) AND ((outcome = 'ok'::text) OR (detail IS NOT NULL))))
+ai_call | ai_call_started_at_not_null | NOT NULL started_at
+ai_call | ai_call_step_not_null | NOT NULL step
+ai_call | ai_call_steps | CHECK (((route_version >= 1) AND ((step >= 1) AND (step <= 5)) AND ((fell_back_from IS NULL) OR ((fell_back_from >= 1) AND (fell_back_from <= (step - 1))))))
+ai_call | ai_call_tokens | CHECK (((input_tokens >= 0) AND (output_tokens >= 0) AND (cache_read_tokens >= 0) AND (cache_write_tokens >= 0) AND (reasoning_tokens >= 0) AND (reasoning_tokens <= output_tokens)))
 ai_connection | ai_connection_auth_known | CHECK ((auth = ANY (ARRAY['api-key'::text, 'workload-identity'::text, 'none'::text])))
 ai_connection | ai_connection_auth_not_null | NOT NULL auth
 ai_connection | ai_connection_auto_qualify_not_null | NOT NULL auto_qualify
@@ -5647,6 +5707,10 @@ CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, p
 CREATE INDEX account_recovery_user ON fyniq.account_recovery USING btree (user_id, cooling_off_until)
 CREATE INDEX accountant_review_period ON fyniq.accountant_review USING btree (organisation_id, period_id)
 CREATE INDEX accountant_review_query_review ON fyniq.accountant_review_query USING btree (organisation_id, review_id)
+CREATE INDEX ai_call_by_agent ON fyniq.ai_call USING btree (organisation_id, agent, started_at DESC)
+CREATE INDEX ai_call_by_connection ON fyniq.ai_call USING btree (organisation_id, connection_id, started_at DESC)
+CREATE INDEX ai_call_by_price ON fyniq.ai_call USING btree (organisation_id, price_id)
+CREATE INDEX ai_call_by_run ON fyniq.ai_call USING btree (organisation_id, run_id)
 CREATE INDEX ai_model_list_read_connection ON fyniq.ai_model_list_read USING btree (organisation_id, connection_id, read_at DESC)
 CREATE INDEX ai_price_by_approval ON fyniq.ai_price USING btree (organisation_id, approval_id)
 CREATE INDEX ai_price_by_catalogue ON fyniq.ai_price USING btree (organisation_id, catalogue_id)
@@ -5789,6 +5853,7 @@ CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btre
 CREATE UNIQUE INDEX accounting_policy_version_key ON fyniq.accounting_policy USING btree (organisation_id, area, version)
 CREATE UNIQUE INDEX ai_agent_pkey ON fyniq.ai_agent USING btree (id)
 CREATE UNIQUE INDEX ai_agent_position ON fyniq.ai_agent USING btree ("position")
+CREATE UNIQUE INDEX ai_call_pkey ON fyniq.ai_call USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_connection_name ON fyniq.ai_connection USING btree (organisation_id, name)
 CREATE UNIQUE INDEX ai_connection_pkey ON fyniq.ai_connection USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_connection_version_id ON fyniq.ai_connection_version USING btree (organisation_id, id)
@@ -6310,6 +6375,8 @@ CREATE TRIGGER accountant_review_query_no_truncate BEFORE TRUNCATE ON fyniq.acco
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER acra_extract_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION acra_extract_guard()
+CREATE TRIGGER ai_call_guard BEFORE DELETE OR UPDATE ON fyniq.ai_call FOR EACH ROW EXECUTE FUNCTION ai_call_guard()
+CREATE TRIGGER ai_call_no_truncate BEFORE TRUNCATE ON fyniq.ai_call FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_connection_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_connection FOR EACH ROW EXECUTE FUNCTION ai_connection_guard()
 CREATE TRIGGER ai_connection_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_connection_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_connection_version FOR EACH ROW EXECUTE FUNCTION ai_connection_guard()
@@ -6659,6 +6726,7 @@ accountant_review_journal | tenant_isolation | * | (organisation_id = current_or
 accountant_review_query | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_data_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6833,6 +6901,7 @@ accountant_review_query | enabled | forced
 accounting_framework | enabled | forced
 accounting_policy | enabled | forced
 ai_agent | disabled | not forced
+ai_call | enabled | forced
 ai_connection | enabled | forced
 ai_connection_version | enabled | forced
 ai_data_policy | enabled | forced
@@ -7041,6 +7110,7 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e61f76b3fe2a4eb691c487471ba73494
+ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
@@ -7285,6 +7355,7 @@ purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=p
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
 reapply_shredding(p_run uuid, p_cohort date, p_keys uuid[], p_listed_at timestamp with time zone, p_approved_by text, p_approved_at timestamp with time zone, p_register text) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 479b5993ee4000e36ae2f505d9db0fb9
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
+record_ai_call(p_run uuid, p_agent text, p_route_version integer, p_step integer, p_fell_back_from integer, p_connection uuid, p_model_requested text, p_model_reported text, p_version_reported text, p_actor text, p_classes text[], p_outcome text, p_detail text, p_input bigint, p_output bigint, p_cache_read bigint, p_cache_write bigint, p_reasoning bigint, p_cost numeric, p_currency text, p_price uuid, p_latency_ms integer, p_started_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c7dc46b56c29b0e6eaa81bbd7282f6a9
 record_ai_price_catalogue(p_source text, p_url text, p_fetched_at timestamp with time zone, p_sha256 text, p_size bigint, p_licence text, p_licence_url text, p_licence_sha256 text, p_outcome text, p_failure text, p_entries integer, p_document text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ac4395cc3583f420076652bafb579d78
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
