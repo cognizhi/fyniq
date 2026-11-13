@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conditions": {
+      "$ref": "RuleConditions.schema.json",
+      "description": "What the rule matches: every condition set must hold."
+    },
+    "steps": {
+      "description": "The ordered steps a request that matches it takes, instead of the policy's default steps.",
+      "items": {
+        "$ref": "ApprovalStep.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "conditions",
+    "steps"
+  ],
+  "title": "ApprovalRule",
+  "type": "object"
+}
