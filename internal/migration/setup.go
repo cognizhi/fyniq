@@ -424,11 +424,28 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 
 	out = append(out, w.itemRecords(m, s.BaseCurrency)...)
 
+	out = append(out, w.rateRecords()...)
+	for _, r := range m.BankRules {
+		if w.transferRule(r.Order) {
+			continue // kept in the archive: the validation report says so
+		}
+		out = append(out, w.ruleRecord(r, w.ruleOrigin(r.Order)))
+	}
+	return append(out, w.funding(m, path)...)
+}
+
+// rateRecords are the monthly FX rates' records (FR-FX-01): each currency's rate for a month, as base per unit.
+func (w *Workbook) rateRecords() []Record {
+	var out []Record
+	note := "From the workbook's Lists sheet (FR-MIG-01)"
+	if w.drafts {
+		note = "Imported from a file (FR-MIG-03)"
+	}
 	for _, r := range w.Rates {
 		on := time.Date(r.Month.Year(), r.Month.Month(), 1, 0, 0, 0, 0, time.UTC)
 		out = append(out, Record{Key: "fx-rate:" + r.Currency + ":" + on.Format("2006-01"), Kind: KindFXRate, Origin: r.Origin,
 			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-				base, err := money.Lookup(s.BaseCurrency)
+				base, err := money.Lookup(w.Settings.BaseCurrency)
 				if err != nil {
 					return Made{}, err
 				}
@@ -437,7 +454,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 					quote = r.Rate.Text('f')
 				}
 				n, bad := fx.Check(fx.Entry{Kind: storage.FXRateMonth, Currency: r.Currency, On: on, Quote: quote, QuoteForm: money.QuoteBasePerUnit,
-					Note: "From the workbook's Lists sheet (FR-MIG-01)"}, base)
+					Note: note}, base)
 				if len(bad) > 0 {
 					out := make(Refused, len(bad))
 					for i, x := range bad {
@@ -449,28 +466,44 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 				return Made{Type: "fx_rate", ID: x.ID}, err
 			}})
 	}
+	return out
+}
 
-	for _, r := range m.BankRules {
-		if w.transferRule(r.Order) {
-			continue // kept in the archive: the validation report says so
-		}
-		out = append(out, Record{Key: fmt.Sprintf("bank-rule:%d", r.Order), Kind: KindBankRule, Origin: w.ruleOrigin(r.Order),
-			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-				a, err := account(ctx, u, "account_id", r.Account)
+// ruleRecord is a bank rule's record (FR-BNK-14): it suggests its account and GST code, and an approver makes it
+// auto-apply after its back-test. The workbook's rules keep their order; a file's go after the organisation's own, in
+// the file's order (rev 0.272), and one that gives a money account is refused: money between the organisation's own
+// accounts is a transfer the bank import matches, never a rule (FR-BNK-05).
+func (w *Workbook) ruleRecord(r RuleMap, origin Origin) Record {
+	return Record{Key: fmt.Sprintf("bank-rule:%d", r.Order), Kind: KindBankRule, Origin: origin,
+		make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+			a, err := account(ctx, u, "account_id", r.Account)
+			if err != nil {
+				return Made{}, err
+			}
+			position := r.Order
+			if w.drafts {
+				if a.MoneyAccount {
+					return Made{}, Refused{{Code: CodeValue, Field: "account_id", Message: fmt.Sprintf("account %s is a money account: money moving between the organisation's own accounts is a transfer, never a rule", r.Account),
+						Fix: "Leave the row out: the bank import matches transfers by itself"}}
+				}
+				rules, err := u.BankMatching().Rules(ctx)
 				if err != nil {
 					return Made{}, err
 				}
-				name := "Contains " + r.Contains
-				if len([]rune(name)) > banking.MaxRuleName {
-					name = string([]rune(name)[:banking.MaxRuleName])
+				position = 1
+				for _, x := range rules {
+					position = max(position, x.Position+1)
 				}
-				// A rule suggests: an approver makes it auto-apply after its back-test (FR-BNK-14).
-				x, err := banking.CreateRule(ctx, u, banking.RuleRequest{Name: name, Position: r.Order, When: banking.Conditions{DescriptionContains: r.Contains},
-					Then: banking.Action{AccountID: a.ID, GSTCode: r.GST}, Active: true, At: e.Now})
-				return Made{Type: "bank_rule", ID: x.ID}, err
-			}})
-	}
-	return append(out, w.funding(m, path)...)
+			}
+			name := "Contains " + r.Contains
+			if len([]rune(name)) > banking.MaxRuleName {
+				name = string([]rune(name)[:banking.MaxRuleName])
+			}
+			// A rule suggests: an approver makes it auto-apply after its back-test (FR-BNK-14).
+			x, err := banking.CreateRule(ctx, u, banking.RuleRequest{Name: name, Position: position, When: banking.Conditions{DescriptionContains: r.Contains},
+				Then: banking.Action{AccountID: a.ID, GSTCode: r.GST}, Active: true, At: e.Now})
+			return Made{Type: "bank_rule", ID: x.ID}, err
+		}}
 }
 
 // moneyKind is the kind of money account an account's name says it is: a card, cash, a payment gateway, a wallet, else a

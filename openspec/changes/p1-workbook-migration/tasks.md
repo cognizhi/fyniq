@@ -139,7 +139,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 7. Generic import (FR-MIG-03)
 
-- [ ] 7.1 A template per entity, each laid out as the workbook's sheet for it (design D9), as CSV and XLSX:
+- [x] 7.1 A template per entity, each laid out as the workbook's sheet for it (design D9), as CSV and XLSX:
   `GET /v1/imports/templates/{entity}`, and `POST /v1/imports/{entity}` with `Prefer: return=preview` for the dry run.
   Each record goes through its command with its normal approvals, in any organisation, needing the entity's own C.
   Tests `// req: FR-MIG-03` for each entity (a dry run commits nothing; a commit equals the same rows entered by hand),
@@ -153,6 +153,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   numbers kept, the organisation's contacts, items and dimension values pre-loaded by name, a refusal in the file's
   words; an invoices .xlsx file's Doc Lines sheet itemises its invoices; TestTheGenericImportMakesDocumentsDrafts. Left:
   opening balances, FX rates, bank rules and budgets.)
+  (Slice 20 built the last four, rev 0.272: the opening balances' draft, each balance on its account's own side; FX
+  rates and bank rules read from the Lists sheet's sections or a file of their columns, a rule placed after the
+  organisation's own and none giving a money account; each financial year's budget a draft in the organisation's
+  years; a refusal names its row even when one record holds several; TestTheGenericImportEntersOpeningBalancesAndPlans.)
 
 ## 8. Full tenant export (FR-MIG-04)
 
