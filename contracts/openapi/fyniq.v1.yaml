@@ -924,6 +924,110 @@ components:
         - ok
         - at
       type: object
+    AIPreset:
+      additionalProperties: false
+      properties:
+        agents:
+          items:
+            $ref: "#/components/schemas/AIPresetAgent"
+          type: array
+        description:
+          examples:
+            - Claude on Agent Platform in Singapore (asia-southeast1) for every agent.
+          type: string
+        id:
+          enum:
+            - A
+            - B
+            - C
+          examples:
+            - A
+          type: string
+        name:
+          examples:
+            - Singapore only
+          type: string
+        targets:
+          description: Where its steps go, in order; none for C, which takes A's or B's by the agent's classes.
+          items:
+            $ref: "#/components/schemas/AIPresetTarget"
+          type: array
+      required:
+        - id
+        - name
+        - description
+        - targets
+        - agents
+      type: object
+    AIPresetAgent:
+      additionalProperties: false
+      properties:
+        agent:
+          examples:
+            - chat
+          type: string
+        notes:
+          items:
+            description: What the preset leaves out of the route, and why.
+            examples:
+              - personal-data stays with preset A, in Singapore (AI-75)
+            maxLength: 300
+            type: string
+          type: array
+        route:
+          $ref: "#/components/schemas/AIRouteSet"
+          description: The route, as setAIRoute takes it.
+        why:
+          description: Why the preset gives the agent no route it could set now.
+          examples:
+            - no connection that is on has an allowed model of the lines preset A pins
+          type: string
+      required:
+        - agent
+        - notes
+      type: object
+    AIPresetList:
+      additionalProperties: false
+      properties:
+        presets:
+          items:
+            $ref: "#/components/schemas/AIPreset"
+          type: array
+      required:
+        - presets
+      type: object
+    AIPresetTarget:
+      additionalProperties: false
+      properties:
+        auth:
+          examples:
+            - workload-identity
+          type: string
+        classification_line:
+          description: The prefix it pins for high-volume classification.
+          examples:
+            - claude-sonnet-
+          type: string
+        connector:
+          examples:
+            - anthropic
+          type: string
+        location:
+          examples:
+            - asia-southeast1
+          type: string
+        main_line:
+          description: The prefix of the model IDs it pins for most agents.
+          examples:
+            - claude-opus-
+          type: string
+      required:
+        - connector
+        - auth
+        - location
+        - main_line
+        - classification_line
+      type: object
     AIPrice:
       additionalProperties: false
       properties:
@@ -51650,6 +51754,108 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: C
+  /v1/ai/presets:
+    get:
+      description: "ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists, with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects."
+      operationId: getAIPresets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIPresetList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the route presets
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: V
   /v1/ai/price-catalogues:
     get:
       description: "Each daily download of LiteLLM's public model price catalogue, newest first (AI-85): the same for every organisation, with its SHA-256, size, source, licence check and whether it was valid or why it was refused. Only a valid download prices anything. A page at a time. Read-only; no side effects."
