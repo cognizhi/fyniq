@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "description": "The agent, as GET /v1/ai/routes lists it: one whose eval suite has arrived.",
+      "examples": [
+        "probe"
+      ],
+      "maxLength": 60,
+      "minLength": 2,
+      "type": "string"
+    },
+    "model": {
+      "description": "The provider's ID for it, as the connection's list shows it.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "agent"
+  ],
+  "title": "AIModelQualify",
+  "type": "object"
+}

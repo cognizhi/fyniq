@@ -149,8 +149,8 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's gen
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
 
-evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
-	@scripts/evals.sh
+evals: ## Run the AI eval suites (CTL-AI-05): replay each model's recorded answers, check each suite judges soundly, report in .data/evals/report.json; FYNIQ_AI_LIVE=1 MODEL=<id> runs one model live on synthetic text and records it
+	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
 
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \

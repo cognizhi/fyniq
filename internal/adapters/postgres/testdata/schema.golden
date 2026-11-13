@@ -261,6 +261,23 @@ ai_price_rate | kind | text | not null |
 ai_price_rate | above | bigint | not null | 0
 ai_price_rate | unit | text | not null | 
 ai_price_rate | amount | numeric(24,10) | not null | 
+ai_qualification | organisation_id | uuid | not null | current_org()
+ai_qualification | id | uuid | not null | uuidv7()
+ai_qualification | agent | text | not null | 
+ai_qualification | connection_id | uuid | not null | 
+ai_qualification | model | text | not null | 
+ai_qualification | version | text | not null | ''::text
+ai_qualification | suite | text | not null | 
+ai_qualification | suite_version | integer | not null | 
+ai_qualification | threshold | numeric(5,4) | not null | 
+ai_qualification | cases | integer | not null | 
+ai_qualification | passed | integer | not null | 
+ai_qualification | result | text | not null | 
+ai_qualification | run_id | uuid | not null | 
+ai_qualification | ran_by | text | not null | 
+ai_qualification | ran_at | timestamp with time zone | not null | 
+ai_qualification | out_of_date_at | timestamp with time zone | null | 
+ai_qualification | out_of_date_why | text | null | 
 ai_reservation | organisation_id | uuid | not null | current_org()
 ai_reservation | id | uuid | not null | uuidv7()
 ai_reservation | run_id | uuid | not null | 
@@ -2411,7 +2428,7 @@ ai_call | ai_call_run_id_not_null | NOT NULL run_id
 ai_call | ai_call_served | CHECK ((((outcome = 'ok'::text) = (model_reported IS NOT NULL)) AND ((outcome = 'ok'::text) OR (detail IS NOT NULL))))
 ai_call | ai_call_started_at_not_null | NOT NULL started_at
 ai_call | ai_call_step_not_null | NOT NULL step
-ai_call | ai_call_steps | CHECK (((route_version >= 0) AND ((step >= 1) AND (step <= 5)) AND ((fell_back_from IS NULL) OR ((fell_back_from >= 1) AND (fell_back_from <= (step - 1)))) AND ((route_version > 0) OR ((agent = 'probe'::text) AND (step = 1)))))
+ai_call | ai_call_steps | CHECK (((route_version >= 0) AND ((step >= 1) AND (step <= 5)) AND ((fell_back_from IS NULL) OR ((fell_back_from >= 1) AND (fell_back_from <= (step - 1)))) AND ((route_version > 0) OR ((agent = ANY (ARRAY['probe'::text, 'eval_runner'::text])) AND (step = 1)))))
 ai_call | ai_call_tokens | CHECK (((input_tokens >= 0) AND (output_tokens >= 0) AND (cache_read_tokens >= 0) AND (cache_write_tokens >= 0) AND (reasoning_tokens >= 0) AND (reasoning_tokens <= output_tokens)))
 ai_connection | ai_connection_auth_known | CHECK ((auth = ANY (ARRAY['api-key'::text, 'workload-identity'::text, 'none'::text])))
 ai_connection | ai_connection_auth_not_null | NOT NULL auth
@@ -2599,6 +2616,32 @@ CASE kind
     ELSE 'per_million_tokens'::text
 END))
 ai_price_rate | ai_price_rate_unit_not_null | NOT NULL unit
+ai_qualification | ai_qualification_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
+ai_qualification | ai_qualification_agent_not_null | NOT NULL agent
+ai_qualification | ai_qualification_cases_not_null | NOT NULL cases
+ai_qualification | ai_qualification_connection_id_not_null | NOT NULL connection_id
+ai_qualification | ai_qualification_counts | CHECK (((cases >= 1) AND ((passed >= 0) AND (passed <= cases))))
+ai_qualification | ai_qualification_id_not_null | NOT NULL id
+ai_qualification | ai_qualification_model_fkey | FOREIGN KEY (organisation_id, connection_id, model) REFERENCES ai_model(organisation_id, connection_id, model)
+ai_qualification | ai_qualification_model_not_null | NOT NULL model
+ai_qualification | ai_qualification_organisation_id_not_null | NOT NULL organisation_id
+ai_qualification | ai_qualification_out_of_date | CHECK ((((out_of_date_at IS NULL) = (out_of_date_why IS NULL)) AND (length(out_of_date_why) <= 500)))
+ai_qualification | ai_qualification_passed_not_null | NOT NULL passed
+ai_qualification | ai_qualification_pkey | PRIMARY KEY (organisation_id, id)
+ai_qualification | ai_qualification_ran_at_not_null | NOT NULL ran_at
+ai_qualification | ai_qualification_ran_by_format | CHECK ((ran_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_qualification | ai_qualification_ran_by_not_null | NOT NULL ran_by
+ai_qualification | ai_qualification_result | CHECK (((result = ANY (ARRAY['pass'::text, 'fail'::text])) AND ((result = 'pass'::text) = ((passed)::numeric >= (threshold * (cases)::numeric)))))
+ai_qualification | ai_qualification_result_not_null | NOT NULL result
+ai_qualification | ai_qualification_run_id_not_null | NOT NULL run_id
+ai_qualification | ai_qualification_suite_format | CHECK (((suite ~ '^[a-z][a-z0-9_.-]{1,59}$'::text) AND (suite_version >= 1)))
+ai_qualification | ai_qualification_suite_not_null | NOT NULL suite
+ai_qualification | ai_qualification_suite_version_not_null | NOT NULL suite_version
+ai_qualification | ai_qualification_threshold | CHECK (((threshold <> 'NaN'::numeric) AND (threshold > (0)::numeric) AND (threshold <= (1)::numeric)))
+ai_qualification | ai_qualification_threshold_not_null | NOT NULL threshold
+ai_qualification | ai_qualification_version_length | CHECK ((length(version) <= 200))
+ai_qualification | ai_qualification_version_not_null | NOT NULL version
+ai_qualification | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_reservation | ai_reservation_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_reservation | ai_reservation_agent_not_null | NOT NULL agent
 ai_reservation | ai_reservation_amounts | CHECK (((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric) AND (actual <> 'NaN'::numeric) AND (actual >= (0)::numeric)))
@@ -5780,6 +5823,7 @@ CREATE INDEX ai_model_list_read_connection ON fyniq.ai_model_list_read USING btr
 CREATE INDEX ai_price_by_approval ON fyniq.ai_price USING btree (organisation_id, approval_id)
 CREATE INDEX ai_price_by_catalogue ON fyniq.ai_price USING btree (organisation_id, catalogue_id)
 CREATE INDEX ai_price_catalogue_latest ON fyniq.ai_price_catalogue USING btree (source, fetched_at DESC)
+CREATE INDEX ai_qualification_latest ON fyniq.ai_qualification USING btree (organisation_id, connection_id, model, agent, ran_at DESC)
 CREATE INDEX ai_reservation_by_month ON fyniq.ai_reservation USING btree (organisation_id, month)
 CREATE INDEX ai_reservation_by_run ON fyniq.ai_reservation USING btree (organisation_id, run_id)
 CREATE INDEX ai_route_by_approval ON fyniq.ai_route USING btree (organisation_id, approval_id)
@@ -5939,6 +5983,7 @@ CREATE UNIQUE INDEX ai_price_pkey ON fyniq.ai_price USING btree (organisation_id
 CREATE UNIQUE INDEX ai_price_rate_one ON fyniq.ai_price_rate USING btree (organisation_id, price_id, kind, above)
 CREATE UNIQUE INDEX ai_price_rate_pkey ON fyniq.ai_price_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_price_waiting ON fyniq.ai_price USING btree (organisation_id, connection_id, model) WHERE (status = 'pending'::text)
+CREATE UNIQUE INDEX ai_qualification_pkey ON fyniq.ai_qualification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_reservation_pkey ON fyniq.ai_reservation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_pkey ON fyniq.ai_route USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_step_once ON fyniq.ai_route_step USING btree (organisation_id, route_id, connection_id, model)
@@ -6282,6 +6327,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_budget DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_data_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_data_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_model_list_read DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'connection_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_price', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_qualification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_qualification', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_route DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_route', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
@@ -6464,6 +6510,8 @@ CREATE TRIGGER ai_price_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_pric
 CREATE TRIGGER ai_price_no_truncate BEFORE TRUNCATE ON fyniq.ai_price FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_price_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_price_rate FOR EACH ROW EXECUTE FUNCTION ai_price_guard()
 CREATE TRIGGER ai_price_rate_no_truncate BEFORE TRUNCATE ON fyniq.ai_price_rate FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_qualification_guard BEFORE DELETE OR UPDATE ON fyniq.ai_qualification FOR EACH ROW EXECUTE FUNCTION ai_qualification_guard()
+CREATE TRIGGER ai_qualification_no_truncate BEFORE TRUNCATE ON fyniq.ai_qualification FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_reservation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_reservation FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
 CREATE TRIGGER ai_reservation_no_truncate BEFORE TRUNCATE ON fyniq.ai_reservation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_route_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_route FOR EACH ROW EXECUTE FUNCTION ai_route_guard()
@@ -6810,6 +6858,7 @@ ai_model | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_qualification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_reservation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6988,6 +7037,7 @@ ai_model_list_read | enabled | forced
 ai_price | enabled | forced
 ai_price_catalogue | disabled | not forced
 ai_price_rate | enabled | forced
+ai_qualification | enabled | forced
 ai_reservation | enabled | forced
 ai_route | enabled | forced
 ai_route_step | enabled | forced
@@ -7196,6 +7246,7 @@ ai_connection_versioned() → trigger | security invoker | v | search_path=pg_ca
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
+ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
 ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1511f4bc76174e684948c8d9d4f368b7
 ai_route_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6410526861d59ed27a7d790937a0f2c
 ai_settle(p_reservation uuid, p_actual numeric, p_known boolean) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 34d0cac1f01f01c5429d5fe7e232b989

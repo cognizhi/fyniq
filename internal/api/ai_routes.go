@@ -13,11 +13,13 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -54,8 +56,12 @@ type AIRouteStep struct {
 	Model        string `json:"model" example:"claude-opus-4-6"`
 	Effort       string `json:"effort,omitempty" enum:"low,medium,high" example:"high"`
 	Cache        bool   `json:"cache" example:"true"`
-	Serves       bool   `json:"serves" doc:"It can serve now: its connection on, its model on the allow-list and callable, and priced where the connection bills by usage." example:"true"`
+	Serves       bool   `json:"serves" doc:"It can serve now: its connection on, its model on the allow-list, callable and qualified for the agent, and priced where the connection bills by usage." example:"true"`
 	Why          string `json:"why,omitempty" doc:"Why it cannot serve now: the router skips it to the next step (AI-76)." example:"the model is no longer on the allow-list"`
+	// Qualification is the step's standing in its agent's evals (AI-78, AI-87).
+	Qualification string `json:"qualification" enum:"qualified,out_of_date,unqualified" doc:"The model's standing in the agent's evals on this connection (AI-78): out_of_date shows ⚠, and the step carries no personal data or payroll until it is qualified again (AI-87); unqualified, it serves nothing." example:"qualified"`
+	// Qualified is the run that decided it, if any.
+	Qualified *AIQualification `json:"qualified,omitempty" doc:"The model's latest run of the agent's evals on this connection."`
 }
 
 // AIRoute is a version of an agent's route.
@@ -136,13 +142,14 @@ type routeScene struct {
 	connections map[uuid.UUID]storage.AIConnection
 	models      map[uuid.UUID]map[string]storage.AIModel
 	priced      map[uuid.UUID]map[string]bool
+	quals       map[uuid.UUID]map[string]map[string]storage.AIQualification // by connection, model and agent: the latest run
 	policy      aipolicy.Policy
 	now         time.Time
 }
 
 func (a *API) routeScene(ctx context.Context, u storage.UnitOfWork) (routeScene, error) {
 	s := routeScene{connections: map[uuid.UUID]storage.AIConnection{}, models: map[uuid.UUID]map[string]storage.AIModel{},
-		priced: map[uuid.UUID]map[string]bool{}, now: a.deps.Clock.Now()}
+		priced: map[uuid.UUID]map[string]bool{}, quals: map[uuid.UUID]map[string]map[string]storage.AIQualification{}, now: a.deps.Clock.Now()}
 	all, err := u.AIConnections().List(ctx)
 	if err != nil {
 		return s, err
@@ -164,6 +171,17 @@ func (a *API) routeScene(ctx context.Context, u storage.UnitOfWork) (routeScene,
 		s.priced[c.ID] = map[string]bool{}
 		for _, p := range prices {
 			s.priced[c.ID][p.Model] = s.priced[c.ID][p.Model] || p.Status == aiprice.Active
+		}
+		quals, err := u.AIQualifications().Latest(ctx, c.ID)
+		if err != nil {
+			return s, err
+		}
+		s.quals[c.ID] = map[string]map[string]storage.AIQualification{}
+		for _, q := range quals {
+			if s.quals[c.ID][q.Model] == nil {
+				s.quals[c.ID][q.Model] = map[string]storage.AIQualification{}
+			}
+			s.quals[c.ID][q.Model][q.Agent] = q
 		}
 	}
 	policy, err := u.AIDataPolicies().Latest(ctx)
@@ -196,6 +214,38 @@ func (s routeScene) serves(i int, step airoute.Step, classes []string) error {
 	return aiprice.Serves(c.Billing, c.SelfHosted, s.priced[c.ID][step.Model], step.Model)
 }
 
+// standing is a step's model's standing in agent's evals on its connection, and the run that decided it (AI-78).
+func (s routeScene) standing(agent string, step airoute.Step) (string, *storage.AIQualification) {
+	q, ok := s.quals[step.Connection][step.Model][agent]
+	if !ok {
+		return aiqual.Unqualified, nil
+	}
+	return ai.Standing(&q, s.models[step.Connection][step.Model].AliasOf != "", s.now), &q
+}
+
+// qualifiedFor refuses a route a step of which names a model whose pass of agent's evals is missing, failed or out of
+// date: a change that widens where data goes carries a passing eval run of every step (AI-78, CMP-AI-03).
+func (s routeScene) qualifiedFor(agent string, r airoute.Route) error {
+	for i, step := range r.Steps {
+		if st, _ := s.standing(agent, step); st != aiqual.Qualified {
+			return aiqual.NotQualified(i, step.Model, agent, st)
+		}
+	}
+	return nil
+}
+
+// evalRuns are the passing runs a widening change carries, one per step, as its approval request shows them (CMP-AI-03).
+func (s routeScene) evalRuns(agent string, r airoute.Route) []map[string]any {
+	var out []map[string]any
+	for _, step := range r.Steps {
+		if _, q := s.standing(agent, step); q != nil {
+			out = append(out, map[string]any{"connection_id": step.Connection.String(), "model": step.Model, "qualification": q.ID.String(),
+				"run": q.Run.String(), "suite": q.Suite, "suite_version": q.SuiteVersion, "passed": q.Passed, "cases": q.Cases, "version": q.Version})
+		}
+	}
+	return out
+}
+
 func routeOut(r storage.AIRoute, s routeScene) AIRoute {
 	out := AIRoute{Version: r.Version, Classes: []RouteClass{}, Preset: r.Preset, Steps: []AIRouteStep{}, MadeBy: r.MadeBy, MadeAt: r.MadeAt.UTC()}
 	for _, c := range r.Classes {
@@ -207,8 +257,17 @@ func routeOut(r storage.AIRoute, s routeScene) AIRoute {
 	for i, step := range r.Steps {
 		st := AIRouteStep{ConnectionID: step.ConnectionID.String(), Connection: s.connections[step.ConnectionID].Name, Model: step.Model,
 			Effort: step.Effort, Cache: step.Cache, Serves: true}
-		if err := s.serves(i, airoute.Step{Connection: step.ConnectionID, Model: step.Model}, r.Classes); err != nil {
+		ds := airoute.Step{Connection: step.ConnectionID, Model: step.Model}
+		standing, q := s.standing(r.Agent, ds)
+		st.Qualification = standing
+		if q != nil {
+			qo := qualificationOut(*q, standing)
+			st.Qualified = &qo
+		}
+		if err := s.serves(i, ds, r.Classes); err != nil {
 			st.Serves, st.Why = false, problemMessage(err)
+		} else if standing == aiqual.Unqualified {
+			st.Serves, st.Why = false, problemMessage(aiqual.NotQualified(i, step.Model, r.Agent, standing))
 		}
 		out.Steps = append(out.Steps, st)
 	}
@@ -219,11 +278,14 @@ func routeOut(r storage.AIRoute, s routeScene) AIRoute {
 func problemMessage(err error) string {
 	var re *airoute.Error
 	var pe *aiprice.Error
+	var qe *aiqual.Error
 	switch {
 	case errors.As(err, &re):
 		return re.Message
 	case errors.As(err, &pe):
 		return pe.Message
+	case errors.As(err, &qe):
+		return qe.Message
 	}
 	return err.Error()
 }
@@ -239,8 +301,12 @@ func agentOut(a storage.AIAgent) AIAgentRoute {
 // routeProblem is a refusal of the route rules, with the field it is about.
 func routeProblem(err error) error {
 	var e *airoute.Error
-	if errors.As(err, &e) {
+	var q *aiqual.Error
+	switch {
+	case errors.As(err, &e):
 		return problem(e.Code, e.Field+" "+e.Message+".", e.Fix, FieldProblem{Code: e.Code, Field: "body." + e.Field, Message: e.Message, Fix: e.Fix})
+	case errors.As(err, &q):
+		return problem(q.Code, q.Field+" "+q.Message+".", q.Fix, FieldProblem{Code: q.Code, Field: "body." + q.Field, Message: q.Message, Fix: q.Fix})
 	}
 	return priceProblem(err)
 }
@@ -276,21 +342,21 @@ func domainRoute(r storage.AIRoute) airoute.Route {
 	return out
 }
 
-// checkRoute checks a route for its agent, and each step against the organisation as it is now.
-func (a *API) checkRoute(ctx context.Context, u storage.UnitOfWork, agent storage.AIAgent, r airoute.Route) error {
+// checkRoute checks a route for its agent, and each step against the organisation as it is now, which it returns.
+func (a *API) checkRoute(ctx context.Context, u storage.UnitOfWork, agent storage.AIAgent, r airoute.Route) (routeScene, error) {
 	if err := airoute.Check(airoute.Agent{ID: agent.ID, Name: agent.Name, Classes: agent.Classes, Line: agent.Line}, r); err != nil {
-		return routeProblem(err)
+		return routeScene{}, routeProblem(err)
 	}
 	scene, err := a.routeScene(ctx, u)
 	if err != nil {
-		return err
+		return scene, err
 	}
 	for i, s := range r.Steps {
 		if err := scene.serves(i, s, r.Classes); err != nil {
-			return routeProblem(err)
+			return scene, routeProblem(err)
 		}
 	}
-	return nil
+	return scene, nil
 }
 
 // aiRouteDependencies are the agent's route version (AI-74).
@@ -387,11 +453,13 @@ func registerAIRoutes(a *API) {
 			"model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). " +
 			"A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, " +
 			"the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the " +
-			"Owner or a second approver (202, the approval request): model IDs change only so. Needs If-Match with the route's ETag (0 before " +
+			"Owner or a second approver (202, the approval request): model IDs change only so, and only when every step's model has a passing, " +
+			"current run of the agent's evals on its connection, which the request carries (AI-78, CMP-AI-03). Needs If-Match with the route's ETag (0 before " +
 			"it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the " +
 			"AI and MCP (§9.6).",
 	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired,
-		CodeIfMatchRequired, CodeStale, approval.CodePending, airoute.CodeRoute, airoute.CodeStep, aiprice.CodeUnpriced, storage.CodeAIRoute}, locks...),
+		CodeIfMatchRequired, CodeStale, approval.CodePending, airoute.CodeRoute, airoute.CodeStep, aiprice.CodeUnpriced, aiqual.CodeUnqualified,
+		storage.CodeAIRoute}, locks...),
 		func(ctx context.Context, in *aiRouteSetInput) (*aiRouteSetOutput, error) {
 			resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (AIRouteChange, error) {
 				ag, err := agentOf(ctx, u, in.Agent)
@@ -416,7 +484,8 @@ func registerAIRoutes(a *API) {
 				if err != nil {
 					return AIRouteChange{}, err
 				}
-				if err := a.checkRoute(ctx, u, ag, next); err != nil {
+				scene, err := a.checkRoute(ctx, u, ag, next)
+				if err != nil {
 					return AIRouteChange{}, err
 				}
 				if !airoute.Widens(prev, next) {
@@ -424,12 +493,16 @@ func registerAIRoutes(a *API) {
 					if err != nil {
 						return AIRouteChange{}, err
 					}
-					scene, err := a.routeScene(ctx, u)
-					if err != nil {
-						return AIRouteChange{}, err
-					}
 					r := routeOut(saved, scene)
 					return AIRouteChange{Route: &r}, nil
+				}
+				// A change that widens where data goes carries a passing eval run of every step (AI-78, CMP-AI-03).
+				if err := scene.qualifiedFor(ag.ID, next); err != nil {
+					return AIRouteChange{}, routeProblem(err)
+				}
+				runs, err := json.Marshal(scene.evalRuns(ag.ID, next))
+				if err != nil {
+					return AIRouteChange{}, err
 				}
 				steps, err := json.Marshal(in.Body.Steps)
 				if err != nil {
@@ -442,11 +515,16 @@ func registerAIRoutes(a *API) {
 				diff := []ApprovalDiff{{Field: "classes", After: string(classes)}}
 				for i, s := range next.Steps {
 					diff = append(diff, ApprovalDiff{Field: fmt.Sprintf("step %d", i+1), After: s.Model + " on " + s.Connection.String()})
+					if _, q := scene.standing(ag.ID, s); q != nil {
+						diff = append(diff, ApprovalDiff{Field: fmt.Sprintf("step %d evals", i+1), After: fmt.Sprintf("passed %d of %d (%s v%d), run %s",
+							q.Passed, q.Cases, q.Suite, q.SuiteVersion, q.Run)})
+					}
 				}
 				asked, err := a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectAIRoute, ObjectKey: ag.ID, Operation: approval.OpAIRouteChange,
 					Summary: "Change the route of " + ag.Name + ", which sends its data somewhere new",
-					Execute: map[string]any{"agent": ag.ID, "version": version + 1, "classes": string(classes), "steps": string(steps), "preset": in.Body.Preset},
-					Diff:    diff})
+					Execute: map[string]any{"agent": ag.ID, "version": version + 1, "classes": string(classes), "steps": string(steps), "preset": in.Body.Preset,
+						"evals": string(runs)},
+					Diff: diff})
 				if err != nil {
 					return AIRouteChange{}, err
 				}
@@ -485,7 +563,7 @@ func storedRoute(agent string, version int, preset string, r airoute.Route, appr
 }
 
 // executeAIRoute makes an approved route its agent's next version, after checking it once more against the
-// organisation as it is now (AI-74).
+// organisation as it is now, its steps' eval runs included (AI-74, AI-78).
 func (a *API) executeAIRoute(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
 	str := func(k string) string { v, _ := s.Execute[k].(string); return v }
 	ag, err := agentOf(ctx, u, str("agent"))
@@ -503,8 +581,13 @@ func (a *API) executeAIRoute(ctx context.Context, u storage.UnitOfWork, r storag
 	if err != nil {
 		return err
 	}
-	if err := a.checkRoute(ctx, u, ag, next); err != nil {
+	scene, err := a.checkRoute(ctx, u, ag, next)
+	if err != nil {
 		return err
+	}
+	// Every step still holds a passing, current eval run when it is applied (AI-78, CMP-AI-03).
+	if err := scene.qualifiedFor(ag.ID, next); err != nil {
+		return routeProblem(err)
 	}
 	version, err := strconv.Atoi(numberText(s.Execute["version"]))
 	if err != nil {

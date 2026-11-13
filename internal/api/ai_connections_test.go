@@ -328,6 +328,15 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/probe", tok,
 			map[string]any{"model": "gpt-5"}), nil
 	},
+	"qualifyAIConnectionModel": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.AIProviders
+		defer func() { e.api.deps.AIProviders = was }()
+		e.api.deps.AIProviders = func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+			return &evalModel{answers: map[string]string{"single word OK": "OK", "17 plus 25": "42", "READY": "READY"}}, nil
+		}
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/qualify", tok,
+			map[string]any{"model": "gpt-5", "agent": "probe"}), nil
+	},
 	"allowAIConnectionModel": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/allow", steppedUp(e, tok),
 			map[string]any{"model": "gpt-6"}, "Prefer", "return=preview"), nil

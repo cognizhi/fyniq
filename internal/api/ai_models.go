@@ -56,6 +56,8 @@ type AIModel struct {
 	Serves        bool          `json:"serves" doc:"It may serve a route as far as its price goes: a usage-based connection's model needs a price in force, as its cost could not otherwise be budgeted; a subscription or a self-hosted server needs none (AI-82)." example:"true"`
 	Unpriced      string        `json:"unpriced,omitempty" doc:"Why the last look found no new price for it: never priced by a guess (AI-82)." example:"no entry of anthropic names claude-test-9"`
 	PriceChecked  *time.Time    `json:"price_checked,omitempty" doc:"When its price was last looked for." example:"2026-11-14T06:15:00Z"`
+	// Qualifications are its latest run of each agent's evals on this connection (AI-78).
+	Qualifications []AIQualification `json:"qualifications" nullable:"false" doc:"Its latest run of each agent's evals on this connection: it serves an agent only on a pass that is not out of date (AI-78, AI-87)."`
 }
 
 // AIModelProbe is a model's last probe on its connection.
@@ -137,6 +139,17 @@ func (a *API) modelList(ctx context.Context, u storage.UnitOfWork, raw string) (
 	if out.Models, err = withPrices(ctx, u, c, out.Models, models); err != nil {
 		return out, err
 	}
+	quals, err := u.AIQualifications().Latest(ctx, id)
+	if err != nil {
+		return out, err
+	}
+	for i := range out.Models {
+		for _, q := range quals {
+			if q.Model == out.Models[i].Model {
+				out.Models[i].Qualifications = append(out.Models[i].Qualifications, qualificationOut(q, ai.Standing(&q, out.Models[i].AliasOf != "", now)))
+			}
+		}
+	}
 	reads, err := u.AIModels().Reads(ctx, id, 10)
 	if err != nil {
 		return out, err
@@ -212,7 +225,8 @@ func registerAIModels(a *API) {
 
 func modelOut(m storage.AIModel, state string, reports []ModelReport) AIModel {
 	out := AIModel{Model: m.Model, Name: m.Name, AliasOf: m.AliasOf, State: state, Shutdown: m.Shutdown, ContextWindow: m.ContextWindow,
-		MaxOutput: m.MaxOutput, Reports: reports, FirstListed: m.FirstListed.UTC(), LastListed: m.LastListed.UTC(), Allowed: m.Allowed}
+		MaxOutput: m.MaxOutput, Reports: reports, FirstListed: m.FirstListed.UTC(), LastListed: m.LastListed.UTC(), Allowed: m.Allowed,
+		Qualifications: []AIQualification{}}
 	if m.ProbedAt != nil {
 		out.Probe = &AIModelProbe{OK: m.ProbeOK, At: m.ProbedAt.UTC(), Detail: m.ProbeDetail}
 	}

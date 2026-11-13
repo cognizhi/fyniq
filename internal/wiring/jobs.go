@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/evals"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -116,8 +117,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		connector.CleanupJob: k.CleanupJob(clock),
-		ai.DailyJob:          k.AIModels(clock).Daily, // AI-80: every connection's model list, at 06:00 SGT
-		ai.PriceJob:          k.AIPrices(clock).Daily, // AI-82: the price catalogue, and every model priced from it, at 06:15 SGT
+		ai.DailyJob:          k.AIModels(clock).Daily,    // AI-80: every connection's model list, at 06:00 SGT
+		ai.PriceJob:          k.AIPrices(clock).Daily,    // AI-82: the price catalogue, and every model priced from it, at 06:15 SGT
+		ai.QualifyJob:        k.AIQualifier(clock).Daily, // AI-78: moving aliases weekly, and out-of-date qualifications, at 06:30 SGT
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
@@ -391,6 +393,12 @@ func (k *Kit) AIPrices(clock ports.Clock) ai.Pricer {
 func (k *Kit) AIModels(clock ports.Clock) ai.Lister {
 	d := k.dispatcher(clock)
 	return ai.Lister{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock, Outbox: &d}
+}
+
+// AIQualifier runs the agents' eval suites against models on their connections, as the eval runner (AI-78).
+func (k *Kit) AIQualifier(clock ports.Clock) ai.Qualifier {
+	d := k.dispatcher(clock)
+	return ai.Qualifier{Router: ai.Router{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock, Outbox: &d}, Suites: evals.Suites}
 }
 
 // Migrations validate uploaded workbooks in the background, keeping each report and Checks export in the staging store

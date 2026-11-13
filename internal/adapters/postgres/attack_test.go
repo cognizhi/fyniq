@@ -521,6 +521,9 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"ai_call.cost":         func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, "cost", v) },
 	"ai_call.cost_base":    func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, "cost_base", v) },
 	"ai_budget.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawAIBudget(t, b, v) },
+	"ai_qualification.threshold": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAIQualification(t, b, v)
+	},
 	"ai_reservation.amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawAIReservation(t, b, "amount", v)
 	},
@@ -693,6 +696,27 @@ func rawAIBudget(t *testing.T, b porttest.Books, amount string) error {
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_budget (scope, subject, amount, set_by, set_at) VALUES ('agent', 'attack', $1::numeric,
   'system:attack-test', now())`, amount)
+		return err
+	})
+}
+
+// rawAIQualification records a run as the table's owner with the triggers held back (AI-78), so only the threshold's
+// own checks can fail. Its connection closes at once.
+func rawAIQualification(t *testing.T, b porttest.Books, threshold string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_qualification (agent, connection_id, model, suite, suite_version, threshold, cases, passed,
+  result, run_id, ran_by, ran_at) VALUES ('chat', gen_random_uuid(), 'm', 'attack', 1, $1::numeric, 1, 0, 'fail', gen_random_uuid(),
+  'system:attack-test', now())`, threshold)
 		return err
 	})
 }

@@ -616,6 +616,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/connections/{connection_id}/models/qualify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qualify a listed model for an agent
+         * @description Runs an agent's eval suite against a model the connection's provider lists (AI-78, CMP-AI-03): synthetic cases only, nothing of the organisation's, each call reserved against the budgets and recorded under the run as the eval runner's (AI-86). The suite's threshold decides pass or fail, and the run is recorded with the version the provider reported. A model serves an agent only on a pass that is not out of date, and a route change that widens where data goes needs one for every step. A case the provider does not answer stops the run and records nothing. Side effects: the run and its audit event ai_qualification.recorded. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["qualifyAIConnectionModel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/connections/{connection_id}/models/refresh": {
         parameters: {
             query?: never;
@@ -689,7 +709,7 @@ export interface paths {
         };
         /**
          * Get the route presets
-         * @description ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists, with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.
+         * @description ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists that passed the agent's evals there (AI-78), with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.
          */
         get: operations["getAIPresets"];
         put?: never;
@@ -794,7 +814,7 @@ export interface paths {
         get: operations["getAIRoute"];
         /**
          * Set an agent's route
-         * @description Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so. Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
+         * @description Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so, and only when every step's model has a passing, current run of the agent's evals on its connection, which the request carries (AI-78, CMP-AI-03). Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
          */
         put: operations["setAIRoute"];
         post?: never;
@@ -14886,6 +14906,8 @@ export interface components {
             priced: boolean;
             /** @description The last probe on this connection: a few tokens of synthetic text (AI-80). */
             probe?: components["schemas"]["AIModelProbe"];
+            /** @description Its latest run of each agent's evals on this connection: it serves an agent only on a pass that is not out of date (AI-78, AI-87). */
+            qualifications: components["schemas"]["AIQualification"][];
             /** @description What the list reports it supports, as the provider names it: hints, never proof (AI-71). */
             reports: string[];
             /**
@@ -15000,6 +15022,18 @@ export interface components {
             detail?: string;
             /** @example true */
             ok: boolean;
+        };
+        AIModelQualify: {
+            /**
+             * @description The agent, as GET /v1/ai/routes lists it: one whose eval suite has arrived.
+             * @example probe
+             */
+            agent: string;
+            /**
+             * @description The provider's ID for it, as the connection's list shows it.
+             * @example claude-opus-4-6
+             */
+            model: string;
         };
         AIPreset: {
             agents: components["schemas"]["AIPresetAgent"][];
@@ -15237,6 +15271,160 @@ export interface components {
              */
             decision: "confirm" | "decline";
         };
+        AIQualification: {
+            /**
+             * @description The agent whose evals it ran.
+             * @example chat
+             */
+            agent: string;
+            /**
+             * Format: int64
+             * @example 3
+             */
+            cases: number;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a31
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T02:00:00Z
+             */
+            out_of_date_at?: string;
+            /** @example kimi-latest answered as version 2026-11-15, not 2026-11-01, which passed the evals */
+            out_of_date_why?: string;
+            /**
+             * Format: int64
+             * @example 3
+             */
+            passed: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:30:00Z
+             */
+            ran_at: string;
+            /**
+             * @description Who ran it: a person, or the daily job.
+             * @example system:ai.qualify
+             */
+            ran_by: string;
+            /**
+             * @example pass
+             * @enum {string}
+             */
+            result: "pass" | "fail";
+            /**
+             * Format: uuid
+             * @description The eval run: its calls are in the AI activity log under it.
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a32
+             */
+            run: string;
+            /**
+             * @description qualified: it serves the agent; out_of_date: another version answered since, or a moving alias's week passed, so it carries no personal data or payroll and shows ⚠ until it is qualified again (AI-87); unqualified: its latest run failed, so it serves the agent nothing.
+             * @example qualified
+             * @enum {string}
+             */
+            standing: "qualified" | "out_of_date" | "unqualified";
+            /**
+             * @description The eval suite, as evals/<suite>/suite.json names it.
+             * @example probe
+             */
+            suite: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            suite_version: number;
+            /**
+             * @description The share of cases that must pass, as an exact decimal.
+             * @example 1
+             */
+            threshold: string;
+            /**
+             * @description The model version the provider reported while it ran; absent when it reported none (AI-87).
+             * @example 2026-10-01
+             */
+            version?: string;
+        };
+        AIQualificationRun: {
+            /**
+             * @description The agent whose evals it ran.
+             * @example chat
+             */
+            agent: string;
+            /**
+             * Format: int64
+             * @example 3
+             */
+            cases: number;
+            /** @description The cases it failed, by ID. */
+            failed: string[];
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a31
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T02:00:00Z
+             */
+            out_of_date_at?: string;
+            /** @example kimi-latest answered as version 2026-11-15, not 2026-11-01, which passed the evals */
+            out_of_date_why?: string;
+            /**
+             * Format: int64
+             * @example 3
+             */
+            passed: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:30:00Z
+             */
+            ran_at: string;
+            /**
+             * @description Who ran it: a person, or the daily job.
+             * @example system:ai.qualify
+             */
+            ran_by: string;
+            /**
+             * @example pass
+             * @enum {string}
+             */
+            result: "pass" | "fail";
+            /**
+             * Format: uuid
+             * @description The eval run: its calls are in the AI activity log under it.
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a32
+             */
+            run: string;
+            /**
+             * @description qualified: it serves the agent; out_of_date: another version answered since, or a moving alias's week passed, so it carries no personal data or payroll and shows ⚠ until it is qualified again (AI-87); unqualified: its latest run failed, so it serves the agent nothing.
+             * @example qualified
+             * @enum {string}
+             */
+            standing: "qualified" | "out_of_date" | "unqualified";
+            /**
+             * @description The eval suite, as evals/<suite>/suite.json names it.
+             * @example probe
+             */
+            suite: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            suite_version: number;
+            /**
+             * @description The share of cases that must pass, as an exact decimal.
+             * @example 1
+             */
+            threshold: string;
+            /**
+             * @description The model version the provider reported while it ran; absent when it reported none (AI-87).
+             * @example 2026-10-01
+             */
+            version?: string;
+        };
         AIQuotaUse: {
             /**
              * Format: int64
@@ -15336,7 +15524,15 @@ export interface components {
             /** @example claude-opus-4-6 */
             model: string;
             /**
-             * @description It can serve now: its connection on, its model on the allow-list and callable, and priced where the connection bills by usage.
+             * @description The model's standing in the agent's evals on this connection (AI-78): out_of_date shows ⚠, and the step carries no personal data or payroll until it is qualified again (AI-87); unqualified, it serves nothing.
+             * @example qualified
+             * @enum {string}
+             */
+            qualification: "qualified" | "out_of_date" | "unqualified";
+            /** @description The model's latest run of the agent's evals on this connection. */
+            qualified?: components["schemas"]["AIQualification"];
+            /**
+             * @description It can serve now: its connection on, its model on the allow-list, callable and qualified for the agent, and priced where the connection bills by usage.
              * @example true
              */
             serves: boolean;
@@ -50857,6 +51053,124 @@ export interface operations {
             };
         };
     };
+    qualifyAIConnectionModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The connection's ID. */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIModelQualify"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIQualificationRun"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-BUDGET-02` An AI budget is spent this month; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-QUAL-01` The agent has no eval suite yet; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Bad Gateway: `AI-QUAL-02` The provider did not answer the evals. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     refreshAIConnectionModels: {
         parameters: {
             query?: never;
@@ -51975,7 +52289,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `AI-ROUTE-01` The route is not valid; `AI-ROUTE-02` A step of the route cannot serve it; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `AI-QUAL-03` A step's model has not passed the agent's evals on its connection; `AI-ROUTE-01` The route is not valid; `AI-ROUTE-02` A step of the route cannot serve it; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

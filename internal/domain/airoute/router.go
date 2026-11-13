@@ -8,6 +8,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -76,9 +77,10 @@ func (n Needs) Lacking(c ports.ModelCapabilities) string {
 // StepState is what the router knows of a step before calling it.
 type StepState struct {
 	Enabled    bool
-	Allowed    bool // on the connection's allow-list
-	Callable   bool // listed, not past its shutdown, not refused by the provider (AI-81)
-	Alias      bool // a moving alias, as the provider's list says (AI-87)
+	Allowed    bool   // on the connection's allow-list
+	Callable   bool   // listed, not past its shutdown, not refused by the provider (AI-81)
+	Alias      bool   // a moving alias, as the provider's list says (AI-87)
+	Standing   string // the model's qualification for the call's agent on this connection (AI-78): aiqual's standings
 	Priced     bool
 	Billing    string
 	SelfHosted bool
@@ -97,14 +99,18 @@ func Why(classes []string, n Needs, s StepState, model string) string {
 		return model + " is not on the connection's allow-list"
 	case !s.Callable:
 		return model + " is no longer listed, is past its shutdown, or the provider refused it"
+	case s.Standing != aiqual.Qualified && s.Standing != aiqual.OutOfDate:
+		return model + " has not passed this agent's evals on this connection (AI-78)"
 	case s.Policy != nil:
 		var e *aipolicy.Error
 		if errors.As(s.Policy, &e) {
 			return "the data-class policy keeps the call from this connection: " + e.Message
 		}
 		return "the data-class policy keeps the call from this connection"
-	case s.Alias && slices.ContainsFunc(classes, func(c string) bool { return slices.Contains(aipolicy.Sensitive, c) }):
+	case s.Alias && sensitive(classes):
 		return model + " is a moving alias, which serves only know-how and business figures (AI-87)"
+	case s.Standing == aiqual.OutOfDate && sensitive(classes):
+		return model + "'s qualification is out of date: it carries no personal data or payroll until it is qualified again (AI-87)"
 	}
 	if err := aiprice.Serves(s.Billing, s.SelfHosted, s.Priced, model); err != nil {
 		return model + " has no price in force on this usage-based connection (AI-82)"
@@ -116,6 +122,11 @@ func Why(classes []string, n Needs, s StepState, model string) string {
 		return "the connection has not proved " + lack + ", which the call needs (AI-27)"
 	}
 	return ""
+}
+
+// sensitive is whether classes hold personal data or payroll.
+func sensitive(classes []string) bool {
+	return slices.ContainsFunc(classes, func(c string) bool { return slices.Contains(aipolicy.Sensitive, c) })
 }
 
 // Failover is what an attempt's error means for the run (AI-76): its outcome, and whether the next eligible step may
