@@ -3,15 +3,19 @@ package ai
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -19,6 +23,10 @@ import (
 // QualifyJob runs again, daily at 06:30 Singapore time after the model lists and prices, the qualifications that are
 // due (AI-78, AI-87): a moving alias's before its week ends, and every one put out of date by another version.
 const QualifyJob = "ai.qualify"
+
+// QualifyKind is the outbox's work of qualifying a newly listed model for one agent, on a connection whose automatic
+// qualification is on (AI-81).
+const QualifyKind = "ai.qualify"
 
 // requalifyAfter is how old a moving alias's pass may be before the daily job runs it again: a day inside its week, so
 // it does not lapse between runs.
@@ -161,4 +169,105 @@ func (q Qualifier) Daily(ctx context.Context) error {
 		}
 	}
 	return errors.Join(failed...)
+}
+
+// AutoQualifies is whether a connection qualifies its newly listed models automatically: its configuration's
+// auto_qualify, off by default (AI-81).
+func AutoQualifies(c storage.AIConnection) bool {
+	var config struct {
+		Auto bool `json:"auto_qualify"`
+	}
+	return json.Unmarshal(c.Configuration, &config) == nil && config.Auto
+}
+
+// QualifyItem is the outbox item that has the worker qualify model for agent on connection, once for the read that
+// first listed it.
+func QualifyItem(connection uuid.UUID, model, agent string, read uuid.UUID) (storage.NewOutboxItem, error) {
+	payload, err := json.Marshal(map[string]string{"connection_id": connection.String(), "model": model, "agent": agent})
+	return storage.NewOutboxItem{Class: storage.ClassWorker, Kind: QualifyKind, Payload: payload,
+		BusinessKey: "ai-qualify:" + connection.String() + ":" + model + ":" + agent + ":" + read.String()}, err
+}
+
+// newlyListed queues, on a connection whose automatic qualification is on, each model a read listed for the first time
+// for the evals of every agent whose route in force uses that connection (AI-81). Adding it to the allow-list or a
+// route stays a person's decision.
+func newlyListed(ctx context.Context, d *outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, c storage.AIConnection, read uuid.UUID,
+	kept []storage.AIModel, models []storage.AIModel) error {
+	if !AutoQualifies(c) {
+		return nil
+	}
+	routes, err := u.AIRoutes().Current(ctx)
+	if err != nil {
+		return err
+	}
+	var agents []string
+	for _, r := range routes {
+		if slices.ContainsFunc(r.Steps, func(s storage.AIRouteStep) bool { return s.ConnectionID == c.ID }) && !slices.Contains(agents, r.Agent) {
+			agents = append(agents, r.Agent)
+		}
+	}
+	slices.Sort(agents)
+	for _, m := range models {
+		if slices.ContainsFunc(kept, func(k storage.AIModel) bool { return k.Model == m.Model }) {
+			continue
+		}
+		for _, agent := range agents {
+			item, err := QualifyItem(c.ID, m.Model, agent, read)
+			if err != nil {
+				return err
+			}
+			if d != nil {
+				_, err = d.Enqueue(ctx, u, org, item)
+			} else {
+				_, err = u.Outbox().Enqueue(ctx, item)
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Work is the outbox's work of QualifyKind: run the agent's evals against the model as the system, on a connection that
+// is on and still qualifies automatically (AI-81). An agent whose suite has not arrived, or a spent budget, ends it
+// with the model as it was, which a person may still qualify; the stopped call is in the activity log.
+func (q Qualifier) Work() outbox.Work {
+	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+		var p struct {
+			Connection uuid.UUID `json:"connection_id"`
+			Model      string    `json:"model"`
+			Agent      string    `json:"agent"`
+		}
+		if err := json.Unmarshal(row.Payload, &p); err != nil {
+			return fmt.Errorf("%s: %w", QualifyKind, err)
+		}
+		var c storage.AIConnection
+		var provider ports.ModelProvider
+		var built error
+		skip := false
+		if err := q.Router.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			if c, err = u.AIConnections().Get(ctx, p.Connection); err != nil {
+				return err
+			}
+			if skip = c.State != "enabled" || !AutoQualifies(c); skip {
+				return nil
+			}
+			provider, built = q.Router.Provider(ctx, u, c)
+			return nil
+		}); err != nil || skip {
+			return err
+		}
+		if built != nil {
+			return built
+		}
+		_, err := q.Qualify(ctx, org, c, provider, p.Model, p.Agent, "system:"+QualifyJob)
+		var spent *aibudget.Error
+		var qe *aiqual.Error
+		switch {
+		case errors.As(err, &spent), errors.As(err, &qe) && qe.Code == aiqual.CodeNoSuite:
+			return nil
+		}
+		return err
+	}
 }
