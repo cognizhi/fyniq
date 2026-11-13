@@ -2657,6 +2657,7 @@ func TestAuthorisationMatrix(t *testing.T) {
 			// An operation over records of several kinds is decided past its policy by the record's own row: not found.
 			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals || policies[op].ByRecord
 			switch {
+			case want && pastPolicy[op] != "" && r.problemCode() == pastPolicy[op]: // allowed: its state's code, past the policy
 			case want && lenient && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
 				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case want && !lenient && (r.Status < 200 || r.Status > 299):

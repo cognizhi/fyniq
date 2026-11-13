@@ -8606,11 +8606,51 @@ export interface paths {
         };
         /**
          * Get the reconciliation
-         * @description The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) the Accountant decides. The workbook's Checks rows are compared, by their Appendix C.1 number, with the statuses of Fyniq's checks at their last run. sha256 is what the sign-off names. Before the import is committed, status not_committed and no figures. Read-only; no side effects.
+         * @description The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) and the Accountant's decision; so is each of the workbook's Checks rows whose status Fyniq's checks of its Appendix C.1 number, at their last run, do not share. A decision made on other figures is stale. sha256, the ETag, is what a decision and the sign-off are made on. Before the import is committed, status not_committed and no figures. Read-only; no side effects.
          */
         get: operations["getMigrationReconciliation"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/reconciliation/register/{line}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Decide a line of the register
+         * @description The Accountant decides a line of the difference register (FR-MIG-02, §17.1 M4; rev 0.266): a figure that differs, or a workbook check whose status Fyniq's do not share, as a (a cent allocation of spreads and depreciation), b (a deliberate rule change) or c (a workbook defect found during the migration, with a note saying what it is). The decision keeps the line's two figures: once they move it is stale and the line is decided again, as its next version. A line the report does not have is MIGRATION-15; before the import is committed, MIGRATION-14. Needs If-Match with the report's ETag: the decision is made on the report as read. Side effects: the decision and the audit event migration.difference_decided. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["decideMigrationDifference"];
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/reconciliation/sign-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign the reconciliation
+         * @description The Accountant signs the parity report and its difference register together (§17.1 M4, FR-MIG-02; rev 0.266), over the report's SHA-256, stepped up in the last 5 minutes. Refused (MIGRATION-15) while a line has no decision that counts (undecided, or stale), or Fyniq's checks have never run; a report is signed once. Once the books or a decision change, the report is another and shows the earlier sign-off as not current. Needs If-Match with the report's ETag. Side effects: the sign-off and the audit event migration.reconciliation_signed, with the ledger revision the report was read at. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["signMigrationReconciliation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -31994,8 +32034,15 @@ export interface components {
             total: number;
         };
         MigrationCheckParity: {
+            /** @description The Accountant's decision on a different status; absent while undecided. */
+            decision?: components["schemas"]["MigrationRegisterDecision"];
             /** @description Fyniq's checks of the number. */
             fyniq: components["schemas"]["MigrationFyniqCheck"][];
+            /**
+             * @description Its line's key in the difference register, which a different status needs: check and its number.
+             * @example check.30
+             */
+            key: string;
             /**
              * @description Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).
              * @example false
@@ -32167,6 +32214,8 @@ export interface components {
              * @example 6510
              */
             account: string;
+            /** @description The Accountant's decision on the line; absent while undecided. */
+            decision?: components["schemas"]["MigrationRegisterDecision"];
             /**
              * @description Fyniq's less the workbook's.
              * @example -0.01
@@ -32545,21 +32594,100 @@ export interface components {
              */
             path: "history" | "clean_start";
             /**
-             * @description The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8).
+             * @description The SHA-256 of the report's figures, checks and decisions (not its status, revision, run time or sign-off): what the Accountant's sign-off names, and the ETag (design D8).
              * @example 5d1e…
              */
             sha256: string;
+            /** @description The latest sign-off of the report and its register; absent before the first. */
+            sign_off?: components["schemas"]["MigrationReconciliationSignOff"];
             /**
-             * @description not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand.
+             * @description not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4).
              * @example ready
              * @enum {string}
              */
-            status: "not_committed" | "ready";
+            status: "not_committed" | "ready" | "signed";
             /**
              * @description The last month compared: the workbook's as-of.
              * @example 2026-09
              */
             through: string;
+            /**
+             * Format: int64
+             * @description The register's lines without a decision that counts: the differences, and the checks whose status differs. The sign-off needs none.
+             * @example 0
+             */
+            undecided: number;
+        };
+        MigrationReconciliationSignOff: {
+            /**
+             * @description Whether it names this report: once the books or a decision change, the report is another, and the step stays signed by the earlier one.
+             * @example true
+             */
+            current: boolean;
+            /**
+             * @description The report's SHA-256 it signs.
+             * @example 5d1e…
+             */
+            sha256: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T10:00:00Z
+             */
+            signed_at: string;
+            /**
+             * @description The Accountant who signed it, stepped up.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11
+             */
+            signed_by: string;
+        };
+        MigrationRegisterChange: {
+            /**
+             * @description a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration.
+             * @example a
+             * @enum {string}
+             */
+            class: "a" | "b" | "c";
+            /**
+             * @description Why; a workbook defect (c) says what it is.
+             * @example ALLOC-EVEN puts the quarter's cent in its last month
+             */
+            note?: string;
+        };
+        MigrationRegisterDecision: {
+            /**
+             * @description a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration.
+             * @example a
+             * @enum {string}
+             */
+            class: "a" | "b" | "c";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T09:30:00Z
+             */
+            decided_at: string;
+            /**
+             * @description Who decided it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11
+             */
+            decided_by: string;
+            /**
+             * @description Why, as the Accountant wrote it; a workbook defect says what it is.
+             * @example ALLOC-EVEN puts the quarter's cent in its last month
+             */
+            note?: string;
+            /**
+             * @description true: it was decided on other figures than the report's, so it no longer counts: decide the line again.
+             * @example false
+             */
+            stale: boolean;
+            /**
+             * Format: int64
+             * @description The decision's version: deciding the line again takes the next.
+             * @example 1
+             */
+            version: number;
         };
         MigrationReportView: {
             /**
@@ -112686,6 +112814,7 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    ETag?: string;
                     /** @description What is left of the limit (r) and the seconds until the window ends (t). */
                     RateLimit?: string;
                     /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
@@ -112734,6 +112863,334 @@ export interface operations {
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideMigrationDifference: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+                /** @description The line's key, as the report gives it. */
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MigrationRegisterChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationReconciliation"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    signMigrationReconciliation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationReconciliation"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };

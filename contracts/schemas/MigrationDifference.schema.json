@@ -9,6 +9,10 @@
       ],
       "type": "string"
     },
+    "decision": {
+      "$ref": "MigrationRegisterDecision.schema.json",
+      "description": "The Accountant's decision on the line; absent while undecided."
+    },
     "difference": {
       "description": "Fyniq's less the workbook's.",
       "examples": [

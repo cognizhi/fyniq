@@ -138,7 +138,26 @@ type MigrationRecord struct {
 }
 
 // The things a migration's sign-off signs.
-const SignOffMapping = "mapping" // M2
+const (
+	SignOffMapping        = "mapping"        // M2
+	SignOffReconciliation = "reconciliation" // M4: the parity report and its register, over the report's hash (rev 0.266)
+)
+
+// MigrationDecision is the Accountant's decision on a line of the difference register (FR-MIG-02, design D8; rev
+// 0.266): the line's key, its class and note, and the figures it was decided on, so a decision on figures that have
+// since moved no longer counts. Deciding a line again takes its next version.
+type MigrationDecision struct {
+	ID        uuid.UUID
+	RunID     uuid.UUID
+	Line      string
+	Class     string // a, b or c
+	Note      string
+	Fyniq     string // Fyniq's figure, or a check's statuses, when decided
+	Workbook  string // the workbook's
+	Version   int
+	DecidedBy string
+	DecidedAt time.Time
+}
 
 // MigrationSignOff is a sign-off of a migration's mapping, over the SHA-256 of the version signed (rev 0.256).
 type MigrationSignOff struct {
@@ -208,4 +227,9 @@ type Migrations interface {
 	Committed(ctx context.Context, id uuid.UUID, at time.Time) (MigrationCommit, error)
 	// RecordOf is the migration record that made a record: ports.ErrNotFound when the import did not make it.
 	RecordOf(ctx context.Context, recordType string, id uuid.UUID) (MigrationRecord, error)
+	// Decisions are the run's decisions on its difference register's lines, by line.
+	Decisions(ctx context.Context, run uuid.UUID) ([]MigrationDecision, error)
+	// Decide decides a line of the register: the first decision of a line when d.Version is 0, else the line again at
+	// that version, as its next (CodeVersion when it changed since). Audited as migration.difference_decided.
+	Decide(ctx context.Context, d MigrationDecision) (MigrationDecision, error)
 }

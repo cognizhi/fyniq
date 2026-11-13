@@ -16,6 +16,7 @@ import (
 	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/migration"
@@ -1020,5 +1021,111 @@ func TestTheReconciliationComparesTheBooksWithTheWorkbook(t *testing.T) {
 	if r := cf.e.call(http.MethodGet, "/v1/migrations/"+cid+"/reconciliation", cf.as(cf.ahkow, authz.Accountant), nil); json.Unmarshal([]byte(r.Raw), &clean) != nil ||
 		clean.Path != "clean_start" || clean.BooksStart != "2026-10-01" || clean.Through != "2026-09" || clean.Figures != clean.Accounts || len(clean.Differences) != 0 {
 		t.Errorf("the clean start's reconciliation: %s", r.Raw)
+	}
+}
+
+// The Accountant decides the difference register and signs it with the report (§17.1 M4, FR-MIG-02; rev 0.266): on
+// the sample, after a checks run, the 4 depreciation cents and the 4 checks whose status differs are the register's
+// lines. The sign-off is refused while any is undecided; a decision is made on the report as read (If-Match), on a line
+// the report has, a workbook defect with its note; each decision is a new report. With every line decided the
+// Accountant, stepped up, signs it, once. Books that move after it make another report: the sign-off is no longer
+// current, a new difference is undecided, and a decided line whose figures moved is stale.
+// req: FR-MIG-02
+// req: QA-MIG-01
+// req: data/migration Parity check (M4)
+// req: data/migration Parity evidence
+func TestTheAccountantDecidesTheRegisterAndSignsIt(t *testing.T) {
+	f, id := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	path := "/v1/migrations/" + id + "/reconciliation"
+	e.runCatalogue()
+	read := func() (MigrationReconciliation, string) {
+		t.Helper()
+		r := e.call(http.MethodGet, path, accountant, nil)
+		var rec MigrationReconciliation
+		if err := json.Unmarshal([]byte(r.Raw), &rec); r.Status != http.StatusOK || err != nil {
+			t.Fatalf("the reconciliation: %d %v %s", r.Status, err, r.Raw)
+		}
+		if r.Header.Get("ETag") != `"`+rec.ReportSHA256+`"` {
+			t.Fatalf("the ETag %q is not the report's hash %s", r.Header.Get("ETag"), rec.ReportSHA256)
+		}
+		return rec, r.Header.Get("ETag")
+	}
+	rec, tag := read()
+	var differing []string
+	for _, c := range rec.Checks {
+		if !c.Same {
+			differing = append(differing, c.Key)
+		}
+	}
+	if rec.Undecided != len(rec.Differences)+len(differing) || len(rec.Differences) != 4 || len(differing) == 0 || rec.Status != "ready" || rec.SignOff != nil {
+		t.Fatalf("the register before any decision: %d undecided, %d differences, %v", rec.Undecided, len(rec.Differences), differing)
+	}
+	sign := func(tok, tag string) response {
+		return e.call(http.MethodPost, path+"/sign-off", tok, nil, "If-Match", tag)
+	}
+	e.problemIs(sign(accountant, tag), "signMigrationReconciliation", 409, migration.CodeRegister)
+	decide := func(tok, line, tag string, body map[string]any) response {
+		return e.call(http.MethodPatch, path+"/register/"+line, tok, body, "If-Match", tag)
+	}
+	e.problemIs(decide(accountant, rec.Differences[0].Key, `"`+strings.Repeat("0", 64)+`"`, map[string]any{"class": "a"}), "decideMigrationDifference", 412, CodeStale)
+	e.problemIs(decide(accountant, "6410.2026-03.movement", tag, map[string]any{"class": "a"}), "decideMigrationDifference", 409, migration.CodeRegister)
+	e.problemIs(decide(accountant, rec.Differences[0].Key, tag, map[string]any{"class": "c"}), "decideMigrationDifference", 409, migration.CodeRegister)
+	e.problemIs(decide(f.as(f.weiling, authz.Controller), rec.Differences[0].Key, tag, map[string]any{"class": "a"}), "decideMigrationDifference", 403, CodeForbidden)
+	for _, d := range rec.Differences {
+		r := decide(accountant, d.Key, tag, map[string]any{"class": "a", "note": "The asset register's even monthly cents (ALLOC-EVEN)"})
+		if r.Status != http.StatusOK || r.Header.Get("ETag") == tag {
+			t.Fatalf("deciding %s: %d %s", d.Key, r.Status, r.Raw)
+		}
+		tag = r.Header.Get("ETag")
+	}
+	for _, key := range differing {
+		r := decide(accountant, key, tag, map[string]any{"class": "b", "note": "Fyniq's check reads the books as of today"})
+		if r.Status != http.StatusOK {
+			t.Fatalf("deciding %s: %d %s", key, r.Status, r.Raw)
+		}
+		tag = r.Header.Get("ETag")
+	}
+	rec, tag = read()
+	if rec.Undecided != 0 || rec.Differences[0].Decision == nil || rec.Differences[0].Decision.Class != "a" || rec.Differences[0].Decision.Stale ||
+		rec.Differences[0].Decision.Version != 1 || !strings.HasPrefix(rec.Differences[0].Decision.DecidedBy, "user:") {
+		t.Fatalf("the register decided: %+v", rec)
+	}
+	// Deciding a line again takes its next version.
+	if r := decide(accountant, rec.Differences[0].Key, tag, map[string]any{"class": "a", "note": "ALLOC-EVEN"}); r.Status != http.StatusOK ||
+		!strings.Contains(r.Raw, `"version":2`) {
+		t.Fatalf("deciding a line again: %d %s", r.Status, r.Raw)
+	} else {
+		tag = r.Header.Get("ETag")
+	}
+	// The sign-off: the Accountant, stepped up, once.
+	notSteppedUp := e.principal(authn.Principal{Subject: "founder-" + f.ahkow, UserID: uuid.MustParse(f.ahkow), Client: "web", Class: authn.ClassUser,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Accountant}})
+	e.problemIs(sign(notSteppedUp, tag), "signMigrationReconciliation", 403, CodeStepUpRequired)
+	signed := sign(accountant, tag)
+	if signed.Status != http.StatusOK || signed.str("status") != "signed" || !strings.Contains(signed.Raw, `"current":true`) {
+		t.Fatalf("the sign-off: %d %s", signed.Status, signed.Raw)
+	}
+	e.problemIs(sign(accountant, signed.Header.Get("ETag")), "signMigrationReconciliation", 409, migration.CodeRegister)
+
+	// The books move after it: a new difference undecided, a decided line's figures moved, the sign-off not current.
+	codes := map[string]string{}
+	for _, a := range e.call(http.MethodGet, "/v1/accounts?limit=500", accountant, nil).Body["items"].([]any) {
+		codes[a.(map[string]any)["code"].(string)] = a.(map[string]any)["id"].(string)
+	}
+	if j := e.postFounderJournal("2026-06-20", founderLine(codes["6610"], "10.00", "", ""), founderLine(codes["1020"], "-10.00", "", "")); j.Status != http.StatusOK {
+		t.Fatalf("the journal: %d %s", j.Status, j.Raw)
+	}
+	after, _ := read()
+	stale := 0
+	for _, d := range after.Differences {
+		if d.Decision != nil && d.Decision.Stale {
+			stale++
+		}
+	}
+	if after.Status != "ready" || after.SignOff == nil || after.SignOff.Current || after.SignOff.SHA256 != rec.ReportSHA256 && after.SignOff.SHA256 == "" ||
+		stale != 1 || after.Undecided < 3 {
+		t.Errorf("after the books moved: status %s, %+v, %d stale, %d undecided", after.Status, after.SignOff, stale, after.Undecided)
 	}
 }

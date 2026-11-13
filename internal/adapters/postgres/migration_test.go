@@ -296,8 +296,12 @@ func TestAttackTheMigrationMappingKeepsItsRules(t *testing.T) {
 // migration's latest valid workbook and its latest mapping, signed; once, as one per migration; a record joins only its
 // running commit, each key once; the commit is committed only when it holds every record it planned, and then takes
 // no record; from the commit on, no workbook or mapping version is added; nothing changes or goes; the worker writes
-// none of it; another organisation sees none of it.
+// none of it; another organisation sees none of it. The difference register (000332, FY328) and the report's sign-off
+// (FY326) wait for the commit to be committed; a line is decided first at version 1 and again only at its version, a
+// workbook defect with a note, a line of its form; the report is signed once; no decision changes line, skips a version
+// or goes.
 // req: FR-MIG-01
+// req: FR-MIG-02
 // req: AUD-01
 // req: QA-ENG-05
 // asvs: V8.2.2
@@ -392,6 +396,24 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 	if _, err := start(commit(approved.ID, v2.ID, 2)); !storageCode(err, storage.CodeDuplicate) {
 		t.Errorf("a second commit: %v", err)
 	}
+	// The register (000332, FY328) and the report's sign-off (FY326) wait for the commit.
+	decision := func(version int, class string) storage.MigrationDecision {
+		return storage.MigrationDecision{RunID: run.ID, Line: "6610.2026-06.movement", Class: class, Note: "ALLOC-EVEN", Fyniq: "616.66", Workbook: "616.67",
+			Version: version, DecidedBy: "user:y", DecidedAt: now}
+	}
+	report := storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffReconciliation, SubjectSHA256: hash("f"), SignedBy: "user:y", SignedAt: now}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Decide(ctx, decision(0, "a"))
+		return err
+	}); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("a decision before the commit is committed: %v", err)
+	}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().SignOff(ctx, report)
+		return err
+	}); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("the report signed before the commit is committed: %v", err)
+	}
 
 	record := func(key string) storage.MigrationRecord {
 		return storage.MigrationRecord{RunID: run.ID, CommitID: c.ID, Key: key, Kind: "contact", Sheet: "Contacts", Row: 6, RecordType: "contact",
@@ -427,6 +449,45 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		return err
 	}); err != nil {
 		t.Fatal(err)
+	}
+	// Once committed: a line decided, then again at its version as its next; a stale version refused; the report signed, once.
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		first, err := u.Migrations().Decide(ctx, decision(0, "a"))
+		if err != nil || first.Version != 1 {
+			t.Errorf("the first decision: %+v %v", first, err)
+		}
+		again, err := u.Migrations().Decide(ctx, decision(1, "b"))
+		if err != nil || again.Version != 2 || again.Class != "b" {
+			t.Errorf("deciding again: %+v %v", again, err)
+		}
+		_, err = u.Migrations().SignOff(ctx, report)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for what, x := range map[string]struct {
+		fn   func(ctx context.Context, u storage.UnitOfWork) error
+		code string
+	}{
+		"a first decision of a decided line": {func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Decide(ctx, decision(0, "a"))
+			return err
+		},
+			storage.CodeVersion},
+		"a decision at a stale version": {func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Decide(ctx, decision(1, "a"))
+			return err
+		},
+			storage.CodeVersion},
+		"the report signed twice": {func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().SignOff(ctx, report)
+			return err
+		},
+			storage.CodeMigration},
+	} {
+		if err := in(x.fn); !storageCode(err, x.code) {
+			t.Errorf("%s: %v", what, err)
+		}
 	}
 	for what, fn := range map[string]func(ctx context.Context, u storage.UnitOfWork) error{
 		"a record after the commit": func(ctx context.Context, u storage.UnitOfWork) error {
@@ -465,6 +526,17 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		{"the owner removing a record", "fyniq_migrator", `DELETE FROM fyniq.migration_record`, nil, []string{"FY327"}},
 		{"the owner removing the commit", "fyniq_migrator", `DELETE FROM fyniq.migration_commit`, nil, []string{"FY327", "23503"}},
 		{"the owner emptying the records", "fyniq_migrator", `TRUNCATE fyniq.migration_record`, nil, []string{"FY060", "FY061"}},
+		{"a workbook defect with no note", "fyniq_api", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+		  VALUES ($1, 'check.30', 'c', ' ', 'bank.suspense=ok', 'review', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
+		{"a line of no form", "fyniq_api", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+		  VALUES ($1, '6610 June', 'a', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
+		{"the worker deciding a line", "fyniq_worker", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+		  VALUES ($1, 'check.31', 'b', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"42501"}},
+		{"the API removing a decision", "fyniq_api", `DELETE FROM fyniq.migration_difference`, nil, []string{"42501"}},
+		{"the owner removing a decision", "fyniq_migrator", `DELETE FROM fyniq.migration_difference`, nil, []string{"FY328"}},
+		{"the owner skipping a version", "fyniq_migrator", `UPDATE fyniq.migration_difference SET version = version + 2`, nil, []string{"FY328"}},
+		{"the owner moving a decision to another line", "fyniq_migrator", `UPDATE fyniq.migration_difference SET line_key = 'check.1', version = version + 1`, nil, []string{"FY328"}},
+		{"the owner emptying the register", "fyniq_migrator", `TRUNCATE fyniq.migration_difference`, nil, []string{"FY060", "FY061"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.args...); return err })
 		wantState(t, x.what, err, x.states...)
@@ -476,6 +548,9 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		records, err := u.Migrations().Records(ctx, c.ID)
 		if err == nil && len(records) != 0 {
 			t.Errorf("another organisation sees %d records", len(records))
+		}
+		if decisions, err := u.Migrations().Decisions(ctx, run.ID); err != nil || len(decisions) != 0 {
+			t.Errorf("another organisation sees %d decisions: %v", len(decisions), err)
 		}
 		return err
 	}); err != nil {
