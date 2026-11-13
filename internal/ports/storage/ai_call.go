@@ -35,13 +35,37 @@ type AICall struct {
 	Cost            string // exact decimal text; "" when unpriced
 	Currency        string
 	Price           *uuid.UUID
+	CostBase        string // the cost in the base currency at the day's rate, exact; "" when it could not be converted
 	LatencyMS       int
 	StartedAt       time.Time
 	RecordedAt      time.Time
 }
 
+// AIUsageRow is the use of one connection's model by one agent for one person over a time: attempts by outcome, tokens
+// by kind and the cost in the base currency (AI-77).
+type AIUsageRow struct {
+	ConnectionID uuid.UUID
+	Model        string
+	Agent        string
+	Actor        string
+	Requests     int64 // attempts sent: every outcome but skipped and stopped
+	Served       int64
+	Fallbacks    int64 // served by a step after the first
+	Errors       int64 // busy, timed out, not found, refused or failed
+	Skipped      int64
+	Input        int64
+	Output       int64
+	CacheRead    int64
+	CacheWrite   int64
+	Reasoning    int64
+	CostBase     string // exact decimal text
+	Unpriced     int64  // served attempts with no cost in the base currency
+}
+
 // AICalls keeps the model calls, as the AI activity log reads them: written only through record_ai_call, never changed.
 type AICalls interface {
+	// Usage are the calls started in [from, to), summed by connection, model, agent and person.
+	Usage(ctx context.Context, from, to time.Time) ([]AIUsageRow, error)
 	// Record keeps one attempt in the organisation.
 	Record(ctx context.Context, c AICall) (AICall, error)
 	// OfRun are a run's attempts, in order.

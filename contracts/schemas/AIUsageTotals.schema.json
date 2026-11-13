@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cache_read_tokens": {
+      "examples": [
+        640000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cache_write_tokens": {
+      "examples": [
+        12000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cost": {
+      "description": "In the base currency at each day's rate, exact; the screens round it for display.",
+      "examples": [
+        "4.3125"
+      ],
+      "type": "string"
+    },
+    "errors": {
+      "description": "Busy, timed out, missing, refused or failed.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "fallbacks": {
+      "description": "Served by a step after the route's first (AI-76).",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "input_tokens": {
+      "examples": [
+        812000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "output_tokens": {
+      "description": "Reasoning included.",
+      "examples": [
+        96000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reasoning_tokens": {
+      "examples": [
+        30000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "requests": {
+      "description": "Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.",
+      "examples": [
+        120
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "served": {
+      "examples": [
+        117
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "skipped": {
+      "description": "Steps the router passed over without sending them anything.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "unpriced": {
+      "description": "Served attempts whose cost could not be put in the base currency.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "requests",
+    "served",
+    "fallbacks",
+    "errors",
+    "skipped",
+    "input_tokens",
+    "output_tokens",
+    "cache_read_tokens",
+    "cache_write_tokens",
+    "reasoning_tokens",
+    "cost",
+    "unpriced"
+  ],
+  "title": "AIUsageTotals",
+  "type": "object"
+}

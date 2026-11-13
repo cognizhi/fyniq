@@ -88,9 +88,14 @@ var Catalogue = []Type{
 	{Key: "cash.below_buffer", Label: "Cash is projected to fall below the buffer", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
 	{Key: "cash.buffer_recovered", Label: "Cash is projected back above the buffer", Category: Operations, Severity: "info", Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
+	{Key: AIBudgetType, Label: "An AI budget reached 80% this month", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }
+
+// AIBudgetType is the notice to the Owners that an AI budget reached 80% of its amount this month (AI-77): at 100% no
+// call it cannot cover is admitted.
+const AIBudgetType = "ai.budget"
 
 // BreakGlassType is the notice to every Owner and the Accountant that an Owner started break-glass, released a batch
 // under it or ended it (FM-8): a security type, so always on and emailed at once.

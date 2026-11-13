@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,12 +9,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -68,6 +75,7 @@ type step struct {
 	cache      bool
 	state      airoute.StepState
 	price      *storage.AIPrice
+	rate       *apd.Decimal // the day's rate from the price's currency into the base currency; nil when there is none
 	provider   ports.ModelProvider
 	timeout    time.Duration
 }
@@ -117,14 +125,8 @@ func (r Router) load(ctx context.Context, org uuid.UUID, call Call) (storage.AIR
 					st.state.Callable = aimodel.Callable(aimodel.Model{ID: m.Model, Shutdown: m.Shutdown, Listed: m.Listed, NotCallableAt: m.NotCallableAt}, now)
 				}
 			}
-			prices, err := u.AIPrices().Current(ctx, c.ID)
-			if err != nil {
+			if err := r.priceStep(ctx, u, &st); err != nil {
 				return err
-			}
-			for i := range prices {
-				if prices[i].Model == s.Model && prices[i].Status == aiprice.Active {
-					st.price, st.state.Priced = &prices[i], true
-				}
 			}
 			st.state.Policy = aipolicy.Allowed(policy, aipolicy.Connection{ID: c.ID.String(), Enabled: c.State == "enabled", Declaration: declaration(c)},
 				s.Model, airoute.Feature, call.Classes)
@@ -191,6 +193,23 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 				return res, errors.Join(err, r.record(ctx, org, &res, attempt))
 			}
 		}
+		reservation, err := r.reserve(ctx, org, s, call, attempt)
+		if err != nil {
+			var se *storage.Error
+			switch {
+			case errors.As(err, &se) && se.Code == storage.CodeAIConnectionSpent: // the next step may still serve (AI-86)
+				attempt.Outcome, attempt.Detail = airoute.Skipped, se.Message
+				if err := r.record(ctx, org, &res, attempt); err != nil {
+					return res, err
+				}
+				reasons, previous = append(reasons, fmt.Sprintf("step %d: %s", s.position, se.Message)), s.position
+				continue
+			case errors.As(err, &se) && se.Code == storage.CodeAIBudgetSpent:
+				attempt.Outcome, attempt.Detail = airoute.Stopped, se.Message
+				return res, errors.Join(aibudget.Spent(se.Message), r.record(ctx, org, &res, attempt))
+			}
+			return res, err
+		}
 		resp, err := r.attempt(ctx, s, call)
 		attempt.LatencyMS = int(r.Clock.Now().Sub(attempt.StartedAt).Milliseconds())
 		if err == nil {
@@ -202,6 +221,9 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 			if why := r.cost(&attempt, s, call.Request, resp.Usage); why != "" {
 				attempt.Detail = why
 			}
+			if err := r.settle(ctx, org, reservation, s, &attempt, true); err != nil {
+				return res, err
+			}
 			if err := r.record(ctx, org, &res, attempt); err != nil {
 				return res, err
 			}
@@ -210,6 +232,12 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 		}
 		outcome, next := airoute.Failover(err, errors.Is(err, errDelivered))
 		attempt.Outcome, attempt.Detail = outcome, cut(err.Error())
+		// A busy, missing or refused answer is not billed; a timeout, a broken stream or a failure may have been, so its
+		// reservation stays whole until the provider's usage is reconciled (AI-86).
+		billed := outcome == airoute.TimedOut || outcome == airoute.Failed || outcome == airoute.Stopped
+		if err := r.settle(ctx, org, reservation, s, &attempt, !billed); err != nil {
+			return res, err
+		}
 		if err := r.record(ctx, org, &res, attempt); err != nil {
 			return res, err
 		}
@@ -289,6 +317,75 @@ func (r Router) cost(a *storage.AICall, s step, req ports.ModelRequest, u ports.
 	return ""
 }
 
+// reserve reserves an attempt's most against every budget that applies (AI-86): its most usage at the step's price, in
+// the base currency at the day's rate; nothing for a connection with no per-token price; unconverted when there is no
+// rate, which a budget that applies refuses. A budget it takes to 80% this month alerts the Owner (AI-77).
+func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a storage.AICall) (uuid.UUID, error) {
+	most := "0"
+	if s.price != nil {
+		most = ""
+		cost, missing, err := domainPrice(*s.price).Cost(aibudget.MostUsage(call.Request), 0, 1)
+		if err == nil && missing == "" && s.rate != nil {
+			if most, err = aibudget.InBase(cost.Text('f'), s.rate); err != nil {
+				return uuid.Nil, err
+			}
+		}
+	}
+	var id uuid.UUID
+	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var alerts []storage.AIBudgetAlert
+		var err error
+		id, alerts, err = u.AIBudgets().Reserve(ctx, storage.AIReservation{Run: a.Run, Step: a.Step, Agent: a.Agent, Connection: a.ConnectionID,
+			Person: a.Actor, Month: aibudget.Month(a.StartedAt), Amount: most})
+		if err != nil {
+			return err
+		}
+		d := outbox.Dispatcher{Store: r.Store, Clock: r.Clock}
+		if r.Outbox != nil {
+			d = *r.Outbox
+		}
+		for _, al := range alerts {
+			key := uuid.NewSHA1(uuid.NameSpaceOID, []byte(org.String()+" ai-budget "+al.Scope+" "+al.Subject+" "+aibudget.Month(a.StartedAt)))
+			title := fmt.Sprintf("The AI budget of the %s reached %d%%: %s of %s used this month", budgetName(al), aibudget.AlertAt, al.Used, al.Amount)
+			if _, err := notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AIBudgetType, RecordType: "ai_budget", RecordID: &key, Title: title,
+				Link: "/settings/ai/usage", At: a.StartedAt, Audience: notify.Audience{Capability: string(authz.AIProviders), Need: "A"}}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return id, err
+}
+
+func budgetName(a storage.AIBudgetAlert) string {
+	if a.Subject == "" {
+		return a.Scope
+	}
+	return a.Scope + " " + a.Subject
+}
+
+// settle settles an attempt's reservation to what it cost in the base currency, or keeps it whole when the outcome or
+// the cost is not known (AI-86), and puts the cost in the base currency on the attempt.
+func (r Router) settle(ctx context.Context, org, reservation uuid.UUID, s step, a *storage.AICall, known bool) error {
+	actual := "0"
+	if a.Outcome == airoute.Served {
+		switch {
+		case s.price == nil:
+		case a.Cost != "" && s.rate != nil:
+			base, err := aibudget.InBase(a.Cost, s.rate)
+			if err != nil {
+				return err
+			}
+			a.CostBase, actual = base, base
+		default:
+			known = false // priced, but this call's cost could not be put in the base currency: the reservation stays
+		}
+	}
+	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.AIBudgets().Settle(ctx, reservation, actual, known)
+	})
+}
+
 // record keeps an attempt in the organisation's activity log.
 func (r Router) record(ctx context.Context, org uuid.UUID, res *Result, a storage.AICall) error {
 	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -314,4 +411,87 @@ func (r Router) readList(ctx context.Context, org, connection, run uuid.UUID) er
 		_, err := u.Outbox().Enqueue(ctx, item)
 		return err
 	})
+}
+
+// ProbeAgent is the agent a probe runs as (AI-80): its calls are outside any route, recorded as route version 0.
+const ProbeAgent = "probe"
+
+// Probe asks a model a few tokens of synthetic text on its connection, outside any route (AI-80): like any call it
+// reserves against the budgets, settles and is recorded, as the probe agent's (AI-86).
+func (r Router) Probe(ctx context.Context, org uuid.UUID, c storage.AIConnection, provider ports.ModelProvider, req ports.ModelRequest,
+	actor string) (ports.ModelResponse, error) {
+	run, err := uuid.NewV7()
+	if err != nil {
+		return ports.ModelResponse{}, err
+	}
+	s := step{position: 1, connection: c, model: req.Model, provider: provider, timeout: time.Minute, cache: false}
+	s.state.Caps = provider.Capabilities()
+	if err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return r.priceStep(ctx, u, &s)
+	}); err != nil {
+		return ports.ModelResponse{}, err
+	}
+	res := Result{Run: run}
+	call := Call{Agent: ProbeAgent, Classes: []string{aipolicy.KnowHow}, Request: req, Actor: actor}
+	attempt := storage.AICall{Run: run, Agent: ProbeAgent, Step: 1, ConnectionID: c.ID, ModelRequested: req.Model, Actor: actor,
+		Classes: call.Classes, StartedAt: r.Clock.Now()}
+	reservation, err := r.reserve(ctx, org, s, call, attempt)
+	if err != nil {
+		var se *storage.Error
+		if errors.As(err, &se) && (se.Code == storage.CodeAIBudgetSpent || se.Code == storage.CodeAIConnectionSpent) {
+			attempt.Outcome, attempt.Detail = airoute.Stopped, se.Message
+			return ports.ModelResponse{}, errors.Join(aibudget.Spent(se.Message), r.record(ctx, org, &res, attempt))
+		}
+		return ports.ModelResponse{}, err
+	}
+	resp, callErr := r.attempt(ctx, s, call)
+	attempt.LatencyMS = int(r.Clock.Now().Sub(attempt.StartedAt).Milliseconds())
+	known := true
+	if callErr == nil {
+		attempt.Outcome, attempt.ModelReported, attempt.VersionReported = airoute.Served, cmp.Or(resp.Model, req.Model), resp.Version
+		usage(&attempt, resp.Usage)
+		if why := r.cost(&attempt, s, req, resp.Usage); why != "" {
+			attempt.Detail = why
+		}
+	} else {
+		outcome, _ := airoute.Failover(callErr, false)
+		attempt.Outcome, attempt.Detail = outcome, cut(callErr.Error())
+		known = !(outcome == airoute.TimedOut || outcome == airoute.Failed || outcome == airoute.Stopped)
+	}
+	if err := r.settle(ctx, org, reservation, s, &attempt, known); err != nil {
+		return resp, err
+	}
+	if err := r.record(ctx, org, &res, attempt); err != nil {
+		return resp, err
+	}
+	return resp, callErr
+}
+
+// priceStep finds a step's price in force and the day's rate from its currency into the base currency.
+func (r Router) priceStep(ctx context.Context, u storage.UnitOfWork, s *step) error {
+	organisation, err := u.Organisation(ctx)
+	if err != nil {
+		return err
+	}
+	base, err := money.Lookup(organisation.BaseCurrency)
+	if err != nil {
+		return err
+	}
+	prices, err := u.AIPrices().Current(ctx, s.connection.ID)
+	if err != nil {
+		return err
+	}
+	for i := range prices {
+		if prices[i].Model == s.model && prices[i].Status == aiprice.Active {
+			s.price, s.state.Priced = &prices[i], true
+		}
+	}
+	if s.price != nil {
+		if cur, err := money.Lookup(s.price.Currency); err == nil {
+			if found, err := fx.Lookup(ctx, u, base, cur, r.Clock.Now()); err == nil {
+				s.rate = found.Rate.Decimal()
+			}
+		}
+	}
+	return nil
 }

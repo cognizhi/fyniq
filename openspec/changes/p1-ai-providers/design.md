@@ -129,6 +129,15 @@ See proposal.md for why. What exists today:
   row locks, refusing what any budget cannot cover; after the call it settles to the actual cost; an unknown outcome
   keeps its reservation until the provider's usage reconciles it. Probes, evals and retries count. Alerts at 80% go to
   the Owner; at 100% nothing new is admitted; accounting, checks and deadlines keep working.
+- As built (task 5.3): budgets are in the base currency per calendar month in Singapore; the most a call could cost is
+  its input estimated at a token per three bytes (and a fixed allowance per image) plus all its output limit, at the
+  step's price and the day's exchange rate. Costs in the base currency are exact (`NUMERIC(43,26)`: a cost of up to 16
+  places at a rate of up to 10), never rounded. A connection's spent budget skips to the next step; the organisation's,
+  the agent's or the person's stops the call, as does a cost with no exchange rate where a budget applies. Probes go
+  through the router, reserving and recorded as the probe agent's calls outside any route (route version 0). The 80%
+  alert is the notification `ai.budget` to the Owners. `ai_reserve` and `ai_settle` are the API's and the worker's
+  (see D11). The usage view is `GET /v1/ai/usage`, by connection (with a subscription's quota), model, agent, person
+  and organisation.
 
 **D9. The activity log and the switch (AI-12, AI-13; rev 0.275).**
 - `ai_call` (append-only) records each attempt: agent, route version and step, connection, the model requested, the

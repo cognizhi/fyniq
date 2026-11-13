@@ -350,6 +350,15 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	"reviewAIPrice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/prices/"+matrixAIPrice(e)+"/review", tok, map[string]any{"decision": "decline"}), nil
 	},
+	"getAIBudgets": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/budgets", tok, nil), nil
+	},
+	"setAIBudget": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/ai/budgets/organisation", tok, map[string]any{"amount": "100"}, "Prefer", "return=preview", "If-Match", "*"), nil
+	},
+	"getAIUsage": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/usage", tok, nil), nil
+	},
 	"getAIPresets": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/presets", tok, nil), nil
 	},

@@ -388,6 +388,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI budgets
+         * @description The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
+         */
+        get: operations["getAIBudgets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/budgets/{budget}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set an AI budget
+         * @description The Owner sets a monthly AI budget in the base currency (AI-77, AI-86): the organisation's, an agent's, a connection's or a person's; a null amount removes it. From the next call the router reserves each attempt's most against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
+         */
+        put: operations["setAIBudget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/connections": {
         parameters: {
             query?: never;
@@ -757,6 +797,26 @@ export interface paths {
          * @description Sets an agent's route (AI-74, AI-26): the data classes it handles and one to five steps, each a connection that is on and a model on its allow-list that the data-class policy lets every class go to, priced where the connection bills by usage (AI-82). A version that only narrows where data goes (reordering, dropping a step or a class, the effort or caching) is saved at once (200, the route). One that names a connection or model, or a class, the one in force did not, and an agent's first route, waits for the Owner or a second approver (202, the approval request): model IDs change only so. Needs If-Match with the route's ETag (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves or asks nothing. On the never-list for the AI and MCP (§9.6).
          */
         put: operations["setAIRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI usage of a month
+         * @description Requests, tokens by kind, cost in the base currency, fallbacks and errors per connection, model, agent, person and the organisation, for a calendar month in Singapore (AI-77), from the AI activity log; and each subscription's quota used in its current window and when it resets. The provider's invoice stays the record: it is entered as a bill, and this view helps check it. Read-only; no side effects.
+         */
+        get: operations["getAIUsage"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -14335,6 +14395,70 @@ export interface components {
             /** @description Its versions, newest first, at most 20. */
             versions: components["schemas"]["AIRoute"][];
         };
+        AIBudget: {
+            /**
+             * @description Its 80% alert was raised this month.
+             * @example false
+             */
+            alerted: boolean;
+            /**
+             * @description Per calendar month in Singapore, in the base currency, as an exact decimal; absent when removed.
+             * @example 50
+             */
+            amount?: string;
+            /**
+             * @description The budget: organisation, agent:<agent>, connection:<id> or person:<user id>.
+             * @example agent:chat
+             */
+            key: string;
+            /**
+             * @example agent
+             * @enum {string}
+             */
+            scope: "organisation" | "agent" | "connection" | "person";
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            set_at?: string;
+            /** @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d */
+            set_by: string;
+            /**
+             * @description The agent, the connection's ID or user:<id>; absent for the organisation.
+             * @example chat
+             */
+            subject?: string;
+            /**
+             * @description What this month's reservations hold or settled against it, in the base currency: a reservation whose outcome is unknown counts whole until it is reconciled.
+             * @example 12.5
+             */
+            used: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+        };
+        AIBudgetList: {
+            budgets: components["schemas"]["AIBudget"][];
+            /**
+             * @description The base currency the budgets are in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * @description The calendar month in Singapore the use is of.
+             * @example 2026-11
+             */
+            month: string;
+        };
+        AIBudgetSet: {
+            /**
+             * @description Per calendar month in the base currency, above zero with at most four decimal places; null removes the budget.
+             * @example 50.00
+             */
+            amount?: string | null;
+        };
         AIConnection: {
             /**
              * @description How it authenticates: an API key, the service's own cloud account, or none for a self-hosted server on a registered private endpoint.
@@ -15113,6 +15237,34 @@ export interface components {
              */
             decision: "confirm" | "decline";
         };
+        AIQuotaUse: {
+            /**
+             * Format: int64
+             * @example 5000000
+             */
+            amount: number;
+            /**
+             * Format: date-time
+             * @description When the window starts again, in Singapore.
+             * @example 2026-11-30T16:00:00Z
+             */
+            resets: string;
+            /**
+             * @example tokens
+             * @enum {string}
+             */
+            unit: "tokens" | "requests";
+            /**
+             * Format: int64
+             * @example 908000
+             */
+            used: number;
+            /**
+             * @example month
+             * @enum {string}
+             */
+            window: "day" | "month";
+        };
         AIRoute: {
             /**
              * Format: uuid
@@ -15216,6 +15368,383 @@ export interface components {
              * @example claude-opus-4-6
              */
             model: string;
+        };
+        AIUsage: {
+            by_agent: components["schemas"]["AIUsageByAgent"][];
+            by_connection: components["schemas"]["AIUsageByConnection"][];
+            by_model: components["schemas"]["AIUsageByModel"][];
+            by_person: components["schemas"]["AIUsageByPerson"][];
+            /**
+             * @description The base currency the costs are in.
+             * @example SGD
+             */
+            currency: string;
+            /** @example 2026-11 */
+            month: string;
+            total: components["schemas"]["AIUsageTotals"];
+        };
+        AIUsageByAgent: {
+            /** @example chat */
+            agent: string;
+            /**
+             * Format: int64
+             * @example 640000
+             */
+            cache_read_tokens: number;
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            cache_write_tokens: number;
+            /**
+             * @description In the base currency at each day's rate, exact; the screens round it for display.
+             * @example 4.3125
+             */
+            cost: string;
+            /**
+             * Format: int64
+             * @description Busy, timed out, missing, refused or failed.
+             * @example 3
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Served by a step after the route's first (AI-76).
+             * @example 3
+             */
+            fallbacks: number;
+            /**
+             * Format: int64
+             * @example 812000
+             */
+            input_tokens: number;
+            /**
+             * Format: int64
+             * @description Reasoning included.
+             * @example 96000
+             */
+            output_tokens: number;
+            /**
+             * Format: int64
+             * @example 30000
+             */
+            reasoning_tokens: number;
+            /**
+             * Format: int64
+             * @description Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.
+             * @example 120
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @example 117
+             */
+            served: number;
+            /**
+             * Format: int64
+             * @description Steps the router passed over without sending them anything.
+             * @example 5
+             */
+            skipped: number;
+            /**
+             * Format: int64
+             * @description Served attempts whose cost could not be put in the base currency.
+             * @example 0
+             */
+            unpriced: number;
+        };
+        AIUsageByConnection: {
+            /**
+             * Format: int64
+             * @example 640000
+             */
+            cache_read_tokens: number;
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            cache_write_tokens: number;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            connection_id: string;
+            /**
+             * @description In the base currency at each day's rate, exact; the screens round it for display.
+             * @example 4.3125
+             */
+            cost: string;
+            /**
+             * Format: int64
+             * @description Busy, timed out, missing, refused or failed.
+             * @example 3
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Served by a step after the route's first (AI-76).
+             * @example 3
+             */
+            fallbacks: number;
+            /**
+             * Format: int64
+             * @example 812000
+             */
+            input_tokens: number;
+            /** @example Claude on Agent Platform */
+            name: string;
+            /**
+             * Format: int64
+             * @description Reasoning included.
+             * @example 96000
+             */
+            output_tokens: number;
+            /** @description A subscription's quota. */
+            quota?: components["schemas"]["AIQuotaUse"];
+            /**
+             * Format: int64
+             * @example 30000
+             */
+            reasoning_tokens: number;
+            /**
+             * Format: int64
+             * @description Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.
+             * @example 120
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @example 117
+             */
+            served: number;
+            /**
+             * Format: int64
+             * @description Steps the router passed over without sending them anything.
+             * @example 5
+             */
+            skipped: number;
+            /**
+             * Format: int64
+             * @description Served attempts whose cost could not be put in the base currency.
+             * @example 0
+             */
+            unpriced: number;
+        };
+        AIUsageByModel: {
+            /**
+             * Format: int64
+             * @example 640000
+             */
+            cache_read_tokens: number;
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            cache_write_tokens: number;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            connection_id: string;
+            /**
+             * @description In the base currency at each day's rate, exact; the screens round it for display.
+             * @example 4.3125
+             */
+            cost: string;
+            /**
+             * Format: int64
+             * @description Busy, timed out, missing, refused or failed.
+             * @example 3
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Served by a step after the route's first (AI-76).
+             * @example 3
+             */
+            fallbacks: number;
+            /**
+             * Format: int64
+             * @example 812000
+             */
+            input_tokens: number;
+            /** @example claude-opus-4-6 */
+            model: string;
+            /**
+             * Format: int64
+             * @description Reasoning included.
+             * @example 96000
+             */
+            output_tokens: number;
+            /**
+             * Format: int64
+             * @example 30000
+             */
+            reasoning_tokens: number;
+            /**
+             * Format: int64
+             * @description Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.
+             * @example 120
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @example 117
+             */
+            served: number;
+            /**
+             * Format: int64
+             * @description Steps the router passed over without sending them anything.
+             * @example 5
+             */
+            skipped: number;
+            /**
+             * Format: int64
+             * @description Served attempts whose cost could not be put in the base currency.
+             * @example 0
+             */
+            unpriced: number;
+        };
+        AIUsageByPerson: {
+            /**
+             * Format: int64
+             * @example 640000
+             */
+            cache_read_tokens: number;
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            cache_write_tokens: number;
+            /**
+             * @description In the base currency at each day's rate, exact; the screens round it for display.
+             * @example 4.3125
+             */
+            cost: string;
+            /**
+             * Format: int64
+             * @description Busy, timed out, missing, refused or failed.
+             * @example 3
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Served by a step after the route's first (AI-76).
+             * @example 3
+             */
+            fallbacks: number;
+            /**
+             * Format: int64
+             * @example 812000
+             */
+            input_tokens: number;
+            /**
+             * Format: int64
+             * @description Reasoning included.
+             * @example 96000
+             */
+            output_tokens: number;
+            /**
+             * @description user:<id>, or system:<job> for a job.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            person: string;
+            /**
+             * Format: int64
+             * @example 30000
+             */
+            reasoning_tokens: number;
+            /**
+             * Format: int64
+             * @description Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.
+             * @example 120
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @example 117
+             */
+            served: number;
+            /**
+             * Format: int64
+             * @description Steps the router passed over without sending them anything.
+             * @example 5
+             */
+            skipped: number;
+            /**
+             * Format: int64
+             * @description Served attempts whose cost could not be put in the base currency.
+             * @example 0
+             */
+            unpriced: number;
+        };
+        AIUsageTotals: {
+            /**
+             * Format: int64
+             * @example 640000
+             */
+            cache_read_tokens: number;
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            cache_write_tokens: number;
+            /**
+             * @description In the base currency at each day's rate, exact; the screens round it for display.
+             * @example 4.3125
+             */
+            cost: string;
+            /**
+             * Format: int64
+             * @description Busy, timed out, missing, refused or failed.
+             * @example 3
+             */
+            errors: number;
+            /**
+             * Format: int64
+             * @description Served by a step after the route's first (AI-76).
+             * @example 3
+             */
+            fallbacks: number;
+            /**
+             * Format: int64
+             * @example 812000
+             */
+            input_tokens: number;
+            /**
+             * Format: int64
+             * @description Reasoning included.
+             * @example 96000
+             */
+            output_tokens: number;
+            /**
+             * Format: int64
+             * @example 30000
+             */
+            reasoning_tokens: number;
+            /**
+             * Format: int64
+             * @description Attempts sent and answered or failed: not those skipped, or stopped before sending, such as by a budget.
+             * @example 120
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @example 117
+             */
+            served: number;
+            /**
+             * Format: int64
+             * @description Steps the router passed over without sending them anything.
+             * @example 5
+             */
+            skipped: number;
+            /**
+             * Format: int64
+             * @description Served attempts whose cost could not be put in the base currency.
+             * @example 0
+             */
+            unpriced: number;
         };
         AccentOption: {
             /** @example #0F766E */
@@ -48709,6 +49238,237 @@ export interface operations {
             };
         };
     };
+    getAIBudgets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIBudgetList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setAIBudget: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description organisation, agent:<agent>, connection:<id> or person:<user id>. */
+                budget: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIBudgetSet"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIBudget"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-BUDGET-01` The AI budget is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listAIConnections: {
         parameters: {
             query?: {
@@ -50044,7 +50804,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `AI-BUDGET-02` An AI budget is spent this month; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -51226,6 +51986,102 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIUsage: {
+        parameters: {
+            query?: {
+                /** @description The calendar month in Singapore; this month when left out. */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIUsage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

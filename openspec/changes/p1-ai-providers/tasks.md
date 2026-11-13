@@ -67,7 +67,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   only to an eligible step, a plain stop with a code, strict schemas, thinking, caching and streaming where proven, the
   call recorded with the model requested and reported (`ai_call`, append-only, through `record_ai_call`). Tests
   `// req: AI-76`, `// req: AI-83`, `// req: AI-87`, `// req: AI-27`.
-- [ ] 5.3 Budgets: `ai_budget`, `ai_reservation`, `ai_reserve` and `ai_settle` under row locks (the concurrent-spend
+- [x] 5.3 Budgets: `ai_budget`, `ai_reservation`, `ai_reserve` and `ai_settle` under row locks (the concurrent-spend
   scenario: S$5 left, ten calls of S$1, at most five admitted); unknown outcomes kept; probes, evals and retries
   counted; alerts at 80%, a hard stop at 100%; metering by connection, model, agent, person and organisation; costs
   exact, in their currency and SGD. `fyniq_ai`'s grants exactly design D11's. Tests `// req: AI-77`, `// req: AI-86`,

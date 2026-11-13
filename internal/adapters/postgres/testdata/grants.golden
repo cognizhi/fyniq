@@ -23,6 +23,9 @@ fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, wr
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
 fyniq_api       SELECT    ai_agents
+fyniq_api       INSERT    ai_budget (amount, scope, set_at, set_by, subject)
+fyniq_api       SELECT    ai_budget
+fyniq_api       UPDATE    ai_budget (amount, set_at, set_by, version)
 fyniq_api       SELECT    ai_call
 fyniq_api       INSERT    ai_connection (auth, auto_qualify, billing_mode, changed_at, changed_by, configuration, connector, created_at, created_by, credential_ref, credential_set_at, data_handling, host, id, name, preset, quota, self_hosted)
 fyniq_api       SELECT    ai_connection
@@ -42,10 +45,13 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
+fyniq_api       SELECT    ai_reservation
+fyniq_api       EXECUTE   ai_reserve()
 fyniq_api       INSERT    ai_route (agent, approval_id, classes, made_at, made_by, preset, version)
 fyniq_api       SELECT    ai_route
 fyniq_api       INSERT    ai_route_step (cache, connection_id, effort, model, position, route_id)
 fyniq_api       SELECT    ai_route_step
+fyniq_api       EXECUTE   ai_settle()
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
@@ -596,6 +602,7 @@ fyniq_readonly  SELECT    accountant_review_query
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    ai_agents
+fyniq_readonly  SELECT    ai_budget
 fyniq_readonly  SELECT    ai_call
 fyniq_readonly  SELECT    ai_connection
 fyniq_readonly  SELECT    ai_connection_version
@@ -605,6 +612,7 @@ fyniq_readonly  SELECT    ai_model_list_read
 fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
+fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
 fyniq_readonly  SELECT    allocation
@@ -782,6 +790,7 @@ fyniq_worker    SELECT    accountant_review_query
 fyniq_worker    SELECT    accounting_framework
 fyniq_worker    SELECT    accounting_policy
 fyniq_worker    SELECT    ai_agents
+fyniq_worker    SELECT    ai_budget
 fyniq_worker    SELECT    ai_call
 fyniq_worker    SELECT    ai_connection
 fyniq_worker    SELECT    ai_connection_version
@@ -797,8 +806,11 @@ fyniq_worker    UPDATE    ai_price (status)
 fyniq_worker    SELECT    ai_price_catalogues
 fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
+fyniq_worker    SELECT    ai_reservation
+fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route
 fyniq_worker    SELECT    ai_route_step
+fyniq_worker    EXECUTE   ai_settle()
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal

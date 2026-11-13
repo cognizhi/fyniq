@@ -14599,6 +14599,51 @@ A link that works for 5 minutes and serves the export's ZIP as an attachment (FR
 
 The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6).
 
+### `GET /v1/ai/budgets`
+
+**Get the AI budgets** (`getAIBudgets`)
+
+The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Responses:**
+  - `200` OK [`AIBudgetList`](../../contracts/schemas/AIBudgetList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/ai/budgets/{budget}`
+
+**Set an AI budget** (`setAIBudget`)
+
+The Owner sets a monthly AI budget in the base currency (AI-77, AI-86): the organisation's, an agent's, a connection's or a person's; a null amount removes it. From the next call the router reserves each attempt's most against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Approve on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `budget` (path, required): organisation, agent:<agent>, connection:<id> or person:<user id>.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Request body:** [`AIBudgetSet`](../../contracts/schemas/AIBudgetSet.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AIBudget`](../../contracts/schemas/AIBudget.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `AI-BUDGET-01` The AI budget is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-BUDGET-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/ai/connections`
 
 **List the organisation's AI connections** (`listAIConnections`)
@@ -14859,12 +14904,12 @@ Asks a model the connection's provider lists for a few tokens of synthetic text,
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `AI-BUDGET-02` An AI budget is spent this month; `STORAGE-LOCK-01` Another change is in progress.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `AI-BUDGET-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/ai/connections/{connection_id}/models/refresh`
 
@@ -15098,6 +15143,26 @@ Sets an agent's route (AI-74, AI-26): the data classes it handles and one to fiv
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `AI-PRICE-01`, `AI-ROUTE-01`, `AI-ROUTE-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `STORAGE-AI-ROUTE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/ai/usage`
+
+**Get the AI usage of a month** (`getAIUsage`)
+
+Requests, tokens by kind, cost in the base currency, fallbacks and errors per connection, model, agent, person and the organisation, for a calendar month in Singapore (AI-77), from the AI activity log; and each subscription's quota used in its current window and when it resets. The provider's invoice stays the record: it is entered as a bill, and this view helps check it. Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `month` (query): The calendar month in Singapore; this month when left out.
+- **Responses:**
+  - `200` OK [`AIUsage`](../../contracts/schemas/AIUsage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ## Import
 
