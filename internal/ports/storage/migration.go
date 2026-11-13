@@ -17,6 +17,7 @@ const CodeMigration = "STORAGE-MIGRATION-01"
 // The migration's steps (PRD-001 §17.1) and a step's states (p1-workbook-migration design D11).
 const (
 	StepWorkbook = "M1" // the frozen workbook uploaded and validated
+	StepParallel = "M5" // the workbook at the end of the parallel month, uploaded once the parity report is signed (rev 0.268)
 
 	StepValidating = "validating"
 	StepValid      = "valid"
@@ -141,6 +142,7 @@ type MigrationRecord struct {
 const (
 	SignOffMapping        = "mapping"        // M2
 	SignOffReconciliation = "reconciliation" // M4: the parity report and its register, over the report's hash (rev 0.266)
+	SignOffParallel       = "parallel"       // M5: the parallel month's report and its register (rev 0.268)
 )
 
 // MigrationDecision is the Accountant's decision on a line of the difference register (FR-MIG-02, design D8; rev

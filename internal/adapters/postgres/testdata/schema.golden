@@ -3960,7 +3960,7 @@ migration_signoff | migration_signoff_run_id_not_null | NOT NULL run_id
 migration_signoff | migration_signoff_signed_at_not_null | NOT NULL signed_at
 migration_signoff | migration_signoff_signed_by_format | CHECK ((signed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 migration_signoff | migration_signoff_signed_by_not_null | NOT NULL signed_by
-migration_signoff | migration_signoff_subject_known | CHECK ((subject = ANY (ARRAY['mapping'::text, 'reconciliation'::text])))
+migration_signoff | migration_signoff_subject_known | CHECK ((subject = ANY (ARRAY['mapping'::text, 'reconciliation'::text, 'parallel'::text])))
 migration_signoff | migration_signoff_subject_names | CHECK (((subject = 'mapping'::text) = (mapping_id IS NOT NULL)))
 migration_signoff | migration_signoff_subject_not_null | NOT NULL subject
 migration_signoff | migration_signoff_subject_sha256_not_null | NOT NULL subject_sha256
@@ -6733,10 +6733,10 @@ member_names() → TABLE(user_id uuid, display_name text) | security definer | s
 member_sign_ins() → TABLE(user_id uuid, last_sign_in timestamp with time zone, step_up_method text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 730a2c7376a7b64b9bf0e585b149ee49
 members_second_factor(since timestamp with time zone) → TABLE(user_id uuid, passkeys integer, sessions_with integer, sessions_without integer, last_without timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 069e54faf0ce32b2f36de53f37ad6500
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
-migration_commit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 90f4f22633b2741e1cc4d875adee06cc
+migration_commit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bd69d27440402155ca7331f380a3166b
 migration_difference_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8c89b6b14c7ebb536c73a85ccd3257d5
 migration_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | def4b1a574f1c8e5715b1a5f94e3dd5b
-migration_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7a1e3c6d0106fb82e90027805ff3de5b
+migration_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 53fa34d7092757492eb84d0f6b4049b8
 money_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e476d7ba9a85e485d5ab2f1665b4c59c
 money_account_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8171a26dc6379c626b612b8db542d1b9
 notification_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f2b969415ae5bd9d1ebfa65933ad19e

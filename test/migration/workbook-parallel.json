@@ -1,0 +1,42 @@
+{
+  "base": {
+    "file": "workbook-sample.xlsx",
+    "sha256": "0a5a5cb9f8f91598dfd76393ad2b8dd5c563a222951cca6004e514fda25ea26e"
+  },
+  "as_of": "2026-10-31",
+  "october": [
+    {
+      "account": "1020",
+      "movement": "-2180"
+    },
+    {
+      "account": "6310",
+      "movement": "2180"
+    },
+    {
+      "account": "2400",
+      "movement": "2000"
+    },
+    {
+      "account": "4010",
+      "movement": "-2000"
+    },
+    {
+      "account": "1210",
+      "movement": "-300"
+    },
+    {
+      "account": "6450",
+      "movement": "200"
+    },
+    {
+      "account": "6210",
+      "movement": "100"
+    }
+  ],
+  "fixture": {
+    "file": "workbook-parallel.xlsx",
+    "sha256": "890e646d3d1daa2c6433ed0167c4bffbb1daca98d205fa444b6126fcae4cb126"
+  },
+  "data": "synthetic (DEV-08): the workbook's sample company, with its parallel month derived from it"
+}

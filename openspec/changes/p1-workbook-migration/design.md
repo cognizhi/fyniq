@@ -288,8 +288,10 @@ See proposal.md for why. What exists today and shapes the approach:
 - An uploaded workbook passes the scanner service before it is read.
 - Audit events:
   - `migration.started`, `migration.workbook_received`, `migration.validated`, `migration.mapping_signed`,
-    `migration.committed`, `migration.reconciled`, `migration.register_item_changed`, `migration.register_signed`,
-    `migration.parallel_signed`, `migration.archived`;
+    `migration.committed`, `migration.difference_decided`, `migration.reconciliation_signed`,
+    `migration.parallel_signed`, `migration.archived` (as built, rev 0.266 and 0.268: a register line's decision is
+    `difference_decided`, M4's sign-off `reconciliation_signed`; the report is worked out on each read, so there is no
+    `reconciled` event);
   - `import.run`;
   - `tenant_export.requested`, `tenant_export.completed`, `tenant_export.downloaded`.
 - `docs/security/threat-models/migration-and-export.md` covers:

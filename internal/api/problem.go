@@ -241,6 +241,7 @@ var codeFacts = map[string]struct {
 	migration.CodeImport:          {422, "A record of the workbook could not be imported"},
 	migration.CodeCommit:          {409, "The import cannot be committed or run now"},
 	migration.CodeRegister:        {409, "The difference register refuses it"},
+	migration.CodeParallel:        {409, "The parallel month cannot start yet"},
 	storage.CodeHeartbeatDrill:    {409, "A heartbeat drill, once recorded, never changes"},
 	storage.CodeTransfer:          {409, "A transfer's versions follow each other and keep the flow they cover"},
 	storage.CodeShredding:         {409, "Personal data is shredded only in its approved run, after its retention"},

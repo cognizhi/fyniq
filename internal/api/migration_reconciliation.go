@@ -98,7 +98,7 @@ type MigrationReconciliationSignOff struct {
 // MigrationReconciliation is the parity report (§17.1 M4, design D8): every figure of the workbook's Trial Balance sheet
 // compared with Fyniq's books, the differences, and the workbook's checks against Fyniq's.
 type MigrationReconciliation struct {
-	Status       string                          `json:"status" enum:"not_committed,ready,signed" doc:"not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4)." example:"ready"`
+	Status       string                          `json:"status" enum:"not_committed,not_started,ready,signed" doc:"not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; not_started: the parallel month has no valid workbook yet, so its report holds no figures (M5); ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4)." example:"ready"`
 	Path         string                          `json:"path" enum:"history,clean_start" doc:"The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of." example:"history"`
 	BooksStart   string                          `json:"books_start" format:"date" doc:"The books start." example:"2026-01-01"`
 	Through      string                          `json:"through" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month compared: the workbook's as-of." example:"2026-09"`
@@ -248,12 +248,14 @@ func booksOf(ctx context.Context, u storage.UnitOfWork, start, through time.Time
 // errNotCommitted ends the read of a migration whose import is not committed: its report holds nothing.
 var errNotCommitted = errors.New("api: the import is not committed")
 
-// reconciliationSource is what a committed import's report is worked out from: its commit, the kept workbook and the
-// mapping it imported by.
+// reconciliationSource is what a committed import's report is worked out from: its commit, the workbook compared (M1's,
+// or M5's at the end of the parallel month), the workbook imported, the mapping it imported by, and the sign-off's
+// subject.
 type reconciliationSource struct {
-	commit storage.MigrationCommit
-	w      *migration.Workbook
-	m      migration.Mapping
+	commit  storage.MigrationCommit
+	w, cut  *migration.Workbook
+	m       migration.Mapping
+	subject string
 }
 
 // notCommittedReport is the report of an import not committed yet: nothing to reconcile.
@@ -297,7 +299,51 @@ func (a *API) sourceOf(ctx context.Context, org, id uuid.UUID) (reconciliationSo
 	if src.w, err = a.readWorkbook(ctx, file); err != nil {
 		return src, err
 	}
+	src.cut, src.subject = src.w, storage.SignOffReconciliation
 	return src, json.Unmarshal(mapping.Mapping, &src.m)
+}
+
+// errNotStarted ends the read of a parallel month whose workbook is not uploaded and valid yet: its report holds nothing.
+var errNotStarted = errors.New("api: the parallel month has no valid workbook")
+
+// parallelSourceOf is the parallel month's report's source (§17.1 M5, rev 0.268): the import's, comparing the latest
+// valid workbook of M5; errNotCommitted before the commit, errNotStarted before that workbook.
+func (a *API) parallelSourceOf(ctx context.Context, org, id uuid.UUID) (reconciliationSource, error) {
+	src, err := a.sourceOf(ctx, org, id)
+	if err != nil {
+		return src, err
+	}
+	var file storage.MigrationFile
+	err = a.deps.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		steps, err := u.Migrations().Steps(ctx, id)
+		if err != nil {
+			return err
+		}
+		var last *storage.MigrationStep
+		for i := range steps {
+			if steps[i].Step == storage.StepParallel && steps[i].State == storage.StepValid {
+				last = &steps[i]
+			}
+		}
+		if last == nil {
+			return errNotStarted
+		}
+		files, err := u.Migrations().Files(ctx, id)
+		for _, f := range files {
+			if f.ID == last.WorkbookFileID {
+				file = f
+			}
+		}
+		return err
+	})
+	if err != nil {
+		return src, err
+	}
+	if src.w, err = a.readWorkbook(ctx, file); err != nil {
+		return src, err
+	}
+	src.subject = storage.SignOffParallel
+	return src, nil
 }
 
 // decisionOf is a line's decision as the report shows it: stale when made on other figures than the report's.
@@ -383,7 +429,7 @@ func openItemsOf(ctx context.Context, u storage.UnitOfWork, b *migration.Books, 
 // reportIn is a committed import's parity report in u (design D8), at the ledger's current revision, with the
 // register's decisions and the latest sign-off.
 func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src reconciliationSource) (MigrationReconciliation, error) {
-	c, w, m := src.commit, src.w, src.m
+	c, w, cut, m := src.commit, src.w, src.cut, src.m
 	out := MigrationReconciliation{Status: "ready", Path: c.Path, Differences: []MigrationDifference{}, Checks: []MigrationCheckParity{},
 		NotCompared: []MigrationNotCompared{"gst_f5"}}
 	base, err := baseOf(ctx, u)
@@ -401,7 +447,7 @@ func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src recon
 	for _, d := range decisions {
 		decided[d.Line] = d
 	}
-	start := w.BooksStart(c.Path)
+	start := cut.BooksStart(c.Path)
 	through := w.Settings.AsOf
 	if through.Before(start) {
 		through = start
@@ -428,7 +474,7 @@ func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src recon
 	if err := openItemsOf(ctx, u, &books, base, through); err != nil {
 		return out, err
 	}
-	p := w.Reconcile(m, c.Path, books)
+	p := w.ReconcileFrom(cut, m, c.Path, books)
 	out.BooksStart, out.Through, out.Accounts, out.Figures = start.Format(time.DateOnly), p.Through.Format("2006-01"), p.Accounts, p.Figures
 	for _, f := range p.Differences {
 		d := MigrationDifference{Key: f.Key(), Account: f.Account, Name: f.Name, Kind: f.Kind, Fyniq: cents(f.Fyniq, base.MinorUnits),
@@ -502,7 +548,7 @@ func reportIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, src recon
 		return out, err
 	}
 	for _, o := range offs {
-		if o.Subject == storage.SignOffReconciliation {
+		if o.Subject == src.subject {
 			out.SignOff = &MigrationReconciliationSignOff{SignedBy: o.SignedBy, SignedAt: o.SignedAt, SHA256: o.SubjectSHA256, Current: o.SubjectSHA256 == out.ReportSHA256}
 		}
 	}
@@ -562,7 +608,7 @@ func registerMigrationReconciliation(a *API) {
 			return out, nil
 		})
 
-	// change runs a decision or the sign-off on the report as read (If-Match), in one unit of work.
+	// change runs a decision or the sign-off on the parity report as read (If-Match), in one unit of work.
 	change := func(ctx context.Context, id uuid.UUID, key, prefer, ifMatch string, request any,
 		do func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, src reconciliationSource) error) (*migrationReconciliationWriteOutput, error) {
 		p, _ := authn.From(ctx)
@@ -574,27 +620,7 @@ func registerMigrationReconciliation(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		w, err := write(ctx, a, key, prefer, request, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (MigrationReconciliation, error) {
-			r, err := reportIn(ctx, u, id, src)
-			if err != nil {
-				return r, err
-			}
-			if err := checkIfMatch(ifMatch, `"`+r.ReportSHA256+`"`); err != nil {
-				return r, err
-			}
-			if err := do(ctx, u, r, src); err != nil {
-				return r, err
-			}
-			return reportIn(ctx, u, id, src)
-		})
-		if err != nil {
-			return nil, err
-		}
-		out := &migrationReconciliationWriteOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}
-		if !w.Previewed {
-			out.ETag = `"` + w.Body.ReportSHA256 + `"`
-		}
-		return out, nil
+		return a.changeReport(ctx, id, key, prefer, ifMatch, request, src, do)
 	}
 
 	register(a, authz.DecideMigrationDifference, huma.Operation{
@@ -614,31 +640,7 @@ func registerMigrationReconciliation(a *API) {
 				return nil, err
 			}
 			now := a.deps.Clock.Now()
-			return change(ctx, id, in.IdempotencyKey, in.Prefer, in.IfMatch, in, func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, _ reconciliationSource) error {
-				fyniq, workbook, ok := r.lineFigures(in.Line)
-				if !ok {
-					return problem(migration.CodeRegister, fmt.Sprintf("The register has no line %s: the report shows no difference there.", in.Line),
-						"Decide a line the report lists, by its key.", FieldProblem{Field: "line", Code: migration.CodeRegister,
-							Message: "is not a line of the report", Fix: "Read the report again"})
-				}
-				if in.Body.Class == migration.ClassDefect && strings.TrimSpace(in.Body.Note) == "" {
-					return problem(migration.CodeRegister, "A workbook defect (class c) says what it is.", "Write what the workbook got wrong in the note.",
-						FieldProblem{Field: "note", Code: migration.CodeRegister, Message: "is empty", Fix: "Say what the workbook got wrong"})
-				}
-				version := 0
-				decisions, err := u.Migrations().Decisions(ctx, id)
-				if err != nil {
-					return err
-				}
-				for _, d := range decisions {
-					if d.Line == in.Line {
-						version = d.Version
-					}
-				}
-				_, err = u.Migrations().Decide(ctx, storage.MigrationDecision{RunID: id, Line: in.Line, Class: in.Body.Class, Note: strings.TrimSpace(in.Body.Note),
-					Fyniq: fyniq, Workbook: workbook, Version: version, DecidedBy: uploader(ctx), DecidedAt: now})
-				return err
-			})
+			return change(ctx, id, in.IdempotencyKey, in.Prefer, in.IfMatch, in, decideLine(id, in.Line, in.Body, now))
 		})
 
 	register(a, authz.SignMigrationReconciliation, huma.Operation{
@@ -661,22 +663,88 @@ func registerMigrationReconciliation(a *API) {
 				return nil, err
 			}
 			now := a.deps.Clock.Now()
-			return change(ctx, id, in.IdempotencyKey, in.Prefer, in.IfMatch, in, func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, _ reconciliationSource) error {
-				switch {
-				case r.Undecided > 0:
-					return problem(migration.CodeRegister, fmt.Sprintf("%d lines of the register have no decision that counts.", r.Undecided),
-						"Decide each line the report lists, again where its figures moved, then sign.")
-				case r.ChecksRunAt == nil:
-					return problem(migration.CodeRegister, "Fyniq's checks have never run, so the workbook's cannot be compared.",
-						"Run the checks, decide each that differs, then sign.")
-				case r.SignOff != nil && r.SignOff.Current:
-					return problem(migration.CodeRegister, "The report is signed already.", "Nothing to do: the step is signed.")
-				}
-				audit := storage.AuditFrom(ctx)
-				audit.Reason = fmt.Sprintf("The parity report at ledger revision %d and its register (FR-MIG-02)", r.Revision)
-				_, err := u.Migrations().SignOff(storage.WithAudit(ctx, audit), storage.MigrationSignOff{RunID: id, Subject: storage.SignOffReconciliation,
-					SubjectSHA256: r.ReportSHA256, SignedBy: "user:" + person.UserID.String(), SignedAt: now})
-				return err
-			})
+			return change(ctx, id, in.IdempotencyKey, in.Prefer, in.IfMatch, in, signReport(id, person, now))
 		})
+}
+
+// changeReport runs a decision or a sign-off on a report as read (If-Match), in one unit of work: M4's or M5's, by src.
+func (a *API) changeReport(ctx context.Context, id uuid.UUID, key, prefer, ifMatch string, request any, src reconciliationSource,
+	do func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, src reconciliationSource) error) (*migrationReconciliationWriteOutput, error) {
+	w, err := write(ctx, a, key, prefer, request, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (MigrationReconciliation, error) {
+		r, err := reportIn(ctx, u, id, src)
+		if err != nil {
+			return r, err
+		}
+		if err := checkIfMatch(ifMatch, `"`+r.ReportSHA256+`"`); err != nil {
+			return r, err
+		}
+		if err := do(ctx, u, r, src); err != nil {
+			return r, err
+		}
+		return reportIn(ctx, u, id, src)
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := &migrationReconciliationWriteOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}
+	if !w.Previewed {
+		out.ETag = `"` + w.Body.ReportSHA256 + `"`
+	}
+	return out, nil
+}
+
+// decideLine is the Accountant's decision on a line of the report as read (FR-MIG-02; rev 0.266): the line's figures kept
+// with it.
+func decideLine(id uuid.UUID, line string, body MigrationRegisterChange, now time.Time) func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, src reconciliationSource) error {
+	return func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, _ reconciliationSource) error {
+		fyniq, workbook, ok := r.lineFigures(line)
+		if !ok {
+			return problem(migration.CodeRegister, fmt.Sprintf("The register has no line %s: the report shows no difference there.", line),
+				"Decide a line the report lists, by its key.", FieldProblem{Field: "line", Code: migration.CodeRegister,
+					Message: "is not a line of the report", Fix: "Read the report again"})
+		}
+		if body.Class == migration.ClassDefect && strings.TrimSpace(body.Note) == "" {
+			return problem(migration.CodeRegister, "A workbook defect (class c) says what it is.", "Write what the workbook got wrong in the note.",
+				FieldProblem{Field: "note", Code: migration.CodeRegister, Message: "is empty", Fix: "Say what the workbook got wrong"})
+		}
+		version := 0
+		decisions, err := u.Migrations().Decisions(ctx, id)
+		if err != nil {
+			return err
+		}
+		for _, d := range decisions {
+			if d.Line == line {
+				version = d.Version
+			}
+		}
+		_, err = u.Migrations().Decide(ctx, storage.MigrationDecision{RunID: id, Line: line, Class: body.Class, Note: strings.TrimSpace(body.Note),
+			Fyniq: fyniq, Workbook: workbook, Version: version, DecidedBy: uploader(ctx), DecidedAt: now})
+		return err
+	}
+}
+
+// signReport is the Accountant's sign-off of the report as read and its register, over its hash, under the source's
+// subject: M4's parity report (rev 0.266) or M5's parallel month (rev 0.268).
+func signReport(id uuid.UUID, person authn.Principal, now time.Time) func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, src reconciliationSource) error {
+	return func(ctx context.Context, u storage.UnitOfWork, r MigrationReconciliation, src reconciliationSource) error {
+		switch {
+		case r.Undecided > 0:
+			return problem(migration.CodeRegister, fmt.Sprintf("%d lines of the register have no decision that counts.", r.Undecided),
+				"Decide each line the report lists, again where its figures moved, then sign.")
+		case r.ChecksRunAt == nil:
+			return problem(migration.CodeRegister, "Fyniq's checks have never run, so the workbook's cannot be compared.",
+				"Run the checks, decide each that differs, then sign.")
+		case r.SignOff != nil && r.SignOff.Current:
+			return problem(migration.CodeRegister, "The report is signed already.", "Nothing to do: the step is signed.")
+		}
+		what := "The parity report"
+		if src.subject == storage.SignOffParallel {
+			what = "The parallel month's report"
+		}
+		audit := storage.AuditFrom(ctx)
+		audit.Reason = fmt.Sprintf("%s at ledger revision %d and its register (FR-MIG-02)", what, r.Revision)
+		_, err := u.Migrations().SignOff(storage.WithAudit(ctx, audit), storage.MigrationSignOff{RunID: id, Subject: src.subject,
+			SubjectSHA256: r.ReportSHA256, SignedBy: "user:" + person.UserID.String(), SignedAt: now})
+		return err
+	}
 }
