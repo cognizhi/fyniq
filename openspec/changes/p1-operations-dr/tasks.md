@@ -88,7 +88,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 9. Browsers (slice 9)
 
-- [ ] 9.1 Playwright's Firefox and WebKit projects in CI, and Vite's build target from the supported browsers, with a
+- [x] 9.1 Playwright's Firefox and WebKit projects in CI, and Vite's build target from the supported browsers, with a
   test that keeps them in step. `// req: NFR-BROWSER-01`
 
 ## 10. Cost (slice 10)

@@ -236,6 +236,13 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
 - Vite's `build.target` names the supported browsers' oldest versions, from a browserslist query of the last two
   versions [verify the versions at build]. A test keeps the two in step.
 
+- **As built (slice 9):** `apps/web/browsers.ts` lists the supported browsers with their engine and build target; Vite's
+  `build.target` and the Playwright projects read it, and `src/browsers.test.ts` keeps both to NFR-BROWSER-01's list.
+  The targets are floors no newer than the oldest of the last two versions (Chrome, Edge 130; Firefox 130; Safari and
+  iOS 18), written down rather than queried at build, so a build never depends on a database download `[verify the
+  floors each release]`. `make test-e2e` runs Chrome locally; CI installs Firefox and WebKit and sets
+  `FYNIQ_E2E_BROWSERS=all`.
+
 ### D9. Cost (NFR-COST-01 to NFR-COST-04; rev 0.249)
 
 - **The idle alert (NFR-COST-02),** a policy in `modules/slo`. It fires when Cloud Run's billable instance time is above

@@ -6,6 +6,7 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { buildTarget } from "./browsers.ts";
 
 const api = `http://localhost:${process.env.FYNIQ_API_PORT ?? "8081"}`;
 const proxy = { "/api": { target: api, rewrite: (p: string) => p.replace(/^\/api/, "") } };
@@ -26,6 +27,8 @@ export default defineConfig({
   build: {
     // NFR-PERF-UI-03: the shell's initial JavaScript stays small; heavy parts load on demand.
     reportCompressedSize: true,
+    // NFR-BROWSER-01: the supported browsers' oldest versions (browsers.ts).
+    target: buildTarget,
   },
   test: {
     environment: "jsdom",

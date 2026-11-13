@@ -219,7 +219,11 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: pnpm install --frozen-lockfile
-      - run: make test-e2e   # uses the runner's Google Chrome; no browser download
+      # NFR-BROWSER-01: Firefox and WebKit, the builds of the pinned Playwright (its CDN); Chrome is the runner's own.
+      - run: pnpm --filter @fyniq/web exec playwright install --with-deps firefox webkit
+      - run: make test-e2e   # in Chrome, Firefox and WebKit (apps/web/browsers.ts)
+        env:
+          FYNIQ_E2E_BROWSERS: all
 
   local-mode:
     name: Local mode timings (make setup && make dev)
