@@ -472,13 +472,24 @@ func ReviseShareClassIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID,
 // RecordIn records a drafted holder record or share class (of type t) in u, on its approval: append-only from then on,
 // superseding the one before it. It needs its evidence attached (EQUITY-06) and posts no entry.
 func RecordIn(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, id uuid.UUID) (storage.Document, error) {
+	return record(ctx, u, t, id, true)
+}
+
+// RecordImportedIn records a draft the workbook import made (FR-MIG-01; rev 0.262), such as a SAFE of the Funding
+// sheet: its evidence is the workbook the migration keeps as M1's evidence, which its migration record names, and the
+// import's approved commit is its approval [accountant to confirm].
+func RecordImportedIn(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, id uuid.UUID) (storage.Document, error) {
+	return record(ctx, u, t, id, false)
+}
+
+func record(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, id uuid.UUID, evidence bool) (storage.Document, error) {
 	doc, err := Drafted(ctx, u, t, id)
 	if err != nil {
 		return doc, err
 	}
 	if n, err := attached(ctx, u, id); err != nil {
 		return doc, err
-	} else if n == 0 {
+	} else if n == 0 && evidence {
 		fix, ok := evidenceFix[t]
 		if !ok {
 			fix = "Attach the identity document, or the constitution and the shareholders' agreement"

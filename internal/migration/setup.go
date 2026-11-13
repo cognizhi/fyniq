@@ -107,6 +107,19 @@ func (m Mapping) gstOf(code string) string {
 	return code
 }
 
+// salesGST and purchaseGST are the GST code a sale's or a purchase's row maps onto: the workbook's NA, neither a supply
+// nor a purchase, on such a row (a balance brought forward, say) is one out of scope, OS or OP, which no return reports
+// (rev 0.262) [accountant to confirm].
+func (m Mapping) salesGST(code string) string    { return outOfScope(m.gstOf(code), "OS") }
+func (m Mapping) purchaseGST(code string) string { return outOfScope(m.gstOf(code), "OP") }
+
+func outOfScope(code, as string) string {
+	if code == "NA" {
+		return as
+	}
+	return code
+}
+
 // accountOf is the Fyniq account a workbook account code (or "code - name" label) maps onto.
 func (m Mapping) accountOf(code string) string {
 	code = codeOf(code)
@@ -425,7 +438,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 	for i := range m.People {
 		p := m.People[i]
 		if x, ok := people[p.Contact]; ok {
-			x.Director, x.Shareholder = x.Director || p.Director, x.Shareholder || p.Shareholder
+			x.Director, x.Shareholder, x.Investor = x.Director || p.Director, x.Shareholder || p.Shareholder, x.Investor || p.Investor
 			continue
 		}
 		people[p.Contact] = &p
@@ -435,7 +448,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 		p := people[name]
 		out = append(out, Record{Key: "person:" + strings.ToLower(name), Kind: KindPerson, Origin: Origin{Sheet: p.Sheet, Row: p.Row},
 			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-				d := storage.ContactDetails{LegalName: name, Director: p.Director, Shareholder: p.Shareholder, Individual: p.Director}
+				d := storage.ContactDetails{LegalName: name, Director: p.Director, Shareholder: p.Shareholder, Investor: p.Investor, Individual: p.Director}
 				if err := refused(contact.Check(d)); err != nil {
 					return Made{}, err
 				}
@@ -541,7 +554,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 				return Made{Type: "bank_rule", ID: x.ID}, err
 			}})
 	}
-	return out
+	return append(out, w.funding(m, path)...)
 }
 
 // moneyKind is the kind of money account an account's name says it is: a card, cash, a payment gateway, a wallet, else a

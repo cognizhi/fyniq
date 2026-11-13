@@ -160,17 +160,19 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 	rep := e.call(http.MethodGet, "/v1/migrations/"+id+"/report", e.as(authz.Auditor), nil)
 	sheets, _ := rep.Body["sheets"].([]any)
 	problems, _ := rep.Body["problems"].([]any)
-	// Five warnings: the Timesheets and the bank rule to a money account kept in the archive, the sample's placeholder
-	// UEN, which the import leaves out, and the two US suppliers' natures of payment, which the mapping asks for.
+	// Six warnings: the Timesheets, the bank rule to a money account and the option pool kept in the archive, the
+	// sample's placeholder UEN, which the import leaves out, and the two US suppliers' natures of payment, which the
+	// mapping asks for.
 	var warned []string
 	for _, p := range problems {
 		warned = append(warned, fmt.Sprint(p.(map[string]any)["code"], " ", p.(map[string]any)["sheet"]))
 	}
 	slices.Sort(warned)
-	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(5) ||
+	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(6) ||
 		rep.str("format") != migration.ReportFormat || rep.str("base_currency") != "SGD" || rep.str("books_start") != "2026-01-01" ||
 		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 22 ||
-		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Lists, "+migration.CodeArchived+" Timesheets, "+
+		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Funding, "+migration.CodeArchived+" Lists, "+
+			migration.CodeArchived+" Timesheets, "+
 			migration.CodeMapping+" Contacts, "+migration.CodeMapping+" Contacts" {
 		t.Fatalf("the report: %d %s", rep.Status, rep.Raw)
 	}

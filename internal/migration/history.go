@@ -275,6 +275,13 @@ func (w *Workbook) balancesRecord(m Mapping, rows []Account, sheet string) (Reco
 							Fix: "Add 3900 Opening balance clearing, with its role, to the chart"}}
 					}
 					line.AccountID, line.Description = clearing.ID, "Opening "+a.Name+", carried by the opening items"
+				case ledger.RoleConvertibleInstruments: // a line per SAFE or note of the Funding sheet, naming it (FR-EQ-18; rev 0.262)
+					split, err := w.byInstrument(e, line, amt)
+					if err != nil {
+						return Made{}, err
+					}
+					lines = append(lines, split...)
+					continue
 				case ledger.RoleDirectorLoan, ledger.RoleDeferredRemuneration, ledger.RoleShareApplicationMonies:
 					person, err := contactOf(e, persons[a.Code])
 					if err != nil {
@@ -297,8 +304,42 @@ func (w *Workbook) balancesRecord(m Mapping, rows []Account, sheet string) (Reco
 		}}, true
 }
 
-// docLines are the Doc Lines of a document's number.
+// byInstrument splits an opening balance of convertible instruments into a line for each SAFE or note of the Funding
+// sheet, each its amount, naming the instrument its record made (FR-EQ-18): refused when they do not add up to it.
+func (w *Workbook) byInstrument(e *Env, line ledger.JournalLine, total money.Money) ([]ledger.JournalLine, error) {
+	var out []ledger.JournalLine
+	sum := money.Zero(total.Currency())
+	for _, x := range w.Instruments {
+		id, ok := e.Made(fmt.Sprintf("instrument:%d", x.Row))
+		if !ok {
+			continue
+		}
+		amt, err := amount(x.Amount, total.Currency(), total.Sign() < 0, "amount")
+		if err != nil {
+			return nil, err
+		}
+		if sum, err = sum.Add(amt); err != nil {
+			return nil, err
+		}
+		l := line
+		l.Amount, l.Instrument, l.Description = amt, id, line.Description+", "+personName(x.Investor)
+		out = append(out, l)
+	}
+	if c, err := sum.Cmp(total); err != nil || c != 0 {
+		if total.Sign() < 0 {
+			sum, total = sum.Neg(), total.Neg()
+		}
+		return nil, Refused{{Code: CodeImport, Field: "opening_balance", Message: fmt.Sprintf("the SAFEs and notes of the Funding sheet add up to %s, not the %s the account carries",
+			sum, total), Fix: "Enter every SAFE and note the account holds on the Funding sheet, each with its amount"}}
+	}
+	return out, nil
+}
+
+// docLines are the Doc Lines of a document's number; none for no number.
 func (w *Workbook) docLines(number string) []DocLine {
+	if strings.TrimSpace(number) == "" {
+		return nil
+	}
 	var out []DocLine
 	for _, l := range w.DocLines {
 		if strings.EqualFold(strings.TrimSpace(l.Document), strings.TrimSpace(number)) {
@@ -427,7 +468,7 @@ func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
 			if err != nil {
 				return Made{}, err
 			}
-			gst := m.gstOf(cmp.Or(d.GSTUsed, d.GST))
+			gst := m.salesGST(cmp.Or(d.GSTUsed, d.GST))
 			draft := invoicedoc.Draft{CustomerID: customer, Date: d.Date, DueDate: d.Due, Currency: cur, Rate: rate, Notes: d.Notes, OpeningItem: d.OpeningItem}
 			spread := func(l *invoicedoc.Line) {
 				if d.ServiceMonths != nil {
@@ -440,7 +481,11 @@ func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
 			if creditNote {
 				net = new(apd.Decimal).Neg(d.Net)
 			}
-			if draft.Lines, err = w.salesLines(ctx, u, e, d.Number, net, cmp.Or(d.Description, "Invoice "+d.Number), category.ID, gst, values, cur, spread); err != nil {
+			itemised := d.Number // a balance the Carry Forward sheet brings forward is one line of its amount, never the invoice's Doc Lines
+			if d.Sheet == "Carry Forward" {
+				itemised = ""
+			}
+			if draft.Lines, err = w.salesLines(ctx, u, e, itemised, net, cmp.Or(d.Description, "Invoice "+d.Number), category.ID, gst, values, cur, spread); err != nil {
 				return Made{}, err
 			}
 			svc := journal.Invoices{Store: e.Store, Clock: e.Clock}
@@ -516,7 +561,7 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 					return Made{}, err
 				}
 			}
-			l := billdoc.Line{AccountID: category.ID, Description: cmp.Or(d.Description, "Bill "+d.Number), Net: net, GSTCode: m.gstOf(cmp.Or(d.GSTUsed, d.GST)),
+			l := billdoc.Line{AccountID: category.ID, Description: cmp.Or(d.Description, "Bill "+d.Number), Net: net, GSTCode: m.purchaseGST(cmp.Or(d.GSTUsed, d.GST)),
 				GST: gst, Values: values}
 			if d.ServiceMonths != nil {
 				if n, err := d.ServiceMonths.Int64(); err == nil && n > 1 {

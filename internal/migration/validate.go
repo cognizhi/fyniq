@@ -237,6 +237,13 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.U
 				Fix:     "Record its disposal in Fixed assets once the import is committed"})
 		}
 	}
+	for _, h := range w.Holdings {
+		if esop(h) {
+			w.Problems = append(w.Problems, Problem{Sheet: "Funding", Row: h.Row, Column: "Holder", Severity: Warning, Code: CodeArchived,
+				Message: fmt.Sprintf("%s is an option pool, no holding: it is kept in the archive (rev 0.262)", h.Holder),
+				Fix:     "Record the pool's resolution in Cap table › Options once the import is committed (FR-EQ-19)"})
+		}
+	}
 	for _, q := range w.QuotesOrders {
 		k := strings.ToLower(q.Kind)
 		if !strings.Contains(k, "quote") && !strings.Contains(k, "order") {

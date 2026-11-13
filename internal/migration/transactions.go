@@ -74,7 +74,7 @@ func signed(x Transaction) *apd.Decimal {
 }
 
 // equity says whether a row goes to share capital or to convertible instruments: what the Funding sheet's share issues
-// and SAFEs record (task 4.6), so its line waits for them.
+// and SAFEs record (task 4.6).
 func (m Mapping) equity(code string) bool {
 	r := m.role(code)
 	return r == string(storage.RoleShareCapital) || r == ledger.RoleConvertibleInstruments
@@ -83,8 +83,8 @@ func (m Mapping) equity(code string) bool {
 // transactions are the Transactions sheet's records (design D5): first a statement of each money account's lines, a
 // row each, and for a transfer between two of them a line on each side; then, in date order with the rest of the
 // history, each row as what it was: a customer's payment of the invoice it names, a payment of a supplier's bill, a
-// transfer, or a categorised bank transaction. A row to share capital or to a SAFE waits for the Funding sheet's
-// records (task 4.6) as its line.
+// transfer, a subscription for shares, or a categorised bank transaction, a SAFE's money naming its instrument (rev
+// 0.262).
 func (w *Workbook) transactions(m Mapping) ([]Record, []dated) {
 	type side struct {
 		Transaction
@@ -111,7 +111,8 @@ func (w *Workbook) transactions(m Mapping) ([]Record, []dated) {
 			}
 			add(x.Category, x, new(apd.Decimal).Neg(amt), lineRef(x.Row, other))
 			rows = append(rows, dated{Record: w.transferRecord(m, x, amt.Sign() < 0), on: x.Date, order: 4})
-		case m.equity(x.Category):
+		case m.role(x.Category) == string(storage.RoleShareCapital):
+			rows = append(rows, dated{Record: w.subscriptionRecord(m, x), on: x.Date, order: 4})
 		case m.role(x.Category) == ledger.RoleAccountsReceivable:
 			rows = append(rows, dated{Record: w.receiptRecord(m, x), on: x.Date, order: 4})
 		case m.role(x.Category) == ledger.RoleAccountsPayable:
@@ -327,7 +328,7 @@ func (w *Workbook) transferRecord(m Mapping, x Transaction, out bool) Record {
 }
 
 // categorisedRecord imports any other row as its line categorised (FR-BNK-06): its category, the GST code the workbook
-// used, its spread, project and contact; a director's account's line names its person.
+// used, its spread, project and contact; a director's account's line names its person, and a SAFE's its instrument.
 func (w *Workbook) categorisedRecord(m Mapping, x Transaction) Record {
 	return Record{Key: "transaction:" + fmt.Sprint(x.Row), Kind: KindBankTransaction, Origin: x.Origin,
 		make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
@@ -350,6 +351,13 @@ func (w *Workbook) categorisedRecord(m Mapping, x Transaction) Record {
 				}
 			}
 			d := banktransaction.Draft{LineID: line.ID, Reference: strings.TrimSpace(x.Ref), Parts: []banktransaction.Part{part}}
+			if string(acc.Role) == ledger.RoleConvertibleInstruments { // the SAFE or note the money is for (FR-EQ-18)
+				id, err := w.instrumentOf(e, x.Contact)
+				if err != nil {
+					return Made{}, err
+				}
+				d.InstrumentID = &id
+			}
 			if strings.TrimSpace(x.Contact) != "" {
 				if id, err := contactOf(e, x.Contact); err == nil {
 					d.ContactID = &id

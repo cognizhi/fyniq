@@ -50,11 +50,16 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 		t.Errorf("the history: %v, the first invoice %s and bill %s", kinds, plan[first[KindInvoice]].Key, plan[first[KindBill]].Key)
 	}
 	// Transactions (rev 0.259): a statement for each of the 6 money accounts they move, then each row as a receipt,
-	// a payment of a bill, a transfer or a categorised transaction; the 2 rows to share capital or a SAFE wait for the
-	// Funding sheet (task 4.6).
-	if kinds[KindStatement] != 6 || kinds[KindReceipt] != 18 || kinds[KindBillPayment] != 14 || kinds[KindTransfer] != 23 ||
-		kinds[KindReceipt]+kinds[KindBillPayment]+kinds[KindTransfer]+kinds[KindBankTransaction] != len(w.Transactions)-2 || kinds[KindMoneyAccount] != 7 {
+	// a payment of a bill, a transfer, a subscription for shares or a categorised transaction (rev 0.262).
+	if kinds[KindStatement] != 6 || kinds[KindReceipt] != 18 || kinds[KindBillPayment] != 14 || kinds[KindTransfer] != 23 || kinds[KindSubscription] != 1 ||
+		kinds[KindReceipt]+kinds[KindBillPayment]+kinds[KindTransfer]+kinds[KindBankTransaction]+kinds[KindSubscription] != len(w.Transactions) ||
+		kinds[KindMoneyAccount] != 7 {
 		t.Errorf("the transactions: %v of %d rows", kinds, len(w.Transactions))
+	}
+	// The Funding sheet (rev 0.262): the founders' and the angels' shares issued before the books start, the seed round
+	// allotted with its row, and the SAFE, all in the set-up; a clean start after the seed round issues it before too.
+	if kinds[KindShareIssue] != 3 || kinds[KindInstrument] != 1 || first[KindShareIssue] < first[KindPerson] || first[KindStatement] < first[KindInstrument] {
+		t.Errorf("the Funding sheet: %v, %v", kinds, first)
 	}
 	// A clean start (§17.1 M3, rev 0.261): after the set-up, the Carry Forward sheet's balances and its 6 open invoices,
 	// one a credit note, and 3 open bills as opening items, and the 3 assets as opening assets; none of the history.
@@ -67,7 +72,8 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 			t.Errorf("a clean start imports the history's %s", r.Key)
 		}
 	}
-	if got[KindOpeningBalances] != 1 || got[KindInvoice] != 5 || got[KindCreditNote] != 1 || got[KindBill] != 3 || got[KindAsset] != 3 {
+	if got[KindOpeningBalances] != 1 || got[KindInvoice] != 5 || got[KindCreditNote] != 1 || got[KindBill] != 3 || got[KindAsset] != 3 ||
+		got[KindShareIssue] != 4 || got[KindInstrument] != 1 {
 		t.Errorf("the clean start: %v", got)
 	}
 	// Payroll: one summary journal for each of the sheet's 9 months (design D7).

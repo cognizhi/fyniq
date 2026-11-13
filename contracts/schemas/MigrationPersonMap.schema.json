@@ -17,6 +17,13 @@
       ],
       "type": "boolean"
     },
+    "investor": {
+      "description": "Marked investor: holds a SAFE or note of the Funding sheet (rev 0.262).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "row": {
       "description": "Its row; ignored in a change.",
       "examples": [

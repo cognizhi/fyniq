@@ -58,6 +58,7 @@ type MigrationPersonMap struct {
 	Contact     string `json:"contact" maxLength:"200" doc:"The contact's legal name: two names of one person map onto one contact." example:"Alex Tan"`
 	Director    bool   `json:"director,omitempty" doc:"Marked director: a director's account names them (FR-EQ-01)." example:"true"`
 	Shareholder bool   `json:"shareholder,omitempty" doc:"Marked shareholder." example:"true"`
+	Investor    bool   `json:"investor,omitempty" doc:"Marked investor: holds a SAFE or note of the Funding sheet (rev 0.262)." example:"false"`
 }
 
 // MigrationCodeMap is a workbook GST code and the sg-gst code it maps onto.

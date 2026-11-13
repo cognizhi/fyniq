@@ -94,7 +94,7 @@ func (w *Workbook) quoteRecord(m Mapping, q QuoteOrder) (dated, bool) {
 					return Made{}, err
 				}
 			}
-			lines, err := w.salesLines(ctx, u, e, q.Number, q.Net, cmp.Or(q.Description, q.Kind+" "+q.Number), category, m.gstOf(q.GST), values, cur, nil)
+			lines, err := w.salesLines(ctx, u, e, q.Number, q.Net, cmp.Or(q.Description, q.Kind+" "+q.Number), category, m.salesGST(q.GST), values, cur, nil)
 			if err != nil {
 				return Made{}, err
 			}
@@ -140,7 +140,7 @@ func (w *Workbook) purchaseOrder(ctx context.Context, u storage.UnitOfWork, e *E
 	if err != nil {
 		return Made{}, Refused{{Code: CodeValue, Field: "amount", Message: err.Error(), Fix: "Enter the amount before GST in the workbook"}}
 	}
-	gst := m.gstOf(q.GST)
+	gst := m.purchaseGST(q.GST)
 	if gst == "" {
 		if gst, err = defaultGST(ctx, u, category); err != nil {
 			return Made{}, err

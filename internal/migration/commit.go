@@ -43,6 +43,8 @@ type Record struct {
 type Env struct {
 	made map[string]uuid.UUID
 	Now  time.Time
+	// Person is the user who runs the batch, whom the register of members names as recording what the import records.
+	Person uuid.UUID
 	// The store, organisation and clock of the batch, for the services a record's command goes through: they join its
 	// unit of work.
 	Store storage.Store
@@ -144,13 +146,13 @@ type Progress struct {
 }
 
 // Batch imports up to n of the plan's records not yet imported, in order, each in its own unit of work with its
-// migration record, as by (rev 0.258). It stops at the first record that cannot be imported and returns it as an
+// migration record, as by, the user person (rev 0.258). It stops at the first record that cannot be imported and returns it as an
 // ImportError with the progress so far: the records before it stay imported, and the next batch starts again at it.
 // When every record is imported, the commit is committed.
-func Batch(ctx context.Context, store storage.Store, org uuid.UUID, c storage.MigrationCommit, plan []Record, n int, by string,
+func Batch(ctx context.Context, store storage.Store, org uuid.UUID, c storage.MigrationCommit, plan []Record, n int, by string, person uuid.UUID,
 	now func() time.Time) (Progress, error) {
 	p := Progress{Total: len(plan)}
-	e := &Env{made: map[string]uuid.UUID{}, Store: store, Org: org, Clock: clockOf(now)}
+	e := &Env{made: map[string]uuid.UUID{}, Person: person, Store: store, Org: org, Clock: clockOf(now)}
 	err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		done, err := u.Migrations().Records(ctx, c.ID)
 		for _, r := range done {
