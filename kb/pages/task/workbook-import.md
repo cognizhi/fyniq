@@ -2,9 +2,9 @@
 key: settings.import
 type: task
 title: Import from the finance workbook step by step, and import records from CSV or Excel
-summary: Settings › Import, the six migration steps M1 to M6, starting, uploading and checking the workbook, mapping and signing, and the generic import
+summary: Settings › Import, the migration steps M1 to M6, uploading, mapping, committing and reconciling the workbook, and the generic import
 sources:
-  - docs/user-guide/workbook-import.md sha256:688f1849b97b4e059de7efb74e92f9ba6593cfbc4975a6b65d96714a1425a1f9
+  - docs/user-guide/workbook-import.md sha256:67d6c9802ddadb9748ad9a7dc99ca3e3df2b754700b2e6907e9591793540db65
 data_class: general
 taint: trusted
 status: published
@@ -55,6 +55,24 @@ aliases:
 - The Accountant selects **Sign the mapping** and confirms it's them; a later version needs its own sign-off, and once the import is committed the mapping is fixed.
 
 (src: docs/user-guide/workbook-import.md#map-and-sign)
+
+## Commit
+
+- Once the mapping is signed, choose what to import: the year's history from the books start, or a clean start from the workbook's Carry Forward sheet.
+- **Ask to commit** and confirm it's you; an Owner who did not ask approves it in **Approvals** ([[approvals.decide]]).
+- Once approved, **Run the import** enters the records batch by batch, each through the same checks as entering it by hand, with the progress shown by kind.
+- A record that cannot be entered stops the import, naming its row, what is wrong and how to fix it; the records before it stay entered, and **Continue the import** picks up where it stopped.
+
+(src: docs/user-guide/workbook-import.md#commit)
+
+## Reconcile and sign
+
+- Once committed, every account and month is compared with the workbook to the cent, with the customers' and suppliers' open balances, the pay runs' totals, and each workbook check against Fyniq's.
+- Each figure or check that differs goes into the difference register, where the Accountant decides its class: **a**, a cent from how spreads and depreciation are allocated; **b**, a rule Fyniq applies deliberately differently; **c**, a workbook defect found during the move, with a note saying what it is.
+- If the figures move after a line is decided, it is marked to decide again.
+- Once every line is decided, the Accountant selects **Sign the register** and confirms it's them; the GST F5 is compared once Fyniq makes the F5 return.
+
+(src: docs/user-guide/workbook-import.md#reconcile-and-sign)
 
 ## Other imports
 
