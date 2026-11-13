@@ -110,8 +110,22 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 12. Threat model and as built (slice 12)
 
-- [ ] 12.1 `docs/security/threat-models/operations-dr.md`.
-- [ ] 12.2 `make test` and `make up` pass on the last slice; the build plan's paragraph says what was built.
+- [x] 12.1 `docs/security/threat-models/operations-dr.md`.
+- [x] 12.2 `make test` and `make up` pass on the last slice; the build plan's paragraph says what was built.
+
+## 13. The owner's decisions after building (rev 0.250, design D11)
+
+- [x] 13.1 PRD-001 rev 0.250 and the specs it changes (DR-04, DR-07, SEC-11, NFR-OBS-01, NFR-PERF-05, QA-PERF-01,
+  FR-INT-09).
+- [ ] 13.2 The evidence buckets and the key ring of `fields` and `fingerprints` in `fyniq-audit`, granted to the api and
+  the worker alone, with module tests `[live-verify]`. `// req: DR-07`, `// req: SEC-11`, `// req: DR-04`
+- [ ] 13.3 The environment's `traces` setting, off until Cloud Trace keeps spans in Singapore; off, the services export
+  nothing. Module test and the runbook's check `[live-verify]`. `// req: NFR-OBS-01`, `// req: CTL-DP-07`
+- [ ] 13.4 The general ledger export streamed a page at a time with no limit, its figures checked against the
+  on-screen report and the oracle's, and the harness's NFR-PERF-05 at 1 M lines. `// req: NFR-PERF-05`
+- [ ] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02`
+- [ ] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09`
+- [ ] 13.7 The threat model and the build plan say what was built.
 
 ## Workflow follow-up
 

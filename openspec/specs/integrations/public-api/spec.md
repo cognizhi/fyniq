@@ -171,6 +171,12 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **WHEN** an update to a versioned resource has no `If-Match`
 - **THEN** it is not applied
 
+#### Scenario: Our own tag, weakened by a proxy (rev 0.250)
+- **GIVEN** a compressing proxy marked the API's `ETag` weak with `W/`
+- **WHEN** the client sends that tag back in `If-Match`
+- **THEN** the API accepts it, since the tag names the record's version, the same in every encoding
+- **AND** any other tag is still refused with 412
+
 ### Requirement: FR-INT-10 Lists and value formats
 List endpoints SHALL use cursor pagination and support filtering on documented fields, sorting and sparse fieldsets, and the API SHALL format money, dates and IDs in one way throughout.
 

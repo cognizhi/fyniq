@@ -271,6 +271,25 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
 - **Help keys** `shell.operations`; a guide section; a component test with axe; the fragment `OperationsTray`,
   local only until the design account is available.
 
+### D11. The owner's decisions after building (PRD-001 rev 0.250; DR-04, DR-07, SEC-11, NFR-OBS-01, NFR-PERF-02, NFR-PERF-05, QA-PERF-01, FR-INT-09)
+
+Taken interactively on 11 Nov 2026, once slices 1 to 12 were built:
+
+- **The evidence buckets and the sealed fields' key ring move to `fyniq-audit`.** The `evidence` module and the key
+  ring of `fields` and `fingerprints` take the audit project; the api and the worker are granted on those buckets and
+  keys alone. Nothing is live yet, so nothing is migrated. The project-loss drill then restores documents and opens
+  sealed fields.
+- **Cloud Trace in Singapore, or no traces in production.** The environment's `traces` setting stays off until the
+  dev cloud shows Cloud Trace keeps spans in `asia-southeast1`; with it off, the services are given no trace project
+  and export nothing. Logs and metrics are unchanged.
+- **The 10 M-line run gates from the first release**, so the findings are fixed first:
+  - the general ledger export streams: the worker reads each account's lines a page at a time (keyset paging) and
+    writes the CSV or XLSX as it reads, with no limit; the on-screen report keeps its 5,000 lines an account;
+  - the reports are measured at 1 M and 10 M lines, and made to meet NFR-PERF-02 where the time goes.
+- **`If-Match` accepts the API's own tag weak or strong.** The comparison drops a leading `W/` from the client's tag
+  before comparing it with the record's: the tag names the record's version, the same in every encoding. Any other tag
+  is still 412.
+
 ## Risks / Trade-offs
 
 - **[Most of it runs only in the cloud]** Clones, exports, SLOs, absence alerts and Cloud Trace are verified in the dev

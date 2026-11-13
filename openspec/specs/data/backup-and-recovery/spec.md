@@ -68,6 +68,11 @@ Source: PRD-001 §11.8 · Priority M · Phase P1
 - **THEN** the posture covers it
 - **AND** it does not cover loss of the region, because every copy and key is in `asia-southeast1` (open question 37)
 
+#### Scenario: Documents and sealed fields survive too (rev 0.250)
+- **GIVEN** the evidence buckets (DR-07) and the sealed fields' keys (SEC-11) are in `fyniq-audit`
+- **WHEN** the database is restored after the loss of `fyniq-prod`
+- **THEN** its documents are there and its sealed fields can be opened
+
 ### Requirement: DR-05 Enhanced backups in a vault
 The system SHALL keep enhanced backups in a Backup and DR vault in a separate project, with enforced retention and retention lock.
 
@@ -124,6 +129,11 @@ Source: PRD-001 §11.8 · Priority M · Phase P1
 #### Scenario: Separate staging bucket
 - **WHEN** a file is uploaded
 - **THEN** it goes to a separate, unlocked staging bucket (FR-DOC-13)
+
+#### Scenario: The buckets live in the audit project (rev 0.250)
+- **WHEN** the attachment and staging buckets are created
+- **THEN** they are in the `fyniq-audit` project (§12.4), beside the weekly export
+- **AND** the api and the worker write to them through grants on those buckets alone
 
 ### Requirement: Retention of the ledger, documents, attachments and audit trail
 The ledger, documents, attachments and audit trail SHALL be retained for the statutory minimum (§14) after the end of the financial year they relate to, 7 years by default; documents and attachments SHALL then be removed by an automatic, audited purge job, while ledger entries and their audit events are kept for life unless their purge is switched on.

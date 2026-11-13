@@ -101,7 +101,7 @@ Source: PRD-001 §15 · Priority M · Phase P1
 #### Scenario: Traces sampled and kept on error (rev 0.249)
 - **WHEN** a request is served in the cloud
 - **THEN** its trace context (W3C) follows it across the services
-- **AND** one request in ten is exported to Cloud Trace through an adapter, and every request that fails is
+- **AND** one request in ten is exported to Cloud Trace through an adapter, and every request that fails is kept
 
 #### Scenario: No traces locally unless asked (rev 0.249)
 - **WHEN** a service runs in local mode without an OTLP endpoint
@@ -111,6 +111,11 @@ Source: PRD-001 §15 · Priority M · Phase P1
 - **WHEN** an SLO's error budget burns faster than its alert rate
 - **THEN** a burn-rate alert is raised
 - **AND** the SLO is shown on its dashboard
+
+#### Scenario: Traces stay in Singapore (rev 0.250)
+- **WHEN** production sends traces
+- **THEN** Cloud Trace keeps them in Singapore (CTL-DP-07)
+- **AND** while it cannot, production sends none, and its logs and metrics remain
 
 ### Requirement: NFR-OBS-02 Scheduler heartbeat
 An alert independent of the API, the database and Scheduler itself SHALL notify the named platform owner within 30 minutes of the last successful tick (the Owner by escalation if it is not acknowledged), and within 2 hours for daily jobs [verify the alerting limits at P0].

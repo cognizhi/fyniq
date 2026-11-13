@@ -45,6 +45,11 @@ Source: PRD-001 §13.2 · Priority M · Phase P1
 - **WHEN** equal sealed values must be found, or a change proved in the audit trail
 - **THEN** a keyed HMAC-SHA256 fingerprint within the organisation is compared, under a pinned key version, and the value is never decrypted for it
 
+#### Scenario: The keys live in the audit project (rev 0.250)
+- **WHEN** the key ring holding `fields` and `fingerprints` is created
+- **THEN** it is in the `fyniq-audit` project (§12.4), and the api's roles on the two keys are granted there
+- **AND** the sealed fields of the weekly export can still be opened after the loss of `fyniq-prod`
+
 ### Requirement: SEC-12 Secrets in Secret Manager only
 Secrets SHALL be kept only in Secret Manager, SHALL be rotated, and SHALL never be in code, images or logs.
 
