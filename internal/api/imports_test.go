@@ -96,9 +96,13 @@ func init() {
 		"contacts": "Matrix Imports Pte Ltd,Customer,,,,SGD,30,,SG,\r\n",
 		"items":    "MTX-1,Matrix service,,Service,hour,10,,SR,Yes,\r\n",
 		"accounts": "6996,Matrix expense,Expense,Other expenses,,G&A,No,,Yes,\r\n",
+		"journals": "MJ-1,2026-10-01,6310,Matrix rent,10,,,,\r\nMJ-1,2026-10-01,1020,Matrix rent,,10,,,\r\n",
+		"invoices": "MINV-1,2026-10-01,Matrix Imports Pte Ltd,4010,Matrix service,,100,,,,,,,,,,\r\n",
+		"bills":    "MB-1,2026-10-01,Matrix Imports Pte Ltd,6310,Matrix rent,,100,,,,,,,,,,\r\n",
 	}
 	ops := map[string][2]string{"contacts": {"getContactsTemplate", "importContacts"}, "items": {"getItemsTemplate", "importItems"},
-		"accounts": {"getAccountsTemplate", "importAccounts"}}
+		"accounts": {"getAccountsTemplate", "importAccounts"}, "journals": {"getJournalsTemplate", "importJournals"},
+		"invoices": {"getInvoicesTemplate", "importInvoices"}, "bills": {"getBillsTemplate", "importBills"}}
 	for entity, op := range ops {
 		matrixImports[op[0]] = func(e *env, tok string) (response, func() bool) {
 			return e.call(http.MethodGet, "/v1/imports/"+entity+"/template", tok, nil), nil
@@ -107,5 +111,70 @@ func init() {
 			tpl := e.call(http.MethodGet, "/v1/imports/"+entity+"/template", e.as(authz.Owner), nil).Raw
 			return e.upload("/v1/imports/"+entity, tok, nil, entity+".csv", []byte(tpl+files[entity]), "Prefer", "return=preview"), nil
 		}
+	}
+}
+
+// The generic import's documents (FR-MIG-03; rev 0.271): a journal, an invoice and a bill are made drafts, nothing
+// posted, each keeping the file's number and naming the organisation's contacts by their names; a bill's GST is
+// RND-GST-EXCL at its code's rate and its due date its row's terms; a row naming a customer the organisation does not
+// have refuses the file, saying to import the contact first.
+// req: FR-MIG-03
+func TestTheGenericImportMakesDocumentsDrafts(t *testing.T) {
+	e := newEnv(t)
+	ctrl := e.as(authz.Accountant) // C on journals, invoices and bills (Appendix D)
+	e.customer()
+	e.supplier()
+	find := func(list, field, value string) map[string]any {
+		t.Helper()
+		r := e.call(http.MethodGet, list+"?limit=200", ctrl, nil)
+		for _, x := range r.Body["items"].([]any) {
+			if m := x.(map[string]any); m[field] == value {
+				return m
+			}
+		}
+		t.Fatalf("%s has no %s %s: %s", list, field, value, r.Raw)
+		return nil
+	}
+
+	tpl := e.call(http.MethodGet, "/v1/imports/journals/template", ctrl, nil).Raw
+	file := tpl + "IJ-1,2026-10-20,6310,Imported rent,1200.00,,,,\r\nIJ-1,2026-10-20," + e.books.Bank.Code + ",Imported rent,,1200.00,,,\r\n"
+	file = strings.ReplaceAll(file, "6310", e.books.Rent.Code)
+	if r := e.upload("/v1/imports/journals", ctrl, nil, "journals.csv", []byte(file)); r.Status != http.StatusCreated || r.Body["made"] != float64(1) {
+		t.Fatalf("the journals: %d %s", r.Status, r.Raw)
+	}
+	if j := find("/v1/journals", "number", "IJ-1"); j["status"] != "draft" {
+		t.Errorf("the imported journal: %v", j)
+	}
+
+	tpl = e.call(http.MethodGet, "/v1/imports/invoices/template", ctrl, nil).Raw
+	file = tpl + "IINV-1,2026-10-14,Acme Analytics Pte Ltd," + e.books.Sales.Code + ",Analytics platform,,1000.00,SR,30,,,,,,,,\r\n"
+	if r := e.upload("/v1/imports/invoices", ctrl, nil, "invoices.csv", []byte(file)); r.Status != http.StatusCreated || r.Body["made"] != float64(1) {
+		t.Fatalf("the invoices: %d %s", r.Status, r.Raw)
+	}
+	if inv := find("/v1/invoices", "number", "IINV-1"); inv["status"] != "draft" || inv["due_date"] != "2026-11-13" {
+		t.Errorf("the imported invoice: %v", inv)
+	}
+
+	tpl = e.call(http.MethodGet, "/v1/imports/bills/template", ctrl, nil).Raw
+	file = tpl + "SUP-77,2026-10-14,," + e.books.Rent.Code + ",Office rent,,1000.00,TX,14,,,,,,,,\r\n"
+	sup := e.call(http.MethodGet, "/v1/contacts/"+e.supplier(), ctrl, nil).str("legal_name")
+	file = strings.Replace(file, "2026-10-14,,", "2026-10-14,"+sup+",", 1)
+	if r := e.upload("/v1/imports/bills", ctrl, nil, "bills.csv", []byte(file)); r.Status != http.StatusCreated || r.Body["made"] != float64(1) {
+		t.Fatalf("the bills: %d %s", r.Status, r.Raw)
+	}
+	b := find("/v1/bills", "supplier_ref", "SUP-77")
+	if b["status"] != "draft" || b["due_date"] != "2026-10-28" {
+		t.Errorf("the imported bill: %v", b)
+	}
+	if full := e.call(http.MethodGet, "/v1/bills/"+b["id"].(string), ctrl, nil); !strings.Contains(full.Raw, `"gst":{"amount":"90.00"`) {
+		t.Errorf("the imported bill's GST: %s", full.Raw)
+	}
+
+	// A customer the organisation does not have refuses the file.
+	bad := e.call(http.MethodGet, "/v1/imports/invoices/template", ctrl, nil).Raw + "IINV-2,2026-10-14,Nobody Pte Ltd," + e.books.Sales.Code + ",x,,10.00,SR,,,,,,,,,\r\n"
+	r := e.upload("/v1/imports/invoices", ctrl, nil, "bad.csv", []byte(bad))
+	e.problemIs(r, "importInvoices", 422, migration.CodeGeneric)
+	if !strings.Contains(r.Raw, `"rows[2].contact"`) || !strings.Contains(r.Raw, "Import the contact first") {
+		t.Errorf("the unknown customer: %s", r.Raw)
 	}
 }

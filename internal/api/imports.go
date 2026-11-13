@@ -22,7 +22,7 @@ import (
 // ImportReport is what a file of the generic import makes, or would make on a dry run: its rows' records, and every
 // problem with its row and column, what is wrong and how to fix it.
 type ImportReport struct {
-	Entity   string             `json:"entity" enum:"contacts,items,accounts" doc:"What the file holds." example:"contacts"`
+	Entity   string             `json:"entity" enum:"contacts,items,accounts,journals,invoices,bills" doc:"What the file holds." example:"contacts"`
 	FileName string             `json:"file_name" doc:"As the uploader named it." example:"contacts.csv"`
 	Rows     int                `json:"rows" doc:"The rows read." example:"42"`
 	Made     int                `json:"made" doc:"The records made: every row's, or none, as a file is imported whole or not at all; on a dry run, the ones it would make." example:"42"`
@@ -58,10 +58,14 @@ var importPolicies = map[string][2]authz.Policy{
 	"contacts": {authz.GetContactsTemplate, authz.ImportContacts},
 	"items":    {authz.GetItemsTemplate, authz.ImportItems},
 	"accounts": {authz.GetAccountsTemplate, authz.ImportAccounts},
+	"journals": {authz.GetJournalsTemplate, authz.ImportJournals},
+	"invoices": {authz.GetInvoicesTemplate, authz.ImportInvoices},
+	"bills":    {authz.GetBillsTemplate, authz.ImportBills},
 }
 
 // importNames are each entity's words in the contract.
-var importNames = map[string]string{"contacts": "contacts", "items": "items", "accounts": "accounts of the chart"}
+var importNames = map[string]string{"contacts": "contacts", "items": "items", "accounts": "accounts of the chart",
+	"journals": "journals, as drafts", "invoices": "invoices and credit notes, as drafts", "bills": "bills and vendor credits, as drafts"}
 
 func registerImports(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
@@ -95,7 +99,9 @@ func registerImports(a *API) {
 			Description: "Imports " + words + " from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: " +
 				"CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is " +
 				"scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in " +
-				"any organisation; a file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with " +
+				"any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its " +
+				"own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is " +
+				"imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with " +
 				"its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side " +
 				"effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.",
 		}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid,

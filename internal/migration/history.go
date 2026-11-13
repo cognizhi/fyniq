@@ -12,10 +12,13 @@ import (
 	"github.com/google/uuid"
 
 	billdoc "github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/gst"
 	invoicedoc "github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -408,6 +411,24 @@ func (w *Workbook) salesLines(ctx context.Context, u storage.UnitOfWork, e *Env,
 	return out, nil
 }
 
+// gstExcl is the GST on a purchase's net at its code's rate on its date (RND-GST-EXCL): none for a code not standard
+// rated, or before GST.
+func gstExcl(ctx context.Context, u storage.UnitOfWork, on time.Time, code string, net money.Money) (money.Money, error) {
+	codes, err := gst.CodesOn(ctx, u, on, pack.DirPurchase)
+	if err != nil {
+		return money.Money{}, err
+	}
+	i := slices.IndexFunc(codes.Codes, func(c pack.GSTCode) bool { return c.Code == code })
+	if i < 0 || !codes.Codes[i].StandardRated || codes.Rate == "" {
+		return money.Zero(net.Currency()), nil
+	}
+	subtotals, err := rounding.GSTExcl([]rounding.GSTNet{{Code: code, Rate: codes.Rate, Net: net}}, rounding.GSTPerSubtotal)
+	if err != nil {
+		return money.Money{}, err
+	}
+	return subtotals[0].GST, nil
+}
+
 // defaultGST is the GST code a line on an account starts with, as the workbook falls back to its category's.
 func defaultGST(ctx context.Context, u storage.UnitOfWork, account uuid.UUID) (string, error) {
 	if account == uuid.Nil {
@@ -500,7 +521,7 @@ func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
 			if _, err := u.Sequences().Keep(ctx, doc.ID, typ, strings.TrimSpace(d.Number)); err != nil {
 				return Made{}, err
 			}
-			if !d.Draft {
+			if !d.Draft && !w.drafts {
 				if _, err := svc.Post(ctx, e.Org, doc.ID); err != nil {
 					return Made{}, err
 				}
@@ -551,7 +572,18 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 			if err != nil {
 				return Made{}, err
 			}
+			code := m.purchaseGST(cmp.Or(d.GSTUsed, d.GST))
+			if code == "" { // as the workbook falls back to its category's
+				if code, err = defaultGST(ctx, u, category.ID); err != nil {
+					return Made{}, err
+				}
+			}
 			gst := money.Zero(cur)
+			if d.Total == nil && w.drafts { // a file has no total the workbook worked out: RND-GST-EXCL at the code's rate, as the workbook does
+				if gst, err = gstExcl(ctx, u, d.Date, code, net); err != nil {
+					return Made{}, err
+				}
+			}
 			if d.Total != nil {
 				total, err := amount(d.Total, cur, credit, "total")
 				if err != nil {
@@ -561,7 +593,7 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 					return Made{}, err
 				}
 			}
-			l := billdoc.Line{AccountID: category.ID, Description: cmp.Or(d.Description, "Bill "+d.Number), Net: net, GSTCode: m.purchaseGST(cmp.Or(d.GSTUsed, d.GST)),
+			l := billdoc.Line{AccountID: category.ID, Description: cmp.Or(d.Description, "Bill "+d.Number), Net: net, GSTCode: code,
 				GST: gst, Values: values}
 			if d.ServiceMonths != nil {
 				if n, err := d.ServiceMonths.Int64(); err == nil && n > 1 {
@@ -588,7 +620,7 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 			if err != nil {
 				return Made{}, err
 			}
-			if !d.Draft {
+			if !d.Draft && !w.drafts {
 				if _, err := svc.Post(ctx, e.Org, doc.ID); err != nil {
 					return Made{}, err
 				}
@@ -665,7 +697,9 @@ func (w *Workbook) journalRecord(m Mapping, lines []JournalLine) Record {
 			if _, err := u.Sequences().Keep(ctx, doc.ID, storage.DocumentJournal, strings.TrimSpace(first.Entry)); err != nil {
 				return Made{}, err
 			}
-			_, err = svc.Post(ctx, e.Org, doc.ID)
+			if !w.drafts {
+				_, err = svc.Post(ctx, e.Org, doc.ID)
+			}
 			return Made{Type: "document", ID: doc.ID}, err
 		}}
 }

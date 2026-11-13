@@ -149,6 +149,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   carries its entity's own policy; the record builders are the workbook import's own;
   TestTheGenericImportEntersEachRowAsByHand. Left: opening balances, journals, invoices with lines, bills, FX rates,
   bank rules and budgets.)
+  (Slice 19 built journals, invoices and bills, rev 0.271: drafts posted later through their own approvals, the file's
+  numbers kept, the organisation's contacts, items and dimension values pre-loaded by name, a refusal in the file's
+  words; an invoices .xlsx file's Doc Lines sheet itemises its invoices; TestTheGenericImportMakesDocumentsDrafts. Left:
+  opening balances, FX rates, bank rules and budgets.)
 
 ## 8. Full tenant export (FR-MIG-04)
 

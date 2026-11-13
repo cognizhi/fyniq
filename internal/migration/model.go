@@ -308,6 +308,9 @@ type Balance struct {
 
 // Workbook is the workbook as the import reads it.
 type Workbook struct {
+	// drafts makes its journals, invoices and bills drafts, posted later through their approvals: the generic import's
+	// (rev 0.271); the workbook import posts them, its commit approved as a whole.
+	drafts       bool
 	Settings     Settings
 	Accounts     []Account
 	Items        []Item
