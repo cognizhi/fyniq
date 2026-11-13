@@ -112,6 +112,8 @@ type InvoiceDraft struct {
 	Lines      []InvoiceLineDraft  `json:"lines" maxItems:"200" doc:"The invoice's lines."`
 	Notes      string              `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the invoice." example:"Thank you for your business"`
 	Deposits   []InvoiceDepositUse `json:"deposits,omitempty" maxItems:"20" doc:"An invoice only: the customer's deposits it deducts (FR-AR-09), each a posted deposit of the same customer and currency, at most what is left of it. Issuing settles them; the invoice charges GST only on what they did not already bear."`
+	// Opening open items (FR-GL-06; rev 0.257).
+	OpeningItem bool `json:"opening_item,omitempty" doc:"An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice." example:"false"`
 }
 
 // InvoiceDepositUse is a deposit an invoice deducts, as entered.
@@ -202,6 +204,9 @@ type Invoice struct {
 
 	// Recurring invoices (FR-AR-07; rev 0.135).
 	RecurringInvoice *RecurringOrigin `json:"recurring_invoice,omitempty" doc:"The recurring invoice, and the version of its content, the scheduler made this draft from; whoever wrote that version does not approve its issue (SOD-3)."`
+
+	// Opening open items (FR-GL-06; rev 0.257).
+	OpeningItem bool `json:"opening_item" doc:"Whether it is an opening item: issued before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06)." example:"false"`
 
 	// Incoming-funds alerts (FR-BNK-16, UC-BNK-02; rev 0.145).
 	LikelyPaid *LikelyPaid `json:"likely_paid,omitempty" doc:"An issued invoice not yet paid: the bank's incoming-funds alert that it is likely paid, while the alert waits for its statement line. A hint only: its settlement and the ledger stay as they are until the line is reconciled to it."`
@@ -332,6 +337,7 @@ func invoiceETag(i Invoice) string { return etag(i.Version, i.Status) }
 // invoiceDraftOf reads an invoice from the request, with every invalid field at once.
 func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error) {
 	var d invoice.Draft
+	d.OpeningItem = in.OpeningItem
 	var fields []FieldProblem
 	if in.CustomerID != "" {
 		id, err := uuid.Parse(in.CustomerID)
@@ -540,7 +546,7 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		return Invoice{}, err
 	}
 	out := Invoice{ID: doc.ID.String(), Kind: invoiceKind(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
-		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
+		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d), OpeningItem: d.OpeningItem,
 		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, Sends: []DocumentSendOut{}, Links: []DocumentLinkOut{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {

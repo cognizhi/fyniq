@@ -47,13 +47,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 3. Opening open items (FR-GL-06) [accountant to confirm]
 
-- [ ] 3.1 Invoices and bills flagged `opening_item` post under `opening_item@1` against the system account "Opening
-  balance clearing" (design D6), in their currency at their rate, with no revenue, cost or GST; the opening balances
-  carry receivables and payables on the clearing account. The oracle implements the rule independently, and the
-  differential gains the source `opening-items`. Tests `// req: FR-GL-06` (an opening USD invoice paid after the books
-  start), `// req: INV-07` (the sub-ledgers agree at the books start), the full `make differential`.
-- [ ] 3.2 A C.2 check that the clearing account nets to zero once the opening balances and items are posted, with a
-  fixture that triggers it. `// req: FR-GL-06`
+- [x] 3.1 Invoices and bills flagged `opening_item` post at the books start under `opening_invoice@1` and
+  `opening_bill@1` (rev 0.257; two rule versions where the plan named one, as each keeps a replay golden of its own)
+  against the new system account 3900 "Opening balance clearing" (design D6; standard chart, role
+  `opening-balance-clearing`, 000328), in their currency at their rate, with no revenue, cost or GST; the opening
+  balances carry receivables and payables on the clearing account. Every identity, settlement, ageing and replay reads
+  the item's rule. The oracle implements the rule independently, and the differential gains the source `opening-items`.
+  Tests `TestAnOpeningItemPostsItsTotalAgainstTheClearingAccount`, `TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt`
+  (`// req: FR-GL-06`: an opening USD invoice paid after the books start; `// req: INV-07`: the sub-ledgers agree at the
+  books start; every entry replays), the oracle's `test_opening_items.py`, `make differential`.
+- [x] 3.2 C.2 #63: 3900 Opening balance clearing not at nothing (⚠) once the opening balances and items have posted,
+  with a fixture that triggers it. `// req: FR-GL-06`
 
 ## 4. The commit (M3)
 

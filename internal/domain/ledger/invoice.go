@@ -59,6 +59,9 @@ type Invoice struct {
 	GSTMethod rounding.GSTMethod
 	// Deposits are the customer's deposits the invoice deducts (FR-AR-09; rev 0.127): none for an invoice before then.
 	Deposits []InvoiceDeposit
+	// Opening is the books start an opening item posts at (FR-GL-06, opening_invoice@1; rev 0.257): an invoice issued before
+	// the books start and still unpaid then. Nil for every other invoice.
+	Opening *time.Time
 }
 
 // InvoiceDeposit is a customer deposit an invoice deducts, as the rule reads it: the amount it takes in the invoice's
@@ -423,7 +426,8 @@ type InvoiceRule func(i Invoice, s Settings) (Entry, error)
 // InvoiceRules are every invoice rule version the engine has posted with, by name: like Rules, a version is never
 // removed or changed while an entry names it.
 var InvoiceRules = map[string]InvoiceRule{
-	RuleInvoice: PostInvoice,
+	RuleInvoice:        PostInvoice,
+	RuleOpeningInvoice: PostOpeningInvoice,
 }
 
 // ReplayInvoice re-runs the rule version that posted an invoice's entry over the same version (ENG-06).

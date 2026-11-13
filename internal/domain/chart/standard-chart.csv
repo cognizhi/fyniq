@@ -15,6 +15,9 @@
 # - source "prd-203" (rev 0.203): 2040 Share application monies, a liability per subscriber (B.7, FR-EQ-17), on its own
 #   cash-flow line (rev 0.207): a current liability whose cash is financing (IAS 7 para 17(a))
 #   [accountant to confirm the code and classification];
+# - source "prd-257" (rev 0.257): 3900 Opening balance clearing, the system account opening open items post against
+#   (FR-GL-06, opening_invoice@1 and opening_bill@1), which nets to zero once the opening balances and the items have posted
+#   [accountant to confirm the code and classification];
 # - source "prd-151" (rev 0.151): 1160 Asset disposal clearing, the recommended disposal clearing account
 #   (FR-FA-03) [accountant to confirm the code]; 7050's guidance names the asset register, which now records disposals;
 # - useful_life_months (rev 0.151, FR-COA-02): the default useful life the asset register offers, on 1510 36, 1520 60,
@@ -65,6 +68,7 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 3100,Retained earnings,equity,Retained earnings,Dividends & other equity,,no,NA,no,no,retained-earnings,workbook,SYSTEM. Accumulated profits / (losses) of previous years. Enter the opening balance here (negative if losses).,no,
 3200,Dividends,equity,Other equity,Dividends & other equity,,no,NA,no,no,,workbook,Dividends paid to shareholders.,no,
 3300,Capital contribution,equity,Other equity,Dividends & other equity,,no,NA,no,no,capital-contribution,prd-b5,"A founder's balance waived as a shareholder (FR-EQ-07): equity, not income.",no,
+3900,Opening balance clearing,equity,Other equity,Dividends & other equity,,no,NA,no,no,opening-balance-clearing,prd-257,"SYSTEM. Where the opening balances meet the invoices and bills still unpaid at the books start (FR-GL-06): it nets to zero once both have posted, and a check says when it does not.",no,
 4010,Subscription revenue,revenue,Subscription revenue,,,no,SR,no,no,,workbook,Recurring software / platform subscription fees (monthly or annual plans).,no,
 4020,Consulting & services revenue,revenue,Services & project revenue,,,no,SR,no,no,,workbook,"Consulting, implementation, training and other service fees.",no,
 4030,AI project & solution revenue,revenue,Services & project revenue,,,no,SR,no,no,,workbook,Fixed-price or milestone-based AI / software project work.,no,

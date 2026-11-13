@@ -72,8 +72,11 @@ func checkBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 	}
 	out := Checked{Prepared: p, Problems: append(probs, orders...)}
 	post := ledger.PostBill
-	if doc.Type == storage.DocumentVendorCredit {
+	switch {
+	case doc.Type == storage.DocumentVendorCredit:
 		post = ledger.PostVendorCredit
+	case p.Draft.OpeningItem:
+		post = ledger.PostOpeningBill // FR-GL-06: at the books start, against the opening balance clearing account
 	}
 	entry, err := post(p.Bill, s)
 	if ps, ok := err.(ledger.Problems); ok {
@@ -106,12 +109,7 @@ func isBill(doc storage.Document) error {
 }
 
 // BillIdentityOf is the posting identity of a bill's or a vendor credit's version under its rule.
-func BillIdentityOf(doc storage.Document) string {
-	if doc.Type == storage.DocumentVendorCredit {
-		return ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
-	}
-	return ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
-}
+func BillIdentityOf(doc storage.Document) string { return bill.IdentityOf(doc) }
 
 func billDraft(doc storage.Document, what string) error {
 	if doc.Status != storage.DocumentDraft {

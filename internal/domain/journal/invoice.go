@@ -71,8 +71,11 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	probs = append(probs, quotes...)
 	out := CheckedInvoice{Prepared: p, Problems: probs}
 	post := ledger.PostInvoice
-	if invoice.IsCreditNote(doc) {
+	switch {
+	case invoice.IsCreditNote(doc):
 		post = ledger.PostCreditNote
+	case p.Draft.OpeningItem:
+		post = ledger.PostOpeningInvoice // FR-GL-06: at the books start, against the opening balance clearing account
 	}
 	entry, err := post(p.Invoice, s)
 	if ps, ok := err.(ledger.Problems); ok {
@@ -111,12 +114,7 @@ func isInvoice(doc storage.Document) error {
 }
 
 // InvoiceIdentityOf is the posting identity of an invoice's or a credit note's version under its rule.
-func InvoiceIdentityOf(doc storage.Document) string {
-	if invoice.IsCreditNote(doc) {
-		return ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
-	}
-	return ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
-}
+func InvoiceIdentityOf(doc storage.Document) string { return invoice.IdentityOf(doc) }
 
 // Create saves a draft invoice (✎). It is checked when it is issued; Check shows what issuing it would do.
 func (s Invoices) Create(ctx context.Context, org uuid.UUID, d invoice.Draft) (storage.Document, error) {
@@ -584,6 +582,18 @@ func replayInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	taxed := false
 	for _, l := range stored.Lines {
 		taxed = taxed || s.Accounts[l.AccountID].Role == ledger.RoleGSTControl
+	}
+	if e.RuleVersion == ledger.RuleOpeningInvoice {
+		// An opening item posts no GST line (FR-GL-06): it charged GST when its receivable is more than its lines' nets.
+		nets := money.Zero(i.Currency)
+		for _, l := range i.Lines {
+			nets, _ = nets.Add(l.Net)
+		}
+		for _, l := range stored.Lines {
+			if s.Accounts[l.AccountID].Role == ledger.RoleAccountsReceivable && l.Amount.Currency() == i.Currency {
+				taxed = !l.Amount.Equal(nets)
+			}
+		}
 	}
 	if !taxed {
 		for k := range i.Lines {

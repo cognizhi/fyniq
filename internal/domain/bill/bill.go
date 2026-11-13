@@ -84,6 +84,9 @@ type Draft struct {
 	// RecurringBill is the recurring bill version the scheduler made it from (FR-AP-09; rev 0.84), nil for one a person
 	// made. The database's create_scheduled_bill_draft writes it, and every later version keeps it.
 	RecurringBill *RecurringRef
+	// OpeningItem marks a bill received before the books start and still unpaid then (FR-GL-06; rev 0.257): it posts at the
+	// books start under opening_bill@1, with no cost or GST, against the opening balance clearing account.
+	OpeningItem bool
 }
 
 // RecurringRef names the recurring bill, and the version of its content, that a bill was made from.
@@ -167,6 +170,7 @@ type payload struct {
 	RecurringBill *RecurringRef `json:"recurring_bill,omitempty"`
 	InputTax      *payloadTax   `json:"input_tax,omitempty"`
 	Nature        string        `json:"nature_of_payment,omitempty"`
+	OpeningItem   bool          `json:"opening_item,omitempty"`
 }
 
 // payloadTax are a bill's input-tax facts as a document version stores them: only those that are not the usual, so a
@@ -219,7 +223,7 @@ func Encode(d Draft) ([]byte, error) {
 		return nil, &Error{CodeNature, fmt.Sprintf("nature_of_payment: %q is not one of %s", d.Nature, strings.Join(Natures, ", ")), "Choose one of them"}
 	}
 	p := payload{SupplierID: d.SupplierID, SupplierRef: d.SupplierRef, Date: day(d.Date), DueDate: day(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes,
-		Lines: []payloadLine{}, RecurringBill: d.RecurringBill, Nature: d.Nature}
+		Lines: []payloadLine{}, RecurringBill: d.RecurringBill, Nature: d.Nature, OpeningItem: d.OpeningItem}
 	if f := d.InputTax; f != (InputTax{}) {
 		p.InputTax = &payloadTax{Document: f.Document, AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
 		if f.SupplierNotRegistered {
@@ -255,6 +259,26 @@ func IsBill(doc storage.Document) bool {
 	return doc.Type == storage.DocumentBill || doc.Type == storage.DocumentVendorCredit
 }
 
+// IsOpening says whether a bill's version is an opening item (FR-GL-06; rev 0.257), which posts under opening_bill@1.
+func IsOpening(doc storage.Document) bool {
+	var p struct {
+		OpeningItem bool `json:"opening_item"`
+	}
+	return doc.Type == storage.DocumentBill && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
+}
+
+// IdentityOf is the posting identity of a bill's or a vendor credit's version under the rule it posts with:
+// vendor_credit@1, opening_bill@1 for an opening item, else bill@1.
+func IdentityOf(doc storage.Document) string {
+	switch {
+	case doc.Type == storage.DocumentVendorCredit:
+		return ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
+	case IsOpening(doc):
+		return ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleOpeningBill)
+	}
+	return ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
+}
+
 // Read reads a bill or vendor credit version as it was saved; base is the organisation's base currency, which a typed
 // rate converts into.
 func Read(doc storage.Document, base money.Currency) (Draft, error) {
@@ -272,7 +296,8 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill, Nature: p.Nature}
+	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill, Nature: p.Nature,
+		OpeningItem: p.OpeningItem}
 	if t := p.InputTax; t != nil {
 		d.InputTax = InputTax{SupplierNotRegistered: t.SupplierRegistered != nil && !*t.SupplierRegistered, Document: t.Document, AddressedTo: t.AddressedTo,
 			Repaid: t.Repaid, TaxAgent: t.TaxAgent}
@@ -413,6 +438,18 @@ func PrepareAt(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 
 	// The rate: as typed, else the cascade's for the bill's date (ENG-40).
 	b := ledger.Bill{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Supplier, d)}
+	// An opening item posts at the books start (FR-GL-06; rev 0.257); a supplier's credit note never is one.
+	if d.OpeningItem {
+		if doc.Type == storage.DocumentVendorCredit {
+			add(ledger.CodeOpeningItem, "opening_item", "a supplier's credit note is never an opening item", "Enter the credit note dated from the books start")
+		} else {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			b.Opening = o.Profile.BooksStart
+		}
+	}
 	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
 		f, err := fx.Lookup(ctx, u, base, d.Currency, d.Date)
 		var fe *fx.Error

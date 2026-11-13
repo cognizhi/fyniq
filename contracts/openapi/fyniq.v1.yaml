@@ -4927,6 +4927,11 @@ components:
         open:
           $ref: "#/components/schemas/Money"
           description: "A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."
+        opening_item:
+          description: "Whether it is an opening item: received before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06)."
+          examples:
+            - false
+          type: boolean
         payable:
           $ref: "#/components/schemas/Money"
           description: "What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."
@@ -4998,6 +5003,7 @@ components:
         - currency
         - lines
         - input_tax
+        - opening_item
         - input_tax_decisions
         - total
         - payments
@@ -5129,6 +5135,11 @@ components:
             - Annual renewal, 10 seats
           maxLength: 2000
           type: string
+        opening_item:
+          description: "A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill."
+          examples:
+            - false
+          type: boolean
         supplier_id:
           description: "The supplier: a contact marked as a vendor."
           examples:
@@ -5210,6 +5221,11 @@ components:
             - Annual renewal, 10 seats
           maxLength: 2000
           type: string
+        opening_item:
+          description: "A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill."
+          examples:
+            - false
+          type: boolean
         reason:
           description: "Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12)."
           examples:
@@ -23849,6 +23865,11 @@ components:
         open:
           $ref: "#/components/schemas/Money"
           description: "An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."
+        opening_item:
+          description: "Whether it is an opening item: issued before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06)."
+          examples:
+            - false
+          type: boolean
         posted_at:
           description: When it was issued.
           examples:
@@ -23919,6 +23940,7 @@ components:
         - ledger_impact
         - sends
         - links
+        - opening_item
       type: object
     InvoiceCheck:
       additionalProperties: false
@@ -24141,6 +24163,11 @@ components:
             - Thank you for your business
           maxLength: 2000
           type: string
+        opening_item:
+          description: "An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice."
+          examples:
+            - false
+          type: boolean
         reference:
           description: The customer's reference for it, such as their purchase order number.
           examples:
@@ -24219,6 +24246,11 @@ components:
             - Thank you for your business
           maxLength: 2000
           type: string
+        opening_item:
+          description: "An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice."
+          examples:
+            - false
+          type: boolean
         reason:
           description: "Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12)."
           examples:
@@ -44908,7 +44940,7 @@ paths:
         right: C
   /v1/accounts:load-standard-chart:
     post:
-      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 89 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 90 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: loadStandardChart
       parameters:
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."

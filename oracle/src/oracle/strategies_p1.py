@@ -79,7 +79,7 @@ from oracle import money, strategies_gl
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity", "opening-items")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -166,6 +166,13 @@ EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-tr
                    "equity-transfer-not-share-capital", "equity-safe-bad", "equity-safe-money-unnamed",
                    "equity-safe-conversion-unfunded", "equity-grant-beyond", "equity-grant-no-pool", "equity-pool-short",
                    "equity-event-too-many", "equity-forfeit-vested", "equity-exercise-not-vested"]
+# Opening open items (README, "Opening open items"; FR-GL-06, rev 0.257): invoices and bills from before the books'
+# start, posted at it against the clearing account, then settled by receipts and payments like any other. Refused: one
+# dated on or after the books' start, and one that spreads.
+OPENING_POSTING = ["opening-invoice", "opening-invoice", "opening-invoice-foreign", "opening-invoice-taxed", "opening-bill",
+                   "opening-bill", "opening-bill-foreign", "receipt", "receipt", "receipt-in-full", "pay", "pay", "pay-in-full"]
+OPENING_REJECTED = ["opening-item-not-before-start", "opening-item-spread"]
+OPENING_CLEARING = "3900"
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
@@ -173,9 +180,9 @@ KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTIN
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
          "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED,
          "general-ledger": strategies_gl.KINDS, "fx": FX_POSTING * 2 + FX_REJECTED,
-         "equity": EQUITY_POSTING * 2 + EQUITY_REJECTED}
+         "equity": EQUITY_POSTING * 2 + EQUITY_REJECTED, "opening-items": OPENING_POSTING * 2 + OPENING_REJECTED}
 REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED
-                           + FOUNDERS_REJECTED + FX_REJECTED + EQUITY_REJECTED)
+                           + FOUNDERS_REJECTED + FX_REJECTED + EQUITY_REJECTED + OPENING_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 # The founders' money (README, "Settings and as_of" and the founders' sections): the directors and shareholders, a
@@ -432,6 +439,61 @@ def _purchase_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book:
     elif kind in ("bill", "bill-foreign", "bill-spread", "bill-quantity"):
         book.open[doc_id] = (currency, total)
     return doc, REJECT if kind in REJECTED_KINDS else POST
+
+
+@st.composite
+def _opening_document(draw: st.DrawFn, doc_id: str, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    """An opening invoice or bill (README, "Opening open items"; FR-GL-06, rev 0.257): dated before the books' start, it
+    posts its total at the books' start against the clearing account, and is kept open for the receipts and payments
+    that settle it. Its lines bear no GST but the taxed invoice's, which is in the base currency and kept out of what
+    later receipts settle. Refused: an item dated on or after the books' start, and one that spreads."""
+    assert book.books_start is not None
+    sales = kind.startswith("opening-invoice") or kind in OPENING_REJECTED and draw(st.booleans())
+    if kind == "opening-item-not-before-start":
+        day = book.books_start + timedelta(days=draw(st.integers(0, 60)))
+    else:
+        day = book.books_start - timedelta(days=draw(st.integers(1, 120)))
+    currency = draw(st.sampled_from(["USD", "JPY", "KWD"])) if kind.endswith("-foreign") else "SGD"
+    minor = CURRENCIES[currency]
+    taxed = kind == "opening-invoice-taxed"
+    lines, total = [], Decimal(0)
+    for i in range(draw(st.integers(1, 3))):
+        net = draw(_cents(minor, 6))
+        if sales:
+            codes = ["SR", "ZR"] if taxed else ["ZR", "ES", "OS"]
+            line: dict[str, Any] = {"account": draw(st.sampled_from(REVENUES)), "gst_code": draw(st.sampled_from(codes)),
+                                    "amount": _text(net, minor)}
+        else:
+            line = {"account": draw(st.sampled_from(EXPENSES + ["1500"])), "gst_code": draw(st.sampled_from(_PURCHASE_CODES)),
+                    "amount": _text(net, minor)}
+            if line["gst_code"] in ("TX", "IM") and draw(st.booleans()):
+                gst = money.round_quotient(money.EXACT.multiply(net, Decimal(9)), Decimal(100), minor)
+                line["gst"] = _text(gst, minor)
+                net = money.EXACT.add(net, gst)
+        if kind == "opening-item-spread" and i == 0:
+            line["account"] = draw(st.sampled_from(REVENUES if sales else EXPENSES))
+            line["spread_months"] = draw(st.sampled_from([3, 12]))
+        lines.append(line)
+        total = money.EXACT.add(total, net)
+    doc: dict[str, Any] = {"type": "invoice" if sales else "bill", "id": doc_id, "version": 1, "date": day.isoformat(),
+                           "currency": currency, "lines": lines, "opening_item": True}
+    rate = None
+    if currency != "SGD":
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        rate = Decimal(doc["fx_rate"])
+    if kind in OPENING_REJECTED:
+        return doc, REJECT
+    base = total if rate is None else money.rnd_fx(total, rate, 2)
+    if base.is_zero():
+        return doc, REJECT  # its base amount rounds to nothing, so only the control account's line is left (README, "P1 readings")
+    if taxed:
+        return doc, POST  # its GST depends on the registration on its date: not tracked for settlement
+    if sales:
+        book.invoices[doc_id] = (currency, total)
+        book.invoice_base[doc_id] = (rate, base)
+    else:
+        book.open[doc_id] = (currency, total)
+    return doc, POST
 
 
 @st.composite
@@ -1438,6 +1500,13 @@ def p1_scenarios_with_intent(
         settings["books_start"] = book.books_start.isoformat()
         settings["accounts"].update({key: code for key, (code, _) in DIRECTOR_ACCOUNTS.items()})
         accounts += _founders_accounts()
+    if "opening-items" in sources:  # README, "Opening open items": the books start after the items' own dates
+        if book.books_start is None:
+            month = days[0].year * 12 + days[0].month - 1 - draw(st.integers(0, 3))
+            book.books_start = date(month // 12, month % 12 + 1, 1)
+            settings["books_start"] = book.books_start.isoformat()
+        settings["accounts"]["opening_clearing"] = OPENING_CLEARING
+        accounts.append({"code": OPENING_CLEARING, "type": "equity", "group": False, "active": True})
     if "fx" in sources:
         _revalue(draw, accounts, settings)
     seeded: list[str] = []  # the equity source's first kinds: money in, then issues, so later ones find shares held
@@ -1474,7 +1543,9 @@ def p1_scenarios_with_intent(
     for i, day in enumerate(days):
         kind = seeded[i] if i < len(seeded) else draw(st.sampled_from(kinds))
         doc_id = f"P1-{i + 1:04d}"
-        if kind in KINDS["bank"]:
+        if kind.startswith("opening-"):
+            document, meant = draw(_opening_document(doc_id, kind, book))
+        elif kind in KINDS["bank"]:
             document, meant = draw(_bank_document(doc_id, day, kind)), REJECT if kind in REJECTED_KINDS else POST
         elif kind in KINDS["purchases"]:
             document, meant = draw(_purchase_document(doc_id, day, kind, book))

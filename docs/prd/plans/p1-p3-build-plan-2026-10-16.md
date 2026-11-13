@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,382 requirements:
+That is all 1,383 requirements:
 - 114 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,268 are spread over 65 changes below;
+- the other 1,269 are spread over 65 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -444,7 +444,7 @@ the synthetic sample workbook.
 | 6 | `p1-document-capture` | Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms | 3 | 1 | `p1-ai-providers`, `p1-purchases`, `p1-templates-email` | Inbound email through Mailpit | — | Security (#4) | After go-live |
 | 7 | `p1-security-hardening` | Web protections, uploads, outbound requests to configured hosts, registered private endpoints, dependency hygiene, SLSA provenance and reproducible builds, security monitoring, alerting and the incident runbook, release review and recorded versions | 19 | 0 | P0 | Local logs and alerts; Binary Authorization and cloud posture at the cloud gate | — | Security (#4) | Launch |
 | 7 | `p1-operations-dr` | Observability and the scheduler heartbeat, the performance budgets, volume, availability and browsers, cost targets and limits, backup, PITR, DR copy, restore drills and attachment storage | 31 | 1 | P0 | Performance budgets locally; backups, restores and observability at the cloud gate | — | — | Launch |
-| 7 | `p1-workbook-migration` | Workbook import, import reconciliation, generic import and full tenant export; the M1…M6 migration steps rehearsed on the synthetic sample workbook | 9 | 2 | `p1-sales`, `p1-purchases`, `p1-bank-import-reconcile`, `p1-founders-money` | The synthetic sample workbook only: real company data never comes to a laptop (DEV-08) | The accountant confirms the framework (Q31) and the founders' balances (Q15) | Accountant | Launch |
+| 7 | `p1-workbook-migration` | Workbook import, import reconciliation, generic import and full tenant export; the M1…M6 migration steps rehearsed on the synthetic sample workbook | 10 | 2 | `p1-sales`, `p1-purchases`, `p1-bank-import-reconcile`, `p1-founders-money` | The synthetic sample workbook only: real company data never comes to a laptop (DEV-08) | The accountant confirms the framework (Q31) and the founders' balances (Q15) | Accountant | Launch |
 | 7 | `p1-launch-readiness` | The quality gates as requirements (calculation correctness, test gates), the trace gate against the frozen launch subset, the acceptance scenarios of Appendix G and the UAT scripts | 50 | 0 | `p1-workbook-migration` | — | The launch rows left to decide (Q25) | — | Launch |
 
 <!-- /roadmap -->
@@ -607,7 +607,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-document-capture` | `documents/attachments-and-evidence`: FR-DOC-12; `purchases/payables`: FR-AP-04, FR-AP-12<br>Screens: document-inbox |
 | `p1-security-hardening` | `compliance/technology-controls`: CTL-CHG-04, CTL-CHG-05, CTL-CHG-07, CTL-DP-03, CTL-RES-04; `platform/container-images`: NFR-IMG-05, NFR-IMG-07; `platform/release-and-versioning`: REL-04, REL-05; `security/application-security`: SEC-22, SEC-23, SEC-24, SEC-36, SEC-37, SEC-26; `security/detection-and-response`: SEC-30, SEC-31, SEC-32, SEC-33 |
 | `p1-operations-dr` | `compliance/financial-controls`: CTL-AUD-03, CTL-AUD-04; `compliance/technology-controls`: CTL-RES-02, CTL-RES-03, CTL-RES-05; `data/audit-trail`: 1 unnumbered; `data/backup-and-recovery`: DR-01, DR-02, DR-03, DR-04, DR-06, DR-07; `platform/operations`: NFR-DR-01, NFR-DR-02, NFR-DR-03, NFR-RET-01, NFR-OBS-01, NFR-OBS-02; `platform/performance-and-scale`: NFR-PERF-01, NFR-PERF-06, NFR-PERF-02, NFR-PERF-03, NFR-PERF-04, NFR-PERF-05, NFR-SCALE-01, NFR-AVAIL-01, NFR-BROWSER-01; `platform/portability-and-cost`: NFR-COST-02, NFR-COST-01, NFR-COST-03, NFR-COST-04<br>Screens: operations-tray |
-| `p1-workbook-migration` | `data/migration`: FR-MIG-01, FR-MIG-02, FR-MIG-03, FR-MIG-04, 4 unnumbered; `ledger/money-and-rounding`: RND-IMPORT<br>Screens: data-export, workbook-import |
+| `p1-workbook-migration` | `controls/platform-checks`: C.2 #63; `data/migration`: FR-MIG-01, FR-MIG-02, FR-MIG-03, FR-MIG-04, 4 unnumbered; `ledger/money-and-rounding`: RND-IMPORT<br>Screens: data-export, workbook-import |
 | `p1-launch-readiness` | `quality/calculation-correctness`: QA-ENG-01, QA-ENG-02, QA-ENG-03, QA-ENG-04, QA-ENG-05, QA-ENG-06, QA-ENG-07, QA-ENG-08, QA-RPT-01, QA-RPT-02, QA-RPT-03, QA-RPT-04, QA-MIG-01, QA-PROD-01, QA-REL-01, 13 unnumbered; `quality/test-gates`: QA-API-01, QA-API-02, QA-API-03, QA-API-04, QA-MCP-01, QA-LOCAL-01, QA-IMG-01, QA-UI-01, QA-UI-02, QA-UI-03, QA-UI-04, QA-UI-05, QA-UI-06, QA-UI-07, QA-UI-08, QA-UI-09, QA-TRACE-01, QA-SEC-03, QA-SEC-04, QA-SEC-05, QA-E2E-01 End-to-end journeys, QA-PERF-01 |
 | `cloud-first-deployment` | — |
 | `p1-go-live` | `data/migration`: 2 unnumbered |

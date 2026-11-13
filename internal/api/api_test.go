@@ -689,7 +689,7 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
-// The standard chart loads once into an organisation with no account: 89 accounts with every attribute, and the
+// The standard chart loads once into an organisation with no account: 90 accounts with every attribute, and the
 // expense policy's starter claim categories; a second load, or a load into an organisation with accounts, is refused.
 // req: FR-COA-01
 // req: FR-COA-02
@@ -714,15 +714,15 @@ func TestStandardChart(t *testing.T) {
 	}
 
 	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
-		r.Body["accounts"] != float64(89) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
+		r.Body["accounts"] != float64(90) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
 		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
 	}
 	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
-	if r.Status != 201 || r.Body["accounts"] != float64(89) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
+	if r.Status != 201 || r.Body["accounts"] != float64(90) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
 		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
 	}
 	accounts := list()
-	if len(accounts) != 89 {
+	if len(accounts) != 90 {
 		t.Fatalf("%d accounts after loading", len(accounts))
 	}
 	// The expense policy's starter categories come with it, each on its standard account with no limit (FR-AP-15).
@@ -801,7 +801,7 @@ func TestStandardChart(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
-	if n := len(list()); n != 89 {
+	if n := len(list()); n != 90 {
 		t.Errorf("a refused load changed the chart: %d accounts", n)
 	}
 }

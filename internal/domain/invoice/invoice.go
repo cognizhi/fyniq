@@ -95,6 +95,9 @@ type Draft struct {
 	// RecurringInvoice is the recurring invoice version the scheduler made it from (FR-AR-07; rev 0.135), nil for one a
 	// person made. The database's create_scheduled_invoice_draft writes it, and every later draft version keeps it.
 	RecurringInvoice *RecurringRef
+	// OpeningItem marks an invoice issued before the books start and still unpaid then (FR-GL-06; rev 0.257): it posts at
+	// the books start under opening_invoice@1, with no revenue or GST, against the opening balance clearing account.
+	OpeningItem bool
 }
 
 // RecurringRef names the recurring invoice, and the version of its content, that an invoice was made from.
@@ -179,6 +182,7 @@ type payload struct {
 	Credits      *uuid.UUID    `json:"invoice_id,omitempty"` // a credit note's invoice
 	Deposits     []payloadUse  `json:"deposits,omitempty"`
 	Recurring    *RecurringRef `json:"recurring_invoice,omitempty"`
+	OpeningItem  bool          `json:"opening_item,omitempty"`
 }
 
 type payloadUse struct {
@@ -230,7 +234,7 @@ func Encode(d Draft) ([]byte, error) {
 		id := d.Credits
 		p.Credits = &id
 	}
-	p.Recurring = d.RecurringInvoice
+	p.Recurring, p.OpeningItem = d.RecurringInvoice, d.OpeningItem
 	for _, x := range d.Deposits {
 		p.Deposits = append(p.Deposits, payloadUse{DepositID: x.DepositID, Amount: x.Amount})
 	}
@@ -261,6 +265,27 @@ func IsInvoice(doc storage.Document) bool {
 
 // IsCreditNote says whether a document is a credit note to a customer (FR-AR-04).
 func IsCreditNote(doc storage.Document) bool { return doc.Type == storage.DocumentCreditNote }
+
+// IsOpening says whether an invoice's version is an opening item (FR-GL-06; rev 0.257), which posts under
+// opening_invoice@1.
+func IsOpening(doc storage.Document) bool {
+	var p struct {
+		OpeningItem bool `json:"opening_item"`
+	}
+	return doc.Type == storage.DocumentInvoice && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
+}
+
+// IdentityOf is the posting identity of an invoice's or a credit note's version under the rule it posts with:
+// credit_note@1, opening_invoice@1 for an opening item, else invoice@1.
+func IdentityOf(doc storage.Document) string {
+	switch {
+	case IsCreditNote(doc):
+		return ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
+	case IsOpening(doc):
+		return ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleOpeningInvoice)
+	}
+	return ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
+}
 
 // Kind is what a document of this package is, in words: an invoice, or a credit note.
 func Kind(doc storage.Document) string {
@@ -293,7 +318,7 @@ func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes, RecurringInvoice: p.Recurring}
+	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes, RecurringInvoice: p.Recurring, OpeningItem: p.OpeningItem}
 	if p.Credits != nil {
 		d.Credits = *p.Credits
 	}
@@ -425,6 +450,18 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 
 	// The rate: as typed, else the cascade's for the invoice's date (ENG-40).
 	inv := ledger.Invoice{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Customer, doc)}
+	// An opening item posts at the books start (FR-GL-06; rev 0.257); a credit note never is one.
+	if d.OpeningItem {
+		if credit {
+			add(ledger.CodeOpeningItem, "opening_item", "a credit note is never an opening item", "Credit the opening invoice with a credit note dated from the books start")
+		} else {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			inv.Opening = o.Profile.BooksStart
+		}
+	}
 	var found fx.Found
 	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
 		f, err := fx.Lookup(ctx, u, base, d.Currency, d.Date)
@@ -629,7 +666,7 @@ func credited(ctx context.Context, u storage.UnitOfWork, self uuid.UUID, d Draft
 // Charged is what an issued invoice charged in its currency, net and GST: what its entry debited to accounts
 // receivable, and what the deposits it deducts took (FR-AR-09).
 func Charged(ctx context.Context, u storage.UnitOfWork, doc storage.Document, cur money.Currency) (money.Money, error) {
-	out, err := receivable(ctx, u, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice), cur)
+	out, err := receivable(ctx, u, IdentityOf(doc), cur)
 	if err != nil {
 		return out, err
 	}

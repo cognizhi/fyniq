@@ -121,6 +121,8 @@ def _invoice_lines(r: Rules, doc: Source, books: dict[str, Any], *, credit: bool
     total = money.EXACT.add(money.total(nets), gst)
     if not total > 0:
         raise Rejected("total-not-positive")
+    if d.get("opening_item"):
+        return _opening_invoice(r, doc, credit=credit, currency=currency, rate=rate, total=total, gst_base=gst_base)
 
     # Deposits the invoice deducts (rev 0.127).
     takes: list[tuple[Deposit, Decimal, Decimal, Decimal]] = []  # (deposit, used, base part, GST part)
@@ -167,6 +169,30 @@ def _invoice_lines(r: Rules, doc: Source, books: dict[str, Any], *, credit: bool
     item = OpenItem("credit_note" if credit else "invoice", receivable, currency, rate, owed, owed_base,
                     date=doc.date, gross=total)
     return Posting(lines, scheduled, facts=item, effects=[apply])
+
+
+def _opening_invoice(r: Rules, doc: Source, *, credit: bool, currency: str, rate: Decimal | None, total: Decimal,
+                     gst_base: Decimal) -> Posting:
+    """An opening invoice (FR-GL-06, Appendix B.2 "Opening open items"; rev 0.257) [accountant to confirm]: issued before
+    the books' start and unpaid then, it posts at the books' start its total (nets and the GST it charged) on 1100 at its
+    rate, ``RND-FX``, against the opening balance clearing account with that base amount, in the base currency. No
+    revenue and no GST: they were the books before. Every rule of an invoice holds first; it is never a credit note,
+    spreads nothing and deducts no deposit."""
+    d = doc.data
+    on = r.opening_day(doc.date)
+    if credit:
+        raise Rejected("opening-credit-note")
+    if any("spread_months" in raw for raw in d["lines"]):
+        raise Rejected("spread-on-opening-item")
+    if d.get("deposits"):
+        raise Rejected("deposit-on-opening-item")
+    if not gst_base.is_zero():
+        r.system("gst")  # an invoice that charges GST needs the GST control account, as every invoice does
+    receivable = r.system("receivable")
+    owed_base = r.fx(total, rate)
+    lines = [r.line(receivable, currency, total, owed_base), r.base_line(r.system("opening_clearing"), money.negate(owed_base))]
+    item = OpenItem("invoice", receivable, currency, rate, total, owed_base, date=doc.date, gross=total)
+    return Posting(lines, facts=item, on=on)
 
 
 def invoice(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:

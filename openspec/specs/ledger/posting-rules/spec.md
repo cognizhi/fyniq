@@ -586,6 +586,11 @@ Source: PRD-001 §B.2
 - **THEN** its open balance goes to AR or AP
 - **AND** no revenue or expense is posted
 
+#### Scenario: Opening items at the books start (rev 0.257)
+- **WHEN** an opening invoice or bill, dated before the books start, is posted
+- **THEN** it posts at the books start Dr 1100 (an invoice) or Cr 2010 (a bill) with its total in its currency at its rate under RND-FX, and the same base amount the other way on 3900 Opening balance clearing in the base currency (opening_invoice@1, opening_bill@1)
+- **AND** one dated on or after the books start, one that spreads, deducts a deposit or withholds tax is refused [accountant to confirm]
+
 ### Requirement: Payroll per employee-month
 Payroll SHALL compute CPF, SDL and SHG once per employee-month (calendar month, per employer) on the total wages payable in that month, across all its runs and corrections.
 
@@ -736,6 +741,10 @@ Source: PRD-001 §B.5
 - **THEN** 3010 / 3020 are Share capital, ordinary / preference (workbook codes; postings only from the register of share issues, INV-13)
 - **AND** proposed 3300 is Capital contribution (equity)
 - **AND** 2700 is Convertible notes / SAFE (workbook code, §8.22; each instrument classified per FR-EQ-18)
+
+#### Scenario: Opening balance clearing (rev 0.257)
+- **WHEN** opening open items and the opening balances post
+- **THEN** 3900 Opening balance clearing (equity) is where they meet, netting to zero once both have posted [accountant to confirm the code and classification]
 
 ### Requirement: GST codes and F5 reporting
 The system SHALL provide the workbook's GST codes, each marked standard-rated or not, with its direction and its F5 reporting, extended per current IRAS guidance [verify].

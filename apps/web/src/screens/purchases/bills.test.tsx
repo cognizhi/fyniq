@@ -44,6 +44,7 @@ const states = (extra: Partial<Bill["states"]> = {}): Bill["states"] => ({ appro
 const draft: Bill = {
   id: "b1",
   kind: "bill",
+  opening_item: false,
   status: "draft",
   version: 1,
   supplier: { id: "c1", name: "Atlassian Pty Ltd" },

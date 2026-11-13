@@ -242,6 +242,8 @@ CHECKS_WITH_MODULES = {
     # C.2 #30 needs the evidence rules (FR-DOC-06), which p1-documents-evidence builds (its task 3.1; rev 0.166).
     "p1-documents-evidence": "C.2 #30",
     "p2-mobile-approvals-automation": "C.2 #52",
+    # C.2 #63 guards the opening open items p1-workbook-migration builds (FR-GL-06; rev 0.257).
+    "p1-workbook-migration": "C.2 #63",
 }
 BY_ID.update({i: c for c, ids in CHECKS_WITH_MODULES.items() for i in ids.split("|")})
 # Phase-less rows placed by title
