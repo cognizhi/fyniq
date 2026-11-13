@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The rule.",
+      "examples": [
+        "STORAGE-INV-03"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "What to do.",
+      "examples": [
+        "Ask for the period to be reopened first."
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What would stop it, in plain words.",
+      "examples": [
+        "The posting date is in a closed period."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ],
+  "title": "ImpactRefusal",
+  "type": "object"
+}
