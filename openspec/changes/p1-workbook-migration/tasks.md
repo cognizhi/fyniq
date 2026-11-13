@@ -81,7 +81,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   depreciation. Rows to share capital or a SAFE wait for task 4.6.)
 - [x] 4.4 Payroll as one summary journal a month (design D7, rev 0.254), approved under Journals. Test
   `// req: FR-MIG-02` "Imported pay runs keep the amounts paid" on the fixture's months.
-- [ ] 4.5 The clean start from Carry Forward: balances and open items at the cut-over. Test
+- [ ] 4.5 The clean start from Carry Forward: balances and open items at the cut-over. (Slice 9 plans it: the
+  balances at the cut-over, its open invoices, bills and credits as opening items, credits under rev 0.261's
+  opening_credit_note@1 and opening_vendor_credit@1, the assets carried at the workbook's depreciation; its commit waits
+  for the Funding sheet's SAFE, which the 2700 balance names, task 4.6.) Test
   `// req: data/migration History or opening balances import (M3)` (clean start) on the fixture.
 - [ ] 4.6 Both paths: active Recurring rows from the cut-over on; Budget as an approved version; the Forecast drivers
   as a forecast document; Funding as the equity register's holdings [accountant to confirm]; Timesheets and per-person

@@ -107,3 +107,37 @@ func TestAnOpeningItemKeepsItsRules(t *testing.T) {
 		t.Errorf("a withholding opening bill: %v", err)
 	}
 }
+
+// A credit open at the books start is an opening item too (FR-GL-06; rev 0.261): a credit note to a customer of S$1,090.00
+// (1,000.00 at 9%) credits 1100 with its total and debits 3900 with it, at the books start, posting no revenue or GST;
+// a supplier's credit of S$218.00 debits 2010 and credits 3900. Each names its own rule and identity, and replays.
+// req: FR-GL-06
+// req: ledger/posting-rules Credit documents and opening items
+func TestACreditOpenAtTheBooksStartPostsAgainstTheClearingAccount(t *testing.T) {
+	cn := openingInvoice(Invoice{ID: creditNoteID, Version: 1, Date: day, Memo: "Acme Analytics CN-0009", Currency: sgd,
+		Lines: []InvoiceLine{invoiceLine(t, consulting, "1000.00", sgd, "SR", "0.09")}})
+	e, err := PostOpeningCreditNote(cn, selling())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.Lines) != 2 || e.Lines[0].AccountID != receivables.ID || e.Lines[0].Base.String() != "-1090.00" || e.Lines[1].AccountID != openingClearing.ID ||
+		e.Lines[1].Base.String() != "1090.00" || !e.PostingDate.Equal(booksStart) || e.RuleVersion != RuleOpeningCreditNote ||
+		e.PostingIdentity != CreditNoteIdentity(creditNoteID, 1, RuleOpeningCreditNote) || e.Source.Type != SourceCreditNote {
+		t.Errorf("the opening credit note: %+v", e)
+	}
+	vc := openingBill(Bill{ID: creditID, Version: 1, Date: day, Memo: "Atlassian CN-20", Currency: sgd, Lines: []BillLine{billLine(t, software, "200.00", "18.00", sgd, true)}})
+	e, err = PostOpeningVendorCredit(vc, purchasing())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.Lines) != 2 || e.Lines[0].AccountID != payables.ID || e.Lines[0].Base.String() != "218.00" || e.Lines[1].AccountID != openingClearing.ID ||
+		e.Lines[1].Base.String() != "-218.00" || e.RuleVersion != RuleOpeningVendorCredit || e.Source.Type != SourceVendorCredit {
+		t.Errorf("the opening vendor credit: %+v", e)
+	}
+	// One dated on the books start is refused as an opening invoice's is, in a credit note's words.
+	late := cn
+	late.Date = booksStart
+	if _, err := PostOpeningCreditNote(late, selling()); err == nil || !strings.Contains(err.Error(), "credit note") {
+		t.Errorf("an opening credit note on the books start: %v", err)
+	}
+}

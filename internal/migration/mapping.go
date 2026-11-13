@@ -328,8 +328,12 @@ func (w *Workbook) Propose(t Target, previous *Mapping) Mapping {
 	for _, a := range previous.Accounts {
 		accounts[a.Workbook] = a
 	}
+	carried := map[string]bool{} // a clean start's balances at the cut-over
+	for _, b := range w.CarryForward.Balances {
+		carried[b.Code] = b.Balance != nil && !b.Balance.IsZero()
+	}
 	for _, a := range w.Accounts {
-		e := AccountMap{Workbook: a.Code, Name: a.Name, WorkbookType: a.Type, Row: a.Row, HasOpening: a.Opening != nil && !a.Opening.IsZero()}
+		e := AccountMap{Workbook: a.Code, Name: a.Name, WorkbookType: a.Type, Row: a.Row, HasOpening: a.Opening != nil && !a.Opening.IsZero() || carried[a.Code]}
 		if p, ok := accounts[a.Code]; ok {
 			p.Name, p.WorkbookType, p.Row, p.HasOpening, p.Role = e.Name, e.WorkbookType, e.Row, e.HasOpening, ""
 			if x, ok := t.Accounts[p.Fyniq]; ok && p.Action == Existing {

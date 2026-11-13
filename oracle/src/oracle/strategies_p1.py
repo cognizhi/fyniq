@@ -170,7 +170,8 @@ EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-tr
 # start, posted at it against the clearing account, then settled by receipts and payments like any other. Refused: one
 # dated on or after the books' start, and one that spreads.
 OPENING_POSTING = ["opening-invoice", "opening-invoice", "opening-invoice-foreign", "opening-invoice-taxed", "opening-bill",
-                   "opening-bill", "opening-bill-foreign", "receipt", "receipt", "receipt-in-full", "pay", "pay", "pay-in-full"]
+                   "opening-bill", "opening-bill-foreign", "opening-credit-note", "opening-credit-note-foreign", "opening-vendor-credit",
+                   "receipt", "receipt", "receipt-in-full", "pay", "pay", "pay-in-full"]
 OPENING_REJECTED = ["opening-item-not-before-start", "opening-item-spread"]
 OPENING_CLEARING = "3900"
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
@@ -446,9 +447,11 @@ def _opening_document(draw: st.DrawFn, doc_id: str, kind: str, book: _Book) -> t
     """An opening invoice or bill (README, "Opening open items"; FR-GL-06, rev 0.257): dated before the books' start, it
     posts its total at the books' start against the clearing account, and is kept open for the receipts and payments
     that settle it. Its lines bear no GST but the taxed invoice's, which is in the base currency and kept out of what
-    later receipts settle. Refused: an item dated on or after the books' start, and one that spreads."""
+    later receipts settle. A credit note or a supplier's credit open at the books' start (rev 0.261) posts the other way,
+    and nothing settles it here. Refused: an item dated on or after the books' start, and one that spreads."""
     assert book.books_start is not None
-    sales = kind.startswith("opening-invoice") or kind in OPENING_REJECTED and draw(st.booleans())
+    credit = kind.startswith("opening-credit-note") or kind == "opening-vendor-credit"
+    sales = kind.startswith("opening-invoice") or kind.startswith("opening-credit-note") or kind in OPENING_REJECTED and draw(st.booleans())
     if kind == "opening-item-not-before-start":
         day = book.books_start + timedelta(days=draw(st.integers(0, 60)))
     else:
@@ -475,7 +478,8 @@ def _opening_document(draw: st.DrawFn, doc_id: str, kind: str, book: _Book) -> t
             line["spread_months"] = draw(st.sampled_from([3, 12]))
         lines.append(line)
         total = money.EXACT.add(total, net)
-    doc: dict[str, Any] = {"type": "invoice" if sales else "bill", "id": doc_id, "version": 1, "date": day.isoformat(),
+    kinds = {(True, False): "invoice", (False, False): "bill", (True, True): "credit_note", (False, True): "vendor_credit"}
+    doc: dict[str, Any] = {"type": kinds[(sales, credit)], "id": doc_id, "version": 1, "date": day.isoformat(),
                            "currency": currency, "lines": lines, "opening_item": True}
     rate = None
     if currency != "SGD":
@@ -486,8 +490,8 @@ def _opening_document(draw: st.DrawFn, doc_id: str, kind: str, book: _Book) -> t
     base = total if rate is None else money.rnd_fx(total, rate, 2)
     if base.is_zero():
         return doc, REJECT  # its base amount rounds to nothing, so only the control account's line is left (README, "P1 readings")
-    if taxed:
-        return doc, POST  # its GST depends on the registration on its date: not tracked for settlement
+    if taxed or credit:
+        return doc, POST  # a taxed invoice's GST depends on the registration on its date; a credit is not settled here
     if sales:
         book.invoices[doc_id] = (currency, total)
         book.invoice_base[doc_id] = (rate, base)
@@ -1593,7 +1597,7 @@ def p1_scenarios_with_intent(
         scenario["dimensions"] = dims.declared
     if "equity" in sources:  # README, "Cap tables": a few days, from before the first document to as_of
         scenario["subscribers"] = list(SUBSCRIBERS)
-        when = st.one_of(st.sampled_from([*days, as_of]), st.dates(days[0] - timedelta(days=30), as_of))
+        when = st.one_of(st.sampled_from([*days, as_of]), st.dates(min(days[0] - timedelta(days=30), as_of), as_of))
         days_asked = draw(st.lists(when, min_size=1, max_size=3, unique=True))
         scenario["cap_tables"] = [d.isoformat() for d in days_asked]
         scenario["rounds"] = [draw(_round(when, book)) for _ in range(draw(st.integers(0, 2)))] or None  # README, "Rounds"

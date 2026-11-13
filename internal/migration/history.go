@@ -25,6 +25,7 @@ const (
 	KindInvoice         = "invoice"
 	KindCreditNote      = "credit_note"
 	KindBill            = "bill"
+	KindVendorCredit    = "vendor_credit"
 	KindJournal         = "journal"
 )
 
@@ -77,7 +78,7 @@ func (w *Workbook) history(m Mapping) []Record {
 	}
 	start := w.BooksStart(storage.PathHistory)
 	for _, a := range w.Assets {
-		rest = append(rest, w.assetRecord(m, a, start))
+		rest = append(rest, w.assetRecord(m, a, start, false))
 	}
 	if len(w.Assets) > 0 {
 		rest = append(rest, w.depreciationRecord())
@@ -170,10 +171,14 @@ func rateOf(d Document, cur, base money.Currency) (*money.Rate, error) {
 	if cur == base {
 		return nil, nil
 	}
-	if d.RateUsed == nil {
+	used := d.RateUsed
+	if used == nil { // Carry Forward keeps the rate as typed
+		used = d.Rate
+	}
+	if used == nil {
 		return nil, Refused{{Code: CodeValue, Field: "fx_rate", Message: "the workbook used no rate for it", Fix: "Recalculate the workbook and save it again"}}
 	}
-	r, err := money.ParseRate(d.RateUsed.Text('f'), cur, base, "document")
+	r, err := money.ParseRate(used.Text('f'), cur, base, "document")
 	if err != nil {
 		return nil, Refused{{Code: CodeValue, Field: "fx_rate", Message: err.Error(), Fix: "Enter the rate in Lists › FX rates, or on the row"}}
 	}
@@ -202,6 +207,30 @@ func (w *Workbook) openingBalances(m Mapping) (Record, bool) {
 			rows = append(rows, a)
 		}
 	}
+	return w.balancesRecord(m, rows, "Accounts")
+}
+
+// carriedBalances is a clean start's opening balances at the cut-over (§17.1 M3): the Carry Forward sheet's balances,
+// on each account's side as the Accounts sheet gives them.
+func (w *Workbook) carriedBalances(m Mapping) (Record, bool) {
+	accounts := map[string]Account{}
+	for _, a := range w.Accounts {
+		accounts[a.Code] = a
+	}
+	var rows []Account
+	for _, b := range w.CarryForward.Balances {
+		if b.Balance == nil || b.Balance.IsZero() {
+			continue
+		}
+		a := accounts[b.Code]
+		a.Code, a.Origin, a.Opening = b.Code, b.Origin, b.Balance
+		rows = append(rows, a)
+	}
+	return w.balancesRecord(m, rows, "Carry Forward")
+}
+
+// balancesRecord posts rows' balances as the opening balances at the books start.
+func (w *Workbook) balancesRecord(m Mapping, rows []Account, sheet string) (Record, bool) {
 	if len(rows) == 0 {
 		return Record{}, false
 	}
@@ -209,7 +238,7 @@ func (w *Workbook) openingBalances(m Mapping) (Record, bool) {
 	for _, a := range m.Accounts {
 		persons[a.Workbook] = a.OpeningPerson
 	}
-	return Record{Key: "opening-balances", Kind: KindOpeningBalances, Origin: Origin{Sheet: "Accounts"},
+	return Record{Key: "opening-balances", Kind: KindOpeningBalances, Origin: Origin{Sheet: sheet},
 		make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
 			base, err := baseOf(ctx, u)
 			if err != nil {
@@ -439,7 +468,13 @@ func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
 // and the due date the workbook used; the workbook's number as the supplier's reference (rev 0.259). It posts on its date,
 // or at the books start as an opening item; a draft stays a draft.
 func (w *Workbook) billRecord(m Mapping, d Document) Record {
-	return Record{Key: "bill:" + strings.ToLower(strings.TrimSpace(d.Contact)) + ":" + strings.TrimSpace(d.Number), Kind: KindBill, Origin: d.Origin,
+	// A row of a negative amount is the supplier's credit note (FR-AP-03), entered with positive amounts.
+	credit := d.Net != nil && d.Net.Sign() < 0
+	kind := KindBill
+	if credit {
+		kind = KindVendorCredit
+	}
+	return Record{Key: kind + ":" + strings.ToLower(strings.TrimSpace(d.Contact)) + ":" + strings.TrimSpace(d.Number), Kind: kind, Origin: d.Origin,
 		make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
 			base, err := baseOf(ctx, u)
 			if err != nil {
@@ -467,13 +502,13 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 			if err != nil {
 				return Made{}, err
 			}
-			net, err := amount(d.Net, cur, false, "amount")
+			net, err := amount(d.Net, cur, credit, "amount")
 			if err != nil {
 				return Made{}, err
 			}
 			gst := money.Zero(cur)
 			if d.Total != nil {
-				total, err := amount(d.Total, cur, false, "total")
+				total, err := amount(d.Total, cur, credit, "total")
 				if err != nil {
 					return Made{}, err
 				}
@@ -500,7 +535,11 @@ func (w *Workbook) billRecord(m Mapping, d Document) Record {
 				}
 			}
 			svc := journal.Bills{Store: e.Store, Clock: e.Clock}
-			doc, err := svc.Create(ctx, e.Org, draft)
+			create := svc.Create
+			if credit {
+				create, draft.DueDate = svc.CreateCredit, time.Time{} // a credit falls due on nothing
+			}
+			doc, err := create(ctx, e.Org, draft)
 			if err != nil {
 				return Made{}, err
 			}

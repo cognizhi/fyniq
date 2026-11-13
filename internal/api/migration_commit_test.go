@@ -357,6 +357,26 @@ func TestEveryImportedRecordNamesItsRow(t *testing.T) {
 	}
 }
 
+// committedAs is a fresh organisation with the sample committed by path, as the accountant asked and the owner approved.
+func committedAs(t *testing.T, path string) (founders, string) {
+	t.Helper()
+	f := freshFounders(t)
+	accountant, owner := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Owner)
+	id := signedMigration(f, accountant)
+	committed(f, id, accountant, owner, path)
+	for i := 0; i < 20; i++ {
+		r := f.e.run(id, accountant)
+		if r.Status != http.StatusOK {
+			t.Fatalf("a batch: %d %s", r.Status, r.Raw)
+		}
+		if r.str("status") == "committed" {
+			return f, id
+		}
+	}
+	t.Fatal("the import did not commit in 20 batches")
+	return f, id
+}
+
 // importedSample is a fresh organisation with the sample committed, its history included, as the accountant asked and
 // the owner approved.
 func importedSample(t *testing.T) (founders, string) {
@@ -494,7 +514,12 @@ func TestTheHistoryPostsAsTheWorkbookDid(t *testing.T) {
 // statement shows it.
 func trialBalance(t *testing.T, e *env, tok, to string) map[string]*apd.Decimal {
 	t.Helper()
-	r := e.call(http.MethodGet, "/v1/reports/statements/tb?from=2026-01&to="+to, tok, nil)
+	return trialBalanceFrom(t, e, tok, "2026-01", to)
+}
+
+func trialBalanceFrom(t *testing.T, e *env, tok, from, to string) map[string]*apd.Decimal {
+	t.Helper()
+	r := e.call(http.MethodGet, "/v1/reports/statements/tb?from="+from+"&to="+to, tok, nil)
 	var tb struct {
 		Blocks []struct {
 			Key    string

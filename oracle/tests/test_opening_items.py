@@ -52,9 +52,23 @@ def test_an_opening_item_comes_before_the_books_start_and_spreads_nothing():
     spread = invoice("INV-2", "2025-12-01", "SGD", invoice_line("4010", "1200.00", "ZR", spread_months=12), opening_item=True)
     withheld = bill("BILL-1", "2025-12-01", "SGD", {"account": "6010", "gst_code": "OP", "amount": "100.00"}, opening_item=True,
                     withholding={"percent": "15"})
-    credit = invoice("CN-1", "2025-12-01", "SGD", invoice_line("4010", "10.00", "ZR"), kind="credit_note", opening_item=True)
-    _, ledger = post(on_start, spread, withheld, credit)
-    assert set(ledger.rejected) == {"INV-1", "INV-2", "BILL-1", "CN-1"}
+    late_credit = invoice("CN-2", "2026-01-05", "SGD", invoice_line("4010", "10.00", "ZR"), kind="credit_note", opening_item=True)
+    _, ledger = post(on_start, spread, withheld, late_credit)
+    assert set(ledger.rejected) == {"INV-1", "INV-2", "BILL-1", "CN-2"}
     _, ledger = p1_post(invoice("INV-3", "2025-12-01", "SGD", invoice_line("4010", "100.00", "ZR"), opening_item=True),
                         settings=P1_SETTINGS)
     assert set(ledger.rejected) == {"INV-3"}  # no books start to post at
+
+
+# req: FR-GL-06
+def test_a_credit_open_at_the_books_start_posts_the_other_way():
+    # rev 0.261: a zero-rated credit note of S$1,090.00 open on 1 Jan 2026 credits 1100 and debits 3900 at the books'
+    # start; a supplier's credit of S$218.00, GST 18.00 stated, debits 2010 and credits 3900.
+    cn = invoice("CN-1", "2025-12-20", "SGD", invoice_line("4010", "1090.00", "ZR"), kind="credit_note", opening_item=True)
+    vc = bill("VC-1", "2025-12-22", "SGD", {"account": "6010", "gst_code": "TX", "amount": "200.00", "gst": "18.00"}, kind="vendor_credit",
+              opening_item=True)
+    result, ledger = post(cn, vc)
+    assert not ledger.rejected, dict(ledger.reasons)
+    assert lines_of(result, "CN-1") == [("1100", "SGD", "-1090.00", "-1090.00"), ("3900", "SGD", "1090.00", "1090.00")]
+    assert lines_of(result, "VC-1") == [("2010", "SGD", "218.00", "218.00"), ("3900", "SGD", "-218.00", "-218.00")]
+    assert posted_on(result, "CN-1") == posted_on(result, "VC-1") == "2026-01-01"

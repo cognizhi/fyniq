@@ -167,10 +167,18 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 	}
 	if x.OpeningItem { // FR-GL-06 (rev 0.257): issued before the books start, it posts at the books start
 		start, ok := r.booksStart()
-		if credit || !ok {
+		if !ok {
 			return ledger.Entry{}, false
 		}
 		inv.Opening = &start
+		if credit { // rev 0.261: a credit note open at the books start
+			e, err := ledger.PostOpeningCreditNote(inv, r.settings)
+			if err != nil || !r.fits(e) {
+				return ledger.Entry{}, false
+			}
+			r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
+			return e, true
+		}
 		e, err := ledger.PostOpeningInvoice(inv, r.settings)
 		if err != nil || !r.fits(e) {
 			return ledger.Entry{}, false

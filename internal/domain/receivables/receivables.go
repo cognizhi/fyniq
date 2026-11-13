@@ -142,7 +142,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uui
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
-		identity := ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
+		identity := invoice.IdentityOf(doc) // credit_note@1, or opening_credit_note@1 (rev 0.261)
 		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
 			return err
 		}

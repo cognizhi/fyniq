@@ -73,6 +73,8 @@ func checkBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 	out := Checked{Prepared: p, Problems: append(probs, orders...)}
 	post := ledger.PostBill
 	switch {
+	case doc.Type == storage.DocumentVendorCredit && p.Draft.OpeningItem:
+		post = ledger.PostOpeningVendorCredit // FR-GL-06 (rev 0.261): a credit open at the books start
 	case doc.Type == storage.DocumentVendorCredit:
 		post = ledger.PostVendorCredit
 	case p.Draft.OpeningItem:

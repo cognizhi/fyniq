@@ -3,6 +3,7 @@ package ledger
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -16,11 +17,18 @@ import (
 // currency. It posts no revenue, cost or GST: those were the books before the books start. The opening balances carry
 // the receivables and payables on the clearing account instead, so the clearing nets to zero once both have posted, and
 // every receivable and payable is a document that can be settled, aged and reminded.
+//
+// (rev 0.261) A credit note to a customer, or a supplier's credit note, issued before the books start and still open then
+// is an opening item too: it posts the legs an opening invoice or bill of its content would, the other way, under
+// opening_credit_note@1 or opening_vendor_credit@1, so a credit open at the cut-over is a document that can be applied
+// or refunded.
 const (
-	RuleOpeningInvoice  = "opening_invoice@1"
-	RuleOpeningBill     = "opening_bill@1"
-	RoleOpeningClearing = "opening-balance-clearing"
-	CodeOpeningItem     = "LEDGER-50" // an opening item dated on or after the books start, or with what posts after it
+	RuleOpeningInvoice      = "opening_invoice@1"
+	RuleOpeningBill         = "opening_bill@1"
+	RuleOpeningCreditNote   = "opening_credit_note@1"
+	RuleOpeningVendorCredit = "opening_vendor_credit@1"
+	RoleOpeningClearing     = "opening-balance-clearing"
+	CodeOpeningItem         = "LEDGER-50" // an opening item dated on or after the books start, or with what posts after it
 )
 
 // openingChecks are what an opening item is refused for, beside the rules of its kind.
@@ -156,4 +164,42 @@ func PostOpeningBill(b Bill, s Settings) (Entry, error) {
 	y, m, d := b.Opening.Date()
 	return Entry{PostingDate: time.Date(y, m, d, 0, 0, 0, 0, time.UTC), Source: source, RuleVersion: RuleOpeningBill, PostingIdentity: identity, Memo: b.Memo,
 		Lines: lines}, nil
+}
+
+// opened negates an opening item's entry into a credit's, of its source and rule, its problems worded for the credit.
+func opened(e Entry, err error, words *strings.Replacer, source Source, rule, identity string) (Entry, error) {
+	if probs, ok := err.(Problems); ok {
+		for k := range probs {
+			probs[k].Message, probs[k].Fix = words.Replace(probs[k].Message), words.Replace(probs[k].Fix)
+		}
+		return Entry{}, probs
+	}
+	if err != nil {
+		return Entry{}, err
+	}
+	for k := range e.Lines {
+		e.Lines[k].Amount, e.Lines[k].Base = e.Lines[k].Amount.Neg(), e.Lines[k].Base.Neg()
+	}
+	e.Source, e.RuleVersion, e.PostingIdentity = source, rule, identity
+	return e, nil
+}
+
+// PostOpeningCreditNote turns one version of an opening credit note to a customer into its entry
+// (opening_credit_note@1; rev 0.261): the legs an opening invoice of its content posts, the other way: Cr 1100 Accounts
+// receivable with its total at its rate under RND-FX, Dr 3900 Opening balance clearing with that base amount, at the
+// books start. Every refusal is the opening invoice's, worded for a credit note.
+func PostOpeningCreditNote(i Invoice, s Settings) (Entry, error) {
+	e, err := PostOpeningInvoice(i, s)
+	return opened(e, err, asCreditNote, Source{Type: SourceCreditNote, ID: i.ID.String(), Version: i.Version}, RuleOpeningCreditNote,
+		CreditNoteIdentity(i.ID, i.Version, RuleOpeningCreditNote))
+}
+
+// PostOpeningVendorCredit turns one version of a supplier's opening credit note into its entry
+// (opening_vendor_credit@1; rev 0.261): the legs an opening bill of its content posts, the other way: Dr 2010 Accounts
+// payable with its total at its rate under RND-FX, Cr 3900 Opening balance clearing with that base amount, at the
+// books start. Every refusal is the opening bill's, worded for a credit note.
+func PostOpeningVendorCredit(b Bill, s Settings) (Entry, error) {
+	e, err := PostOpeningBill(b, s)
+	return opened(e, err, asCredit, Source{Type: SourceVendorCredit, ID: b.ID.String(), Version: b.Version}, RuleOpeningVendorCredit,
+		VendorCreditIdentity(b.ID, b.Version, RuleOpeningVendorCredit))
 }

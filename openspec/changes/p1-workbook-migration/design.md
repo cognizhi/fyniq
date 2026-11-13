@@ -201,6 +201,11 @@ See proposal.md for why. What exists today and shapes the approach:
 - Alternative: the workbook's way, where the item posts nothing and the account's opening balance carries it.
   Rejected: Fyniq's sub-ledgers are read from postings by document, so the items could not be settled without a
   manual adjustment.
+- (rev 0.261, slice 9) A credit open at the books start is an opening item too: a credit note to a customer posts
+  opening_credit_note@1 (Cr 1100, Dr 3900), a supplier's credit opening_vendor_credit@1 (Dr 2010, Cr 3900), each the
+  opening invoice's or bill's legs the other way, so the Carry Forward sheet's open credit note is a document that can
+  be applied or refunded. The oracle posts them as its credit notes do, and the differential's opening-items source
+  generates both [accountant to confirm].
 
 **D7. Payroll as one summary journal a month (rev 0.254).**
 - From the Payroll sheet's calculated columns, one manual journal per pay month, lines aggregated by account and

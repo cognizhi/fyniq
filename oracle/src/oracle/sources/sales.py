@@ -176,12 +176,11 @@ def _opening_invoice(r: Rules, doc: Source, *, credit: bool, currency: str, rate
     """An opening invoice (FR-GL-06, Appendix B.2 "Opening open items"; rev 0.257) [accountant to confirm]: issued before
     the books' start and unpaid then, it posts at the books' start its total (nets and the GST it charged) on 1100 at its
     rate, ``RND-FX``, against the opening balance clearing account with that base amount, in the base currency. No
-    revenue and no GST: they were the books before. Every rule of an invoice holds first; it is never a credit note,
-    spreads nothing and deducts no deposit."""
+    revenue and no GST: they were the books before. Every rule of an invoice holds first; it spreads nothing and deducts no
+    deposit. A credit note open at the books' start (rev 0.261) is an opening item too: these legs, which
+    ``credit_note`` turns the other way."""
     d = doc.data
     on = r.opening_day(doc.date)
-    if credit:
-        raise Rejected("opening-credit-note")
     if any("spread_months" in raw for raw in d["lines"]):
         raise Rejected("spread-on-opening-item")
     if d.get("deposits"):
@@ -191,7 +190,7 @@ def _opening_invoice(r: Rules, doc: Source, *, credit: bool, currency: str, rate
     receivable = r.system("receivable")
     owed_base = r.fx(total, rate)
     lines = [r.line(receivable, currency, total, owed_base), r.base_line(r.system("opening_clearing"), money.negate(owed_base))]
-    item = OpenItem("invoice", receivable, currency, rate, total, owed_base, date=doc.date, gross=total)
+    item = OpenItem("credit_note" if credit else "invoice", receivable, currency, rate, total, owed_base, date=doc.date, gross=total)
     return Posting(lines, facts=item, on=on)
 
 
