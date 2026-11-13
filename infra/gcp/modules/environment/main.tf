@@ -140,7 +140,7 @@ locals {
   url = { for name in keys(local.spec.services) : name => "https://${name}-${local.number}.${local.region}.run.app" }
 
   # FYNIQ_GCP (internal/wiring/release.go Config): the worker classes' queues, handlers and invokers, the
-  # Scheduler's, the anchors, the jobs image's Cloud Run job and the render service.
+  # Scheduler's, the anchors, the jobs image's Cloud Run job, and the render and scanner services.
   gcp_config = jsonencode({
     tasks = { for class, c in local.spec.classes : class => {
       queue           = "projects/${var.project}/locations/${local.region}/queues/${class}"
@@ -159,12 +159,14 @@ locals {
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
     # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
     render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
+    # The private scanner service (PRD-001 rev 0.247): where the api and the worker send files to scan (scanservice.Client).
+    scanner = { url = local.url["scanner"], audience = local.url["scanner"], service_accounts = [local.email["api"], local.email["worker"]] }
     # The platform's own networks: its subnet and the range its database is peered on, which no registered private
     # endpoint reaches (SEC-37, internal/egress).
     platform_ranges = [google_compute_subnetwork.run.ip_cidr_range, "${google_compute_global_address.services.address}/${google_compute_global_address.services.prefix_length}"]
   })
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
-  wired       = toset(["api", "worker", "executor", "jobs", "render"])
+  wired       = toset(["api", "worker", "executor", "jobs", "render", "scanner"])
   oauth_admin = toset(["api", "worker"])
   with_db     = { for name, r in local.runners : name => r if r.database_role != null }
 

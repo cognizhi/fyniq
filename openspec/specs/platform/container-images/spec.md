@@ -60,6 +60,20 @@ Source: PRD-001 §12.9
 - **WHEN** the web app is served in production
 - **THEN** it is served as static files from Cloud Storage and CDN, not from the `web` image
 
+### Requirement: Scanner images
+The scanner service (rev 0.248) SHALL ship as two images: `scanner`, a static Go binary on `gcr.io/distroless/static-debian12:nonroot` within ≤ 30 MB, and its sidecar `clamd`, Debian 12's `clamd` and `freshclam` with only the packages their libraries need, on `gcr.io/distroless/cc-debian12:nonroot`, within ≤ 60 MB.
+
+Source: PRD-001 §12.9
+
+#### Scenario: The clamd image is reproducible and scannable
+- **WHEN** the `clamd` image is built
+- **THEN** its packages come from snapshot.debian.org at a pinned date, unpacked without their scripts
+- **AND** each package's record and file list are in the image, so the scan sees every library
+
+#### Scenario: No shell in the clamd image
+- **WHEN** the `clamd` image runs
+- **THEN** a static Go entry point runs `freshclam`, then `clamd` on loopback, as nonroot, with no shell or package manager
+
 ### Requirement: OAuth image
 The `oauth` image SHALL be the upstream Ory Hydra image pinned by digest, with its version and edition recorded in ADR-T3.
 
@@ -144,7 +158,7 @@ Source: PRD-001 §12.9 · Priority M · Phase P0
 - **THEN** the change is made in the budget table by a reviewed pull request
 
 ### Requirement: NFR-IMG-05 SBOM, scan, signature and provenance
-Every image SHALL have an SBOM (syft), a vulnerability scan with no unwaived critical or high findings (grype or Trivy), a cosign signature and SLSA provenance (SEC-22, SEC-26), and SHALL be deployed by digest.
+Every image SHALL have an SBOM (syft), a vulnerability scan with no unwaived critical or high findings that a patch exists for (grype or Trivy; rev 0.248), a cosign signature and SLSA provenance (SEC-22, SEC-26), and SHALL be deployed by digest.
 
 Source: PRD-001 §12.9 · Priority M · Phase P0 (budget, hardening, cosign signature, deployment by digest) / P1 (SBOM, scan gate, SLSA provenance)
 
@@ -155,7 +169,12 @@ Source: PRD-001 §12.9 · Priority M · Phase P0 (budget, hardening, cosign sign
 
 #### Scenario: Scan gate
 - **WHEN** an image is scanned with grype or Trivy
-- **THEN** it passes only with no unwaived critical or high findings
+- **THEN** it passes only with no unwaived critical or high findings that a patch exists for
+
+#### Scenario: A finding no patch exists for (rev 0.248)
+- **WHEN** a critical or high finding is one the distribution marks won't fix or not fixed
+- **THEN** it is reported in the scan's evidence
+- **AND** it does not block
 
 #### Scenario: Signed with cosign
 - **WHEN** an image is published

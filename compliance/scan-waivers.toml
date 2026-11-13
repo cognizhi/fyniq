@@ -33,6 +33,13 @@ path = "internal/app/app.go"
 reason = "The image healthcheck calls its own /readyz on 127.0.0.1 and the PORT of its environment; no request input reaches the URL."
 expires = 2027-04-15
 
+[[waiver]]
+tool = "gosec"
+rule = "G704"
+path = "internal/scanservice/scanservice.go"
+reason = "The scanner service's URL comes from the deployment's FYNIQ_GCP (written by OpenTofu), never from a request, and the client's HTTP goes through the egress guard, which reaches that one host (SEC-36); only the file to scan comes from the caller, as the body."
+expires = 2027-05-31
+
 # ---------------------------------------------------------------- gitleaks (secrets)
 
 [[waiver]]

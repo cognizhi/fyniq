@@ -15,7 +15,7 @@ OPENSPEC ?= $(shell command -v openspec >/dev/null 2>&1 && echo openspec || echo
 export OPENSPEC_TELEMETRY := 0
 # The pinned toolchain from mise.toml when mise is installed; the tools on PATH otherwise
 MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
-GO_IMAGES := api ai mcp worker executor render migrate jobs
+GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
@@ -149,7 +149,7 @@ evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
-	  target=$$( [ "$$svc" = render ] && echo render || echo service ); \
+	  target=$$( case "$$svc" in render|clamd) echo "$$svc" ;; *) echo service ;; esac ); \
 	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --target $$target --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
 	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done

@@ -13,7 +13,7 @@ variables {
 run "the_platform_as_data" {
   command = plan
   assert {
-    condition     = toset(keys(output.spec.services)) == toset(["api", "ai", "mcp", "worker", "executor", "render", "oauth", "oauth-admin"])
+    condition     = toset(keys(output.spec.services)) == toset(["api", "ai", "mcp", "worker", "executor", "render", "scanner", "oauth", "oauth-admin"])
     error_message = "the services are not those of §12.3"
   }
   assert {

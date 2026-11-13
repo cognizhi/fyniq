@@ -23,7 +23,8 @@ platforms (part of `make images`; needs the registries): every image pinned by d
 the local stack, the dev container, the database tests and this script is a multi-platform index with
 linux/amd64 and linux/arm64, so neither platform needs emulation (NFR-IMG-08).
 scan (CI): an SPDX SBOM per release image (syft) and a grype scan; a Critical or High finding fails unless
-compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21, NFR-IMG-05). Reports go to .data/images/.
+compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21, NFR-IMG-05); one the distribution marks won't fix or not
+fixed is reported, not blocking (rev 0.248). Reports go to .data/images/.
 sign (CI, after scan): pushes each release image to a registry, signs it by digest with cosign, attaches
 its SBOM as an SPDX attestation and verifies both, then shows that verification refuses a wrong key and an
 unsigned image (NFR-IMG-05, SEC-22, CTL-CHG-04). Without --registry and --key it starts a throwaway
@@ -72,6 +73,8 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORTS = ROOT / ".data" / "images"
 BUDGETS = json.loads((ROOT / "deploy" / "docker" / "budgets.json").read_text())["images"]
 GO_IMAGES = [i for i in BUDGETS if i != "web"]
+# The Dockerfile target of an image that is not the default service's: render with Typst, clamd with Debian's ClamAV.
+TARGETS = {"render": "render", "clamd": "clamd"}
 FORBIDDEN = ("bin/sh", "bin/bash", "bin/ash", "bin/busybox", "sbin/apk", "usr/bin/apt", "usr/bin/apt-get", "usr/bin/dpkg",
              "usr/local/go/bin/go", "usr/bin/gcc")
 LOCAL_MARK = b"github.com/cognizhi/fyniq/internal/adapters/local"
@@ -249,6 +252,18 @@ def platforms() -> int:
 # req: CTL-CHG-09
 # req: CTL-CHG-08
 def self_test() -> None:
+    # The image scan (NFR-IMG-05, rev 0.248): a critical with a patch blocks; one the distribution will not fix, or has
+    # not yet, is reported and does not block; a medium never blocks.
+    matches = {"matches": [
+        {"vulnerability": {"id": "CVE-1", "severity": "Critical", "fix": {"state": "fixed", "versions": ["2"]}}, "artifact": {"name": "a", "version": "1"}},
+        {"vulnerability": {"id": "CVE-2", "severity": "Critical", "fix": {"state": "wont-fix"}}, "artifact": {"name": "b", "version": "1"}},
+        {"vulnerability": {"id": "CVE-3", "severity": "High", "fix": {"state": "not-fixed"}}, "artifact": {"name": "c", "version": "1"}},
+        {"vulnerability": {"id": "CVE-4", "severity": "High"}, "artifact": {"name": "d", "version": "1"}},
+        {"vulnerability": {"id": "CVE-5", "severity": "Medium", "fix": {"state": "fixed"}}, "artifact": {"name": "e", "version": "1"}},
+    ]}
+    blocking = [f.rule for f in image_findings(json.dumps(matches), "fyniq-x") if f.blocking]
+    if blocking != ["CVE-1", "CVE-4"]:
+        raise SystemExit(f"✖ images self-test: only a critical or high with a patch, or with no fix state, blocks: {blocking}")
     good = {"User": "65532:65532", "Entrypoint": ["/app"]}
     elf = lambda machine: b"\x7fELF\x02\x01" + bytes(12) + machine.to_bytes(2, "little")  # noqa: E731  (an ELF header)
     if judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app", "etc/passwd"], elf(62) + b"main"):
@@ -319,6 +334,23 @@ def self_test() -> None:
           " its time")
 
 
+# The fix states of a finding no patch exists for: the distribution will not fix it, or has not yet (NFR-IMG-05, rev 0.248).
+UNPATCHED = {"wont-fix", "not-fixed"}
+
+
+def image_findings(out: str, image: str) -> list[scan.Finding]:
+    """grype's matches for an image as findings: a critical or high one blocks unless no patch exists for it, which is
+    reported, not blocking (NFR-IMG-05, the owner's decision of 11 Nov 2026)."""
+    found = []
+    for m in json.loads(out).get("matches", []):
+        v, a = m["vulnerability"], m["artifact"]
+        state = (v.get("fix") or {}).get("state", "")
+        unpatched = state in UNPATCHED
+        found.append(scan.Finding("grype-image", v["id"], image, f"{a['name']} {a['version']}: {v['severity']}" + (f" ({state})" if unpatched else ""),
+                                  v["severity"] in scan.BLOCKING_SEVERITIES and not unpatched))
+    return found
+
+
 def scan_images(version: str) -> int:
     REPORTS.mkdir(parents=True, exist_ok=True)
     findings = []
@@ -327,10 +359,7 @@ def scan_images(version: str) -> int:
         sh("syft", "scan", f"docker:{image}", "-q", "-o", f"spdx-json={REPORTS / (svc + '.spdx.json')}")
         out = sh("grype", f"docker:{image}", "-q", "-o", "json")
         (REPORTS / f"{svc}.grype.json").write_text(out)
-        for m in json.loads(out).get("matches", []):
-            v, a = m["vulnerability"], m["artifact"]
-            findings.append(scan.Finding("grype-image", v["id"], image.split(":")[0],
-                                         f"{a['name']} {a['version']}: {v['severity']}", v["severity"] in scan.BLOCKING_SEVERITIES))
+        findings += image_findings(out, image.split(":")[0])
     problems = scan.judge(findings, scan.load_waivers(), {"grype-image"}, dt.date.today())
     (REPORTS / "summary.json").write_text(json.dumps({"problems": problems, "findings": [f.__dict__ for f in findings]}, indent=1))
     if problems:
@@ -479,7 +508,7 @@ def build_command(svc: str, builder: str, version: str, sha: str, release: str, 
     if svc == "web":
         cmd += ["-f", "deploy/docker/Dockerfile.web"]
     else:
-        cmd += ["-f", "deploy/docker/Dockerfile.go-service", "--target", "render" if svc == "render" else "service",
+        cmd += ["-f", "deploy/docker/Dockerfile.go-service", "--target", TARGETS.get(svc, "service"),
                 "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
                 "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}"]
     return [*cmd, *extra, "."]
@@ -598,10 +627,7 @@ def publish(release: str, registry: str, github_output: str) -> int:
             sh("syft", "scan", f"registry:{name}@{digest}", "--platform", "linux/amd64", "-q", "-o", f"spdx-json={sbom}")
             out = sh("grype", f"sbom:{sbom}", "-q", "-o", "json")
             (REPORTS / f"{svc}.grype.json").write_text(out)
-            for m in json.loads(out).get("matches", []):
-                v, a = m["vulnerability"], m["artifact"]
-                findings.append(scan.Finding("grype-image", v["id"], f"fyniq-{svc}", f"{a['name']} {a['version']}: {v['severity']}",
-                                             v["severity"] in scan.BLOCKING_SEVERITIES))
+            findings += image_findings(out, f"fyniq-{svc}")
             rows.append({"image": name, "digest": digest, "service": svc})
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -95,6 +95,8 @@ locals {
     worker   = { image = "worker", port = 8080, public = false, open_inside = false, database_role = "fyniq_worker", class = "worker" }
     executor = { image = "executor", port = 8080, public = false, open_inside = false, database_role = "fyniq_executor", class = "executor" }
     render   = { image = "render", port = 8080, public = false, open_inside = false, database_role = null, class = null }
+    # The scanner service (PRD-001 rev 0.247): its HTTP front, with clamd beside it (the environment module's sidecar).
+    scanner = { image = "scanner", port = 8080, public = false, open_inside = false, database_role = null, class = null }
     # Ory Hydra (ADR-T3): its public port for clients; its admin port reachable from inside the network
     # only, with no further check, as in the local stack (the api's Hydra client sends no ID token).
     oauth       = { image = "oauth", port = 4444, public = true, open_inside = false, database_role = null, class = null }

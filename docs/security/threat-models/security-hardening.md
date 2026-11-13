@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The platform's hardening before launch: signed and attested releases, reproducible images, one egress client and registered private endpoints, the edge with Cloud Armor and per-IP limits, signed evidence downloads, security alerts, the central log store, cloud posture and the log scan, DAST, dependency hygiene, the auto-approval rule, the recorded version, the incident runbook and register: SEC-22, SEC-23, SEC-24, SEC-26, SEC-30, SEC-31, SEC-32, SEC-33, SEC-36, SEC-37, REL-04, REL-05, NFR-IMG-05, NFR-IMG-07, CTL-CHG-04, CTL-CHG-05, CTL-CHG-07, CTL-DP-03, CTL-RES-04 (PRD-001 rev 0.246; `p1-security-hardening`) |
+| Feature and requirement IDs | The platform's hardening before launch: signed and attested releases, reproducible images, one egress client and registered private endpoints, the edge with Cloud Armor and per-IP limits, signed evidence downloads, security alerts, the central log store, cloud posture and the log scan, DAST, dependency hygiene, the auto-approval rule, the recorded version, the incident runbook and register: SEC-22, SEC-23, SEC-24, SEC-26, SEC-30, SEC-31, SEC-32, SEC-33, SEC-36, SEC-37, REL-04, REL-05, NFR-IMG-05, FR-DOC-08, NFR-IMG-07, CTL-CHG-04, CTL-CHG-05, CTL-CHG-07, CTL-DP-03, CTL-RES-04 (PRD-001 rev 0.246; `p1-security-hardening`) |
 | Author, reviewer, date | Claude Code for the owner, 11 Nov 2026; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Every class the platform holds, indirectly: what the controls here protect is the release, the network path, the files and the evidence of what happened. Direct: client IP addresses, countries and devices of sign-ins (personal, kept 400 days beside the chain, AUD-06); incident and alert texts (may name people); the platform's logs (must hold no secret, token, NRIC or bank number, SEC-15) |
 | Who acts | The release workflow (GitHub Actions on a tag) and its attester; the jobs' account (posture and log reads); the api (signs download links as itself); the worker (sign-in checks, alerts); the edge (Cloud Armor, the load balancer); the DPO (the incident register); a Super admin (private endpoints, with dual control); attackers on the internet, in a dependency, in a connector's upstream, or holding a member's session |
@@ -40,6 +40,7 @@ platform client); browser ↔ Cloud Storage (signed URLs); the platform ↔ its 
 | T6 | Internet → edge → services | Spoofing: a client sets the client-IP, country or region headers itself | Per-IP limits and impossible travel defeated | Medium |
 | T7 | Internet → edge | Denial of service: floods of sign-in, setup, join or public-document requests | Lockouts, cost | High |
 | T8 | Browser → storage | Information disclosure: an evidence link reused, shared or long-lived | A sensitive file read by others | Medium |
+| T19 | Upload → scanner | Elevation / tampering: a crafted file exploits clamd's parsers (libxml2 and others with no patch yet), or a file passes because the scanner could not decide | Code running in the scanner; malware kept as evidence | Medium |
 | T9 | Platform → people | Repudiation / denial: an attacker's sign-in, export or bank change goes unseen; alerts drown in noise | Late detection | Medium |
 | T10 | Platform → logs | Information disclosure: a secret, a token, an NRIC or a bank number reaches the logs | Secrets and personal data exposed to log readers | Medium |
 | T11 | Cloud configuration | Elevation: a public bucket, an open firewall or a broad grant stays open | Data exposure | Medium |
@@ -79,6 +80,7 @@ security-definer functions.
 | T16 | The endpoint names only what every export names and the release notes publish; patching is fast because the version is known (Dependabot, govulncheck); no build paths or dependency lists | `TestThePlatformVersionNeedsNoCredential` |
 | T17 | Insert-only tables, every change refused (FY322), steps in the runbook's order, each audited; kept by the DPO only (Appendix D, Compliance Center C/A); the breach link only to the organisation's own breach | `TestAttackTheIncidentRegisterKeepsItsRules`, `TestTheIncidentRegister` |
 | T18 | A package gosec cannot type-check fails the scan; a waiver that matches nothing fails it too | `scripts/scan.py --self-test` |
+| T19 | clamd runs as nonroot in its own sidecar with no shell, no database role, no secret and no credential; its front accepts only the api's and the worker's tokens and keeps nothing; a file clamd cannot decide is refused, never passed; the image scan shows every library (each Debian package's record), blocks what a patch exists for and reports the rest | `TestTheScannerServiceScansForItsCallers`, `TestTheSidecarUpdatesThenRunsClamd`, `TestTheSidecarFailsWithoutSignaturesOrClamd`; `only_the_api_and_the_worker_scan` (module test); `scripts/images.py self-test` |
 
 ## 4. What remains
 
@@ -86,7 +88,8 @@ security-definer functions.
   Armor's rules in preview, the load balancer's headers, the sink and its lock, SCC, Sensitive Data Protection, the
   signed URLs' signer `[live-verify]` (`infra/README.md`).
 - ClamAV in the cloud is a private scanner service (the owner's decision, rev 0.247): an HTTP front with clamd as a
-  sidecar; its deployment is `[live-verify]`.
+  sidecar; its deployment is `[live-verify]`. The clamd image's libraries carry findings no patch exists for yet
+  (libxml2, glibc and others), reported and not blocking (rev 0.248); move DEBIAN_SNAPSHOT forward as fixes land.
 - The nightly DAST of staging is not signed in until a staging test identity exists.
 - Impossible travel reads country and region only (the owner's decision): a VPN defeats it, and new-device alerts
   catch the rest.

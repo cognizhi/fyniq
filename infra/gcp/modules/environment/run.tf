@@ -16,6 +16,11 @@ locals {
     lookup(var.service_env, name, {}),
   ) }
   health = { for name in keys(local.spec.services) : name => contains(["oauth", "oauth-admin"], name) ? "/health/ready" : "/healthz" }
+  # The scanner service's sidecar (PRD-001 rev 0.247): clamd, which speaks raw TCP on loopback to the HTTP front beside
+  # it, keeps its signatures current in the background (so its CPU is always allocated) and holds them in memory, about
+  # 1.2 GB and twice that while it reloads them [live-verify the sizes]. The front reports ready only once clamd answers
+  # (/readyz), so no file reaches an instance before its signatures are loaded.
+  sidecars = { scanner = { name = "clamd", memory = "3Gi" } }
 }
 
 resource "google_cloud_run_v2_service" "services" {
@@ -36,7 +41,8 @@ resource "google_cloud_run_v2_service" "services" {
     timeout                          = contains(["worker", "executor"], each.key) ? "1800s" : "300s" # Cloud Tasks waits up to 30 minutes
     max_instance_request_concurrency = 40
     scaling {
-      min_instance_count = 0
+      # One scanner kept warm in production: clamd takes about a minute to load its signatures (rev 0.247).
+      min_instance_count = each.key == "scanner" && local.spec.environment == "production" ? 1 : 0
       max_instance_count = each.value.max_instances
     }
     vpc_access {
@@ -47,8 +53,11 @@ resource "google_cloud_run_v2_service" "services" {
       egress = "ALL_TRAFFIC"
     }
     containers {
+      name  = each.key
       image = var.placeholder_image
       args  = lookup(local.args, each.key, null)
+      # A service with a sidecar starts after it.
+      depends_on = contains(keys(local.sidecars), each.key) ? [local.sidecars[each.key].name] : null
       ports {
         container_port = each.value.port
       }
@@ -76,8 +85,11 @@ resource "google_cloud_run_v2_service" "services" {
         }
       }
       startup_probe {
+        # The scanner waits for clamd's signatures: its readiness asks clamd, for up to 5 minutes.
+        period_seconds    = contains(keys(local.sidecars), each.key) ? 10 : null
+        failure_threshold = contains(keys(local.sidecars), each.key) ? 30 : null
         http_get {
-          path = local.health[each.key]
+          path = contains(keys(local.sidecars), each.key) ? "/readyz" : local.health[each.key]
         }
       }
       liveness_probe {
@@ -86,9 +98,20 @@ resource "google_cloud_run_v2_service" "services" {
         }
       }
     }
+    dynamic "containers" {
+      for_each = contains(keys(local.sidecars), each.key) ? [local.sidecars[each.key]] : []
+      content {
+        name  = containers.value.name
+        image = var.placeholder_image
+        resources {
+          limits   = { cpu = "1", memory = containers.value.memory }
+          cpu_idle = false
+        }
+      }
+    }
   }
   lifecycle {
-    ignore_changes = [template[0].containers[0].image, client, client_version] # deployed by digest by the release workflow
+    ignore_changes = [template[0].containers[0].image, template[0].containers[1].image, client, client_version] # deployed by digest by the release workflow
   }
   depends_on = [google_service_account.all, google_secret_manager_secret_iam_member.access]
 }
@@ -178,6 +201,16 @@ resource "google_cloud_run_v2_service_iam_member" "render_invoker" {
   project  = var.project
   location = local.region
   name     = google_cloud_run_v2_service.services["render"].name
+  role     = "roles/run.invoker"
+  member   = local.member[each.key]
+}
+
+# The private scanner service (PRD-001 rev 0.247) is invoked by the api and the worker only, as their own accounts.
+resource "google_cloud_run_v2_service_iam_member" "scanner_invoker" {
+  for_each = toset(["api", "worker"])
+  project  = var.project
+  location = local.region
+  name     = google_cloud_run_v2_service.services["scanner"].name
   role     = "roles/run.invoker"
   member   = local.member[each.key]
 }
