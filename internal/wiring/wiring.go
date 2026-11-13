@@ -51,6 +51,8 @@ type Kit struct {
 	// Prices is the public model price catalogue read daily (AI-82, AI-85): LiteLLM's through the platform's egress
 	// guard in a release, a directory of files locally; nil: every model stays unpriced.
 	Prices ports.PriceCatalogue
+	// Billing is Google's Cloud Billing Catalog for Agent Platform's prices (AI-82 (b)); nil locally.
+	Billing ports.BillingCatalog
 	// Render is the private render service (PRD-001 §12.3, rev 0.96), which compiles template versions to PDF; nil when
 	// none is configured: then no preview renders and no template with IRAS particulars publishes.
 	Render render.Renderer

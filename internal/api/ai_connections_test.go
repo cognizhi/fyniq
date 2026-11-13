@@ -234,8 +234,8 @@ func matrixAIPrice(e *env) string {
 	worker := workerStore(e.t)
 	digest := strings.Repeat("cd", 32)
 	cat, err := worker.RecordAIPriceCatalogue(context.Background(), storage.AIPriceCatalogue{Source: "litellm", URL: "https://example.com/prices.json",
-		FetchedAt: now, SHA256: digest, Licence: "MIT, outside enterprise/", LicenceURL: "https://example.com/LICENSE", LicenceSHA256: digest,
-		Outcome: "valid", Entries: 100, Document: "ai/price-catalogues/litellm/" + digest + ".json"})
+		FetchedAt: now, SHA256: digest, LicenceURL: "https://example.com/LICENSE", LicenceSHA256: digest, Outcome: "rejected",
+		Failure: "a fixture of the matrix, never the latest valid download", Document: "ai/price-catalogues/litellm/" + digest + ".json"})
 	if err != nil {
 		e.t.Fatal(err)
 	}

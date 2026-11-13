@@ -170,6 +170,8 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	kit.ModelTokens = tokens // Claude and Gemini on Agent Platform, with the service's own account (AI-72)
 	// LiteLLM's public model price catalogue, from its one host through the platform's guard (AI-82, AI-85) [live-verify].
 	kit.Prices = litellm.Catalogue{HTTP: platform.Bounded(40<<20, 2*time.Minute).For(litellm.Host)}
+	// Google's Cloud Billing Catalog for Agent Platform's prices, as the service's own account (AI-82 (b)) [live-verify].
+	kit.Billing = gcp.NewBillingCatalog(gcp.CloudBillingAPI, tokens, platform.For(egress.HostOf(gcp.CloudBillingAPI)))
 	// The weekly export (DR-02, DR-04) and the restore drill's copy (DR-06), as the jobs' account [live-verify].
 	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
 		sql := gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)

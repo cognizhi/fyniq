@@ -473,6 +473,47 @@ func (c *Client) Stream(ctx context.Context, r ports.ModelRequest, each func(por
 
 // ListModels implements ports.ModelProvider: the endpoint's model list, whole on one page, with the hints some
 // endpoints add (OpenRouter's name, context length, supported parameters and alias target).
+// pricingKinds are the per-token rates of OpenRouter's pricing object, by the kind Fyniq keeps (checked 14 Nov 2026):
+// strings in US dollars per token. Its audio, image-output, image-token and web-search rates are uses Fyniq never makes.
+var pricingKinds = map[string]string{"prompt": "input", "completion": "output", "input_cache_read": "cache_read",
+	"input_cache_write": "cache_write", "input_cache_write_1h": "cache_write_1h", "internal_reasoning": "reasoning"}
+
+// listedPrice is the price a model list gives (AI-82 (a)), such as OpenRouter's pricing object: each rate as the
+// provider's decimal text; an optional rate of zero is left out, and a discount or overrides make it conditional. Nil
+// when the list gives none.
+func listedPrice(pricing map[string]json.RawMessage) *ports.ListedPrice {
+	if len(pricing) == 0 {
+		return nil
+	}
+	text := func(raw json.RawMessage) string {
+		var s string
+		if json.Unmarshal(raw, &s) == nil {
+			return s
+		}
+		return strings.TrimSpace(string(raw)) // a number, kept as its text
+	}
+	p := &ports.ListedPrice{Currency: "USD", PerToken: map[string]string{}}
+	for key, raw := range pricing {
+		v := text(raw)
+		switch kind, ok := pricingKinds[key]; {
+		case ok && (kind == "input" || kind == "output" || !zero(v)):
+			p.PerToken[kind] = v
+		case key == "image" && !zero(v):
+			p.PerImage = v
+		case key == "request" && !zero(v):
+			p.PerRequest = v
+		case key == "discount" && !zero(v):
+			p.Conditional = true
+		case key == "overrides" && v != "[]" && v != "null":
+			p.Conditional = true
+		}
+	}
+	return p
+}
+
+// zero is whether a price's text is zero, or empty.
+func zero(v string) bool { return strings.Trim(v, "0.") == "" }
+
 func (c *Client) ListModels(ctx context.Context, _ string) (ports.ModelPage, error) {
 	resp, err := c.do(ctx, http.MethodGet, "/models", nil)
 	if err != nil {
@@ -481,12 +522,13 @@ func (c *Client) ListModels(ctx context.Context, _ string) (ports.ModelPage, err
 	defer resp.Body.Close()
 	var list struct {
 		Data []struct {
-			ID                  string   `json:"id"`
-			Name                string   `json:"name"`
-			Created             int64    `json:"created"`
-			ContextLength       int      `json:"context_length"`
-			SupportedParameters []string `json:"supported_parameters"`
-			AliasTarget         string   `json:"alias_target"`
+			ID                  string                     `json:"id"`
+			Name                string                     `json:"name"`
+			Created             int64                      `json:"created"`
+			ContextLength       int                        `json:"context_length"`
+			SupportedParameters []string                   `json:"supported_parameters"`
+			AliasTarget         string                     `json:"alias_target"`
+			Pricing             map[string]json.RawMessage `json:"pricing"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 16<<20)).Decode(&list); err != nil {
@@ -494,7 +536,8 @@ func (c *Client) ListModels(ctx context.Context, _ string) (ports.ModelPage, err
 	}
 	out := ports.ModelPage{Models: []ports.ListedModel{}}
 	for _, m := range list.Data {
-		lm := ports.ListedModel{ID: m.ID, Name: m.Name, ContextWindow: m.ContextLength, Reports: m.SupportedParameters, AliasOf: m.AliasTarget}
+		lm := ports.ListedModel{ID: m.ID, Name: m.Name, ContextWindow: m.ContextLength, Reports: m.SupportedParameters, AliasOf: m.AliasTarget,
+			Price: listedPrice(m.Pricing)}
 		if m.Created > 0 {
 			created := time.Unix(m.Created, 0).UTC()
 			lm.Created = &created

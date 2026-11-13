@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,9 +47,21 @@ func toDomain(ms []storage.AIModel) []aimodel.Model {
 	for _, m := range ms {
 		out = append(out, aimodel.Model{ID: m.Model, Name: m.Name, AliasOf: m.AliasOf, Created: m.Created, Shutdown: m.Shutdown,
 			ContextWindow: m.ContextWindow, MaxOutput: m.MaxOutput, Reports: m.Reports, FirstListed: m.FirstListed, LastListed: m.LastListed,
-			Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed})
+			Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed, ListedPrice: listedPriceOf(m.ListedPrice)})
 	}
 	return out
+}
+
+// listedPriceOf is a stored listed price as the domain holds it; nil when there is none or it cannot be read.
+func listedPriceOf(raw json.RawMessage) *ports.ListedPrice {
+	if len(raw) == 0 {
+		return nil
+	}
+	var p ports.ListedPrice
+	if json.Unmarshal(raw, &p) != nil {
+		return nil
+	}
+	return &p
 }
 
 func fromDomain(connection uuid.UUID, ms []aimodel.Model) []storage.AIModel {
@@ -56,9 +69,21 @@ func fromDomain(connection uuid.UUID, ms []aimodel.Model) []storage.AIModel {
 	for _, m := range ms {
 		out = append(out, storage.AIModel{ConnectionID: connection, Model: m.ID, Name: m.Name, AliasOf: m.AliasOf, Created: m.Created,
 			Shutdown: m.Shutdown, ContextWindow: m.ContextWindow, MaxOutput: m.MaxOutput, Reports: m.Reports, FirstListed: m.FirstListed,
-			LastListed: m.LastListed, Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed})
+			LastListed: m.LastListed, Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed, ListedPrice: rawListedPrice(m.ListedPrice)})
 	}
 	return out
+}
+
+// rawListedPrice is a listed price as the store keeps it; nil for none.
+func rawListedPrice(p *ports.ListedPrice) json.RawMessage {
+	if p == nil {
+		return nil
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		return nil
+	}
+	return b
 }
 
 // failure is why a read was not complete, in Fyniq's words: the adapter's error, already scrubbed of the credential
@@ -116,6 +141,7 @@ func (l Lister) Read(ctx context.Context, org, id uuid.UUID, trigger, by string)
 		cancel()
 	}
 	now := l.Clock.Now()
+	priced := slices.ContainsFunc(listed, func(m ports.ListedModel) bool { return m.Price != nil })
 	merged, added, removed := toDomain(kept), 0, 0
 	if outcome != aimodel.Failed {
 		merged, added, removed = aimodel.Merge(merged, listed, outcome, now)
@@ -124,10 +150,10 @@ func (l Lister) Read(ctx context.Context, org, id uuid.UUID, trigger, by string)
 		Failure: failure(outcome, err), ReadBy: by, ReadAt: now}
 	models := fromDomain(id, merged)
 	err = l.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		if read, err = u.AIModels().Record(ctx, read, models); err != nil || read.Added == 0 {
+		if read, err = u.AIModels().Record(ctx, read, models); err != nil || (read.Added == 0 && !priced) {
 			return err
 		}
-		// New models are priced from the latest catalogue at once, not on the next daily read (AI-82).
+		// New models, and the prices the list gives, are priced at once, not on the next daily read (AI-82).
 		item, err := PriceItem(id, read.ID)
 		switch {
 		case err != nil:

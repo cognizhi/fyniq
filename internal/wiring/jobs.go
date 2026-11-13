@@ -383,7 +383,8 @@ func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
 
 // AIPrices read the model price catalogue and price the AI connections' models from it (AI-82, AI-85).
 func (k *Kit) AIPrices(clock ports.Clock) ai.Pricer {
-	return ai.Pricer{Store: k.Store, Catalogues: k.Store, Blobs: k.Blobs, Catalogue: k.Prices, Connectors: k.Connectors, Clock: clock}
+	return ai.Pricer{Store: k.Store, Catalogues: k.Store, Blobs: k.Blobs, Catalogue: k.Prices, Billing: k.Billing, Connectors: k.Connectors,
+		Clock: clock}
 }
 
 // AIModels read AI connections' model lists from their providers through the connector runtime (AI-80, AI-84).

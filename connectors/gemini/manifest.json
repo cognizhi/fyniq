@@ -90,7 +90,8 @@
     "list_models": "The publisher's models on Agent Platform in the location [live-verify]",
     "price_catalogue": {
       "workload-identity": {
-        "provider": "vertex_ai-language-models"
+        "provider": "vertex_ai-language-models",
+        "google_billing": true
       }
     }
   },

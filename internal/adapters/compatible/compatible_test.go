@@ -35,8 +35,10 @@ func (f *fakeChat) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		_ = json.NewEncoder(w).Encode(map[string]any{"object": "list", "data": []map[string]any{
 			{"id": "moonshotai/kimi-k3", "name": "MoonshotAI: Kimi K3", "created": 1790000000, "context_length": 262144,
-				"supported_parameters": []string{"tools", "response_format"}},
-			{"id": "openrouter/auto", "alias_target": "anthropic/claude-sonnet-5-5"}}})
+				"supported_parameters": []string{"tools", "response_format"}, "pricing": map[string]any{"prompt": "0.0000006", "completion": "0.0000025",
+					"input_cache_read": "0.00000015", "input_cache_write": "0", "request": "0", "image": "0.0012", "web_search": "0.004"}},
+			{"id": "openrouter/auto", "alias_target": "anthropic/claude-sonnet-5-5"},
+			{"id": "vendor/discounted", "pricing": map[string]any{"prompt": "0.000001", "completion": "0.000002", "discount": 0.25}}}})
 		return
 	}
 	var body map[string]any
@@ -202,9 +204,10 @@ func TestCompatibleClaimsOnlyWhatItProved(t *testing.T) {
 }
 
 // Refusals map to the port's errors; finish reasons to its stop reasons; the model list carries the hints an endpoint
-// such as OpenRouter adds, an alias's target among them (AI-78, AI-80).
+// such as OpenRouter adds, an alias's target and its prices among them (AI-78, AI-80, AI-82).
 // req: AI-80
 // req: AI-78
+// req: AI-82
 func TestCompatibleErrorsStopsAndModelList(t *testing.T) {
 	fake := &fakeChat{}
 	srv := httptest.NewServer(fake)
@@ -227,9 +230,18 @@ func TestCompatibleErrorsStopsAndModelList(t *testing.T) {
 		t.Error("a refusal")
 	}
 	page, err := c.ListModels(ctx, "")
-	if err != nil || len(page.Models) != 2 || page.Models[0].ContextWindow != 262144 || page.Models[0].Name != "MoonshotAI: Kimi K3" ||
+	if err != nil || len(page.Models) != 3 || page.Models[0].ContextWindow != 262144 || page.Models[0].Name != "MoonshotAI: Kimi K3" ||
 		strings.Join(page.Models[0].Reports, ",") != "tools,response_format" || page.Models[1].AliasOf != "anthropic/claude-sonnet-5-5" {
 		t.Errorf("the model list: %v %+v", err, page)
+	}
+	// The list's prices, as OpenRouter gives them (AI-82 (a)): decimal text per token; an optional rate of zero left out;
+	// a discount makes the price conditional; no pricing, no price.
+	if p := page.Models[0].Price; p == nil || p.Currency != "USD" || p.PerToken["input"] != "0.0000006" || p.PerToken["output"] != "0.0000025" ||
+		p.PerToken["cache_read"] != "0.00000015" || len(p.PerToken) != 3 || p.PerImage != "0.0012" || p.PerRequest != "" || p.Conditional {
+		t.Errorf("a listed price: %+v", p)
+	}
+	if page.Models[1].Price != nil || page.Models[2].Price == nil || !page.Models[2].Price.Conditional {
+		t.Errorf("no price, and a discounted one: %+v %+v", page.Models[1].Price, page.Models[2].Price)
 	}
 }
 
