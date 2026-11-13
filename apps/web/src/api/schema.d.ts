@@ -21163,11 +21163,11 @@ export interface components {
              */
             in_flight: "finish" | "reconcile";
             /**
-             * @description The kind of service.
+             * @description The kind of service; a model provider (AI-71) is connected through AI connections, not installed.
              * @example outbound-email
              * @enum {string}
              */
-            kind: "sign-in" | "outbound-email" | "inbound-email" | "messaging" | "ticketing" | "payment-provider" | "bank-data" | "e-invoicing" | "document-ai";
+            kind: "sign-in" | "outbound-email" | "inbound-email" | "messaging" | "ticketing" | "payment-provider" | "bank-data" | "e-invoicing" | "document-ai" | "model-provider";
             /**
              * @description What disabling does to its queued work; pausing always holds it (FR-INT-26).
              * @example hold

@@ -10736,7 +10736,7 @@ components:
             - reconcile
           type: string
         kind:
-          description: The kind of service.
+          description: The kind of service; a model provider (AI-71) is connected through AI connections, not installed.
           enum:
             - sign-in
             - outbound-email
@@ -10747,6 +10747,7 @@ components:
             - bank-data
             - e-invoicing
             - document-ai
+            - model-provider
           examples:
             - outbound-email
           type: string
