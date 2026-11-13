@@ -414,6 +414,11 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** retention is applied to the AI activity log
 - **THEN** its entries are retained as audit data
 
+#### Scenario: Built with the model providers (rev 0.275)
+- **WHEN** the activity log is built
+- **THEN** it is built with `p1-ai-providers`, ahead of go-live, since the assistant and the scheduled agents launch (the owner's decision of 13 Nov 2026)
+- **AND** its parts for proposals, task types and knowledge pages fill in as those changes arrive
+
 ### Requirement: AI-13 Kill switch and token budgets
 The Owner SHALL be able to disable the assistant, the propose tool or individual task types, with new requests refused at once and existing access stopped within 60 seconds, and the system SHALL keep organisation and per-user token budgets with alerts.
 
@@ -438,6 +443,11 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 #### Scenario: Token budgets with alerts
 - **WHEN** token use reaches the organisation's or a user's token budget
 - **THEN** an alert is raised
+
+#### Scenario: Built with the model providers (rev 0.275)
+- **WHEN** the kill switch and the token budgets is built
+- **THEN** it is built with `p1-ai-providers`, ahead of go-live, since the assistant and the scheduled agents launch (the owner's decision of 13 Nov 2026)
+- **AND** its parts for proposals, task types and knowledge pages fill in as those changes arrive
 
 ### Requirement: AI-14 Rejection reasons fed back
 A rejection SHALL carry a reason, which SHALL be fed back into the conversation so the AI can revise.

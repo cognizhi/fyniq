@@ -213,6 +213,9 @@ BY_ID.update({
     "CMP-AI-02": "p1-ai-providers", "CMP-AI-03": "p1-ai-providers", "CTL-AI-05": "p1-ai-providers",
     "CTL-AI-02": "p1-ai-proposals", "CTL-AI-03": "p1-ai-proposals", "CTL-AI-04": "p1-ai-proposals", "CTL-AI-07": "p1-ai-proposals",
     "CTL-AI-06": "p1-ai-assistant", "CTL-AI-08": "p1-knowledge-base", "CTL-AI-09": "p1-scheduled-agents",
+    # The owner's decision of 13 Nov 2026 (PRD-001 rev 0.275): with the AI at launch, its activity log and kill switch
+    # come with the model calls they record and stop, ahead of the proposals.
+    "AI-12": "p1-ai-providers", "AI-13": "p1-ai-providers",
     "CTL-MCP-01": "p1-mcp-first-party", "CTL-MCP-02": "p1-mcp-first-party", "CTL-MCP-03": "p1-mcp-first-party",
     "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
     "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
