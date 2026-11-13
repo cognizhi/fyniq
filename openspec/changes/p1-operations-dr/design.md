@@ -85,6 +85,15 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
     (Q) becomes an attestation.
 - **Audit:** the drill job records `restore.drilled` in the installation's trail, with the clone's time, the verification
   results and the duration.
+- **As built (11 Nov 2026, slice 4a):**
+  - The port names the copy itself (`<instance>-drill-<time>`; `fyniq_drill_<time>` locally) and removes only such a
+    name; the jobs' IAM grants say the same by condition.
+  - The chain on a copy is verified by `audit.VerifyRestored`: as the nightly verification, except that an anchor or a
+    close anchor past the copy's head, written after its point in time, is counted, not failed.
+  - The job runs every 28 days (Sunday 04:00 SGT), so never more than four weeks apart; CTL-RES-02 (M) is the check
+    `job restore.drill`, which the job's own outcome passes or fails, and the drill records `restore.drilled` in the
+    installation's trail, retried once because the local copy ends every connection to the database.
+  - Locally `make restore-drill` runs `jobs restore-drill`.
 - *Alternatives:* both drills in a drill project, and the quarterly drill alone (the owner's decision).
 
 ### D3. Records and attachment storage (DR-07, NFR-RET-01, CTL-AUD-03)

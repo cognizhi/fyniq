@@ -48,6 +48,9 @@ var PlatformSchedules = []Schedule{
 	// Weekly on Sundays at 03:00 Singapore time (Saturday 19:00 UTC; the epoch was a Thursday), the database's export into
 	// the audit project's locked bucket, and in a month's first week its monthly copy (DR-02, DR-04; rev 0.249).
 	{Job: "db.export", Every: 7 * 24 * time.Hour, Offset: 67 * time.Hour, Lease: 3 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Every fourth Sunday at 04:00 Singapore time (Saturday 20:00 UTC), so never more than 28 days apart, the restore drill:
+	// a copy of the database an hour back, verified and removed (DR-06, CTL-RES-02 M; rev 0.249).
+	{Job: "restore.drill", Every: 28 * 24 * time.Hour, Offset: 68 * time.Hour, Lease: 5 * time.Hour, Stale: 30 * 24 * time.Hour},
 	// Nightly at 02:45, every stored entry posted again under the rule version that posted it (ENG-06, QA-ENG-06; rev 0.67).
 	{Job: "ledger.replay", Every: 24 * time.Hour, Offset: 18*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},

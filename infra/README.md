@@ -51,6 +51,7 @@ The tests check the controls on the planned configuration:
 | CTL-AUD-02 | Production's anchors are retention-locked. Staging's are not |
 | DR-01, DR-02, DR-03, CTL-RES-01 | Production's database is regional HA, and a zonal one is refused. Point-in-time recovery keeps 7 days of logs, and 35 daily backups are kept in Singapore |
 | DR-07, CTL-AUD-03, FR-DOC-02 | The evidence bucket locks each object until its own retain-until, deletes nothing by age and is never public; no account may delete a committed file or shorten its retention |
+| DR-06, CTL-RES-02 | The jobs' account may clone the instance, and read, update and delete only its drill copies (`<instance>-drill-<time>`), by IAM conditions |
 | DR-02, DR-04 | The weekly export is kept 35 days and each month's first a year, in `fyniq-audit` for production, locked there; only the instance writes it, and the jobs' account may only start it |
 | NFR-COST-01 | Budgets are variables, with alerts at 50%, 80% and 100% and no Pub/Sub cap |
 
@@ -166,6 +167,10 @@ assumptions, not facts.
 - `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
   (a write across projects under that project's key), that `db.export` succeeds with the custom role
   alone, and how long an export of production takes.
+- `[live-verify]` The restore drill: that the clone's permissions are enough (`[verify]` whether Cloud SQL
+  also asks for `cloudsql.instances.create`), that the IAM conditions match Cloud SQL's resource names, that
+  the jobs reach the copy's private address as their own database role (and its TLS), and how long a
+  clone of production takes against NFR-DR-02's 4 hours.
 - `[live-verify]` That the evidence bucket refuses to delete a committed file or shorten its Locked
   retention, and that the committer's custom role is enough to commit one and set its retention.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
