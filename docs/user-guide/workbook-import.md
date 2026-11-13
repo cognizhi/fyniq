@@ -70,6 +70,20 @@ If the figures move after a line is decided, it is marked to decide again. Once 
 Accountant selects **Sign the register** and confirms it's them. The GST F5 is compared once Fyniq makes the F5
 return.
 
+## Run a parallel month
+
+Once the register is signed, keep one month in both the workbook and Fyniq. At its end, upload the workbook as it
+stands then, with **Upload the month's workbook**. It is checked as the first was, then the month is compared with
+Fyniq's books the same way, and each difference decided in its own register. The Accountant then selects **Sign the
+parallel month** and confirms it's them.
+
+## Archive and go live
+
+Once the parallel month is signed, add the PDFs of the workbook's reports, then select **Archive and go live** and
+confirm it's you. Each of the import's files (the workbooks, their Checks exports and the PDFs) is copied, write-once,
+to the retention-locked store with its hash, and kept as long as the records are. The import then closes, read only:
+nothing of it changes again.
+
 ## Other imports
 
 Import one kind of record from CSV or Excel: contacts, items, accounts of the chart, opening balances, journals,
