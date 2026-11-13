@@ -735,6 +735,63 @@ func (q *Queries) InsertDataInventoryReview(ctx context.Context, arg InsertDataI
 	return i, err
 }
 
+const insertHeartbeatDrill = `-- name: InsertHeartbeatDrill :one
+INSERT INTO fyniq.tick_drill (held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by,
+                                   recorded_at)
+VALUES ($1, $2, $3, $4, $5,
+        $6, $7, $8)
+RETURNING id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+`
+
+type InsertHeartbeatDrillParams struct {
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+type InsertHeartbeatDrillRow struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+func (q *Queries) InsertHeartbeatDrill(ctx context.Context, arg InsertHeartbeatDrillParams) (InsertHeartbeatDrillRow, error) {
+	row := q.db.QueryRow(ctx, insertHeartbeatDrill,
+		arg.HeldOn,
+		arg.Environment,
+		arg.PausedMinutes,
+		arg.FirstAlertMinutes,
+		arg.EscalationMinutes,
+		arg.Findings,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertHeartbeatDrillRow
+	err := row.Scan(
+		&i.ID,
+		&i.HeldOn,
+		&i.Environment,
+		&i.PausedMinutes,
+		&i.FirstAlertMinutes,
+		&i.EscalationMinutes,
+		&i.Findings,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
 const insertIncident = `-- name: InsertIncident :one
 INSERT INTO fyniq.security_incident (title, summary, severity, detected_at, opened_by, opened_at)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -1834,6 +1891,54 @@ func (q *Queries) ListDataInventoryReviews(ctx context.Context) ([]ListDataInven
 			&i.ReviewedBy,
 			&i.ReviewedAt,
 			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHeartbeatDrills = `-- name: ListHeartbeatDrills :many
+SELECT id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+FROM fyniq.tick_drill ORDER BY held_on, recorded_at, id
+`
+
+type ListHeartbeatDrillsRow struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+// The organisation's heartbeat drills, oldest first (NFR-OBS-02).
+func (q *Queries) ListHeartbeatDrills(ctx context.Context) ([]ListHeartbeatDrillsRow, error) {
+	rows, err := q.db.Query(ctx, listHeartbeatDrills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListHeartbeatDrillsRow
+	for rows.Next() {
+		var i ListHeartbeatDrillsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldOn,
+			&i.Environment,
+			&i.PausedMinutes,
+			&i.FirstAlertMinutes,
+			&i.EscalationMinutes,
+			&i.Findings,
+			&i.RecordedBy,
+			&i.RecordedAt,
 		); err != nil {
 			return nil, err
 		}

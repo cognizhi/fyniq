@@ -2380,6 +2380,19 @@ type FyniqTenants struct {
 	CreatedAt      time.Time
 }
 
+type FyniqTickDrill struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
 type FyniqUserIdentity struct {
 	Issuer          string
 	Subject         string

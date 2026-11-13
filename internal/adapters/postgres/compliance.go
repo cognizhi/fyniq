@@ -920,3 +920,59 @@ func (c compliance) RecordRestoreDrill(ctx context.Context, d storage.RestoreDri
 	}
 	return out, nil
 }
+
+// minutes32 is minutes as the database keeps them; nil stays nil.
+func minutes32(m *int) *int32 {
+	if m == nil {
+		return nil
+	}
+	v := int32(*m) // #nosec G115 -- minutes, at most a year's by the API (recordHeartbeatDrill)
+	return &v
+}
+
+func minutesOf(m *int32) *int {
+	if m == nil {
+		return nil
+	}
+	v := int(*m)
+	return &v
+}
+
+func (c compliance) HeartbeatDrills(ctx context.Context) ([]storage.HeartbeatDrill, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListHeartbeatDrills(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.HeartbeatDrill, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.HeartbeatDrill{ID: r.ID, HeldOn: r.HeldOn, Environment: r.Environment, PausedMinutes: int(r.PausedMinutes),
+			FirstAlertMinutes: minutesOf(r.FirstAlertMinutes), EscalationMinutes: minutesOf(r.EscalationMinutes), Findings: r.Findings,
+			RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt})
+	}
+	return out, nil
+}
+
+func (c compliance) RecordHeartbeatDrill(ctx context.Context, d storage.HeartbeatDrill) (storage.HeartbeatDrill, error) {
+	if err := c.u.check(); err != nil {
+		return storage.HeartbeatDrill{}, err
+	}
+	paused := int32(d.PausedMinutes) // #nosec G115 -- minutes, at most a year's by the API (recordHeartbeatDrill)
+	r, err := c.u.q.InsertHeartbeatDrill(ctx, sqlcdb.InsertHeartbeatDrillParams{HeldOn: d.HeldOn, Environment: d.Environment, PausedMinutes: paused,
+		FirstAlertMinutes: minutes32(d.FirstAlertMinutes), EscalationMinutes: minutes32(d.EscalationMinutes), Findings: d.Findings,
+		RecordedBy: d.RecordedBy, RecordedAt: d.RecordedAt})
+	if err != nil {
+		return storage.HeartbeatDrill{}, mapError(err)
+	}
+	out := storage.HeartbeatDrill{ID: r.ID, HeldOn: r.HeldOn, Environment: r.Environment, PausedMinutes: int(r.PausedMinutes),
+		FirstAlertMinutes: minutesOf(r.FirstAlertMinutes), EscalationMinutes: minutesOf(r.EscalationMinutes), Findings: r.Findings,
+		RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}
+	if err := c.u.event(ctx, "tick_drill.recorded", "tick_drill", r.ID, nil, map[string][2]any{"held_on": {nil, r.HeldOn.Format(time.DateOnly)},
+		"environment": {nil, r.Environment}, "paused_minutes": {nil, r.PausedMinutes}, "first_alert_minutes": {nil, out.FirstAlertMinutes},
+		"escalation_minutes": {nil, out.EscalationMinutes}, "passed": {nil, out.Passed()}}); err != nil {
+		return storage.HeartbeatDrill{}, err
+	}
+	return out, nil
+}

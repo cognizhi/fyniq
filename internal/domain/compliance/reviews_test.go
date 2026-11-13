@@ -236,6 +236,23 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 		reviewIs(t, "the last did not recover", r, ReviewOverdue, 1, 1, "did not recover")
 	})
 
+	t.Run("the heartbeat drill", func(t *testing.T) {
+		members := []storage.Member{{UserID: alice, Since: today.AddDate(-1, 0, 0)}}
+		if r := heartbeatDrillReview(members, nil, today, false); r.Status != ReviewNotApplicable {
+			t.Errorf("outside the installation: %+v", r)
+		}
+		mins := func(n int) *int { return &n }
+		drill := func(held time.Time, first, escalation *int) storage.HeartbeatDrill {
+			return storage.HeartbeatDrill{HeldOn: held, Environment: "staging", PausedMinutes: 75, FirstAlertMinutes: first, EscalationMinutes: escalation,
+				RecordedBy: "user:" + alice.String(), RecordedAt: now}
+		}
+		reviewIs(t, "one a month ago", heartbeatDrillReview(members, []storage.HeartbeatDrill{drill(today.AddDate(0, -1, 0), mins(28), mins(58))}, today, true),
+			ReviewSigned, 0, 0, "The next heartbeat drill is due by")
+		// An alert a minute late, or no escalation, does not count.
+		r := heartbeatDrillReview(members, []storage.HeartbeatDrill{drill(today.AddDate(0, -4, 0), mins(25), mins(55)), drill(today.AddDate(0, 0, -2), mins(31), nil)}, today, true)
+		reviewIs(t, "the last alerted late", r, ReviewOverdue, 1, 1, "did not alert in time")
+	})
+
 	t.Run("the risk reviews", func(t *testing.T) {
 		risk := func(ref, state string, next time.Time, reviewed *time.Time) storage.Risk {
 			r := storage.Risk{Ref: ref, RiskFields: storage.RiskFields{State: state, NextReviewOn: next}}

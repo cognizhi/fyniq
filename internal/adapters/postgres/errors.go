@@ -205,6 +205,7 @@ var fyCodes = map[string]string{
 	"FY321": storage.CodeImmutable,       // a private endpoint's version changed or removed (000310)
 	"FY322": storage.CodeIncident,        // an incident's step out of order, or any change (000316)
 	"FY323": storage.CodeRestoreDrill,    // a restore drill changed or removed (000317)
+	"FY324": storage.CodeHeartbeatDrill,  // a heartbeat drill changed or removed (000318)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

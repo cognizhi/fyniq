@@ -10514,6 +10514,7 @@ components:
             - breach-tabletop
             - transfers
             - restore-drill
+            - heartbeat-drill
           examples:
             - access-review
           type: string
@@ -21724,6 +21725,143 @@ components:
         - currency
         - ledger_revision
         - accounts
+      type: object
+    HeartbeatDrillInput:
+      additionalProperties: false
+      properties:
+        environment:
+          description: "Where the tick was paused: staging, by the runbook."
+          enum:
+            - staging
+            - production
+          examples:
+            - staging
+          type: string
+        escalation_minutes:
+          description: Minutes after the pause the Owners were alerted; leave out when no escalation came.
+          examples:
+            - 58
+          format: int64
+          maximum: 525600
+          minimum: 0
+          type: integer
+        findings:
+          description: What it found and what changed. Never a secret, a token, a full NRIC or a bank number (SEC-15).
+          examples:
+            - Both alerts came on time.
+          maxLength: 8000
+          minLength: 1
+          type: string
+        first_alert_minutes:
+          description: Minutes after the pause the platform owner was first alerted; leave out when no alert came.
+          examples:
+            - 28
+          format: int64
+          maximum: 525600
+          minimum: 0
+          type: integer
+        held_on:
+          description: When it was held, today or earlier.
+          examples:
+            - "2026-11-15"
+          format: date
+          type: string
+        paused_minutes:
+          description: "How long the tick was paused, in minutes: at least 60, to see the escalation."
+          examples:
+            - 75
+          format: int64
+          maximum: 525600
+          minimum: 1
+          type: integer
+      required:
+        - held_on
+        - environment
+        - paused_minutes
+        - findings
+      type: object
+    HeartbeatDrillView:
+      additionalProperties: false
+      properties:
+        environment:
+          description: Where the tick was paused.
+          enum:
+            - staging
+            - production
+          examples:
+            - staging
+          type: string
+        escalation_minutes:
+          description: Minutes after the pause the Owners were alerted; absent when no escalation came.
+          examples:
+            - 61
+          format: int64
+          type: integer
+        findings:
+          description: What it found and what changed.
+          examples:
+            - "The first alert came a minute late: the absence window now starts at the last beat."
+          type: string
+        first_alert_minutes:
+          description: Minutes after the pause the platform owner was first alerted; absent when no alert came.
+          examples:
+            - 31
+          format: int64
+          type: integer
+        held_on:
+          description: When it was held.
+          examples:
+            - "2026-11-15"
+          format: date
+          type: string
+        id:
+          description: The drill.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        passed:
+          description: "Whether the drill passed: the platform owner told within 30 minutes and the Owners within 60 (NFR-OBS-02)."
+          examples:
+            - false
+          type: boolean
+        paused_minutes:
+          description: How long the tick was paused, in minutes.
+          examples:
+            - 75
+          format: int64
+          type: integer
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-11-15T09:30:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          description: Who recorded it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+      required:
+        - id
+        - held_on
+        - environment
+        - paused_minutes
+        - passed
+        - findings
+        - recorded_by
+        - recorded_at
+      type: object
+    HeartbeatDrillsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The drills, oldest first.
+          items:
+            $ref: "#/components/schemas/HeartbeatDrillView"
+          type: array
+      required:
+        - items
       type: object
     Holder:
       additionalProperties: false
@@ -75631,6 +75769,273 @@ paths:
       x-fyniq-permission:
         capability: GST return, filing
         right: V
+  /v1/compliance/heartbeat-drills:
+    get:
+      description: "The heartbeat drill register (NFR-OBS-02, CTL-RES-05): each drill in which the tick was paused, by docs/runbooks/heartbeat-drill.md, with how long and how many minutes after the pause the first alert and the escalation came; it passes when the platform owner was told within 30 minutes and the Owners within 60. Read-only; no side effects."
+      operationId: listHeartbeatDrills
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeartbeatDrillsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the heartbeat drills
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: A few drills a year, read whole as one register.
+      x-fyniq-permission:
+        capability: Compliance Center
+        right: V
+    post:
+      description: "Records a heartbeat drill (NFR-OBS-02, CTL-RES-05 Q): where and how long the tick was paused, and how many minutes after the pause the first alert and the escalation came, if they did. The next drill is due 3 months after the last that passed. Side effects: the drill, the audit event tick_drill.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: recordHeartbeatDrill
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HeartbeatDrillInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeartbeatDrillView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HEARTBEAT-DRILL-01` A heartbeat drill, once recorded, never changes; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record a heartbeat drill
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-HEARTBEAT-DRILL-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Compliance Center
+        right: C
   /v1/compliance/incidents:
     get:
       description: "The incident register (SEC-32): every security incident with its severity and its steps in the runbook's order (docs/runbooks/incident-response.md): contained, assessed (with the breach register's breach when personal data was involved), notified, recovered and reviewed, which closes it. Read-only; no side effects."
@@ -77884,7 +78289,7 @@ paths:
         right: C
   /v1/compliance/reviews:
     get:
-      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas transfers and the quarterly full restore drill (the installation's). Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
+      description: "Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas transfers, and the quarterly full restore drill and heartbeat drill (the installation's). Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects."
       operationId: listComplianceReviews
       responses:
         "200":
@@ -77982,7 +78387,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-exempt:
-        cursor: "The recurring reviews, fourteen of them, read whole: one summary per kind, each worked out from its own records."
+        cursor: "The recurring reviews, fifteen of them, read whole: one summary per kind, each worked out from its own records."
       x-fyniq-permission:
         capability: Compliance Center
         right: V

@@ -3244,6 +3244,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/heartbeat-drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the heartbeat drills
+         * @description The heartbeat drill register (NFR-OBS-02, CTL-RES-05): each drill in which the tick was paused, by docs/runbooks/heartbeat-drill.md, with how long and how many minutes after the pause the first alert and the escalation came; it passes when the platform owner was told within 30 minutes and the Owners within 60. Read-only; no side effects.
+         */
+        get: operations["listHeartbeatDrills"];
+        put?: never;
+        /**
+         * Record a heartbeat drill
+         * @description Records a heartbeat drill (NFR-OBS-02, CTL-RES-05 Q): where and how long the tick was paused, and how many minutes after the pause the first alert and the escalation came, if they did. The next drill is due 3 months after the last that passed. Side effects: the drill, the audit event tick_drill.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordHeartbeatDrill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/incidents": {
         parameters: {
             query?: never;
@@ -3485,7 +3509,7 @@ export interface paths {
         };
         /**
          * List the recurring reviews and attestations
-         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas transfers and the quarterly full restore drill (the installation's). Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
+         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas transfers, and the quarterly full restore drill and heartbeat drill (the installation's). Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
          */
         get: operations["listComplianceReviews"];
         put?: never;
@@ -20088,7 +20112,7 @@ export interface components {
              * @example access-review
              * @enum {string}
              */
-            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop" | "transfers" | "restore-drill";
+            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop" | "transfers" | "restore-drill" | "heartbeat-drill";
             /** @description The latest sign-off; none before the first. */
             last_sign_off?: components["schemas"]["ComplianceSignOff"];
             /**
@@ -28043,6 +28067,106 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        HeartbeatDrillInput: {
+            /**
+             * @description Where the tick was paused: staging, by the runbook.
+             * @example staging
+             * @enum {string}
+             */
+            environment: "staging" | "production";
+            /**
+             * Format: int64
+             * @description Minutes after the pause the Owners were alerted; leave out when no escalation came.
+             * @example 58
+             */
+            escalation_minutes?: number;
+            /**
+             * @description What it found and what changed. Never a secret, a token, a full NRIC or a bank number (SEC-15).
+             * @example Both alerts came on time.
+             */
+            findings: string;
+            /**
+             * Format: int64
+             * @description Minutes after the pause the platform owner was first alerted; leave out when no alert came.
+             * @example 28
+             */
+            first_alert_minutes?: number;
+            /**
+             * Format: date
+             * @description When it was held, today or earlier.
+             * @example 2026-11-15
+             */
+            held_on: string;
+            /**
+             * Format: int64
+             * @description How long the tick was paused, in minutes: at least 60, to see the escalation.
+             * @example 75
+             */
+            paused_minutes: number;
+        };
+        HeartbeatDrillView: {
+            /**
+             * @description Where the tick was paused.
+             * @example staging
+             * @enum {string}
+             */
+            environment: "staging" | "production";
+            /**
+             * Format: int64
+             * @description Minutes after the pause the Owners were alerted; absent when no escalation came.
+             * @example 61
+             */
+            escalation_minutes?: number;
+            /**
+             * @description What it found and what changed.
+             * @example The first alert came a minute late: the absence window now starts at the last beat.
+             */
+            findings: string;
+            /**
+             * Format: int64
+             * @description Minutes after the pause the platform owner was first alerted; absent when no alert came.
+             * @example 31
+             */
+            first_alert_minutes?: number;
+            /**
+             * Format: date
+             * @description When it was held.
+             * @example 2026-11-15
+             */
+            held_on: string;
+            /**
+             * Format: uuid
+             * @description The drill.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /**
+             * @description Whether the drill passed: the platform owner told within 30 minutes and the Owners within 60 (NFR-OBS-02).
+             * @example false
+             */
+            passed: boolean;
+            /**
+             * Format: int64
+             * @description How long the tick was paused, in minutes.
+             * @example 75
+             */
+            paused_minutes: number;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-15T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+        };
+        HeartbeatDrillsOutputBody: {
+            /** @description The drills, oldest first. */
+            items: components["schemas"]["HeartbeatDrillView"][];
         };
         Holder: {
             /**
@@ -67010,6 +67134,231 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listHeartbeatDrills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeartbeatDrillsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordHeartbeatDrill: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeartbeatDrillInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeartbeatDrillView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HEARTBEAT-DRILL-01` A heartbeat drill, once recorded, never changes; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
