@@ -112,7 +112,42 @@ func TestAttackTheAIConnectionKeepsItsRules(t *testing.T) {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.args...); return err })
 		wantState(t, x.what, err, x.states...)
 	}
+	// The data-class policy: one approved version after another, kept as written; restricted data allowed nowhere.
+	policy := func(version int, p string) error {
+		return api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.AIDataPolicies().Save(ctx, storage.AIDataPolicy{Version: version, Policy: json.RawMessage(p), Approval: approval, MadeBy: "user:x", MadeAt: now})
+			return err
+		})
+	}
+	if err := policy(1, `{"allow":{"business-figures":["`+c.ID.String()+`"]}}`); err != nil {
+		t.Fatal(err)
+	}
+	if err := policy(1, `{}`); !storageCode(err, storage.CodeVersion) {
+		t.Errorf("a policy version twice: %v", err)
+	}
+	if err := policy(2, `{"allow":{"restricted":["`+c.ID.String()+`"]}}`); !storageCode(err, storage.CodeAIConnection) {
+		t.Errorf("restricted data allowed: %v", err)
+	}
+	for _, x := range []struct {
+		what, role, stmt string
+		states           []string
+	}{
+		{"the owner skipping a policy version", "fyniq_migrator", `INSERT INTO fyniq.ai_data_policy (version, policy, approval_id, made_by, made_at)
+		  VALUES (5, '{}', gen_random_uuid(), 'user:x', now())`, []string{"FY331"}},
+		{"the owner rewriting the policy", "fyniq_migrator", `UPDATE fyniq.ai_data_policy SET policy = '{}'`, []string{"FY331"}},
+		{"the API rewriting the policy", "fyniq_api", `UPDATE fyniq.ai_data_policy SET policy = '{}'`, []string{"42501"}},
+		{"the owner removing the policy", "fyniq_migrator", `DELETE FROM fyniq.ai_data_policy`, []string{"FY331"}},
+		{"the worker writing a policy", "fyniq_worker", `INSERT INTO fyniq.ai_data_policy (version, policy, approval_id, made_by, made_at)
+		  VALUES (2, '{}', gen_random_uuid(), 'user:x', now())`, []string{"42501"}},
+	} {
+		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.states...)
+	}
+
 	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if p, err := u.AIDataPolicies().Latest(ctx); err != nil || p.Version != 0 {
+			t.Errorf("another organisation's policy: %v %+v", err, p)
+		}
 		all, err := u.AIConnections().List(ctx)
 		if err == nil && len(all) != 0 {
 			t.Errorf("another organisation sees %d connections", len(all))

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allow": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "description": "Per data class, the connections it may also go to: personal-data and payroll only to a connection whose transfer is recorded; restricted never.",
+      "examples": [
+        {
+          "business-figures": [
+            "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "defaults": {
+      "description": "The defaults that apply beyond it.",
+      "examples": [
+        "personal-data and payroll only where Singapore processing is evidenced; restricted nowhere; know-how and business-figures to any enabled connection"
+      ],
+      "type": "string"
+    },
+    "exclude": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "description": "Per data class, the connections it may not go to although the defaults allow it.",
+      "examples": [
+        {}
+      ],
+      "type": "object"
+    },
+    "version": {
+      "description": "Its version; 0 before any is approved, when only the defaults apply.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "allow",
+    "exclude",
+    "defaults"
+  ],
+  "title": "AIDataPolicy",
+  "type": "object"
+}

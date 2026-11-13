@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "handling": {
+      "description": "Every model, endpoint and feature the connection is used for.",
+      "items": {
+        "$ref": "AIDataHandlingEntry.schema.json"
+      },
+      "type": "array"
+    },
+    "inventory_id": {
+      "description": "Its row in the data inventory (SEC-13), which switching it on needs.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "type": "string"
+    },
+    "transfer_id": {
+      "description": "Its recorded transfer assessment (CMP-PD-06), which switching on needs when it processes outside Singapore.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "handling"
+  ],
+  "title": "AIDataHandling",
+  "type": "object"
+}

@@ -496,6 +496,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/data-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI's data-class policy
+         * @description Which AI connections each data class may go to (AI-75): the policy in force, with its ETag, and the defaults that apply beyond it. Read-only; no side effects.
+         */
+        get: operations["getAIDataPolicy"];
+        /**
+         * Ask to change the AI's data-class policy
+         * @description Asks for the policy's next version (AI-75): per data class, the connections it may also go to and those it may not. Restricted data never goes to an AI provider; personal data and payroll go overseas only on a connection whose transfer assessment is recorded (CMP-PD-06). It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner approves. Needs If-Match with its ETag; idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        put: operations["changeAIDataPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -14068,6 +14092,8 @@ export interface components {
             /** @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01 */
             created_by: string;
             credential: components["schemas"]["AIConnectionCredentialState"];
+            /** @description Where its prompts are processed and kept, per model, endpoint and feature, with evidence (AI-75, AI-88). */
+            data_handling: components["schemas"]["AIDataHandling"];
             /**
              * @description The one host its calls go to (SEC-36).
              * @example asia-southeast1-aiplatform.googleapis.com
@@ -14143,6 +14169,8 @@ export interface components {
              * @example sk-proj-0123456789abcdef
              */
             credential?: string;
+            /** @description Its data-handling declaration (AI-75, AI-88); switching it on needs one, with its data inventory row and, when it processes outside Singapore, its transfer assessment. */
+            data_handling?: components["schemas"]["AIDataHandling"];
             /**
              * @description Its name in the organisation.
              * @example Claude in Singapore
@@ -14192,6 +14220,8 @@ export interface components {
             configuration?: {
                 [key: string]: unknown;
             };
+            /** @description Its data-handling declaration (AI-75, AI-88); switching it on needs one, with its data inventory row and, when it processes outside Singapore, its transfer assessment. */
+            data_handling?: components["schemas"]["AIDataHandling"];
             /**
              * @description Its name in the organisation.
              * @example Claude in Singapore
@@ -14241,6 +14271,139 @@ export interface components {
              * @enum {string}
              */
             window: "day" | "month";
+        };
+        AIDataEvidence: {
+            /**
+             * Format: date
+             * @description The day it was read.
+             * @example 2026-11-14
+             */
+            checked_on: string;
+            /**
+             * @description The contract's evidence file, for a contract term.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            evidence_id?: string;
+            /**
+             * @description source: the provider's official page, read on a day; contract: a contract term kept as evidence (FR-DOC-05). A probe never proves geography (AI-88).
+             * @example source
+             * @enum {string}
+             */
+            kind: "source" | "contract";
+            /**
+             * @description The page's title, or the contract and its clause.
+             * @example Generative AI on Vertex AI locations
+             */
+            title: string;
+            /**
+             * @description The official page, for a source.
+             * @example https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations
+             */
+            url?: string;
+        };
+        AIDataHandling: {
+            /** @description Every model, endpoint and feature the connection is used for. */
+            handling: components["schemas"]["AIDataHandlingEntry"][];
+            /**
+             * @description Its row in the data inventory (SEC-13), which switching it on needs.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            inventory_id?: string;
+            /**
+             * @description Its recorded transfer assessment (CMP-PD-06), which switching on needs when it processes outside Singapore.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62
+             */
+            transfer_id?: string;
+        };
+        AIDataHandlingEntry: {
+            /**
+             * @description The endpoint's host.
+             * @example asia-southeast1-aiplatform.googleapis.com
+             */
+            endpoint: string;
+            evidence: components["schemas"]["AIDataEvidence"];
+            /**
+             * @description The feature, such as messages, batch or caching, or * for every feature.
+             * @example *
+             */
+            feature: string;
+            /** @description Any gateway in between, with its own handling. */
+            gateways?: string[] | null;
+            /**
+             * @description The model, or * for every model.
+             * @example claude-opus-4-6
+             */
+            model: string;
+            /** @description Where prompts are processed, as ISO 3166 codes: distinct from where they are stored (AI-88). */
+            processed_in: string[] | null;
+            /**
+             * Format: int64
+             * @description How long the provider keeps prompts: 0 for zero data retention; none when not known.
+             * @example 0
+             */
+            retention_days?: number;
+            /** @description Where they are kept at rest. */
+            stored_in?: string[] | null;
+            /** @description The provider's sub-processors for it. */
+            sub_processors?: string[] | null;
+            /**
+             * @description Whether the provider trains models on them.
+             * @example no
+             * @enum {string}
+             */
+            training: "no" | "yes" | "unknown";
+            /**
+             * @description The evidence is unclear or conflicting: then it never counts as Singapore (AI-88).
+             * @example false
+             */
+            unclear?: boolean;
+        };
+        AIDataPolicy: {
+            /**
+             * @description Per data class, the connections it may also go to: personal-data and payroll only to a connection whose transfer is recorded; restricted never.
+             * @example {
+             *       "business-figures": [
+             *         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40"
+             *       ]
+             *     }
+             */
+            allow: {
+                [key: string]: string[] | null;
+            };
+            /**
+             * @description The defaults that apply beyond it.
+             * @example personal-data and payroll only where Singapore processing is evidenced; restricted nowhere; know-how and business-figures to any enabled connection
+             */
+            defaults: string;
+            /**
+             * @description Per data class, the connections it may not go to although the defaults allow it.
+             * @example {}
+             */
+            exclude: {
+                [key: string]: string[] | null;
+            };
+            /**
+             * Format: int64
+             * @description Its version; 0 before any is approved, when only the defaults apply.
+             * @example 1
+             */
+            version: number;
+        };
+        AIDataPolicyChange: {
+            /**
+             * @description Per data class, the connections it may also go to.
+             * @example {}
+             */
+            allow?: {
+                [key: string]: string[] | null;
+            };
+            /**
+             * @description Per data class, the connections it may not go to.
+             * @example {}
+             */
+            exclude?: {
+                [key: string]: string[] | null;
+            };
         };
         AccentOption: {
             /** @example #0F766E */
@@ -15564,13 +15727,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare" | "ai_connection.create" | "ai_connection.change" | "ai_connection.credential" | "ai_connection.enable";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare" | "ai_connection.create" | "ai_connection.change" | "ai_connection.credential" | "ai_connection.enable" | "ai_data_policy.change";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -15707,7 +15870,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -15749,7 +15912,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -47908,7 +48071,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -48157,7 +48320,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -48309,7 +48472,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -48591,7 +48754,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -48634,6 +48797,240 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIDataPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIDataPolicy"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeAIDataPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDataPolicyChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-DATA-02` The data-class policy cannot send that class there; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

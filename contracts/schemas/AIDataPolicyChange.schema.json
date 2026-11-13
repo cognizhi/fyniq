@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allow": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "description": "Per data class, the connections it may also go to.",
+      "examples": [
+        {}
+      ],
+      "type": "object"
+    },
+    "exclude": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "description": "Per data class, the connections it may not go to.",
+      "examples": [
+        {}
+      ],
+      "type": "object"
+    }
+  },
+  "title": "AIDataPolicyChange",
+  "type": "object"
+}

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "endpoint": {
+      "description": "The endpoint's host.",
+      "examples": [
+        "asia-southeast1-aiplatform.googleapis.com"
+      ],
+      "maxLength": 253,
+      "type": "string"
+    },
+    "evidence": {
+      "$ref": "AIDataEvidence.schema.json"
+    },
+    "feature": {
+      "description": "The feature, such as messages, batch or caching, or * for every feature.",
+      "examples": [
+        "*"
+      ],
+      "maxLength": 128,
+      "type": "string"
+    },
+    "gateways": {
+      "description": "Any gateway in between, with its own handling.",
+      "items": {
+        "description": "A sub-processor's or gateway's name.",
+        "examples": [
+          "Google Cloud"
+        ],
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "model": {
+      "description": "The model, or * for every model.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "maxLength": 128,
+      "type": "string"
+    },
+    "processed_in": {
+      "description": "Where prompts are processed, as ISO 3166 codes: distinct from where they are stored (AI-88).",
+      "items": {
+        "description": "An ISO 3166 country code.",
+        "examples": [
+          "SG"
+        ],
+        "pattern": "^[A-Z]{2}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "retention_days": {
+      "description": "How long the provider keeps prompts: 0 for zero data retention; none when not known.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "maximum": 3650,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "stored_in": {
+      "description": "Where they are kept at rest.",
+      "items": {
+        "description": "An ISO 3166 country code.",
+        "examples": [
+          "SG"
+        ],
+        "pattern": "^[A-Z]{2}$",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "sub_processors": {
+      "description": "The provider's sub-processors for it.",
+      "items": {
+        "description": "A sub-processor's or gateway's name.",
+        "examples": [
+          "Google Cloud"
+        ],
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "training": {
+      "description": "Whether the provider trains models on them.",
+      "enum": [
+        "no",
+        "yes",
+        "unknown"
+      ],
+      "examples": [
+        "no"
+      ],
+      "type": "string"
+    },
+    "unclear": {
+      "description": "The evidence is unclear or conflicting: then it never counts as Singapore (AI-88).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "model",
+    "endpoint",
+    "feature",
+    "processed_in",
+    "training",
+    "evidence"
+  ],
+  "title": "AIDataHandlingEntry",
+  "type": "object"
+}

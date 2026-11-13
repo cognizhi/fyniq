@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -245,6 +246,9 @@ var codeFacts = map[string]struct {
 	aiconnection.CodeBilling:      {422, "The billing is not valid"},
 	aiconnection.CodeState:        {409, "The connection cannot take that step now"},
 	aiconnection.CodeName:         {422, "The connection's name is not valid"},
+	aipolicy.CodeDeclaration:      {422, "The connection's data handling is not complete or evidenced"},
+	aipolicy.CodePolicy:           {422, "The data-class policy cannot send that class there"},
+	aipolicy.CodeNotAllowed:       {409, "The connection may not receive that class of data"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
 	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},

@@ -47,7 +47,7 @@ func (q *Queries) AIConnectionVersions(ctx context.Context, connectionID uuid.UU
 }
 
 const aIConnections = `-- name: AIConnections :many
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at FROM fyniq.ai_connection ORDER BY name, id
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection ORDER BY name, id
 `
 
 func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error) {
@@ -79,6 +79,7 @@ func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error
 			&i.CreatedAt,
 			&i.ChangedBy,
 			&i.ChangedAt,
+			&i.DataHandling,
 		); err != nil {
 			return nil, err
 		}
@@ -91,7 +92,7 @@ func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error
 }
 
 const getAIConnection = `-- name: GetAIConnection :one
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at FROM fyniq.ai_connection WHERE id = $1
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection WHERE id = $1
 `
 
 func (q *Queries) GetAIConnection(ctx context.Context, id uuid.UUID) (FyniqAiConnection, error) {
@@ -117,12 +118,13 @@ func (q *Queries) GetAIConnection(ctx context.Context, id uuid.UUID) (FyniqAiCon
 		&i.CreatedAt,
 		&i.ChangedBy,
 		&i.ChangedAt,
+		&i.DataHandling,
 	)
 	return i, err
 }
 
 const getAIConnectionForUpdate = `-- name: GetAIConnectionForUpdate :one
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at FROM fyniq.ai_connection WHERE id = $1 FOR UPDATE
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetAIConnectionForUpdate(ctx context.Context, id uuid.UUID) (FyniqAiConnection, error) {
@@ -148,17 +150,18 @@ func (q *Queries) GetAIConnectionForUpdate(ctx context.Context, id uuid.UUID) (F
 		&i.CreatedAt,
 		&i.ChangedBy,
 		&i.ChangedAt,
+		&i.DataHandling,
 	)
 	return i, err
 }
 
 const insertAIConnection = `-- name: InsertAIConnection :one
 INSERT INTO fyniq.ai_connection (id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at,
-  billing_mode, quota, created_by, created_at, changed_by, changed_at)
+  billing_mode, quota, data_handling, created_by, created_at, changed_by, changed_at)
 VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7,
   $8, $9, $10, $11, $12::jsonb,
-  $13, $14, $13, $14)
-RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at
+  $13::jsonb, $14, $15, $14, $15)
+RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling
 `
 
 type InsertAIConnectionParams struct {
@@ -174,6 +177,7 @@ type InsertAIConnectionParams struct {
 	CredentialSetAt *time.Time
 	BillingMode     string
 	Quota           []byte
+	DataHandling    []byte
 	CreatedBy       string
 	CreatedAt       time.Time
 }
@@ -192,6 +196,7 @@ func (q *Queries) InsertAIConnection(ctx context.Context, arg InsertAIConnection
 		arg.CredentialSetAt,
 		arg.BillingMode,
 		arg.Quota,
+		arg.DataHandling,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -216,6 +221,7 @@ func (q *Queries) InsertAIConnection(ctx context.Context, arg InsertAIConnection
 		&i.CreatedAt,
 		&i.ChangedBy,
 		&i.ChangedAt,
+		&i.DataHandling,
 	)
 	return i, err
 }
@@ -249,14 +255,68 @@ func (q *Queries) InsertAIConnectionVersion(ctx context.Context, arg InsertAICon
 	return err
 }
 
+const insertAIDataPolicy = `-- name: InsertAIDataPolicy :one
+INSERT INTO fyniq.ai_data_policy (version, policy, approval_id, made_by, made_at)
+VALUES ($1, $2::jsonb, $3, $4, $5)
+RETURNING organisation_id, id, version, policy, approval_id, made_by, made_at
+`
+
+type InsertAIDataPolicyParams struct {
+	Version    int32
+	Policy     []byte
+	ApprovalID uuid.UUID
+	MadeBy     string
+	MadeAt     time.Time
+}
+
+func (q *Queries) InsertAIDataPolicy(ctx context.Context, arg InsertAIDataPolicyParams) (FyniqAiDataPolicy, error) {
+	row := q.db.QueryRow(ctx, insertAIDataPolicy,
+		arg.Version,
+		arg.Policy,
+		arg.ApprovalID,
+		arg.MadeBy,
+		arg.MadeAt,
+	)
+	var i FyniqAiDataPolicy
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Version,
+		&i.Policy,
+		&i.ApprovalID,
+		&i.MadeBy,
+		&i.MadeAt,
+	)
+	return i, err
+}
+
+const latestAIDataPolicy = `-- name: LatestAIDataPolicy :one
+SELECT organisation_id, id, version, policy, approval_id, made_by, made_at FROM fyniq.ai_data_policy ORDER BY version DESC LIMIT 1
+`
+
+func (q *Queries) LatestAIDataPolicy(ctx context.Context) (FyniqAiDataPolicy, error) {
+	row := q.db.QueryRow(ctx, latestAIDataPolicy)
+	var i FyniqAiDataPolicy
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Version,
+		&i.Policy,
+		&i.ApprovalID,
+		&i.MadeBy,
+		&i.MadeAt,
+	)
+	return i, err
+}
+
 const updateAIConnection = `-- name: UpdateAIConnection :one
 UPDATE fyniq.ai_connection SET name = $1, preset = $2, auth = $3,
   configuration = $4::jsonb, host = $5, self_hosted = $6,
   credential_ref = $7, credential_set_at = $8, billing_mode = $9,
-  quota = $10::jsonb, state = $11, version = version + 1, changed_by = $12,
-  changed_at = $13
-WHERE id = $14 AND version = $15
-RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at
+  quota = $10::jsonb, data_handling = $11::jsonb, state = $12, version = version + 1, changed_by = $13,
+  changed_at = $14
+WHERE id = $15 AND version = $16
+RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling
 `
 
 type UpdateAIConnectionParams struct {
@@ -270,6 +330,7 @@ type UpdateAIConnectionParams struct {
 	CredentialSetAt *time.Time
 	BillingMode     string
 	Quota           []byte
+	DataHandling    []byte
 	State           string
 	ChangedBy       string
 	ChangedAt       time.Time
@@ -289,6 +350,7 @@ func (q *Queries) UpdateAIConnection(ctx context.Context, arg UpdateAIConnection
 		arg.CredentialSetAt,
 		arg.BillingMode,
 		arg.Quota,
+		arg.DataHandling,
 		arg.State,
 		arg.ChangedBy,
 		arg.ChangedAt,
@@ -316,6 +378,7 @@ func (q *Queries) UpdateAIConnection(ctx context.Context, arg UpdateAIConnection
 		&i.CreatedAt,
 		&i.ChangedBy,
 		&i.ChangedAt,
+		&i.DataHandling,
 	)
 	return i, err
 }

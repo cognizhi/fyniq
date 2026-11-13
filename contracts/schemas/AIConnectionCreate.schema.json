@@ -45,6 +45,10 @@
       "type": "string",
       "writeOnly": true
     },
+    "data_handling": {
+      "$ref": "AIDataHandling.schema.json",
+      "description": "Its data-handling declaration (AI-75, AI-88); switching it on needs one, with its data inventory row and, when it processes outside Singapore, its transfer assessment."
+    },
     "name": {
       "description": "Its name in the organisation.",
       "examples": [
