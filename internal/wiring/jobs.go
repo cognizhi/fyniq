@@ -92,6 +92,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		backup.DrillJob: func(ctx context.Context) error { // DR-06, CTL-RES-02: the monthly restore drill
+			if k.DrillOnDemand {
+				return errors.New("the local stack runs the restore drill only when asked (make restore-drill): its copy stops every connection to the database while it is made")
+			}
 			_, err := k.Drill(clock).Run(ctx)
 			return err
 		},

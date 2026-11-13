@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,7 +56,8 @@ func init() {
 				Roles: []authz.Role{authz.Owner, authz.Accountant}, StepUpAt: deps.Clock.Now()}, 6*time.Hour)
 		}
 		client := (&egress.Guard{Local: true}).Bounded(16<<20, 10*time.Minute).For(egress.HostOf(o.API))
-		r.Results = perf.Measurer{API: o.API, Token: token, HTTP: client, Clock: deps.Clock, Readers: o.Readers, Lines: o.Lines, Log: os.Stderr}.Run(ctx, r.Grown)
+		r.Results = perf.Measurer{API: o.API, Token: token, HTTP: client, Clock: deps.Clock, Readers: o.Readers, Lines: o.Lines, Log: os.Stderr,
+			Only: strings.FieldsFunc(o.Only, func(r rune) bool { return r == ',' })}.Run(ctx, r.Grown)
 		r.Settle()
 		if err := perf.Write(o.Out, r); err != nil {
 			return err

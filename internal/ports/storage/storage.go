@@ -309,9 +309,15 @@ type Ledger interface {
 	// AccountLines are an account's lines dated from..to, in posting order, at most limit (FR-GL-11). Only the
 	// balance service reads them (ENG-04).
 	AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]AccountLine, error)
+	// AccountLinesWithAmount are AccountLines in a currency of exactly an amount, at most limit: what a bank line of that
+	// amount may be the money of (design D5), read without the rest of the account's lines (NFR-PERF-04).
+	AccountLinesWithAmount(ctx context.Context, account uuid.UUID, from, to time.Time, currency string, amount Decimal, limit int) ([]AccountLine, error)
 	// AccountLinesAfter are AccountLines after a line's place in posting order (nil: from the first), at most limit: the
 	// general ledger export reads them a page at a time, with no limit of lines (NFR-PERF-05, rev 0.250).
 	AccountLinesAfter(ctx context.Context, account uuid.UUID, from, to time.Time, after *LineKey, limit int) ([]AccountLine, error)
+	// OfSourceType are every entry of a source type, such as the opening balances, reversals included, in revision order,
+	// with their lines: the few a statement reads apart from the balances (NFR-PERF-02).
+	OfSourceType(ctx context.Context, sourceType string) ([]Entry, error)
 	// OfSource are every entry naming a source document by its ID, reversals included, in revision order, with their
 	// lines: an asset's months of depreciation (FR-FA-02). After a purge, a document's carry-forward is among them.
 	OfSource(ctx context.Context, sourceID uuid.UUID) ([]Entry, error)

@@ -126,6 +126,8 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // balances or manual journals (INV-07, C.2 #2); (rev 0.85) the same two checks of the recurring bills as of the
 // recurring journals (C.1 #28, #29); (p1-bank-import-reconcile task 6.2) the bank checks of bankChecks.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
+	// As the checks catalogue does: the statements read the lines, apart from the balances they are compared with (INV-08).
+	ctx = storage.WithLines(ctx)
 	cur, org, err := base(ctx, u)
 	if err != nil {
 		return nil, err

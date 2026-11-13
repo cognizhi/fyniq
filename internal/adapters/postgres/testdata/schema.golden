@@ -753,6 +753,8 @@ document_version | version | integer | not null |
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
 document_version | created_by | text | null | 
+document_version | doc_date | text | null | COALESCE((payload ->> 'date'::text), ''::text)
+document_version | search_text | text | null | document_search_text(payload)
 dpia_approval | organisation_id | uuid | not null | current_org()
 dpia_approval | id | uuid | not null | uuidv7()
 dpia_approval | key | text | not null | 
@@ -5040,9 +5042,14 @@ CREATE INDEX control_run_latest_idx ON fyniq.control_run USING btree (organisati
 CREATE INDEX conversion_step_settlement ON fyniq.conversion_step USING btree (organisation_id, settlement_id)
 CREATE INDEX dimension_value_dimension_idx ON fyniq.dimension_value USING btree (organisation_id, dimension_id)
 CREATE INDEX document_link_document ON fyniq.document_link USING btree (organisation_id, document_id, created_at)
+CREATE INDEX document_number_search ON fyniq.document_number USING gin (organisation_id, lower(number) fyniq_ext.gin_trgm_ops)
 CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
 CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
+CREATE INDEX document_version_customer ON fyniq.document_version USING btree (organisation_id, ((payload ->> 'customer_id'::text)))
+CREATE INDEX document_version_date ON fyniq.document_version USING btree (organisation_id, doc_date DESC, document_id DESC)
+CREATE INDEX document_version_search ON fyniq.document_version USING gin (organisation_id, search_text fyniq_ext.gin_trgm_ops)
+CREATE INDEX document_version_supplier ON fyniq.document_version USING btree (organisation_id, ((payload ->> 'supplier_id'::text)))
 CREATE INDEX email_event_message ON fyniq.email_event USING btree (organisation_id, message_id, occurred_at)
 CREATE INDEX email_sender_latest ON fyniq.email_sender USING btree (organisation_id, purpose, set_at)
 CREATE INDEX equity_step_transaction ON fyniq.equity_step USING btree (organisation_id, transaction_id)
@@ -5063,6 +5070,7 @@ CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_entry_source_idx ON fyniq.journal_entry USING btree (organisation_id, source_id)
+CREATE INDEX journal_entry_source_type ON fyniq.journal_entry USING btree (organisation_id, source_type, ledger_revision)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
@@ -6273,7 +6281,8 @@ audit_purge(p_last_seq bigint) → bigint | security definer | v | search_path=p
 audit_recovery_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | cc6e63a491b0b40d589054b85e13ed19
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
-balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
+balance_lines_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
+balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a0314e0bf5258f5fa563b982ba8175e2
 balances_by_set_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, value_ids uuid[], amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 7e1f3145f1ae4041e42abd85874e0867
 bank_agreement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 045b2a2e3ab50c531641fa49d5157cc4
 bank_feed_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 44b4e05c97a31d2e77d3cb543863849c
@@ -6345,6 +6354,7 @@ document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) |
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8b251f0c6b45c478243230c7d16583bc
 document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
+document_search_text(p jsonb) → text | security invoker | i | search_path=pg_catalog, pg_temp | 0b762ed6001c93bd27f68c2e0082f0eb
 document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c5e8cf759ed24db83f888a0284df37c4
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_template_choice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fa7935baf02928c3f94dd5979982c7e6
@@ -6568,5 +6578,7 @@ withdraw_installation_announcement(p_by uuid, p_id uuid, p_at timestamp with tim
 withholding_decision_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1b6bc116037949c933d0c5d75c0da1f0
 
 ## extensions
+btree_gin | fyniq_ext
 btree_gist | fyniq_ext
+pg_trgm | fyniq_ext
 pgcrypto | fyniq_ext

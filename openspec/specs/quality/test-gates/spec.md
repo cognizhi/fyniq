@@ -446,3 +446,8 @@ Source: PRD-001 §16.2
 - **WHEN** release evidence is gathered for any release
 - **THEN** the 10 M-line run must meet the NFR-PERF targets for it to pass
 - **AND** the general ledger export and the reports are made to meet NFR-PERF-05 and NFR-PERF-02 first
+
+#### Scenario: Concurrent users pause between reads (rev 0.252)
+- **WHEN** the harness measures NFR-PERF-01 for NFR-SCALE-01's 100 concurrent users
+- **THEN** the gated measure is 100 people who each pause 1 to 3 seconds between reads
+- **AND** 100 reads at once, back to back, are reported as throughput and gate nothing

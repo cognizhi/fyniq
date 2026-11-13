@@ -3,7 +3,9 @@ package differential
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -107,6 +109,35 @@ func (l memLedger) Entries(_ context.Context, after int64, limit int) ([]storage
 }
 
 func (l memLedger) Revision(context.Context) (int64, error) { return int64(len(l.m.entries)), nil }
+
+func (l memLedger) AccountLinesAfter(ctx context.Context, account uuid.UUID, from, to time.Time, after *storage.LineKey,
+	limit int) ([]storage.AccountLine, error) {
+	all, err := l.AccountLines(ctx, account, from, to, math.MaxInt)
+	if err != nil {
+		return nil, err
+	}
+	key := func(k storage.LineKey) string {
+		return fmt.Sprintf("%s|%020d|%08d", k.PostingDate.Format(time.DateOnly), k.Revision, k.LineNo)
+	}
+	slices.SortFunc(all, func(a, b storage.AccountLine) int { return strings.Compare(key(a.Key()), key(b.Key())) })
+	out := []storage.AccountLine{}
+	for _, x := range all {
+		if (after == nil || key(x.Key()) > key(*after)) && len(out) < limit {
+			out = append(out, x)
+		}
+	}
+	return out, nil
+}
+
+func (l memLedger) OfSourceType(_ context.Context, sourceType string) ([]storage.Entry, error) {
+	var out []storage.Entry
+	for _, e := range l.m.entries {
+		if e.Source.Type == sourceType {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
 
 func (l memLedger) AccountLines(_ context.Context, account uuid.UUID, from, to time.Time, limit int) ([]storage.AccountLine, error) {
 	var out []storage.AccountLine

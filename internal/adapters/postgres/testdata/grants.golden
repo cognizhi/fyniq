@@ -58,6 +58,7 @@ fyniq_api       SELECT    authz_refusal
 fyniq_api       UPDATE    authz_refusal (refused)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
+fyniq_api       EXECUTE   balance_lines_at()
 fyniq_api       EXECUTE   balances_at()
 fyniq_api       EXECUTE   balances_by_set_at()
 fyniq_api       SELECT    bank_feed
@@ -166,6 +167,7 @@ fyniq_api       UPDATE    document_link (first_viewed_at, revoked_at, revoked_by
 fyniq_api       EXECUTE   document_link_route()
 fyniq_api       INSERT    document_number (document_type, id, number)
 fyniq_api       SELECT    document_number
+fyniq_api       EXECUTE   document_search_text()
 fyniq_api       INSERT    document_send (document_id, document_version, evidence_id, message_id, pdf_sha256, recipient, sent_by, template_hash, template_id, template_source, template_version)
 fyniq_api       SELECT    document_send
 fyniq_api       INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
@@ -486,6 +488,7 @@ fyniq_executor  UPDATE    document (current_version, posted_at, posted_by, statu
 fyniq_executor  SELECT    document_link
 fyniq_executor  INSERT    document_number (document_type, id, number)
 fyniq_executor  SELECT    document_number
+fyniq_executor  EXECUTE   document_search_text()
 fyniq_executor  SELECT    document_send
 fyniq_executor  INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_executor  SELECT    document_sequence
@@ -563,6 +566,7 @@ fyniq_readonly  SELECT    audit_request_detail
 fyniq_readonly  SELECT    authz_refusal
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
+fyniq_readonly  EXECUTE   balance_lines_at()
 fyniq_readonly  EXECUTE   balances_at()
 fyniq_readonly  EXECUTE   balances_by_set_at()
 fyniq_readonly  SELECT    bank_feed
@@ -731,6 +735,7 @@ fyniq_worker    DELETE    authz_refusal
 fyniq_worker    SELECT    authz_refusal (id, organisation_id, window_start)
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
+fyniq_worker    EXECUTE   balance_lines_at()
 fyniq_worker    EXECUTE   balances_at()
 fyniq_worker    EXECUTE   balances_by_set_at()
 fyniq_worker    INSERT    bank_feed (connector_id, cursor, last_error, money_account_id, provider_account, synced_at)
@@ -804,6 +809,7 @@ fyniq_worker    INSERT    document_link (created_by, document_id, document_versi
 fyniq_worker    SELECT    document_link
 fyniq_worker    INSERT    document_number (document_type, id, number)
 fyniq_worker    SELECT    document_number
+fyniq_worker    EXECUTE   document_search_text()
 fyniq_worker    INSERT    document_send (document_id, document_version, evidence_id, message_id, pdf_sha256, recipient, sent_by, template_hash, template_id, template_source, template_version)
 fyniq_worker    SELECT    document_send
 fyniq_worker    INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)

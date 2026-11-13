@@ -30,7 +30,9 @@ When it fails, CTL-RES-02 fails and its owners are told. Then:
    the instance › Delete), after turning its deletion protection off.
 4. **A drill over 4 hours**: record it as a finding of the next full drill; the RTO target needs a faster restore.
 
-Locally, `make restore-drill` runs the same drill against the local database.
+Locally, `make restore-drill` runs the same drill against the local database, only when asked: its copy, made from the
+database as a template, stops every connection to it while it is made, so the local stack never runs it on the
+schedule (the scheduled slot fails, saying so).
 
 ## The full drill (each quarter)
 

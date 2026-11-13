@@ -31,7 +31,7 @@ func (k *Kit) CheckKinds(clock ports.Clock) map[string]func(ctx context.Context,
 	r := k.Checks(clock)
 	return map[string]func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error{
 		checks.RefreshKind: func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {
-			_, err := r.Refresh(ctx, org)
+			_, err := r.Paced(ctx, org) // at most once a minute through a burst of changes
 			return err
 		},
 		checks.RequestKind: func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {

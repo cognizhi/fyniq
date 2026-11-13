@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -21,11 +23,14 @@ import (
 
 // The budgets the harness measures (PRD-001 §15).
 var (
-	Reads   = Budget{ID: "NFR-PERF-01", What: "interactive reads (a journal, a list page, a search), 100 readers at once (NFR-SCALE-01)", Limit: 300 * time.Millisecond, Each: true, Gated: true}
-	Posting = Budget{ID: "NFR-PERF-03", What: "save and post a 50-line journal", Limit: 500 * time.Millisecond, Each: true, Gated: true}
-	Imports = Budget{ID: "NFR-PERF-04", What: "import a 10,000-line bank statement", Limit: time.Minute, Gated: true}
-	Exports = Budget{ID: "NFR-PERF-05", What: "export the general ledger of the grown months to CSV", Limit: 5 * time.Minute, Gated: true}
-	Cold    = Budget{ID: "NFR-PERF-06", What: "the first request after the API starts from idle", Limit: 2300 * time.Millisecond}
+	Reads = Budget{ID: "NFR-PERF-01", What: "interactive reads (a journal, a list page, a search) by 100 people, each pausing 1 to 3 s between reads (NFR-SCALE-01)", Limit: 300 * time.Millisecond, Each: true, Gated: true}
+	// Throughput is the same reads, 100 at once and back to back: where the stack saturates, reported and never gated
+	// (the owner's decision of 11 Nov 2026, PRD-001 rev 0.252).
+	Throughput = Budget{ID: "NFR-SCALE-01", What: "the same reads, 100 at once, back to back: throughput", Limit: 300 * time.Millisecond, Each: true}
+	Posting    = Budget{ID: "NFR-PERF-03", What: "save and post a 50-line journal", Limit: 500 * time.Millisecond, Each: true, Gated: true}
+	Imports    = Budget{ID: "NFR-PERF-04", What: "import a 10,000-line bank statement", Limit: time.Minute, Gated: true}
+	Exports    = Budget{ID: "NFR-PERF-05", What: "export about 1 M lines of the general ledger to CSV", Limit: 5 * time.Minute, Gated: true}
+	Cold       = Budget{ID: "NFR-PERF-06", What: "the first request after the API starts from idle", Limit: 2300 * time.Millisecond}
 )
 
 // ReportsBudget is NFR-PERF-02's: a standard report over twelve months with its comparative, within 2 s at up to 1 M
@@ -53,6 +58,17 @@ type Measurer struct {
 	Readers, ReadsEach int
 	Lines              int // the ledger's size, which sets the reports' limit
 	Log                io.Writer
+	// Only names the budgets to measure, by requirement (NFR-PERF-02) or step (reads, reports, posting, import,
+	// export); none measures every one.
+	Only []string
+	// Pause is the least and the most a reader waits between two reads, as a person reading a page does: 1 to 3 s
+	// when zero (NFR-SCALE-01, rev 0.252).
+	Pause [2]time.Duration
+}
+
+// wanted is whether the run measures a budget.
+func (m Measurer) wanted(b Budget, step string) bool {
+	return len(m.Only) == 0 || slices.Contains(m.Only, b.ID) || slices.Contains(m.Only, step)
 }
 
 // Run measures every budget against the grown ledger.
@@ -63,16 +79,34 @@ func (m Measurer) Run(ctx context.Context, g GrowReport) []Result {
 	if m.ReadsEach <= 0 {
 		m.ReadsEach = 10
 	}
-	m.say("perf: reads, %d readers at once", m.Readers)
-	out := []Result{m.reads(ctx, g)}
-	m.say("perf: reports")
-	out = append(out, m.reports(ctx))
-	m.say("perf: posting")
-	out = append(out, m.posting(ctx, g))
-	m.say("perf: a %d-line bank import", StatementLines)
-	out = append(out, m.importing(ctx, g))
-	m.say("perf: the general ledger's export")
-	out = append(out, m.exporting(ctx))
+	var out []Result
+	if m.wanted(Reads, "reads") {
+		m.say("perf: reads by %d people, each pausing between reads", m.Readers)
+		out = append(out, m.reads(ctx, g, Reads))
+	}
+	if m.wanted(Throughput, "reads") {
+		m.say("perf: the same reads, %d at once, back to back", m.Readers)
+		out = append(out, m.reads(ctx, g, Throughput))
+	}
+	if m.wanted(ReportsBudget(m.Lines), "reports") {
+		m.say("perf: reports")
+		out = append(out, m.reports(ctx))
+	}
+	if m.wanted(Posting, "posting") {
+		m.say("perf: posting")
+		out = append(out, m.posting(ctx, g))
+	}
+	if m.wanted(Imports, "import") {
+		m.say("perf: a %d-line bank import", StatementLines)
+		out = append(out, m.importing(ctx, g))
+	}
+	if m.wanted(Exports, "export") {
+		m.say("perf: the general ledger's export")
+		out = append(out, m.exporting(ctx))
+	}
+	if !m.wanted(Cold, "cold") {
+		return out
+	}
 	return append(out, Result{Budget: Cold, Note: "measured on the real images in staging, not on the local stack [live-verify]"})
 }
 
@@ -137,35 +171,86 @@ func (m Measurer) postJSON(ctx context.Context, path string, v any, header map[s
 }
 
 // reads times a journal, a page of journals and a search, by many readers at once.
-func (m Measurer) reads(ctx context.Context, g GrowReport) Result {
-	paths := []string{"/v1/journals?page_size=50", "/v1/search?q=" + url.QueryEscape("perf payment")}
-	for _, id := range g.Sample {
-		paths = append(paths, "/v1/journals/"+id.String())
+// reads times the readers' reads: for Reads each pauses between reads as a person does, for Throughput none does.
+func (m Measurer) reads(ctx context.Context, g GrowReport, b Budget) Result {
+	least, most := m.Pause[0], m.Pause[1]
+	if most <= 0 {
+		least, most = time.Second, 3*time.Second
+	}
+	pause := func(r *rand.Rand) {
+		if b.Gated {
+			time.Sleep(least + time.Duration(r.Int64N(int64(most-least)+1)))
+		}
+	}
+	// Each kind of read takes its turn, so a list or a search is measured as often as a journal is.
+	kinds := []string{"list", "search"}
+	if len(g.Sample) > 0 {
+		kinds = append(kinds, "journal")
+	}
+	path := func(kind string, i int) string {
+		switch kind {
+		case "list":
+			return "/v1/journals?page_size=50"
+		case "search":
+			return "/v1/search?q=" + url.QueryEscape("perf payment")
+		}
+		return "/v1/journals/" + g.Sample[i%len(g.Sample)].String()
 	}
 	var mu sync.Mutex
 	var took []time.Duration
+	per := map[string][]time.Duration{}
 	var first error
 	var wg sync.WaitGroup
 	for w := range m.Readers {
 		wg.Go(func() {
+			r := rand.New(rand.NewPCG(uint64(w), 1)) // #nosec G404 G115 -- a reader's pauses, not a secret
 			for i := range m.ReadsEach {
-				_, d, err := m.call(ctx, fmt.Sprintf("perf-reader-%d", w), http.MethodGet, paths[(w*m.ReadsEach+i)%len(paths)], nil, "", nil)
+				pause(r)
+				n := w*m.ReadsEach + i
+				kind := kinds[n%len(kinds)]
+				_, d, err := m.call(ctx, fmt.Sprintf("perf-reader-%d", w), http.MethodGet, path(kind, n/len(kinds)), nil, "", nil)
 				mu.Lock()
 				if err != nil && first == nil {
 					first = err
 				}
 				if err == nil {
 					took = append(took, d)
+					per[kind] = append(per[kind], d)
 				}
 				mu.Unlock()
 			}
 		})
 	}
 	wg.Wait()
-	return sampled(Reads, took, first)
+	res := sampled(b, took, first)
+	res.Note = each(per, kinds)
+	return res
+}
+
+// each is the 95th percentile of each kind's samples, in words: where the time goes.
+func each(per map[string][]time.Duration, kinds []string) string {
+	var parts []string
+	for _, k := range kinds {
+		if len(per[k]) > 0 {
+			parts = append(parts, fmt.Sprintf("%s p95 %s", k, ms(Percentile(per[k], 95))))
+		}
+	}
+	return strings.Join(parts, ", ")
 }
 
 // lastMonths are the twelve months that end with the last whole month, as YYYY-MM.
+// ExportLines is the size of NFR-PERF-05's export: a 1 M-line general ledger.
+const ExportLines = 1_000_000
+
+// exportMonths is how many of the grown months, the latest, hold about ExportLines lines: every one up to 1 M lines, as
+// growth spreads them evenly, and fewer above, so a 10 M-line run exports NFR-PERF-05's size, not the whole ledger.
+func exportMonths(lines int) int {
+	if lines <= ExportLines {
+		return Months
+	}
+	return max(1, (ExportLines*Months+lines-1)/lines)
+}
+
 func (m Measurer) lastMonths() (from, to string) {
 	now := m.Clock.Now().UTC()
 	last := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
@@ -175,19 +260,28 @@ func (m Measurer) lastMonths() (from, to string) {
 // reports times the standard reports over twelve months with the prior twelve beside them.
 func (m Measurer) reports(ctx context.Context) Result {
 	from, to := m.lastMonths()
+	kinds := []string{"pl", "bs", "tb"}
 	var took []time.Duration
+	per := map[string][]time.Duration{}
 	var first error
-	for range 10 {
-		for _, kind := range []string{"pl", "bs", "tb"} {
+	var cold []string
+	for round := range 10 {
+		for _, kind := range kinds {
 			_, d, err := m.call(ctx, "perf", http.MethodGet, fmt.Sprintf("/v1/reports/statements/%s?from=%s&to=%s&compare=prior_period", kind, from, to), nil, "", nil)
 			if err != nil {
 				first = cmpErr(first, err)
 				continue
 			}
 			took = append(took, d)
+			per[kind] = append(per[kind], d)
+			if round == 0 {
+				cold = append(cold, fmt.Sprintf("%s %s", kind, ms(d)))
+			}
 		}
 	}
-	return sampled(ReportsBudget(m.Lines), took, first)
+	r := sampled(ReportsBudget(m.Lines), took, first)
+	r.Note = each(per, kinds) + "; first " + strings.Join(cold, ", ")
+	return r
 }
 
 func cmpErr(first, err error) error {
@@ -313,7 +407,7 @@ func (m Measurer) importing(ctx context.Context, g GrowReport) Result {
 func (m Measurer) exporting(ctx context.Context) Result {
 	now := m.Clock.Now().UTC()
 	this := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	from, to := this.AddDate(0, -Months, 0), this.AddDate(0, 0, -1)
+	from, to := this.AddDate(0, -exportMonths(m.Lines), 0), this.AddDate(0, 0, -1)
 	start := m.Clock.Now()
 	a, _, err := m.postJSON(ctx, "/v1/report-exports", map[string]any{"report": "general_ledger", "format": "csv",
 		"from": from.Format(time.DateOnly), "to": to.Format(time.DateOnly)}, nil)

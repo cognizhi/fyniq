@@ -180,7 +180,8 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 		mu.Unlock()
 		return "owner-token", nil
 	}
-	m := Measurer{API: srv.URL + "/api", Token: token, HTTP: srv.Client(), Clock: clock.System{}, Readers: 8, ReadsEach: 3, Lines: 1000}
+	m := Measurer{API: srv.URL + "/api", Token: token, HTTP: srv.Client(), Clock: clock.System{}, Readers: 8, ReadsEach: 3, Lines: 1000,
+		Pause: [2]time.Duration{time.Millisecond, 2 * time.Millisecond}}
 	results := m.Run(context.Background(), g)
 	if len(problems) > 0 {
 		t.Fatalf("the calls: %s", strings.Join(problems, "; "))
@@ -189,8 +190,11 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 	for _, r := range results {
 		byID[r.ID] = r
 	}
-	if r := byID["NFR-PERF-01"]; r.Samples != 24 || r.Error != "" || !clients["perf-reader-7"] || !clients["perf"] || len(clients) != 9 {
+	if r := byID["NFR-PERF-01"]; r.Samples != 24 || r.Error != "" || !r.Gated || !clients["perf-reader-7"] || !clients["perf"] || len(clients) != 9 {
 		t.Errorf("the reads, each reader a client of its own: %+v %v", r, clients)
+	}
+	if r := byID["NFR-SCALE-01"]; r.Samples != 24 || r.Error != "" || r.Gated { // back to back: throughput, reported (rev 0.252)
+		t.Errorf("the same reads back to back: %+v", r)
 	}
 	if r := byID["NFR-PERF-02"]; r.Samples != 30 || r.Error != "" {
 		t.Errorf("the reports: %+v", r)
@@ -206,5 +210,16 @@ func TestTheMeasurerCallsTheAPIAsTheWebAppDoes(t *testing.T) {
 	}
 	if r := byID["NFR-PERF-06"]; r.Gated || r.Samples != 0 {
 		t.Errorf("the cold start is reported from staging: %+v", r)
+	}
+}
+
+// The export is NFR-PERF-05's size: the whole grown ledger up to 1 M lines, and above it the latest months that hold
+// about 1 M, so a 10 M-line run does not export ten times the requirement's ledger.
+// req: NFR-PERF-05
+func TestTheExportIsTheRequirementsSize(t *testing.T) {
+	for lines, want := range map[int]int{1000: Months, 1_000_000: Months, 2_000_000: 12, 10_000_000: 3, 100_000_000: 1} {
+		if got := exportMonths(lines); got != want {
+			t.Errorf("a %d-line ledger exports %d months, want %d", lines, got, want)
+		}
 	}
 }

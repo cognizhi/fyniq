@@ -71,4 +71,7 @@ type Kit struct {
 	Scheduling ports.Scheduling
 	Clone      ports.DatabaseClone
 	OpenClone  func(ctx context.Context, t ports.CloneTarget) (storage.Store, func(), error)
+	// DrillOnDemand keeps the restore drill off the schedule: locally a copy from a template stops every connection to
+	// the database while it copies, so the stack runs it only when asked (make restore-drill).
+	DrillOnDemand bool
 }
