@@ -300,7 +300,9 @@ func TestAttackTheMigrationMappingKeepsItsRules(t *testing.T) {
 // (FY326) wait for the commit to be committed; a line is decided first at version 1 and again only at its version, a
 // workbook defect with a note, a line of its form; the report is signed once; no decision changes line, skips a version
 // or goes. Once the report is signed, the parallel month's workbook (M5, 000336) joins, and no other step or mapping; its
-// sign-off waits for that workbook to be valid, once per report.
+// sign-off waits for that workbook to be valid, once per report. At M6 (000338) each file is archived with its own hash
+// once the parallel month is signed, and the migration closes only with every file archived; then nothing joins it, no
+// copy changes or goes, and it never reopens.
 // req: FR-MIG-01
 // req: FR-MIG-02
 // req: AUD-01
@@ -539,8 +541,41 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("validating the parallel month's workbook: %v", err)
 	}
+	copyOf := func(f storage.MigrationFile, sum string) storage.MigrationArchive {
+		return storage.MigrationArchive{RunID: run.ID, FileID: f.ID, LockedKey: "migrations/" + a.Org.String() + "/" + run.ID.String() + "/" + f.ID.String(),
+			SHA256: sum, RetainUntil: now.AddDate(8, 0, 0), ArchivedBy: "user:x", ArchivedAt: now}
+	}
+	var files []storage.MigrationFile
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		files, err = u.Migrations().Files(ctx, run.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Archive(ctx, copyOf(files[0], files[0].SHA256))
+		return err
+	}); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("an archive copy before the parallel month is signed: %v", err)
+	}
 	if err := in(signParallel); err != nil {
 		t.Fatalf("the parallel month's sign-off: %v", err)
+	}
+	// M6 (000338): each file archived with its own hash, once the parallel month is signed; the migration closes only
+	// with every file archived, and then takes nothing.
+	for what, fn := range map[string]func(ctx context.Context, u storage.UnitOfWork) error{
+		"an archive copy of another hash": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Archive(ctx, copyOf(files[0], hash("7")))
+			return err
+		},
+		"the migration closed with a file not archived": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Close(ctx, run.ID)
+			return err
+		},
+	} {
+		if err := in(fn); !storageCode(err, storage.CodeMigration) {
+			t.Errorf("%s: %v", what, err)
+		}
 	}
 	if err := in(signParallel); !storageCode(err, storage.CodeMigration) {
 		t.Errorf("the parallel month signed twice: %v", err)
@@ -574,6 +609,45 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		{"the owner skipping a version", "fyniq_migrator", `UPDATE fyniq.migration_difference SET version = version + 2`, nil, []string{"FY328"}},
 		{"the owner moving a decision to another line", "fyniq_migrator", `UPDATE fyniq.migration_difference SET line_key = 'check.1', version = version + 1`, nil, []string{"FY328"}},
 		{"the owner emptying the register", "fyniq_migrator", `TRUNCATE fyniq.migration_difference`, nil, []string{"FY060", "FY061"}},
+	} {
+		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.args...); return err })
+		wantState(t, x.what, err, x.states...)
+	}
+	// Archived and closed: then read only.
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Migrations().Files(ctx, run.ID)
+		if err != nil {
+			return err
+		}
+		for _, f := range all {
+			if _, err := u.Migrations().Archive(ctx, copyOf(f, f.SHA256)); err != nil {
+				return err
+			}
+		}
+		closed, err := u.Migrations().Close(ctx, run.ID)
+		if err == nil && closed.Status != "closed" {
+			t.Errorf("the migration closed: %+v", closed)
+		}
+		return err
+	}); err != nil {
+		t.Fatalf("archiving and closing: %v", err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, _, err := u.Migrations().AddWorkbook(ctx, storage.StepParallel, migrationFile(run.ID, a.Org, "November.xlsx", now))
+		return err
+	}); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("a workbook after the close: %v", err)
+	}
+	for _, x := range []struct {
+		what, role, stmt string
+		args             []any
+		states           []string
+	}{
+		{"the owner changing an archive copy", "fyniq_migrator", `UPDATE fyniq.migration_archive SET retain_until = retain_until - interval '1 year'`, nil, []string{"FY329"}},
+		{"the owner removing an archive copy", "fyniq_migrator", `DELETE FROM fyniq.migration_archive`, nil, []string{"FY329"}},
+		{"the API removing an archive copy", "fyniq_api", `DELETE FROM fyniq.migration_archive`, nil, []string{"42501"}},
+		{"the owner reopening the migration", "fyniq_migrator", `UPDATE fyniq.migration_run SET status = 'open'`, nil, []string{"FY325"}},
+		{"the worker closing a migration", "fyniq_worker", `UPDATE fyniq.migration_run SET status = 'closed'`, nil, []string{"42501"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.args...); return err })
 		wantState(t, x.what, err, x.states...)

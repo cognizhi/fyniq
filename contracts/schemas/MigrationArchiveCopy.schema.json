@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "archived_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-30T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "archived_by": {
+      "description": "Who archived it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11"
+      ],
+      "type": "string"
+    },
+    "file_id": {
+      "description": "The file archived.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "As the uploader named it.",
+      "examples": [
+        "Cognizhi-Finance-Hub.xlsx"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "workbook: a workbook as uploaded (M1's, or M5's); checks: the Checks export made from one; pdf: a PDF of the workbook's reports.",
+      "enum": [
+        "workbook",
+        "checks",
+        "pdf"
+      ],
+      "examples": [
+        "workbook"
+      ],
+      "type": "string"
+    },
+    "retain_until": {
+      "description": "How long the store keeps it, never shortened: the end of the financial year it was archived in, plus the records' retention (FR-DOC-07, §11.9).",
+      "examples": [
+        "2034-01-01T00:00:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The copy's SHA-256, the file's as kept.",
+      "examples": [
+        "4d8057dc…"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "file_id",
+    "kind",
+    "file_name",
+    "sha256",
+    "retain_until",
+    "archived_by",
+    "archived_at"
+  ],
+  "title": "MigrationArchiveCopy",
+  "type": "object"
+}

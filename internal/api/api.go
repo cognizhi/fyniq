@@ -383,6 +383,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerMigrationCommit(a)
 	registerMigrationReconciliation(a)
 	registerMigrationParallel(a)
+	registerMigrationArchive(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerShredding(a)
