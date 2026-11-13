@@ -372,7 +372,8 @@ func (w *Workbook) readPayroll(g sheet.Grid, base money.Currency) {
 			Gross: t.calculated(r, "Gross pay", base), EmployeeCPF: t.calculated(r, "Employee CPF", base),
 			EmployerCPF: t.calculated(r, "Employer CPF", base), SDL: t.calculated(r, "SDL", base),
 			Net: t.calculated(r, "Net pay to employee", base), SHG: t.calculated(r, "SHG used", base),
-			TotalEmployerCost: t.calculated(r, "Total cost to company", base), Status: statusOf(t.text(r, "Status"))}
+			TotalEmployerCost: t.calculated(r, "Total cost to company", base), Status: statusOf(t.text(r, "Status")),
+			MonthEnd: t.date(r, "Month end"), SalaryAccount: codeOf(t.text(r, "Salary account"))}
 		if kept(t, r, p.Status) {
 			w.Payroll = append(w.Payroll, p)
 		}

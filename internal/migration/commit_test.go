@@ -62,6 +62,10 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 			t.Errorf("a clean start imports the history's %s", r.Key)
 		}
 	}
+	// Payroll: one summary journal for each of the sheet's 9 months (design D7).
+	if kinds[KindPayroll] != 9 {
+		t.Errorf("the pay runs: %d", kinds[KindPayroll])
+	}
 	// Quotes and orders, the assets and their depreciation to the "as of", last.
 	if kinds[KindQuote] != 3 || kinds[KindPurchaseOrder] != 1 || kinds[KindAsset] != 3 || kinds[KindDepreciation] != 1 ||
 		plan[len(plan)-1].Kind != KindDepreciation {

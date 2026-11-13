@@ -69,6 +69,7 @@ func (w *Workbook) history(m Mapping) []Record {
 	statements, rows := w.transactions(m)
 	out = append(out, statements...)
 	rest = append(rest, rows...)
+	rest = append(rest, w.payrollRecords(m)...)
 	for _, q := range w.QuotesOrders {
 		if x, ok := w.quoteRecord(m, q); ok {
 			rest = append(rest, x)

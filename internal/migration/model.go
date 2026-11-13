@@ -193,6 +193,8 @@ type PayRow struct {
 	Employee                                                          string
 	Gross, EmployeeCPF, EmployerCPF, SDL, Net, SHG, TotalEmployerCost *apd.Decimal
 	Status                                                            Status
+	MonthEnd                                                          time.Time // the month's last day, which it posts on
+	SalaryAccount                                                     string    // the employee's salary account, as the workbook worked it out
 }
 
 // Asset is a row of Assets.
