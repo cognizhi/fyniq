@@ -492,6 +492,11 @@ Source: PRD-001 §F.6
 - **THEN** an automated PITR restore runs with ledger and audit-chain verification
 - **AND** the drill report is kept as evidence
 
+#### Scenario: Where the monthly restore runs (rev 0.249)
+- **WHEN** the monthly restore runs
+- **THEN** it clones the production database in production's own project, where no app can reach it, and deletes the clone once verified
+- **AND** the quarterly full drill restores the weekly export into an isolated drill project
+
 #### Scenario: Quarterly full drill
 - **WHEN** a quarter's drill falls due
 - **THEN** a full restore drill runs with ledger and audit-chain verification
