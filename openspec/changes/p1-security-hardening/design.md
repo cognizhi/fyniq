@@ -151,7 +151,11 @@ Asking for it is audited when the file is sensitive (AUD-05's audited reads).
 header 6 months on (FR-INT-06). The web app moves to the link.
 
 **ClamAV** runs as an internal Cloud Run service in `infra/` [live-verify]. The release wiring requires
-`FYNIQ_CLAMD_ADDR` there, as it does today.
+`FYNIQ_CLAMD_ADDR` there, as it does today. *Superseded (11 Nov 2026, rev 0.247):* clamd speaks raw TCP, which a
+Cloud Run service does not accept. By the owner's decision it is a private **scanner service**: `cmd/scanner`, an
+HTTP front, with clamd as a sidecar in the same Cloud Run service; the API and the worker call it with an ID token, as
+they call the render service (`FYNIQ_SCANNER_URL`); one instance stays warm in production; locally the stack's clamd
+is reached directly, as today.
 
 ### D6. Dependencies (SEC-26)
 
@@ -199,7 +203,7 @@ header 6 months on (FR-INT-06). The web app moves to the link.
 - **The port.** `ports.Posture` lists the findings: severity, category, resource, first seen, state. The GCP adapter
   reads Security Command Center (Standard tier) [live-verify]; the local adapter is a fake for tests.
 - **The verification.** `posture.findings` feeds the Compliance Center: CTL-RES-04 fails when a High finding is open
-  past 30 days, or a Critical one past 7 [verify the SLA with the founders]. The findings show under the control.
+  past 30 days, or a Critical one past 7 (the owner's decision of 11 Nov 2026, rev 0.247). The findings show under the control.
 
 **The weekly scans.**
 - **`logs.scan` (CTL-DP-03).** It reads a sample of the week's application logs through a `ports.LogReader` (Cloud
@@ -277,7 +281,6 @@ workflow's attestations are only recorded.
 
 ## Open Questions
 
-- **The SLA for SCC findings** (CTL-RES-04): 7 days for Critical and 30 for High are proposed [verify with the
-  founders].
+- ~~**The SLA for SCC findings**~~ (CTL-RES-04): decided on 11 Nov 2026, 7 days for Critical and 30 for High (rev 0.247).
 - **Whether the Super admin, or the operator outside the app, registers private endpoints.** The PRD says "the
   platform operator". The Super admin is the operator in the app, so they register them here.

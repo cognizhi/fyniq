@@ -516,7 +516,7 @@ Source: PRD-001 §F.6
 - **THEN** it is mapped to ISO 8.16 and SOC2 A1.1 and CC7.2
 
 ### Requirement: CTL-RES-04 Security Command Center findings fixed within SLA
-High and critical Security Command Center findings SHALL be fixed within their SLA. The control is checked daily, with the findings report kept as evidence.
+High and critical Security Command Center findings SHALL be fixed within their SLA: a Critical finding within 7 days and a High one within 30, from when it was first found (rev 0.247). The control is checked daily, with the findings report kept as evidence.
 
 Source: PRD-001 §F.6
 
@@ -524,6 +524,10 @@ Source: PRD-001 §F.6
 - **WHEN** the daily check runs
 - **THEN** it detects any high or critical finding not fixed within its SLA
 - **AND** the findings report is kept as evidence
+
+#### Scenario: The SLA's days
+- **WHEN** a Critical finding has been open more than 7 days since it was first found, or a High one more than 30
+- **THEN** the control fails and names the finding
 
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
