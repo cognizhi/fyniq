@@ -34,9 +34,11 @@ fyniq_api       SELECT    ai_model
 fyniq_api       UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, max_output, name, not_callable_at, probe_detail, probe_ok, probed_at, provider_created, reports, shutdown_at)
 fyniq_api       INSERT    ai_model_list_read (added, connection_id, failure, outcome, pages, read_at, read_by, removed, trigger)
 fyniq_api       SELECT    ai_model_list_read
+fyniq_api       INSERT    ai_price (approval_id, connection_id, currency, match, model, number, recorded_at, recorded_by, source, status)
 fyniq_api       SELECT    ai_price
 fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
+fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation

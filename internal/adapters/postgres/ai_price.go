@@ -119,9 +119,13 @@ func priceChange(p storage.AIPrice) map[string]any {
 	for _, r := range p.Rates {
 		rates = append(rates, map[string]any{"kind": r.Kind, "above": r.Above, "unit": r.Unit, "amount": r.Amount})
 	}
-	return map[string]any{"connection_id": p.ConnectionID.String(), "model": p.Model, "number": p.Number, "source": p.Source,
+	out := map[string]any{"connection_id": p.ConnectionID.String(), "model": p.Model, "number": p.Number, "source": p.Source,
 		"catalogue_key": p.CatalogueKey, "match": p.Match, "currency": p.Currency, "rates": rates, "status": p.Status,
 		"review": p.Review, "review_detail": p.ReviewDetail}
+	if p.Approval != nil {
+		out["approval"] = p.Approval.String()
+	}
+	return out
 }
 
 func (r aiPrices) Record(ctx context.Context, p storage.AIPrice) (storage.AIPrice, error) {
@@ -132,9 +136,16 @@ func (r aiPrices) Record(ctx context.Context, p storage.AIPrice) (storage.AIPric
 	if ignored == nil {
 		ignored = []string{}
 	}
-	row, err := r.u.q.InsertAIPrice(ctx, sqlcdb.InsertAIPriceParams{ConnectionID: p.ConnectionID, Model: p.Model, Source: p.Source,
-		CatalogueID: p.CatalogueID, CatalogueKey: optional(p.CatalogueKey), Match: p.Match, Currency: p.Currency, Ignored: ignored,
-		Status: p.Status, Review: optional(p.Review), ReviewDetail: optional(p.ReviewDetail), RecordedBy: p.RecordedBy, RecordedAt: p.RecordedAt})
+	var row sqlcdb.FyniqAiPrice
+	var err error
+	if p.Approval != nil { // an Owner's price, as its approval executes (only the API may name one)
+		row, err = r.u.q.InsertOwnerAIPrice(ctx, sqlcdb.InsertOwnerAIPriceParams{ConnectionID: p.ConnectionID, Model: p.Model, Currency: p.Currency,
+			RecordedBy: p.RecordedBy, RecordedAt: p.RecordedAt, ApprovalID: p.Approval})
+	} else {
+		row, err = r.u.q.InsertAIPrice(ctx, sqlcdb.InsertAIPriceParams{ConnectionID: p.ConnectionID, Model: p.Model, Source: p.Source,
+			CatalogueID: p.CatalogueID, CatalogueKey: optional(p.CatalogueKey), Match: p.Match, Currency: p.Currency, Ignored: ignored,
+			Status: p.Status, Review: optional(p.Review), ReviewDetail: optional(p.ReviewDetail), RecordedBy: p.RecordedBy, RecordedAt: p.RecordedAt})
+	}
 	if err != nil {
 		return storage.AIPrice{}, mapError(err)
 	}
@@ -183,6 +194,22 @@ func (r aiPrices) Decide(ctx context.Context, id uuid.UUID, confirm bool, by str
 	}
 	version := out[0].Number
 	return out[0], r.u.event(ctx, action, "ai_price", id, &version, map[string][2]any{"status": {"pending", status}})
+}
+
+func (r aiPrices) Withdraw(ctx context.Context, id uuid.UUID, by string, at time.Time) (storage.AIPrice, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIPrice{}, err
+	}
+	row, err := r.u.q.DecideAIPrice(ctx, sqlcdb.DecideAIPriceParams{Status: "withdrawn", DecidedBy: &by, DecidedAt: &at, ID: id})
+	if err != nil {
+		return storage.AIPrice{}, mapError(err)
+	}
+	out, err := r.withRates(ctx, []sqlcdb.FyniqAiPrice{row})
+	if err != nil {
+		return storage.AIPrice{}, err
+	}
+	version := out[0].Number
+	return out[0], r.u.event(ctx, "ai_price.withdrawn", "ai_price", id, &version, map[string][2]any{"status": {"active", "withdrawn"}})
 }
 
 func (r aiPrices) Catalogue(ctx context.Context, id uuid.UUID) (storage.AIPriceCatalogue, error) {

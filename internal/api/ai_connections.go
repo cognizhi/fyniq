@@ -686,6 +686,8 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 		}
 		_, err := u.AIModels().Allow(ctx, c.ID, model, true, &r.ID)
 		return err
+	case approval.OpAIConnectionPrice:
+		return a.executeAIPrice(ctx, u, c, r, str)
 	default:
 		return fmt.Errorf("ai connection: no operation %q", r.Operation)
 	}

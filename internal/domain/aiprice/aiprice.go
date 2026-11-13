@@ -9,10 +9,12 @@ package aiprice
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 
 	"github.com/cockroachdb/apd/v3"
 
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -20,6 +22,8 @@ import (
 const (
 	CodeUnpriced = "AI-PRICE-01" // a usage-based connection's model with no price in force cannot serve a route (AI-82)
 	CodeReview   = "AI-PRICE-02" // the version is not waiting for a review, or the decision is not confirm or decline
+	CodeEntered  = "AI-PRICE-03" // an Owner's price that is not valid: a currency Fyniq does not know, no input or output rate, a rate not above zero or too fine
+	CodeWithdraw = "AI-PRICE-04" // only an Owner's price in force can be withdrawn
 )
 
 // Error is a refused price step, in Fyniq's words (ENG-23).
@@ -54,6 +58,7 @@ const (
 	Pending    = "pending"    // waiting for an Owner's review; the version before it, if any, stays in force
 	Superseded = "superseded" // a later version took its place
 	Declined   = "declined"   // an Owner declined it on review
+	Withdrawn  = "withdrawn"  // the Owner withdrew their own price: the next read prices the model from its source
 )
 
 // Why a version waits for an Owner's review (AI-82, AI-85).
@@ -284,6 +289,46 @@ func (p Price) Cost(u ports.ModelUsage, images, requests int64) (cost apd.Decima
 	}
 	_, _, err = calc.Reduce(&cost, &cost)
 	return cost, "", err
+}
+
+// EnteredRate is a rate as an Owner enters it: its kind, the prompt length above which it applies, and its amount as
+// decimal text, per million tokens, per image or per request as the kind's unit says.
+type EnteredRate struct {
+	Kind   string
+	Above  int64
+	Amount string
+}
+
+// plainDecimal is a decimal as a person types it: no sign, no exponent.
+var plainDecimal = regexp.MustCompile(`^[0-9]{1,14}(\.[0-9]{1,10})?$`)
+
+// Entered checks an Owner's price (AI-82): a currency Fyniq knows, a base input and output rate, every amount a plain
+// decimal above zero within Scale, of a kind Fyniq knows, once per tier.
+func Entered(currency string, rates []EnteredRate) (Price, error) {
+	if _, err := money.Lookup(currency); err != nil {
+		return Price{}, refuse(CodeEntered, "currency", "is not a currency Fyniq knows", "Give the ISO 4217 code the provider bills in, such as USD")
+	}
+	p := Price{Currency: currency}
+	for i, r := range rates {
+		d, _, err := apd.NewFromString(r.Amount)
+		if !plainDecimal.MatchString(r.Amount) || err != nil {
+			return Price{}, refuse(CodeEntered, fmt.Sprintf("rates[%d].amount", i), "is not a plain decimal number",
+				"Give the rate as a decimal such as 3 or 0.125, with at most 10 decimal places")
+		}
+		p.Rates = append(p.Rates, Rate{Kind: r.Kind, Above: r.Above, Amount: *d})
+	}
+	if err := p.Valid(); err != nil {
+		return Price{}, refuse(CodeEntered, "rates", err.Error(), "Give at least an input and an output rate, each above zero, once per tier")
+	}
+	return p, nil
+}
+
+// Withdrawable refuses to withdraw a version that is not an Owner's price in force.
+func Withdrawable(source, status string) error {
+	if source != SourceOwner || status != Active {
+		return refuse(CodeWithdraw, "price", "is not an Owner's price in force", "Withdraw the Owner's price the model's list shows in force")
+	}
+	return nil
 }
 
 // Trim is a stored amount without the zeros its column pads it with, such as 3 for 3.0000000000.

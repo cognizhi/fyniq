@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "above": {
+      "description": "The prompt length in tokens above which it applies; 0 or absent for the base rate.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "amount": {
+      "description": "A plain decimal above zero with at most 10 decimal places: per million tokens, per image or per request as the kind's unit says.",
+      "examples": [
+        "3"
+      ],
+      "maxLength": 25,
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "input",
+        "output",
+        "cache_read",
+        "cache_write",
+        "cache_write_1h",
+        "reasoning",
+        "input_image",
+        "request"
+      ],
+      "examples": [
+        "input"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "amount"
+  ],
+  "title": "AIPriceRateEntry",
+  "type": "object"
+}
