@@ -517,3 +517,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-12] compile | organisation-settings.md, members-and-roles.md, sign-in.md → settings.organisation, sign-in, members (the hold after an account recovery, 24 to 72 hours; SEC-35 rev 0.253)
 
 ## [2026-11-13] compile | docs/user-guide/chart-of-accounts.md → task/accounting-chart (the standard chart has 90 accounts: 3900 Opening balance clearing, rev 0.257)
+
+## [2026-11-13] compile | docs/user-guide/data-export.md → settings.data (new: Settings › Data and export, the full tenant export, FR-MIG-04)
+
+## [2026-11-13] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Data region and retention section names Settings › Data and export)
