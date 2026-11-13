@@ -339,6 +339,12 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-5", "If-Match", `"4-open"`), "signMigrationMapping", 409, migration.CodeNotSignable)
 }
 
+// pastPolicy are the operations the matrix's organisation never reaches a success of, as its state never allows one,
+// each with the code the API answers past its policy: allowed means that code, refused the policy's 403. The workbook
+// import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
+// commits one (rev 0.266).
+var pastPolicy = map[string]string{"decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit}
+
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample
 // validated, before the matrix runs (seedMigration); starting it again answers that one.
@@ -403,6 +409,15 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	// The matrix's import is not committed: a role allowed to read gets the report with nothing in it.
 	"getMigrationReconciliation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/reconciliation", tok, nil), nil
+	},
+	// The register needs a committed import, which the matrix's never is: allowed answers MIGRATION-14 (pastPolicy).
+	"decideMigrationDifference": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPatch, "/v1/migrations/"+matrixMigration(e)+"/reconciliation/register/6610.2026-06.movement", tok,
+			map[string]any{"class": "a"}, "Prefer", "return=preview", "If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
+	},
+	"signMigrationReconciliation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/migrations/"+matrixMigration(e)+"/reconciliation/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview",
+			"If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
 	},
 }
 

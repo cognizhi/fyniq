@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -380,4 +381,72 @@ func (m migrations) RecordByKey(ctx context.Context, commit uuid.UUID, key strin
 		return storage.MigrationRecord{}, mapError(err)
 	}
 	return toMigrationRecord(r), nil
+}
+
+func toMigrationDecision(r sqlcdb.FyniqMigrationDifference) storage.MigrationDecision {
+	return storage.MigrationDecision{ID: r.ID, RunID: r.RunID, Line: r.LineKey, Class: r.Class, Note: r.Note, Fyniq: r.FyniqFigure, Workbook: r.WorkbookFigure,
+		Version: int(r.Version), DecidedBy: r.DecidedBy, DecidedAt: r.DecidedAt}
+}
+
+func (m migrations) Decisions(ctx context.Context, run uuid.UUID) ([]storage.MigrationDecision, error) {
+	if err := m.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := m.u.q.ListMigrationDifferences(ctx, run)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MigrationDecision, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toMigrationDecision(r))
+	}
+	return out, nil
+}
+
+func (m migrations) Decide(ctx context.Context, d storage.MigrationDecision) (storage.MigrationDecision, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationDecision{}, err
+	}
+	changed := func(was string) *storage.Error {
+		return &storage.Error{Code: storage.CodeVersion, Message: fmt.Sprintf("the line %s was decided %s since it was read", d.Line, was)}
+	}
+	var before *storage.MigrationDecision
+	var r sqlcdb.FyniqMigrationDifference
+	var err error
+	if d.Version == 0 {
+		r, err = m.u.q.InsertMigrationDifference(ctx, sqlcdb.InsertMigrationDifferenceParams{RunID: d.RunID, LineKey: d.Line, Class: d.Class, Note: d.Note,
+			FyniqFigure: d.Fyniq, WorkbookFigure: d.Workbook, DecidedBy: d.DecidedBy, DecidedAt: d.DecidedAt})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return storage.MigrationDecision{}, changed("already")
+		}
+	} else {
+		was, gerr := m.u.q.GetMigrationDifference(ctx, sqlcdb.GetMigrationDifferenceParams{RunID: d.RunID, LineKey: d.Line})
+		if gerr != nil {
+			return storage.MigrationDecision{}, mapError(gerr)
+		}
+		w := toMigrationDecision(was)
+		before = &w
+		r, err = m.u.q.UpdateMigrationDifference(ctx, sqlcdb.UpdateMigrationDifferenceParams{RunID: d.RunID, LineKey: d.Line, Version: int32(d.Version), // #nosec G115 -- a version
+			Class: d.Class, Note: d.Note, FyniqFigure: d.Fyniq, WorkbookFigure: d.Workbook, DecidedBy: d.DecidedBy, DecidedAt: d.DecidedAt})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return storage.MigrationDecision{}, changed("again")
+		}
+	}
+	if err != nil {
+		return storage.MigrationDecision{}, mapError(err)
+	}
+	out := toMigrationDecision(r)
+	field := func(was, now string) [2]any {
+		if before == nil {
+			return [2]any{nil, now}
+		}
+		return [2]any{was, now}
+	}
+	var b storage.MigrationDecision
+	if before != nil {
+		b = *before
+	}
+	changes := map[string][2]any{"line": {nil, out.Line}, "class": field(b.Class, out.Class), "note": field(b.Note, out.Note),
+		"fyniq": field(b.Fyniq, out.Fyniq), "workbook": field(b.Workbook, out.Workbook)}
+	return out, m.u.event(ctx, "migration.difference_decided", "migration_run", out.RunID, nil, changes)
 }

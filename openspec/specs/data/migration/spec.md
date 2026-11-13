@@ -107,6 +107,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **AND** each figure that differs is a register line with a proposed class: a on a spread or depreciation account within a cent a month, b on a revaluation or statutory account, else none for the accountant
 - **AND** the workbook's Checks rows are compared by their C.1 number with Fyniq's at their last run, one never run counting as different
 
+#### Scenario: The register decided and signed (rev 0.266)
+- **WHEN** the Accountant decides the register's lines and signs the report
+- **THEN** each decision is a, b or c on the report as read, a workbook defect with a note, and it goes stale once the line's figures move
+- **AND** the Accountant, stepped up, signs the report and the register together over the report's hash once every line has a decision that counts and Fyniq's checks have run
+- **AND** a report is signed once, and books or decisions that change afterwards make another report on which the earlier sign-off is not current
+
 ### Requirement: FR-MIG-03 Generic import
 The system SHALL provide a generic CSV/XLSX import for each entity, with templates and a dry run.
 

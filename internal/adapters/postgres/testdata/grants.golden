@@ -270,6 +270,9 @@ fyniq_api       EXECUTE   member_sign_ins()
 fyniq_api       INSERT    migration_commit (approval_id, approved_at, approved_by, mapping_id, path, records, run_id, step_id)
 fyniq_api       SELECT    migration_commit
 fyniq_api       UPDATE    migration_commit (committed_at, status)
+fyniq_api       INSERT    migration_difference (class, decided_at, decided_by, fyniq_figure, line_key, note, run_id, workbook_figure)
+fyniq_api       SELECT    migration_difference
+fyniq_api       UPDATE    migration_difference (class, decided_at, decided_by, fyniq_figure, note, version, workbook_figure)
 fyniq_api       INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
 fyniq_api       SELECT    migration_file
 fyniq_api       INSERT    migration_mapping (made_at, made_by, mapping, mapping_sha256, run_id, step_id, version)
@@ -659,6 +662,7 @@ fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    migration_commit
+fyniq_readonly  SELECT    migration_difference
 fyniq_readonly  SELECT    migration_file
 fyniq_readonly  SELECT    migration_mapping
 fyniq_readonly  SELECT    migration_record
@@ -895,6 +899,7 @@ fyniq_worker    EXECUTE   member_names()
 fyniq_worker    EXECUTE   member_sign_ins()
 fyniq_worker    EXECUTE   members_second_factor()
 fyniq_worker    SELECT    migration_commit
+fyniq_worker    SELECT    migration_difference
 fyniq_worker    INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
 fyniq_worker    SELECT    migration_file
 fyniq_worker    INSERT    migration_mapping (made_at, made_by, mapping, mapping_sha256, run_id, step_id, version)

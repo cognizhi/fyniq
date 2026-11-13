@@ -2,12 +2,23 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "decision": {
+      "$ref": "MigrationRegisterDecision.schema.json",
+      "description": "The Accountant's decision on a different status; absent while undecided."
+    },
     "fyniq": {
       "description": "Fyniq's checks of the number.",
       "items": {
         "$ref": "MigrationFyniqCheck.schema.json"
       },
       "type": "array"
+    },
+    "key": {
+      "description": "Its line's key in the difference register, which a different status needs: check and its number.",
+      "examples": [
+        "check.30"
+      ],
+      "type": "string"
     },
     "missing": {
       "description": "Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).",
@@ -60,6 +71,7 @@
     }
   },
   "required": [
+    "key",
     "number",
     "name",
     "row",

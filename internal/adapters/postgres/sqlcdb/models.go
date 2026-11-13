@@ -1494,6 +1494,20 @@ type FyniqMigrationCommit struct {
 	CommittedAt    *time.Time
 }
 
+type FyniqMigrationDifference struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	LineKey        string
+	Class          string
+	Note           string
+	FyniqFigure    string
+	WorkbookFigure string
+	Version        int32
+	DecidedBy      string
+	DecidedAt      time.Time
+}
+
 type FyniqMigrationFile struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

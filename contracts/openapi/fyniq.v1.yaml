@@ -26882,11 +26882,19 @@ components:
     MigrationCheckParity:
       additionalProperties: false
       properties:
+        decision:
+          $ref: "#/components/schemas/MigrationRegisterDecision"
+          description: The Accountant's decision on a different status; absent while undecided.
         fyniq:
           description: Fyniq's checks of the number.
           items:
             $ref: "#/components/schemas/MigrationFyniqCheck"
           type: array
+        key:
+          description: "Its line's key in the difference register, which a different status needs: check and its number."
+          examples:
+            - check.30
+          type: string
         missing:
           description: Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).
           examples:
@@ -26924,6 +26932,7 @@ components:
             - fine
           type: string
       required:
+        - key
         - number
         - name
         - row
@@ -27114,6 +27123,9 @@ components:
           examples:
             - "6510"
           type: string
+        decision:
+          $ref: "#/components/schemas/MigrationRegisterDecision"
+          description: The Accountant's decision on the line; absent while undecided.
         difference:
           description: Fyniq's less the workbook's.
           examples:
@@ -27683,15 +27695,19 @@ components:
             - history
           type: string
         sha256:
-          description: "The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8)."
+          description: "The SHA-256 of the report's figures, checks and decisions (not its status, revision, run time or sign-off): what the Accountant's sign-off names, and the ETag (design D8)."
           examples:
             - 5d1e…
           type: string
+        sign_off:
+          $ref: "#/components/schemas/MigrationReconciliationSignOff"
+          description: The latest sign-off of the report and its register; absent before the first.
         status:
-          description: "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand."
+          description: "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4)."
           enum:
             - not_committed
             - ready
+            - signed
           examples:
             - ready
           type: string
@@ -27701,6 +27717,12 @@ components:
             - 2026-09
           pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
           type: string
+        undecided:
+          description: "The register's lines without a decision that counts: the differences, and the checks whose status differs. The sign-off needs none."
+          examples:
+            - 0
+          format: int64
+          type: integer
       required:
         - status
         - path
@@ -27712,7 +27734,105 @@ components:
         - differences
         - checks
         - checks_differ
+        - undecided
         - sha256
+      type: object
+    MigrationReconciliationSignOff:
+      additionalProperties: false
+      properties:
+        current:
+          description: "Whether it names this report: once the books or a decision change, the report is another, and the step stays signed by the earlier one."
+          examples:
+            - true
+          type: boolean
+        sha256:
+          description: The report's SHA-256 it signs.
+          examples:
+            - 5d1e…
+          type: string
+        signed_at:
+          description: When.
+          examples:
+            - "2026-11-13T10:00:00Z"
+          format: date-time
+          type: string
+        signed_by:
+          description: The Accountant who signed it, stepped up.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11
+          type: string
+      required:
+        - signed_by
+        - signed_at
+        - sha256
+        - current
+      type: object
+    MigrationRegisterChange:
+      additionalProperties: false
+      properties:
+        class:
+          description: "a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration."
+          enum:
+            - a
+            - b
+            - c
+          examples:
+            - a
+          type: string
+        note:
+          description: Why; a workbook defect (c) says what it is.
+          examples:
+            - ALLOC-EVEN puts the quarter's cent in its last month
+          maxLength: 500
+          type: string
+      required:
+        - class
+      type: object
+    MigrationRegisterDecision:
+      additionalProperties: false
+      properties:
+        class:
+          description: "a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration."
+          enum:
+            - a
+            - b
+            - c
+          examples:
+            - a
+          type: string
+        decided_at:
+          description: When.
+          examples:
+            - "2026-11-13T09:30:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: Who decided it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11
+          type: string
+        note:
+          description: Why, as the Accountant wrote it; a workbook defect says what it is.
+          examples:
+            - ALLOC-EVEN puts the quarter's cent in its last month
+          type: string
+        stale:
+          description: "true: it was decided on other figures than the report's, so it no longer counts: decide the line again."
+          examples:
+            - false
+          type: boolean
+        version:
+          description: "The decision's version: deciding the line again takes the next."
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - class
+        - version
+        - decided_by
+        - decided_at
+        - stale
       type: object
     MigrationReportView:
       additionalProperties: false
@@ -136548,7 +136668,7 @@ paths:
         right: A
   /v1/migrations/{migration_id}/reconciliation:
     get:
-      description: "The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) the Accountant decides. The workbook's Checks rows are compared, by their Appendix C.1 number, with the statuses of Fyniq's checks at their last run. sha256 is what the sign-off names. Before the import is committed, status not_committed and no figures. Read-only; no side effects."
+      description: "The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) and the Accountant's decision; so is each of the workbook's Checks rows whose status Fyniq's checks of its Appendix C.1 number, at their last run, do not share. A decision made on other figures is stale. sha256, the ETag, is what a decision and the sign-off are made on. Before the import is committed, status not_committed and no figures. Read-only; no side effects."
       operationId: getMigrationReconciliation
       parameters:
         - description: The migration.
@@ -136569,6 +136689,10 @@ paths:
                 $ref: "#/components/schemas/MigrationReconciliation"
           description: OK
           headers:
+            ETag:
+              schema:
+                description: "The report's SHA-256, for If-Match: a decision or the sign-off is made on the report as read."
+                type: string
             RateLimit:
               description: What is left of the limit (r) and the seconds until the window ends (t).
               schema:
@@ -136667,6 +136791,435 @@ paths:
       x-fyniq-permission:
         capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
         right: V
+  /v1/migrations/{migration_id}/reconciliation/register/{line}:
+    patch:
+      description: "The Accountant decides a line of the difference register (FR-MIG-02, §17.1 M4; rev 0.266): a figure that differs, or a workbook check whose status Fyniq's do not share, as a (a cent allocation of spreads and depreciation), b (a deliberate rule change) or c (a workbook defect found during the migration, with a note saying what it is). The decision keeps the line's two figures: once they move it is stale and the line is decided again, as its next version. A line the report does not have is MIGRATION-15; before the import is committed, MIGRATION-14. Needs If-Match with the report's ETag: the decision is made on the report as read. Side effects: the decision and the audit event migration.difference_decided. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: decideMigrationDifference
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: The line's key, as the report gives it.
+          in: path
+          name: line
+          required: true
+          schema:
+            description: The line's key, as the report gives it.
+            examples:
+              - 6610.2026-06.movement
+            pattern: ^([0-9A-Za-z_-]{1,20}\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\.(movement|closing))|check\.[0-9]{1,3})$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MigrationRegisterChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationReconciliation"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The report's SHA-256, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Decide a line of the register
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - MIGRATION-14
+        - MIGRATION-15
+        - STORAGE-LOCK-01
+        - STORAGE-MIGRATION-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)"
+        right: A
+  /v1/migrations/{migration_id}/reconciliation/sign-off:
+    post:
+      description: "The Accountant signs the parity report and its difference register together (§17.1 M4, FR-MIG-02; rev 0.266), over the report's SHA-256, stepped up in the last 5 minutes. Refused (MIGRATION-15) while a line has no decision that counts (undecided, or stale), or Fyniq's checks have never run; a report is signed once. Once the books or a decision change, the report is another and shows the earlier sign-off as not current. Needs If-Match with the report's ETag. Side effects: the sign-off and the audit event migration.reconciliation_signed, with the ledger revision the report was read at. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: signMigrationReconciliation
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationReconciliation"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The report's SHA-256, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Sign the reconciliation
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - MIGRATION-14
+        - MIGRATION-15
+        - STORAGE-LOCK-01
+        - STORAGE-MIGRATION-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)"
+        note: A person signed in to Fyniq, stepped up in the last 5 minutes.
+        right: A
   /v1/migrations/{migration_id}/report:
     get:
       description: "M1's latest validation report (FR-MIG-01, design D2): the workbook's company, base currency and dates, each sheet's rows the import reads, and every problem with its sheet, row and column, what is wrong and how to fix it. An error stops the commit; a row the workbook did not post (✖) is a warning and is not imported. While the workbook is validating, the state says so: poll the operation, then read again. Before a workbook is uploaded there is none to read. Read-only; no side effects."

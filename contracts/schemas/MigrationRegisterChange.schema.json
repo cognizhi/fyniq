@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration.",
+      "enum": [
+        "a",
+        "b",
+        "c"
+      ],
+      "examples": [
+        "a"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why; a workbook defect (c) says what it is.",
+      "examples": [
+        "ALLOC-EVEN puts the quarter's cent in its last month"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "class"
+  ],
+  "title": "MigrationRegisterChange",
+  "type": "object"
+}

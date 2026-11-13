@@ -207,6 +207,7 @@ var fyCodes = map[string]string{
 	"FY325": storage.CodeMigration,       // a migration in an organisation with a posted entry, a step changed twice, or anything removed (000325)
 	"FY326": storage.CodeMigration,       // a mapping version out of order, a sign-off of anything but the latest version, or any change (000327)
 	"FY327": storage.CodeMigration,       // a change once the migration has a commit, or a commit or record out of its rules (000330)
+	"FY328": storage.CodeMigration,       // a register decision before the commit, on a closed migration, out of its versions, or removed (000332)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
