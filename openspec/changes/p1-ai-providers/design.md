@@ -146,8 +146,9 @@ See proposal.md for why. What exists today:
   write. Security review #4 reviews it.
 
 **D12. Local mode (DEV-09, "Local AI in replay and live mode").**
-- Replay by default: a `replay` provider answers from cassettes in `test/ai/cassettes/`, keyed by the hash of the
-  prompt, tools and model version; a miss is an error naming the key, so CI never calls out.
+- Replay by default: a `replay` provider answers from cassettes in `evals/cassettes/` (beside the AI suites, as
+  §12.4's layout puts them), keyed by the hash of the prompt, tools and model version; a miss is
+  an error naming the key, so CI never calls out.
 - Live on `FYNIQ_AI_LIVE=1`: the real adapters with a developer's key from the environment, synthetic data only.
 - DEV-09's adapters, in the `local` build only: they call the developer's own `claude` or `codex` command-line agent as
   a subprocess, never read its sign-in, name the model from its configuration and declare what they lack

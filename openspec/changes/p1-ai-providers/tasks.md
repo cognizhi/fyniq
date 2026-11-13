@@ -2,7 +2,7 @@
 
 Each slice is its own pull request, stacked in order; each passes `make check` and `make test` on its own.
 
-- [ ] 1.1 `ports.ModelProvider` (design D1) and the `replay` provider: cassettes in `test/ai/cassettes/` keyed by the
+- [x] 1.1 `ports.ModelProvider` (design D1) and the `replay` provider: cassettes in `evals/cassettes/` keyed by the
   hash of the prompt, tools and model version, a miss an error naming its key; live mode only on `FYNIQ_AI_LIVE=1`
   with a developer's key from the environment, synthetic data only. Tests `// req: AI-70`,
   `// req: platform/local-mode Local AI in replay and live mode`.
