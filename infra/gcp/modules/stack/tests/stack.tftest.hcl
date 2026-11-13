@@ -6,6 +6,7 @@
 # req: DR-04
 # req: DR-07
 # req: CTL-RES-03
+# req: NFR-OBS-02
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -74,6 +75,10 @@ run "production" {
   assert {
     condition     = toset(keys(module.slo.slos)) == toset(["api", "ai", "mcp", "oauth"])
     error_message = "every public service has its objectives (CTL-RES-03)"
+  }
+  assert {
+    condition     = contains(module.heartbeat.policies, "Fyniq production: heartbeat tick absent 30 minutes")
+    error_message = "the tick's absence alerts the platform owner (NFR-OBS-02)"
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")

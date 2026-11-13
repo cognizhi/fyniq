@@ -99,12 +99,8 @@ func main() {
 			}
 			return outbox.RunSlot(ctx, kit.Store, deps.Clock, args[1], slot, run)
 		case "heartbeat-check":
-			alerts, err := outbox.Absences(ctx, kit.Store, deps.Clock.Now(), outbox.PlatformSchedules)
-			if err != nil {
+			if err := outbox.CheckHeartbeats(ctx, kit.Store, deps.Clock.Now(), outbox.PlatformSchedules); err != nil {
 				return err
-			}
-			if len(alerts) > 0 {
-				return fmt.Errorf("heartbeats missing: %s", strings.Join(alerts, "; "))
 			}
 			fmt.Fprintln(os.Stderr, "jobs: every heartbeat is current")
 			return nil

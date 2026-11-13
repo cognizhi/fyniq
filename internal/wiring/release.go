@@ -178,6 +178,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	// The platform's posture and logs, read as the jobs' account (SEC-33, CTL-DP-03) [live-verify].
 	kit.Posture = gcp.NewSecurityCenter(gcp.SecurityCenterAPI, "projects/"+projectOf(c.Job), tokens, google)
 	kit.Logs = gcp.NewLogging(gcp.LoggingAPI, projectOf(c.Job), tokens, google)
+	kit.Scheduling = gcp.NewScheduling(gcp.SchedulerAPI, gcp.MonitoringAPI, projectOf(c.Job), locationOf(c.Job), tokens, google)
 	kit.watchChanges(clock)
 	return kit, nil
 }
@@ -186,6 +187,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 const secretsRegion = "asia-southeast1"
 
 // projectOf is the project of a resource name such as projects/<project>/locations/…/jobs/….
+// locationOf is the location a resource name names (projects/<project>/locations/<location>/…).
+func locationOf(name string) string {
+	parts := strings.Split(name, "/")
+	if len(parts) > 3 && parts[2] == "locations" {
+		return parts[3]
+	}
+	return ""
+}
+
 func projectOf(name string) string {
 	parts := strings.Split(name, "/")
 	if len(parts) > 1 && parts[0] == "projects" {

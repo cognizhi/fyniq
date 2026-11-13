@@ -183,6 +183,17 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
 - **The quarterly drill** (CTL-RES-05 Q): disabling the tick in staging raises the alert. It is a review,
   `heartbeat-drill`, signed off in the Compliance Center, with the runbook's steps.
 
+- **As built (slice 7a):**
+  - `outbox.Beat` records a heartbeat and then logs it; a heartbeat the database refused is not logged, so its absence
+    alerts.
+  - The daily jobs' fallback is a platform job, `heartbeats.check`, each hour: it logs `fyniq.heartbeat_missing` for each
+    heartbeat past its schedule's limit (the same rule as `jobs heartbeat-check`), and a log-match alert tells the
+    platform owner at the first line. Its own heartbeat, and `audit.anchor`'s, have 3-hour absence alerts; the tick's
+    absence covers the case where nothing runs it.
+  - The platform owner is the stack's `platform_owner_emails`; without one, the Owners are told from the first alert.
+  - `scheduler.configured` requires the tick's Scheduler job, running, and the three heartbeat policies (the tick at 30
+    and 60 minutes, a late job) on with a channel. Locally `local.Scheduling` stands in with the stack's own tick.
+
 ### D7. Performance (NFR-PERF-01 to NFR-PERF-06, NFR-SCALE-01, QA-PERF-01; rev 0.249)
 
 - **`cmd/perf`** (a tool built with `-tags local`, like `cmd/seed`):

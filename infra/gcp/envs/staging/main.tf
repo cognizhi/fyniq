@@ -29,6 +29,12 @@ variable "billing_account" {
   type        = string
 }
 
+variable "platform_owner_emails" {
+  description = "The named platform owner, whom the heartbeat's alerts tell first; empty: the Owners."
+  type        = list(string)
+  default     = []
+}
+
 variable "budget_emails" {
   description = "Who gets the budget alerts: both founders."
   type        = list(string)
@@ -80,18 +86,19 @@ provider "google-beta" {
 }
 
 module "stack" {
-  source            = "../../modules/stack"
-  environment       = "staging"
-  project           = var.project
-  secrets_project   = var.secrets_project
-  audit_project     = var.project
-  anchors           = { retention_days = 30, lock = false } # staging's anchors are test data: kept 30 days, never locked
-  database          = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
-  billing_account   = var.billing_account
-  budget            = { amount_usd = var.budget_usd, emails = var.budget_emails }
-  public_origin     = var.public_origin
-  signin_providers  = var.signin_providers
-  artifact_registry = var.artifact_registry
+  source                = "../../modules/stack"
+  environment           = "staging"
+  project               = var.project
+  secrets_project       = var.secrets_project
+  audit_project         = var.project
+  anchors               = { retention_days = 30, lock = false } # staging's anchors are test data: kept 30 days, never locked
+  database              = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
+  billing_account       = var.billing_account
+  budget                = { amount_usd = var.budget_usd, emails = var.budget_emails }
+  platform_owner_emails = var.platform_owner_emails
+  public_origin         = var.public_origin
+  signin_providers      = var.signin_providers
+  artifact_registry     = var.artifact_registry
 }
 
 output "gcp_config" {

@@ -14,8 +14,9 @@ checks:
     how: "check scheduler.jobs-on-time"
     evidence: "every scheduled job ran on time, read from the Scheduler tick's heartbeats (C.2 #12); the check's latest result for each organisation, on Checks"
   - frequency: D
-    status: planned
-    arrives: "p1-operations-dr (rev 0.241: the heartbeat absence alert and its notification channel)"
+    status: running
+    how: "verify scheduler.configured"
+    evidence: "the latest run in the installation's organisation (fyniq.control_run): the tick's Scheduler job exists and runs, and the heartbeat's alert policies (the tick absent 30 and 60 minutes, a late platform job) are on and tell someone; read as the jobs' account in the cloud [live-verify], the stack's own tick locally"
   - frequency: Q
     status: planned
     arrives: "p1-operations-dr (rev 0.241: the quarterly drill that disabling the tick in staging raises the alert)"

@@ -67,6 +67,8 @@ type Kit struct {
 	ExportBuckets backup.Buckets
 	// Clone makes the monthly restore drill's copy of the database, and OpenClone opens it as this service's own role
 	// (DR-06, CTL-RES-02; p1-operations-dr design D2); nil: the drill fails, which its heartbeat shows.
-	Clone     ports.DatabaseClone
-	OpenClone func(ctx context.Context, t ports.CloneTarget) (storage.Store, func(), error)
+	// Scheduling reads the Scheduler's jobs and the heartbeat's alert policies (CTL-RES-05).
+	Scheduling ports.Scheduling
+	Clone      ports.DatabaseClone
+	OpenClone  func(ctx context.Context, t ports.CloneTarget) (storage.Store, func(), error)
 }

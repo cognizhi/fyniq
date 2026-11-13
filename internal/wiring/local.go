@@ -97,8 +97,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Clone:     postgres.TemplateClone{AdminURL: asOwner(url, "postgres"), Source: "fyniq", Clock: clock},
 		OpenClone: copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
-		Posture: local.Posture{},
-		Logs:    local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
+		Posture:    local.Posture{},
+		Scheduling: local.Scheduling{},
+		Logs:       local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}
 	kit.watchChanges(clock)
 	return kit, nil

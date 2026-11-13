@@ -168,6 +168,8 @@ type Runner struct {
 	Posture ports.Posture
 	Logs    ports.LogReader
 	Alert   Alert
+	// Scheduling is what scheduler.configured reads: the Scheduler's jobs and the heartbeat's alert policies (CTL-RES-05).
+	Scheduling ports.Scheduling
 	// Evidence is the locked records store records.retention reads (p1-operations-dr design D3); nil: it does not run.
 	Evidence ports.BlobStore
 }
