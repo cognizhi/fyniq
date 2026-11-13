@@ -14515,7 +14515,7 @@ The generic import (FR-MIG-03): each entity's template, laid out as the workbook
 
 **Import accounts of the chart** (`importAccounts`)
 
-Imports accounts of the chart from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+Imports accounts of the chart from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
 
 - **Permission:** Create on Chart of accounts, dimensions. The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
 - **Parameters:**
@@ -14557,11 +14557,57 @@ The template for importing accounts of the chart (FR-MIG-03, design D9; rev 0.27
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/imports/bills`
+
+**Import bills and vendor credits, as drafts** (`importBills`)
+
+Imports bills and vendor credits, as drafts from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+
+- **Permission:** Create on Bills, vendor credits
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `201` Created [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `MIGRATION-17` The file cannot be imported.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `MIGRATION-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/imports/bills/template`
+
+**Get the template for bills and vendor credits, as drafts** (`getBillsTemplate`)
+
+The template for importing bills and vendor credits, as drafts (FR-MIG-03, design D9; rev 0.270): the workbook's sheet for them, its input columns as the header and no row, as CSV or as an .xlsx workbook. Fill a row in per record; a date is YYYY-MM-DD in CSV, and an amount a plain decimal. The workbook's own sheet, as it is, imports too. Read-only; no side effects.
+
+- **Permission:** View on Bills, vendor credits
+- **Parameters:**
+  - `format` (query): csv: UTF-8, its header row first; xlsx: a workbook of one sheet named as the workbook's.
+- **Responses:**
+  - `200` The template, as an attachment.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/imports/contacts`
 
 **Import contacts** (`importContacts`)
 
-Imports contacts from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+Imports contacts from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
 
 - **Permission:** Create on Contacts and items (rev 0.33)
 - **Parameters:**
@@ -14603,11 +14649,57 @@ The template for importing contacts (FR-MIG-03, design D9; rev 0.270): the workb
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/imports/invoices`
+
+**Import invoices and credit notes, as drafts** (`importInvoices`)
+
+Imports invoices and credit notes, as drafts from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `201` Created [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `MIGRATION-17` The file cannot be imported.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `MIGRATION-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/imports/invoices/template`
+
+**Get the template for invoices and credit notes, as drafts** (`getInvoicesTemplate`)
+
+The template for importing invoices and credit notes, as drafts (FR-MIG-03, design D9; rev 0.270): the workbook's sheet for them, its input columns as the header and no row, as CSV or as an .xlsx workbook. Fill a row in per record; a date is YYYY-MM-DD in CSV, and an amount a plain decimal. The workbook's own sheet, as it is, imports too. Read-only; no side effects.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `format` (query): csv: UTF-8, its header row first; xlsx: a workbook of one sheet named as the workbook's.
+- **Responses:**
+  - `200` The template, as an attachment.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/imports/items`
 
 **Import items** (`importItems`)
 
-Imports items from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+Imports items from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
 
 - **Permission:** Create on Contacts and items (rev 0.33)
 - **Parameters:**
@@ -14636,6 +14728,52 @@ Imports items from a file filled in their template (FR-MIG-03, design D9; rev 0.
 The template for importing items (FR-MIG-03, design D9; rev 0.270): the workbook's sheet for them, its input columns as the header and no row, as CSV or as an .xlsx workbook. Fill a row in per record; a date is YYYY-MM-DD in CSV, and an amount a plain decimal. The workbook's own sheet, as it is, imports too. Read-only; no side effects.
 
 - **Permission:** View on Contacts and items (rev 0.33)
+- **Parameters:**
+  - `format` (query): csv: UTF-8, its header row first; xlsx: a workbook of one sheet named as the workbook's.
+- **Responses:**
+  - `200` The template, as an attachment.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/imports/journals`
+
+**Import journals, as drafts** (`importJournals`)
+
+Imports journals, as drafts from a file filled in their template (FR-MIG-03, design D9; rev 0.270), as multipart/form-data: CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.
+
+- **Permission:** Create on Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `201` Created [`ImportReport`](../../contracts/schemas/ImportReport.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `MIGRATION-17` The file cannot be imported.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `MIGRATION-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/imports/journals/template`
+
+**Get the template for journals, as drafts** (`getJournalsTemplate`)
+
+The template for importing journals, as drafts (FR-MIG-03, design D9; rev 0.270): the workbook's sheet for them, its input columns as the header and no row, as CSV or as an .xlsx workbook. Fill a row in per record; a date is YYYY-MM-DD in CSV, and an amount a plain decimal. The workbook's own sheet, as it is, imports too. Read-only; no side effects.
+
+- **Permission:** View on Journals
 - **Parameters:**
   - `format` (query): csv: UTF-8, its header row first; xlsx: a workbook of one sheet named as the workbook's.
 - **Responses:**

@@ -441,7 +441,10 @@ var (
 	CreateCustomerGroup  = Policy{Operation: "createCustomerGroup", Capability: ContactsAndItems, Need: Create}
 	ReplaceCustomerGroup = Policy{Operation: "replaceCustomerGroup", Capability: ContactsAndItems, Need: Create}
 
-	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	CreateJournal = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	// The generic import's journals (FR-MIG-03, rev 0.271): drafts, each posted through its own approval.
+	GetJournalsTemplate       = Policy{Operation: "getJournalsTemplate", Capability: Journals, Need: View}
+	ImportJournals            = Policy{Operation: "importJournals", Capability: Journals, Need: Create}
 	BulkCreateJournals        = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
 	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
 	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
@@ -600,15 +603,18 @@ var (
 	// Bills (FR-AP-02; p1-purchases): read under V, prepared under C (the Bookkeeper, the AP specialist, the Accountant),
 	// posted and voided under P (the Accountant), as journals are; asking for approval to post or void is posting (P),
 	// and another person who holds A approves it through the approval engine (FM-1, FM-2, SOD-3).
-	ListBills       = Policy{Operation: "listBills", Capability: Bills, Need: View}
-	GetBill         = Policy{Operation: "getBill", Capability: Bills, Need: View}
-	CreateBill      = Policy{Operation: "createBill", Capability: Bills, Need: Create}
-	ReplaceBill     = Policy{Operation: "replaceBill", Capability: Bills, Need: Create}
-	PostBill        = Policy{Operation: "postBill", Capability: Bills, Need: Post}
-	VoidBill        = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
-	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
-	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
-	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	ListBills  = Policy{Operation: "listBills", Capability: Bills, Need: View}
+	GetBill    = Policy{Operation: "getBill", Capability: Bills, Need: View}
+	CreateBill = Policy{Operation: "createBill", Capability: Bills, Need: Create}
+	// The generic import's bills (FR-MIG-03, rev 0.271): drafts, each posted through its own approval.
+	GetBillsTemplate = Policy{Operation: "getBillsTemplate", Capability: Bills, Need: View}
+	ImportBills      = Policy{Operation: "importBills", Capability: Bills, Need: Create}
+	ReplaceBill      = Policy{Operation: "replaceBill", Capability: Bills, Need: Create}
+	PostBill         = Policy{Operation: "postBill", Capability: Bills, Need: Post}
+	VoidBill         = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
+	RequestBillPost  = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
+	RequestBillVoid  = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
+	EditBill         = Policy{Operation: "editBill", Capability: Bills, Need: Post}
 	// Expense claims (FR-AP-07, FR-AP-14, FR-AP-17; p1-expense-claims): a claimant's own under the Employee's "C (own)",
 	// which the handlers narrow to the caller's own claims (design D10); everyone's under V (the Owner, the Accountant,
 	// the Bookkeeper, the AP specialist, the Auditor, the Tax agent) or A (the Approver, the Controller). Submitting asks
@@ -861,9 +867,12 @@ var (
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
 	// SOD-3).
-	ListInvoices        = Policy{Operation: "listInvoices", Capability: Invoices, Need: View}
-	GetInvoice          = Policy{Operation: "getInvoice", Capability: Invoices, Need: View}
-	CreateInvoice       = Policy{Operation: "createInvoice", Capability: Invoices, Need: Create}
+	ListInvoices  = Policy{Operation: "listInvoices", Capability: Invoices, Need: View}
+	GetInvoice    = Policy{Operation: "getInvoice", Capability: Invoices, Need: View}
+	CreateInvoice = Policy{Operation: "createInvoice", Capability: Invoices, Need: Create}
+	// The generic import's invoices (FR-MIG-03, rev 0.271): drafts, each issued through its own approval.
+	GetInvoicesTemplate = Policy{Operation: "getInvoicesTemplate", Capability: Invoices, Need: View}
+	ImportInvoices      = Policy{Operation: "importInvoices", Capability: Invoices, Need: Create}
 	ReplaceInvoice      = Policy{Operation: "replaceInvoice", Capability: Invoices, Need: Create}
 	IssueInvoice        = Policy{Operation: "issueInvoice", Capability: Invoices, Need: Post}
 	VoidInvoice         = Policy{Operation: "voidInvoice", Capability: Invoices, Need: Post}
@@ -1827,7 +1836,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {
