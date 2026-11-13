@@ -33,7 +33,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 3. Connections
 
-- [ ] 3.1 Migrations for `ai_connection` and its versions (RLS, `organisation_id` leading every index); the approval
+- [x] 3.1 Migrations for `ai_connection` and its versions (RLS, `organisation_id` leading every index); the approval
   object `ai_connection` on "AI providers and model routes" (create, change, enable, add a model: the Owner and a
   second approver; disable at once); the credential through the connector secret store, shown once, masked, rotated,
   only in headers, scrubbed from errors; each connection's egress its host only, a self-hosted one a registered

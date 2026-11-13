@@ -88,6 +88,34 @@ accounting_policy | written_by | text | not null |
 accounting_policy | written_at | timestamp with time zone | not null | now()
 accounting_policy | approved_by | text | null | 
 accounting_policy | approved_at | timestamp with time zone | null | 
+ai_connection | organisation_id | uuid | not null | current_org()
+ai_connection | id | uuid | not null | uuidv7()
+ai_connection | name | text | not null | 
+ai_connection | connector | text | not null | 
+ai_connection | preset | text | null | 
+ai_connection | auth | text | not null | 
+ai_connection | configuration | jsonb | not null | '{}'::jsonb
+ai_connection | host | text | not null | 
+ai_connection | self_hosted | boolean | not null | false
+ai_connection | credential_ref | text | null | 
+ai_connection | credential_set_at | timestamp with time zone | null | 
+ai_connection | billing_mode | text | not null | 
+ai_connection | quota | jsonb | null | 
+ai_connection | state | text | not null | 'disabled'::text
+ai_connection | version | integer | not null | 1
+ai_connection | created_by | text | not null | 
+ai_connection | created_at | timestamp with time zone | not null | 
+ai_connection | changed_by | text | not null | 
+ai_connection | changed_at | timestamp with time zone | not null | 
+ai_connection_version | organisation_id | uuid | not null | current_org()
+ai_connection_version | id | uuid | not null | uuidv7()
+ai_connection_version | connection_id | uuid | not null | 
+ai_connection_version | version | integer | not null | 
+ai_connection_version | step | text | not null | 
+ai_connection_version | snapshot | jsonb | not null | 
+ai_connection_version | approval_id | uuid | null | 
+ai_connection_version | made_by | text | not null | 
+ai_connection_version | made_at | timestamp with time zone | not null | 
 allocation | organisation_id | uuid | not null | current_org()
 allocation | id | uuid | not null | uuidv7()
 allocation | source_id | uuid | not null | 
@@ -2140,6 +2168,57 @@ accounting_policy | accounting_policy_written_at_not_null | NOT NULL written_at
 accounting_policy | accounting_policy_written_by_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 accounting_policy | accounting_policy_written_by_not_null | NOT NULL written_by
 accounting_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_connection | ai_connection_auth_known | CHECK ((auth = ANY (ARRAY['api-key'::text, 'workload-identity'::text, 'none'::text])))
+ai_connection | ai_connection_auth_not_null | NOT NULL auth
+ai_connection | ai_connection_billing_known | CHECK ((billing_mode = ANY (ARRAY['usage'::text, 'subscription'::text])))
+ai_connection | ai_connection_billing_mode_not_null | NOT NULL billing_mode
+ai_connection | ai_connection_changed_at_not_null | NOT NULL changed_at
+ai_connection | ai_connection_changed_by_format | CHECK ((changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_connection | ai_connection_changed_by_not_null | NOT NULL changed_by
+ai_connection | ai_connection_configuration_not_null | NOT NULL configuration
+ai_connection | ai_connection_configuration_object | CHECK ((jsonb_typeof(configuration) = 'object'::text))
+ai_connection | ai_connection_connector_format | CHECK ((connector ~ '^[a-z][a-z0-9-]{1,39}$'::text))
+ai_connection | ai_connection_connector_not_null | NOT NULL connector
+ai_connection | ai_connection_created_at_not_null | NOT NULL created_at
+ai_connection | ai_connection_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_connection | ai_connection_created_by_not_null | NOT NULL created_by
+ai_connection | ai_connection_credential_format | CHECK (((credential_ref ~ '^[!-~]+$'::text) AND (length(credential_ref) <= 512)))
+ai_connection | ai_connection_credential_with_time | CHECK (((credential_ref IS NULL) = (credential_set_at IS NULL)))
+ai_connection | ai_connection_enabled_with_key | CHECK (((state <> 'enabled'::text) OR (auth <> 'api-key'::text) OR (credential_ref IS NOT NULL)))
+ai_connection | ai_connection_host_format | CHECK ((host ~ '^[a-z0-9][a-z0-9.:-]{0,252}$'::text))
+ai_connection | ai_connection_host_not_null | NOT NULL host
+ai_connection | ai_connection_id_not_null | NOT NULL id
+ai_connection | ai_connection_name | UNIQUE (organisation_id, name)
+ai_connection | ai_connection_name_format | CHECK ((((length(name) >= 1) AND (length(name) <= 80)) AND (name = btrim(name))))
+ai_connection | ai_connection_name_not_null | NOT NULL name
+ai_connection | ai_connection_none_self_hosted | CHECK (((auth <> 'none'::text) OR self_hosted))
+ai_connection | ai_connection_organisation_id_not_null | NOT NULL organisation_id
+ai_connection | ai_connection_pkey | PRIMARY KEY (organisation_id, id)
+ai_connection | ai_connection_preset_format | CHECK ((preset ~ '^[a-z][a-z0-9-]{1,39}$'::text))
+ai_connection | ai_connection_quota_object | CHECK ((jsonb_typeof(quota) = 'object'::text))
+ai_connection | ai_connection_quota_with_subscription | CHECK (((billing_mode = 'subscription'::text) = (quota IS NOT NULL)))
+ai_connection | ai_connection_self_hosted_not_null | NOT NULL self_hosted
+ai_connection | ai_connection_state_known | CHECK ((state = ANY (ARRAY['disabled'::text, 'enabled'::text])))
+ai_connection | ai_connection_state_not_null | NOT NULL state
+ai_connection | ai_connection_version_not_null | NOT NULL version
+ai_connection | ai_connection_version_positive | CHECK ((version >= 1))
+ai_connection | ai_connection_versioned | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_connection | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_connection_version | ai_connection_version_approved | CHECK (((step = 'disabled'::text) OR (approval_id IS NOT NULL)))
+ai_connection_version | ai_connection_version_connection_fkey | FOREIGN KEY (organisation_id, connection_id) REFERENCES ai_connection(organisation_id, id) DEFERRABLE INITIALLY DEFERRED
+ai_connection_version | ai_connection_version_connection_id_not_null | NOT NULL connection_id
+ai_connection_version | ai_connection_version_id | UNIQUE (organisation_id, id)
+ai_connection_version | ai_connection_version_id_not_null | NOT NULL id
+ai_connection_version | ai_connection_version_made_at_not_null | NOT NULL made_at
+ai_connection_version | ai_connection_version_made_by_format | CHECK ((made_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_connection_version | ai_connection_version_made_by_not_null | NOT NULL made_by
+ai_connection_version | ai_connection_version_organisation_id_not_null | NOT NULL organisation_id
+ai_connection_version | ai_connection_version_pkey | PRIMARY KEY (organisation_id, connection_id, version)
+ai_connection_version | ai_connection_version_snapshot_not_null | NOT NULL snapshot
+ai_connection_version | ai_connection_version_snapshot_object | CHECK ((jsonb_typeof(snapshot) = 'object'::text))
+ai_connection_version | ai_connection_version_step_known | CHECK ((step = ANY (ARRAY['created'::text, 'changed'::text, 'credential'::text, 'enabled'::text, 'disabled'::text])))
+ai_connection_version | ai_connection_version_step_not_null | NOT NULL step
+ai_connection_version | ai_connection_version_version_not_null | NOT NULL version
 allocation | allocation_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 allocation | allocation_amount_not_null | NOT NULL amount
 allocation | allocation_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount <> (0)::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
@@ -2214,7 +2293,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text, 'ai_connection'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -2242,7 +2321,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -5396,6 +5475,10 @@ CREATE UNIQUE INDEX accounting_framework_pkey ON fyniq.accounting_framework USIN
 CREATE UNIQUE INDEX accounting_framework_version_key ON fyniq.accounting_framework USING btree (organisation_id, version)
 CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX accounting_policy_version_key ON fyniq.accounting_policy USING btree (organisation_id, area, version)
+CREATE UNIQUE INDEX ai_connection_name ON fyniq.ai_connection USING btree (organisation_id, name)
+CREATE UNIQUE INDEX ai_connection_pkey ON fyniq.ai_connection USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_connection_version_id ON fyniq.ai_connection_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_connection_version_pkey ON fyniq.ai_connection_version USING btree (organisation_id, connection_id, version)
 CREATE UNIQUE INDEX allocation_pkey ON fyniq.allocation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_reversed_once ON fyniq.allocation USING btree (organisation_id, reverses_id)
 CREATE UNIQUE INDEX announcement_dismissal_once ON fyniq.announcement_dismissal USING btree (organisation_id, user_id, announcement_id)
@@ -5706,6 +5789,7 @@ CREATE UNIQUE INDEX withholding_decision_pkey ON fyniq.withholding_decision USIN
 
 ## triggers
 CREATE CONSTRAINT TRIGGER accountant_review_reopened AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION accountant_review_reopened()
+CREATE CONSTRAINT TRIGGER ai_connection_versioned AFTER INSERT OR UPDATE ON fyniq.ai_connection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ai_connection_versioned()
 CREATE CONSTRAINT TRIGGER break_glass_logged AFTER INSERT ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION break_glass_logged()
 CREATE CONSTRAINT TRIGGER claimant_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'claimant_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER contact_member_approved AFTER UPDATE OF member_user_id ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.member_user_id IS DISTINCT FROM old.member_user_id)) EXECUTE FUNCTION contact_member_approved()
@@ -5816,6 +5900,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounta
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review_query DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_connection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
@@ -5890,6 +5975,10 @@ CREATE TRIGGER accountant_review_query_no_truncate BEFORE TRUNCATE ON fyniq.acco
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER acra_extract_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION acra_extract_guard()
+CREATE TRIGGER ai_connection_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_connection FOR EACH ROW EXECUTE FUNCTION ai_connection_guard()
+CREATE TRIGGER ai_connection_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_connection_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_connection_version FOR EACH ROW EXECUTE FUNCTION ai_connection_guard()
+CREATE TRIGGER ai_connection_version_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
 CREATE TRIGGER allocation_no_truncate BEFORE TRUNCATE ON fyniq.allocation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER announcement_dismissal_guard BEFORE DELETE OR UPDATE ON fyniq.announcement_dismissal FOR EACH ROW EXECUTE FUNCTION announcement_dismissal_guard()
@@ -6221,6 +6310,8 @@ accountant_review_journal | tenant_isolation | * | (organisation_id = current_or
 accountant_review_query | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_connection_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6385,6 +6476,8 @@ accountant_review_journal | enabled | forced
 accountant_review_query | enabled | forced
 accounting_framework | enabled | forced
 accounting_policy | enabled | forced
+ai_connection | enabled | forced
+ai_connection_version | enabled | forced
 allocation | enabled | forced
 announcement | enabled | forced
 announcement_dismissal | enabled | forced
@@ -6583,6 +6676,8 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e61f76b3fe2a4eb691c487471ba73494
+ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
+ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | faf46a2ff4eb5c3d17fcbdc8baa47c5b
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd

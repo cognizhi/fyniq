@@ -70,6 +70,10 @@ const operations: Record<Approval["operation"], string> = {
   "budget.record": "Approve and lock a budget",
   "migration.commit": "Commit the workbook import",
   "tenant_export.prepare": "Prepare the full export",
+  "ai_connection.create": "Connect an AI provider",
+  "ai_connection.change": "Change an AI provider's connection",
+  "ai_connection.credential": "Replace an AI provider's API key",
+  "ai_connection.enable": "Switch on an AI provider's connection",
 };
 
 export function operationLabel(op: string): string {
@@ -130,6 +134,7 @@ const objects: Record<string, string> = {
   budget: "Budget",
   migration_commit: "Workbook import",
   tenant_export: "Full export",
+  ai_connection: "AI provider connection",
 };
 
 export function objectLabel(t: string): string {

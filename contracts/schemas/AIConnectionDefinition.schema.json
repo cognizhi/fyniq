@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "description": "How it authenticates, one the provider and its preset offer.",
+      "enum": [
+        "api-key",
+        "workload-identity",
+        "none"
+      ],
+      "examples": [
+        "workload-identity"
+      ],
+      "type": "string"
+    },
+    "billing": {
+      "$ref": "AIConnectionBilling.schema.json"
+    },
+    "configuration": {
+      "additionalProperties": {},
+      "description": "Its configuration, as the provider's manifest describes it.",
+      "examples": [
+        {
+          "endpoint": "agent-platform",
+          "project": "fyniq-prod"
+        }
+      ],
+      "type": "object"
+    },
+    "name": {
+      "description": "Its name in the organisation.",
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "preset": {
+      "description": "One of the provider's presets, from listConnectorCatalogue.",
+      "examples": [
+        "kimi"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "auth",
+    "billing"
+  ],
+  "title": "AIConnectionDefinition",
+  "type": "object"
+}

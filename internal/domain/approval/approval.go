@@ -163,6 +163,10 @@ const (
 	// ObjectTenantExport is the full tenant export (FR-MIG-04, design D10, FM-1; rev 0.273): a person with C on
 	// "Tenant export" asks for it, and another who holds its A approves; its key is the export's ID.
 	ObjectTenantExport = "tenant_export"
+	// ObjectAIConnection is a connection to an AI model provider (AI-72, golden rule 6; p1-ai-providers design D2): a
+	// person with C on "AI providers and model routes" asks to create, change, re-key or enable it, and the Owner, who
+	// holds its A, approves; its key is the connection's ID. Switching one off is never held back.
+	ObjectAIConnection = "ai_connection"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -272,6 +276,14 @@ const (
 	OpMigrationCommit = "migration.commit"
 	// OpTenantExportPrepare queues the full tenant export for its requester (FR-MIG-04, rev 0.273).
 	OpTenantExportPrepare = "tenant_export.prepare"
+	// OpAIConnectionCreate adds the connection, switched off (AI-72).
+	OpAIConnectionCreate = "ai_connection.create"
+	// OpAIConnectionChange changes its name, configuration or billing (AI-72, AI-73).
+	OpAIConnectionChange = "ai_connection.change"
+	// OpAIConnectionCredential makes the credential the request stored its current one (AI-79).
+	OpAIConnectionCredential = "ai_connection.credential"
+	// OpAIConnectionEnable switches it on (AI-72).
+	OpAIConnectionEnable = "ai_connection.enable"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -314,6 +326,10 @@ var Operations = map[string]string{
 	OpBudgetRecord:             ObjectBudget,
 	OpMigrationCommit:          ObjectMigrationCommit,
 	OpTenantExportPrepare:      ObjectTenantExport,
+	OpAIConnectionCreate:       ObjectAIConnection,
+	OpAIConnectionChange:       ObjectAIConnection,
+	OpAIConnectionCredential:   ObjectAIConnection,
+	OpAIConnectionEnable:       ObjectAIConnection,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -424,6 +440,8 @@ var Dependencies = map[string][]string{
 	ObjectMigrationCommit: {"status", "workbook", "mapping"},
 	// nothing: the export does not exist until it is approved
 	ObjectTenantExport: {},
+	// the connection's version and state ("new" before it exists): what is created, changed, re-keyed or enabled
+	ObjectAIConnection: {"status"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -482,6 +500,7 @@ var Rows = map[string]string{
 	ObjectBudget:              "Budgets, forecasts",
 	ObjectMigrationCommit:     "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)",
 	ObjectTenantExport:        "Tenant export",
+	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 }
 
 // The limits of a policy.
@@ -569,6 +588,7 @@ var Policies = map[string]Policy{
 	ObjectBudget:              {ObjectType: ObjectBudget, Version: "founder/budget@2026-11-08.1", Steps: []Step{{Quorum: 1}}},
 	ObjectMigrationCommit:     {ObjectType: ObjectMigrationCommit, Version: "founder/migration_commit@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
 	ObjectTenantExport:        {ObjectType: ObjectTenantExport, Version: "founder/tenant_export@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
