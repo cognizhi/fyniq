@@ -640,6 +640,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the route presets
+         * @description ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists, with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects.
+         */
+        get: operations["getAIPresets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/price-catalogues": {
         parameters: {
             query?: never;
@@ -14856,6 +14876,53 @@ export interface components {
             detail?: string;
             /** @example true */
             ok: boolean;
+        };
+        AIPreset: {
+            agents: components["schemas"]["AIPresetAgent"][];
+            /** @example Claude on Agent Platform in Singapore (asia-southeast1) for every agent. */
+            description: string;
+            /**
+             * @example A
+             * @enum {string}
+             */
+            id: "A" | "B" | "C";
+            /** @example Singapore only */
+            name: string;
+            /** @description Where its steps go, in order; none for C, which takes A's or B's by the agent's classes. */
+            targets: components["schemas"]["AIPresetTarget"][];
+        };
+        AIPresetAgent: {
+            /** @example chat */
+            agent: string;
+            notes: string[];
+            /** @description The route, as setAIRoute takes it. */
+            route?: components["schemas"]["AIRouteSet"];
+            /**
+             * @description Why the preset gives the agent no route it could set now.
+             * @example no connection that is on has an allowed model of the lines preset A pins
+             */
+            why?: string;
+        };
+        AIPresetList: {
+            presets: components["schemas"]["AIPreset"][];
+        };
+        AIPresetTarget: {
+            /** @example workload-identity */
+            auth: string;
+            /**
+             * @description The prefix it pins for high-volume classification.
+             * @example claude-sonnet-
+             */
+            classification_line: string;
+            /** @example anthropic */
+            connector: string;
+            /** @example asia-southeast1 */
+            location: string;
+            /**
+             * @description The prefix of the model IDs it pins for most agents.
+             * @example claude-opus-
+             */
+            main_line: string;
         };
         AIPrice: {
             /**
@@ -50436,6 +50503,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPresetList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

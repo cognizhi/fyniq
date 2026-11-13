@@ -60,7 +60,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 5. Routes, the router, budgets and qualification
 
-- [ ] 5.1 `ai_agent` and `ai_route` versions with ordered steps; presets A, B and C pinning the newest active,
+- [x] 5.1 `ai_agent` and `ai_route` versions with ordered steps; presets A, B and C pinning the newest active,
   qualified model of a line from the discovered list; the approval object `ai_route` for a route that widens where
   data goes. The API's `/v1/ai/routes` and `/v1/ai/presets`. Tests `// req: AI-74`, `// req: AI-26`.
 - [ ] 5.2 The router (`internal/ai`): admission, the union of classes checked before each call and fallback, failover
