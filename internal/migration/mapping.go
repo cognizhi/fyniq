@@ -60,12 +60,16 @@ type Mapping struct {
 	Natures []NatureMap `json:"natures"`
 }
 
-// NatureMap is a non-resident supplier of the Contacts sheet and the nature of payment its bills record.
+// NatureMap is a non-resident supplier of the Contacts sheet, the nature of payment its bills record, and the tax
+// agent's decision on withholding for it, which its bills post with (FR-AP-19): the Accountant enters each.
 type NatureMap struct {
-	Contact string `json:"contact"`
-	Row     int    `json:"row"`
-	Country string `json:"country"`
-	Nature  string `json:"nature"`
+	Contact     string `json:"contact"`
+	Row         int    `json:"row"`
+	Country     string `json:"country"`
+	Nature      string `json:"nature"`
+	Outcome     string `json:"outcome"`
+	RatePercent string `json:"rate_percent,omitempty"`
+	TaxAgent    string `json:"tax_agent"`
 }
 
 // PersonMap is a person the workbook names and the contact they become: a director, a shareholder, or both.
@@ -408,16 +412,18 @@ func (w *Workbook) Propose(t Target, previous *Mapping) Mapping {
 		m.BankRules = append(m.BankRules, e)
 	}
 	m.People = w.people(m, previous.People)
-	natures := map[string]string{}
+	natures := map[string]NatureMap{}
 	for _, n := range previous.Natures {
-		natures[n.Contact] = n.Nature
+		natures[n.Contact] = n
 	}
 	for _, c := range w.Contacts {
 		role := strings.ToLower(c.Role)
 		country := countryOf(c.Country)
 		if (strings.Contains(role, "supplier") || strings.Contains(role, "vendor") || strings.Contains(role, "both")) && country != "" && country != "SG" {
 			name := strings.TrimSpace(c.Name)
-			m.Natures = append(m.Natures, NatureMap{Contact: name, Row: c.Row, Country: country, Nature: natures[name]})
+			p := natures[name]
+			m.Natures = append(m.Natures, NatureMap{Contact: name, Row: c.Row, Country: country, Nature: p.Nature, Outcome: p.Outcome,
+				RatePercent: p.RatePercent, TaxAgent: p.TaxAgent})
 		}
 	}
 	return m
@@ -622,9 +628,13 @@ func (m Mapping) Check(t Target) []Problem {
 		}
 	}
 	for _, n := range m.Natures {
-		if !slices.Contains(billdoc.Natures, n.Nature) {
+		switch {
+		case !slices.Contains(billdoc.Natures, n.Nature):
 			add("Contacts", n.Row, "Country", fmt.Sprintf("%s is resident for tax in %s, and its bills name no nature of payment", n.Contact, n.Country),
 				"Choose the nature of payment its bills are for, such as services performed outside Singapore, for the tax agent's withholding decision (FR-AP-19)")
+		case !slices.Contains(billdoc.Outcomes, n.Outcome) || strings.TrimSpace(n.TaxAgent) == "" || (n.Outcome == billdoc.OutcomeNotApplicable) != (n.RatePercent == ""):
+			add("Contacts", n.Row, "Country", fmt.Sprintf("%s's bills name no tax agent's decision on withholding", n.Contact),
+				"Enter the tax agent's decision: not applicable, or withhold at the rate they advised, with their name (FR-AP-19)")
 		}
 	}
 	for _, r := range m.BankRules {
@@ -714,7 +724,8 @@ func (m Mapping) Apply(c Change) (Mapping, []Problem) {
 			missing("supplier", n.Contact)
 			continue
 		}
-		next.Natures[i].Nature = n.Nature
+		next.Natures[i].Nature, next.Natures[i].Outcome, next.Natures[i].RatePercent, next.Natures[i].TaxAgent = n.Nature, n.Outcome, n.RatePercent,
+			strings.TrimSpace(n.TaxAgent)
 	}
 	for _, p := range c.People {
 		i := slices.IndexFunc(next.People, func(x PersonMap) bool { return x.Workbook == p.Workbook })

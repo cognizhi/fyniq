@@ -36,6 +36,26 @@
       ],
       "type": "string"
     },
+    "outcome": {
+      "description": "The tax agent's decision its bills post with: not_applicable, or withhold at the rate they advised (treaty: a reduced treaty rate); empty until entered, which stops the sign-off.",
+      "enum": [
+        "",
+        "not_applicable",
+        "withhold",
+        "treaty"
+      ],
+      "examples": [
+        "not_applicable"
+      ],
+      "type": "string"
+    },
+    "rate_percent": {
+      "description": "The rate withheld, a percentage: only when tax is withheld.",
+      "examples": [
+        "17"
+      ],
+      "type": "string"
+    },
     "row": {
       "description": "Its row on the Contacts sheet; ignored in a change.",
       "examples": [
@@ -43,11 +63,21 @@
       ],
       "format": "int64",
       "type": "integer"
+    },
+    "tax_agent": {
+      "description": "The tax agent who decided.",
+      "examples": [
+        "Tally \u0026 Co Accounting"
+      ],
+      "maxLength": 200,
+      "type": "string"
     }
   },
   "required": [
     "contact",
-    "nature"
+    "nature",
+    "outcome",
+    "tax_agent"
   ],
   "title": "MigrationNatureMap",
   "type": "object"

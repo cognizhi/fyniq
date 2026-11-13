@@ -61,8 +61,9 @@ func TestTheSampleMapsOntoANewOrganisation(t *testing.T) {
 		!strings.Contains(problemsSay(ps), "NeuralAPI Labs is resident for tax in US") {
 		t.Fatalf("the sample's mapping:\n%s", problemsSay(ps))
 	}
-	m, _ = m.Apply(Change{Natures: []NatureMap{{Contact: "CloudNimbus Hosting", Nature: "services_outside_singapore"},
-		{Contact: "NeuralAPI Labs", Nature: "services_outside_singapore"}}})
+	m, _ = m.Apply(Change{Natures: []NatureMap{
+		{Contact: "CloudNimbus Hosting", Nature: "services_outside_singapore", Outcome: "not_applicable", TaxAgent: "Tally & Co Accounting"},
+		{Contact: "NeuralAPI Labs", Nature: "services_outside_singapore", Outcome: "not_applicable", TaxAgent: "Tally & Co Accounting"}}})
 	if ps := m.Check(tg); len(ps) != 0 {
 		t.Fatalf("the sample's mapping with its natures:\n%s", problemsSay(ps))
 	}

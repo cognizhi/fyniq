@@ -155,6 +155,17 @@ See proposal.md for why. What exists today and shapes the approach:
   - The mapping (M2) gains the people behind the director's and subscriber's accounts and each non-resident supplier's
     nature of payment, which the Accountant chooses: the sample's two US suppliers are the mapping's two errors until
     then.
+- (As built, slice 6; rev 0.260) The Transactions sheet: a statement of each money account the rows move, the
+  workbook as its file, each row a line referenced `WB-<row>` (so no two rows are taken for duplicates, and a row finds
+  its line), and a transfer's other side, which the workbook keeps on the same row, a line referenced `WB-<row>-to` or
+  `-from`. Each row is then, in date order with the documents: the receipt of the invoice it names (MatchInvoices),
+  the payment of the bill it names (MatchBills), a transfer (RecordTransfer), or its line categorised. A document in
+  another currency than the line's, as the USD invoices paid into the wallet kept in SGD, is settled in full at the
+  workbook's own total, its realised difference to 7030 (ENG-41). The set-up adds a money account in Banking for each
+  of the workbook's (its kind from its name), and the mapping holds the tax agent's withholding decision for each
+  non-resident supplier, which its bills post with (FR-AP-19). Rows to share capital or to a SAFE wait as lines for
+  the Funding sheet's share issue and SAFE (task 4.6). At the sample's as-of, every account the import has built equals
+  the workbook's trial balance.
 - **Clean start**: the Carry Forward sheet's balances as opening balances at the cut-over, and its open invoices and
   bills as opening open items.
 - Both paths:

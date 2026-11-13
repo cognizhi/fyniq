@@ -48,7 +48,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **WHEN** the mapping is proposed
 - **THEN** it names the Funding sheet's founders and everyone named on a director's or subscriber's account, each mapped to a contact marked director or shareholder
 - **AND** each such account with an opening balance names whose balance it is
-- **AND** each supplier resident for tax outside Singapore names the nature of payment its bills record, which the Accountant chooses before signing
+- **AND** each supplier resident for tax outside Singapore names the nature of payment its bills record and the tax agent's decision on withholding, which the Accountant enters before signing
+
+#### Scenario: Transactions as statement lines (rev 0.260)
+- **WHEN** the Transactions sheet is imported
+- **THEN** each row is a line of its money account's statement, and a transfer between two money accounts a line on each side
+- **AND** each line becomes the receipt of the invoice it names, the payment of the bill it names, a transfer, or a categorised bank transaction
 
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.

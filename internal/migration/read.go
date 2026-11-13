@@ -280,7 +280,7 @@ func (w *Workbook) readTransactions(g sheet.Grid, base money.Currency) {
 			Bank: codeOf(t.text(r, "Bank / cash account")), Category: codeOf(t.text(r, "Category")), GST: t.text(r, "GST code (optional)"),
 			Contact: t.text(r, "Customer / supplier"), Ref: t.text(r, "Invoice / bill # (Reference)"), Project: t.text(r, "Project"),
 			Spread: t.number(r, "Spread over months"), Reconciled: t.yes(r, "Reconciled?"), Notes: t.text(r, "Notes / receipt link"),
-			Status: statusOf(t.text(r, "Status"))}
+			Status: statusOf(t.text(r, "Status")), GSTUsed: t.text(r, "GST code used")}
 		if kept(t, r, x.Status) {
 			w.Transactions = append(w.Transactions, x)
 		}

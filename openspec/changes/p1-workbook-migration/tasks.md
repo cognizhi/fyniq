@@ -76,8 +76,8 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   Lines and spreads; bills; quotes and orders; Transactions as receipts, bill payments or categorised bank
   transactions; journals; assets with past depreciation. Test `// req: data/migration History or opening balances
   import (M3)` (history) on the fixture. (Part built in slice 5: the opening balances with the opening items, invoices with Doc Lines,
-  spreads and credit notes, bills and journals, their numbers kept, rev 0.259. Left: quotes and orders, Transactions,
-  assets.)
+  spreads and credit notes, bills and journals, their numbers kept, rev 0.259; slice 6: Transactions as statement
+  lines, receipts, payments, transfers and categorisations, rev 0.260. Left: quotes and orders, assets.)
 - [ ] 4.4 Payroll as one summary journal a month (design D7, rev 0.254), approved under Journals. Test
   `// req: FR-MIG-02` "Imported pay runs keep the amounts paid" on the fixture's months.
 - [ ] 4.5 The clean start from Carry Forward: balances and open items at the cut-over. Test

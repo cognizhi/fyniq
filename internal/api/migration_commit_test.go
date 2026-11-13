@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
@@ -457,4 +458,101 @@ func TestTheHistoryPostsAsTheWorkbookDid(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantStatus(t, e.checked("books.opening-clearing"), "ok")
+}
+
+// trialBalance is the organisation's trial balance through a month, each account's balance with debits positive, as the
+// statement shows it.
+func trialBalance(t *testing.T, e *env, tok, to string) map[string]*apd.Decimal {
+	t.Helper()
+	r := e.call(http.MethodGet, "/v1/reports/statements/tb?from=2026-01&to="+to, tok, nil)
+	var tb struct {
+		Blocks []struct {
+			Key    string
+			Groups []struct {
+				Lines []struct {
+					Code    string
+					Amounts []struct{ Amount string }
+				}
+			}
+		}
+	}
+	if err := json.Unmarshal([]byte(r.Raw), &tb); r.Status != http.StatusOK || err != nil {
+		t.Fatalf("the trial balance: %d %v %s", r.Status, err, r.Raw)
+	}
+	out := map[string]*apd.Decimal{}
+	for _, b := range tb.Blocks {
+		for _, g := range b.Groups {
+			for _, l := range g.Lines {
+				d, _, err := apd.NewFromString(l.Amounts[0].Amount)
+				if err != nil {
+					t.Fatal(err)
+				}
+				out[l.Code] = d
+			}
+		}
+	}
+	return out
+}
+
+// The Transactions sheet brings every account to the workbook's own balance (design D5, D8): at 30 September, the
+// sample's "as of", each account's balance in Fyniq equals the workbook's trial balance to the cent, but those the
+// records not yet built move: payroll's summary journals (task 4.4), the assets' depreciation (task 4.3) and the Funding
+// sheet's share issue and SAFE (task 4.6), whose two Transactions rows of S$700,000 into 1020 wait for them as lines.
+// Each Transactions row is a line of its money account's statement, a transfer's two sides a line each.
+// req: data/migration History or opening balances import (M3)
+// req: FR-MIG-01
+// req: FR-BNK-09
+func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
+	f, id := importedSample(t)
+	e := f.e
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tb := trialBalance(t, e, f.as(f.ahkow, authz.Accountant), "2026-09")
+	waiting := map[string]string{"1020": "-700000.00", "1590": "", "6610": "", "2100": "", "2110": "", "6011": "", "6012": "", "6013": "", "6020": "",
+		"6030": "", "2700": "", "3020": ""}
+	for _, x := range w.TrialBalance {
+		want := x.Closing[8]
+		if want == nil {
+			want = new(apd.Decimal)
+		}
+		got := tb[x.Code]
+		if got == nil {
+			got = new(apd.Decimal)
+		}
+		diff := new(apd.Decimal)
+		if _, err := apd.BaseContext.WithPrecision(40).Sub(diff, got, want); err != nil {
+			t.Fatal(err)
+		}
+		short, ok := waiting[x.Code]
+		switch {
+		case !ok && !diff.IsZero():
+			t.Errorf("account %s %s: %s in Fyniq; the workbook's %s", x.Code, x.Name, got.Text('f'), want.Text('f'))
+		case ok && short != "" && diff.Text('f') != short:
+			t.Errorf("account %s: %s short of the workbook's %s, not %s", x.Code, diff.Text('f'), want.Text('f'), short)
+		}
+	}
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		lines, err := u.Banking().Lines(ctx, storage.BankLineFilter{})
+		if err != nil {
+			return err
+		}
+		transfers, waitingLines := 0, 0
+		for _, l := range lines {
+			switch {
+			case strings.HasSuffix(l.Reference, "-to") || strings.HasSuffix(l.Reference, "-from"):
+				transfers++
+			case l.Status == storage.LineUnreconciled:
+				waitingLines++
+			}
+		}
+		if len(lines) != len(w.Transactions)+transfers || transfers != 23 || waitingLines != 2 {
+			t.Errorf("the lines: %d for %d rows, %d transfers' other sides, %d waiting", len(lines), len(w.Transactions), transfers, waitingLines)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_ = id
 }

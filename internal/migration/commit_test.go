@@ -43,9 +43,17 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 	// The history (design D5): the opening balances after the set-up, the opening items first, then every invoice, credit
 	// note, bill and journal in date order; a clean start has none of it.
 	if kinds[KindOpeningBalances] != 1 || kinds[KindInvoice]+kinds[KindCreditNote] != 25 || kinds[KindCreditNote] != 1 || kinds[KindBill] != 17 ||
-		kinds[KindJournal] != 2 || first[KindOpeningBalances] < first[KindBankRule] || plan[first[KindOpeningBalances]+1].Key != "invoice:INV-0098" ||
-		plan[first[KindOpeningBalances]+2].Key != "bill:tally & co accounting:TAL-2025-112" {
-		t.Errorf("the history: %v, after the opening balances %s and %s", kinds, plan[first[KindOpeningBalances]+1].Key, plan[first[KindOpeningBalances]+2].Key)
+		kinds[KindJournal] != 2 || first[KindOpeningBalances] < first[KindBankRule] || plan[first[KindInvoice]].Key != "invoice:INV-0098" ||
+		plan[first[KindBill]].Key != "bill:tally & co accounting:TAL-2025-112" || first[KindStatement] < first[KindOpeningBalances] ||
+		first[KindInvoice] < first[KindStatement] {
+		t.Errorf("the history: %v, the first invoice %s and bill %s", kinds, plan[first[KindInvoice]].Key, plan[first[KindBill]].Key)
+	}
+	// Transactions (rev 0.259): a statement for each of the 6 money accounts they move, then each row as a receipt,
+	// a payment of a bill, a transfer or a categorised transaction; the 2 rows to share capital or a SAFE wait for the
+	// Funding sheet (task 4.6).
+	if kinds[KindStatement] != 6 || kinds[KindReceipt] != 18 || kinds[KindBillPayment] != 14 || kinds[KindTransfer] != 23 ||
+		kinds[KindReceipt]+kinds[KindBillPayment]+kinds[KindTransfer]+kinds[KindBankTransaction] != len(w.Transactions)-2 || kinds[KindMoneyAccount] != 7 {
+		t.Errorf("the transactions: %v of %d rows", kinds, len(w.Transactions))
 	}
 	clean, _ := w.Plan(m, storage.PathCleanStart)
 	for _, r := range clean {
