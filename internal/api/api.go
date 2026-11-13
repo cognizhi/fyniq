@@ -10,6 +10,7 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -77,6 +78,12 @@ type Deps struct {
 	// Connectors are the release's connectors, their keys' store and runtime (FR-INT-20); a nil catalogue answers that
 	// connectors are not configured.
 	Connectors ConnectorDeps
+	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
+	// and Caddy. The API's own download links start with it.
+	APIBase string
+	// DownloadKey signs the API's own download links (SEC-24), shared by every instance; empty: each instance makes one.
+	// The cloud's evidence stores give signed URLs instead.
+	DownloadKey []byte
 	// Origin is the web app's origin as the browser sees it, such as https://fyniq.example.com: passkeys are registered
 	// and asserted for it and its host (FR-ADM-02). Empty: no passkey ceremony runs.
 	Origin string
@@ -87,6 +94,7 @@ type API struct {
 	huma.API
 	deps         Deps
 	policies     map[string]authz.Policy
+	downloadKey  []byte // signs the API's own download links (SEC-24): Deps.DownloadKey, else one of its own
 	journals     journal.Service
 	bills        journal.Bills
 	invoices     journal.Invoices
@@ -222,12 +230,20 @@ func New(mux humago.Mux, d Deps) *API {
 	if d.Store == nil {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
+	if d.APIBase == "" {
+		d.APIBase = "/api" // where the web app reaches the API on its own origin, in every deployment
+	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
 		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, preCosts: journal.PreCosts{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock, More: checks.ForClose}}
+	a.downloadKey = d.DownloadKey
+	if len(a.downloadKey) == 0 {
+		a.downloadKey = make([]byte, 32)
+		_, _ = rand.Read(a.downloadKey) // one instance's own: the links it signs open on it alone
+	}
 	if d.Outbox != nil { // FR-BNK-12: a batch's supplier payment matched to its statement line sends its remittance advice
 		dispatcher := *d.Outbox
 		a.bank.AfterMatch = func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error {
@@ -377,6 +393,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerOwnerSuccession(a)
 	registerEvidenceSearch(a)
 	registerEvidenceFile(a)
+	registerEvidenceDownloads(a)
 	registerSearch(a)
 	registerContactSummary(a)
 	registerAccountantReviews(a)

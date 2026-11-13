@@ -10,6 +10,7 @@
 # req: SEC-22
 # req: SEC-37
 # req: SEC-23
+# req: SEC-24
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -386,6 +387,16 @@ run "a_secrets_project_is_a_project_id" {
 }
 
 # Every service and job is held to the project's Binary Authorization policy, with no breakglass (SEC-22).
+# The api signs download links as its own account, and no account signs as another (SEC-24).
+run "only_the_api_signs_and_only_as_itself" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = google_service_account_iam_member.api_signs_as_itself.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com" && google_service_account_iam_member.api_signs_as_itself.service_account_id == "projects/fyniq-staging/serviceAccounts/run-api@fyniq-staging.iam.gserviceaccount.com" && google_service_account_iam_member.api_signs_as_itself.role == "roles/iam.serviceAccountTokenCreator"
+    error_message = "the api may sign as itself only"
+  }
+}
+
 # A public service is reached from outside only through the edge's load balancer (SEC-23).
 run "the_public_services_are_behind_the_edge" {
   command = plan

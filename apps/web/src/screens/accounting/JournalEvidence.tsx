@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
@@ -240,26 +240,23 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const q = useQuery({ queryKey: [`${record.kind}-evidence`, record.id], queryFn: () => files(record) });
   const items = q.data ?? [];
   const [shown, setShown] = useState<{ id: string; url: string; name: string } | null>(null);
-  useEffect(() => () => void (shown && URL.revokeObjectURL(shown.url)), [shown]);
 
-  // open fetches a file through the API (rev 0.188): a picture is shown below the list, any other file saved.
+  // open asks for a link to the file that works for 5 minutes and serves it as an attachment (SEC-24): a picture is
+  // shown below the list from it, any other file saved through it.
   const open = async (e: Evidence) => {
     setBusy(true);
     setProblem(null);
-    const out = await api.GET("/v1/evidence/{evidence_id}/file", { params: { path: { evidence_id: e.id } } });
+    const out = await api.POST("/v1/evidence/{evidence_id}/download", { params: { path: { evidence_id: e.id } } });
     setBusy(false);
     if (!out.data) {
       setFailed("The file could not be opened");
       return setProblem(problemOf(out.error));
     }
-    const bytes = Uint8Array.from(atob(out.data.content_base64), (c) => c.charCodeAt(0));
-    const url = URL.createObjectURL(new Blob([bytes], { type: out.data.media_type }));
-    if (pictures.includes(out.data.media_type)) return setShown({ id: e.id, url, name: e.file_name });
+    if (pictures.includes(out.data.media_type)) return setShown({ id: e.id, url: out.data.url, name: e.file_name });
     const link = document.createElement("a");
-    link.href = url;
+    link.href = out.data.url;
     link.download = safeName(out.data.file_name, e.id);
     link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 

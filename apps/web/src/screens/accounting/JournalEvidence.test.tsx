@@ -58,10 +58,14 @@ const at = { path: "/accounting/journals/j1", route: "/accounting/journals/$jour
 
 // req: FR-DOC-05
 // req: FR-DOC-07
+// link is a download link to a file, as createEvidenceDownload answers (SEC-24).
+const link = (id: string, fileName: string, mediaType: string) => ({
+  url: `/api/v1/evidence-downloads/${id}.signed`, expires_at: "2026-10-15T09:05:00Z", file_name: fileName, media_type: mediaType, sha256: "a".repeat(64),
+});
+
 describe("a journal's evidence", () => {
   // req: FR-DOC-01
   it("shows a picture below the list and saves any other file under a safe name; a removed file has neither", async () => {
-    const png = btoa("\x89PNG fake picture");
     answer({
       "GET /v1/accounts": accounts,
       "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
@@ -69,24 +73,21 @@ describe("a journal's evidence", () => {
         status: 200,
         body: { items: [file({ id: "ev1", file_name: "receipt.png", media_type: "image/png" }), file({ id: "ev2" }), file({ id: "ev3", file_name: "gone.pdf", state: "removed" })] },
       },
-      "GET /v1/evidence/ev1/file": { status: 200, body: { id: "ev1", file_name: "receipt.png", media_type: "image/png", size_bytes: 18, sha256: "a".repeat(64), content_base64: png } },
-      "GET /v1/evidence/ev2/file": { status: 200, body: { id: "ev2", file_name: "../rent: accrual?.xlsx", media_type: file().media_type, size_bytes: 4, sha256: "a".repeat(64), content_base64: btoa("PK..") } },
+      "POST /v1/evidence/ev1/download": { status: 200, body: link("ev1", "receipt.png", "image/png") },
+      "POST /v1/evidence/ev2/download": { status: 200, body: link("ev2", "../rent: accrual?.xlsx", file().media_type) },
     });
-    const made = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fyniq/picture");
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
-    const saved: string[] = [];
+    const saved: { name: string; href: string }[] = [];
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
-      saved.push(this.download);
+      saved.push({ name: this.download, href: this.getAttribute("href") ?? "" });
     });
     renderPage(page(auditor), at);
     fireEvent.click(await screen.findByRole("button", { name: "Show receipt.png" }));
     const picture = await screen.findByRole("img", { name: "receipt.png, as attached" });
-    expect(picture.getAttribute("src")).toBe("blob:fyniq/picture");
+    expect(picture.getAttribute("src")).toBe("/api/v1/evidence-downloads/ev1.signed");
     fireEvent.click(screen.getByRole("button", { name: "Save rent-accrual.xlsx" }));
-    await vi.waitFor(() => expect(saved).toEqual(["rent_ accrual_.xlsx"]));
-    expect(made).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(saved).toEqual([{ name: "rent_ accrual_.xlsx", href: "/api/v1/evidence-downloads/ev2.signed" }]));
     expect(screen.queryByRole("button", { name: /gone\.pdf/ })).toBeNull();
-    expect(seen.filter((x) => x.path.endsWith("/file")).map((x) => x.path)).toEqual(["/v1/evidence/ev1/file", "/v1/evidence/ev2/file"]);
+    expect(seen.filter((x) => x.path.endsWith("/download")).map((x) => `${x.method} ${x.path}`)).toEqual(["POST /v1/evidence/ev1/download", "POST /v1/evidence/ev2/download"]);
     await noViolations(document.body);
     vi.restoreAllMocks();
   });

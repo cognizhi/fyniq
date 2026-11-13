@@ -35,3 +35,12 @@ resource "google_privileged_access_manager_entitlement" "break_glass" {
   }
   depends_on = [google_project_service.apis]
 }
+
+# The api signs evidence download links as its own account, through the IAM Credentials API's signBlob (SEC-24): it may
+# sign as itself, and no account may sign as another.
+resource "google_service_account_iam_member" "api_signs_as_itself" {
+  service_account_id = "projects/${var.project}/serviceAccounts/${local.email["api"]}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${local.email["api"]}"
+  depends_on         = [google_service_account.all]
+}

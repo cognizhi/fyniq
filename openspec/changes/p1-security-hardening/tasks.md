@@ -57,7 +57,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 7. Signed downloads and ClamAV (slice 7)
 
-- [ ] 7.1 `createEvidenceDownload` (D5): a 5-minute link, a V4 signed URL in the cloud and an HMAC path locally,
+- [x] 7.1 `createEvidenceDownload` (D5): a 5-minute link, a V4 signed URL in the cloud and an HMAC path locally,
   served as an attachment with its content type. Audited where the file is sensitive. `getEvidenceFile` is deprecated
   with its Sunset. The web app moves to the link. `// req: SEC-24`
 - [ ] 7.2 ClamAV as an internal Cloud Run service in `infra/`, with a module test `[live-verify]`. `// req: SEC-24`

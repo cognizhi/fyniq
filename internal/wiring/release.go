@@ -109,8 +109,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	kit.Fields = fields
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
-		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, google)
-		kit.Evidence = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, google)
+		// Their files are saved through signed URLs, signed as the service's own account (SEC-24; the api may).
+		sign := gcp.IAMSigner(tokens, google)
+		staging, locked := gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, google), gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, google)
+		staging.Sign, locked.Sign = sign, sign
+		kit.Staging, kit.Evidence = staging, locked
 	}
 	if strings.HasPrefix(c.Render.URL, "https://") && c.Render.Audience != "" { // as the service's own account
 		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil),

@@ -57,3 +57,19 @@ type ScanResult struct {
 	Clean     bool
 	Signature string // what was found, when not clean, such as "Eicar-Test-Signature"
 }
+
+// Download is how a file is saved through a download link (SEC-24): the name and type it is saved with, and how long the
+// link lives.
+type Download struct {
+	FileName  string
+	MediaType string
+	TTL       time.Duration
+}
+
+// DownloadLinker is a file store that gives short-lived links to its blobs, served with download headers (SEC-24): the
+// cloud's signed URLs. A store without it is opened through the API's own signed path.
+type DownloadLinker interface {
+	// DownloadURL is a link to the blob at key that works for d.TTL from at, served as an attachment named d.FileName of
+	// type d.MediaType.
+	DownloadURL(ctx context.Context, key string, d Download, at time.Time) (string, error)
+}

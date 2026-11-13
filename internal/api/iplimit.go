@@ -47,7 +47,7 @@ func IPKindOf(r *http.Request) string {
 	switch {
 	case strings.HasPrefix(p, "/auth/"), p == "/v1/sign-in-providers":
 		return storage.IPSignIn
-	case strings.HasPrefix(p, "/v1/public/"):
+	case strings.HasPrefix(p, "/v1/public/"), strings.HasPrefix(p, "/v1/evidence-downloads/"):
 		return storage.IPPublic
 	case p == "/v1/setup":
 		return storage.IPSetup

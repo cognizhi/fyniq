@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "When the link stops working: 5 minutes after it was made.",
+      "examples": [
+        "2026-11-10T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "As the uploader named it: data, never a path (FR-DOC-08).",
+      "examples": [
+        "AU-100.pdf"
+      ],
+      "type": "string"
+    },
+    "media_type": {
+      "description": "Its type, decided from its content when it was attached.",
+      "examples": [
+        "application/pdf"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the file as stored, in hexadecimal, to check what was saved.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "Open it within expires_at: the file is served as an attachment named file_name, of type media_type. A path starting /api/ is on the web app's own origin.",
+      "examples": [
+        "https://storage.googleapis.com/fyniq-prod-evidence/01928f6e/AU-100.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256\u0026X-Goog-Expires=300\u0026X-Goog-Signature=ab12"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "expires_at",
+    "file_name",
+    "media_type",
+    "sha256"
+  ],
+  "title": "EvidenceDownload",
+  "type": "object"
+}

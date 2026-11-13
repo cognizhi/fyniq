@@ -31,10 +31,15 @@ type Storage struct {
 	// Clock decides whether an object's retain-until has passed, for the adapter's own check; nil reads the
 	// wall clock. Cloud Storage judges by its own clock.
 	Clock ports.Clock
-	r     rest
+	// Sign signs download links as the service's own account (IAMSigner); nil: the store gives none (SEC-24).
+	Sign SignBlob
+	r    rest
 }
 
-var _ ports.BlobStore = (*Storage)(nil)
+var (
+	_ ports.BlobStore      = (*Storage)(nil)
+	_ ports.DownloadLinker = (*Storage)(nil)
+)
 
 // NewStorage returns the adapter; tokens is nil for the emulator.
 func NewStorage(endpoint, bucket string, tokens oauth2.TokenSource, client *http.Client) *Storage {
