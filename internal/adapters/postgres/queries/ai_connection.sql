@@ -45,14 +45,14 @@ SELECT * FROM fyniq.ai_model WHERE connection_id = sqlc.arg(connection_id) ORDER
 
 -- name: UpsertAIModel :exec
 INSERT INTO fyniq.ai_model (connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports,
-  first_listed_at, last_listed_at, listed, not_callable_at, allowed)
+  first_listed_at, last_listed_at, listed, not_callable_at, allowed, listed_price)
 VALUES (sqlc.arg(connection_id), sqlc.arg(model), sqlc.narg(name), sqlc.narg(alias_of), sqlc.narg(provider_created), sqlc.narg(shutdown_at),
   sqlc.narg(context_window), sqlc.narg(max_output), sqlc.arg(reports)::text[], sqlc.arg(first_listed_at), sqlc.arg(last_listed_at), sqlc.arg(listed),
-  sqlc.narg(not_callable_at), sqlc.arg(allowed))
+  sqlc.narg(not_callable_at), sqlc.arg(allowed), sqlc.narg(listed_price))
 ON CONFLICT (organisation_id, connection_id, model) DO UPDATE SET name = EXCLUDED.name, alias_of = EXCLUDED.alias_of,
   provider_created = EXCLUDED.provider_created, shutdown_at = EXCLUDED.shutdown_at, context_window = EXCLUDED.context_window,
   max_output = EXCLUDED.max_output, reports = EXCLUDED.reports, last_listed_at = EXCLUDED.last_listed_at, listed = EXCLUDED.listed,
-  not_callable_at = EXCLUDED.not_callable_at, allowed = fyniq.ai_model.allowed AND EXCLUDED.allowed;
+  not_callable_at = EXCLUDED.not_callable_at, allowed = fyniq.ai_model.allowed AND EXCLUDED.allowed, listed_price = EXCLUDED.listed_price;
 
 -- name: InsertAIModelListRead :one
 INSERT INTO fyniq.ai_model_list_read (connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at)

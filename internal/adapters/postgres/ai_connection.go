@@ -238,7 +238,7 @@ type aiModels struct{ u *unitOfWork }
 func toAIModel(r sqlcdb.FyniqAiModel) storage.AIModel {
 	m := storage.AIModel{ConnectionID: r.ConnectionID, Model: r.Model, Created: r.ProviderCreated, Shutdown: r.ShutdownAt, Reports: r.Reports,
 		FirstListed: r.FirstListedAt, LastListed: r.LastListedAt, Listed: r.Listed, NotCallableAt: r.NotCallableAt, Allowed: r.Allowed,
-		ProbedAt: r.ProbedAt, PriceCheckedAt: r.PriceCheckedAt}
+		ProbedAt: r.ProbedAt, PriceCheckedAt: r.PriceCheckedAt, ListedPrice: r.ListedPrice}
 	if r.Unpriced != nil {
 		m.Unpriced = *r.Unpriced
 	}
@@ -307,7 +307,7 @@ func (r aiModels) Record(ctx context.Context, read storage.AIModelListRead, mode
 		if err := r.u.q.UpsertAIModel(ctx, sqlcdb.UpsertAIModelParams{ConnectionID: read.ConnectionID, Model: m.Model, Name: optional(m.Name),
 			AliasOf: optional(m.AliasOf), ProviderCreated: m.Created, ShutdownAt: m.Shutdown, ContextWindow: positive(m.ContextWindow),
 			MaxOutput: positive(m.MaxOutput), Reports: reports, FirstListedAt: m.FirstListed, LastListedAt: m.LastListed, Listed: m.Listed,
-			NotCallableAt: m.NotCallableAt, Allowed: m.Allowed}); err != nil {
+			NotCallableAt: m.NotCallableAt, Allowed: m.Allowed, ListedPrice: m.ListedPrice}); err != nil {
 			return storage.AIModelListRead{}, mapError(err)
 		}
 	}

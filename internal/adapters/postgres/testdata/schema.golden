@@ -146,6 +146,7 @@ ai_model | probe_ok | boolean | null |
 ai_model | probe_detail | text | null | 
 ai_model | price_checked_at | timestamp with time zone | null | 
 ai_model | unpriced | text | null | 
+ai_model | listed_price | jsonb | null | 
 ai_model_list_read | organisation_id | uuid | not null | current_org()
 ai_model_list_read | id | uuid | not null | uuidv7()
 ai_model_list_read | connection_id | uuid | not null | 
@@ -2344,6 +2345,7 @@ ai_model | ai_model_last_listed_at_not_null | NOT NULL last_listed_at
 ai_model | ai_model_limits | CHECK (((context_window > 0) AND (max_output > 0)))
 ai_model | ai_model_listed_not_null | NOT NULL listed
 ai_model | ai_model_listed_order | CHECK ((last_listed_at >= first_listed_at))
+ai_model | ai_model_listed_price_object | CHECK (((jsonb_typeof(listed_price) = 'object'::text) AND (length((listed_price)::text) <= 4000)))
 ai_model | ai_model_model_not_null | NOT NULL model
 ai_model | ai_model_name_length | CHECK ((length(name) <= 300))
 ai_model | ai_model_one | UNIQUE (organisation_id, connection_id, model)

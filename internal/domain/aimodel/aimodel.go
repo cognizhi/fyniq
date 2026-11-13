@@ -67,7 +67,8 @@ type Model struct {
 	LastListed    time.Time
 	Listed        bool // listed by the last complete read
 	NotCallableAt *time.Time
-	Allowed       bool // on the connection's allow-list (AI-72)
+	Allowed       bool               // on the connection's allow-list (AI-72)
+	ListedPrice   *ports.ListedPrice // the price the provider's list gave when it last listed it (AI-82 (a))
 }
 
 // State is the state m shows at now (AI-81).
@@ -139,7 +140,7 @@ func Merge(kept []Model, listed []ports.ListedModel, outcome string, now time.Ti
 		m := &out[i]
 		m.Name, m.AliasOf, m.Created, m.Shutdown, m.ContextWindow, m.MaxOutput = l.Name, l.AliasOf, l.Created, l.Shutdown, l.ContextWindow, l.MaxOutput
 		m.Reports = append([]string{}, l.Reports...)
-		m.LastListed, m.Listed, m.NotCallableAt = now, true, nil
+		m.LastListed, m.Listed, m.NotCallableAt, m.ListedPrice = now, true, nil, l.Price
 	}
 	if outcome == Complete {
 		for i := range out {
