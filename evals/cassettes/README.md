@@ -7,6 +7,8 @@ recorded model list.
 
 - **Replay** (the default) answers a request from its cassette; a request with none fails, naming its key.
 - **Live** (`FYNIQ_AI_LIVE=1`) calls a provider with a developer's key, on the synthetic sample company only (DEV-08),
-  and records each answer here. CI never calls a provider.
+  and records each answer here. CI never calls a provider. With `FYNIQ_AI_AGENT=claude` or `codex` it runs the
+  developer's own command-line agent instead (DEV-09, local build only), which serves text only: a request with tools,
+  a strict schema, images or PDFs needs a key.
 
 Never record anything from real organisation data.
