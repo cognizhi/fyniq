@@ -72,6 +72,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listHeartbeatDrills cursor")                                                                           // NFR-OBS-02
 	want = append(want, "createEvidenceDownload Idempotency-Key", "createEvidenceDownload Prefer")                              // SEC-24: a link, no record
 	want = append(want, "createTenantExportDownload Idempotency-Key", "createTenantExportDownload Prefer")                      // FR-MIG-04: a link, no record
+	want = append(want, "refreshAIConnectionModels Idempotency-Key", "refreshAIConnectionModels Prefer")                        // AI-80: a read of the provider's list
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

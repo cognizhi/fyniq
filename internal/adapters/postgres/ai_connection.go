@@ -226,3 +226,110 @@ func (r aiDataPolicies) Save(ctx context.Context, p storage.AIDataPolicy) (stora
 	return out, r.u.event(ctx, "ai_data_policy.changed", "ai_data_policy", out.ID, &out.Version, map[string][2]any{
 		"policy": {string(latest.Policy), string(out.Policy)}})
 }
+
+func (u *unitOfWork) AIModels() storage.AIModels { return aiModels{u} }
+
+type aiModels struct{ u *unitOfWork }
+
+func toAIModel(r sqlcdb.FyniqAiModel) storage.AIModel {
+	m := storage.AIModel{ConnectionID: r.ConnectionID, Model: r.Model, Created: r.ProviderCreated, Shutdown: r.ShutdownAt, Reports: r.Reports,
+		FirstListed: r.FirstListedAt, LastListed: r.LastListedAt, Listed: r.Listed, NotCallableAt: r.NotCallableAt}
+	if r.Name != nil {
+		m.Name = *r.Name
+	}
+	if r.AliasOf != nil {
+		m.AliasOf = *r.AliasOf
+	}
+	if r.ContextWindow != nil {
+		m.ContextWindow = int(*r.ContextWindow)
+	}
+	if r.MaxOutput != nil {
+		m.MaxOutput = int(*r.MaxOutput)
+	}
+	return m
+}
+
+func toAIModelListRead(r sqlcdb.FyniqAiModelListRead) storage.AIModelListRead {
+	out := storage.AIModelListRead{ID: r.ID, ConnectionID: r.ConnectionID, Trigger: r.Trigger, Outcome: r.Outcome, Pages: int(r.Pages),
+		Added: int(r.Added), Removed: int(r.Removed), ReadBy: r.ReadBy, ReadAt: r.ReadAt}
+	if r.Failure != nil {
+		out.Failure = *r.Failure
+	}
+	return out
+}
+
+func positive(n int) *int32 {
+	if n <= 0 {
+		return nil
+	}
+	v := int32(min(n, 1<<30)) // #nosec G115 -- capped
+	return &v
+}
+
+func (r aiModels) Of(ctx context.Context, connection uuid.UUID) ([]storage.AIModel, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIModelsOf(ctx, connection)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIModel, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toAIModel(row))
+	}
+	return out, nil
+}
+
+func (r aiModels) Record(ctx context.Context, read storage.AIModelListRead, models []storage.AIModel) (storage.AIModelListRead, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIModelListRead{}, err
+	}
+	for _, m := range models {
+		reports := m.Reports
+		if reports == nil {
+			reports = []string{}
+		}
+		if err := r.u.q.UpsertAIModel(ctx, sqlcdb.UpsertAIModelParams{ConnectionID: read.ConnectionID, Model: m.Model, Name: optional(m.Name),
+			AliasOf: optional(m.AliasOf), ProviderCreated: m.Created, ShutdownAt: m.Shutdown, ContextWindow: positive(m.ContextWindow),
+			MaxOutput: positive(m.MaxOutput), Reports: reports, FirstListedAt: m.FirstListed, LastListedAt: m.LastListed, Listed: m.Listed,
+			NotCallableAt: m.NotCallableAt}); err != nil {
+			return storage.AIModelListRead{}, mapError(err)
+		}
+	}
+	row, err := r.u.q.InsertAIModelListRead(ctx, sqlcdb.InsertAIModelListReadParams{ConnectionID: read.ConnectionID, Trigger: read.Trigger,
+		Outcome: read.Outcome, Pages: int32(min(read.Pages, 1<<30)), Added: int32(min(read.Added, 1<<30)), Removed: int32(min(read.Removed, 1<<30)), // #nosec G115 -- capped
+		Failure: optional(read.Failure), ReadBy: read.ReadBy, ReadAt: read.ReadAt})
+	if err != nil {
+		return storage.AIModelListRead{}, mapError(err)
+	}
+	out := toAIModelListRead(row)
+	return out, r.u.event(ctx, "ai_model.listed", "ai_connection", read.ConnectionID, nil, map[string][2]any{"read": {nil, map[string]any{
+		"trigger": out.Trigger, "outcome": out.Outcome, "pages": out.Pages, "added": out.Added, "removed": out.Removed, "failure": out.Failure}}})
+}
+
+func (r aiModels) Reads(ctx context.Context, connection uuid.UUID, limit int) ([]storage.AIModelListRead, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIModelListReads(ctx, sqlcdb.AIModelListReadsParams{ConnectionID: connection, PageSize: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIModelListRead, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toAIModelListRead(row))
+	}
+	return out, nil
+}
+
+func (r aiModels) LastComplete(ctx context.Context, connection uuid.UUID) (storage.AIModelListRead, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIModelListRead{}, err
+	}
+	row, err := r.u.q.LastCompleteAIModelListRead(ctx, connection)
+	if err != nil {
+		return storage.AIModelListRead{}, mapError(err)
+	}
+	return toAIModelListRead(row), nil
+}

@@ -211,6 +211,7 @@ var fyCodes = map[string]string{
 	"FY329": storage.CodeMigration,       // an archive copy before the parallel month's sign-off, of another file, or changed (000338)
 	"FY330": storage.CodeAIConnection,    // an AI connection removed, switched on at creation, a version skipped or unrecorded, or rewritten (000343)
 	"FY331": storage.CodeAIConnection,    // a data-class policy version out of order, changed or removed (000345)
+	"FY332": storage.CodeAIConnection,    // a listed model removed or moved, or a model list's read changed (000347)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

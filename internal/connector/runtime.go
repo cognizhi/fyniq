@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -31,6 +33,9 @@ type Runtime struct {
 	Egress       *egress.Guard
 	SenderDomain string
 	Clock        ports.Clock
+	// Tokens are the service's own account's, for an AI connection that authenticates with workload identity (AI-72);
+	// nil where the runtime has none, such as local mode.
+	Tokens oauth2.TokenSource
 
 	mu     sync.Mutex
 	guards map[uuid.UUID]*guard
@@ -243,6 +248,11 @@ func (r *Runtime) Endpoints(ctx context.Context, u storage.UnitOfWork, c storage
 	if err != nil {
 		return nil, err
 	}
+	return endpointsOf(all), nil
+}
+
+// endpointsOf are registered private endpoints as the egress guard reaches them: over TLS with their pinned keys.
+func endpointsOf(all []storage.PrivateEndpoint) []egress.Endpoint {
 	out := make([]egress.Endpoint, 0, len(all))
 	for _, e := range all {
 		pin, err := egress.ParsePin(e.Pin)
@@ -251,7 +261,47 @@ func (r *Runtime) Endpoints(ctx context.Context, u storage.UnitOfWork, c storage
 		}
 		out = append(out, egress.Endpoint{Prefix: e.Address.Masked(), Port: e.Port, Pin: pin})
 	}
-	return out, nil
+	return out
+}
+
+// Model is an AI connection's model provider (AI-70, AI-79): its connector's binding built with the connection's
+// configuration and credential, read through the cache by its pinned reference, its traffic through the egress guard to
+// the connection's one host only, and a self-hosted server's only to the private endpoints registered for it (SEC-36,
+// SEC-37). Read in the work's unit of work, never cached.
+func (r *Runtime) Model(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error) {
+	b, ok := r.Catalogue.Get(c.Connector)
+	if !ok || b.Model == nil {
+		return nil, fmt.Errorf("%s is not a model provider of this release", c.Connector)
+	}
+	values := map[string]any{}
+	if err := json.Unmarshal(c.Configuration, &values); err != nil {
+		return nil, fmt.Errorf("the connection's configuration cannot be read: %w", err)
+	}
+	secrets := map[string]string{}
+	if c.CredentialRef != "" {
+		v, err := r.Secrets.Get(ctx, ports.SecretRef(c.CredentialRef))
+		if err != nil {
+			return nil, fmt.Errorf("its API key cannot be read: %w", err)
+		}
+		secrets["api_key"] = v
+	}
+	g := r.Egress
+	if c.SelfHosted {
+		all, err := u.PrivateEndpoints().For(ctx, storage.PrivateEndpointAIModel, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		eps := endpointsOf(all)
+		if len(eps) == 0 {
+			return nil, fmt.Errorf("the self-hosted server has no private endpoint registered for this connection (SEC-37)")
+		}
+		g = g.With(eps...)
+	}
+	host := strings.ToLower(c.Host)
+	allow := func(h string, port int) bool {
+		return strings.ToLower(strings.TrimSuffix(h, ".")) == host && (port == 443 || c.SelfHosted)
+	}
+	return b.Model(Config{Values: values, Secrets: secrets, HTTP: g.Client(allow), Clock: r.Clock, Tokens: r.Tokens})
 }
 
 // config is what connector c's binding builds from: its configuration, its current secrets, and clients bound to its

@@ -14636,12 +14636,12 @@ Asks to connect one of the release's model providers (AI-71, AI-72): from one of
   - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
-  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `AI-MODEL-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/ai/connections/{connection_id}`
 
@@ -14683,14 +14683,14 @@ Asks to replace a connection's name, preset, authentication, configuration and b
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `AI-MODEL-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `PUT /v1/ai/connections/{connection_id}/credential`
 
@@ -14711,14 +14711,14 @@ Stores the new API key in the secret store at once, as a new version never shown
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `AI-MODEL-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `POST /v1/ai/connections/{connection_id}/disable`
 
@@ -14764,14 +14764,56 @@ Asks to switch a connection on (AI-72): an API-key connection needs its credenti
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `AI-DATA-01` The connection's data handling is not complete or evidenced; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `AI-DATA-01`, `AI-MODEL-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/ai/connections/{connection_id}/models`
+
+**List the models an AI connection's provider lists** (`getAIConnectionModels`)
+
+Every model the connection's provider has listed (AI-80), with its state (AI-81), what the list reports of it as hints, and the latest reads of the list with their outcomes (AI-84). Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Responses:**
+  - `200` OK [`AIModelList`](../../contracts/schemas/AIModelList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/connections/{connection_id}/models/refresh`
+
+**Read an AI connection's model list from its provider now** (`refreshAIConnectionModels`)
+
+Refresh from provider (AI-80): reads the connection's list now with its credential, page by page to the cap, sending no company data, and answers the list as getAIConnectionModels does. A complete read marks the models it does not list no longer listed; a partial or failed one keeps the last complete list (AI-84). Side effects: the read, kept with its outcome, and its audit event ai_model.listed. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Responses:**
+  - `200` OK [`AIModelList`](../../contracts/schemas/AIModelList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/ai/data-policy`
 

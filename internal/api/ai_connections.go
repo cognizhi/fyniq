@@ -13,9 +13,11 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -158,8 +160,8 @@ type (
 
 // AIConnectionCodes are the refusals of an AI connection's definition and steps.
 var AIConnectionCodes = []string{aiconnection.CodeProvider, aiconnection.CodeAuth, aiconnection.CodeConfig, aiconnection.CodeCredential,
-	aiconnection.CodeEgress, aiconnection.CodeBilling, aiconnection.CodeState, aiconnection.CodeName, aipolicy.CodeDeclaration, storage.CodeAIConnection,
-	storage.CodeDuplicate}
+	aiconnection.CodeEgress, aiconnection.CodeBilling, aiconnection.CodeState, aiconnection.CodeName, aipolicy.CodeDeclaration, aimodel.CodeListUnavailable,
+	storage.CodeAIConnection, storage.CodeDuplicate}
 
 func aiConnectionOut(c storage.AIConnection) AIConnection {
 	out := AIConnection{ID: c.ID.String(), Name: c.Name, Connector: c.Connector, Preset: c.Preset, Auth: c.Auth, Configuration: map[string]any{},
@@ -569,7 +571,11 @@ func (a *API) canEnable(ctx context.Context, u storage.UnitOfWork, c storage.AIC
 		return problem(aiconnection.CodeState, "The connection is on already.", "Nothing to do")
 	case c.Auth == "api-key" && c.CredentialRef == "":
 		return problem(aiconnection.CodeState, "The connection has no API key yet.", "Set its API key with setAIConnectionCredential, then ask again")
-	case c.SelfHosted:
+	}
+	if err := listedWhole(ctx, u, c); err != nil {
+		return err
+	}
+	if c.SelfHosted {
 		endpoints, err := u.PrivateEndpoints().For(ctx, storage.PrivateEndpointAIModel, c.ID)
 		if err != nil {
 			return err
@@ -635,8 +641,13 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 		if ref := str("ref"); ref != "" {
 			c.CredentialRef, c.CredentialSetAt = ref, &now
 		}
-		_, err = u.AIConnections().Create(ctx, c, r.ID)
-		return err
+		if _, err = u.AIConnections().Create(ctx, c, r.ID); err != nil {
+			return err
+		}
+		if c.CredentialRef != "" || c.Auth != "api-key" {
+			return a.queueModelRead(ctx, u, c.ID, r.ID) // AI-80: the list read once there is a credential
+		}
+		return nil
 	}
 	c, err := u.AIConnections().Get(ctx, id)
 	if err != nil {
@@ -656,6 +667,9 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 		step = storage.AIConnectionChanged
 	case approval.OpAIConnectionCredential:
 		c.CredentialRef, c.CredentialSetAt, step = str("ref"), &now, storage.AIConnectionCredential
+		if err := a.queueModelRead(ctx, u, c.ID, r.ID); err != nil { // AI-80: the list read when a key is stored
+			return err
+		}
 	case approval.OpAIConnectionEnable:
 		if err := a.canEnable(ctx, u, c); err != nil {
 			return err
@@ -665,5 +679,20 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 		return fmt.Errorf("ai connection: no operation %q", r.Operation)
 	}
 	_, err = u.AIConnections().Step(ctx, c, step, &r.ID)
+	return err
+}
+
+// queueModelRead has the worker read a connection's model list after this change commits (AI-80).
+func (a *API) queueModelRead(ctx context.Context, u storage.UnitOfWork, id, change uuid.UUID) error {
+	item, err := ai.ReadItem(id, aimodel.ByCredential, change.String())
+	if err != nil {
+		return err
+	}
+	if a.deps.Outbox != nil {
+		p, _ := authn.From(ctx)
+		_, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
+		return err
+	}
+	_, err = u.Outbox().Enqueue(ctx, item) // no dispatcher here: the tick sends it
 	return err
 }

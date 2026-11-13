@@ -496,6 +496,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/connections/{connection_id}/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the models an AI connection's provider lists
+         * @description Every model the connection's provider has listed (AI-80), with its state (AI-81), what the list reports of it as hints, and the latest reads of the list with their outcomes (AI-84). Read-only; no side effects.
+         */
+        get: operations["getAIConnectionModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/connections/{connection_id}/models/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read an AI connection's model list from its provider now
+         * @description Refresh from provider (AI-80): reads the connection's list now with its credential, page by page to the cap, sending no company data, and answers the list as getAIConnectionModels does. A complete read marks the models it does not list no longer listed; a partial or failed one keeps the last complete list (AI-84). Side effects: the read, kept with its outcome, and its audit event ai_model.listed. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["refreshAIConnectionModels"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/data-policy": {
         parameters: {
             query?: never;
@@ -14404,6 +14444,114 @@ export interface components {
             exclude?: {
                 [key: string]: string[] | null;
             };
+        };
+        AIModel: {
+            /**
+             * @description The model an alias points at, when the list says (AI-78).
+             * @example anthropic/claude-sonnet-5-5
+             */
+            alias_of?: string;
+            /**
+             * Format: int64
+             * @description The context window the list reports: a hint the probe still proves.
+             * @example 1000000
+             */
+            context_window?: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:00:00Z
+             */
+            first_listed: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:00:00Z
+             */
+            last_listed: string;
+            /**
+             * Format: int64
+             * @description The most output tokens the list reports.
+             * @example 128000
+             */
+            max_output?: number;
+            /**
+             * @description The provider's ID for it.
+             * @example claude-opus-4-6
+             */
+            model: string;
+            /**
+             * @description The provider's name for it.
+             * @example Claude Opus 4.6
+             */
+            name?: string;
+            /** @description What the list reports it supports, as the provider names it: hints, never proof (AI-71). */
+            reports: string[];
+            /**
+             * Format: date-time
+             * @description The provider's retirement or shutdown date (AI-84).
+             * @example 2027-03-31T00:00:00Z
+             */
+            shutdown?: string;
+            /**
+             * @description new: first listed in the last 7 days; deprecated: a shutdown date ahead; no_longer_listed: not in the last complete read, or past its shutdown; not_callable: the provider refused it (AI-81).
+             * @example available
+             * @enum {string}
+             */
+            state: "new" | "available" | "deprecated" | "no_longer_listed" | "not_callable";
+        };
+        AIModelList: {
+            /**
+             * Format: date-time
+             * @description When the list was last read whole: switching the connection on needs one.
+             * @example 2026-11-14T06:00:00Z
+             */
+            last_complete?: string;
+            /** @description Every model the provider has listed, by ID; none is ever removed, so its history stays. */
+            models: components["schemas"]["AIModel"][];
+            /** @description The latest reads, newest first, at most 10. */
+            reads: components["schemas"]["AIModelListRead"][];
+        };
+        AIModelListRead: {
+            /**
+             * Format: int64
+             * @description Models it listed for the first time, or again.
+             * @example 2
+             */
+            added: number;
+            /**
+             * @description Why it was not complete.
+             * @example the provider answered 401 (authentication_error): the provider refused the credential
+             */
+            failure?: string;
+            /**
+             * @description complete: every page to the provider's end; partial: the page cap or a later page stopped it; failed: the first page did.
+             * @example complete
+             * @enum {string}
+             */
+            outcome: "complete" | "partial" | "failed";
+            /**
+             * Format: int64
+             * @example 1
+             */
+            pages: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:00:00Z
+             */
+            read_at: string;
+            /** @example system:ai.models.read */
+            read_by: string;
+            /**
+             * Format: int64
+             * @description Models it no longer listed: a complete read only.
+             * @example 0
+             */
+            removed: number;
+            /**
+             * @description Why it was read.
+             * @example daily
+             * @enum {string}
+             */
+            trigger: "credential" | "test" | "enable" | "daily" | "not_found" | "refresh";
         };
         AccentOption: {
             /** @example #0F766E */
@@ -48062,7 +48210,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -48302,7 +48450,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -48454,7 +48602,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -48736,7 +48884,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -48797,6 +48945,216 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIConnectionModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The connection's ID. */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIModelList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    refreshAIConnectionModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The connection's ID. */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIModelList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
