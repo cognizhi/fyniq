@@ -56,7 +56,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 6. Observability (slice 6)
 
-- [ ] 6.1 `internal/telemetry` (D5): the tracer provider in `app.Serve`, 10% sampled with every failed request kept,
+- [x] 6.1 `internal/telemetry` (D5): the tracer provider in `app.Serve`, 10% sampled with every failed request kept,
   W3C context through `httpserver` and every egress client, the tenant and request IDs on spans and log lines; the GCP
   exporter in `internal/adapters/gcp` and the local OTLP one, with tests. `// req: NFR-OBS-01`
 - [ ] 6.2 `infra/gcp/modules/slo`: availability (99.9%) and latency SLOs for the public services, fast and slow

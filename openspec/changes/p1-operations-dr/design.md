@@ -152,6 +152,18 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
   - burn-rate alerts: fast (14.4× over 1 hour) and slow (6× over 6 hours), to the founders' channels;
   - a dashboard [live-verify]. CTL-RES-03 becomes `tofu slo/…`.
 - *Alternatives:* logs and metrics only, and every request traced (the owner's decision).
+- **As built (slice 6a):**
+  - **The exporter** is Fyniq's own OTLP/JSON over HTTP (`internal/telemetry`), to the Telemetry API's OTLP endpoint
+    (`telemetry.googleapis.com`) as the service's account, rather than Google's trace exporter: the gcp adapter calls
+    Google's REST APIs and imports no SDK, and the images keep no protobuf or gRPC library. Locally the same exporter
+    sends to `FYNIQ_OTLP_ENDPOINT`.
+  - **The tail rule:** the sampler records every request; a span the ratio did not sample is held until its local root
+    ends, and goes out only when the root ended in error (a 5xx), bounded to 4,096 requests of 256 spans.
+  - **Trace context** goes out only through the platform's own guard (its services and Google's APIs); the guard for
+    third parties (email providers, connectors) traces their calls but never sends them the trace.
+  - **What leaves:** only the method, route, status, server address and Fyniq's IDs; the client's address, browser and
+    the full URL stay in the service, so a trace holds no personal data. **`[verify]` where Cloud Trace keeps traces**
+    (CTL-DP-07, Singapore only): the owner decides if it is not Singapore.
 
 ### D6. The heartbeat (NFR-OBS-02, CTL-RES-05)
 

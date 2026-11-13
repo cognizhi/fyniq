@@ -167,6 +167,9 @@ assumptions, not facts.
 - `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
   (a write across projects under that project's key), that `db.export` succeeds with the custom role
   alone, and how long an export of production takes.
+- `[live-verify]` Traces (NFR-OBS-01): that the Telemetry API takes OTLP/JSON at `telemetry.googleapis.com/v1/traces`
+  with the resource attribute `gcp.project_id`, that `roles/telemetry.tracesWriter` is its role (`[verify]`), and
+  where Cloud Trace keeps the traces (`[verify]`: CTL-DP-07 allows Singapore only; a trace holds no personal data).
 - `[live-verify]` That Cloud SQL writes pgAudit's entries to its `postgres.log` with `AUDIT:`, so the security
   sink's filter keeps them (CTL-AUD-04).
 - `[live-verify]` The restore drill: that the clone's permissions are enough (`[verify]` whether Cloud SQL

@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/telemetry"
 )
 
 // Deps are what the API needs.
@@ -583,6 +584,7 @@ func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
 		host, country, region = from.IP.String(), from.Country, from.Region
 	}
 	c := context.WithValue(ctx.Context(), requestIDKey{}, id)
+	telemetry.Caller(c, "", "", id)
 	c = context.WithValue(c, loggerKey{}, a.deps.Log)
 	c = storage.WithAudit(c, storage.AuditContext{Request: storage.Request{ID: id, IP: host, UserAgent: ctx.Header("User-Agent"),
 		Country: country, Region: region}})
@@ -612,13 +614,18 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 	// The session cookie is ambient: any site could make a browser send it. A request it authenticates may
 	// change state only from the web app's own origin (CSRF; OWASP Fetch Metadata).
 	if creds.Authorization == "" && !authn.Safe(ctx.Method()) && ctx.Header("Sec-Fetch-Site") != "same-origin" {
-		a.deps.Log.Warn("api.refused", "operation", ctx.Operation().OperationID, "code", CodeCrossSite, "subject", p.Subject,
+		a.deps.Log.WarnContext(ctx.Context(), "api.refused", "operation", ctx.Operation().OperationID, "code", CodeCrossSite, "subject", p.Subject,
 			"request_id", requestID(ctx.Context()))
 		_ = huma.WriteErr(a.API, ctx, http.StatusForbidden, "", problem(CodeCrossSite,
 			"The request was sent from another site with your Fyniq session.", "Do it in Fyniq itself."))
 		return
 	}
 	c := authn.WithPrincipal(ctx.Context(), p)
+	org := ""
+	if p.Organisation != uuid.Nil {
+		org = p.Organisation.String()
+	}
+	telemetry.Caller(c, org, p.Client, "") // who asked, on the request's trace (NFR-OBS-01)
 	audit := storage.AuditFrom(c)
 	actor := &storage.Actor{Type: "user", ID: p.Subject}
 	if p.UserID != uuid.Nil {
@@ -671,7 +678,7 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		}
 	}
 	if refusal != nil {
-		a.deps.Log.Warn("api.refused", "operation", op.OperationID, "code", refusal.Code, "subject", p.Subject,
+		a.deps.Log.WarnContext(ctx.Context(), "api.refused", "operation", op.OperationID, "code", refusal.Code, "subject", p.Subject,
 			"client", p.Client, "organisation", p.Organisation.String(), "reason", d.Reason, "request_id", requestID(ctx.Context()))
 		_ = huma.WriteErr(a.API, ctx, refusal.Status, "", refusal)
 		if refusal.Code == CodeForbidden { // the policy layer's refusal (API-AUTHZ-01), counted for SEC-31's alert
@@ -693,7 +700,7 @@ func requestID(ctx context.Context) string {
 
 func logFailure(ctx context.Context, err error) {
 	if l, ok := ctx.Value(loggerKey{}).(*slog.Logger); ok {
-		l.Error("api.failure", "error", err.Error(), "request_id", requestID(ctx))
+		l.ErrorContext(ctx, "api.failure", "error", err.Error(), "request_id", requestID(ctx))
 	}
 }
 

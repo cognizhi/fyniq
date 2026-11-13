@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/runtime"
+	"github.com/cognizhi/fyniq/internal/telemetry"
 	"github.com/cognizhi/fyniq/internal/version"
 )
 
@@ -64,6 +65,10 @@ func Serve(service string, routes func(*httpserver.Server, Deps) error) int {
 		return 2
 	}
 	s := httpserver.New(Info(service))
+	// Every request traced from the trace context it came with, a tenth of them kept and each one that failed (NFR-OBS-01).
+	stopTracing := telemetry.Setup(tracing(service))
+	defer func() { _ = stopTracing(context.WithoutCancel(context.Background())) }()
+	s.Use(telemetry.Middleware(service))
 	if routes != nil {
 		if err := routes(s, deps); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", service, err)

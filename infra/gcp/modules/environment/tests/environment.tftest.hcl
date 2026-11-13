@@ -521,6 +521,24 @@ run "only_the_api_and_the_worker_scan" {
   }
 }
 
+# Fyniq's own services trace to Cloud Trace in their own project, each as itself; Hydra does not (NFR-OBS-01).
+# req: NFR-OBS-01
+run "the_services_trace_to_cloud_trace" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (local.env["api"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" && local.env["jobs"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" &&
+    !contains(keys(local.env["oauth"]), "FYNIQ_TRACE_PROJECT"))
+    error_message = "the services name the project their traces go to; Hydra does not trace"
+  }
+  assert {
+    condition = (contains(local.apis, "telemetry") && contains(keys(google_project_iam_member.traces), "scanner") &&
+      !contains(keys(google_project_iam_member.traces), "oauth") &&
+    alltrue([for m in google_project_iam_member.traces : m.role == "roles/telemetry.tracesWriter" && m.project == "fyniq-staging"]))
+    error_message = "the Telemetry API is on, and each traced service may write traces in its own project only"
+  }
+}
+
 # The restore drill: the jobs' account clones the instance and may update and delete only its drill copies, never the
 # instance itself (DR-06, CTL-RES-02).
 run "the_drill_clones_and_removes_only_its_copies" {

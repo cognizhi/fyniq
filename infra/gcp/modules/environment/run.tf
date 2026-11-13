@@ -7,6 +7,8 @@ locals {
   env = { for name in keys(local.runners) : name => merge(
     { FYNIQ_ENV = local.spec.environment },
     contains(local.wired, name) ? { FYNIQ_GCP = local.gcp_config } : {},
+    # The project the service's traces go to, and its log lines link to (internal/app, internal/logging).
+    contains(local.traced, name) ? { FYNIQ_TRACE_PROJECT = var.project } : {},
     contains(local.oauth_admin, name) ? { FYNIQ_OAUTH_ADMIN_URL = local.url["oauth-admin"] } : {},
     lookup(local.default_env, name, {}),
     # Which secret holds each installation connector secret (the names, never the values; rev 0.139).

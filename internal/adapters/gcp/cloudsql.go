@@ -17,6 +17,10 @@ import (
 // SQLAdminAPI is Cloud SQL's admin API.
 const SQLAdminAPI = "https://sqladmin.googleapis.com"
 
+// TelemetryAPI is Google Cloud's Telemetry API, whose OTLP endpoint takes the services' traces into Cloud Trace
+// (NFR-OBS-01) [live-verify].
+const TelemetryAPI = "https://telemetry.googleapis.com"
+
 // CloudSQL exports the database of an instance to Cloud Storage (DR-02, DR-04; p1-operations-dr design D1), as the jobs'
 // account, which may export and read the instance; the instance's own account writes the file. For the monthly restore
 // drill it clones the instance at a point in time and deletes the clone (DR-06, design D2): the jobs' account may clone the

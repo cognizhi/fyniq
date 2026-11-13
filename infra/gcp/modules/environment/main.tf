@@ -138,7 +138,7 @@ locals {
   spec    = var.spec
   region  = local.spec.region
   number  = data.google_project.this.number
-  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager", "securitycenter"]
+  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager", "securitycenter", "telemetry", "cloudtrace"]
   runners = merge(local.spec.services, local.spec.jobs)
 
   # One identity per service and job (SEC-03), one invoker per worker class and one for the Scheduler.
@@ -185,7 +185,9 @@ locals {
     platform_ranges = [google_compute_subnetwork.run.ip_cidr_range, "${google_compute_global_address.services.address}/${google_compute_global_address.services.prefix_length}"]
   })
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
-  wired       = toset(["api", "worker", "executor", "jobs", "render", "scanner"])
+  wired = toset(["api", "worker", "executor", "jobs", "render", "scanner"])
+  # Fyniq's own services, which send their traces to Cloud Trace (NFR-OBS-01; p1-operations-dr design D5); Hydra does not.
+  traced      = toset([for name in ["api", "ai", "mcp", "worker", "executor", "jobs", "render", "scanner"] : name if contains(keys(local.runners), name)])
   oauth_admin = toset(["api", "worker"])
   with_db     = { for name, r in local.runners : name => r if r.database_role != null }
 

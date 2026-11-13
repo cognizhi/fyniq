@@ -7,3 +7,12 @@ resource "google_logging_project_bucket_config" "application" {
   bucket_id      = "_Default"
   retention_days = 30
 }
+
+# Each of Fyniq's own services writes its traces to Cloud Trace through the Telemetry API, and nothing else of it
+# (NFR-OBS-01) [verify the role's name] [live-verify].
+resource "google_project_iam_member" "traces" {
+  for_each = local.traced
+  project  = var.project
+  role     = "roles/telemetry.tracesWriter"
+  member   = local.member[each.key]
+}
