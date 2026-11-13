@@ -80,10 +80,16 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 	if kinds[KindPayroll] != 9 {
 		t.Errorf("the pay runs: %d", kinds[KindPayroll])
 	}
-	// Quotes and orders, the assets and their depreciation to the "as of", last.
+	// Quotes and orders, the assets and their depreciation to the "as of", the history's last.
 	if kinds[KindQuote] != 3 || kinds[KindPurchaseOrder] != 1 || kinds[KindAsset] != 3 || kinds[KindDepreciation] != 1 ||
-		plan[len(plan)-1].Kind != KindDepreciation {
-		t.Errorf("the quotes, orders and assets: %v, last %s", kinds, plan[len(plan)-1].Key)
+		plan[first[KindRecurringInvoice]-1].Kind != KindDepreciation {
+		t.Errorf("the quotes, orders and assets: %v, %v", kinds, first)
+	}
+	// Then both paths' plans (rev 0.263): the Recurring sheet's invoice, bill and journal rows, its 2 transaction rows
+	// kept in the archive, and the Budget sheet's 2026 as one budget, last.
+	if kinds[KindRecurringInvoice] != 1 || kinds[KindRecurringBill] != 1 || kinds[KindRecurringJournal] != 1 || kinds[KindBudget] != 1 ||
+		plan[len(plan)-1].Key != "budget:2026-01-01" || got[KindRecurringInvoice] != 1 || got[KindBudget] != 1 {
+		t.Errorf("the plans: %v, the clean start's %v, last %s", kinds, got, plan[len(plan)-1].Key)
 	}
 	if got := openingAccumulated(w.Assets[0], w.Settings.BooksStart, money.MustLookup("SGD")); got.Text('f') != "3000.00" {
 		t.Errorf("the MacBooks' depreciation before the books start: %s, not the 3000.00 the opening balances carry", got.Text('f'))

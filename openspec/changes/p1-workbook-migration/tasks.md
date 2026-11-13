@@ -92,7 +92,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   Employees rows reported as kept in the archive. Tests on the fixture, `// req: FR-MIG-01`. (Slice 10 built Funding
   (rev 0.262): the holdings before the books start in the register, the seed round's row as a cash issue, the SAFE as an
   instrument, the option pool warned and archived; with it the history's trial balance equals the workbook's on every
-  account. Left: Recurring, Budget and Forecast.)
+  account. Slice 11 built Recurring and Budget (rev 0.263): the invoice, bill and journal rows as recurring ones from
+  after the as-of, the bank transaction rows archived with a warning, the Budget as a recorded original budget per
+  financial year from the books start; TestTheRecurringRowsAndTheBudgetCarryOn. Left: the Forecast drivers.)
 
 ## 5. Reconciliation (M4)
 

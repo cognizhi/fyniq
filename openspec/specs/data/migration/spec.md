@@ -61,6 +61,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **AND** each SAFE or note is a recorded instrument, which its line on 2700 names, a clean start's 2700 balance a line for each
 - **AND** the option pool stays in the archived workbook with a warning, and the import's equity records need no evidence attached, the archived workbook being their evidence
 
+#### Scenario: Recurring rows and the budget carry on (rev 0.263)
+- **WHEN** either path is imported
+- **THEN** each active Recurring invoice, bill or journal row becomes a recurring invoice, bill or journal whose first occurrence is the first after the workbook's as-of
+- **AND** a Recurring bank transaction, an inactive row and one Fyniq cannot schedule stay in the archived workbook with a warning
+- **AND** the Budget sheet becomes a recorded original budget for each financial year its months reach from the books start
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 

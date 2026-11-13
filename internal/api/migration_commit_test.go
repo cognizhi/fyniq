@@ -713,6 +713,19 @@ func TestACleanStartCarriesTheBalancesForward(t *testing.T) {
 	if p := e.call(http.MethodGet, "/v1/organisation/profile", accountant, nil); p.str("books_start") != "2026-10-01" || p.str("first_year_end") != "2026-12-31" {
 		t.Fatalf("the profile: %s", p.Raw)
 	}
+	// Its budget is the first year's three months of the Budget sheet's 2026, its recurring rows those of the history
+	// (rev 0.263): income 34,900 of subscriptions, 60,000 of services and 900 of interest; costs the eleven lines' months.
+	if b := e.call(http.MethodGet, "/v1/budgets", accountant, nil); len(b.Body["items"].([]any)) != 1 {
+		t.Errorf("the budgets: %s", b.Raw)
+	} else if x := b.Body["items"].([]any)[0].(map[string]any); x["budget"].(map[string]any)["financial_year"] != "2026-10-01" || len(x["months"].([]any)) != 3 ||
+		x["totals"].(map[string]any)["income_year"] != "95800.00" || x["totals"].(map[string]any)["costs_year"] != "145560.00" {
+		t.Errorf("the clean start's budget: %v", x)
+	}
+	for _, path := range []string{"/v1/recurring-invoices", "/v1/recurring-bills", "/v1/recurring-journals"} {
+		if r := e.call(http.MethodGet, path, accountant, nil); len(r.Body["items"].([]any)) != 1 {
+			t.Errorf("%s: %s", path, r.Raw)
+		}
+	}
 	// The register of members holds every share of the cap table from before the books start (rev 0.262).
 	if c := e.call(http.MethodGet, "/v1/cap-table?at=2026-09-30", accountant, nil); c.Status != http.StatusOK || c.str("issued") != "11800000" {
 		t.Errorf("the cap table: %d %s", c.Status, c.Raw)
@@ -753,5 +766,106 @@ func TestACleanStartCarriesTheBalancesForward(t *testing.T) {
 	assets := byNumber(e.call(http.MethodGet, "/v1/fixed-assets", accountant, nil), "name")
 	if a := assets["Laptops x3 (engineering)"]; a == nil || fmt.Sprint(a["opening_accumulated"].(map[string]any)["amount"]) != "1950.00" {
 		t.Errorf("the laptops carried: %v", a)
+	}
+}
+
+// The Recurring rows and the Budget carry on in Fyniq (design D5, task 4.6; rev 0.263): the retainer invoice, the
+// bookkeeper's quarterly bill and the audit fee accrual each recur from their first occurrence after the workbook's
+// "as of", the bill with the GST its code charges; the 2 bank transactions stay in the archive. The Budget sheet's 2026
+// is the year's original budget, recorded, each account's months as the sheet's P&L lines that map onto it.
+// req: FR-MIG-01
+// req: FR-AR-07
+// req: FR-GL-02
+// req: FR-PLN-01
+func TestTheRecurringRowsAndTheBudgetCarryOn(t *testing.T) {
+	f, id := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	only := func(path string) map[string]any {
+		r := e.call(http.MethodGet, path, accountant, nil)
+		items, _ := r.Body["items"].([]any)
+		if r.Status != http.StatusOK || len(items) != 1 {
+			t.Fatalf("%s: %d %s", path, r.Status, r.Raw)
+		}
+		return items[0].(map[string]any)
+	}
+	amountOf := func(x any) string { return fmt.Sprint(x.(map[string]any)["amount"]) }
+	inv := only("/v1/recurring-invoices")
+	if inv["next_on"] != "2026-10-31" || inv["status"] != "active" || amountOf(inv["net"]) != "12000.00" ||
+		inv["schedule"].(map[string]any)["every_months"] != float64(1) || inv["name"] != "Harbourline Logistics Pte Ltd – AI route-optimisation retainer" {
+		t.Errorf("the recurring invoice: %v", inv)
+	}
+	bill := only("/v1/recurring-bills")
+	line := bill["lines"].([]any)[0].(map[string]any)
+	if bill["next_on"] != "2026-12-31" || bill["schedule"].(map[string]any)["every_months"] != float64(3) || amountOf(line["net"]) != "1500.00" ||
+		amountOf(line["gst"]) != "135.00" || line["gst_code"] != "TX" {
+		t.Errorf("the recurring bill: %v", bill)
+	}
+	jnl := only("/v1/recurring-journals")
+	if jnl["next_on"] != "2026-10-31" || jnl["reverses"] != false || amountOf(jnl["debits"].([]any)[0]) != "500.00" || jnl["memo"] != "Accrue audit fee" {
+		t.Errorf("the recurring journal: %v", jnl)
+	}
+
+	b := only("/v1/budgets")
+	body := b["budget"].(map[string]any)
+	totals := b["totals"].(map[string]any)
+	if b["status"] != "recorded" || body["kind"] != "original" || body["financial_year"] != "2026-01-01" || len(b["months"].([]any)) != 12 ||
+		totals["income_year"] != "367650.00" || totals["costs_year"] != "513500.00" {
+		t.Errorf("the budget: %v", b)
+	}
+	// Each line's months are the sheet's, by the account its P&L lines map onto.
+	codes := map[string]string{}
+	accounts := e.call(http.MethodGet, "/v1/accounts?limit=500", accountant, nil)
+	for _, a := range accounts.Body["items"].([]any) {
+		codes[a.(map[string]any)["id"].(string)] = a.(map[string]any)["code"].(string)
+	}
+	mapping, _ := e.migrationMapping(id)
+	lineTo := map[string]string{}
+	for _, x := range mapping.Body["budget_lines"].([]any) {
+		lineTo[x.(map[string]any)["line"].(string)] = x.(map[string]any)["account"].(string)
+	}
+	want := map[string][12]*apd.Decimal{}
+	for _, l := range w.Budget {
+		code := lineTo[l.Line]
+		months := want[code]
+		for i, x := range l.Months {
+			if x == nil {
+				continue
+			}
+			if months[i] == nil {
+				months[i] = new(apd.Decimal)
+			}
+			if _, err := apd.BaseContext.WithPrecision(40).Add(months[i], months[i], x); err != nil {
+				t.Fatal(err)
+			}
+		}
+		want[code] = months
+	}
+	lines := body["lines"].([]any)
+	for _, l := range lines {
+		l := l.(map[string]any)
+		code := codes[l["account_id"].(string)]
+		for i, a := range l["amounts"].([]any) {
+			x := want[code][i]
+			if x == nil {
+				x = new(apd.Decimal)
+			}
+			if got, _, _ := apd.NewFromString(a.(string)); got.Cmp(x) != 0 {
+				t.Errorf("account %s month %d: %s, the sheet's %s", code, i+1, a, x.Text('f'))
+			}
+		}
+		delete(want, code)
+	}
+	for code, months := range want {
+		for _, x := range months {
+			if x != nil && !x.IsZero() {
+				t.Errorf("account %s's budget is not imported", code)
+				break
+			}
+		}
 	}
 }
