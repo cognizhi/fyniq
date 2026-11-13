@@ -55,6 +55,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/ai/price-catalogues` (listAIPriceCatalogues): List the price catalogue's downloads
 - `POST /v1/ai/prices/{price_id}/review` (reviewAIPrice): Review a model's price waiting for the Owner
 - `POST /v1/ai/prices/{price_id}/withdraw` (withdrawAIPrice): Withdraw an Owner's price
+- `GET /v1/ai/routes` (getAIRoutes): Get every agent's route
+- `GET /v1/ai/routes/{agent}` (getAIRoute): Get an agent's route and its versions
+- `PUT /v1/ai/routes/{agent}` (setAIRoute): Set an agent's route
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement

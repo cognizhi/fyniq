@@ -42,12 +42,13 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // credentials, private_endpoints_for. ip_rate_window is the per-IP windows of the routes that need no organisation
 // (000312): counted only through count_ip_request, purged through purge_ip_rate_windows. ai_price_catalogue is the
 // model price catalogue's downloads (000350): read through ai_price_catalogues, written by the worker only through
-// record_ai_price_catalogue.
+// record_ai_price_catalogue. ai_agent is the agents that call a model (000356): written only by the migrations, read
+// through ai_agents.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "sign_in_method",
-	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue"}
+	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue", "ai_agent"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}

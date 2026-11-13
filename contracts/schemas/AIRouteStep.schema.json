@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cache": {
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "connection": {
+      "description": "The connection's name.",
+      "examples": [
+        "Claude on Agent Platform"
+      ],
+      "type": "string"
+    },
+    "connection_id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "model": {
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    },
+    "serves": {
+      "description": "It can serve now: its connection on, its model on the allow-list and callable, and priced where the connection bills by usage.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "why": {
+      "description": "Why it cannot serve now: the router skips it to the next step (AI-76).",
+      "examples": [
+        "the model is no longer on the allow-list"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "connection_id",
+    "connection",
+    "model",
+    "cache",
+    "serves"
+  ],
+  "title": "AIRouteStep",
+  "type": "object"
+}
