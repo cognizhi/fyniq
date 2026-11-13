@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "by_agent": {
+      "items": {
+        "$ref": "AIUsageByAgent.schema.json"
+      },
+      "type": "array"
+    },
+    "by_connection": {
+      "items": {
+        "$ref": "AIUsageByConnection.schema.json"
+      },
+      "type": "array"
+    },
+    "by_model": {
+      "items": {
+        "$ref": "AIUsageByModel.schema.json"
+      },
+      "type": "array"
+    },
+    "by_person": {
+      "items": {
+        "$ref": "AIUsageByPerson.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency the costs are in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "AIUsageTotals.schema.json"
+    }
+  },
+  "required": [
+    "month",
+    "currency",
+    "total",
+    "by_connection",
+    "by_model",
+    "by_agent",
+    "by_person"
+  ],
+  "title": "AIUsage",
+  "type": "object"
+}

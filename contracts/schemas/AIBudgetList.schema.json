@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budgets": {
+      "items": {
+        "$ref": "AIBudget.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency the budgets are in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The calendar month in Singapore the use is of.",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "currency",
+    "budgets"
+  ],
+  "title": "AIBudgetList",
+  "type": "object"
+}

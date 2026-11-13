@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -91,6 +92,11 @@ type AIModelList struct {
 type (
 	aiModelListOutput struct{ Body AIModelList }
 )
+
+// router is the API's router: the connector runtime's providers, the API's own outbox.
+func (a *API) router() ai.Router {
+	return ai.Router{Store: a.deps.Store, Provider: a.lister().Provider, Clock: a.deps.Clock, Outbox: a.deps.Outbox}
+}
 
 func (a *API) lister() ai.Lister {
 	provider := a.deps.AIProviders
@@ -275,7 +281,7 @@ func registerAIAllowList(a *API) {
 			"Side effects: the probe's result on the model and its audit event ai_model.probed. On the never-list for the AI and MCP (§9.6).",
 	}, "Idempotency-Key", "A probe asks the provider again; repeating it probes again, which harms nothing."),
 		"Prefer", "A probe asks the provider: a preview would be the probe itself."),
-		append([]string{CodeNotFound, CodeInvalid}, locks...), func(ctx context.Context, in *aiModelInput) (*aiModelOutput, error) {
+		append([]string{CodeNotFound, CodeInvalid, aibudget.CodeSpent}, locks...), func(ctx context.Context, in *aiModelInput) (*aiModelOutput, error) {
 			p, _ := authn.From(ctx)
 			id, err := parseID("connection_id", in.ConnectionID)
 			if err != nil {
@@ -283,9 +289,10 @@ func registerAIAllowList(a *API) {
 			}
 			var provider ports.ModelProvider
 			var built error
+			var c storage.AIConnection
 			listed := false
-			if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-				c, err := u.AIConnections().Get(ctx, id)
+			if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+				c, err = u.AIConnections().Get(ctx, id)
 				if err != nil {
 					return err
 				}
@@ -308,10 +315,13 @@ func registerAIAllowList(a *API) {
 			if built != nil {
 				detail = built.Error()
 			} else {
-				probeCtx, cancel := context.WithTimeout(ctx, time.Minute)
-				resp, err := provider.Call(probeCtx, ports.ModelRequest{Model: in.Body.Model, MaxTokens: 16,
-					Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: probeText}}}}})
-				cancel()
+				// The probe reserves against the budgets and is recorded like any call (AI-86).
+				resp, err := a.router().Probe(ctx, p.Organisation, c, provider, ports.ModelRequest{Model: in.Body.Model, MaxTokens: 16,
+					Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: probeText}}}}}, uploader(ctx))
+				var spent *aibudget.Error
+				if errors.As(err, &spent) {
+					return nil, problem(spent.Code, spent.Message+".", spent.Fix)
+				}
 				if err != nil {
 					detail, refused = err.Error(), errors.Is(err, ports.ErrModelNotFound) || errors.Is(err, ports.ErrModelAuth)
 				} else {

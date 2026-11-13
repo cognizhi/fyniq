@@ -129,7 +129,7 @@ func TestPricesComeFromTheirSource(t *testing.T) {
 		t.Errorf("an unpriced model: %+v", none)
 	}
 	cats := e.call(http.MethodGet, "/v1/ai/price-catalogues", admin, nil)
-	items, _ := cats.Body["items"].([]any)
+	items := ownDownloads(cats)
 	sum := sha256.Sum256(source.body)
 	if cats.Status != http.StatusOK || len(items) != 1 || items[0].(map[string]any)["sha256"] != hex.EncodeToString(sum[:]) ||
 		items[0].(map[string]any)["outcome"] != "valid" || items[0].(map[string]any)["licence"] != "MIT, outside enterprise/" {
@@ -179,7 +179,7 @@ func TestPricesComeFromTheirSource(t *testing.T) {
 	source.licence, source.body = []byte(mitLicence), []byte(`{"gpt-test-6": {"litellm_provider": "openai", "input_cost_per_token": 1e-09}}`)
 	daily()
 	cats = e.call(http.MethodGet, "/v1/ai/price-catalogues", admin, nil)
-	items, _ = cats.Body["items"].([]any)
+	items = ownDownloads(cats)
 	if len(items) != 5 || items[0].(map[string]any)["outcome"] != "rejected" || !strings.Contains(items[0].(map[string]any)["failure"].(string), "fewer than 100") ||
 		items[1].(map[string]any)["outcome"] != "rejected" || !strings.Contains(items[1].(map[string]any)["failure"].(string), "MIT") {
 		t.Fatalf("the rejected downloads: %s", cats.Raw)
@@ -459,4 +459,17 @@ func TestPricesComeFirstFromTheProviderAndGoogle(t *testing.T) {
 		!strings.Contains(kept.Unpriced, "could not be read") {
 		t.Errorf("Google's price while its catalogue cannot be read: %+v", kept)
 	}
+}
+
+// ownDownloads are the downloads of LiteLLM's catalogue a test's own source made: the table is the installation's, so
+// other tests' fixtures are in it too.
+func ownDownloads(r response) []any {
+	var out []any
+	all, _ := r.Body["items"].([]any)
+	for _, it := range all {
+		if strings.HasPrefix(it.(map[string]any)["url"].(string), "https://raw.githubusercontent.com/") {
+			out = append(out, it)
+		}
+	}
+	return out
 }

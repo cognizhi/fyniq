@@ -518,7 +518,15 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 		return rawFeedRate(t, v, "1.35")
 	},
 	"ai_price_rate.amount": func(t *testing.T, b porttest.Books, v string) error { return rawAIPriceRate(t, b, v) },
-	"ai_call.cost":         func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, v) },
+	"ai_call.cost":         func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, "cost", v) },
+	"ai_call.cost_base":    func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, "cost_base", v) },
+	"ai_budget.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawAIBudget(t, b, v) },
+	"ai_reservation.amount": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAIReservation(t, b, "amount", v)
+	},
+	"ai_reservation.actual": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAIReservation(t, b, "actual", v)
+	},
 	"fx_feed_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, "1.35", v)
 	},
@@ -644,7 +652,7 @@ func rawAIPriceRate(t *testing.T, b porttest.Books, amount string) error {
 
 // rawAICallCost records a model call with a cost as the table's owner with the triggers held back (AI-77), so only the
 // cost's own checks can fail. Its connection closes at once, as the test holds many.
-func rawAICallCost(t *testing.T, b porttest.Books, cost string) error {
+func rawAICallCost(t *testing.T, b porttest.Books, column, value string) error {
 	t.Helper()
 	ctx := context.Background()
 	c, err := pgx.Connect(ctx, db.URL("fyniq"))
@@ -656,9 +664,61 @@ func rawAICallCost(t *testing.T, b porttest.Books, cost string) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
 			return err
 		}
+		cost, base := "1", "1"
+		if column == "cost" {
+			cost = value
+		} else {
+			base = value
+		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_call (run_id, agent, route_version, step, connection_id, model_requested, model_reported, actor,
-  classes, outcome, cost, currency, price_id, started_at) VALUES (gen_random_uuid(), 'chat', 1, 1, gen_random_uuid(), 'gpt-attack', 'gpt-attack',
-  'system:attack-test', ARRAY['know-how'], 'ok', $1::numeric, 'USD', gen_random_uuid(), now())`, cost)
+  classes, outcome, cost, currency, price_id, cost_base, started_at) VALUES (gen_random_uuid(), 'chat', 1, 1, gen_random_uuid(), 'gpt-attack',
+  'gpt-attack', 'system:attack-test', ARRAY['know-how'], 'ok', $1::numeric, 'USD', gen_random_uuid(), $2::numeric, now())`, cost, base)
+		return err
+	})
+}
+
+// rawAIBudget sets an AI budget as the table's owner with the triggers held back (AI-77), so only the amount's own
+// checks can fail. Its connection closes at once.
+func rawAIBudget(t *testing.T, b porttest.Books, amount string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_budget (scope, subject, amount, set_by, set_at) VALUES ('agent', 'attack', $1::numeric,
+  'system:attack-test', now())`, amount)
+		return err
+	})
+}
+
+// rawAIReservation reserves as the table's owner with the triggers held back (AI-86), so only the amounts' own checks
+// can fail. Its connection closes at once.
+func rawAIReservation(t *testing.T, b porttest.Books, column, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		amount, actual := "1", "1"
+		if column == "amount" {
+			amount = value
+		} else {
+			actual = value
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_reservation (run_id, step, agent, connection_id, person, month, amount, actual, state, settled_at)
+  VALUES (gen_random_uuid(), 1, 'chat', gen_random_uuid(), 'system:attack-test', '2026-11', $1::numeric, $2::numeric, 'settled', now())`, amount, actual)
 		return err
 	})
 }

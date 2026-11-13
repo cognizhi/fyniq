@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accessreview"
 	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
+	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
@@ -258,6 +259,9 @@ var codeFacts = map[string]struct {
 	aiprice.CodeReview:            {409, "The price is not waiting for that review"},
 	aiprice.CodeEntered:           {422, "The Owner's price is not valid"},
 	aiprice.CodeWithdraw:          {409, "Only an Owner's price in force can be withdrawn"},
+	aibudget.CodeBudget:           {422, "The AI budget is not valid"},
+	aibudget.CodeSpent:            {409, "An AI budget is spent this month"},
+	storage.CodeAIBudget:          {409, "An AI budget keeps its scope and each version, and its reservations are kept"},
 	airoute.CodeRoute:             {422, "The route is not valid"},
 	airoute.CodeStep:              {422, "A step of the route cannot serve it"},
 	airoute.CodeAgent:             {404, "Not an agent of this release"},
