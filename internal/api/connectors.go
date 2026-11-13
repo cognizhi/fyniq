@@ -109,7 +109,7 @@ func asWebhookPath(s string) WebhookPath   { return WebhookPath(s) }
 
 // ConnectorCapability is a kind of service a connector implements, and how its work behaves (FR-INT-25…27).
 type ConnectorCapability struct {
-	Kind        string `json:"kind" enum:"sign-in,outbound-email,inbound-email,messaging,ticketing,payment-provider,bank-data,e-invoicing,document-ai" doc:"The kind of service." example:"outbound-email"`
+	Kind        string `json:"kind" enum:"sign-in,outbound-email,inbound-email,messaging,ticketing,payment-provider,bank-data,e-invoicing,document-ai,model-provider" doc:"The kind of service; a model provider (AI-71) is connected through AI connections, not installed." example:"outbound-email"`
 	Trigger     string `json:"trigger" enum:"human-authority,system-rule,none" doc:"Who may make it act: a completed human authority, a rule of the platform, or nobody (FR-INT-27)." example:"system-rule"`
 	TriggerRule string `json:"trigger_rule" doc:"The authority or rule, in plain words." example:"A message the outbox holds for sending."`
 	OnDisable   string `json:"on_disable" enum:"hold,cancel" doc:"What disabling does to its queued work; pausing always holds it (FR-INT-26)." example:"hold"`

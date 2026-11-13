@@ -55,6 +55,9 @@ type Binding struct {
 	OutboundEmail func(Config) (ports.Email, error)
 	InboundEmail  func(Config) (ports.InboundMail, error)
 	BankData      func(Config) (ports.BankData, error)
+	// Model builds a model provider's adapter for one AI connection (AI-71): its configuration and credential are the
+	// connection's, never an installed connector's (p1-ai-providers design D2).
+	Model func(Config) (ports.ModelProvider, error)
 	// VerifyWebhook checks a provider's webhook to an installed organisation connector against its configuration and
 	// secrets, at now; nil: the connector takes no webhook. A verified webhook only prompts work: its body is never data.
 	VerifyWebhook func(c Config, h http.Header, body []byte, now time.Time) error
@@ -71,6 +74,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.BankData != nil {
 		ks = append(ks, BankData)
+	}
+	if b.Model != nil {
+		ks = append(ks, ModelProvider)
 	}
 	return ks
 }
