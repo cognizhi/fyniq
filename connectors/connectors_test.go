@@ -275,3 +275,20 @@ func TestTheOpenAIConnectorBuildsItsAdapter(t *testing.T) {
 		t.Errorf("the OpenAI API: %v", err)
 	}
 }
+
+// The Gemini connector builds its adapter per connection, with the project and the service's own account, in the
+// configured location (AI-71, AI-72).
+// req: AI-71
+func TestTheGeminiConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "gemini")
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "project") {
+		t.Errorf("without a project: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}}); err == nil || !strings.Contains(err.Error(), "own account") {
+		t.Errorf("without the service's account: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}, Tokens: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "t"})})
+	if err != nil || strings.Join(p.Capabilities().Regions, ",") != "asia-southeast1" || p.Capabilities().Caching {
+		t.Errorf("Gemini: %v", err)
+	}
+}
