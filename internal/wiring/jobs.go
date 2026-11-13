@@ -374,7 +374,8 @@ func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 
 // Exports prepare the exports that run in the background in the staging store, and expire them (FR-RPT-09).
 func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
-	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock, Stamp: k.Stamp}
+	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock, Stamp: k.Stamp,
+		Tenant: reportexport.TenantSources{Evidence: k.Evidence, Staging: k.Staging, Fields: k.Fields}}
 }
 
 // Migrations validate uploaded workbooks in the background, keeping each report and Checks export in the staging store

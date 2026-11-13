@@ -160,6 +160,9 @@ const (
 	// ObjectMigrationCommit is the workbook import's commit (FR-MIG-01, §17.1 M3, FM-1; rev 0.258): an Owner who did not
 	// prepare it approves it over the workbook, its validation report and the signed mapping; its key is the migration's ID.
 	ObjectMigrationCommit = "migration_commit"
+	// ObjectTenantExport is the full tenant export (FR-MIG-04, design D10, FM-1; rev 0.273): a person with C on
+	// "Tenant export" asks for it, and another who holds its A approves; its key is the export's ID.
+	ObjectTenantExport = "tenant_export"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -267,6 +270,8 @@ const (
 	OpBudgetRecord = "budget.record"
 	// OpMigrationCommit commits the workbook import: the batches then import its records (FR-MIG-01, rev 0.258).
 	OpMigrationCommit = "migration.commit"
+	// OpTenantExportPrepare queues the full tenant export for its requester (FR-MIG-04, rev 0.273).
+	OpTenantExportPrepare = "tenant_export.prepare"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -308,6 +313,7 @@ var Operations = map[string]string{
 	OpControllerEntryRecord:    ObjectControllerEntry,
 	OpBudgetRecord:             ObjectBudget,
 	OpMigrationCommit:          ObjectMigrationCommit,
+	OpTenantExportPrepare:      ObjectTenantExport,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -416,6 +422,8 @@ var Dependencies = map[string][]string{
 	ObjectBudget: {"status", "financial_year"},
 	// the migration's status, the workbook with its validation report, and the signed mapping: what is imported
 	ObjectMigrationCommit: {"status", "workbook", "mapping"},
+	// nothing: the export does not exist until it is approved
+	ObjectTenantExport: {},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -473,6 +481,7 @@ var Rows = map[string]string{
 	ObjectControllerEntry:     "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectBudget:              "Budgets, forecasts",
 	ObjectMigrationCommit:     "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)",
+	ObjectTenantExport:        "Tenant export",
 }
 
 // The limits of a policy.
@@ -559,6 +568,7 @@ var Policies = map[string]Policy{
 	ObjectControllerEntry:     {ObjectType: ObjectControllerEntry, Version: "founder/controller_entry@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectBudget:              {ObjectType: ObjectBudget, Version: "founder/budget@2026-11-08.1", Steps: []Step{{Quorum: 1}}},
 	ObjectMigrationCommit:     {ObjectType: ObjectMigrationCommit, Version: "founder/migration_commit@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
+	ObjectTenantExport:        {ObjectType: ObjectTenantExport, Version: "founder/tenant_export@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

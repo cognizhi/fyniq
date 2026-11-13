@@ -87,7 +87,8 @@
         "investor_right",
         "controller_entry",
         "budget",
-        "migration_commit"
+        "migration_commit",
+        "tenant_export"
       ],
       "examples": [
         "organisation_setting"

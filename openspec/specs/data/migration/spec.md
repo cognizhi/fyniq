@@ -165,6 +165,11 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **WHEN** the organisation exits, answers an access request or meets a data-portability obligation
 - **THEN** the full tenant export serves that purpose
 
+#### Scenario: Asked, approved by another, saved by its requester (rev 0.273)
+- **WHEN** a person with C on "Tenant export" asks for the export and another who holds its A approves it
+- **THEN** the worker writes one ZIP whose manifest names every file's SHA-256, every table exported or excluded with why
+- **AND** only its requester saves it, through a 5-minute link, for 24 hours, each link recorded as a sensitive export
+
 ### Requirement: Workbook freeze (M1)
 The migration SHALL start by freezing the workbook at a month end, running `make verify` on the live file and exporting its Checks status.
 

@@ -276,3 +276,50 @@ func (q *Queries) ReportExportsOf(ctx context.Context, arg ReportExportsOfParams
 	}
 	return items, nil
 }
+
+const reportExportsOfReport = `-- name: ReportExportsOfReport :many
+SELECT organisation_id, id, report, format, parameters, requested_by, requested_at, status, ledger_revision, file_name, media_type, size_bytes, file_sha256, rows_count, ready_at, expires_at, failure FROM fyniq.report_export WHERE report = $1 ORDER BY requested_at DESC, id DESC LIMIT $2
+`
+
+type ReportExportsOfReportParams struct {
+	Report   string
+	PageSize int32
+}
+
+func (q *Queries) ReportExportsOfReport(ctx context.Context, arg ReportExportsOfReportParams) ([]FyniqReportExport, error) {
+	rows, err := q.db.Query(ctx, reportExportsOfReport, arg.Report, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqReportExport
+	for rows.Next() {
+		var i FyniqReportExport
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Report,
+			&i.Format,
+			&i.Parameters,
+			&i.RequestedBy,
+			&i.RequestedAt,
+			&i.Status,
+			&i.LedgerRevision,
+			&i.FileName,
+			&i.MediaType,
+			&i.SizeBytes,
+			&i.FileSha256,
+			&i.RowsCount,
+			&i.ReadyAt,
+			&i.ExpiresAt,
+			&i.Failure,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

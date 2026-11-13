@@ -160,7 +160,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 8. Full tenant export (FR-MIG-04)
 
-- [ ] 8.1 The approval object `tenant_export` (Appendix D's row: the Owner and a second approver) and the worker that
+- [x] 8.1 The approval object `tenant_export` (Appendix D's row: the Owner and a second approver) and the worker that
   writes the ZIP (design D10): CSV per table, documents as JSON, files, the audit trail with its hashes, the manifest
   with SHA-256s, the README. The table catalogue's test fails on a table with `organisation_id` that is neither exported
   nor excluded. Downloaded by the requester for 24 hours, recorded as a sensitive export (AUD-05). Sealed values in
@@ -173,6 +173,11 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   tenant_rows (000340) read as the worker, under its grants and row-level security;
   TestTheTenantExportCataloguesEveryTable, TestTheTenantExportWritesTheOrganisation. Left: the approval object, the
   request and the worker's job, the download for 24 hours and AUD-05.)
+  (Slice 22 built the rest, rev 0.273: `requestTenantExport` makes the `tenant_export` approval request, whose approval by
+  another person with A queues the worker's job; `listTenantExports` shows each awaiting approval, pending, ready, failed
+  or expired; `createTenantExportDownload` gives only the requester a 5-minute link, a signed URL in the cloud and the
+  public `getTenantExportDownload` path locally, audited as `tenant_export.download_linked` (AUD-05); the report exports
+  never show a full export; TestTheFullExportIsDualControlledAndSavedByItsRequester and the matrix's rows.)
 
 ## 9. Screens, help and the guide
 
