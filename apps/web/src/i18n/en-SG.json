@@ -2032,6 +2032,14 @@
       "label": "Controls",
       "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."
     },
+    "compliance.incidents": {
+      "label": "Incidents",
+      "tooltip": "Every security incident, from when it was seen to its review: contained, assessed, notified, recovered and reviewed, as the incident runbook says. The DPO keeps it."
+    },
+    "incidents.severity": {
+      "label": "Severity",
+      "tooltip": "Critical when money, personal data, access or the books' integrity is lost or at once at risk; High for an attempt that was stopped, or exposure without signs of access; Medium for a failing control; Low for a false alarm worth keeping."
+    },
     "compliance.attestations": {
       "label": "Reviews and attestations",
       "tooltip": "The recurring reviews people sign off: what is due, what is overdue and when each was last signed off, with where to sign it."

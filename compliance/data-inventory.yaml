@@ -80,6 +80,15 @@ classes:
     protection: "Read only by the Compliance officer, the Owner and the Auditor"
     transfers: "None; a notifiable breach is reported to the PDPC outside Fyniq"
     columns: [pd_breach.description]
+  - key: incidents
+    what: "Security incidents: what happened and each step of the response, which may name the people involved"
+    why: "To contain, assess, notify, recover and learn from each incident, and to show it was done (SEC-32)"
+    where: "The database, in Singapore"
+    who: "Appendix D's Compliance Center: kept by the DPO"
+    retention: "The records' retention"
+    protection: "Read only by the Compliance Center's readers; never a secret, a token, a full NRIC or a bank number (SEC-15)"
+    transfers: "None"
+    columns: [security_incident.summary, security_incident_step.note]
   - key: organisation-contacts
     what: "The company's own published contacts, its Data Protection Officer's name and email among them"
     why: "To print them on documents and give them to people who ask about their personal data (PDPA s11(5))"

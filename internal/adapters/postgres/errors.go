@@ -203,6 +203,7 @@ var fyCodes = map[string]string{
 	"FY319": storage.CodePrivateEndpoint, // a private endpoint retired, not a private range, a bad pin or no such organisation (000310)
 	"FY320": storage.CodeVersion,         // a private endpoint changed since it was read (000310)
 	"FY321": storage.CodeImmutable,       // a private endpoint's version changed or removed (000310)
+	"FY322": storage.CodeIncident,        // an incident's step out of order, or any change (000316)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

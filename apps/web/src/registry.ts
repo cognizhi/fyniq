@@ -202,6 +202,9 @@ export const actions = [
   { kind: "action", id: "appearance.motion", mode: "basic", help: "appearance.motion", guide: "preferences.appearance#motion" },
   { kind: "action", id: "sign-out", mode: "basic", help: "auth.sign-out", guide: "home.overview#sign-out" },
   // The Help menu and its About dialog (REL-05): the version and the commit, in both modes.
+  // The incident register, a tab of Compliance › Controls (SEC-32): Expert, as Controls is.
+  { kind: "action", id: "compliance.incidents", mode: "expert", help: "compliance.incidents", guide: "compliance.controls#the-incident-register" },
+  { kind: "action", id: "incidents.severity", mode: "expert", help: "incidents.severity", guide: "compliance.controls#the-incident-register" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.

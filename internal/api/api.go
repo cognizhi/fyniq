@@ -373,6 +373,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDPIAs(a)
 	registerPDRequests(a)
 	registerBreaches(a)
+	registerIncidents(a)
 	registerPDTransfers(a)
 	registerShredding(a)
 	registerFeasibility(a)

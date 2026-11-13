@@ -258,6 +258,23 @@ VALUES (sqlc.arg(breach_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), s
   sqlc.narg(reference))
 RETURNING id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference;
 
+-- name: ListIncidents :many
+-- The organisation's security incidents, oldest first (SEC-32).
+SELECT id, title, summary, severity, detected_at, opened_by, opened_at FROM fyniq.security_incident ORDER BY detected_at, id;
+
+-- name: InsertIncident :one
+INSERT INTO fyniq.security_incident (title, summary, severity, detected_at, opened_by, opened_at)
+VALUES (sqlc.arg(title), sqlc.arg(summary), sqlc.arg(severity), sqlc.arg(detected_at), sqlc.arg(opened_by), sqlc.arg(opened_at))
+RETURNING id, title, summary, severity, detected_at, opened_by, opened_at;
+
+-- name: ListIncidentSteps :many
+SELECT id, incident_id, step, at, by_actor, note, breach_id FROM fyniq.security_incident_step ORDER BY at, id;
+
+-- name: InsertIncidentStep :one
+INSERT INTO fyniq.security_incident_step (incident_id, step, at, by_actor, note, breach_id)
+VALUES (sqlc.arg(incident_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), sqlc.arg(note), sqlc.narg(breach_id))
+RETURNING id, incident_id, step, at, by_actor, note, breach_id;
+
 -- name: ListBreachExercises :many
 SELECT id, held_on, scenario, findings, recorded_by, recorded_at FROM fyniq.pd_breach_exercise ORDER BY held_on, id;
 

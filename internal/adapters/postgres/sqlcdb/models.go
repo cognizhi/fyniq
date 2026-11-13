@@ -2183,6 +2183,28 @@ type FyniqSalesReminder struct {
 	DecidedAt      time.Time
 }
 
+type FyniqSecurityIncident struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Title          string
+	Summary        string
+	Severity       string
+	DetectedAt     time.Time
+	OpenedBy       string
+	OpenedAt       time.Time
+}
+
+type FyniqSecurityIncidentStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	IncidentID     uuid.UUID
+	Step           string
+	At             time.Time
+	ByActor        string
+	Note           string
+	BreachID       *uuid.UUID
+}
+
 type FyniqShareIssue struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

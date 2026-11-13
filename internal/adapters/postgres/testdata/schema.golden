@@ -1680,6 +1680,22 @@ sales_reminder | send_id | uuid | null |
 sales_reminder | reason | text | null | 
 sales_reminder | decided_by | text | not null | 
 sales_reminder | decided_at | timestamp with time zone | not null | now()
+security_incident | organisation_id | uuid | not null | current_org()
+security_incident | id | uuid | not null | uuidv7()
+security_incident | title | text | not null | 
+security_incident | summary | text | not null | 
+security_incident | severity | text | not null | 
+security_incident | detected_at | timestamp with time zone | not null | 
+security_incident | opened_by | text | not null | 
+security_incident | opened_at | timestamp with time zone | not null | 
+security_incident_step | organisation_id | uuid | not null | current_org()
+security_incident_step | id | uuid | not null | uuidv7()
+security_incident_step | incident_id | uuid | not null | 
+security_incident_step | step | text | not null | 
+security_incident_step | at | timestamp with time zone | not null | 
+security_incident_step | by_actor | text | not null | 
+security_incident_step | note | text | not null | 
+security_incident_step | breach_id | uuid | null | 
 share_issue | organisation_id | uuid | not null | current_org()
 share_issue | id | uuid | not null | uuidv7()
 share_issue | holder_id | uuid | not null | 
@@ -4609,6 +4625,36 @@ sales_reminder | sales_reminder_reason_length | CHECK (((reason IS NULL) OR ((le
 sales_reminder | sales_reminder_send_fkey | FOREIGN KEY (organisation_id, send_id) REFERENCES document_send(organisation_id, id)
 sales_reminder | sales_reminder_step_not_null | NOT NULL step
 sales_reminder | sales_reminder_step_range | CHECK (((step >= '-30'::integer) AND (step <= 365)))
+security_incident | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_incident | security_incident_detected | CHECK ((detected_at <= opened_at))
+security_incident | security_incident_detected_at_not_null | NOT NULL detected_at
+security_incident | security_incident_id_not_null | NOT NULL id
+security_incident | security_incident_opened_at_not_null | NOT NULL opened_at
+security_incident | security_incident_opened_by_format | CHECK ((opened_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_incident | security_incident_opened_by_not_null | NOT NULL opened_by
+security_incident | security_incident_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+security_incident | security_incident_organisation_id_not_null | NOT NULL organisation_id
+security_incident | security_incident_pkey | PRIMARY KEY (organisation_id, id)
+security_incident | security_incident_severity_known | CHECK ((severity = ANY (ARRAY['critical'::text, 'high'::text, 'medium'::text, 'low'::text])))
+security_incident | security_incident_severity_not_null | NOT NULL severity
+security_incident | security_incident_summary_not_null | NOT NULL summary
+security_incident | security_incident_texts | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(btrim(summary)) >= 1) AND (length(btrim(summary)) <= 8000))))
+security_incident | security_incident_title_not_null | NOT NULL title
+security_incident_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_incident_step | security_incident_step_at_not_null | NOT NULL at
+security_incident_step | security_incident_step_breach | CHECK (((breach_id IS NULL) OR (step = 'assessed'::text)))
+security_incident_step | security_incident_step_breach_fkey | FOREIGN KEY (organisation_id, breach_id) REFERENCES pd_breach(organisation_id, id)
+security_incident_step | security_incident_step_by_actor_not_null | NOT NULL by_actor
+security_incident_step | security_incident_step_by_format | CHECK ((by_actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_incident_step | security_incident_step_id_not_null | NOT NULL id
+security_incident_step | security_incident_step_incident_fkey | FOREIGN KEY (organisation_id, incident_id) REFERENCES security_incident(organisation_id, id)
+security_incident_step | security_incident_step_incident_id_not_null | NOT NULL incident_id
+security_incident_step | security_incident_step_known | CHECK ((step = ANY (ARRAY['contained'::text, 'assessed'::text, 'notified'::text, 'recovered'::text, 'reviewed'::text])))
+security_incident_step | security_incident_step_note_length | CHECK (((length(btrim(note)) >= 1) AND (length(btrim(note)) <= 8000)))
+security_incident_step | security_incident_step_note_not_null | NOT NULL note
+security_incident_step | security_incident_step_organisation_id_not_null | NOT NULL organisation_id
+security_incident_step | security_incident_step_pkey | PRIMARY KEY (organisation_id, id)
+security_incident_step | security_incident_step_step_not_null | NOT NULL step
 share_issue | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 share_issue | share_issue_amount_not_null | NOT NULL amount
 share_issue | share_issue_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount = trunc(amount, (minor_units)::integer)) AND (amount > (0)::numeric)))
@@ -4978,6 +5024,8 @@ CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organis
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX risk_review_risk_idx ON fyniq.risk_review USING btree (organisation_id, risk_id, reviewed_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
+CREATE INDEX security_incident_step_breach ON fyniq.security_incident_step USING btree (organisation_id, breach_id) WHERE (breach_id IS NOT NULL)
+CREATE INDEX security_incident_step_incident ON fyniq.security_incident_step USING btree (organisation_id, incident_id, at)
 CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
 CREATE INDEX share_issue_settlement ON fyniq.share_issue USING btree (organisation_id, settlement_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
@@ -5262,6 +5310,8 @@ CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btre
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_incident_pkey ON fyniq.security_incident USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_incident_step_pkey ON fyniq.security_incident_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX share_issue_entry_once ON fyniq.share_issue USING btree (organisation_id, entry_id)
 CREATE UNIQUE INDEX share_issue_pkey ON fyniq.share_issue USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sign_in_method_pkey ON fyniq.sign_in_method USING btree (provider)
@@ -5380,6 +5430,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk DEFERRABLE IN
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'incident_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
@@ -5742,6 +5794,10 @@ CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.evidence FOR EACH RO
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT OR UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
+CREATE TRIGGER security_incident_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
+CREATE TRIGGER security_incident_no_truncate BEFORE TRUNCATE ON fyniq.security_incident FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER security_incident_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident_step FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
+CREATE TRIGGER security_incident_step_no_truncate BEFORE TRUNCATE ON fyniq.security_incident_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER share_issue_class_guard BEFORE INSERT ON fyniq.share_issue FOR EACH ROW EXECUTE FUNCTION share_issue_class_guard()
 CREATE TRIGGER share_issue_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.share_issue FOR EACH ROW EXECUTE FUNCTION share_issue_guard()
 CREATE TRIGGER share_issue_no_truncate BEFORE TRUNCATE ON fyniq.share_issue FOR EACH STATEMENT EXECUTE FUNCTION share_issue_guard()
@@ -5903,6 +5959,8 @@ risk_review | tenant_isolation | * | (organisation_id = current_org()) | (organi
 risk_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_incident | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_incident_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6072,6 +6130,8 @@ risk_review | enabled | forced
 risk_version | enabled | forced
 role_assignment | enabled | forced
 sales_reminder | enabled | forced
+security_incident | enabled | forced
+security_incident_step | enabled | forced
 share_issue | enabled | forced
 sign_in_method | disabled | not forced
 sod_override | enabled | forced
@@ -6370,6 +6430,7 @@ sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catal
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d0eccfd19b4bbc648b384f4b3cb9c1aa
+security_incident_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba0df3a8877374fa18fe1af3436dee82
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0375cf31d4bcd7d576a9ce47bc92707b
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248

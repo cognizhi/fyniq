@@ -331,6 +331,30 @@ type BreachStep struct {
 	Reference  string     // pdpc_notified's
 }
 
+// CodeIncident is the database's refusal of an incident's step out of order, or of any change (FY322).
+const CodeIncident = "STORAGE-INCIDENT-01"
+
+// Incident is a security incident (SEC-32, p1-security-hardening design D10), with its steps.
+type Incident struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string // critical, high, medium or low
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+	Steps      []IncidentStep // oldest first
+}
+
+// IncidentStep is an incident's step: contained, assessed, notified, recovered or reviewed, which closes it.
+type IncidentStep struct {
+	Step   string
+	At     time.Time
+	By     string
+	Note   string
+	Breach *uuid.UUID // assessed's: the breach register's breach, when personal data was involved
+}
+
 // BreachExercise is a tabletop exercise of the breach runbook (CTL-DP-06).
 type BreachExercise struct {
 	ID         uuid.UUID
@@ -382,6 +406,12 @@ type Compliance interface {
 	RecordBreach(ctx context.Context, b Breach) (Breach, error)
 	// StepBreach adds a breach's step, audited as breach.<step>; CodeBreach when it is out of order.
 	StepBreach(ctx context.Context, id uuid.UUID, s BreachStep) error
+	// Incidents are the organisation's security incidents with their steps, oldest first (SEC-32).
+	Incidents(ctx context.Context) ([]Incident, error)
+	// OpenIncident opens an incident, audited as incident.opened.
+	OpenIncident(ctx context.Context, i Incident) (Incident, error)
+	// StepIncident adds an incident's step, audited as incident.<step>; CodeIncident when it is out of order.
+	StepIncident(ctx context.Context, id uuid.UUID, s IncidentStep) error
 	// BreachExercises are the tabletop exercises, oldest first (CTL-DP-06).
 	BreachExercises(ctx context.Context) ([]BreachExercise, error)
 	// RecordBreachExercise records a tabletop exercise, audited as breach_exercise.recorded.

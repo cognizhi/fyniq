@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "breach_id": {
+      "description": "With assessed, when personal data was involved: the breach recorded in the breach register (recordBreach).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "What was found or done. Never a secret, a token, a full NRIC or a bank number (SEC-15).",
+      "examples": [
+        "Removed the session; the Owner confirmed the new laptop by phone."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "step": {
+      "description": "The step: contained, assessed, notified (after assessed), recovered (after contained), reviewed (after recovered; it closes the incident).",
+      "enum": [
+        "contained",
+        "assessed",
+        "notified",
+        "recovered",
+        "reviewed"
+      ],
+      "examples": [
+        "contained"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step",
+    "note"
+  ],
+  "title": "IncidentStepInput",
+  "type": "object"
+}
