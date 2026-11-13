@@ -10,5 +10,6 @@ evidence: "Config; incident log"
 owner: Owner
 checks:
   - frequency: D
-    status: planned
-    arrives: "p1-operations-dr (rev 0.241: SLO burn-rate alerts)"
+    status: cloud
+    how: "tofu slo/the_slos_page_the_founders"
+    evidence: "each public service's availability (99.9% a month) and latency (95% within 300 ms) objectives from Cloud Run's metrics, and their fast and slow burn-rate alerts to the founders; the dashboard; every failed request's trace in Cloud Trace (NFR-OBS-01); read in the cloud [live-verify]"
