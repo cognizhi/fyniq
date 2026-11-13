@@ -6,6 +6,7 @@ package connectors
 import (
 	"github.com/cognizhi/fyniq/connectors/airwallex"
 	"github.com/cognizhi/fyniq/connectors/anthropic"
+	"github.com/cognizhi/fyniq/connectors/openai"
 	"github.com/cognizhi/fyniq/connectors/resend"
 	"github.com/cognizhi/fyniq/connectors/smtp"
 	"github.com/cognizhi/fyniq/connectors/wise"
@@ -15,7 +16,7 @@ import (
 
 // bindings are the connectors compiled in.
 var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding,
-	anthropic.Binding}
+	anthropic.Binding, openai.Binding}
 
 // Catalogue is the release's catalogue; an error means a manifest or binding is malformed, and the service must not
 // start.
