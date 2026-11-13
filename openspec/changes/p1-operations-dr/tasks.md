@@ -77,7 +77,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 8. Performance and scale (slice 8)
 
-- [ ] 8.1 `cmd/perf` and `make perf` (D7): the synthetic organisation grown through the engine, every budget timed
+- [x] 8.1 `cmd/perf` and `make perf` (D7): the synthetic organisation grown through the engine, every budget timed
   through the local stack's API, 100 concurrent readers, the report in `.data/perf/`. `// req: NFR-PERF-01` to
   `// req: NFR-PERF-06`, `// req: NFR-SCALE-01`
 - [ ] 8.2 `.github/workflows/perf.yml`: weekly at 1 M lines, and at 10 M on the release pull request with the report

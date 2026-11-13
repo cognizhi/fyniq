@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -90,6 +90,9 @@ seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 seed-load: ## Load the sample company (DEV-04) into an organisation of the local database: ORG=<organisation id>; checks its trial balance against the seed
 	@test -n "$(ORG)" || { echo 'usage: make seed-load ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/seed --load "$(ORG)"
+
+perf: ## The performance harness against the running stack (QA-PERF-01): grows the installation's organisation by LINES ledger lines (default 1 M) through the engine, times NFR-PERF's budgets through the API, writes .data/perf/report.md; fails on a missed budget
+	@$(MISE) go run -tags local ./cmd/perf --lines $(or $(LINES),1000000) --api http://localhost:$${FYNIQ_HTTP_PORT:-8080}/api $(if $(ORG),--org $(ORG))
 
 restore-drill: ## The restore drill now against the local database (DR-06): a copy from it as a template, the ledger and the audit chain verified on it, the copy removed
 	@$(MISE) go run -tags local ./cmd/jobs restore-drill

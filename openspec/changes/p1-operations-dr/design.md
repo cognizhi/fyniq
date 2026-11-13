@@ -216,6 +216,19 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
   - QA-PERF-01's control reads it.
 - **NFR-SCALE-01's 100 concurrent users:** the harness runs the read budget with 100 concurrent sessions.
 
+- **As built (slice 8a), run against a fresh local stack:**
+  - The harness grows the company organisation (the one besides the installation's that keeps books) by journals of 50
+    lines, payments of expenses from its money account over the 24 months before this one, opening missing periods:
+    about 1,600 to 2,600 lines a second locally.
+  - It calls the API with local dev tokens of an Owner and Accountant (Appendix D gives the Accountant journals' and
+    bank transactions' create and post), one client per reader, as the API's per-client limits count 100 people apart.
+  - It posts with If-Match from the draft's version and status, as the web app does: Caddy's compression weakens the
+    ETag header, which the API's strict If-Match then refuses (a finding for integrators).
+  - The statement's money account is named by an identifier taken from its chart account, since reads mask identifiers.
+  - **Findings `[verify]`:** NFR-PERF-05's export cannot pass at 1 M lines while the general ledger export keeps the
+    on-screen report's 5,000 lines per account (`balance.MaxLedgerLines`); NFR-PERF-02's reports took 1.2 s at the 95th
+    percentile with about 200,000 lines. Both go to the owner.
+
 ### D8. Browsers (NFR-BROWSER-01)
 
 - Playwright gains `firefox` and `webkit` projects beside Chrome; CI installs the browsers (`npx playwright install
