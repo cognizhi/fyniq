@@ -122,7 +122,7 @@ locals {
   spec    = var.spec
   region  = local.spec.region
   number  = data.google_project.this.number
-  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager"]
+  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager", "securitycenter"]
   runners = merge(local.spec.services, local.spec.jobs)
 
   # One identity per service and job (SEC-03), one invoker per worker class and one for the Scheduler.

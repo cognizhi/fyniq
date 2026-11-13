@@ -14,5 +14,6 @@ checks:
     how: "tofu stack/production"
     evidence: "each environment is its own project, and production's queues and organisation secrets sit in production's own projects; read in the cloud [live-verify]"
   - frequency: W
-    status: planned
-    arrives: "p1-security-hardening (rev 0.241: the weekly scan of non-production for production data)"
+    status: cloud
+    how: "tofu nonprod-scan/staging_is_scanned_each_week_for_production_data"
+    evidence: "the nonprod-scan module test in make infra-check (staging's database exported each Monday to a bucket of its own in Singapore, kept a week; a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, its summary to Security Command Center and by email; production refused), and the job's results in staging once it runs [live-verify]"

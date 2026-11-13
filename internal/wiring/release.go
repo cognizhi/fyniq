@@ -148,6 +148,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = outbound
+	// The platform's posture and logs, read as the jobs' account (SEC-33, CTL-DP-03) [live-verify].
+	kit.Posture = gcp.NewSecurityCenter(gcp.SecurityCenterAPI, "projects/"+projectOf(c.Job), tokens, google)
+	kit.Logs = gcp.NewLogging(gcp.LoggingAPI, projectOf(c.Job), tokens, google)
 	kit.watchChanges(clock)
 	return kit, nil
 }

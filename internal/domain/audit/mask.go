@@ -67,6 +67,21 @@ func RedactText(s string) string {
 	return keyPattern.ReplaceAllString(s, Redacted)
 }
 
+// Leaks are the kinds of value RedactText would mask or remove that s still holds: an NRIC or FIN number, a JSON web
+// token, a bearer token or an API key. The weekly scan of the logs looks for them (CTL-DP-03, SEC-15).
+func Leaks(s string) []string {
+	var out []string
+	for _, p := range []struct {
+		kind string
+		re   *regexp.Regexp
+	}{{"an NRIC or FIN number", nricPattern}, {"a JSON web token", jwtPattern}, {"a bearer token", bearerPattern}, {"an API key", keyPattern}} {
+		if p.re.MatchString(s) {
+			out = append(out, p.kind)
+		}
+	}
+	return out
+}
+
 // MaskValue masks v as the value of a field called key, looking inside objects and lists.
 func MaskValue(key string, v any) any {
 	switch x := v.(type) {

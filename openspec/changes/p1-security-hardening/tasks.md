@@ -78,11 +78,11 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 9. Logs, posture and the weekly scans (slice 9)
 
-- [ ] 9.1 `infra/`: data-access audit logs for the sensitive services, and the sink to a retention-locked bucket in
+- [x] 9.1 `infra/`: data-access audit logs for the sensitive services, and the sink to a retention-locked bucket in
   the audit project, kept 400 days `[live-verify]`. `// req: SEC-30`
-- [ ] 9.2 `ports.Posture`, with a GCP adapter (SCC) and a local fake. The `posture.findings` verification lists the
+- [x] 9.2 `ports.Posture`, with a GCP adapter (SCC) and a local fake. The `posture.findings` verification lists the
   findings under CTL-RES-04 and fails it past the SLA. `// req: SEC-33`, `// req: CTL-RES-04`
-- [ ] 9.3 `logs.scan`, weekly, over `ports.LogReader` with SEC-15's patterns. `nonprod.scan`, weekly in staging, is a
+- [x] 9.3 `logs.scan`, weekly, over `ports.LogReader` with SEC-15's patterns. `nonprod.scan`, weekly in staging, is a
   Sensitive Data Protection job as code `[live-verify]`. `// req: CTL-DP-03`, `// req: CTL-CHG-05`
 
 ## 10. DAST (slice 10)

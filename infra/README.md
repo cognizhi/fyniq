@@ -18,8 +18,10 @@ Infrastructure workflow does nothing.
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
 | `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
 | `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
+| `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
+| `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
-| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors and budget |
+| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, security logs, the edge, the budget and, in staging, the non-production scan |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
 | `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
@@ -171,3 +173,11 @@ assumptions, not facts.
   platform's manifest.
 - `[live-verify]` That `run.allowedBinaryAuthorizationPolicies` = `default` refuses a service without the policy, and
   an enforced policy refuses an image without the attestation.
+- `[live-verify]` The security logs: data-access audit logs arriving for each sensitive service, the sink's writer
+  identity writing to the bucket in `fyniq-audit`, and the bucket's lock (irreversible: apply production once the 400
+  days are confirmed).
+- `[live-verify]` The posture: Security Command Center's Standard tier on the projects, and the jobs' account listing
+  findings (`roles/securitycenter.findingsViewer`) and reading the services' logs (`roles/logging.viewer`).
+- `[live-verify]` The non-production scan in staging: the Scheduler's export as `scan-export` with only
+  `cloudsql.instances.export`, the instance's account writing to the export bucket, the Sensitive Data Protection
+  infoType names, and its summary reaching Security Command Center.

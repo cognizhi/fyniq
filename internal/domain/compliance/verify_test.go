@@ -2,6 +2,8 @@ package compliance
 
 import (
 	"encoding/json"
+	"maps"
+	"slices"
 	"testing"
 	"time"
 
@@ -30,7 +32,7 @@ func TestEveryRunningVerificationIsBuilt(t *testing.T) {
 			}
 		}
 	}
-	for name := range verifications {
+	for _, name := range slices.Concat(slices.Collect(maps.Keys(verifications)), slices.Collect(maps.Keys(platformVerifications))) {
 		if _, ok := registry.Verifications[name]; !ok {
 			t.Errorf("verify %s is built but not declared in registry.Verifications", name)
 		}

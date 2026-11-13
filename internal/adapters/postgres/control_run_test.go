@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	registry "github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -224,3 +226,89 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 }
 
 func sha(s string) []byte { h := sha256.Sum256([]byte(s)); return h[:] }
+
+// The installation's organisation, as the store would find it.
+type installationAt uuid.UUID
+
+func (i installationAt) InstallationOrganisation(context.Context) (uuid.UUID, error) {
+	return uuid.UUID(i), nil
+}
+
+type postureFake []ports.PostureFinding
+
+func (p postureFake) Findings(context.Context) ([]ports.PostureFinding, error) { return p, nil }
+
+type logsFake []string
+
+func (l logsFake) Read(context.Context, time.Time, int) ([]string, error) { return l, nil }
+
+// The platform's verifications run in the installation's organisation only: a critical finding open past its 7 days
+// fails CTL-RES-04, an NRIC in the logs fails CTL-DP-03 and raises its alert, and another organisation records neither
+// and shows both as not applicable (p1-security-hardening design D8).
+// req: SEC-33
+// req: CTL-RES-04
+// req: CTL-DP-03
+// asvs: V16.2.5
+func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
+	ctx := context.Background()
+	inst, other := books(t, "Platform verifications Pte Ltd"), books(t, "Platform verifications B Pte Ltd")
+	all, err := registry.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var controls []registry.Control
+	for _, c := range all {
+		if c.ID == "CTL-RES-04" || c.ID == "CTL-DP-03" {
+			controls = append(controls, c)
+		}
+	}
+	now := clock.System{}.Now().UTC()
+	var alerted []string
+	runner := compliance.Runner{Store: store(t, "fyniq_worker"), Clock: clock.System{}, Controls: controls, Installation: installationAt(inst.Org),
+		Posture: postureFake{{Name: "late", Severity: "CRITICAL", Category: "OPEN_FIREWALL", Resource: "fw", FirstSeen: now.AddDate(0, 0, -8)},
+			{Name: "recent", Severity: "HIGH", Category: "PUBLIC_BUCKET_ACL", Resource: "bucket", FirstSeen: now.AddDate(0, 0, -2)}},
+		Logs: logsFake{`{"msg":"journal posted"}`, "member S1234567D joined"},
+		Alert: func(_ context.Context, _ storage.UnitOfWork, org uuid.UUID, control string, found []compliance.Finding) error {
+			alerted = append(alerted, fmt.Sprintf("%s %s %d", org, control, len(found)))
+			return nil
+		}}
+	verify := func(org uuid.UUID) map[string]storage.ControlState {
+		t.Helper()
+		rep, err := runner.Verify(ctx, org)
+		if err == nil {
+			err = runner.Statuses(ctx, org, &rep)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if org != inst.Org && len(rep.Runs) != 0 {
+			t.Errorf("another organisation recorded %+v", rep.Runs)
+		}
+		if org == inst.Org {
+			runs := map[string]storage.ControlRun{}
+			for _, r := range rep.Runs {
+				runs[r.Check] = r
+			}
+			posture, logs := runs["verify posture.findings"], runs["verify logs.scan"]
+			if len(runs) != 2 || posture.OK || posture.Count != 1 || logs.OK ||
+				logs.Detail != "1 found in 2 log entries of the last day: 1 log entry holds an NRIC or FIN number" ||
+				strings.Contains(string(logs.Items), "S1234567D") {
+				t.Errorf("the installation's runs: %+v", runs)
+			}
+		}
+		out := map[string]storage.ControlState{}
+		for _, s := range rep.States {
+			out[s.Control] = s
+		}
+		return out
+	}
+	if got := verify(inst.Org); got["CTL-RES-04"].Status != "fail" || got["CTL-DP-03"].Status != "fail" {
+		t.Errorf("the installation's statuses: %+v", got)
+	}
+	if want := inst.Org.String() + " CTL-DP-03 1"; len(alerted) != 1 || alerted[0] != want {
+		t.Errorf("alerted %v, want [%s]", alerted, want)
+	}
+	if got := verify(other.Org); got["CTL-RES-04"].Status != "not_applicable" || got["CTL-DP-03"].Status != "not_applicable" {
+		t.Errorf("another organisation's statuses: %+v", got)
+	}
+}

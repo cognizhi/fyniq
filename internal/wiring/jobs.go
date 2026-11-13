@@ -137,7 +137,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return err
 			}
 			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry, Platform: k.Store, Release: k.Release, Assets: assets,
-				Tell: k.TellControl(clock)}.Nightly(ctx)
+				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock)}.Nightly(ctx)
 			return err
 		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released
@@ -451,6 +451,23 @@ func (k *Kit) Alerts(clock ports.Clock) security.Raiser {
 		log.Warn("alerts.thresholds", "error", err.Error())
 	}
 	return security.Raiser{Dispatcher: outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}, Clock: clock, Thresholds: t, Log: log}
+}
+
+// alertPlatform raises the alert of a platform verification's findings in the installation's organisation, to the Super
+// admins (SEC-31): one per control and window.
+func (k *Kit) alertPlatform(clock ports.Clock) controls.Alert {
+	r := k.Alerts(clock)
+	r.Installation = true
+	return func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, control string, found []controls.Finding) error {
+		details := make([]string, len(found))
+		for i, f := range found {
+			details[i] = f.Detail
+		}
+		_, err := r.Raise(ctx, u, org, security.Alert{Rule: security.RuleLogLeak, Subject: uuid.NewSHA1(uuid.NameSpaceURL, []byte("fyniq:control:"+control)),
+			Link: "/compliance/controls?control=" + control, Title: "The platform's logs hold what they must not: " + strings.Join(details, "; "),
+			Facts: map[string]any{"control": control, "kinds": len(found)}})
+		return err
+	}
 }
 
 // alertChains raises an audit-chain alert in each organisation whose trail failed its verification (SEC-31).

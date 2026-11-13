@@ -50,7 +50,7 @@ var verifications = map[string]verification{
 }
 
 // Built reports whether the verification name is built.
-func Built(name string) bool { _, ok := verifications[name]; return ok }
+func Built(name string) bool { _, ok := verifications[name]; return ok || Platform(name) }
 
 // dualControl (CTL-FIN-08, FM-1): every approval of a payment batch or of a payee's or claimant's bank change, and
 // every release of a batch, was another person's, or a break-glass's use by its Owner (FM-8).
@@ -155,7 +155,20 @@ type Runner struct {
 	// Tell sends the notice that a control newly failed or fell overdue, in the unit of work that saved its state; nil
 	// sends none.
 	Tell Tell
+	// Installation finds the installation's own organisation, where the platform's verifications run; Posture and Logs
+	// are what they read (design D8); Alert raises the security alert of a platform verification's findings (SEC-31).
+	// Nil: the platform's verifications do not run, or raise nothing.
+	Installation interface {
+		InstallationOrganisation(ctx context.Context) (uuid.UUID, error)
+	}
+	Posture ports.Posture
+	Logs    ports.LogReader
+	Alert   Alert
 }
+
+// Alert raises the security alert of a platform verification's findings for control, in the unit of work that recorded
+// its run.
+type Alert func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, control string, found []Finding) error
 
 // Tell tells a control's owners that it newly failed or fell overdue (design D5).
 type Tell func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, c registry.Control, s storage.ControlState) error
@@ -196,12 +209,27 @@ func (r Runner) Nightly(ctx context.Context) ([]Report, error) {
 // others, and records each run.
 func (r Runner) Verify(ctx context.Context, org uuid.UUID) (Report, error) {
 	rep := Report{Organisation: org}
+	inst, err := r.installation(ctx, org)
+	if err != nil {
+		return rep, err
+	}
 	var failed []error
 	for _, c := range r.Controls {
 		for _, ch := range c.Checks {
 			kind, name := ch.Kind()
+			if kind != registry.KindVerify || ch.Status != "running" {
+				continue
+			}
+			if p, ok := platformVerifications[name]; ok {
+				if inst {
+					if err := r.verifyPlatform(ctx, org, c.ID, ch, p, &rep); err != nil {
+						failed = append(failed, fmt.Errorf("%s %s: %w", c.ID, ch.How, err))
+					}
+				}
+				continue
+			}
 			v, ok := verifications[name]
-			if kind != registry.KindVerify || ch.Status != "running" || !ok {
+			if !ok {
 				continue
 			}
 			err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -224,6 +252,31 @@ func (r Runner) Verify(ctx context.Context, org uuid.UUID) (Report, error) {
 		}
 	}
 	return rep, errors.Join(failed...)
+}
+
+// verifyPlatform makes a platform verification in the installation's organisation: it reads the posture outside the
+// unit of work, then records the run and raises its alert.
+func (r Runner) verifyPlatform(ctx context.Context, org uuid.UUID, control string, ch registry.Check, p platformVerification, rep *Report) error {
+	now := r.Clock.Now()
+	found, read, err := p.read(ctx, r, now)
+	if err != nil {
+		return err
+	}
+	run, err := runOf(control, ch, found, read, now)
+	if err != nil {
+		return err
+	}
+	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		saved, err := u.Compliance().RecordRun(ctx, run)
+		if err != nil {
+			return err
+		}
+		rep.Runs = append(rep.Runs, saved)
+		if p.alert && len(found) > 0 && r.Alert != nil {
+			return r.Alert(ctx, u, org, control, found)
+		}
+		return nil
+	})
 }
 
 // runOf is a verification's run: what it found, the first 50 items, and in words.
@@ -253,7 +306,11 @@ func runOf(control string, ch registry.Check, found []Finding, read string, now 
 // the owners of each control that newly failed or fell overdue through a detective check (design D1, D5). A status that
 // did not change keeps when it changed; a failure keeps when it began, so it is told once.
 func (r Runner) Statuses(ctx context.Context, org uuid.UUID, rep *Report) error {
-	in := Inputs{Release: r.Release, Assets: r.Assets, Jobs: map[string][]storage.JobSlot{}, Now: r.Clock.Now()}
+	inst, err := r.installation(ctx, org)
+	if err != nil {
+		return err
+	}
+	in := Inputs{Release: r.Release, Assets: r.Assets, Jobs: map[string][]storage.JobSlot{}, Now: r.Clock.Now(), Installation: inst}
 	for _, c := range r.Controls {
 		for _, ch := range c.Checks {
 			if kind, name := ch.Kind(); kind == registry.KindJob && ch.Status == "running" && r.Platform != nil {
