@@ -8,3 +8,11 @@ SELECT o.id, o.kind, o.job_id, o.resource, o.requested_by, o.requested_at, j.sta
 FROM fyniq.operation o
 JOIN fyniq.outbox j ON j.organisation_id = o.organisation_id AND j.id = o.job_id
 WHERE o.id = $1;
+
+-- name: OperationsOf :many
+SELECT o.id, o.kind, o.job_id, o.resource, o.requested_by, o.requested_at, j.state AS job_state, j.updated_at AS job_updated
+FROM fyniq.operation o
+JOIN fyniq.outbox j ON j.organisation_id = o.organisation_id AND j.id = o.job_id
+WHERE o.requested_by = sqlc.arg(requested_by)
+ORDER BY o.requested_at DESC, o.id DESC
+LIMIT sqlc.arg(page_size);

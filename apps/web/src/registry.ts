@@ -282,6 +282,7 @@ export const actions = [
   { kind: "action", id: "accounting.record-policy", mode: "expert", help: "accounting.record-policy", guide: "settings.accounting#write-a-policy" },
   { kind: "action", id: "accounting.approve-policy", mode: "expert", help: "accounting.approve-policy", guide: "settings.accounting#confirm-and-approve" },
   { kind: "action", id: "notification.centre", mode: "basic", help: "notification.centre", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "shell.operations", mode: "basic", help: "shell.operations", guide: "home.overview#follow-long-work" },
   { kind: "action", id: "notification.read", mode: "basic", help: "notification.read", guide: "settings.notifications#your-notifications" },
   { kind: "action", id: "notification.unread", mode: "basic", help: "notification.unread", guide: "settings.notifications#your-notifications" },
   { kind: "action", id: "notification.archive", mode: "basic", help: "notification.archive", guide: "settings.notifications#your-notifications" },

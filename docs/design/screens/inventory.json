@@ -5490,7 +5490,8 @@
    ],
    "purpose": "Follow long and bulk jobs (imports, exports, bulk categorisation) without waiting on the page.",
    "content": [
-    "Panel listing running and finished operations with progress bars: '10,000 bank lines imported, de-duplicated, rule-matched — 62%'",
+    "Header button with the count running, from the medium class up (the compact header is full until p1-app-shell lays it out again; on a phone the export's notification and Reports cover it); the panel lists the caller's own operations (listMyOperations), read again every 5 s while any runs",
+    "Progress bars: indeterminate until an operation reports how far along it is (p1-operations-dr D10); later '10,000 bank lines imported, de-duplicated, rule-matched — 62%'",
     "Each: started by, started at, status chip, result counts (succeeded, failed with reasons), download link for exports",
     "Bulk results per item with errors linked to the record",
     "Cancel where safe; notifications when done"

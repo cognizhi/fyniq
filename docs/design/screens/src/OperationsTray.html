@@ -52,43 +52,30 @@
       <ul class="fy-stack fy-stack--3 fy-stagger" aria-label="Running operations">
         <li class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3" aria-busy="true">
           <div class="fy-row fy-row--top">
-            <span class="fy-list__icon"><i data-icon="file-up" class="fy-i--20"></i></span>
+            <span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span>
             <div class="fy-stack fy-stack--2 fy-grow">
-              <span class="fy-strong">Import DBS statement history</span>
-              <span class="fy-small fy-muted">Mei Lin Tan · started 10:31 · about 25 s left</span>
+              <span class="fy-strong">Export General ledger (XLSX)</span>
+              <span class="fy-small fy-muted">started 10:35</span>
             </div>
             <span class="fy-chip fy-chip--info"><i data-icon="loader-circle"></i>Running</span>
           </div>
           <div class="fy-stack fy-stack--2">
-            <div class="fy-row fy-row--between fy-small"><span>10,000 bank lines imported, de-duplicated, rule-matched</span><span class="fy-num fy-strong">62%</span></div>
-            <div class="fy-progress" role="progressbar" aria-label="DBS import progress" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><span style="width: 62%"></span></div>
-            <ul class="fy-row fy-row--wrap fy-small fy-secondary" style="gap: var(--space-1) var(--space-3)">
-              <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Imported 10,000</li>
-              <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>De-duplicated: 214 skipped</li>
-              <li class="fy-row" style="gap: 4px"><i data-icon="loader-circle"></i>Rule-matched 6,200 of 10,000</li>
-            </ul>
-          </div>
-          <div class="fy-row fy-row--between">
-            <span class="fy-small fy-muted">Safe to cancel: nothing has been posted yet.</span>
-            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Cancel import</button>
+            <div class="fy-progress fy-progress--indeterminate" role="progressbar" aria-label="Export General ledger (XLSX): running"><span></span></div>
+            <span class="fy-small fy-muted">You can keep working: a notification says when the file is ready.</span>
           </div>
         </li>
         <li class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3" aria-busy="true">
           <div class="fy-row fy-row--top">
-            <span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span>
+            <span class="fy-list__icon"><i data-icon="list-checks" class="fy-i--20"></i></span>
             <div class="fy-stack fy-stack--2 fy-grow">
-              <span class="fy-strong">Export general ledger, Jan–Sep 2026 (XLSX)</span>
-              <span class="fy-small fy-muted">Grace Ho · started 10:35 · streamed</span>
+              <span class="fy-strong">Run every check</span>
+              <span class="fy-small fy-muted">started 10:36</span>
             </div>
             <span class="fy-chip fy-chip--info"><i data-icon="loader-circle"></i>Running</span>
           </div>
           <div class="fy-stack fy-stack--2">
-            <div class="fy-row fy-row--between fy-small"><span>61,480 of 162,300 ledger lines written</span><span class="fy-num fy-strong">38%</span></div>
-            <div class="fy-progress" role="progressbar" aria-label="Ledger export progress" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"><span style="width: 38%"></span></div>
-          </div>
-          <div class="fy-row fy-row--between">
-            <span class="fy-small fy-muted">We will notify you when the file is ready.</span>
-            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Cancel export</button>
+            <div class="fy-progress fy-progress--indeterminate" role="progressbar" aria-label="Run every check: running"><span></span></div>
+            <span class="fy-small fy-muted">You can keep working: Checks updates once they have run.</span>
           </div>
         </li>
       </ul>

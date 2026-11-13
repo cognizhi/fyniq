@@ -105,6 +105,66 @@ func TestLongWorkIsPolledAsAnOperation(t *testing.T) {
 	}
 }
 
+// The operations tray lists the caller's own long work (FR-INT-11, design D10): newest first, a page at a time, each as
+// getOperation shows it, so a finished one names when and its resource; another person's never shows, and a cursor
+// that was not handed out is CURSOR.
+// req: FR-INT-11
+// asvs: V8.2.2
+func TestMyOperationsAreListed(t *testing.T) {
+	e := newEnv(t)
+	me := e.as(authz.Accountant)
+	if l := e.call(http.MethodGet, "/v1/operations", me, nil); l.Status != 200 || len(items(l)) != 0 || l.str("next_cursor") != "" {
+		t.Fatalf("before asking for anything: %d %s", l.Status, l.Raw)
+	}
+	body := map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"}
+	first := e.call(http.MethodPost, "/v1/report-exports", me, body)
+	second := e.call(http.MethodPost, "/v1/report-exports", me, map[string]any{"report": "trial_balance", "to": "2026-09-30", "format": "csv"})
+	if first.Status != 202 || second.Status != 202 {
+		t.Fatalf("asking for two exports: %d %s / %d %s", first.Status, first.Raw, second.Status, second.Raw)
+	}
+	other := e.call(http.MethodPost, "/v1/report-exports", e.as(authz.Accountant), body)
+	l := e.call(http.MethodGet, "/v1/operations", me, nil)
+	xs := items(l)
+	if l.Status != 200 || len(xs) != 2 || xs[0]["id"] != second.str("operation_id") || xs[1]["id"] != first.str("operation_id") {
+		t.Fatalf("my operations, newest first: %d %s", l.Status, l.Raw)
+	}
+	for _, x := range xs {
+		if x["status"] != "running" || x["kind"] != "report_export" || x["finished_at"] != nil || x["id"] == other.str("operation_id") {
+			t.Errorf("one running: %v", x)
+		}
+	}
+	if xs[1]["resource"] != "/v1/report-exports/"+first.str("id") {
+		t.Errorf("its resource: %v", xs[1])
+	}
+
+	page := e.call(http.MethodGet, "/v1/operations?page_size=1", me, nil)
+	next := e.call(http.MethodGet, "/v1/operations?page_size=1&cursor="+page.str("next_cursor"), me, nil)
+	if len(items(page)) != 1 || page.str("next_cursor") == "" || len(items(next)) != 1 || items(next)[0]["id"] != first.str("operation_id") || next.str("next_cursor") != "" {
+		t.Errorf("a page at a time: %s / %s", page.Raw, next.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/operations?cursor=not-a-cursor", me, nil), "listMyOperations", 422, CodeCursor)
+
+	worker := workerStore(t)
+	prep := reportexport.Preparer{Store: worker, Files: e.blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock}
+	e.work(map[string]outbox.Work{reportexport.Kind: prep.Work()})
+	for _, x := range items(e.call(http.MethodGet, "/v1/operations", me, nil)) {
+		if x["status"] != "succeeded" || x["finished_at"] == nil {
+			t.Errorf("once done: %v", x)
+		}
+	}
+}
+
+// items is a list answer's items.
+func items(r response) []map[string]any {
+	var out []map[string]any
+	xs, _ := r.Body["items"].([]any)
+	for _, x := range xs {
+		m, _ := x.(map[string]any)
+		out = append(out, m)
+	}
+	return out
+}
+
 // matrixOperations are the authorisation matrix's rows for polling long work (FR-INT-11): a principal that may ask for
 // an export polls its own operation; one that may not is given another person's, which it never reads (404).
 var matrixOperations = map[string]func(e *env, tok string) (response, func() bool){
@@ -115,5 +175,9 @@ var matrixOperations = map[string]func(e *env, tok string) (response, func() boo
 			loc = e.call(http.MethodPost, "/v1/report-exports", e.as(authz.Accountant), body).Header.Get("Location")
 		}
 		return e.call(http.MethodGet, loc, tok, nil), nil
+	},
+	// Every member lists their own operations, even none.
+	"listMyOperations": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/operations", tok, nil), nil
 	},
 }

@@ -515,4 +515,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (the restore drill register, DR-06)
 
 ## [2026-11-11] compile | docs/user-guide/compliance-controls.md → compliance.controls (the heartbeat drill register, NFR-OBS-02)
+
+## [2026-11-11] compile | docs/user-guide/home.md → home.overview (Follow long work: the operations tray, p1-operations-dr task 11.2)
+
+## [2026-11-11] compile | docs/user-guide/home.md → home.overview (Follow long work: on a phone, the notification and Reports)
 ## [2026-11-11] compile | docs/user-guide/forecast.md → planning.forecast (PRD-001 rev 0.247: the results first, a recorded forecast's plan folded)

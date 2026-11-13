@@ -12381,6 +12381,27 @@ Asks another person to approve a drafted share class version at the version read
 
 Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11).
 
+### `GET /v1/operations`
+
+**List my long operations** (`listMyOperations`)
+
+The long work the caller asked for, newest first, a page at a time (FR-INT-10, FR-INT-11): each with its kind, its status and its resource, as getOperation shows it. The web app's operations tray reads it, polling while any runs. Only the caller's own: nobody lists another person's. Read-only; no side effects.
+
+- **Permission:** View on (membership). Only the caller's own operations.
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`OperationList`](../../contracts/schemas/OperationList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/operations/{operation_id}`
 
 **Poll a long operation** (`getOperation`)

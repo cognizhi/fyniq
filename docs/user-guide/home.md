@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05]
+requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -93,6 +93,22 @@ Results marked **Expert** belong to Expert mode.
 
 To find a record, such as an invoice by its number or a document by its amount, choose **Search the
 records for …** at the end of the list: see [Search the records](search.md).
+
+### Follow long work
+
+Some work runs in the background so you can keep working, such as an accountant export or **Run now** on **Checks**.
+Select **Operations** (the hourglass in the header) to follow it; the header counts the work still running.
+
+- **Running** work shows a moving bar. Fyniq does not yet know how far along it is, so the bar does not fill. The list
+  is read again every 5 seconds while anything runs.
+- **Done** work links to what it made: **Download** for an export, for 24 hours after it is ready, and **See the
+  checks** for a run of the checks.
+- **Failed** work says why when it knows, and how to ask again.
+
+You see only the work you asked for. An export also sends you a notification when it is ready.
+
+On a phone, **Operations** is not in the header yet: the export's notification says when it is ready, and **Reports**
+lists your exports under **Accountant exports**.
 
 ### Copy and paste amounts
 

@@ -34,4 +34,6 @@ type Operations interface {
 	Create(ctx context.Context, n NewOperation) (Operation, error)
 	// Get is an operation with its job's state now: CodeNotFound when there is none.
 	Get(ctx context.Context, id uuid.UUID) (Operation, error)
+	// Mine is the latest limit (1 to 1,000) operations requestedBy asked for, newest first, each with its job's state now.
+	Mine(ctx context.Context, requestedBy string, limit int) ([]Operation, error)
 }

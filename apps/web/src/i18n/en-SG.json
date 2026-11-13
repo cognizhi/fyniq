@@ -44,6 +44,10 @@
       "label": "About Fyniq",
       "tooltip": "Quote the version and the commit when you report a problem. Every exported report names them in its footer."
     },
+    "shell.operations": {
+      "label": "Operations",
+      "tooltip": "Long work you asked for, such as exports and check runs, keeps running in the background. Follow it here and open what it made."
+    },
     "shell.mode": {
       "label": "Experience mode",
       "tooltip": "Basic shows the essentials; Expert adds accounts, settings and every detail. It changes only what you see, never what you may do."

@@ -5072,6 +5072,7 @@ CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree 
 CREATE INDEX notification_inbox ON fyniq.notification USING btree (organisation_id, user_id, created_at DESC) WHERE (archived_at IS NULL)
 CREATE INDEX notification_preference_latest ON fyniq.notification_preference USING btree (organisation_id, user_id, type, set_at)
 CREATE INDEX operation_job ON fyniq.operation USING btree (organisation_id, job_id)
+CREATE INDEX operation_requested ON fyniq.operation USING btree (organisation_id, requested_by, requested_at DESC, id DESC)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
