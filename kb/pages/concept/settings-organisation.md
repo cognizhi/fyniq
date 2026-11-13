@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:f9895caa5f2be883087588ca19811ac9a138a63b244efb99589fb92698126b93
+  - docs/user-guide/organisation-settings.md sha256:a2c376cf1ec1fbe3dc56a21b80ec9e1783c3ae0200d328328c6c3b41459fe990
 data_class: general
 taint: trusted
 status: draft
@@ -339,6 +339,7 @@ The calendar itself: [[compliance.calendar]].
 - Purge the ledger and the audit trail after retention: off, so both are kept for the life of the company. Switched on, the oldest year past its retention is purged, its balances carried forward so later reports are unchanged, after a signed record of what goes; reports before it can no longer be run, and a purge cannot be undone. Each purge is listed on the audit trail ([[compliance.audit-trail]]).
 - Security events' IP address and device kept for: 400 days. A sign-in, revealing a full bank number and an export keep them that long, then they are erased and the event stays.
 - AI conversations are kept 365 days; proposals stay with the audit trail.
+- **Settings → Data and export** shows these read only, beside the full export of everything the organisation keeps ([[settings.data]]).
 
 (src: docs/user-guide/organisation-settings.md#data-region-and-retention)
 

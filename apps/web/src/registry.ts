@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -180,6 +180,8 @@ export const routes = [
   { kind: "route", id: "settings-statutory-packs", path: "/settings/statutory-packs", mode: "expert", signedIn: true, help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "route", id: "settings-members", path: "/settings/members", mode: "expert", signedIn: true, help: "settings.members", guide: "settings.members" },
   { kind: "route", id: "settings-access-review", path: "/settings/access-review", mode: "expert", signedIn: true, help: "settings.access-review", guide: "settings.access-review" },
+  // Settings › Data (FR-MIG-04; p1-workbook-migration task 9.2): the data region and retention, and the full export.
+  { kind: "route", id: "settings-data", path: "/settings/data", mode: "expert", signedIn: true, help: "settings.data", guide: "settings.data" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "route", id: "settings-approval-policies", path: "/settings/approval-policies", mode: "expert", signedIn: true, help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "route", id: "settings-expense-policy", path: "/settings/expense-policy", mode: "expert", signedIn: true, help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
@@ -269,6 +271,8 @@ export const actions = [
   { kind: "action", id: "bank.line-dimensions", mode: "expert", help: "bank.line-dimensions", guide: "banking.accounts#dimensions-on-a-line" },
   { kind: "action", id: "journal.line-dimensions", mode: "expert", help: "journal.line-dimensions", guide: "accounting.journals#tag-a-line-with-dimensions" },
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
+  { kind: "action", id: "tenant-export.request", mode: "expert", help: "tenant-export.request", guide: "settings.data#ask-for-a-full-export" },
+  { kind: "action", id: "tenant-export.save", mode: "expert", help: "tenant-export.save", guide: "settings.data#save-it" },
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },
   { kind: "action", id: "approval-policy.change", mode: "expert", help: "approval-policy.change", guide: "approvals.policies#change-a-policy" },
   { kind: "action", id: "setting.change", mode: "expert", help: "setting.change", guide: "settings.organisation#change-a-setting" },
@@ -690,6 +694,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
+  { kind: "nav", id: "settings.data", route: "/settings/data", icon: Database, group: "organisation", roles: ["owner", "administrator", "dpo"], mode: "expert", help: "settings.data", guide: "settings.data" },
   // The installation's pages show to Super admins only (super_admin, from GET /v1/session).
   { kind: "nav", id: "settings.sign-in-providers", route: "/settings/sign-in-providers", icon: KeyRound, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
 ] as const satisfies readonly NavFeature[];
