@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -166,6 +168,49 @@ func (r sequences) Number(ctx context.Context, id uuid.UUID, t storage.DocumentT
 		return "", mapError(err)
 	}
 	if err := r.u.event(ctx, "document.numbered", "document", id, nil, map[string][2]any{"number": {nil, number}}); err != nil {
+		return "", err
+	}
+	return number, nil
+}
+
+func (r sequences) Keep(ctx context.Context, id uuid.UUID, t storage.DocumentType, number string) (string, error) {
+	if err := r.u.check(); err != nil {
+		return "", err
+	}
+	if n, err := r.u.q.GetDocumentNumber(ctx, id); err == nil {
+		return n, nil
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return "", mapError(err)
+	}
+	cur, err := r.u.q.LockSequence(ctx, string(t))
+	if errors.Is(err, pgx.ErrNoRows) {
+		d, err := defaults(t)
+		if err != nil {
+			return "", err
+		}
+		if _, _, err := r.setUp(ctx, t, d); err != nil {
+			return "", err
+		}
+		cur, err = r.u.q.LockSequence(ctx, string(t))
+		if err != nil {
+			return "", mapError(err)
+		}
+	} else if err != nil {
+		return "", mapError(err)
+	}
+	seq := sequenceOf(sqlcdb.ListSequencesRow(cur))
+	if err := r.u.q.InsertDocumentNumber(ctx, sqlcdb.InsertDocumentNumberParams{ID: id, DocumentType: string(t), Number: number}); err != nil {
+		return "", mapError(err)
+	}
+	// A number of the sequence's own form, its prefix and its digits, is one the sequence would issue: move past it.
+	if digits := strings.TrimPrefix(number, seq.Prefix); digits != number && len(digits) == seq.Digits {
+		if n, err := strconv.ParseInt(digits, 10, 64); err == nil && n > 0 {
+			if err := r.u.q.AdvanceSequencePast(ctx, sqlcdb.AdvanceSequencePastParams{ID: seq.ID, Past: n}); err != nil {
+				return "", mapError(err)
+			}
+		}
+	}
+	if err := r.u.event(ctx, "document.numbered", "document", id, nil, map[string][2]any{"number": {nil, number}, "kept": {nil, true}}); err != nil {
 		return "", err
 	}
 	return number, nil

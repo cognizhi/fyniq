@@ -55,6 +55,7 @@ const (
 	KindDepartment      = "department"
 	KindProject         = "project"
 	KindContact         = "contact"
+	KindPerson          = "person"
 	KindItem            = "item"
 	KindFXRate          = "fx_rate"
 	KindBankRule        = "bank_rule"
@@ -194,9 +195,18 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 			}},
 	}
 	if s.GSTRegistered {
-		// [accountant to confirm] Registered from the books start, filing quarterly in quarters that start with the
-		// financial year: the workbook keeps neither the date nor the frequency.
-		r := storage.NewGSTRegistration{RegisteredFrom: start, GSTNumber: s.GSTNumber, ReturnFrequency: storage.ReturnQuarterly,
+		// [accountant to confirm] Registered from the books start, or from the earliest invoice or bill the workbook keeps
+		// when it is earlier, as the workbook charged GST on it; filing quarterly in quarters that start with the financial
+		// year: the workbook keeps neither the date nor the frequency.
+		from := start
+		for _, ds := range [][]Document{w.Invoices, w.Bills} {
+			for _, d := range ds {
+				if !d.Date.IsZero() && d.Date.Before(from) {
+					from = d.Date
+				}
+			}
+		}
+		r := storage.NewGSTRegistration{RegisteredFrom: from, GSTNumber: s.GSTNumber, ReturnFrequency: storage.ReturnQuarterly,
 			QuarterStartMonth: (int(s.YearStart.Month())-1)%3 + 1, AccountingBasis: storage.BasisInvoice}
 		out = append(out, Record{Key: "gst-registration", Kind: KindGSTRegistration, Origin: Origin{Sheet: "Settings"},
 			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
@@ -209,7 +219,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 					return Made{}, err
 				}
 				for _, x := range regs { // the organisation's own registration, with the workbook's number, stands
-					if x.GSTNumber == r.GSTNumber && !x.RegisteredFrom.After(start) && (x.DeregisteredFrom == nil || x.DeregisteredFrom.After(start)) {
+					if x.GSTNumber == r.GSTNumber && !x.RegisteredFrom.After(from) && (x.DeregisteredFrom == nil || x.DeregisteredFrom.After(from)) {
 						return Made{Type: "gst_registration", ID: x.ID}, nil
 					}
 				}
@@ -364,6 +374,32 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 					}
 					d.DefaultAccountID = &a.ID
 				}
+				if err := refused(contact.Check(d)); err != nil {
+					return Made{}, err
+				}
+				x, err := u.Contacts().Create(ctx, d)
+				return Made{Type: "contact", ID: x.ID}, err
+			}})
+	}
+
+	// The people behind the director's and subscriber's accounts (rev 0.259): one contact per person, marked director or
+	// shareholder, from the first row that names them.
+	people := map[string]*PersonMap{}
+	var order []string
+	for i := range m.People {
+		p := m.People[i]
+		if x, ok := people[p.Contact]; ok {
+			x.Director, x.Shareholder = x.Director || p.Director, x.Shareholder || p.Shareholder
+			continue
+		}
+		people[p.Contact] = &p
+		order = append(order, p.Contact)
+	}
+	for _, name := range order {
+		p := people[name]
+		out = append(out, Record{Key: "person:" + strings.ToLower(name), Kind: KindPerson, Origin: Origin{Sheet: p.Sheet, Row: p.Row},
+			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+				d := storage.ContactDetails{LegalName: name, Director: p.Director, Shareholder: p.Shareholder, Individual: p.Director}
 				if err := refused(contact.Check(d)); err != nil {
 					return Made{}, err
 				}

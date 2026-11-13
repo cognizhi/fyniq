@@ -26718,6 +26718,11 @@ components:
           maxLength: 20
           minLength: 1
           type: string
+        has_opening:
+          description: Whether the workbook gives it an opening balance; ignored in a change.
+          examples:
+            - true
+          type: boolean
         money_account:
           description: "An account to create: whether money moves through it."
           examples:
@@ -26728,10 +26733,21 @@ components:
           examples:
             - AI project & solution revenue
           type: string
+        opening_person:
+          description: "On a director's or subscriber's account with an opening balance: the contact, one of the mapping's people, whose balance it is (B.7, rev 0.259)."
+          examples:
+            - Alex Tan
+          maxLength: 200
+          type: string
         report_group:
           description: "An account to create: its report group."
           examples:
             - Services & project revenue
+          type: string
+        role:
+          description: The system role of the Fyniq account it maps onto, if any (FR-COA-03); ignored in a change.
+          examples:
+            - director-loan
           type: string
         row:
           description: Its row on the Accounts sheet; ignored in a change.
@@ -27169,6 +27185,20 @@ components:
           type:
             - array
             - "null"
+        natures:
+          description: Suppliers' natures of payment to choose, by the supplier's name.
+          items:
+            $ref: "#/components/schemas/MigrationNatureMap"
+          type:
+            - array
+            - "null"
+        people:
+          description: People to map again, by the workbook's name.
+          items:
+            $ref: "#/components/schemas/MigrationPersonMap"
+          type:
+            - array
+            - "null"
         projects:
           description: Projects to map again, by the workbook's name.
           items:
@@ -27222,6 +27252,16 @@ components:
           examples:
             - system:migration.validate
           type: string
+        natures:
+          description: Each supplier resident for tax outside Singapore, with the nature of payment its bills record (FR-AP-19, rev 0.259).
+          items:
+            $ref: "#/components/schemas/MigrationNatureMap"
+          type: array
+        people:
+          description: The Funding sheet's founders and everyone named on a director's or subscriber's account, each the contact they become (rev 0.259).
+          items:
+            $ref: "#/components/schemas/MigrationPersonMap"
+          type: array
         problems:
           description: "What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off."
           items:
@@ -27278,8 +27318,91 @@ components:
         - projects
         - budget_lines
         - bank_rules
+        - people
+        - natures
         - problems
         - errors
+      type: object
+    MigrationNatureMap:
+      additionalProperties: false
+      properties:
+        contact:
+          description: "The supplier, by its name on the Contacts sheet: the entry's key."
+          examples:
+            - CloudNimbus Hosting
+          maxLength: 200
+          minLength: 1
+          type: string
+        country:
+          description: Where it is resident for tax; ignored in a change.
+          examples:
+            - US
+          type: string
+        nature:
+          description: The nature of payment its bills record for the tax agent's withholding decision (FR-AP-19); empty until the Accountant chooses, which stops the sign-off.
+          enum:
+            - ""
+            - goods
+            - software_use
+            - software_rights
+            - services_in_singapore
+            - services_outside_singapore
+            - interest
+            - movable_rent
+            - other
+          examples:
+            - services_outside_singapore
+          type: string
+        row:
+          description: Its row on the Contacts sheet; ignored in a change.
+          examples:
+            - 12
+          format: int64
+          type: integer
+      required:
+        - contact
+        - nature
+      type: object
+    MigrationPersonMap:
+      additionalProperties: false
+      properties:
+        contact:
+          description: "The contact's legal name: two names of one person map onto one contact."
+          examples:
+            - Alex Tan
+          maxLength: 200
+          type: string
+        director:
+          description: "Marked director: a director's account names them (FR-EQ-01)."
+          examples:
+            - true
+          type: boolean
+        row:
+          description: Its row; ignored in a change.
+          examples:
+            - 127
+          format: int64
+          type: integer
+        shareholder:
+          description: Marked shareholder.
+          examples:
+            - true
+          type: boolean
+        sheet:
+          description: Where the workbook first names them; ignored in a change.
+          examples:
+            - Transactions
+          type: string
+        workbook:
+          description: "The name the workbook gives them: the entry's key."
+          examples:
+            - Alex Tan (CEO)
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - workbook
+        - contact
       type: object
     MigrationProblem:
       additionalProperties: false

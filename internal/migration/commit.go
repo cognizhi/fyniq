@@ -43,7 +43,17 @@ type Record struct {
 type Env struct {
 	made map[string]uuid.UUID
 	Now  time.Time
+	// The store, organisation and clock of the batch, for the services a record's command goes through: they join its
+	// unit of work.
+	Store storage.Store
+	Org   uuid.UUID
+	Clock ports.Clock
 }
+
+// clockOf is a clock that reads now.
+type clockOf func() time.Time
+
+func (c clockOf) Now() time.Time { return c() }
 
 // Made is the record an earlier row became, by its key.
 func (e *Env) Made(key string) (uuid.UUID, bool) {
@@ -98,6 +108,9 @@ func (e *ImportError) Unwrap() error { return e.Err }
 func (w *Workbook) Plan(m Mapping, path string) ([]Record, []Problem) {
 	var out []Record
 	out = append(out, w.setUp(m, path)...)
+	if path == storage.PathHistory {
+		out = append(out, w.history(m)...)
+	}
 	seen := map[string]Origin{}
 	var probs []Problem
 	for _, r := range out {
@@ -134,7 +147,7 @@ type Progress struct {
 func Batch(ctx context.Context, store storage.Store, org uuid.UUID, c storage.MigrationCommit, plan []Record, n int, by string,
 	now func() time.Time) (Progress, error) {
 	p := Progress{Total: len(plan)}
-	e := &Env{made: map[string]uuid.UUID{}}
+	e := &Env{made: map[string]uuid.UUID{}, Store: store, Org: org, Clock: clockOf(now)}
 	err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		done, err := u.Migrations().Records(ctx, c.ID)
 		for _, r := range done {

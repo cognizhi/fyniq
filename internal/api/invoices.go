@@ -657,6 +657,9 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		}
 	}
 	out.Receivable = &r
+	// An opening item's receivable holds the GST it charged, in a return before the books start, with no GST leg of
+	// its own (rev 0.257).
+	taxed = taxed || invoice.IsOpening(doc) && doc.Status == storage.DocumentPosted
 	if readable {
 		// What it charged is what its entry posted: an invoice issued before a GST registration recorded later charged none,
 		// as its replay reads it.

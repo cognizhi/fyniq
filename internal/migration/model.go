@@ -158,6 +158,12 @@ type Document struct {
 	Terms, ServiceMonths, Rate                                            *apd.Decimal
 	OpeningItem, FullyPaid, Draft                                         bool
 	Status                                                                Status
+	// As the workbook calculated them, on the Invoices and Bills sheets: its total in its currency, the GST code and
+	// rate it used, and its due date (rev 0.259).
+	Total    *apd.Decimal
+	GSTUsed  string
+	RateUsed *apd.Decimal
+	Due      time.Time
 }
 
 // QuoteOrder is a row of Quotes & Orders.
@@ -174,6 +180,9 @@ type DocLine struct {
 	Document, Item, Description string
 	Quantity, Price, Discount   *apd.Decimal
 	Status                      Status
+	// As the workbook resolved its blanks: the description, quantity and unit price it used (rev 0.259).
+	DescriptionUsed         string
+	QuantityUsed, PriceUsed *apd.Decimal
 }
 
 // PayRow is a row of Payroll: one employee's month, as the workbook calculated it (design D7).

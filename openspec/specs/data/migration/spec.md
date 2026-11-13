@@ -39,6 +39,17 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **AND** once approved it runs in batches of at most 50 records, each one request on the API's own database role through the domain commands, each record in its own transaction with its business key, its sheet and row and the approval
 - **AND** closing the page pauses it, the next batch resumes at the first record not yet imported, and the approval is its one entry in the weekly review
 
+#### Scenario: Imported documents keep their numbers (rev 0.259)
+- **WHEN** the workbook's invoices and journals are imported
+- **THEN** each keeps the workbook's number and its sequence continues past the highest number of its own form, so no number repeats
+- **AND** a bill keeps the workbook's number as the supplier's reference
+
+#### Scenario: The people behind director accounts (rev 0.259)
+- **WHEN** the mapping is proposed
+- **THEN** it names the Funding sheet's founders and everyone named on a director's or subscriber's account, each mapped to a contact marked director or shareholder
+- **AND** each such account with an opening balance names whose balance it is
+- **AND** each supplier resident for tax outside Singapore names the nature of payment its bills record, which the Accountant chooses before signing
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 

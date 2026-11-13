@@ -32,6 +32,28 @@ type MigrationAccountMap struct {
 	Function     string `json:"function,omitempty" doc:"An account to create: its function (COGS, R&D, S&M, G&A or Other)." example:"Other"`
 	MoneyAccount bool   `json:"money_account,omitempty" doc:"An account to create: whether money moves through it." example:"false"`
 	DefaultGST   string `json:"default_gst_code,omitempty" doc:"An account to create: its default GST code." example:"SR"`
+	Role         string `json:"role,omitempty" doc:"The system role of the Fyniq account it maps onto, if any (FR-COA-03); ignored in a change." example:"director-loan"`
+	HasOpening   bool   `json:"has_opening,omitempty" doc:"Whether the workbook gives it an opening balance; ignored in a change." example:"true"`
+	// The person a director's or subscriber's account's opening balance belongs to (rev 0.259).
+	OpeningPerson string `json:"opening_person,omitempty" maxLength:"200" doc:"On a director's or subscriber's account with an opening balance: the contact, one of the mapping's people, whose balance it is (B.7, rev 0.259)." example:"Alex Tan"`
+}
+
+// MigrationNatureMap is a supplier resident for tax outside Singapore and the nature of payment its bills record (rev 0.259).
+type MigrationNatureMap struct {
+	Contact string `json:"contact" minLength:"1" maxLength:"200" doc:"The supplier, by its name on the Contacts sheet: the entry's key." example:"CloudNimbus Hosting"`
+	Row     int    `json:"row,omitempty" doc:"Its row on the Contacts sheet; ignored in a change." example:"12"`
+	Country string `json:"country,omitempty" doc:"Where it is resident for tax; ignored in a change." example:"US"`
+	Nature  string `json:"nature" enum:",goods,software_use,software_rights,services_in_singapore,services_outside_singapore,interest,movable_rent,other" doc:"The nature of payment its bills record for the tax agent's withholding decision (FR-AP-19); empty until the Accountant chooses, which stops the sign-off." example:"services_outside_singapore"`
+}
+
+// MigrationPersonMap is a person the workbook names and the contact they become (rev 0.259).
+type MigrationPersonMap struct {
+	Workbook    string `json:"workbook" minLength:"1" maxLength:"200" doc:"The name the workbook gives them: the entry's key." example:"Alex Tan (CEO)"`
+	Sheet       string `json:"sheet,omitempty" doc:"Where the workbook first names them; ignored in a change." example:"Transactions"`
+	Row         int    `json:"row,omitempty" doc:"Its row; ignored in a change." example:"127"`
+	Contact     string `json:"contact" maxLength:"200" doc:"The contact's legal name: two names of one person map onto one contact." example:"Alex Tan"`
+	Director    bool   `json:"director,omitempty" doc:"Marked director: a director's account names them (FR-EQ-01)." example:"true"`
+	Shareholder bool   `json:"shareholder,omitempty" doc:"Marked shareholder." example:"true"`
 }
 
 // MigrationCodeMap is a workbook GST code and the sg-gst code it maps onto.
@@ -78,6 +100,8 @@ type MigrationMappingView struct {
 	Projects    []MigrationValueMap   `json:"projects" nullable:"false" doc:"Each project the records name, as a value of the Project dimension (rev 0.254)."`
 	BudgetLines []MigrationLineMap    `json:"budget_lines" nullable:"false" doc:"Each P&L line of the Budget sheet."`
 	BankRules   []MigrationRuleMap    `json:"bank_rules" nullable:"false" doc:"The bank rules, in order."`
+	People      []MigrationPersonMap  `json:"people" nullable:"false" doc:"The Funding sheet's founders and everyone named on a director's or subscriber's account, each the contact they become (rev 0.259)."`
+	Natures     []MigrationNatureMap  `json:"natures" nullable:"false" doc:"Each supplier resident for tax outside Singapore, with the nature of payment its bills record (FR-AP-19, rev 0.259)."`
 	Problems    []MigrationProblem    `json:"problems" nullable:"false" doc:"What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off."`
 	Errors      int                   `json:"errors" doc:"The errors." example:"0"`
 }
@@ -90,6 +114,8 @@ type MigrationMappingChange struct {
 	Projects    []MigrationValueMap   `json:"projects,omitempty" doc:"Projects to map again, by the workbook's name."`
 	BudgetLines []MigrationLineMap    `json:"budget_lines,omitempty" doc:"Budget lines to map again, by the line."`
 	BankRules   []MigrationRuleMap    `json:"bank_rules,omitempty" doc:"Bank rules to map again, by their order."`
+	People      []MigrationPersonMap  `json:"people,omitempty" doc:"People to map again, by the workbook's name."`
+	Natures     []MigrationNatureMap  `json:"natures,omitempty" doc:"Suppliers' natures of payment to choose, by the supplier's name."`
 }
 
 type (
@@ -201,6 +227,12 @@ func mappingView(ctx context.Context, u storage.UnitOfWork, s mappingState) (Mig
 	}
 	if v.BankRules == nil {
 		v.BankRules = []MigrationRuleMap{}
+	}
+	if v.People == nil {
+		v.People = []MigrationPersonMap{}
+	}
+	if v.Natures == nil {
+		v.Natures = []MigrationNatureMap{}
 	}
 	return v, problems, nil
 }
