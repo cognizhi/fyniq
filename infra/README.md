@@ -17,6 +17,7 @@ Infrastructure workflow does nothing.
 | `gcp/modules/environment/` | One environment: APIs, CMEK keys, a private network with Cloud NAT, Cloud SQL for PostgreSQL 18, secrets, one service account per service and job, Cloud Run services and jobs, Cloud Tasks queues, the Scheduler tick, and break-glass through Privileged Access Manager; and, in the environment's secrets project, the organisations' connector secrets, which only the api's account manages (`org_secrets.tf`, design D12 of `p1-bank-import-reconcile`) |
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
 | `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
+| `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
 | `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors and budget |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
@@ -37,6 +38,7 @@ The tests check the controls on the planned configuration:
 | SEC-03 | Every service and job has its own service account. The MCP server and the AI orchestrator read no secret |
 | §12.11 | Only the api's account may create tasks or act as an invoker. The executor is invoked only by its own invoker |
 | SEC-04, CTL-IAM-04 | Workload Identity Federation names the repository and its owner by ID and allows only `main` and tags. There are no keys |
+| SEC-23 | Every request to a public service passes Cloud Armor: the OWASP rules, a per-IP ban on sign-in and the public routes, adaptive protection; each service learns the client's address, country and region; HTTPS only, TLS 1.2 or later; the public services' ingress is the load balancer and Google Cloud only |
 | SEC-22, CTL-CHG-04 | Staging's and production's policies require the release attestation for every image and allow-list none; every Cloud Run service and job uses the policy, without breakglass; only `release.yml` on a version tag can reach the attester, which may sign attestations and read images, nothing more |
 | CTL-DP-01 | The database and secrets use rotated CMEK. Backups are pinned to Singapore with point-in-time recovery. The database has a private IP only |
 | CTL-DP-07 | No region outside Singapore, in the spec and anywhere in the code |
@@ -161,6 +163,10 @@ assumptions, not facts.
   Artifact Registry, the SLSA generator's provenance pushed as the publisher, `attribute.release` reaching the
   attester from `release.yml` on a tag only, and `gcloud container binauthz attestations sign-and-create` with the
   attestor and key version by full resource name.
+- `[live-verify]` The edge: the managed certificate after the DNS record, the prefix rewrite of `/api/*` to `/`, Cloud
+  Scheduler and Cloud Tasks reaching services whose ingress is the load balancer and internal traffic, the OWASP rules'
+  hits in preview before they deny, and that the load balancer's `X-Fyniq-Client-IP` cannot be set by the client (the
+  api reads its last value). The web app's bucket replaces the API as the default route with `cloud-first-deployment`.
 - `[live-verify]` Which digest Cloud Run checks for a multi-platform image: the release attests the index and each
   platform's manifest.
 - `[live-verify]` That `run.allowedBinaryAuthorizationPolicies` = `default` refuses a service without the policy, and

@@ -10,9 +10,12 @@
 :8080 {
 	encode zstd gzip
 
-	# The API's routes have no /api prefix; the web app calls /api/… on its own origin.
+	# The API's routes have no /api prefix; the web app calls /api/… on its own origin. Caddy names the client, as the
+	# load balancer does, for the per-IP limits (SEC-23); whatever the client sent in that header is replaced.
 	handle_path /api/* {
-		reverse_proxy api:8080
+		reverse_proxy api:8080 {
+			header_up X-Fyniq-Client-IP {remote_host}
+		}
 	}
 	# The OAuth server's public endpoints (authorise, token, revoke, discovery); its admin port is internal.
 	handle_path /oauth/* {

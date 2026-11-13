@@ -27,6 +27,7 @@ type Server struct {
 	mu     sync.Mutex
 	checks map[string]Check
 	routes []string
+	wrap   []func(http.Handler) http.Handler
 }
 
 // New returns a server that already answers /healthz, /readyz and /version.
@@ -67,10 +68,26 @@ func (s *Server) Routes() []string {
 // over plain HTTP.
 const HSTS = "max-age=63072000; includeSubDomains"
 
-// ServeHTTP serves the routes, each answer with HSTS.
+// ServeHTTP serves the routes through what Use added, each answer with HSTS and nosniff: a browser never guesses an
+// answer's type, so a JSON body is never run as a script or a page (SEC-23).
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Strict-Transport-Security", HSTS)
-	s.Mux.ServeHTTP(w, r)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	s.mu.Lock()
+	var h http.Handler = s.Mux
+	for i := len(s.wrap) - 1; i >= 0; i-- {
+		h = s.wrap[i](h)
+	}
+	s.mu.Unlock()
+	h.ServeHTTP(w, r)
+}
+
+// Use puts mw in front of every route, after those Use added before: a check that may answer a request itself, such as
+// the per-IP limits.
+func (s *Server) Use(mw func(http.Handler) http.Handler) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.wrap = append(s.wrap, mw)
 }
 
 // AddReadiness registers a dependency that /readyz checks.

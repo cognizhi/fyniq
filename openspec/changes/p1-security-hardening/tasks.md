@@ -48,10 +48,10 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 6. The edge and per-IP limits (slice 6)
 
-- [ ] 6.1 `infra/gcp/modules/edge` (D4): the load balancer, serverless NEGs, the certificate, the Cloud Armor policy
+- [x] 6.1 `infra/gcp/modules/edge` (D4): the load balancer, serverless NEGs, the certificate, the Cloud Armor policy
   (OWASP CRS, the rate-based ban, adaptive protection) and the geolocation and client-IP headers. Ingress is
   "internal and load balancer". It has a module test `[live-verify]`. `// req: SEC-23`
-- [ ] 6.2 Per-IP limits for requests with no session (sign-in, joining, public documents, the setup code), from the
+- [x] 6.2 Per-IP limits for requests with no session (sign-in, joining, public documents, the setup code), from the
   client IP header trusted only from the load balancer or Caddy, answered `429` with `Retry-After`. Settings for the
   limits. Tests also pin the JSON `nosniff` answers and the cross-site write refusals. `// req: SEC-23`
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/version"
@@ -64,5 +65,37 @@ func TestEveryAnswerCarriesHSTS(t *testing.T) {
 		if got := rec.Header().Get("Strict-Transport-Security"); got != "max-age=63072000; includeSubDomains" {
 			t.Errorf("%s answered %d with HSTS %q", path, rec.Code, got)
 		}
+	}
+}
+
+// Every answer says nosniff, so a browser never runs a JSON body as a script or a page (SEC-23); a check put in front
+// with Use answers before the route, and checks run in the order they were added.
+// req: SEC-23
+// asvs: V3.2.1
+func TestEveryAnswerIsNosniffAndUseRunsFirst(t *testing.T) {
+	s := New(version.Info{Service: "api"})
+	var order []string
+	s.HandleFunc("GET /v1/things", func(w http.ResponseWriter, _ *http.Request) { order = append(order, "route") })
+	for _, name := range []string{"first", "second"} {
+		s.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				order = append(order, name)
+				if r.URL.Query().Has("refuse") && name == "first" {
+					w.WriteHeader(http.StatusTooManyRequests)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		})
+	}
+	for _, path := range []string{"/v1/things", "/healthz", "/nowhere", "/v1/things?refuse"} {
+		rec := httptest.NewRecorder()
+		s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if got := rec.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("%s answered %d with X-Content-Type-Options %q", path, rec.Code, got)
+		}
+	}
+	if got := strings.Join(order, ","); !strings.HasPrefix(got, "first,second,route,") || !strings.HasSuffix(got, ",first") {
+		t.Fatalf("the checks ran %s", got)
 	}
 }

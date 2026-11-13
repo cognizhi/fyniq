@@ -19,11 +19,12 @@ locals {
 }
 
 resource "google_cloud_run_v2_service" "services" {
-  for_each            = local.spec.services
-  project             = var.project
-  name                = each.key
-  location            = local.region
-  ingress             = each.value.public ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  for_each = local.spec.services
+  project  = var.project
+  name     = each.key
+  location = local.region
+  # A public service takes traffic from the edge's load balancer and from inside Google Cloud only (SEC-23, the edge module).
+  ingress             = each.value.public ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_INTERNAL_ONLY"
   deletion_protection = local.spec.environment == "production"
   # Binary Authorization's project policy admits only images the release workflow attested (SEC-22, the binauthz
   # module in the shared root). No breakglass justification, ever.
@@ -149,7 +150,7 @@ resource "google_cloud_run_v2_job" "jobs" {
 }
 
 # The public services authenticate every request themselves (sessions, OAuth tokens, the tick's OIDC
-# token); a load balancer with Cloud Armor fronts them in production from go-live (SEC-23). Hydra's admin
+# token); the edge's load balancer, with Cloud Armor, is the only way in from outside (SEC-23). Hydra's admin
 # port takes internal traffic only and has no further check, as in the local stack: the network is its
 # boundary [verify in staging that Direct VPC egress counts as internal].
 resource "google_cloud_run_v2_service_iam_member" "public" {

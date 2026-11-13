@@ -538,11 +538,12 @@ func instance(ctx context.Context) string {
 
 // requestContext names the request with a new UUIDv7, returned in X-Request-Id, and records where it
 // came from for the audit trail. A caller's own X-Request-Id is never used: the audit trail must not
-// carry an ID someone else chose.
+// carry an ID someone else chose. Every answer is nosniff, whatever server it runs in (SEC-23).
 func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
 	id := uuid.Must(uuid.NewV7()).String()
 	ctx.SetHeader("X-Request-Id", id)
 	ctx.SetHeader("Cache-Control", "no-store")
+	ctx.SetHeader("X-Content-Type-Options", "nosniff")
 	for name, value := range deprecationHeaders(ctx.Operation()) {
 		ctx.SetHeader(name, value)
 	}

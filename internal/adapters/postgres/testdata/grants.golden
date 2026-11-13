@@ -133,6 +133,7 @@ fyniq_api       SELECT    control_run
 fyniq_api       SELECT    control_state
 fyniq_api       INSERT    conversion_step (kind, on_date, recorded_at, recorded_by, reference, settlement_id)
 fyniq_api       SELECT    conversion_step
+fyniq_api       EXECUTE   count_ip_request()
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
@@ -895,6 +896,7 @@ fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
 fyniq_worker    EXECUTE   private_endpoints_for()
+fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome
 fyniq_worker    DELETE    rate_limit_window

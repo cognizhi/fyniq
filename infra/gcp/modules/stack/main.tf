@@ -127,6 +127,25 @@ module "environment" {
   break_glass       = var.break_glass
 }
 
+# The edge (SEC-23): the load balancer and Cloud Armor in front of the public services, on the public origin's host, with
+# the local stack's paths (deploy/local/Caddyfile).
+locals {
+  edge_paths = {
+    api   = { paths = ["/api/*"], strip = true }
+    oauth = { paths = ["/oauth/*"], strip = true }
+    ai    = { paths = ["/ai/*"], strip = true }
+    mcp   = { paths = ["/mcp", "/mcp/*"], strip = false }
+  }
+}
+
+module "edge" {
+  source   = "../edge"
+  project  = var.project
+  name     = "fyniq-${var.environment}"
+  domain   = trimprefix(var.public_origin, "https://")
+  services = { for name, s in module.spec.spec.services : name => local.edge_paths[name] if s.public }
+}
+
 module "budget" {
   source          = "../budget"
   billing_account = var.billing_account
@@ -145,6 +164,11 @@ output "gcp_config" {
 output "urls" {
   description = "Each service's URL."
   value       = module.environment.urls
+}
+
+output "edge_address" {
+  description = "The edge's address: the public origin's DNS A record."
+  value       = module.edge.address
 }
 
 output "accounts" {
