@@ -922,9 +922,10 @@ func TestTheForecastStartsFromTheWorkbooksBooks(t *testing.T) {
 }
 
 // The reconciliation compares the imported books with the workbook's own engine (§17.1 M4, design D8): before the
-// commit there is nothing to reconcile, and the report holds no figures; on the sample's history, of 1,615 figures of 85 accounts (each opening, and each
-// month's movement and closing through September) only the depreciation of June and September differs, by a cent, which
-// the closings absorb: class a proposed, a cent allocation. A journal posted since moves two accounts' September
+// commit there is nothing to reconcile, and the report holds no figures; on the sample's history, of 1,649 figures (each
+// of 85 accounts' opening and each month's movement and closing through September, each contact's open total and each
+// pay run's totals, rev 0.267) only the depreciation of June and September differs, by a cent, which the closings
+// absorb: class a proposed, a cent allocation. A journal posted since moves two accounts' September
 // movement and closing, with no class proposed. The workbook's checks are compared, by their C.1 number, with Fyniq's
 // at their last run: never run, they differ; run, each is the same exactly when the worst of Fyniq's statuses is the
 // workbook's. A clean start compares each opening with the Carry Forward sheet's balance: none differs.
@@ -957,7 +958,10 @@ func TestTheReconciliationComparesTheBooksWithTheWorkbook(t *testing.T) {
 		}
 		return strings.Join(out, ", ")
 	}
-	if rec.Status != "ready" || rec.Path != "history" || rec.BooksStart != "2026-01-01" || rec.Through != "2026-09" || rec.Accounts != 85 || rec.Figures != 1615 ||
+	// 85 accounts' openings and their months, the 4 customers' and 3 suppliers' open totals and the 9 pay runs' 3 totals
+	// (rev 0.267); the F5 waits for the F5 return.
+	if rec.Status != "ready" || rec.Path != "history" || rec.BooksStart != "2026-01-01" || rec.Through != "2026-09" || rec.Accounts != 85 ||
+		rec.Figures != 85*19+4+3+9*3 || len(rec.NotCompared) != 1 || rec.NotCompared[0] != "gst_f5" ||
 		keys(rec) != "1590.2026-06.movement 0.01 a, 1590.2026-09.movement 0.01 a, 6610.2026-06.movement -0.01 a, 6610.2026-09.movement -0.01 a" ||
 		rec.ReportSHA256 == "" {
 		t.Fatalf("the sample's reconciliation: %s", r.Raw)
@@ -1019,7 +1023,7 @@ func TestTheReconciliationComparesTheBooksWithTheWorkbook(t *testing.T) {
 	cf, cid := committedAs(t, "clean_start")
 	var clean MigrationReconciliation
 	if r := cf.e.call(http.MethodGet, "/v1/migrations/"+cid+"/reconciliation", cf.as(cf.ahkow, authz.Accountant), nil); json.Unmarshal([]byte(r.Raw), &clean) != nil ||
-		clean.Path != "clean_start" || clean.BooksStart != "2026-10-01" || clean.Through != "2026-09" || clean.Figures != clean.Accounts || len(clean.Differences) != 0 {
+		clean.Path != "clean_start" || clean.BooksStart != "2026-10-01" || clean.Through != "2026-09" || clean.Figures != clean.Accounts+4+3 || len(clean.Differences) != 0 {
 		t.Errorf("the clean start's reconciliation: %s", r.Raw)
 	}
 }

@@ -62,7 +62,7 @@ func TestAWorkbookReadsItsSheetsByName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if names := w.Names(); len(names) != 23 || names[0] != "Settings" || names[9] != "Quotes & Orders" {
+	if names := w.Names(); len(names) != 24 || names[0] != "Settings" || names[9] != "Quotes & Orders" {
 		t.Errorf("the sheets: %v", names)
 	}
 	acc, found, err := w.Sheet("Accounts")

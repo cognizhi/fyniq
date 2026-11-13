@@ -64,6 +64,20 @@
       "format": "int64",
       "type": "integer"
     },
+    "not_compared": {
+      "description": "What M4's parity asks for that the report does not compare yet.",
+      "items": {
+        "description": "gst_f5: the last GST F5 return against the workbook's GST Return sheet, until Fyniq makes the F5 return (p1-gst).",
+        "enum": [
+          "gst_f5"
+        ],
+        "examples": [
+          "gst_f5"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
     "path": {
       "description": "The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of.",
       "enum": [
@@ -126,6 +140,7 @@
     "differences",
     "checks",
     "checks_differ",
+    "not_compared",
     "undecided",
     "sha256"
   ],

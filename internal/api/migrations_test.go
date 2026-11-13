@@ -170,7 +170,7 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 	slices.Sort(warned)
 	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(8) ||
 		rep.str("format") != migration.ReportFormat || rep.str("base_currency") != "SGD" || rep.str("books_start") != "2026-01-01" ||
-		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 23 ||
+		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 24 ||
 		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Funding, "+migration.CodeArchived+" Lists, "+
 			migration.CodeArchived+" Recurring, "+migration.CodeArchived+" Recurring, "+migration.CodeArchived+" Timesheets, "+
 			migration.CodeMapping+" Contacts, "+migration.CodeMapping+" Contacts" {
@@ -245,7 +245,7 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 			missing++
 		}
 	}
-	if bad.str("state") != "invalid" || missing != 23 || bad.str("file_name") != "Notes.xlsx" {
+	if bad.str("state") != "invalid" || missing != 24 || bad.str("file_name") != "Notes.xlsx" {
 		t.Fatalf("a workbook without its sheets: %d missing; %s", missing, bad.Raw)
 	}
 	if after := books(); after != before {

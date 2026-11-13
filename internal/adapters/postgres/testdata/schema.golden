@@ -3862,7 +3862,7 @@ migration_difference | migration_difference_figures | CHECK ((((length(fyniq_fig
 migration_difference | migration_difference_fyniq_figure_not_null | NOT NULL fyniq_figure
 migration_difference | migration_difference_id_not_null | NOT NULL id
 migration_difference | migration_difference_line | UNIQUE (organisation_id, run_id, line_key)
-migration_difference | migration_difference_line_format | CHECK ((line_key ~ '^([0-9A-Za-z_-]{1,20}\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\.(movement|closing))|check\.[0-9]{1,3})$'::text))
+migration_difference | migration_difference_line_format | CHECK ((line_key ~ (('^([0-9A-Za-z_-]{1,20}\.(opening|[0-9]{4}-(0[1-9]|1[0-2])\.(movement|closing))|check\.[0-9]{1,3}'::text || '|a[rp]\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|others)'::text) || '|payroll\.[0-9]{4}-(0[1-9]|1[0-2])\.(net|statutory|cost))$'::text)))
 migration_difference | migration_difference_line_key_not_null | NOT NULL line_key
 migration_difference | migration_difference_note | CHECK (((length(note) <= 500) AND ((class <> 'c'::text) OR (length(btrim(note)) > 0))))
 migration_difference | migration_difference_note_not_null | NOT NULL note

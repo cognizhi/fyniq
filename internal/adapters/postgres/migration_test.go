@@ -530,6 +530,10 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		  VALUES ($1, 'check.30', 'c', ' ', 'bank.suspense=ok', 'review', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
 		{"a line of no form", "fyniq_api", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
 		  VALUES ($1, '6610 June', 'a', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
+		{"a contact's line not by its ID", "fyniq_api", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+		  VALUES ($1, 'ar.Lion City Clinics', 'a', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
+		{"a payroll line of no total", "fyniq_api", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+		  VALUES ($1, 'payroll.2026-03.gross', 'a', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"23514"}},
 		{"the worker deciding a line", "fyniq_worker", `INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
 		  VALUES ($1, 'check.31', 'b', '', '1', '2', 'user:y', now())`, []any{run.ID}, []string{"42501"}},
 		{"the API removing a decision", "fyniq_api", `DELETE FROM fyniq.migration_difference`, nil, []string{"42501"}},

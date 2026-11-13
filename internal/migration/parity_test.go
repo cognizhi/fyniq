@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,32 @@ func TestTheParityFindsEveryFigureThatDiffers(t *testing.T) {
 			}
 		}
 	}
+	// The open items as the AR & AP sheet gives them, each contact by the ID the import gave it; the pay runs' lines as
+	// the summary journals post them (design D7).
+	books.Receivable, books.Payable, books.Contacts, books.ContactNames = map[string]*apd.Decimal{}, map[string]*apd.Decimal{}, map[string]string{}, map[string]string{}
+	for _, side := range []struct {
+		rows []OpenBalance
+		to   map[string]*apd.Decimal
+	}{{w.Receivables, books.Receivable}, {w.Payables, books.Payable}} {
+		for _, o := range side.rows {
+			id := "id-" + strings.ToLower(o.Contact)
+			books.Contacts["contact:"+strings.ToLower(o.Contact)], books.ContactNames[id] = id, o.Contact
+			side.to[id] = add(side.to[id], o.Total)
+		}
+	}
+	sys := w.Settings.SystemAccounts
+	salaries, cpf := m.accountOf(sys[sysSalaries]), m.accountOf(sys[sysCPF])
+	books.PayrollLines = map[time.Time]map[string]*apd.Decimal{}
+	for _, r := range w.Payroll {
+		mo := firstOf(r.MonthEnd)
+		if books.PayrollLines[mo] == nil {
+			books.PayrollLines[mo] = map[string]*apd.Decimal{}
+		}
+		l := books.PayrollLines[mo]
+		l[salaries] = sub(l[salaries], r.Net)
+		l[cpf] = sub(sub(sub(sub(l[cpf], r.EmployeeCPF), r.EmployerCPF), r.SDL), r.SHG)
+		l["6110"] = add(add(add(l["6110"], r.Gross), r.EmployerCPF), r.SDL)
+	}
 	p := w.Reconcile(m, storage.PathHistory, books)
 	cents := map[string]string{}
 	for _, d := range p.Differences {
@@ -51,7 +78,8 @@ func TestTheParityFindsEveryFigureThatDiffers(t *testing.T) {
 	}
 	depreciation, accumulated := m.accountOf("6610"), m.accountOf("1590")
 	if len(p.Differences) != 4 || cents[depreciation+".2026-06.movement"] != "-0.01 a" || cents[accumulated+".2026-09.movement"] != "0.01 a" ||
-		p.Accounts == 0 || p.Figures != p.Accounts*(1+2*9) || !p.Through.Equal(time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)) {
+		p.Accounts == 0 || p.Figures != p.Accounts*(1+2*9)+len(w.Receivables)+len(w.Payables)+3*len(books.PayrollLines) ||
+		!p.Through.Equal(time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)) {
 		t.Fatalf("the workbook against books like Fyniq's: %v, %d accounts, %d figures, through %s", cents, p.Accounts, p.Figures, p.Through)
 	}
 	march := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
@@ -64,13 +92,18 @@ func TestTheParityFindsEveryFigureThatDiffers(t *testing.T) {
 	nudge(accumulated, "-0.01")
 	nudge(gst, "-3.00")
 	nudge(rent, "50.00")
+	// A customer owing 100.00 more, and March's net pay 1.00 less than the Payroll sheet's.
+	harbour := "id-" + strings.ToLower(w.Receivables[0].Contact)
+	books.Receivable[harbour] = add(books.Receivable[harbour], apd.New(100, 0))
+	books.PayrollLines[march][salaries] = add(books.PayrollLines[march][salaries], apd.New(1, 0))
 	p = w.Reconcile(m, storage.PathHistory, books)
 	got := map[string]string{}
 	for _, d := range p.Differences {
 		got[d.Key()] = d.Difference.Text('f') + " " + d.Proposed
 	}
-	// Each nudged account's March movement and its closings from March to September, 3 × (1 + 7), and the 4 cents before.
-	if len(p.Differences) != 28 || got[accumulated+".2026-03.movement"] != "-0.01 a" || got[accumulated+".2026-09.closing"] != "-0.01 a" ||
+	// Each nudged account's March movement and its closings from March to September, 3 × (1 + 7), the 4 cents before, the
+	// customer's open total and March's net pay.
+	if len(p.Differences) != 30 || got["ar."+harbour] != "100.00 " || got["payroll.2026-03.net"] != "-1.00 " || got[accumulated+".2026-03.movement"] != "-0.01 a" || got[accumulated+".2026-09.closing"] != "-0.01 a" ||
 		got[gst+".2026-03.movement"] != "-3.00 b" || got[rent+".2026-03.movement"] != "50.00 " || got[rent+".2026-02.closing"] != "" {
 		t.Errorf("the differences: %v", got)
 	}
