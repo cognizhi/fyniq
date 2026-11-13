@@ -23,6 +23,7 @@ fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, wr
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
 fyniq_api       SELECT    ai_agents
+fyniq_api       SELECT    ai_call
 fyniq_api       INSERT    ai_connection (auth, auto_qualify, billing_mode, changed_at, changed_by, configuration, connector, created_at, created_by, credential_ref, credential_set_at, data_handling, host, id, name, preset, quota, self_hosted)
 fyniq_api       SELECT    ai_connection
 fyniq_api       UPDATE    ai_connection (auth, auto_qualify, billing_mode, changed_at, changed_by, configuration, credential_ref, credential_set_at, data_handling, host, name, preset, quota, self_hosted, state, version)
@@ -395,6 +396,7 @@ fyniq_api       SELECT    quote_outcome
 fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
+fyniq_api       EXECUTE   record_ai_call()
 fyniq_api       EXECUTE   record_identity_email()
 fyniq_api       EXECUTE   records_years()
 fyniq_api       EXECUTE   recover_account()
@@ -594,6 +596,7 @@ fyniq_readonly  SELECT    accountant_review_query
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    ai_agents
+fyniq_readonly  SELECT    ai_call
 fyniq_readonly  SELECT    ai_connection
 fyniq_readonly  SELECT    ai_connection_version
 fyniq_readonly  SELECT    ai_data_policy
@@ -779,6 +782,7 @@ fyniq_worker    SELECT    accountant_review_query
 fyniq_worker    SELECT    accounting_framework
 fyniq_worker    SELECT    accounting_policy
 fyniq_worker    SELECT    ai_agents
+fyniq_worker    SELECT    ai_call
 fyniq_worker    SELECT    ai_connection
 fyniq_worker    SELECT    ai_connection_version
 fyniq_worker    SELECT    ai_data_policy
@@ -1023,6 +1027,7 @@ fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   reapply_shredding()
 fyniq_worker    EXECUTE   rebuild_balances()
+fyniq_worker    EXECUTE   record_ai_call()
 fyniq_worker    EXECUTE   record_ai_price_catalogue()
 fyniq_worker    EXECUTE   record_feed_rate()
 fyniq_worker    EXECUTE   records_years()

@@ -18,8 +18,11 @@ import (
 // The database keeps each agent's route whoever writes (golden rule 2; AI-74): the agents are the release's, written
 // only by the migrations; a route's version is the next for its agent, with its steps written with it, never changed or
 // removed; a step names only a model on its connection's allow-list; a route names only classes its agent handles; the
-// worker and the AI write none of it, and another organisation sees none of it.
+// worker and the AI write none of it, and another organisation sees none of it. The call log is written only through
+// record_ai_call, by the API and the worker in their own organisation, never by the AI (CMP-AI-01), and never changed
+// (AI-12, AI-76).
 // req: AI-74
+// req: AI-76
 func TestAttackRoutesKeepTheirRules(t *testing.T) {
 	ctx := context.Background()
 	a, b := books(t, "Routes A Pte Ltd"), books(t, "Routes B Pte Ltd")
@@ -87,6 +90,17 @@ func TestAttackRoutesKeepTheirRules(t *testing.T) {
 		t.Error("a route of an agent the release does not have")
 	}
 
+	// The API records an attempt through the function, in its own organisation; the AI may not (CMP-AI-01).
+	record := `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, $1, 'gpt-6', 'gpt-6', 'gpt-6-20261001', 'user:x',
+	  ARRAY['business-figures'], 'ok', NULL, 1000, 500, 0, 0, 100, NULL, NULL, NULL, 12, now())`
+	if err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, record, c.ID); return err }); err != nil {
+		t.Errorf("the API recording a call: %v", err)
+	}
+	wantState(t, "the AI recording a call", asOrg(ctx, conn(t, "fyniq_ai"), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, record, c.ID); return err }),
+		"42501")
+	if err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, record, c.ID); return err }); err == nil {
+		t.Error("the API recorded a call on another organisation's connection")
+	}
 	for _, x := range []struct {
 		what, role, stmt string
 		states           []string
@@ -107,6 +121,18 @@ func TestAttackRoutesKeepTheirRules(t *testing.T) {
 		{"the worker setting a route", "fyniq_worker", `INSERT INTO fyniq.ai_route (agent, version, classes, made_by, made_at)
 		  VALUES ('chat', 3, ARRAY['know-how'], 'system:x', now())`, []string{"42501"}},
 		{"the AI reading the routes", "fyniq_ai", `SELECT count(*) FROM fyniq.ai_route`, []string{"42501"}},
+		{"the API writing the call log", "fyniq_api", `INSERT INTO fyniq.ai_call (run_id, agent, route_version, step, connection_id, model_requested,
+		  actor, classes, outcome, detail, started_at) VALUES (gen_random_uuid(), 'chat', 1, 1, gen_random_uuid(), 'gpt-6', 'user:x',
+		  ARRAY['know-how'], 'skipped', 'x', now())`, []string{"42501"}},
+		{"the AI writing the call log", "fyniq_ai", `INSERT INTO fyniq.ai_call (run_id, agent, route_version, step, connection_id, model_requested,
+		  actor, classes, outcome, detail, started_at) VALUES (gen_random_uuid(), 'chat', 1, 1, gen_random_uuid(), 'gpt-6', 'user:x',
+		  ARRAY['know-how'], 'skipped', 'x', now())`, []string{"42501"}},
+		{"the owner changing a call", "fyniq_migrator", `UPDATE fyniq.ai_call SET outcome = 'ok'`, []string{"FY335"}},
+		{"the owner removing a call", "fyniq_migrator", `DELETE FROM fyniq.ai_call`, []string{"FY335"}},
+		{"a call that served with no model reported", "fyniq_api", `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, '` + c.ID.String() +
+			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['know-how'], 'ok', NULL, 0, 0, 0, 0, 0, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
+		{"a call carrying restricted data", "fyniq_api", `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, '` + c.ID.String() +
+			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['restricted'], 'skipped', 'x', 0, 0, 0, 0, 0, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
 		wantState(t, x.what, err, x.states...)

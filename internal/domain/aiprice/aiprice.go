@@ -247,7 +247,8 @@ var million = apd.New(1, 6)
 // Cost is what a call's usage costs under p, exactly, in p's currency (AI-77, AI-85). The prompt is its fresh input,
 // cache reads and cache writes; a prompt above a threshold the price gives is priced at that tier's rates, and a kind
 // the call used that the price has no rate for at that tier leaves the call unpriced for that use: missing names it.
-// Reasoning is output unless the price gives reasoning its own rate. Images and requests are counted by the caller.
+// Reasoning is output unless the price gives reasoning its own rate. Images and requests are counted by the caller, and
+// cost nothing apart when the price gives no rate for them.
 func (p Price) Cost(u ports.ModelUsage, images, requests int64) (cost apd.Decimal, missing string, err error) {
 	at := p.tier(u.Input + u.CacheRead + u.CacheWrite)
 	output, reasoning := u.Output, int64(0)
@@ -271,7 +272,10 @@ func (p Price) Cost(u ports.ModelUsage, images, requests int64) (cost apd.Decima
 			above = 0
 		}
 		r, ok := p.rate(part.kind, above)
-		if !ok {
+		switch {
+		case !ok && UnitOf(part.kind) != PerMillionTokens:
+			continue // no rate per image or request: the source charges none, and the tokens carry the cost
+		case !ok:
 			return apd.Decimal{}, Rate{Kind: part.kind, Above: above}.label(), nil
 		}
 		var amount apd.Decimal
