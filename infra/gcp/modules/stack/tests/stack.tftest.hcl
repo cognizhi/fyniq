@@ -4,6 +4,7 @@
 # req: CTL-IAM-03
 # req: SEC-30
 # req: DR-04
+# req: DR-07
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -64,6 +65,10 @@ run "production" {
   assert {
     condition     = jsondecode(output.gcp_config).exports.weekly == module.db_export.buckets.weekly && jsondecode(output.gcp_config).exports.monthly == "fyniq-production-db-monthly"
     error_message = "the jobs export into the buckets the db-export module made in fyniq-audit (DR-04)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).evidence == module.evidence.buckets && module.evidence.buckets.bucket == "fyniq-production-evidence"
+    error_message = "the services keep evidence in the buckets the evidence module made (DR-07)"
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")

@@ -50,7 +50,11 @@ var verifications = map[string]verification{
 }
 
 // Built reports whether the verification name is built.
-func Built(name string) bool { _, ok := verifications[name]; return ok || Platform(name) }
+func Built(name string) bool {
+	_, ok := verifications[name]
+	_, file := fileVerifications[name]
+	return ok || file || Platform(name)
+}
 
 // dualControl (CTL-FIN-08, FM-1): every approval of a payment batch or of a payee's or claimant's bank change, and
 // every release of a batch, was another person's, or a break-glass's use by its Owner (FM-8).
@@ -164,6 +168,8 @@ type Runner struct {
 	Posture ports.Posture
 	Logs    ports.LogReader
 	Alert   Alert
+	// Evidence is the locked records store records.retention reads (p1-operations-dr design D3); nil: it does not run.
+	Evidence ports.BlobStore
 }
 
 // Alert raises the security alert of a platform verification's findings for control, in the unit of work that recorded
@@ -222,7 +228,18 @@ func (r Runner) Verify(ctx context.Context, org uuid.UUID) (Report, error) {
 			}
 			if p, ok := platformVerifications[name]; ok {
 				if inst {
-					if err := r.verifyPlatform(ctx, org, c.ID, ch, p, &rep); err != nil {
+					if err := r.verifyOutside(ctx, org, c.ID, ch, p, &rep); err != nil {
+						failed = append(failed, fmt.Errorf("%s %s: %w", c.ID, ch.How, err))
+					}
+				}
+				continue
+			}
+			if f, ok := fileVerifications[name]; ok {
+				if r.Evidence != nil {
+					p := platformVerification{read: func(ctx context.Context, r Runner, now time.Time) ([]Finding, string, error) {
+						return f(ctx, r, org, now.Add(-Window))
+					}}
+					if err := r.verifyOutside(ctx, org, c.ID, ch, p, &rep); err != nil {
 						failed = append(failed, fmt.Errorf("%s %s: %w", c.ID, ch.How, err))
 					}
 				}
@@ -254,9 +271,9 @@ func (r Runner) Verify(ctx context.Context, org uuid.UUID) (Report, error) {
 	return rep, errors.Join(failed...)
 }
 
-// verifyPlatform makes a platform verification in the installation's organisation: it reads the posture outside the
-// unit of work, then records the run and raises its alert.
-func (r Runner) verifyPlatform(ctx context.Context, org uuid.UUID, control string, ch registry.Check, p platformVerification, rep *Report) error {
+// verifyOutside makes a verification that reads outside a unit of work (the platform's posture and logs in the
+// installation's organisation, or an organisation's files), then records the run and raises its alert.
+func (r Runner) verifyOutside(ctx context.Context, org uuid.UUID, control string, ch registry.Check, p platformVerification, rep *Report) error {
 	now := r.Clock.Now()
 	found, read, err := p.read(ctx, r, now)
 	if err != nil {

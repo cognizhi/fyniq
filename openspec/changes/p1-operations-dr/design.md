@@ -91,15 +91,22 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
 
 - **`modules/evidence`.** It creates two buckets in the environment's project (Singapore, uniform access, public access
   prevented, CMEK) and their grants, and fills `FYNIQ_GCP.evidence`:
-  - **staging**, unlocked, with a 7-day lifecycle on what was never committed;
+  - **staging**, unlocked. *As built:* no age-based deletion of uploads, because an upload waits there for as long as
+    its record is a draft, and the bucket also holds report exports, imported statements, brand files and outgoing
+    documents; the app deletes each in its time (the sweeper, an export's hourly expiry). One backstop deletes report
+    exports (`exports/`) after 7 days;
   - **evidence**, versioned, with Object Retention Lock enabled, so each object carries its own retain-until in Locked
     mode (FR-DOC-02), set by the API at commit as today. No bucket-wide policy: retention differs per record (7 years
     from its financial year's end, legal holds).
+  - The api reads committed files (and signs their links); the worker and the jobs hold a custom role that may create,
+    read, list, set retention and holds, and never delete.
 - **A verification, `records.retention`, daily** (CTL-AUD-03's second check). For each file committed since the last
-  run, through `ports.BlobStore`'s retention read, which the GCS and local adapters already have, it checks:
+  run it reads the object's retention through `ports.BlobStore.RetentionOf` (*as built:* added to the port, the GCS and
+  local adapters, and the port's shared test) and checks:
   - the object is in Locked mode;
-  - its retain-until is at least the expiry its record computes (§11.9);
+  - its retain-until is at least the retain-until its record holds (§11.9), which is authoritative;
   - it has its record, and every committed record has its object (no orphans).
+  It runs in every organisation, outside a unit of work, and does not run where the runner has no evidence store.
 - *Alternatives:* a bucket-wide retention policy, which cannot follow per-record expiries; checking only the bucket
   setting, which misses an object committed without its lock.
 

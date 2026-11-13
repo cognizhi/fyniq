@@ -180,6 +180,20 @@ func (d *Dir) SetLegalHold(_ context.Context, key string, hold bool) error {
 	return d.writeRetention(key, r)
 }
 
+// RetentionOf implements ports.BlobStore: Dir enforces every retain-until as Cloud Storage's Locked mode does.
+func (d *Dir) RetentionOf(_ context.Context, key string) (ports.BlobRetention, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if err := d.exists(key); err != nil {
+		return ports.BlobRetention{}, err
+	}
+	r, err := d.readRetention(key)
+	if err != nil {
+		return ports.BlobRetention{}, err
+	}
+	return ports.BlobRetention{Locked: !r.RetainUntil.IsZero(), RetainUntil: r.RetainUntil, Held: r.LegalHold}, nil
+}
+
 // Put writes r under key, replacing any existing blob unless it is retained.
 func (d *Dir) Put(_ context.Context, key string, r io.Reader) error {
 	p, err := d.path(key)

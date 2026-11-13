@@ -23,12 +23,14 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 3. Records and attachment storage (slice 3)
 
-- [ ] 3.1 `infra/gcp/modules/evidence` (D3): the staging and evidence buckets (Singapore, CMEK, versioned, Object
+- [x] 3.1 `infra/gcp/modules/evidence` (D3): the staging and evidence buckets (Singapore, CMEK, versioned, Object
   Retention Lock on the evidence bucket), their grants and `FYNIQ_GCP.evidence`, with a module test `[live-verify]`.
   `// req: DR-07`, `// req: NFR-RET-01`
-- [ ] 3.2 The `records.retention` verification, daily: each committed file locked until its record's expiry, none
+- [x] 3.2 The `records.retention` verification, daily: each committed file locked until its record's expiry, none
   without its record and none missing, with tests on the local store. CTL-AUD-03's second check becomes `running`.
   `// req: CTL-AUD-03`, `// req: NFR-RET-01`
+  - As built: `ports.BlobStore.RetentionOf` reads an object's retention; staging has no age-based deletion of uploads
+    (a draft's file waits there), only a 7-day backstop on report exports (design D3).
 
 ## 4. Restore drills (slice 4)
 

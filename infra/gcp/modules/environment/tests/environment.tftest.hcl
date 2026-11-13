@@ -20,6 +20,7 @@
 # req: DR-02
 # req: DR-03
 # req: DR-04
+# req: DR-07
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -62,7 +63,8 @@ variables {
     bucket      = "fyniq-staging-audit-anchors"
     key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/audit-staging/cryptoKeys/anchor/cryptoKeyVersions/1"
   }
-  exports = { weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
+  exports  = { weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
+  evidence = { staging = "fyniq-staging-evidence-staging", bucket = "fyniq-staging-evidence" }
   break_glass = {
     requesters = ["group:platform-admins@example.com"]
     approvers  = ["group:founders@example.com"]
@@ -195,6 +197,10 @@ run "the_wiring_the_services_read" {
   assert {
     condition     = jsondecode(output.gcp_config).exports == { instance = "projects/fyniq-staging/instances/fyniq-staging", database = "fyniq", weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
     error_message = "the weekly export's instance, database and buckets, as internal/wiring/release.go reads them (DR-02, DR-04)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).evidence == { staging = "fyniq-staging-evidence-staging", bucket = "fyniq-staging-evidence" }
+    error_message = "the staging and locked evidence buckets, as internal/wiring/release.go reads them (FR-DOC-13, DR-07)"
   }
   assert {
     condition     = local.env["api"]["FYNIQ_PUBLIC_ORIGIN"] == "https://staging.fyniq.example" && local.env["api"]["FYNIQ_SIGNIN"] == "identity-platform" && local.secret_env["api"]["FYNIQ_IDP_API_KEY"] == "idp-api-key"

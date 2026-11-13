@@ -19,10 +19,11 @@ Infrastructure workflow does nothing.
 | `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
 | `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
 | `gcp/modules/db-export/` | The weekly export of the database (DR-02, DR-04): two buckets beside the anchors (`fyniq-audit` in production) under their own CMEK key, in Singapore: each Sunday's export kept 35 days and each month's first kept a year, both locked in production. The instance's own account writes the exports; the jobs' account may only start an export and read it (the platform job `db.export`) |
+| `gcp/modules/evidence/` | The records' and attachments' buckets (DR-07, CTL-AUD-03), in the environment's project, in Singapore, under their own CMEK key: staging (what is not yet a record; the app deletes each file in its time, and a backstop deletes report exports after 7 days) and evidence, with Object Retention Lock on, so the API sets each committed file's retain-until in Locked mode. The api reads committed files; the worker and the jobs commit them with a role that may never delete one |
 | `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
 | `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
-| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, security logs, the edge, the budget and, in staging, the non-production scan |
+| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, the evidence buckets, security logs, the edge, the budget and, in staging, the non-production scan |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
 | `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
@@ -49,6 +50,7 @@ The tests check the controls on the planned configuration:
 | SEC-12 | The api's account holds `roles/secretmanager.admin` on the secrets project only (a rule of `make infra-check`), the worker reads there, and its Secret Manager encrypts under the environment's secrets key |
 | CTL-AUD-02 | Production's anchors are retention-locked. Staging's are not |
 | DR-01, DR-02, DR-03, CTL-RES-01 | Production's database is regional HA, and a zonal one is refused. Point-in-time recovery keeps 7 days of logs, and 35 daily backups are kept in Singapore |
+| DR-07, CTL-AUD-03, FR-DOC-02 | The evidence bucket locks each object until its own retain-until, deletes nothing by age and is never public; no account may delete a committed file or shorten its retention |
 | DR-02, DR-04 | The weekly export is kept 35 days and each month's first a year, in `fyniq-audit` for production, locked there; only the instance writes it, and the jobs' account may only start it |
 | NFR-COST-01 | Budgets are variables, with alerts at 50%, 80% and 100% and no Pub/Sub cap |
 
@@ -164,6 +166,8 @@ assumptions, not facts.
 - `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
   (a write across projects under that project's key), that `db.export` succeeds with the custom role
   alone, and how long an export of production takes.
+- `[live-verify]` That the evidence bucket refuses to delete a committed file or shorten its Locked
+  retention, and that the committer's custom role is enough to commit one and set its retention.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
 - `[verify]` The production anchor retention, with the accountant (§14, AUD-06).
 - `[verify]` The project IDs.
