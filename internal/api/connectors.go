@@ -36,7 +36,7 @@ type ConnectorDeps struct {
 
 // ConnectorCodes are the connector lifecycle's refusals.
 var ConnectorCodes = []string{connector.CodeUnknown, connector.CodeScope, connector.CodeConfiguration, connector.CodeSecretMissing,
-	connector.CodeSecretUnknown, connector.CodeState, connector.CodeNotInstalled, connector.CodeChange, storage.CodeConnector}
+	connector.CodeSecretUnknown, connector.CodeState, connector.CodeNotInstalled, connector.CodeChange, connector.CodeModelProvider, storage.CodeConnector}
 
 // connectorFixes say how to fix each refusal of the lifecycle (ENG-23).
 var connectorFixes = map[string]string{
@@ -48,6 +48,7 @@ var connectorFixes = map[string]string{
 	connector.CodeState:         "Take the steps in order: install, configure, test, enable; pause and resume; disable; uninstall",
 	connector.CodeNotInstalled:  "Check the ID: list the installed connectors",
 	connector.CodeChange:        "Read the change again; ask for a new one if the connector changed since",
+	connector.CodeModelProvider: "Add a connection to the model provider in Settings › AI providers, with its own approvals",
 }
 
 // DataClass is a class of data a connector sends out of Fyniq (PRD-001 AI-75).
@@ -1062,6 +1063,8 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 			switch {
 			case !ok:
 				return nil, problem(connector.CodeUnknown, in.Body.Connector+" is not a connector of this release.", connectorFixes[connector.CodeUnknown])
+			case b.Manifest.Model != nil:
+				return nil, problem(connector.CodeModelProvider, b.Manifest.Name+" is a model provider, connected as an AI connection of its own.", connectorFixes[connector.CodeModelProvider])
 			case b.Manifest.Scope != connector.ScopeOrganisation:
 				return nil, problem(connector.CodeScope, b.Manifest.Name+" is installed installation-wide by a Super admin.", connectorFixes[connector.CodeScope])
 			}

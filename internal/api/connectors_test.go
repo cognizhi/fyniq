@@ -269,6 +269,7 @@ func TestOrganisationConnectorsThroughTheAPI(t *testing.T) {
 		t.Fatalf("asking to install: %d %s", r.Status, r.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/organisation/connectors", ahkow, map[string]any{"connector": "zeptomail"}), "installOrganisationConnector", 422, connector.CodeScope)
+	e.problemIs(e.call(http.MethodPost, "/v1/organisation/connectors", ahkow, map[string]any{"connector": "anthropic"}), "installOrganisationConnector", 422, connector.CodeModelProvider)
 	if d := f.decide(weiling, r.str("id"), "approve", hashOf(r)); d.Status != 200 {
 		t.Fatalf("approving the install: %d %s", d.Status, d.Raw)
 	}
