@@ -6,7 +6,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   hash of the prompt, tools and model version, a miss an error naming its key; live mode only on `FYNIQ_AI_LIVE=1`
   with a developer's key from the environment, synthetic data only. Tests `// req: AI-70`,
   `// req: platform/local-mode Local AI in replay and live mode`.
-- [ ] 1.2 The `Screening` port and its local stub flagging the red-team corpus patterns (design D12); the real Model
+- [x] 1.2 The `Screening` port and its local stub flagging the red-team corpus patterns (design D12); the real Model
   Armor adapter `[live-verify]`. Test `// req: platform/local-mode Local AI in replay and live mode`.
 - [ ] 1.3 DEV-09's local-only adapters: the developer's `claude` or `codex` command-line agent as a subprocess, its
   sign-in never read, its model named from its configuration, what it lacks declared; absent from release images and
