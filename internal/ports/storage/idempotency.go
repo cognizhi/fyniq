@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Idempotency keys (FR-INT-08): a client's Idempotency-Key is kept for 24 hours with a hash of the
@@ -54,8 +56,11 @@ type RateLimits interface {
 	// Count adds one request of kind (RateRead or RateWrite) by client to the window that starts at
 	// start, and returns how many requests the window now holds.
 	Count(ctx context.Context, client, kind string, start time.Time) (int, error)
-	// Purge deletes the windows that started before before and returns how many (the worker's job).
+	// Purge deletes the windows that started before before and returns how many (the worker's job), the refusals' too.
 	Purge(ctx context.Context, before time.Time) (int64, error)
+	// Refused adds one authorisation refusal of user to the window that starts at start, and returns how many the window
+	// now holds (SEC-31).
+	Refused(ctx context.Context, user uuid.UUID, start time.Time) (int, error)
 }
 
 // The kinds of request the per-IP limits count (SEC-23): those that take no session, before anyone is known to belong to

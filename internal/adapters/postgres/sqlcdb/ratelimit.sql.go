@@ -8,7 +8,29 @@ package sqlcdb
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+const countRefusal = `-- name: CountRefusal :one
+INSERT INTO fyniq.authz_refusal (user_id, window_start)
+VALUES ($1, $2)
+ON CONFLICT (organisation_id, user_id, window_start) DO UPDATE SET refused = fyniq.authz_refusal.refused + 1
+RETURNING refused
+`
+
+type CountRefusalParams struct {
+	UserID      uuid.UUID
+	WindowStart time.Time
+}
+
+// Adds one refusal of the person to their window and returns how many the window now holds (SEC-31).
+func (q *Queries) CountRefusal(ctx context.Context, arg CountRefusalParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countRefusal, arg.UserID, arg.WindowStart)
+	var refused int32
+	err := row.Scan(&refused)
+	return refused, err
+}
 
 const countRequest = `-- name: CountRequest :one
 INSERT INTO fyniq.rate_limit_window (client_id, kind, window_start)
@@ -37,6 +59,18 @@ DELETE FROM fyniq.rate_limit_window WHERE window_start < $1
 
 func (q *Queries) PurgeRateLimitWindows(ctx context.Context, before time.Time) (int64, error) {
 	result, err := q.db.Exec(ctx, purgeRateLimitWindows, before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const purgeRefusals = `-- name: PurgeRefusals :execrows
+DELETE FROM fyniq.authz_refusal WHERE window_start < $1
+`
+
+func (q *Queries) PurgeRefusals(ctx context.Context, before time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeRefusals, before)
 	if err != nil {
 		return 0, err
 	}

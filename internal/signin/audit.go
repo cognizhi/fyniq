@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/clientip"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -40,7 +41,7 @@ type Hooks struct {
 
 // client is where a sign-in request came from. It travels in its own context value, read only by the audit hooks
 // here, so no other event of the sign-in carries an IP address into its body, where it could never be erased.
-type client struct{ ip, userAgent string }
+type client struct{ ip, userAgent, country, region string }
 
 type clientKey struct{}
 
@@ -49,14 +50,18 @@ func withClient(r *http.Request) context.Context {
 	if err != nil {
 		host = r.RemoteAddr
 	}
-	return context.WithValue(r.Context(), clientKey{}, client{ip: host, userAgent: r.UserAgent()})
+	c := client{ip: host, userAgent: r.UserAgent()}
+	if from, ok := clientip.From(r.Context()); ok && from.IP.IsValid() { // the edge's view: the client, its country and region
+		c.ip, c.country, c.region = from.IP.String(), from.Country, from.Region
+	}
+	return context.WithValue(r.Context(), clientKey{}, c)
 }
 
 // as is ctx for writing user's event, from where the request came.
 func as(ctx context.Context, user uuid.UUID) context.Context {
 	c, _ := ctx.Value(clientKey{}).(client)
 	return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: user.String()},
-		Request: storage.Request{IP: c.ip, UserAgent: c.userAgent}})
+		Request: storage.Request{IP: c.ip, UserAgent: c.userAgent, Country: c.country, Region: c.region}})
 }
 
 // AuditSignIn records a sign-in in the trail of the organisation of the person who signed in.

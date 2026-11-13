@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/notify"
@@ -40,7 +41,8 @@ func main() {
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			kinds[tokens.Kind] = tokens.Work(wiring.Hydra(admin)) // AI-38: revoke a user's tokens after a change
 		}
-		if c, ok := kit.Committer(deps.Clock); ok { // FR-DOC-13: commit a final record's files to the locked store
+		kinds[security.SignInKind] = security.SignInWork(kit.Store, kit.Alerts(deps.Clock)) // SEC-31: an admin's sign-in, checked
+		if c, ok := kit.Committer(deps.Clock); ok {                                         // FR-DOC-13: commit a final record's files to the locked store
 			kinds[evidence.CommitKind] = func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {
 				_, err := c.Commit(ctx, org)
 				return err

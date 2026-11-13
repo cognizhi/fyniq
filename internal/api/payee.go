@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -484,7 +485,14 @@ func registerPayeeBankDetails(a *API) {
 				if err != nil {
 					return Approval{}, err
 				}
-				return r, a.notifyFounders(ctx, u, doc, fmt.Sprintf("%s's bank details are changing: payments to it are frozen until a second person approves", vendor.LegalName))
+				title := fmt.Sprintf("%s's bank details are changing: payments to it are frozen until a second person approves", vendor.LegalName)
+				if err := a.notifyFounders(ctx, u, doc, title); err != nil {
+					return r, err
+				}
+				// SEC-31: a vendor's bank details changing is a security alert too, to the Owners and the DPO.
+				p, _ := authn.From(ctx)
+				return r, a.alert(ctx, u, p.Organisation, security.Alert{Rule: security.RuleVendorBank, Subject: doc.ID, Title: title,
+					Link: "/purchases/bank-changes/" + doc.ID.String()})
 			})
 			if err != nil {
 				return nil, err

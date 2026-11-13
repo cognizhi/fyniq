@@ -61,6 +61,7 @@ var Catalogue = []Type{
 	{Key: JoinRequestType, Label: "Someone asks to join by their email domain", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: RecoveryType, Label: "An account was recovered, or a recovery confirmed", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: SignInProviderType, Label: "A sign-in provider was turned on or off, or its domains changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: SecurityAlertType, Label: "A security alert: an unusual sign-in, export or refusals, a vendor's bank change, an audit-chain failure", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: PrivateEndpointType, Label: "A private endpoint was registered, changed or retired", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},

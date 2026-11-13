@@ -217,6 +217,13 @@ audit_request_detail | id | uuid | not null |
 audit_request_detail | occurred_at | timestamp with time zone | not null | 
 audit_request_detail | ip | text | not null | 
 audit_request_detail | user_agent | text | not null | 
+audit_request_detail | country | text | not null | ''::text
+audit_request_detail | region | text | not null | ''::text
+authz_refusal | organisation_id | uuid | not null | current_org()
+authz_refusal | id | uuid | not null | uuidv7()
+authz_refusal | user_id | uuid | not null | 
+authz_refusal | window_start | timestamp with time zone | not null | 
+authz_refusal | refused | integer | not null | 1
 balance | organisation_id | uuid | not null | 
 balance | id | uuid | not null | uuidv7()
 balance | account_id | uuid | not null | 
@@ -2213,6 +2220,8 @@ audit_recovery_acknowledgement | audit_recovery_acknowledgement_recovery_fkey | 
 audit_recovery_acknowledgement | audit_recovery_acknowledgement_recovery_id_not_null | NOT NULL recovery_id
 audit_recovery_acknowledgement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 audit_request_detail | audit_request_detail_agent_length | CHECK ((length(user_agent) <= 1000))
+audit_request_detail | audit_request_detail_country_code | CHECK ((country ~ '^([A-Z]{2})?$'::text))
+audit_request_detail | audit_request_detail_country_not_null | NOT NULL country
 audit_request_detail | audit_request_detail_event_fkey | FOREIGN KEY (organisation_id, id) REFERENCES audit_event(organisation_id, id)
 audit_request_detail | audit_request_detail_id_not_null | NOT NULL id
 audit_request_detail | audit_request_detail_ip_length | CHECK ((length(ip) <= 64))
@@ -2220,8 +2229,19 @@ audit_request_detail | audit_request_detail_ip_not_null | NOT NULL ip
 audit_request_detail | audit_request_detail_occurred_at_not_null | NOT NULL occurred_at
 audit_request_detail | audit_request_detail_organisation_id_not_null | NOT NULL organisation_id
 audit_request_detail | audit_request_detail_pkey | PRIMARY KEY (organisation_id, id)
+audit_request_detail | audit_request_detail_region_length | CHECK ((length(region) <= 16))
+audit_request_detail | audit_request_detail_region_not_null | NOT NULL region
 audit_request_detail | audit_request_detail_something | CHECK (((ip <> ''::text) OR (user_agent <> ''::text)))
 audit_request_detail | audit_request_detail_user_agent_not_null | NOT NULL user_agent
+authz_refusal | authz_refusal_id_not_null | NOT NULL id
+authz_refusal | authz_refusal_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+authz_refusal | authz_refusal_organisation_id_not_null | NOT NULL organisation_id
+authz_refusal | authz_refusal_pkey | PRIMARY KEY (organisation_id, id)
+authz_refusal | authz_refusal_refused_not_null | NOT NULL refused
+authz_refusal | authz_refusal_refused_positive | CHECK ((refused > 0))
+authz_refusal | authz_refusal_user_id_not_null | NOT NULL user_id
+authz_refusal | authz_refusal_user_key | UNIQUE (organisation_id, user_id, window_start)
+authz_refusal | authz_refusal_window_start_not_null | NOT NULL window_start
 balance | balance_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 balance | balance_account_id_not_null | NOT NULL account_id
 balance | balance_amount_not_null | NOT NULL amount
@@ -4883,6 +4903,7 @@ CREATE INDEX audit_event_actor_idx ON fyniq.audit_event USING btree (organisatio
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX audit_event_record_idx ON fyniq.audit_event USING btree (organisation_id, object_type, object_id, seq)
 CREATE INDEX audit_request_detail_age_idx ON fyniq.audit_request_detail USING btree (organisation_id, occurred_at)
+CREATE INDEX authz_refusal_start_idx ON fyniq.authz_refusal USING btree (organisation_id, window_start)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)
 CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
@@ -5006,6 +5027,8 @@ CREATE UNIQUE INDEX audit_recovery_acknowledgement_pkey ON fyniq.audit_recovery_
 CREATE UNIQUE INDEX audit_recovery_epoch_key ON fyniq.audit_recovery USING btree (organisation_id, epoch)
 CREATE UNIQUE INDEX audit_recovery_pkey ON fyniq.audit_recovery USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_request_detail_pkey ON fyniq.audit_request_detail USING btree (organisation_id, id)
+CREATE UNIQUE INDEX authz_refusal_pkey ON fyniq.authz_refusal USING btree (organisation_id, id)
+CREATE UNIQUE INDEX authz_refusal_user_key ON fyniq.authz_refusal USING btree (organisation_id, user_id, window_start)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
 CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
@@ -5758,6 +5781,7 @@ audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organi
 audit_recovery | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_recovery_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -5909,6 +5933,7 @@ audit_event | enabled | forced
 audit_recovery | enabled | forced
 audit_recovery_acknowledgement | enabled | forced
 audit_request_detail | enabled | forced
+authz_refusal | enabled | forced
 balance | enabled | forced
 bank_feed | enabled | forced
 bank_gap | enabled | forced

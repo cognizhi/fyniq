@@ -11,6 +11,8 @@
 # req: SEC-37
 # req: SEC-23
 # req: SEC-24
+# req: SEC-30
+# req: SEC-31
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -387,6 +389,30 @@ run "a_secrets_project_is_a_project_id" {
 }
 
 # Every service and job is held to the project's Binary Authorization policy, with no breakglass (SEC-22).
+# Every security alert, audit-chain failure, IAM policy change and secret read outside the services alerts the founders
+# by email at its first entry (SEC-30, SEC-31).
+run "security_monitoring_alerts_the_founders" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = toset(keys(google_logging_metric.security)) == toset(["security-alerts", "audit-chain-failures", "iam-policy-changes", "secret-reads-outside-the-services"])
+    error_message = "the four security metrics"
+  }
+  assert {
+    condition     = strcontains(google_logging_metric.security["security-alerts"].filter, "fyniq.security_alert") && strcontains(google_logging_metric.security["audit-chain-failures"].filter, "audit_chain")
+    error_message = "the alerts' metrics read the platform's structured entries (internal/domain/security.LogEvent)"
+  }
+  assert {
+    condition = alltrue([for p in google_monitoring_alert_policy.security : p.severity == "CRITICAL" && length(p.notification_channels) == 1 &&
+    p.conditions[0].condition_threshold[0].threshold_value == 0])
+    error_message = "every policy is critical, fires at the first entry and emails the founders"
+  }
+  assert {
+    condition     = alltrue([for c in google_monitoring_notification_channel.security : c.type == "email"])
+    error_message = "the founders are told by email"
+  }
+}
+
 # The api signs download links as its own account, and no account signs as another (SEC-24).
 run "only_the_api_signs_and_only_as_itself" {
   command = plan

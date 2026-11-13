@@ -66,8 +66,9 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 	// AUD-06: a security event keeps its IP address and user agent beside the chain, fingerprinted in its body, so they
 	// can be erased after the security-log retention while the event stays and verifies.
 	if audit.IsSecurity(action) && (e.Request.IP != "" || e.Request.UserAgent != "") {
-		d := storage.AuditDetail{EventID: e.EventID, OccurredAt: now, IP: audit.Clip(e.Request.IP, 64), UserAgent: audit.Clip(e.Request.UserAgent, 1000)}
-		mac, err := u.store.fingerprint(ctx, scope, audit.DetailValue(d.IP, d.UserAgent))
+		d := storage.AuditDetail{EventID: e.EventID, OccurredAt: now, IP: audit.Clip(e.Request.IP, 64), UserAgent: audit.Clip(e.Request.UserAgent, 1000),
+			Country: a.Request.Country, Region: audit.Clip(a.Request.Region, 16)}
+		mac, err := u.store.fingerprint(ctx, scope, audit.DetailValue(d.IP, d.UserAgent, d.Country, d.Region))
 		if err != nil {
 			return fmt.Errorf("audit: fingerprint the request details of %s: %w", action, err)
 		}
@@ -104,7 +105,7 @@ func (u *unitOfWork) flush(ctx context.Context) error {
 		}
 		if d, ok := u.details[e.EventID]; ok {
 			if err := u.q.InsertAuditRequestDetail(ctx, sqlcdb.InsertAuditRequestDetailParams{ID: d.EventID, OccurredAt: d.OccurredAt,
-				Ip: d.IP, UserAgent: d.UserAgent}); err != nil {
+				Ip: d.IP, UserAgent: d.UserAgent, Country: d.Country, Region: d.Region}); err != nil {
 				return mapError(err)
 			}
 		}
@@ -170,7 +171,7 @@ func (r auditTrail) Details(ctx context.Context, events []uuid.UUID) (map[uuid.U
 	}
 	out := make(map[uuid.UUID]storage.AuditDetail, len(rows))
 	for _, d := range rows {
-		out[d.ID] = storage.AuditDetail{EventID: d.ID, OccurredAt: d.OccurredAt, IP: d.Ip, UserAgent: d.UserAgent}
+		out[d.ID] = storage.AuditDetail{EventID: d.ID, OccurredAt: d.OccurredAt, IP: d.Ip, UserAgent: d.UserAgent, Country: d.Country, Region: d.Region}
 	}
 	return out, nil
 }

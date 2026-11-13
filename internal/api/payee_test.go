@@ -129,6 +129,9 @@ func TestAChangeOfBankDetailsNeedsASecondPerson(t *testing.T) {
 		if !strings.Contains(n.Raw, `"type":"payee.bank_details"`) {
 			t.Errorf("a founder was not told: %s", n.Raw)
 		}
+		if !strings.Contains(n.Raw, `"type":"security.alert"`) { // SEC-31: a vendor's bank details changing is a security alert
+			t.Errorf("an Owner had no security alert: %s", n.Raw)
+		}
 	}
 
 	// Ah Kow cannot approve what he asked for; Wei Ling can.

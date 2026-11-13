@@ -64,7 +64,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 8. Security alerts (slice 8)
 
-- [ ] 8.1 `internal/domain/security` (D7):
+- [x] 8.1 `internal/domain/security` (D7):
   - admin sign-ins: a new device, and impossible travel from the geolocation headers kept beside the security event;
   - vendor bank changes;
   - mass exports;
@@ -74,7 +74,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
   Each alert is a locked critical notice `security.alert`, a `fyniq.security_alert` log entry and an audit event.
   Thresholds are settings. `// req: SEC-31`
-- [ ] 8.2 The log-based metrics and alert policies in `infra/` `[live-verify]`. `// req: SEC-30`, `// req: SEC-31`
+- [x] 8.2 The log-based metrics and alert policies in `infra/` `[live-verify]`. `// req: SEC-30`, `// req: SEC-31`
 
 ## 9. Logs, posture and the weekly scans (slice 9)
 

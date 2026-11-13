@@ -289,6 +289,16 @@ type FyniqAuditRequestDetail struct {
 	OccurredAt     time.Time
 	Ip             string
 	UserAgent      string
+	Country        string
+	Region         string
+}
+
+type FyniqAuthzRefusal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	WindowStart    time.Time
+	Refused        int32
 }
 
 type FyniqBalance struct {

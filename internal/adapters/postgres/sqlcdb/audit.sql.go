@@ -306,7 +306,7 @@ func (q *Queries) InsertAuditRecovery(ctx context.Context, arg InsertAuditRecove
 }
 
 const insertAuditRequestDetail = `-- name: InsertAuditRequestDetail :exec
-INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent) VALUES ($1, $2, $3, $4)
+INSERT INTO fyniq.audit_request_detail (id, occurred_at, ip, user_agent, country, region) VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertAuditRequestDetailParams struct {
@@ -314,6 +314,8 @@ type InsertAuditRequestDetailParams struct {
 	OccurredAt time.Time
 	Ip         string
 	UserAgent  string
+	Country    string
+	Region     string
 }
 
 // A security event's request details, beside the chain (AUD-06, 000285).
@@ -323,6 +325,8 @@ func (q *Queries) InsertAuditRequestDetail(ctx context.Context, arg InsertAuditR
 		arg.OccurredAt,
 		arg.Ip,
 		arg.UserAgent,
+		arg.Country,
+		arg.Region,
 	)
 	return err
 }
@@ -469,7 +473,7 @@ func (q *Queries) ListAuditRecoveries(ctx context.Context) ([]ListAuditRecoverie
 }
 
 const listAuditRequestDetails = `-- name: ListAuditRequestDetails :many
-SELECT id, occurred_at, ip, user_agent FROM fyniq.audit_request_detail WHERE id = ANY($1::uuid[])
+SELECT id, occurred_at, ip, user_agent, country, region FROM fyniq.audit_request_detail WHERE id = ANY($1::uuid[])
 `
 
 type ListAuditRequestDetailsRow struct {
@@ -477,6 +481,8 @@ type ListAuditRequestDetailsRow struct {
 	OccurredAt time.Time
 	Ip         string
 	UserAgent  string
+	Country    string
+	Region     string
 }
 
 func (q *Queries) ListAuditRequestDetails(ctx context.Context, eventIds []uuid.UUID) ([]ListAuditRequestDetailsRow, error) {
@@ -493,6 +499,8 @@ func (q *Queries) ListAuditRequestDetails(ctx context.Context, eventIds []uuid.U
 			&i.OccurredAt,
 			&i.Ip,
 			&i.UserAgent,
+			&i.Country,
+			&i.Region,
 		); err != nil {
 			return nil, err
 		}
