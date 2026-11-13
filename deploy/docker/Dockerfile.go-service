@@ -17,7 +17,9 @@
 # commit's time, and clamp every file's time in the layers to it, so the same commit gives the same digests.
 
 # ---- build stage ------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS build
+# Go 1.27.4, as mise.toml pins it: the patch release that fixes the standard library's vulnerabilities govulncheck
+# finds the code reaching (SEC-26).
+FROM --platform=$BUILDPLATFORM golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea AS build
 
 WORKDIR /src
 COPY go.* ./
@@ -60,7 +62,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Typst 0.15.1, as mise.toml pins it: the static musl build from github.com/typst/typst/releases for the target
 # platform, checked against its SHA-256 (the release's own digests), its one binary read out with Python's lzma (the
 # image has no xz). The fonts are in the render binary (go:embed).
-FROM --platform=$BUILDPLATFORM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS typst
+FROM --platform=$BUILDPLATFORM golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea AS typst
 ARG TARGETARCH
 RUN case "${TARGETARCH}" in \
       amd64) t=x86_64; sum=a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c ;; \

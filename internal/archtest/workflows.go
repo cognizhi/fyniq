@@ -57,6 +57,7 @@ type defaults struct {
 }
 
 type job struct {
+	If          string    `yaml:"if"`
 	Permissions yaml.Node `yaml:"permissions"`
 	Uses        string    `yaml:"uses"`
 	Defaults    defaults  `yaml:"defaults"`
@@ -198,6 +199,61 @@ func WorkflowViolations(name string, src []byte) []string {
 		for _, m := range secretRef.FindAllStringSubmatch(string(src), -1) {
 			if m[1] != "GITHUB_TOKEN" {
 				bad("reads secrets.%s in a pull_request_target workflow", m[1])
+			}
+		}
+	}
+	return out
+}
+
+// Owner is the GitHub account of the repository's owner: the one whose development pull requests auto-approve.yml
+// approves before production (founder decision, 14 Oct 2026), and the code owner of .github/CODEOWNERS.
+const Owner = "cyyeong"
+
+// AutoApproveViolations checks auto-approve.yml against REL-04 and CTL-CHG-01 (p1-security-hardening design D11): it runs
+// on pull_request_target only, so a pull request cannot change the rule that approves it; its one job approves only
+// when every condition holds (the owner opened the pull request and sent the event, from a branch of this repository,
+// not a draft), so release-please's and Dependabot's pull requests, and anyone else's, wait for a person; it runs no
+// action, so nothing of the pull request's is checked out or run; and it leaves a pull request labelled
+// needs-human-review, or one changing docs/prd/reviews/, for a person.
+func AutoApproveViolations(src []byte, owner string) []string {
+	var w workflow
+	if err := yaml.Unmarshal(src, &w); err != nil {
+		return []string{fmt.Sprintf("auto-approve.yml: not YAML: %v", err)}
+	}
+	var out []string
+	bad := func(format string, args ...any) { out = append(out, "auto-approve.yml: "+fmt.Sprintf(format, args...)) }
+	if events, _ := triggers(w.On); !slices.Equal(events, []string{"pull_request_target"}) {
+		bad("runs on %v; only pull_request_target runs main's copy of the rule, which a pull request cannot change", events)
+	}
+	if len(w.Jobs) != 1 {
+		bad("has %d jobs; one job approves", len(w.Jobs))
+	}
+	for _, id := range slices.Sorted(maps.Keys(w.Jobs)) {
+		j := w.Jobs[id]
+		cond := strings.Join(strings.Fields(j.If), " ")
+		if strings.Contains(cond, "||") {
+			bad("job %s approves when any one condition holds; every condition must", id)
+		}
+		for _, want := range []string{
+			"github.event.pull_request.user.login == '" + owner + "'",
+			"github.event.sender.login == '" + owner + "'",
+			"github.event.pull_request.head.repo.full_name == github.repository",
+			"!github.event.pull_request.draft",
+		} {
+			if !strings.Contains(cond, want) {
+				bad("job %s approves without the condition %s", id, want)
+			}
+		}
+		var script strings.Builder
+		for _, st := range j.Steps {
+			if st.Uses != "" {
+				bad("job %s uses %s: it runs no action, so nothing of the pull request's is checked out or run", id, st.Uses)
+			}
+			script.WriteString(st.Run)
+		}
+		for _, want := range []string{"needs-human-review", "^docs/prd/reviews/"} {
+			if !strings.Contains(script.String(), want) {
+				bad("job %s no longer leaves a pull request with %s for a person", id, want)
 			}
 		}
 	}

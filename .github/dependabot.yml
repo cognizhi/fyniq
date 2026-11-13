@@ -1,8 +1,11 @@
-# Automated update pull requests for what is pinned by digest or SHA (NFR-IMG-03, SEC-28): the base
-# images of deploy/docker/, the images of the local stack and the GitHub Actions. A release must be
-# at least two weeks old before it is proposed. Go, npm and Python dependencies follow with SEC-26 (P1).
-# Dependabot's pull requests are not the owner's, so a person approves them. Major versions of images
-# (a new Node or PostgreSQL major) are not proposed: they change with the toolchain in mise.toml, by hand.
+# Automated update pull requests (NFR-IMG-03, SEC-28, SEC-26): what is pinned by digest or SHA (the base
+# images of deploy/docker/, the images of the local stack and the GitHub Actions), and the Go modules, the
+# web app's npm packages and the oracle's Python packages. A release must be at least two weeks old before
+# it is proposed (the cooldown); a security update is proposed at once, which the cooldown never delays.
+# Minor and patch updates come grouped, one pull request per ecosystem a week; a major version comes on
+# its own. Dependabot's pull requests are not the owner's, so a person approves them. Major versions of
+# images (a new Node or PostgreSQL major) are not proposed: they change with the toolchain in mise.toml,
+# by hand. make scan's govulncheck and pnpm audit find what an update must fix.
 version: 2
 updates:
   - package-ecosystem: docker
@@ -32,3 +35,24 @@ updates:
     commit-message: { prefix: "deps(ci)" }
     groups:
       actions: { patterns: ["*"] }
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: "deps" }
+    groups:
+      go: { patterns: ["*"], update-types: ["minor", "patch"] }
+  - package-ecosystem: npm   # the pnpm workspace: the web app
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: "deps(web)" }
+    groups:
+      npm: { patterns: ["*"], update-types: ["minor", "patch"] }
+  - package-ecosystem: uv   # the oracle's Python packages (oracle/uv.lock)
+    directory: /oracle
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: "deps(oracle)" }
+    groups:
+      python: { patterns: ["*"], update-types: ["minor", "patch"] }

@@ -9,8 +9,9 @@ finding that no waiver covers, on an expired waiver, and on a waiver that no lon
     python3 scripts/scan.py --self-test  # the waiver rules on planted findings (part of make check)
 
 What blocks: gosec HIGH, Semgrep ERROR, any secret, grype Critical and High (NFR-IMG-05, p1-security-hardening
-2.3), any failed Checkov check, actionlint errors, zizmor High, and a licence outside the allow-list. Every
-other finding is reported, not blocking. The tools are pinned in mise.toml; `make setup` installs them.
+2.3), a Go vulnerability the code calls (govulncheck, both flavours) and a High or Critical advisory on the web
+app's production dependencies (pnpm audit --prod; SEC-26), any failed Checkov check, actionlint errors, zizmor
+High, and a licence outside the allow-list. Every other finding is reported, not blocking. The tools are pinned in mise.toml; `make setup` installs them.
 """
 
 from __future__ import annotations
@@ -137,6 +138,13 @@ def gosec() -> list[Finding]:
         if tags:
             cmd += ["-tags", tags]
         data = json.loads(run(cmd + ["./..."], f"gosec{'-' + tags if tags else ''}.json") or "{}")
+        # A package gosec cannot type-check is a package it did not scan: a gosec built for an older Go cannot read a
+        # newer compiler's export data, and would otherwise pass in silence.
+        for file, errs in (data.get("Golang errors") or {}).items():
+            k = ("load", file, 0)
+            if k not in seen:
+                seen.add(k)
+                out.append(Finding("gosec", "load", rel(file), f"not scanned: {errs[0].get('error', '')[:200]}", True))
         for i in data.get("Issues") or []:
             k = (i["rule_id"], i["file"], i["line"])
             if k not in seen:
@@ -182,6 +190,70 @@ def grype() -> list[Finding]:
         out.append(Finding("grype", v["id"], a["name"], f"{a['name']} {a['version']}: {v['severity']} (fixed in {fix})",
                            v["severity"] in BLOCKING_SEVERITIES))
     return out
+
+
+def json_stream(raw: str) -> list[dict]:
+    """The JSON objects of a stream such as govulncheck's, one after another."""
+    dec, i, out = json.JSONDecoder(), 0, []
+    while True:
+        while i < len(raw) and raw[i].isspace():
+            i += 1
+        if i >= len(raw):
+            return out
+        obj, i = dec.raw_decode(raw, i)
+        out.append(obj)
+
+
+def govulnchecked(raw: str) -> list[Finding]:
+    """govulncheck's findings: one per vulnerability and module; blocking when the code calls it (its trace names a
+    function), as govulncheck's own text report counts the code affected (SEC-26)."""
+    msgs = json_stream(raw)
+    osv = {m["osv"]["id"]: m["osv"] for m in msgs if "osv" in m}
+    found: dict[tuple[str, str], Finding] = {}
+    for m in msgs:
+        if "finding" not in m:
+            continue
+        f = m["finding"]
+        frame = (f.get("trace") or [{}])[0]
+        module, called = frame.get("module", ""), bool(frame.get("function"))
+        key = (f["osv"], module)
+        if key in found and (found[key].blocking or not called):
+            continue
+        summary = osv.get(f["osv"], {}).get("summary", "")
+        found[key] = Finding("govulncheck", f["osv"], module, f"{module} {frame.get('version', '')}: {summary} "
+                             f"({'called' if called else 'not called'}; fixed in {f.get('fixed_version') or 'no fix yet'})", called)
+    return list(found.values())
+
+
+def govulncheck() -> list[Finding]:
+    """The Go vulnerabilities the code can reach, in both build flavours (SEC-26)."""
+    out: dict[str, Finding] = {}
+    for tags in ("", "local"):
+        raw = run(["govulncheck", "-format", "json", *(["-tags", tags] if tags else []), "./..."],
+                  f"govulncheck{'-' + tags if tags else ''}.json")
+        for f in govulnchecked(raw):
+            k = f.key()
+            if k not in out or (f.blocking and not out[k].blocking):
+                out[k] = f
+    return list(out.values())
+
+
+def audited(data: dict) -> list[Finding]:
+    """pnpm audit's advisories: blocking when High or Critical (SEC-26)."""
+    out = []
+    for a in data.get("advisories", {}).values():
+        sev = a.get("severity", "")
+        versions = ", ".join(sorted({x.get("version", "") for x in a.get("findings", [])}))
+        out.append(Finding("npm-audit", a.get("github_advisory_id") or str(a.get("id")), a.get("module_name", ""),
+                           f"{a.get('module_name')} {versions}: {sev}: {a.get('title', '')} (patched in {a.get('patched_versions', '?')})",
+                           sev.capitalize() in BLOCKING_SEVERITIES))
+    return out
+
+
+def npm_audit() -> list[Finding]:
+    """The web app's production dependencies against the npm advisories (SEC-26): what ships in the bundle."""
+    raw = run(["pnpm", "audit", "--prod", "--json"], "pnpm-audit.json", ok_codes=(0, 1))
+    return audited(json.loads(raw) if raw.strip() else {})
 
 
 def checkov() -> list[Finding]:
@@ -231,7 +303,7 @@ def licences() -> list[Finding]:
 
 
 TOOLS = {"workflows": workflows, "gosec": gosec, "semgrep": semgrep, "gitleaks": gitleaks, "grype": grype,
-         "checkov": checkov, "licences": licences}
+         "govulncheck": govulncheck, "npm-audit": npm_audit, "checkov": checkov, "licences": licences}
 # A waiver's tool, mapped to the scan that produces its findings.
 SCAN_OF = {"actionlint": "workflows", "zizmor": "workflows"}
 
@@ -259,6 +331,18 @@ def self_test() -> None:
     vulns = [Finding("grype", f"CVE-{s}", "x", s, s in BLOCKING_SEVERITIES) for s in ("Critical", "High", "Medium", "Low")]
     if [x.split(":")[1].strip() for x in judge(vulns, [], {"grype"}, today)] != ["CVE-Critical in x", "CVE-High in x"]:
         raise SystemExit(f"✖ scan self-test: a High vulnerability must block as a Critical one does, a Medium one must not: {vulns}")
+    # govulncheck blocks a vulnerability the code calls, not one it only imports; pnpm audit a High or Critical
+    # advisory (SEC-26).
+    stream = ('{"osv": {"id": "GO-1", "summary": "called"}}\n{"osv": {"id": "GO-2", "summary": "imported"}}\n'
+              '{"finding": {"osv": "GO-1", "fixed_version": "v1.2.3", "trace": [{"module": "stdlib", "version": "v1.0.0"}]}}\n'
+              '{"finding": {"osv": "GO-1", "fixed_version": "v1.2.3", "trace": [{"module": "stdlib", "version": "v1.0.0", "function": "Do"}]}}\n'
+              '{"finding": {"osv": "GO-2", "trace": [{"module": "example.com/m", "version": "v0.1.0"}]}}')
+    if sorted((g.rule, g.blocking) for g in govulnchecked(stream)) != [("GO-1", True), ("GO-2", False)]:
+        raise SystemExit(f"✖ scan self-test: govulncheck must block a called vulnerability only: {govulnchecked(stream)}")
+    advisories = {"advisories": {str(i): {"id": i, "severity": s, "module_name": f"m{i}", "github_advisory_id": f"GHSA-{i}"}
+                                 for i, s in enumerate(["critical", "high", "moderate", "low"])}}
+    if [a.rule for a in audited(advisories) if a.blocking] != ["GHSA-0", "GHSA-1"]:
+        raise SystemExit(f"✖ scan self-test: pnpm audit must block a High or Critical advisory only: {audited(advisories)}")
     load_waivers()  # the real file parses and every waiver has its fields
     print("✔ scan waivers: the rules hold on planted findings, a High vulnerability blocks, and compliance/scan-waivers.toml is well formed")
 

@@ -12,4 +12,4 @@ checks:
   - frequency: CI
     status: running
     how: "make scan"
-    evidence: "CI artefact security-scan-reports (90 days)"
+    evidence: "SAST (gosec, Semgrep), secrets (gitleaks), dependencies (grype; govulncheck for the Go vulnerabilities the code calls; pnpm audit --prod for the web app's bundle; SEC-26), infrastructure and workflows (Checkov, actionlint, zizmor), licences; a Critical or High finding blocks unless waived. CI artefact security-scan-reports (90 days); Dependabot proposes the updates (cooldown 14 days, security updates at once)"
