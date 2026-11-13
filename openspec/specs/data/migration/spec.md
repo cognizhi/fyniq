@@ -132,6 +132,11 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **WHEN** a user runs the import as a dry run
 - **THEN** the result is shown without anything being committed
 
+#### Scenario: Each row through its own command (rev 0.270)
+- **WHEN** a file filled in an entity's template, or the workbook's own sheet, is imported under that entity's right C
+- **THEN** each row becomes its record through the command that enters it by hand, in any organisation
+- **AND** a file with a row refused imports nothing and names each problem's row and column as the file numbers them
+
 ### Requirement: FR-MIG-04 Full tenant export
 The Owner SHALL be able to export all of the organisation's data and documents in open formats (CSV/JSON plus files), with a manifest and hashes, under dual control.
 

@@ -144,6 +144,11 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   Each record goes through its command with its normal approvals, in any organisation, needing the entity's own C.
   Tests `// req: FR-MIG-03` for each entity (a dry run commits nothing; a commit equals the same rows entered by hand),
   the matrix's rows.
+  (Slice 18 built the import and its first entities, rev 0.270: contacts, items and accounts, each as
+  `GET /v1/imports/{entity}/template` and `POST /v1/imports/{entity}` with a fixed path per entity, so each operation
+  carries its entity's own policy; the record builders are the workbook import's own;
+  TestTheGenericImportEntersEachRowAsByHand. Left: opening balances, journals, invoices with lines, bills, FX rates,
+  bank rules and budgets.)
 
 ## 8. Full tenant export (FR-MIG-04)
 
