@@ -73,6 +73,10 @@ run "production" {
     error_message = "the services keep evidence in the buckets the evidence module made (DR-07)"
   }
   assert {
+    condition     = module.evidence.project == "fyniq-audit" && module.field_keys.project == "fyniq-audit" && jsondecode(output.gcp_config).fields == module.field_keys.config
+    error_message = "the evidence buckets and the field keys live in fyniq-audit, beside the export, and the services read them there (DR-07, SEC-11, rev 0.250)"
+  }
+  assert {
     condition     = toset(keys(module.slo.slos)) == toset(["api", "ai", "mcp", "oauth"])
     error_message = "every public service has its objectives (CTL-RES-03)"
   }

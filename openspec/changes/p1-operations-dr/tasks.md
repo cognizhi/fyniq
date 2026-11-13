@@ -117,10 +117,12 @@ module tests on mock providers and tagged `[live-verify]`.
 
 - [x] 13.1 PRD-001 rev 0.250 and the specs it changes (DR-04, DR-07, SEC-11, NFR-OBS-01, NFR-PERF-05, QA-PERF-01,
   FR-INT-09).
-- [ ] 13.2 The evidence buckets and the key ring of `fields` and `fingerprints` in `fyniq-audit`, granted to the api and
-  the worker alone, with module tests `[live-verify]`. `// req: DR-07`, `// req: SEC-11`, `// req: DR-04`
-- [ ] 13.3 The environment's `traces` setting, off until Cloud Trace keeps spans in Singapore; off, the services export
-  nothing. Module test and the runbook's check `[live-verify]`. `// req: NFR-OBS-01`, `// req: CTL-DP-07`
+- [x] 13.2 The evidence buckets and the key ring of `fields` and `fingerprints` in `fyniq-audit`, granted to the api and
+  the worker alone, with module tests `[live-verify]`. `// req: DR-07`, `// req: SEC-11`, `// req: DR-04` Building added
+  the module `field-keys`; the environment module takes the keys as an input.
+- [x] 13.3 The environment's `traces` setting, off until Cloud Trace keeps spans in Singapore; off, the services export
+  nothing. Module test and the runbook's check `[live-verify]`. `// req: NFR-OBS-01`, `// req: CTL-DP-07` The check is
+  in `infra/README.md`.
 - [x] 13.4 The general ledger export streamed a page at a time with no limit, its figures checked against the
   on-screen report and the oracle's, and the harness's NFR-PERF-05 at 1 M lines. `// req: NFR-PERF-05` Built: a keyset
   read of an account's lines (`AccountLinesAfter`), `balance.Opening` and `Walk`, streaming CSV and XLSX writers (a

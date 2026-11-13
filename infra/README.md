@@ -179,6 +179,8 @@ assumptions, not facts.
 - `[live-verify]` Traces (NFR-OBS-01): that the Telemetry API takes OTLP/JSON at `telemetry.googleapis.com/v1/traces`
   with the resource attribute `gcp.project_id`, that `roles/telemetry.tracesWriter` is its role (`[verify]`), and
   where Cloud Trace keeps the traces (`[verify]`: CTL-DP-07 allows Singapore only; a trace holds no personal data).
+  Until it is shown that they stay in `asia-southeast1`, the stack's `traces` stays `false` and no service sends any
+  (the owner's decision of 11 Nov 2026, PRD-001 rev 0.250); set it `true` once it is.
 - `[live-verify]` That Cloud SQL writes pgAudit's entries to its `postgres.log` with `AUDIT:`, so the security
   sink's filter keeps them (CTL-AUD-04).
 - `[live-verify]` The restore drill: that the clone's permissions are enough (`[verify]` whether Cloud SQL
@@ -187,6 +189,9 @@ assumptions, not facts.
   clone of production takes against NFR-DR-02's 4 hours.
 - `[live-verify]` That the evidence bucket refuses to delete a committed file or shorten its Locked
   retention, and that the committer's custom role is enough to commit one and set its retention.
+- `[live-verify]` The evidence buckets and the field keys in `fyniq-audit` (rev 0.250): that the api and the worker,
+  accounts of the production project, write to the buckets and the api seals with the keys through the grants on them
+  alone, and that the weekly export's sealed fields open with the keys after a restore elsewhere.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
 - `[verify]` The production anchor retention, with the accountant (§14, AUD-06).
 - `[verify]` The project IDs.

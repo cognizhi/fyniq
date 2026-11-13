@@ -9,7 +9,7 @@ resource "google_logging_project_bucket_config" "application" {
 }
 
 # Each of Fyniq's own services writes its traces to Cloud Trace through the Telemetry API, and nothing else of it
-# (NFR-OBS-01) [verify the role's name] [live-verify].
+# (NFR-OBS-01) [verify the role's name] [live-verify], once var.traces is on (CTL-DP-07, rev 0.250).
 resource "google_project_iam_member" "traces" {
   for_each = local.traced
   project  = var.project

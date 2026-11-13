@@ -67,6 +67,10 @@ variables {
   }
   exports  = { weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
   evidence = { staging = "fyniq-staging-evidence-staging", bucket = "fyniq-staging-evidence" }
+  field_keys = {
+    key             = "projects/fyniq-staging/locations/asia-southeast1/keyRings/fields-staging/cryptoKeys/fields"
+    mac_key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/fields-staging/cryptoKeys/fingerprints/cryptoKeyVersions/1"
+  }
   break_glass = {
     requesters = ["group:platform-admins@example.com"]
     approvers  = ["group:founders@example.com"]
@@ -128,7 +132,7 @@ run "the_ai_service_account_writes_nothing" {
   variables { spec = run.spec.spec }
   assert {
     condition = !anytrue(concat(
-      [for m in [google_kms_crypto_key_iam_member.fields, google_kms_crypto_key_iam_member.fingerprints, google_project_iam_member.org_secrets_admin] : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in [google_project_iam_member.org_secrets_admin] : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_project_iam_member.org_secrets_reader : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_secret_manager_secret_iam_member.access : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_secret_manager_secret_iam_member.connector_versions : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
@@ -292,24 +296,13 @@ run "the_data_is_encrypted_and_recoverable" {
 
 # The field keys (SEC-11): the wrapping key rotates, the fingerprint key is HMAC-SHA256 with its version pinned in the
 # wiring, and only the api may use either.
-run "the_sensitive_fields_are_sealed_by_the_api_only" {
+# The field keys live in the audit project (infra/gcp/modules/field-keys, rev 0.250): the services read the ones given.
+run "the_services_read_the_field_keys_given" {
   command = plan
   variables { spec = run.spec.spec }
   assert {
-    condition     = google_kms_crypto_key.fields.purpose == "ENCRYPT_DECRYPT" && google_kms_crypto_key.fields.rotation_period == "7776000s"
-    error_message = "the wrapping key encrypts and rotates every 90 days"
-  }
-  assert {
-    condition     = google_kms_crypto_key.fingerprints.purpose == "MAC" && google_kms_crypto_key.fingerprints.version_template[0].algorithm == "HMAC_SHA256"
-    error_message = "the fingerprint key is an HMAC-SHA256 key"
-  }
-  assert {
-    condition     = google_kms_crypto_key_iam_member.fields.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com" && google_kms_crypto_key_iam_member.fingerprints.member == google_kms_crypto_key_iam_member.fields.member && google_kms_crypto_key_iam_member.fingerprints.role == "roles/cloudkms.signer"
-    error_message = "only the api seals and fingerprints"
-  }
-  assert {
-    condition     = endswith(jsondecode(output.gcp_config).fields.mac_key_version, "/cryptoKeyVersions/1")
-    error_message = "the services read the fingerprint key's pinned version"
+    condition     = jsondecode(output.gcp_config).fields.key == var.field_keys.key && endswith(jsondecode(output.gcp_config).fields.mac_key_version, "/cryptoKeyVersions/1")
+    error_message = "the services read the field keys in the audit project, the fingerprint key's version pinned"
   }
 }
 
@@ -521,11 +514,26 @@ run "only_the_api_and_the_worker_scan" {
   }
 }
 
-# Fyniq's own services trace to Cloud Trace in their own project, each as itself; Hydra does not (NFR-OBS-01).
+# Fyniq's own services trace to Cloud Trace in their own project, each as itself; Hydra does not (NFR-OBS-01). Only once
+# traces are turned on: until Cloud Trace is shown to keep them in Singapore, no service is told a trace project or may
+# write traces (CTL-DP-07, rev 0.250).
 # req: NFR-OBS-01
-run "the_services_trace_to_cloud_trace" {
+# req: CTL-DP-07
+run "no_traces_until_they_stay_in_singapore" {
   command = plan
   variables { spec = run.spec.spec }
+  assert {
+    condition     = !anytrue([for name, e in local.env : contains(keys(e), "FYNIQ_TRACE_PROJECT")]) && length(google_project_iam_member.traces) == 0
+    error_message = "with traces off, no service is told a trace project or may write traces"
+  }
+}
+
+run "the_services_trace_to_cloud_trace" {
+  command = plan
+  variables {
+    spec   = run.spec.spec
+    traces = true
+  }
   assert {
     condition = (local.env["api"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" && local.env["jobs"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" &&
     !contains(keys(local.env["oauth"]), "FYNIQ_TRACE_PROJECT"))

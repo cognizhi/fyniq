@@ -25,8 +25,14 @@ variable "secrets_project" {
   type        = string
 }
 
+variable "traces" {
+  description = "Whether the services send traces to Cloud Trace: off until the dev cloud shows Cloud Trace keeps them in Singapore (CTL-DP-07, rev 0.250) [live-verify]."
+  type        = bool
+  default     = false
+}
+
 variable "audit_project" {
-  description = "Where the audit anchors live: fyniq-audit for production (§12.4), the environment's own project for staging."
+  description = "Where the audit anchors, the weekly export, the evidence buckets and the field keys live: fyniq-audit for production (§12.4, rev 0.250), the environment's own project for staging."
   type        = string
 }
 
@@ -133,12 +139,22 @@ module "db_export" {
   lock           = module.spec.spec.anchors.lock
 }
 
-# The records' and attachments' buckets (DR-07, CTL-AUD-03): staging, and the evidence bucket that locks each object.
+# The records' and attachments' buckets (DR-07, CTL-AUD-03): staging, and the evidence bucket that locks each object. In
+# fyniq-audit for production, beside the export, so documents outlive the production project (rev 0.250).
 module "evidence" {
   source      = "../evidence"
-  project     = var.project
+  project     = var.audit_project
   environment = var.environment
   members     = { api = module.environment.members["api"], worker = module.environment.members["worker"], jobs = module.environment.members["jobs"] }
+}
+
+# The keys of the sealed fields (SEC-11), beside the export, so its sealed fields open without the production project
+# (rev 0.250).
+module "field_keys" {
+  source      = "../field-keys"
+  project     = var.audit_project
+  environment = var.environment
+  api_member  = module.environment.members["api"]
 }
 
 module "environment" {
@@ -149,6 +165,8 @@ module "environment" {
   anchors           = { bucket = module.anchors.bucket, key_version = module.anchors.key_version }
   exports           = module.db_export.buckets
   evidence          = module.evidence.buckets
+  field_keys        = module.field_keys.config
+  traces            = var.traces
   public_origin     = var.public_origin
   signin_providers  = var.signin_providers
   artifact_registry = var.artifact_registry
