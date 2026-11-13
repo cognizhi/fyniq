@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "alias_of": {
+      "description": "The model an alias points at, when the list says (AI-78).",
+      "examples": [
+        "anthropic/claude-sonnet-5-5"
+      ],
+      "type": "string"
+    },
+    "context_window": {
+      "description": "The context window the list reports: a hint the probe still proves.",
+      "examples": [
+        1000000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "first_listed": {
+      "examples": [
+        "2026-11-14T06:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_listed": {
+      "examples": [
+        "2026-11-14T06:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "max_output": {
+      "description": "The most output tokens the list reports.",
+      "examples": [
+        128000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "model": {
+      "description": "The provider's ID for it.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The provider's name for it.",
+      "examples": [
+        "Claude Opus 4.6"
+      ],
+      "type": "string"
+    },
+    "reports": {
+      "description": "What the list reports it supports, as the provider names it: hints, never proof (AI-71).",
+      "items": {
+        "description": "What the list reports, as the provider names it: a hint, never proof (AI-71).",
+        "examples": [
+          "image_input"
+        ],
+        "maxLength": 200,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "shutdown": {
+      "description": "The provider's retirement or shutdown date (AI-84).",
+      "examples": [
+        "2027-03-31T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "state": {
+      "description": "new: first listed in the last 7 days; deprecated: a shutdown date ahead; no_longer_listed: not in the last complete read, or past its shutdown; not_callable: the provider refused it (AI-81).",
+      "enum": [
+        "new",
+        "available",
+        "deprecated",
+        "no_longer_listed",
+        "not_callable"
+      ],
+      "examples": [
+        "available"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "state",
+    "reports",
+    "first_listed",
+    "last_listed"
+  ],
+  "title": "AIModel",
+  "type": "object"
+}

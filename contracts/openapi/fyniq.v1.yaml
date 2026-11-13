@@ -547,6 +547,166 @@ components:
             - {}
           type: object
       type: object
+    AIModel:
+      additionalProperties: false
+      properties:
+        alias_of:
+          description: The model an alias points at, when the list says (AI-78).
+          examples:
+            - anthropic/claude-sonnet-5-5
+          type: string
+        context_window:
+          description: "The context window the list reports: a hint the probe still proves."
+          examples:
+            - 1000000
+          format: int64
+          type: integer
+        first_listed:
+          examples:
+            - "2026-11-14T06:00:00Z"
+          format: date-time
+          type: string
+        last_listed:
+          examples:
+            - "2026-11-14T06:00:00Z"
+          format: date-time
+          type: string
+        max_output:
+          description: The most output tokens the list reports.
+          examples:
+            - 128000
+          format: int64
+          type: integer
+        model:
+          description: The provider's ID for it.
+          examples:
+            - claude-opus-4-6
+          type: string
+        name:
+          description: The provider's name for it.
+          examples:
+            - Claude Opus 4.6
+          type: string
+        reports:
+          description: "What the list reports it supports, as the provider names it: hints, never proof (AI-71)."
+          items:
+            description: "What the list reports, as the provider names it: a hint, never proof (AI-71)."
+            examples:
+              - image_input
+            maxLength: 200
+            type: string
+          type: array
+        shutdown:
+          description: The provider's retirement or shutdown date (AI-84).
+          examples:
+            - "2027-03-31T00:00:00Z"
+          format: date-time
+          type: string
+        state:
+          description: "new: first listed in the last 7 days; deprecated: a shutdown date ahead; no_longer_listed: not in the last complete read, or past its shutdown; not_callable: the provider refused it (AI-81)."
+          enum:
+            - new
+            - available
+            - deprecated
+            - no_longer_listed
+            - not_callable
+          examples:
+            - available
+          type: string
+      required:
+        - model
+        - state
+        - reports
+        - first_listed
+        - last_listed
+      type: object
+    AIModelList:
+      additionalProperties: false
+      properties:
+        last_complete:
+          description: "When the list was last read whole: switching the connection on needs one."
+          examples:
+            - "2026-11-14T06:00:00Z"
+          format: date-time
+          type: string
+        models:
+          description: Every model the provider has listed, by ID; none is ever removed, so its history stays.
+          items:
+            $ref: "#/components/schemas/AIModel"
+          type: array
+        reads:
+          description: The latest reads, newest first, at most 10.
+          items:
+            $ref: "#/components/schemas/AIModelListRead"
+          type: array
+      required:
+        - models
+        - reads
+      type: object
+    AIModelListRead:
+      additionalProperties: false
+      properties:
+        added:
+          description: Models it listed for the first time, or again.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        failure:
+          description: Why it was not complete.
+          examples:
+            - "the provider answered 401 (authentication_error): the provider refused the credential"
+          type: string
+        outcome:
+          description: "complete: every page to the provider's end; partial: the page cap or a later page stopped it; failed: the first page did."
+          enum:
+            - complete
+            - partial
+            - failed
+          examples:
+            - complete
+          type: string
+        pages:
+          examples:
+            - 1
+          format: int64
+          type: integer
+        read_at:
+          examples:
+            - "2026-11-14T06:00:00Z"
+          format: date-time
+          type: string
+        read_by:
+          examples:
+            - system:ai.models.read
+          type: string
+        removed:
+          description: "Models it no longer listed: a complete read only."
+          examples:
+            - 0
+          format: int64
+          type: integer
+        trigger:
+          description: Why it was read.
+          enum:
+            - credential
+            - test
+            - enable
+            - daily
+            - not_found
+            - refresh
+          examples:
+            - daily
+          type: string
+      required:
+        - trigger
+        - outcome
+        - pages
+        - added
+        - removed
+        - read_by
+        - read_at
+      type: object
     AccentOption:
       additionalProperties: false
       properties:
@@ -48545,7 +48705,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
         "422":
           content:
             application/problem+json:
@@ -48602,6 +48762,7 @@ paths:
         - AI-CONN-07
         - AI-CONN-08
         - AI-DATA-01
+        - AI-MODEL-01
         - API-AUTH-01
         - API-AUTH-02
         - API-AUTHZ-01
@@ -48872,7 +49033,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -48941,6 +49102,7 @@ paths:
         - AI-CONN-07
         - AI-CONN-08
         - AI-DATA-01
+        - AI-MODEL-01
         - API-AUTH-01
         - API-AUTH-02
         - API-AUTHZ-01
@@ -49093,7 +49255,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -49162,6 +49324,7 @@ paths:
         - AI-CONN-07
         - AI-CONN-08
         - AI-DATA-01
+        - AI-MODEL-01
         - API-AUTH-01
         - API-AUTH-02
         - API-AUTHZ-01
@@ -49489,7 +49652,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `AI-CONN-07` The connection cannot take that step now; `AI-MODEL-01` The connection's model list has not been read whole; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -49558,6 +49721,7 @@ paths:
         - AI-CONN-07
         - AI-CONN-08
         - AI-DATA-01
+        - AI-MODEL-01
         - API-AUTH-01
         - API-AUTH-02
         - API-AUTHZ-01
@@ -49582,6 +49746,248 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: C
+  /v1/ai/connections/{connection_id}/models:
+    get:
+      description: Every model the connection's provider has listed (AI-80), with its state (AI-81), what the list reports of it as hints, and the latest reads of the list with their outcomes (AI-84). Read-only; no side effects.
+      operationId: getAIConnectionModels
+      parameters:
+        - description: The connection's ID.
+          in: path
+          name: connection_id
+          required: true
+          schema:
+            description: The connection's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIModelList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the models an AI connection's provider lists
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: V
+  /v1/ai/connections/{connection_id}/models/refresh:
+    post:
+      description: "Refresh from provider (AI-80): reads the connection's list now with its credential, page by page to the cap, sending no company data, and answers the list as getAIConnectionModels does. A complete read marks the models it does not list no longer listed; a partial or failed one keeps the last complete list (AI-84). Side effects: the read, kept with its outcome, and its audit event ai_model.listed. On the never-list for the AI and MCP (§9.6)."
+      operationId: refreshAIConnectionModels
+      parameters:
+        - description: The connection's ID.
+          in: path
+          name: connection_id
+          required: true
+          schema:
+            description: The connection's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIModelList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read an AI connection's model list from its provider now
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A refresh reads the provider's list again and keeps that read; repeating it reads again, which harms nothing.
+        Prefer: "A refresh reads the provider: a preview would be the read itself."
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: C

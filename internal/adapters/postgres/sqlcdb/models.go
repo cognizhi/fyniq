@@ -168,6 +168,38 @@ type FyniqAiDataPolicy struct {
 	MadeAt         time.Time
 }
 
+type FyniqAiModel struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	ConnectionID    uuid.UUID
+	Model           string
+	Name            *string
+	AliasOf         *string
+	ProviderCreated *time.Time
+	ShutdownAt      *time.Time
+	ContextWindow   *int32
+	MaxOutput       *int32
+	Reports         []string
+	FirstListedAt   time.Time
+	LastListedAt    time.Time
+	Listed          bool
+	NotCallableAt   *time.Time
+}
+
+type FyniqAiModelListRead struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Trigger        string
+	Outcome        string
+	Pages          int32
+	Added          int32
+	Removed        int32
+	Failure        *string
+	ReadBy         string
+	ReadAt         time.Time
+}
+
 type FyniqAllocation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

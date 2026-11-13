@@ -166,6 +166,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = outbound
+	kit.ModelTokens = tokens // Claude and Gemini on Agent Platform, with the service's own account (AI-72)
 	// The weekly export (DR-02, DR-04) and the restore drill's copy (DR-06), as the jobs' account [live-verify].
 	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
 		sql := gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)

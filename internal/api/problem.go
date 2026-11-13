@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
@@ -249,6 +250,7 @@ var codeFacts = map[string]struct {
 	aipolicy.CodeDeclaration:      {422, "The connection's data handling is not complete or evidenced"},
 	aipolicy.CodePolicy:           {422, "The data-class policy cannot send that class there"},
 	aipolicy.CodeNotAllowed:       {409, "The connection may not receive that class of data"},
+	aimodel.CodeListUnavailable:   {409, "The connection's model list has not been read whole"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
 	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},

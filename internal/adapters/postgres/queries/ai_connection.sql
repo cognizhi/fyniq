@@ -39,3 +39,29 @@ SELECT * FROM fyniq.ai_data_policy ORDER BY version DESC LIMIT 1;
 INSERT INTO fyniq.ai_data_policy (version, policy, approval_id, made_by, made_at)
 VALUES (sqlc.arg(version), sqlc.arg(policy)::jsonb, sqlc.arg(approval_id), sqlc.arg(made_by), sqlc.arg(made_at))
 RETURNING *;
+
+-- name: AIModelsOf :many
+SELECT * FROM fyniq.ai_model WHERE connection_id = sqlc.arg(connection_id) ORDER BY model;
+
+-- name: UpsertAIModel :exec
+INSERT INTO fyniq.ai_model (connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports,
+  first_listed_at, last_listed_at, listed, not_callable_at)
+VALUES (sqlc.arg(connection_id), sqlc.arg(model), sqlc.narg(name), sqlc.narg(alias_of), sqlc.narg(provider_created), sqlc.narg(shutdown_at),
+  sqlc.narg(context_window), sqlc.narg(max_output), sqlc.arg(reports)::text[], sqlc.arg(first_listed_at), sqlc.arg(last_listed_at), sqlc.arg(listed),
+  sqlc.narg(not_callable_at))
+ON CONFLICT (organisation_id, connection_id, model) DO UPDATE SET name = EXCLUDED.name, alias_of = EXCLUDED.alias_of,
+  provider_created = EXCLUDED.provider_created, shutdown_at = EXCLUDED.shutdown_at, context_window = EXCLUDED.context_window,
+  max_output = EXCLUDED.max_output, reports = EXCLUDED.reports, last_listed_at = EXCLUDED.last_listed_at, listed = EXCLUDED.listed,
+  not_callable_at = EXCLUDED.not_callable_at;
+
+-- name: InsertAIModelListRead :one
+INSERT INTO fyniq.ai_model_list_read (connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at)
+VALUES (sqlc.arg(connection_id), sqlc.arg(trigger), sqlc.arg(outcome), sqlc.arg(pages), sqlc.arg(added), sqlc.arg(removed), sqlc.narg(failure),
+  sqlc.arg(read_by), sqlc.arg(read_at))
+RETURNING *;
+
+-- name: AIModelListReads :many
+SELECT * FROM fyniq.ai_model_list_read WHERE connection_id = sqlc.arg(connection_id) ORDER BY read_at DESC, id DESC LIMIT sqlc.arg(page_size);
+
+-- name: LastCompleteAIModelListRead :one
+SELECT * FROM fyniq.ai_model_list_read WHERE connection_id = sqlc.arg(connection_id) AND outcome = 'complete' ORDER BY read_at DESC, id DESC LIMIT 1;

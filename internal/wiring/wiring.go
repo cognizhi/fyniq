@@ -7,6 +7,8 @@ package wiring
 import (
 	"context"
 
+	"golang.org/x/oauth2"
+
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
@@ -56,6 +58,9 @@ type Kit struct {
 	ConnectorSecrets ports.SecretStore
 	ConnectorNames   map[string]string
 	Egress           *egress.Guard
+	// ModelTokens are the service's own account's tokens, for an AI connection that authenticates with workload identity
+	// (AI-72): the metadata server's in the cloud; nil locally, where such a connection cannot be read.
+	ModelTokens oauth2.TokenSource
 	// Posture and Logs are the platform's open cloud findings and a sample of its logs, which the Compliance Center's
 	// platform verifications read (SEC-33, CTL-DP-03): Security Command Center and Cloud Logging in the cloud, a fake
 	// and the files of a directory locally. Nil: those verifications do not run.

@@ -124,6 +124,32 @@ ai_data_policy | policy | jsonb | not null |
 ai_data_policy | approval_id | uuid | not null | 
 ai_data_policy | made_by | text | not null | 
 ai_data_policy | made_at | timestamp with time zone | not null | 
+ai_model | organisation_id | uuid | not null | current_org()
+ai_model | id | uuid | not null | uuidv7()
+ai_model | connection_id | uuid | not null | 
+ai_model | model | text | not null | 
+ai_model | name | text | null | 
+ai_model | alias_of | text | null | 
+ai_model | provider_created | timestamp with time zone | null | 
+ai_model | shutdown_at | timestamp with time zone | null | 
+ai_model | context_window | integer | null | 
+ai_model | max_output | integer | null | 
+ai_model | reports | text[] | not null | '{}'::text[]
+ai_model | first_listed_at | timestamp with time zone | not null | 
+ai_model | last_listed_at | timestamp with time zone | not null | 
+ai_model | listed | boolean | not null | true
+ai_model | not_callable_at | timestamp with time zone | null | 
+ai_model_list_read | organisation_id | uuid | not null | current_org()
+ai_model_list_read | id | uuid | not null | uuidv7()
+ai_model_list_read | connection_id | uuid | not null | 
+ai_model_list_read | trigger | text | not null | 
+ai_model_list_read | outcome | text | not null | 
+ai_model_list_read | pages | integer | not null | 
+ai_model_list_read | added | integer | not null | 
+ai_model_list_read | removed | integer | not null | 
+ai_model_list_read | failure | text | null | 
+ai_model_list_read | read_by | text | not null | 
+ai_model_list_read | read_at | timestamp with time zone | not null | 
 allocation | organisation_id | uuid | not null | current_org()
 allocation | id | uuid | not null | uuidv7()
 allocation | source_id | uuid | not null | 
@@ -2243,6 +2269,41 @@ ai_data_policy | ai_data_policy_version | UNIQUE (organisation_id, version)
 ai_data_policy | ai_data_policy_version_not_null | NOT NULL version
 ai_data_policy | ai_data_policy_version_positive | CHECK ((version >= 1))
 ai_data_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_model | ai_model_alias_format | CHECK ((alias_of ~ '^[!-~]{1,200}$'::text))
+ai_model | ai_model_connection_fkey | FOREIGN KEY (organisation_id, connection_id) REFERENCES ai_connection(organisation_id, id)
+ai_model | ai_model_connection_id_not_null | NOT NULL connection_id
+ai_model | ai_model_first_listed_at_not_null | NOT NULL first_listed_at
+ai_model | ai_model_format | CHECK ((model ~ '^[!-~]{1,200}$'::text))
+ai_model | ai_model_id_not_null | NOT NULL id
+ai_model | ai_model_last_listed_at_not_null | NOT NULL last_listed_at
+ai_model | ai_model_limits | CHECK (((context_window > 0) AND (max_output > 0)))
+ai_model | ai_model_listed_not_null | NOT NULL listed
+ai_model | ai_model_listed_order | CHECK ((last_listed_at >= first_listed_at))
+ai_model | ai_model_model_not_null | NOT NULL model
+ai_model | ai_model_name_length | CHECK ((length(name) <= 300))
+ai_model | ai_model_one | UNIQUE (organisation_id, connection_id, model)
+ai_model | ai_model_organisation_id_not_null | NOT NULL organisation_id
+ai_model | ai_model_pkey | PRIMARY KEY (organisation_id, id)
+ai_model | ai_model_reports_not_null | NOT NULL reports
+ai_model_list_read | ai_model_list_read_added_not_null | NOT NULL added
+ai_model_list_read | ai_model_list_read_by_format | CHECK ((read_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+ai_model_list_read | ai_model_list_read_connection_fkey | FOREIGN KEY (organisation_id, connection_id) REFERENCES ai_connection(organisation_id, id)
+ai_model_list_read | ai_model_list_read_connection_id_not_null | NOT NULL connection_id
+ai_model_list_read | ai_model_list_read_counts | CHECK (((pages >= 0) AND (added >= 0) AND (removed >= 0)))
+ai_model_list_read | ai_model_list_read_failure | CHECK ((((outcome = 'complete'::text) = (failure IS NULL)) AND (length(failure) <= 500)))
+ai_model_list_read | ai_model_list_read_id_not_null | NOT NULL id
+ai_model_list_read | ai_model_list_read_organisation_id_not_null | NOT NULL organisation_id
+ai_model_list_read | ai_model_list_read_outcome_known | CHECK ((outcome = ANY (ARRAY['complete'::text, 'partial'::text, 'failed'::text])))
+ai_model_list_read | ai_model_list_read_outcome_not_null | NOT NULL outcome
+ai_model_list_read | ai_model_list_read_pages_not_null | NOT NULL pages
+ai_model_list_read | ai_model_list_read_pkey | PRIMARY KEY (organisation_id, id)
+ai_model_list_read | ai_model_list_read_read_at_not_null | NOT NULL read_at
+ai_model_list_read | ai_model_list_read_read_by_not_null | NOT NULL read_by
+ai_model_list_read | ai_model_list_read_removed_not_null | NOT NULL removed
+ai_model_list_read | ai_model_list_read_removes_complete | CHECK (((removed = 0) OR (outcome = 'complete'::text)))
+ai_model_list_read | ai_model_list_read_trigger_known | CHECK ((trigger = ANY (ARRAY['credential'::text, 'test'::text, 'enable'::text, 'daily'::text, 'not_found'::text, 'refresh'::text])))
+ai_model_list_read | ai_model_list_read_trigger_not_null | NOT NULL trigger
+ai_model_list_read | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 allocation | allocation_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 allocation | allocation_amount_not_null | NOT NULL amount
 allocation | allocation_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount <> (0)::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
@@ -5365,6 +5426,7 @@ CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, p
 CREATE INDEX account_recovery_user ON fyniq.account_recovery USING btree (user_id, cooling_off_until)
 CREATE INDEX accountant_review_period ON fyniq.accountant_review USING btree (organisation_id, period_id)
 CREATE INDEX accountant_review_query_review ON fyniq.accountant_review_query USING btree (organisation_id, review_id)
+CREATE INDEX ai_model_list_read_connection ON fyniq.ai_model_list_read USING btree (organisation_id, connection_id, read_at DESC)
 CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
@@ -5505,6 +5567,9 @@ CREATE UNIQUE INDEX ai_connection_version_id ON fyniq.ai_connection_version USIN
 CREATE UNIQUE INDEX ai_connection_version_pkey ON fyniq.ai_connection_version USING btree (organisation_id, connection_id, version)
 CREATE UNIQUE INDEX ai_data_policy_pkey ON fyniq.ai_data_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_data_policy_version ON fyniq.ai_data_policy USING btree (organisation_id, version)
+CREATE UNIQUE INDEX ai_model_list_read_pkey ON fyniq.ai_model_list_read USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_model_one ON fyniq.ai_model USING btree (organisation_id, connection_id, model)
+CREATE UNIQUE INDEX ai_model_pkey ON fyniq.ai_model USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_pkey ON fyniq.allocation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_reversed_once ON fyniq.allocation USING btree (organisation_id, reverses_id)
 CREATE UNIQUE INDEX announcement_dismissal_once ON fyniq.announcement_dismissal USING btree (organisation_id, user_id, announcement_id)
@@ -5839,6 +5904,7 @@ CREATE CONSTRAINT TRIGGER payment_batch_holds AFTER INSERT ON fyniq.allocation D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.access_review_attestation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('access_review_attestation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.accountant_review_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_data_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_data_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_model_list_read DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'connection_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
@@ -6008,6 +6074,10 @@ CREATE TRIGGER ai_connection_version_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER ai_connection_version_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_data_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_data_policy FOR EACH ROW EXECUTE FUNCTION ai_data_policy_guard()
 CREATE TRIGGER ai_data_policy_no_truncate BEFORE TRUNCATE ON fyniq.ai_data_policy FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_model_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_model FOR EACH ROW EXECUTE FUNCTION ai_model_guard()
+CREATE TRIGGER ai_model_list_read_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_model_list_read FOR EACH ROW EXECUTE FUNCTION ai_model_guard()
+CREATE TRIGGER ai_model_list_read_no_truncate BEFORE TRUNCATE ON fyniq.ai_model_list_read FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_model_no_truncate BEFORE TRUNCATE ON fyniq.ai_model FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
 CREATE TRIGGER allocation_no_truncate BEFORE TRUNCATE ON fyniq.allocation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER announcement_dismissal_guard BEFORE DELETE OR UPDATE ON fyniq.announcement_dismissal FOR EACH ROW EXECUTE FUNCTION announcement_dismissal_guard()
@@ -6342,6 +6412,8 @@ accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (
 ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_data_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_model | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6509,6 +6581,8 @@ accounting_policy | enabled | forced
 ai_connection | enabled | forced
 ai_connection_version | enabled | forced
 ai_data_policy | enabled | forced
+ai_model | enabled | forced
+ai_model_list_read | enabled | forced
 allocation | enabled | forced
 announcement | enabled | forced
 announcement_dismissal | enabled | forced
@@ -6710,6 +6784,7 @@ acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
+ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | faf46a2ff4eb5c3d17fcbdc8baa47c5b
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd

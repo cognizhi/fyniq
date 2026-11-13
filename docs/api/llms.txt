@@ -44,6 +44,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/ai/connections/{connection_id}/credential` (setAIConnectionCredential): Ask to replace an AI connection's API key
 - `POST /v1/ai/connections/{connection_id}/disable` (disableAIConnection): Switch an AI connection off
 - `POST /v1/ai/connections/{connection_id}/enable` (enableAIConnection): Ask to switch an AI connection on
+- `GET /v1/ai/connections/{connection_id}/models` (getAIConnectionModels): List the models an AI connection's provider lists
+- `POST /v1/ai/connections/{connection_id}/models/refresh` (refreshAIConnectionModels): Read an AI connection's model list from its provider now
 - `GET /v1/ai/data-policy` (getAIDataPolicy): Get the AI's data-class policy
 - `PUT /v1/ai/data-policy` (changeAIDataPolicy): Ask to change the AI's data-class policy
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements

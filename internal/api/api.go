@@ -84,6 +84,9 @@ type Deps struct {
 	// Connectors are the release's connectors, their keys' store and runtime (FR-INT-20); a nil catalogue answers that
 	// connectors are not configured.
 	Connectors ConnectorDeps
+	// AIProviders builds an AI connection's model provider (AI-70), read in the work's unit of work; nil: the connector
+	// runtime's, through the egress guard to the connection's one host.
+	AIProviders func(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error)
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string
@@ -391,6 +394,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerTenantExports(a)
 	registerAIConnections(a)
 	registerAIDataPolicy(a)
+	registerAIModels(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerShredding(a)
