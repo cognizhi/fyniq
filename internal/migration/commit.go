@@ -66,6 +66,8 @@ func (e *Env) Made(key string) (uuid.UUID, bool) {
 // Refusal is what a domain rule said about a record: its field, what is wrong and how to fix it.
 type Refusal struct {
 	Code, Field, Message, Fix string
+	// Row is the row it names, for a record of several rows such as the opening balances; zero, the record's own.
+	Row int
 }
 
 // Refused are a record's refusals, every rule that failed at once.
@@ -86,7 +88,8 @@ func refused[P ~struct{ Code, Field, Message, Fix string }](ps []P) error {
 	}
 	out := make(Refused, len(ps))
 	for i, p := range ps {
-		out[i] = Refusal(p)
+		x := struct{ Code, Field, Message, Fix string }(p)
+		out[i] = Refusal{Code: x.Code, Field: x.Field, Message: x.Message, Fix: x.Fix}
 	}
 	return out
 }

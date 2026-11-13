@@ -2,6 +2,7 @@ package migration
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/sheet"
@@ -39,6 +41,8 @@ type importEntity struct {
 	records func(w *Workbook, base money.Currency, m Mapping) []Record
 	// xlsx reads what else an .xlsx file holds, such as an invoices file's Doc Lines sheet.
 	xlsx func(w *Workbook, wb *sheet.Workbook)
+	// calendar says the records need the organisation's financial years, as a budget's do.
+	calendar bool
 }
 
 // The columns an invoice and a bill share, as the Invoices and Bills sheets name them.
@@ -112,6 +116,59 @@ var importEntities = map[string]importEntity{
 			}
 			return out
 		}},
+	// The opening balances and the plans (rev 0.272): the FX rates and bank rules as the Lists sheet's sections have them,
+	// the opening balances a draft and each financial year's budget a draft, each approved later as entered by hand.
+	"fx-rates": {sheet: "Lists", columns: []string{"Currency", "Month (any date in it)", "Rate (1 unit = ? base)"},
+		read: func(w *Workbook, g sheet.Grid, _ money.Currency) {
+			w.readRates(listsSection(w, g, "✍ MONTHLY FX RATES"))
+		},
+		records: func(w *Workbook, _ money.Currency, _ Mapping) []Record { return w.rateRecords() }},
+	"bank-rules": {sheet: "Lists", columns: []string{"If bank description contains", "…use category", "GST code (optional)"},
+		read: func(w *Workbook, g sheet.Grid, _ money.Currency) {
+			w.readRules(listsSection(w, g, "✍ BANK IMPORT RULES"))
+		},
+		records: func(w *Workbook, _ money.Currency, _ Mapping) []Record {
+			var out []Record
+			for i, r := range w.BankRules {
+				out = append(out, w.ruleRecord(RuleMap{Order: i + 1, Contains: r.Contains, Account: r.Account, GST: r.GST}, r.Origin))
+			}
+			return out
+		}},
+	"opening-balances": {sheet: "Accounts", columns: []string{"Code", "Account name", "Opening balance"},
+		read: func(w *Workbook, g sheet.Grid, base money.Currency) { w.readImportOpening(g, base) },
+		records: func(w *Workbook, _ money.Currency, m Mapping) []Record {
+			if r, ok := w.openingBalances(m); ok {
+				return []Record{r}
+			}
+			return nil
+		}},
+	"budgets": {sheet: "Budget", columns: append(append([]string{"Financial year starting", "P&L line"}, budgetMonths[:]...), "Notes / assumptions"),
+		read:     func(w *Workbook, g sheet.Grid, base money.Currency) { w.readBudget(g, base) },
+		records:  func(w *Workbook, _ money.Currency, m Mapping) []Record { return w.budgets(m, "") },
+		calendar: true},
+}
+
+// listsSection is the Lists sheet's section under its mark, or a file's table of the section's columns alone.
+func listsSection(w *Workbook, g sheet.Grid, mark string) table {
+	if from := marked(g, mark, 0); from >= 0 {
+		return w.section("Lists", g, from)
+	}
+	return newTable("Lists", g, 0, -1, &w.Problems)
+}
+
+// readImportOpening reads an opening balances file: each account's code and its balance at the books start, on the
+// account's own side as the chart has it; the opening balances page and the Accounts sheet enter them so.
+func (w *Workbook) readImportOpening(g sheet.Grid, base money.Currency) {
+	t := w.standard("Accounts", g)
+	for _, r := range t.rows() {
+		a := Account{Origin: Origin{"Accounts", r}, Code: codeOf(t.text(r, "Code")), Name: t.text(r, "Account name"),
+			Opening: t.typed(r, "Opening balance", base.MinorUnits)}
+		if a.Code == "" {
+			t.problem(r, "Code", Error, CodeValue, "a balance names no account", "Give the account's code")
+			continue
+		}
+		w.Accounts = append(w.Accounts, a)
+	}
 }
 
 // dueByTerms gives each document of a file the due date its row's payment terms set, as the workbook works it out; a
@@ -203,7 +260,7 @@ func excelDay(t time.Time) string {
 // file's sheet of the entity's name, else its first, or a CSV file whose dates are written YYYY-MM-DD; the header is the
 // first of the first ten rows that names the entity's first column. shift is how many rows the header moved down, so a
 // row is named as the file numbers it.
-func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
+func gridOf(e importEntity, data []byte) (sheet.Grid, int, int, error) {
 	refuse := func(msg, fix string) error {
 		return Refused{{Code: CodeGeneric, Field: "file", Message: msg, Fix: fix}}
 	}
@@ -212,17 +269,17 @@ func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
 		wb, err := sheet.Open(data, sheet.WorkbookBounds)
 		var re *sheet.ReadError
 		if errors.As(err, &re) {
-			return g, 0, refuse(re.Message, re.Fix)
+			return g, 0, 0, refuse(re.Message, re.Fix)
 		}
 		if err != nil {
-			return g, 0, err
+			return g, 0, 0, err
 		}
 		name := e.sheet
 		if !slices.Contains(wb.Names(), name) && len(wb.Names()) > 0 {
 			name = wb.Names()[0]
 		}
 		if g, _, err = wb.Sheet(name); err != nil {
-			return g, 0, err
+			return g, 0, 0, err
 		}
 	} else {
 		r := csv.NewReader(bytes.NewReader(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))))
@@ -233,7 +290,7 @@ func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
 				break
 			}
 			if err != nil {
-				return g, 0, refuse(fmt.Sprintf("the file is neither an .xlsx workbook nor CSV: %v", err), "Save it as CSV (UTF-8) or as an .xlsx workbook")
+				return g, 0, 0, refuse(fmt.Sprintf("the file is neither an .xlsx workbook nor CSV: %v", err), "Save it as CSV (UTF-8) or as an .xlsx workbook")
 			}
 			for i, v := range rec {
 				if isoDate.MatchString(strings.TrimSpace(v)) {
@@ -252,7 +309,7 @@ func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
 		}
 	}
 	if head < 0 {
-		return g, 0, refuse(fmt.Sprintf("the file has no header naming %q in its first ten rows", e.columns[0]),
+		return g, 0, 0, refuse(fmt.Sprintf("the file has no header naming %q in its first ten rows", e.columns[0]),
 			"Fill in the template, whose first row names the columns")
 	}
 	// The rows that hold something in the template's columns: a workbook's sheet keeps empty rows ready for more.
@@ -272,7 +329,7 @@ func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
 		}
 	}
 	if n > MaxImportRows {
-		return g, 0, refuse(fmt.Sprintf("the file has %d rows; one file takes at most %d", n, MaxImportRows), "Split it into files of at most 1,000 rows")
+		return g, 0, 0, refuse(fmt.Sprintf("the file has %d rows; one file takes at most %d", n, MaxImportRows), "Split it into files of at most 1,000 rows")
 	}
 	// The header to row 5, as the workbook's tables have it (headerRow).
 	rows := append(make([][]string, headerRow-1), g.Rows[head:]...)
@@ -280,7 +337,7 @@ func gridOf(e importEntity, data []byte) (sheet.Grid, int, error) {
 		rows = g.Rows[head-(headerRow-1):]
 	}
 	g.Rows = rows
-	return g, headerRow - 1 - head, nil
+	return g, headerRow - 1 - head, n, nil
 }
 
 // ReadImport reads an uploaded file of an entity (FR-MIG-03): its rows as the workbook's sheet's are read, in the
@@ -290,11 +347,11 @@ func ReadImport(entity string, data []byte, base money.Currency) (*Workbook, err
 	if !ok {
 		return nil, fmt.Errorf("migration: no entity %q", entity)
 	}
-	g, shift, err := gridOf(e, data)
+	g, shift, n, err := gridOf(e, data)
 	if err != nil {
 		return nil, err
 	}
-	w := &Workbook{Settings: Settings{BaseCurrency: base.Code}}
+	w := &Workbook{Settings: Settings{BaseCurrency: base.Code}, read: n}
 	e.read(w, g, base)
 	if e.xlsx != nil && bytes.HasPrefix(data, []byte("PK\x03\x04")) {
 		if wb, err := sheet.Open(data, sheet.WorkbookBounds); err == nil {
@@ -325,6 +382,15 @@ func ReadImport(entity string, data []byte, base money.Currency) (*Workbook, err
 	for i := range w.Bills {
 		back(&w.Bills[i].Origin)
 	}
+	for i := range w.Rates {
+		back(&w.Rates[i].Origin)
+	}
+	for i := range w.BankRules {
+		back(&w.BankRules[i].Origin)
+	}
+	for i := range w.Budget {
+		back(&w.Budget[i].Origin)
+	}
 	for i := range w.Problems {
 		if w.Problems[i].Row > 0 && w.Problems[i].Sheet == e.sheet {
 			w.Problems[i].Row -= shift
@@ -349,22 +415,38 @@ func RunImport(ctx context.Context, u storage.UnitOfWork, entity string, w *Work
 	if !ok {
 		return ImportResult{}, fmt.Errorf("migration: no entity %q", entity)
 	}
-	out := ImportResult{Problems: append([]Problem{}, w.Problems...)}
+	out := ImportResult{Rows: w.read, Problems: append([]Problem{}, w.Problems...)}
 	m, made, err := preload(ctx, u)
 	if err != nil {
 		return out, err
 	}
+	if ie.calendar {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return out, err
+		}
+		cal, err := period.CalendarOf(o.Profile)
+		var pe *period.Error
+		if errors.As(err, &pe) {
+			out.Problems = append(out.Problems, Problem{Sheet: ie.sheet, Severity: Error, Code: CodeGeneric, Message: pe.Message, Fix: pe.Fix})
+			return out, nil
+		}
+		if err != nil {
+			return out, err
+		}
+		w.calendar = &cal
+	}
 	e.made = made
 	w.drafts = true
 	for _, r := range ie.records(w, base, m) {
-		out.Rows++
 		made, err := r.make(ctx, u, e)
 		var refusals Refused
 		switch {
 		case errors.As(err, &refusals):
 			for _, x := range refusals {
 				x = fileWords(x)
-				out.Problems = append(out.Problems, Problem{Sheet: r.Sheet, Row: r.Row, Column: x.Field, Severity: Error, Code: x.Code, Message: x.Message, Fix: x.Fix})
+				out.Problems = append(out.Problems, Problem{Sheet: r.Sheet, Row: cmp.Or(x.Row, r.Row), Column: x.Field, Severity: Error, Code: x.Code, Message: x.Message,
+					Fix: x.Fix})
 			}
 		case err != nil:
 			var se *storage.Error
