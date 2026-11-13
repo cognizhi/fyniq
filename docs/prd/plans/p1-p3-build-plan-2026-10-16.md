@@ -366,13 +366,22 @@ The first larger local run of the harness, at about 200,000 lines, found three t
 - the reports' time grows with the ledger (about 1.2 s at that size), so NFR-PERF-02 may not hold at 1 M;
 - the edge's compression changes the API's ETags, which `If-Match` then refuses.
 
-By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250), its task 13 follows:
-- the evidence buckets and the sealed fields' key ring move to `fyniq-audit`;
-- production sends traces only once Cloud Trace keeps them in Singapore;
-- the 10 M-line run gates from the first release, so the export streams and the reports are made faster first;
-- `If-Match` accepts the API's own tag as a compressing proxy changes it.
+By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250 to 0.252), its task 13 was built in
+#574 to #578:
+- the evidence buckets and the sealed fields' key ring moved to `fyniq-audit`;
+- production sends traces only once Cloud Trace keeps them in Singapore (a switch, off);
+- `If-Match` accepts the API's own tag as a compressing proxy changes it (Caddy names its encoding in it, rev 0.251);
+- the 10 M-line run gates from the first release, so what the harness found was fixed first, and the harness gates on
+  100 people pausing between reads (rev 0.252): the general ledger export streams, the reports read the balances cache
+  when nothing later is in a period, search and lists use trigram and date indexes, the bank import's matching reads
+  only lines of the same amount, the balance sheet's movement in equity no longer walks every entry, and the checks
+  refresh at most once a minute through a burst. The local 1 M-line run met every gated budget: reads 54 ms, reports
+  116 ms, posting 40 ms, a 10,000-line import 29 s and a 1 M-line export 2m57s.
+- Building also found that the local stack's services shared no data directory (each its own tmpfs and keys): they
+  share one volume now. The local restore drill runs only when asked, since its copy stops the database's connections.
 
-One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
+One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists, with
+whether GitHub's runners hold the 10 M-line run `[verify]`.
 
 <!-- roadmap:track P1 Fyniq -->
 

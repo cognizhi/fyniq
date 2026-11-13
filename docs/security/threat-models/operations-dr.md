@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Backups, the DR copy and restore drills; the evidence buckets; pgAudit in the security sink; traces, SLOs and the heartbeat's alerts; the performance harness; the supported browsers; the idle-cost alert; the operations tray: DR-01 to DR-04, DR-06, DR-07, NFR-DR-01 to NFR-DR-03, NFR-RET-01, NFR-OBS-01, NFR-OBS-02, NFR-PERF-01 to NFR-PERF-06, NFR-SCALE-01, NFR-AVAIL-01, NFR-BROWSER-01, NFR-COST-01 to NFR-COST-04, FR-INT-11, CTL-AUD-03, CTL-AUD-04, CTL-RES-02, CTL-RES-03, CTL-RES-05 (PRD-001 rev 0.249; `p1-operations-dr`) |
+| Feature and requirement IDs | Backups, the DR copy and restore drills; the evidence buckets; pgAudit in the security sink; traces, SLOs and the heartbeat's alerts; the performance harness; the supported browsers; the idle-cost alert; the operations tray: DR-01 to DR-04, DR-06, DR-07, NFR-DR-01 to NFR-DR-03, NFR-RET-01, NFR-OBS-01, NFR-OBS-02, NFR-PERF-01 to NFR-PERF-06, NFR-SCALE-01, NFR-AVAIL-01, NFR-BROWSER-01, NFR-COST-01 to NFR-COST-04, FR-INT-11, CTL-AUD-03, CTL-AUD-04, CTL-RES-02, CTL-RES-03, CTL-RES-05; from task 13 (rev 0.250 to 0.252) FR-INT-09, FR-UX-02, FR-CTL-01, INV-08, INV-11, DR-07, SEC-11 (PRD-001; `p1-operations-dr`) |
 | Author, reviewer, date | Claude Code for the owner, 11 Nov 2026; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Every class the platform holds, in full: the weekly export, the monthly copy and the drill's clone are copies of the whole database. The evidence buckets hold documents and records (personal and confidential). Spans and log lines hold request metadata: the route's pattern, the status, the organisation's, the client's and the request's IDs. The drill registers' findings are free text and may name people. The performance harness's organisation is synthetic (DEV-08) |
 | Who acts | The jobs' account (the export, the clone and its removal, the checks, the heartbeat check); Cloud SQL's service agent (writes the export); the api and the worker (commit evidence, send spans); the DPO (the drill registers); the Owner with the break-glass holder (the quarterly drill); the platform owner and the founders (alerts); CI (the harness on the local stack); attackers holding production's project, a service's identity, a member's session, or nothing but the internet |
@@ -55,6 +55,9 @@ local stack (the harness).
 | T16 | Billing | Denial (cost): compute billed while nobody uses it, unnoticed | Cost | Medium |
 | T17 | Browser → API (the tray) | Information disclosure: another person's operations, and the exports they name, listed | Someone else's exports discovered | Medium |
 | T18 | Browser | Tampering: a browser too old for the platform's CSP, passkeys or the build's syntax | Weaker protections, broken pages | Low |
+| T19 | Browser → API (search) | Tampering / denial: a search's text taken as a LIKE pattern, its wildcards widening the match, or a text that makes the database read every document | Wrong results; slow searches for everyone | Low |
+| T20 | Reports ↔ checks | Tampering (integrity): a balances cache that drifted from its lines is read by the statements too, so the checks that compare them agree on the wrong figure | A drift unseen | Low |
+| T21 | The local stack | Information disclosure / integrity: the services' shared data volume, or a key made twice when they start together | Sealed fields that do not open; false audit alerts; data left on a laptop | Low |
 
 SOD: the monthly drill runs as the jobs' account, which can clone only the production instance and change or remove
 only instances named for the drill; the quarterly drill is run by the Owner with the break-glass holder and recorded by
@@ -84,18 +87,24 @@ caller's rows of `operation`, which already does.
 | T16 | An alert on a Cloud Run service billed through an hour with no request (production's scanner excepted, a listed fixed fee); budgets alert at 50%, 80% and 100% and never cap; the cost review before go-live and each quarter | `compute_billed_while_idle_alerts_the_founders`, `alerts_and_never_a_cap` (module tests) `[live-verify]`; `docs/runbooks/cost-review.md` |
 | T17 | The list reads only the operations the caller asked for, in the caller's organisation; another person's operation is 404 when polled; the tray reads exports through the caller's own list | `TestMyOperationsAreListed`, `TestLongWorkIsPolledAsAnOperation`; the matrix rows `listMyOperations`, `getOperation` |
 | T18 | A list of supported browsers (NFR-BROWSER-01) that the build targets, and the smoke test in Chromium, Firefox and WebKit | `src/browsers.test.ts`; `make test-e2e` with `FYNIQ_E2E_BROWSERS=all` |
+| T19 | The words of a search are escaped (LIKE's escape character, `%` and `_`) and only narrow the documents on the trigram indexes; the whole text is then matched as typed, as before; every table keeps its row-level security, the indexes led by the organisation | `TestTheSearchFindsTheTextHoweverItsWordsFall`, `TestTheGlobalSearchFindsWhatThePersonMaySee`, `TestTenantKeysIndexesAndForeignKeys` |
+| T20 | Reports read the cache only for a period with nothing later than their revision; a check and the close read the statements from the lines alone (`storage.WithLines`), the trial balance's check from the cache, and `ledger.balances-match-lines` compares the two; the nightly verification too | `TestTamperedBooksFailTheirChecks`, `TestTheCloseAndTheCatalogueAgree`, `TestAPeriodsBalancesAsAtARevisionAreItsLinesUpToIt` |
+| T21 | One named volume, the local stand-in for the cloud's buckets and keys, mounted by the API, the worker and the executor alone, the read-only root and the rest of the hardening kept; a key made once, written whole and linked into place; local only, with synthetic data (DEV-08), and `make reset` deletes it | `TestComposeHardensOurServices`, `TestServicesStartingTogetherHoldOneKey` |
 
 ## 4. What remains
 
 - Everything in the cloud is code with module tests until the dev cloud: the export and its lock, the keys, the
   clone and its removal, the evidence buckets, the sink, Cloud Trace, the SLOs and every alert `[live-verify]`
   (`p1-launch-readiness` lists them).
-- **Decided on 11 Nov 2026 (rev 0.250), built in task 13:**
-  - the evidence buckets and the sealed fields' key ring move to `fyniq-audit`, so losing production's project loses
-    neither the documents nor the means to open sealed fields (T2);
-  - production sends traces only once Cloud Trace is shown to keep them in Singapore (CTL-DP-07, T9);
-  - `If-Match` accepts the API's own tag as a compressing proxy changes it, weak or with its encoding named (FR-INT-09,
-    rev 0.251).
+- **Built in task 13** (the owner's decisions of 11 Nov 2026, rev 0.250 to 0.252):
+  - the evidence buckets and the sealed fields' key ring in `fyniq-audit`, so losing production's project loses neither
+    the documents nor the means to open sealed fields (T2) `[live-verify]`;
+  - no traces from production until Cloud Trace is shown to keep them in Singapore (CTL-DP-07, T9) `[live-verify]`;
+  - `If-Match` accepts the API's own tag as a compressing proxy changes it, weak or with its encoding named (FR-INT-09);
+  - every gated performance budget met by the local 1 M-line run; the 10 M-line run as release evidence (QA-PERF-01).
+    Whether GitHub's runners hold a 10 M-line database within the release workflow's time and disk is `[verify]`;
+    a larger runner is the remedy if not.
+- `pg_trgm` and `btree_gin` on Cloud SQL, created by the migrator, `[live-verify]` (T19).
 - A clone left by a crash between cloning and removing is found through the drill job's failed slot (CTL-RES-02) and
   the budget alerts, and removed by runbook; nothing sweeps it automatically (T4).
 - A caller can force its own requests to be traced (T11); the rate limits bound the cost, and the trace context from
