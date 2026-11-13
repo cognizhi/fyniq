@@ -78,7 +78,8 @@
         "controller_entry",
         "budget",
         "migration_commit",
-        "tenant_export"
+        "tenant_export",
+        "ai_connection"
       ],
       "examples": [
         "organisation_setting"

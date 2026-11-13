@@ -123,6 +123,40 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAiConnection struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Name            string
+	Connector       string
+	Preset          *string
+	Auth            string
+	Configuration   []byte
+	Host            string
+	SelfHosted      bool
+	CredentialRef   *string
+	CredentialSetAt *time.Time
+	BillingMode     string
+	Quota           []byte
+	State           string
+	Version         int32
+	CreatedBy       string
+	CreatedAt       time.Time
+	ChangedBy       string
+	ChangedAt       time.Time
+}
+
+type FyniqAiConnectionVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Version        int32
+	Step           string
+	Snapshot       []byte
+	ApprovalID     *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+}
+
 type FyniqAllocation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

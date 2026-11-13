@@ -126,7 +126,8 @@
         "controller_entry",
         "budget",
         "migration_commit",
-        "tenant_export"
+        "tenant_export",
+        "ai_connection"
       ],
       "examples": [
         "organisation_setting"
@@ -197,7 +198,11 @@
         "controller_entry.record",
         "budget.record",
         "migration.commit",
-        "tenant_export.prepare"
+        "tenant_export.prepare",
+        "ai_connection.create",
+        "ai_connection.change",
+        "ai_connection.credential",
+        "ai_connection.enable"
       ],
       "examples": [
         "organisation_setting.change"

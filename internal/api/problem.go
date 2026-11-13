@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accessreview"
 	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
+	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -235,6 +236,15 @@ var codeFacts = map[string]struct {
 	storage.CodeIncident:          {409, "An incident's steps come in the runbook's order"},
 	storage.CodeRestoreDrill:      {409, "A restore drill, once recorded, never changes"},
 	storage.CodeMigration:         {409, "The migration keeps its record, in an organisation without posted entries"},
+	storage.CodeAIConnection:      {409, "An AI connection keeps each version, and is switched off, never removed"},
+	aiconnection.CodeProvider:     {422, "Not a model provider of this release"},
+	aiconnection.CodeAuth:         {422, "Not an authentication the provider offers"},
+	aiconnection.CodeConfig:       {422, "The configuration does not match the provider's"},
+	aiconnection.CodeCredential:   {422, "Not an API key the provider issues"},
+	aiconnection.CodeEgress:       {422, "The endpoint cannot be reached as a connection may"},
+	aiconnection.CodeBilling:      {422, "The billing is not valid"},
+	aiconnection.CodeState:        {409, "The connection cannot take that step now"},
+	aiconnection.CodeName:         {422, "The connection's name is not valid"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
 	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},
@@ -1001,6 +1011,7 @@ var storageFixes = map[string]string{
 	storage.CodeIncident:             "Contain, assess, notify, recover, then review: each once; notify after assessing, recover after containing, review after recovering",
 	storage.CodeRestoreDrill:         "Record the next drill instead",
 	storage.CodeMigration:            "Start the migration in a new organisation without posted entries; upload the workbook again once the last validation is done",
+	storage.CodeAIConnection:         "Read the connection again and ask for its next version; switch it off instead of removing it",
 	storage.CodeHeartbeatDrill:       "Record the next drill instead",
 	storage.CodeTransfer:             "Save a transfer's next version over the one you read; for another flow, retire it and record a new one",
 	storage.CodeShredding:            "Approve a listed run once, at the version you read; the daily run then shreds it, register first",

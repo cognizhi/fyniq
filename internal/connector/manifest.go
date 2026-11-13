@@ -461,6 +461,20 @@ func checkDestinations(ds []Destination, props map[string]string, bad func(strin
 // Hash is the SHA-256 of the manifest's RFC 8785 form: what an installation consented to.
 func (m Manifest) Hash() string { return m.hash }
 
+// Default is the default its configuration's schema gives property name, or "" when it gives none.
+func (m Manifest) Default(name string) string {
+	var top struct {
+		Properties map[string]struct {
+			Default any `json:"default"`
+		} `json:"properties"`
+	}
+	if json.Unmarshal(m.Configuration, &top) != nil {
+		return ""
+	}
+	s, _ := top.Properties[name].Default.(string)
+	return s
+}
+
 // Capability returns the manifest's capability of kind k.
 func (m Manifest) Capability(k Kind) (Capability, bool) {
 	for _, c := range m.Capabilities {

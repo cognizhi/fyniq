@@ -765,7 +765,12 @@ func (c Cleanup) Run(ctx context.Context) (int, error) {
 			}
 			due = overdue(all, secrets, now)
 			requests, err := u.Approvals().List(ctx, "")
+			if err != nil {
+				return err
+			}
 			refused = refusedRefs(requests, now)
+			replaced, err := replacedAIKeys(ctx, u, now)
+			refused = append(refused, replaced...)
 			return err
 		}); err != nil {
 			return n, err
@@ -794,12 +799,48 @@ func (c Cleanup) Run(ctx context.Context) (int, error) {
 // long enough for a failed run to be retried, short enough not to call Secret Manager about it every hour for good.
 const refusedFor = 8 * 24 * time.Hour
 
+// aiKeyOverlap is how long an AI connection's replaced API key keeps working after its replacement is approved, as the
+// model providers' manifests give it (rotation_overlap_hours), so calls in flight finish (AI-79).
+const aiKeyOverlap = 24 * time.Hour
+
+// replacedAIKeys are the API keys of the organisation's AI connections that were replaced more than aiKeyOverlap ago,
+// within refusedFor of that: each is destroyed on the days it falls in that window (destroying is idempotent).
+func replacedAIKeys(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]ports.SecretRef, error) {
+	all, err := u.AIConnections().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []ports.SecretRef
+	for _, c := range all {
+		versions, err := u.AIConnections().Versions(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		previous := ""
+		for _, v := range versions {
+			var snap struct {
+				Ref string `json:"credential_ref"`
+			}
+			if json.Unmarshal(v.Snapshot, &snap) != nil {
+				continue
+			}
+			if previous != "" && snap.Ref != previous && previous != c.CredentialRef {
+				if over := now.Sub(v.MadeAt.Add(aiKeyOverlap)); over >= 0 && over < refusedFor {
+					out = append(out, ports.SecretRef(previous))
+				}
+			}
+			previous = snap.Ref
+		}
+	}
+	return out, nil
+}
+
 // refusedRefs are the new keys of an organisation's connector approval requests that ended without applying: rejected,
 // withdrawn (void) or expired, recently.
 func refusedRefs(requests []storage.ApprovalRequest, now time.Time) []ports.SecretRef {
 	var out []ports.SecretRef
 	for _, r := range requests {
-		if r.ObjectType != "connector" {
+		if r.ObjectType != "connector" && r.ObjectType != "ai_connection" { // an AI connection's new credential too (AI-79)
 			continue
 		}
 		ended := r.ExpiresAt
