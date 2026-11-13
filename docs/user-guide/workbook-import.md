@@ -45,6 +45,31 @@ save is a new version. Errors against the organisation's set-up are listed and s
 The Accountant then selects **Sign the mapping** and confirms it's them. A later version needs its own sign-off, and
 once the import is committed the mapping is fixed.
 
+## Commit
+
+Once the mapping is signed, choose what to import: the year's history from the books start, or a clean start from
+the workbook's Carry Forward sheet. Select **Ask to commit** and confirm it's you. An Owner who did not ask approves
+it in **Approvals** ([Approve or reject a request](approvals.md)).
+
+Once approved, select **Run the import**. The records are entered batch by batch, each through the same checks as
+entering it by hand, with the progress shown by kind. If a record cannot be entered, the import stops and names its
+row, what is wrong and how to fix it; the records before it stay entered, and **Continue the import** picks up where
+it stopped.
+
+## Reconcile and sign
+
+Once the import is committed, every account and month is compared with the workbook to the cent, with the customers'
+and suppliers' open balances and the pay runs' totals, and each of the workbook's checks with Fyniq's. Each figure or
+check that differs goes into the difference register, where the Accountant decides its class:
+
+- **a**: a cent from how spreads and depreciation are allocated;
+- **b**: a rule Fyniq applies deliberately differently;
+- **c**: a defect in the workbook found during the move, with a note saying what it is.
+
+If the figures move after a line is decided, it is marked to decide again. Once every line is decided, the
+Accountant selects **Sign the register** and confirms it's them. The GST F5 is compared once Fyniq makes the F5
+return.
+
 ## Other imports
 
 Import one kind of record from CSV or Excel: contacts, items, accounts of the chart, opening balances, journals,
