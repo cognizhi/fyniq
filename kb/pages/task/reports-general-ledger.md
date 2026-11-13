@@ -4,7 +4,7 @@ type: task
 title: Read the general ledger
 summary: Every posted line of chosen accounts between two dates, with opening, running and closing balances and each line's source, and exporting it as CSV
 sources:
-  - docs/user-guide/general-ledger.md sha256:9f8dbf13b970b0369557da659fe0bd227d1a5082ca4d6ecfbf1f0c85985a7190
+  - docs/user-guide/general-ledger.md sha256:85f88fe368c92ef5025139e1496f2d746d31f85173ad2cd724c53edb2cedc6dd
 data_class: general
 taint: trusted
 status: draft
@@ -39,7 +39,7 @@ aliases:
 
 - Choose an account and select **Add**, up to 20 accounts; set **From** and **To** (by default the first day of this month to today).
 - Each account shows its opening balance, its lines, and its closing balance with the debits and credits.
-- At most 5,000 lines of one account show at once; for more, choose a shorter range.
+- At most 5,000 lines of one account show at once; for more, choose a shorter range, or ask for the general ledger as an accountant export, which has no such limit: [[reports.statements]].
 - When the organisation uses dimensions, **Only the lines of** shows the lines of a value alone, such as the Engineering department: the opening balance, the lines and the running balance are theirs; each line shows its values in a **Dimensions** column ([[accounting.chart]]).
 - Related: the journals behind the lines ([[accounting.journals]]); the periods they post in ([[accounting.periods]]); the statements whose figures open it ([[reports.statements]]).
 

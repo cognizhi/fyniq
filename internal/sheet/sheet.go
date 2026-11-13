@@ -8,10 +8,8 @@
 package sheet
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -85,36 +83,7 @@ var decimal = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
 // CSV is the first sheet as CSV: UTF-8 with CRLF line ends, the header first.
 func CSV(s Sheet) []byte {
 	var b bytes.Buffer
-	line := func(cells []Cell) {
-		for i, c := range cells {
-			if i > 0 {
-				b.WriteByte(',')
-			}
-			switch {
-			case c.IsNumber && decimal.MatchString(c.Number):
-				b.WriteString(c.Number)
-			case c.IsNumber:
-				b.WriteString(csvText(c.Number)) // not a plain decimal: kept, as text
-			default:
-				b.WriteString(csvText(c.Text))
-			}
-		}
-		b.WriteString("\r\n")
-	}
-	header := make([]Cell, len(s.Header))
-	for i, h := range s.Header {
-		header[i] = Text(h)
-	}
-	line(header)
-	for _, r := range s.Rows {
-		line(r.Cells)
-	}
-	if len(s.Footer) > 0 {
-		b.WriteString("\r\n")
-		for _, f := range s.Footer {
-			line([]Cell{Text(f)})
-		}
-	}
+	_ = Write(NewCSV(&b), []Sheet{s}) // into a buffer, which never fails
 	return b.Bytes()
 }
 
@@ -129,51 +98,11 @@ func csvText(s string) string {
 // XLSX is the sheets as an Office Open XML workbook, the first sheet open. created is the workbook's creation time,
 // so that the same report gives the same bytes.
 func XLSX(sheets []Sheet, created time.Time) ([]byte, error) {
-	var buf bytes.Buffer
-	z := zip.NewWriter(&buf)
-	put := func(name, body string) error {
-		w, err := z.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Deflate, Modified: created.UTC()})
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte(xml.Header + body))
-		return err
-	}
-	var types, sheetsXML, rels strings.Builder
-	for i, s := range sheets {
-		n := i + 1
-		fmt.Fprintf(&types, `<Override PartName="/xl/worksheets/sheet%d.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`, n)
-		fmt.Fprintf(&sheetsXML, `<sheet name="%s" sheetId="%d" r:id="rId%d"/>`, escape(sheetName(s.Name)), n, n)
-		fmt.Fprintf(&rels, `<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet%d.xml"/>`, n, n)
-	}
-	styles := len(sheets) + 1
-	fmt.Fprintf(&rels, `<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`, styles)
-	parts := []struct{ name, body string }{
-		{"[Content_Types].xml", `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
-			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
-			`<Default Extension="xml" ContentType="application/xml"/>` +
-			`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
-			`<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
-			types.String() + `</Types>`},
-		{"_rels/.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
-		{"xl/workbook.xml", `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-			`<sheets>` + sheetsXML.String() + `</sheets></workbook>`},
-		{"xl/_rels/workbook.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` + rels.String() + `</Relationships>`},
-		{"xl/styles.xml", stylesXML},
-	}
-	for i, s := range sheets {
-		parts = append(parts, struct{ name, body string }{fmt.Sprintf("xl/worksheets/sheet%d.xml", i+1), worksheet(s)})
-	}
-	for _, p := range parts {
-		if err := put(p.name, p.body); err != nil {
-			return nil, err
-		}
-	}
-	if err := z.Close(); err != nil {
+	var b bytes.Buffer
+	if err := Write(NewXLSX(&b, created), sheets); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	return b.Bytes(), nil
 }
 
 // The styles: 0 plain; 1 bold; 2 a number with 2 decimals and a thousands separator; 3 the same, bold; 4 a whole
@@ -193,55 +122,6 @@ const stylesXML = `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsh
 	`<xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>` +
 	`<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>` +
 	`<xf numFmtId="166" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs></styleSheet>`
-
-// worksheet is one sheet's XML: the header row bold, then the rows, a strong row bold.
-func worksheet(s Sheet) string {
-	var b strings.Builder
-	b.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`)
-	row := func(n int, cells []Cell, strong bool) {
-		fmt.Fprintf(&b, `<row r="%d">`, n)
-		for i, c := range cells {
-			ref := column(i) + fmt.Sprint(n)
-			if c.IsNumber && decimal.MatchString(c.Number) {
-				style := 2
-				switch c.Decimals {
-				case 0:
-					style = 4
-				case 1:
-					style = 6
-				}
-				if strong {
-					style++
-				}
-				fmt.Fprintf(&b, `<c r="%s" s="%d"><v>%s</v></c>`, ref, style, c.Number)
-				continue
-			}
-			text := c.Text
-			if c.IsNumber {
-				text = c.Number // not a plain decimal: kept, as text
-			}
-			style := 0
-			if strong {
-				style = 1
-			}
-			fmt.Fprintf(&b, `<c r="%s" s="%d" t="inlineStr"><is><t xml:space="preserve">%s</t></is></c>`, ref, style, escape(text))
-		}
-		b.WriteString(`</row>`)
-	}
-	header := make([]Cell, len(s.Header))
-	for i, h := range s.Header {
-		header[i] = Text(h)
-	}
-	row(1, header, true)
-	for i, r := range s.Rows {
-		row(i+2, r.Cells, r.Strong)
-	}
-	for i, f := range s.Footer { // after a blank row
-		row(len(s.Rows)+3+i, []Cell{Text(f)}, false)
-	}
-	b.WriteString(`</sheetData></worksheet>`)
-	return b.String()
-}
 
 // column is a column's letters: 0 is A, 25 Z, 26 AA.
 func column(i int) string {

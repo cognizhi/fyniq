@@ -3,9 +3,12 @@
 package postgres_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -16,9 +19,12 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/reportexport"
 )
@@ -149,5 +155,87 @@ func TestAnAccountantExportIsPreparedInTheBackground(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), c.code) {
 			t.Errorf("%s: %s: want %s, got %v", c.role, c.sql, c.code, err)
 		}
+	}
+}
+
+// NFR-PERF-05 (rev 0.250): the general ledger export reads each account's lines a page at a time, with no limit, and
+// writes the file as it reads. Read in pages of 2, across days and with several entries on one day, the export's rows
+// are the on-screen general ledger's, line for line, in posting order with the same running balances; the SHA-256 and
+// size the export records are those of the file the store keeps.
+// req: NFR-PERF-05
+// req: FR-GL-11
+func TestTheGeneralLedgerExportStreamsWithNoLimit(t *testing.T) {
+	defer func(n int) { balance.LedgerPage = n }(balance.LedgerPage)
+	balance.LedgerPage = 2
+	person := uuid.New()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: person.String()}})
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	b := newFinancialBooks(t, ctx, api, "Streamed Exports Pte Ltd")
+	b.post(t, ctx, api, ledger.SourceOpeningBalance, 10, 1, "1010", "3010", "10000.00")
+	for i, amount := range []string{"100.00", "200.00", "300.00", "400.00", "500.00"} {
+		b.post(t, ctx, api, ledger.SourceManualJournal, 10, 7, "6110", "1010", amount) // five entries on one day
+		b.post(t, ctx, api, ledger.SourceManualJournal, 10, 9+i, "1010", "4010", "1000.00")
+	}
+	at := time.Date(2026, 11, 2, 1, 0, 0, 0, time.UTC)
+	clk := clock.NewFrozen(at)
+	files, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	params, _ := json.Marshal(reportexport.Parameters{From: "2026-10-02", To: "2026-10-31"})
+	var x storage.ReportExport
+	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		x, err = u.ReportExports().Ask(ctx, storage.NewReportExport{Report: reportexport.GeneralLedger, Format: "csv", Parameters: params,
+			RequestedBy: "user:" + person.String(), RequestedAt: at})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	p := reportexport.Preparer{Store: worker, Files: files, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: clk}, Clock: clk}
+	payload, _ := json.Marshal(map[string]string{"export_id": x.ID.String()})
+	if err := p.Work()(context.Background(), b.Org, storage.OutboxRow{Kind: reportexport.Kind, Payload: payload}); err != nil {
+		t.Fatal(err)
+	}
+	var screen balance.AccountLedger
+	if err := worker.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if x, err = u.ReportExports().Get(ctx, x.ID); err != nil {
+			return err
+		}
+		screen, err = balance.GeneralLedger(ctx, u, money.MustLookup("SGD"), b.acc["1010"].ID, porttest.Day(10, 2), porttest.Day(10, 31))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if x.Status != storage.ExportReady || len(screen.Lines) != 10 {
+		t.Fatalf("the export: %+v; the screen's lines: %d", x, len(screen.Lines))
+	}
+	r, err := files.Get(context.Background(), reportexport.Key(b.Org, x.ID, x.File.FileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, _ := io.ReadAll(r)
+	_ = r.Close()
+	if sum := sha256.Sum256(data); !bytes.Equal(sum[:], x.File.SHA256) || x.File.Size != int64(len(data)) {
+		t.Errorf("the recorded hash and size are not the file's: %x %d, file %x %d", x.File.SHA256, x.File.Size, sum, len(data))
+	}
+	var rows []string
+	for _, line := range strings.Split(string(data), "\r\n") {
+		if strings.HasPrefix(line, `"1010",`) {
+			rows = append(rows, line)
+		}
+	}
+	want := []string{`"1010","DBS current","2026-10-02","","","Opening balance","","","",10000.00`}
+	for _, l := range screen.Lines {
+		dr, cr := `""`, `""`
+		if l.Base.Sign() > 0 {
+			dr = l.Base.String()
+		} else {
+			cr = l.Base.Neg().String()
+		}
+		want = append(want, fmt.Sprintf(`"1010","DBS current","%s","","%s","","",%s,%s,%s`, l.PostingDate.Format(time.DateOnly), l.Source.Type, dr, cr, l.Balance))
+	}
+	want = append(want, `"1010","DBS current","2026-10-31","","","Closing balance","",5000.00,1500.00,13500.00`)
+	if strings.Join(rows, "\n") != strings.Join(want, "\n") {
+		t.Errorf("the export's rows of 1010:\n%s\nwant the screen's:\n%s", strings.Join(rows, "\n"), strings.Join(want, "\n"))
 	}
 }

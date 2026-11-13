@@ -121,8 +121,13 @@ module tests on mock providers and tagged `[live-verify]`.
   the worker alone, with module tests `[live-verify]`. `// req: DR-07`, `// req: SEC-11`, `// req: DR-04`
 - [ ] 13.3 The environment's `traces` setting, off until Cloud Trace keeps spans in Singapore; off, the services export
   nothing. Module test and the runbook's check `[live-verify]`. `// req: NFR-OBS-01`, `// req: CTL-DP-07`
-- [ ] 13.4 The general ledger export streamed a page at a time with no limit, its figures checked against the
-  on-screen report and the oracle's, and the harness's NFR-PERF-05 at 1 M lines. `// req: NFR-PERF-05`
+- [x] 13.4 The general ledger export streamed a page at a time with no limit, its figures checked against the
+  on-screen report and the oracle's, and the harness's NFR-PERF-05 at 1 M lines. `// req: NFR-PERF-05` Built: a keyset
+  read of an account's lines (`AccountLinesAfter`), `balance.Opening` and `Walk`, streaming CSV and XLSX writers (a
+  sheet goes on in another at Excel's row limit), the worker piping the file into the store, and the GCS adapter's
+  resumable upload in 8 MiB chunks. The on-screen general ledger is the reference the export is checked against: the
+  oracle's general ledger source compares postings and trial balances, not the report's running balances. Measured
+  locally at 200,000 lines: 200,158 rows in 1m26s; the 1 M run is the weekly job's.
 - [ ] 13.5 The reports measured at 1 M lines and made to meet NFR-PERF-02. `// req: NFR-PERF-02`
 - [x] 13.6 `If-Match` accepts the API's own tag weak or strong. `// req: FR-INT-09` The harness now sends the ETag back as it
   came. Building found Caddy names the encoding in the tag (`"1-draft-gzip"`), so that is accepted too (rev 0.251).

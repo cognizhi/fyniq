@@ -194,18 +194,21 @@ func (d *Dir) RetentionOf(_ context.Context, key string) (ports.BlobRetention, e
 	return ports.BlobRetention{Locked: !r.RetainUntil.IsZero(), RetainUntil: r.RetainUntil, Held: r.LegalHold}, nil
 }
 
-// Put writes r under key, replacing any existing blob unless it is retained.
+// Put writes r under key, replacing any existing blob unless it is retained. The blob is copied outside the store's
+// lock, so a long one, such as an export written as it is read (NFR-PERF-05), holds up no other; the retention is
+// checked again before it replaces the old one.
 func (d *Dir) Put(_ context.Context, key string, r io.Reader) error {
 	p, err := d.path(key)
 	if err != nil {
 		return err
 	}
 	d.mu.Lock()
-	defer d.mu.Unlock()
-	if err := d.retained(key); err != nil {
-		return err
+	err = d.retained(key)
+	if err == nil {
+		err = os.MkdirAll(filepath.Dir(p), 0o700)
 	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+	d.mu.Unlock()
+	if err != nil {
 		return err
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(p), ".put-*")
@@ -218,6 +221,13 @@ func (d *Dir) Put(_ context.Context, key string, r io.Reader) error {
 		return err
 	}
 	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if err := d.retained(key); err != nil {
+		_ = os.Remove(tmp.Name())
 		return err
 	}
 	return os.Rename(tmp.Name(), p)
