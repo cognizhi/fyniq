@@ -10,8 +10,10 @@ evidence: "Reports"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-security-hardening"
+    status: running
+    how: "make dast"
+    evidence: "ZAP's baseline (with its AJAX spider) of the local stack built from the images, signed in through the local sign-in page, on every pull request after the smoke test: a High alert or one of a FAIL rule in compliance/zap-rules.tsv fails unless waived; the security tests' ASVS coverage beside it; CI artefact dast-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p1-security-hardening"
+    status: cloud
+    how: "ci DAST baseline on staging (CTL-CHG-07)"
+    evidence: "dast-staging.yml each night against staging's origin, not signed in until a staging test identity exists; skipped until the STAGING_ORIGIN variable names staging [live-verify]; artefact dast-staging-report (90 days)"

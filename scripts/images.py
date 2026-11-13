@@ -93,7 +93,7 @@ PLATFORMS = ("linux/amd64", "linux/arm64")
 ELF_MACHINES = {62: "amd64", 183: "arm64"}   # EM_X86_64, EM_AARCH64
 # Where images are pinned by digest; each must be a multi-platform index with PLATFORMS.
 PINNED_IN = ("deploy/docker/Dockerfile.go-service", "deploy/docker/Dockerfile.web", "deploy/local/compose.yaml",
-             ".devcontainer/Dockerfile", "internal/adapters/postgres/pgtest/pgtest.go", "scripts/images.py")
+             ".devcontainer/Dockerfile", "internal/adapters/postgres/pgtest/pgtest.go", "scripts/images.py", "scripts/dast.py")
 PIN = re.compile(r"([a-z0-9][a-z0-9._/-]*(?::[A-Za-z0-9._-]+)?)@(sha256:[0-9a-f]{64})")
 
 
