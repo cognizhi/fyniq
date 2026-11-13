@@ -13745,6 +13745,70 @@ export interface paths {
         patch: operations["switchTeamMode"];
         trace?: never;
     };
+    "/v1/tenant-export-downloads/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Save the full export through its link
+         * @description Public: no session; the link's token is the right, for 5 minutes, and only its requester is given one (SEC-24, FR-MIG-04). The export's ZIP itself, served as an attachment and checked against the SHA-256 recorded when it was written. A token that is not the API's, or expired, and an export past its 24 hours, is not found. Only the links of an installation without signed URLs of its store come here. Never cached.
+         */
+        get: operations["getTenantExportDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the organisation's full exports
+         * @description The organisation's full exports (FR-MIG-04), newest first, a page at a time (FR-INT-10): those awaiting approval, then those approved, each with who asked, its status and, once ready, its file's name, size, hash and expiry. Read-only; no side effects.
+         */
+        get: operations["listTenantExports"];
+        put?: never;
+        /**
+         * Ask for the organisation's full export
+         * @description Asks for everything the organisation keeps in Fyniq as one ZIP (FR-MIG-04, design D10; rev 0.273): each table as CSV, each document's versions as JSON, the evidence and payment files, the audit trail with its hashes, and a manifest of every file's SHA-256, for exit and portability. Bank account numbers are in clear [counsel to confirm]. It is dual controlled (FM-1): the answer is the approval request, which another person who holds A on "Tenant export" approves; the approval queues the export for the worker, and its requester saves it with createTenantExportDownload. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key.
+         */
+        post: operations["requestTenantExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant-exports/{export_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a link that saves the full export
+         * @description A link that works for 5 minutes and serves the export's ZIP as an attachment (FR-MIG-04, SEC-24): a signed URL of the stored file in the cloud, a signed path of the API locally. Only the person who asked for the export gets one (REPORT-07), while it is ready (REPORT-05) and within its 24 hours (REPORT-06). Side effects: an audit event of the link, with the file's hash, as a sensitive export (AUD-05). Never cached.
+         */
+        post: operations["createTenantExportDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/write-offs": {
         parameters: {
             query?: never;
@@ -15179,13 +15243,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -15322,7 +15386,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -15364,7 +15428,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -43281,6 +43345,118 @@ export interface components {
             /**
              * @description Send it as cursor for the next page; absent on the last page.
              * @example eyJhZnRlciI6IjIifQ
+             */
+            next_cursor?: string;
+        };
+        TenantExport: {
+            /**
+             * Format: uuid
+             * @description The approval it waits for, or was prepared under.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            approval_id: string;
+            /**
+             * Format: uuid
+             * @description The export, once approved: what createTenantExportDownload saves.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d20
+             */
+            export_id?: string;
+            /**
+             * @description Why it failed.
+             * @example the sealed fields' keys are not configured, so the bank account numbers cannot be exported
+             */
+            failure?: string;
+            /** @description Its file, once ready. */
+            file?: components["schemas"]["TenantExportFile"];
+            /**
+             * Format: date-time
+             * @description When it was asked for, or approved and queued.
+             * @example 2026-11-13T09:00:00Z
+             */
+            requested_at: string;
+            /**
+             * @description Who asked for it; only they save it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+             */
+            requested_by: string;
+            /**
+             * @description awaiting_approval until another person approves it; pending while the worker writes it; ready to save for 24 hours; failed with why; expired once its file is gone.
+             * @example ready
+             * @enum {string}
+             */
+            status: "awaiting_approval" | "pending" | "ready" | "failed" | "expired";
+        };
+        TenantExportDownload: {
+            /**
+             * Format: date-time
+             * @description When the link stops working: 5 minutes after it was made.
+             * @example 2026-11-13T09:10:00Z
+             */
+            expires_at: string;
+            /**
+             * @description The ZIP's name.
+             * @example fyniq-export-2026-11-13.zip
+             */
+            file_name: string;
+            /**
+             * @description The ZIP's SHA-256, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * @description Open it within expires_at: the ZIP is served as an attachment named file_name. A path starting /api/ is on the web app's own origin.
+             * @example https://storage.googleapis.com/fyniq-prod-staging/exports/01928f6e/fyniq-export-2026-11-13.zip?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Expires=300&X-Goog-Signature=ab12
+             */
+            url: string;
+        };
+        TenantExportFile: {
+            /**
+             * Format: date-time
+             * @description When its file is deleted: 24 hours after it was ready.
+             * @example 2026-11-14T09:05:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it was read at.
+             * @example 4211
+             */
+            ledger_revision: number;
+            /**
+             * @description The ZIP's name.
+             * @example fyniq-export-2026-11-13.zip
+             */
+            name: string;
+            /**
+             * Format: date-time
+             * @description When the worker finished it.
+             * @example 2026-11-13T09:05:00Z
+             */
+            ready_at: string;
+            /**
+             * Format: int64
+             * @description The rows of the organisation's tables it holds.
+             * @example 125000
+             */
+            rows: number;
+            /**
+             * @description The ZIP's SHA-256, in hexadecimal, to check what was saved.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 5242880
+             */
+            size: number;
+        };
+        TenantExportList: {
+            /** @description The exports, newest first: those awaiting approval, then those approved. */
+            items: components["schemas"]["TenantExport"][];
+            /**
+             * @description The cursor of the next page; none on the last.
+             * @example eyJhZnRlciI6IjEwMDAifQ
              */
             next_cursor?: string;
         };
@@ -150799,6 +150975,414 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTenantExportDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The link's token, as createTenantExportDownload gave it. */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export's ZIP, as an attachment with its name. */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Content-Disposition"?: string;
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTenantExports: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantExportList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestTenantExport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTenantExportDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The export's ID, as listTenantExports gives it once approved. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantExportDownload"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `REPORT-05` The export is not ready; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone: `REPORT-06` The export has expired. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

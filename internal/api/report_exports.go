@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -107,6 +108,9 @@ func mine(ctx context.Context, u storage.UnitOfWork, path reportExportPath) (sto
 		return storage.ReportExport{}, err
 	}
 	x, err := u.ReportExports().Get(ctx, id)
+	if err == nil && x.Report == reportexport.Tenant { // a full export is the tenant exports' own (FR-MIG-04)
+		err = ports.ErrNotFound
+	}
 	if err != nil {
 		return storage.ReportExport{}, err
 	}
@@ -198,6 +202,7 @@ func registerReportExports(a *API) {
 			if err != nil {
 				return err
 			}
+			xs = slices.DeleteFunc(xs, func(x storage.ReportExport) bool { return x.Report == reportexport.Tenant }) // listTenantExports lists them
 			page, next, err := pageOf(xs, func(x storage.ReportExport) string { return x.ID.String() }, *in)
 			for _, x := range page {
 				out.Items = append(out.Items, reportExportOut(x))

@@ -125,7 +125,8 @@
         "investor_right",
         "controller_entry",
         "budget",
-        "migration_commit"
+        "migration_commit",
+        "tenant_export"
       ],
       "examples": [
         "organisation_setting"
@@ -195,7 +196,8 @@
         "investor_right.record",
         "controller_entry.record",
         "budget.record",
-        "migration.commit"
+        "migration.commit",
+        "tenant_export.prepare"
       ],
       "examples": [
         "organisation_setting.change"

@@ -14507,6 +14507,94 @@ M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `MIGRATION-14`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`
 
+## Data
+
+The organisation's data as a whole: the full tenant export (FR-MIG-04), dual controlled, saved only by its requester.
+
+### `GET /v1/tenant-export-downloads/{token}`
+
+**Save the full export through its link** (`getTenantExportDownload`)
+
+Public: no session; the link's token is the right, for 5 minutes, and only its requester is given one (SEC-24, FR-MIG-04). The export's ZIP itself, served as an attachment and checked against the SHA-256 recorded when it was written. A token that is not the API's, or expired, and an export past its 24 hours, is not found. Only the links of an installation without signed URLs of its store come here. Never cached.
+
+- **Permission:** View on Tenant export
+- **Parameters:**
+  - `token` (path, required): The link's token, as createTenantExportDownload gave it.
+- **Responses:**
+  - `200` The export's ZIP, as an attachment with its name.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-UNAVAILABLE-01`
+
+### `GET /v1/tenant-exports`
+
+**List the organisation's full exports** (`listTenantExports`)
+
+The organisation's full exports (FR-MIG-04), newest first, a page at a time (FR-INT-10): those awaiting approval, then those approved, each with who asked, its status and, once ready, its file's name, size, hash and expiry. Read-only; no side effects.
+
+- **Permission:** View on Tenant export
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`TenantExportList`](../../contracts/schemas/TenantExportList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/tenant-exports`
+
+**Ask for the organisation's full export** (`requestTenantExport`)
+
+Asks for everything the organisation keeps in Fyniq as one ZIP (FR-MIG-04, design D10; rev 0.273): each table as CSV, each document's versions as JSON, the evidence and payment files, the audit trail with its hashes, and a manifest of every file's SHA-256, for exit and portability. Bank account numbers are in clear [counsel to confirm]. It is dual controlled (FM-1): the answer is the approval request, which another person who holds A on "Tenant export" approves; the approval queues the export for the worker, and its requester saves it with createTenantExportDownload. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key.
+
+- **Permission:** Create on Tenant export
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `APR-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/tenant-exports/{export_id}/download`
+
+**Get a link that saves the full export** (`createTenantExportDownload`)
+
+A link that works for 5 minutes and serves the export's ZIP as an attachment (FR-MIG-04, SEC-24): a signed URL of the stored file in the cloud, a signed path of the API locally. Only the person who asked for the export gets one (REPORT-07), while it is ready (REPORT-05) and within its 24 hours (REPORT-06). Side effects: an audit event of the link, with the file's hash, as a sensitive export (AUD-05). Never cached.
+
+- **Permission:** Create on Tenant export. Only the person who asked for the export saves it.
+- **Parameters:**
+  - `export_id` (path, required): The export's ID, as listTenantExports gives it once approved.
+- **Responses:**
+  - `200` OK [`TenantExportDownload`](../../contracts/schemas/TenantExportDownload.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `REPORT-05` The export is not ready; `STORAGE-LOCK-01` Another change is in progress.
+  - `410` Gone: `REPORT-06` The export has expired.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `REPORT-05`, `REPORT-06`, `REPORT-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Import
 
 The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right.

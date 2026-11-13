@@ -57,17 +57,20 @@ const (
 
 // Reports are the accountant exports and whether each runs over a range of days (else it is as at a day).
 var Reports = map[string]bool{GeneralLedger: true, TrialBalance: false, Journals: true, FixedAssets: false, Receivables: false, Payables: false,
-	AuditTrail: true}
+	AuditTrail: true, Tenant: false}
 
 // Names are the reports' names, as a file and a sheet are titled.
 var Names = map[string]string{GeneralLedger: "General ledger", TrialBalance: "Trial balance", Journals: "Journal entries",
-	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail", AuditTrail: "Audit trail"}
+	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail", AuditTrail: "Audit trail",
+	Tenant: "Full export"}
 
 // Parameters are an export's: the first day of a range, and its last day or the day it is as at, YYYY-MM-DD.
 type Parameters struct {
 	From  string       `json:"from,omitempty"`
 	To    string       `json:"to"`
 	Audit *AuditFilter `json:"audit,omitempty"` // an audit trail export's filters
+	// Approval is the approval a full tenant export was prepared under (FR-MIG-04).
+	Approval string `json:"approval,omitempty"`
 }
 
 // Refusal is an export the books refuse: it fails with why, and is not tried again.
@@ -111,6 +114,9 @@ func Plan(x storage.ReportExport) (File, error) {
 	var p Parameters
 	if err := json.Unmarshal(x.Parameters, &p); err != nil {
 		return File{}, Refusal{"its parameters are not readable"}
+	}
+	if x.Report == Tenant {
+		return File{Name: "fyniq-export-" + p.To + ".zip", MediaType: "application/zip"}, nil
 	}
 	name := strings.ReplaceAll(strings.ToLower(Names[x.Report]), " ", "-")
 	if Reports[x.Report] {
@@ -476,6 +482,8 @@ type Preparer struct {
 	// Stamp is the platform version and build that prepare the exports, which each one's footer names (REL-05):
 	// sheet.Stamp of the worker's version and commit.
 	Stamp string
+	// Tenant is what the full tenant export reads besides the database (FR-MIG-04).
+	Tenant TenantSources
 }
 
 // Work prepares one export: a pending one is built, its file kept, and it is marked ready and its requester told; one
@@ -511,7 +519,13 @@ func (p Preparer) Work() func(ctx context.Context, org uuid.UUID, row storage.Ou
 			}
 			// The file goes into the store as it is written, never held whole (NFR-PERF-05, rev 0.250).
 			up = p.upload(ctx, Key(org, x.ID, plan.Name))
-			f, err = Write(ctx, u, x, now, p.Stamp, up)
+			if x.Report == Tenant {
+				if f, err = WriteTenant(ctx, u, p.Tenant, now, p.Stamp, up); err == nil {
+					f.Name, f.MediaType = plan.Name, plan.MediaType // the name the store keeps it under
+				}
+			} else {
+				f, err = Write(ctx, u, x, now, p.Stamp, up)
+			}
 			if r := (Refusal{}); errors.As(err, &r) {
 				up.abort(r)
 				refused = r
@@ -528,6 +542,9 @@ func (p Preparer) Work() func(ctx context.Context, org uuid.UUID, row storage.Ou
 		}
 		return p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			title, link := "Your export is ready: "+f.Name, "/reports"
+			if x.Report == Tenant {
+				link = "/settings/data"
+			}
 			if refused != nil {
 				if _, err := u.ReportExports().Fail(ctx, x.ID, refused.Error()); err != nil {
 					return err

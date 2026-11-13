@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval it waits for, or was prepared under.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "export_id": {
+      "description": "The export, once approved: what createTenantExportDownload saves.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "failure": {
+      "description": "Why it failed.",
+      "examples": [
+        "the sealed fields' keys are not configured, so the bank account numbers cannot be exported"
+      ],
+      "type": "string"
+    },
+    "file": {
+      "$ref": "TenantExportFile.schema.json",
+      "description": "Its file, once ready."
+    },
+    "requested_at": {
+      "description": "When it was asked for, or approved and queued.",
+      "examples": [
+        "2026-11-13T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "Who asked for it; only they save it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "awaiting_approval until another person approves it; pending while the worker writes it; ready to save for 24 hours; failed with why; expired once its file is gone.",
+      "enum": [
+        "awaiting_approval",
+        "pending",
+        "ready",
+        "failed",
+        "expired"
+      ],
+      "examples": [
+        "ready"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "approval_id",
+    "status",
+    "requested_by",
+    "requested_at"
+  ],
+  "title": "TenantExport",
+  "type": "object"
+}

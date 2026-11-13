@@ -61,6 +61,9 @@ type ReportExports interface {
 	Get(ctx context.Context, id uuid.UUID) (ReportExport, error)
 	// Mine are a person's exports, newest first, at most limit.
 	Mine(ctx context.Context, requestedBy string, limit int) ([]ReportExport, error)
+	// OfReport are the organisation's exports of one report, whoever asked, newest first, at most limit: the full tenant
+	// exports, which more than their requester see (FR-MIG-04).
+	OfReport(ctx context.Context, report string, limit int) ([]ReportExport, error)
 	Ready(ctx context.Context, id uuid.UUID, f ReportFileDone) (ReportExport, error)
 	Fail(ctx context.Context, id uuid.UUID, why string) (ReportExport, error)
 	// Expiring are the ready exports whose time is up by now, at most limit.
