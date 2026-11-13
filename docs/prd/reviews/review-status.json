@@ -131,8 +131,8 @@
    "id": "controls",
    "title": "Roles, approvals and payments",
    "reviewer": "a second director",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 6,
    "short": "Approval and payment rules await review by a second director",
    "message": "Check each approval and payment before you release it.",
    "sections": [
