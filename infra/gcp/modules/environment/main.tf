@@ -42,6 +42,14 @@ variable "anchors" {
   })
 }
 
+variable "exports" {
+  description = "The weekly export's buckets in the audit project (infra/gcp/modules/db-export; DR-02, DR-04)."
+  type = object({
+    weekly  = string
+    monthly = string
+  })
+}
+
 variable "artifact_registry" {
   description = "The repository the release images come from (the CI project's), so this project's Cloud Run can pull them; null before CI exists."
   type = object({
@@ -140,7 +148,7 @@ locals {
   url = { for name in keys(local.spec.services) : name => "https://${name}-${local.number}.${local.region}.run.app" }
 
   # FYNIQ_GCP (internal/wiring/release.go Config): the worker classes' queues, handlers and invokers, the
-  # Scheduler's, the anchors, the jobs image's Cloud Run job, and the render and scanner services.
+  # Scheduler's, the anchors, the jobs image's Cloud Run job, the weekly export, and the render and scanner services.
   gcp_config = jsonencode({
     tasks = { for class, c in local.spec.classes : class => {
       queue           = "projects/${var.project}/locations/${local.region}/queues/${class}"
@@ -154,6 +162,8 @@ locals {
     )
     anchors = var.anchors
     job     = "projects/${var.project}/locations/${local.region}/jobs/jobs"
+    # The weekly export (DR-02, DR-04): the instance the jobs' account exports, its database, and the buckets.
+    exports = merge({ instance = "projects/${var.project}/instances/${google_sql_database_instance.main.name}", database = google_sql_database.databases["fyniq"].name }, var.exports)
     # The field keys (SEC-11, fields.tf): the wrapping key and the fingerprint key's pinned version.
     fields = { key = google_kms_crypto_key.fields.id, mac_key_version = "${google_kms_crypto_key.fingerprints.id}/cryptoKeyVersions/1" }
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their

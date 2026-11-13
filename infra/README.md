@@ -18,10 +18,11 @@ Infrastructure workflow does nothing.
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
 | `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
 | `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
+| `gcp/modules/db-export/` | The weekly export of the database (DR-02, DR-04): two buckets beside the anchors (`fyniq-audit` in production) under their own CMEK key, in Singapore: each Sunday's export kept 35 days and each month's first kept a year, both locked in production. The instance's own account writes the exports; the jobs' account may only start an export and read it (the platform job `db.export`) |
 | `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
 | `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
-| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, security logs, the edge, the budget and, in staging, the non-production scan |
+| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, security logs, the edge, the budget and, in staging, the non-production scan |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
 | `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
@@ -47,6 +48,8 @@ The tests check the controls on the planned configuration:
 | CTL-IAM-03 | No grant to a person or group. Break-glass needs another person's approval |
 | SEC-12 | The api's account holds `roles/secretmanager.admin` on the secrets project only (a rule of `make infra-check`), the worker reads there, and its Secret Manager encrypts under the environment's secrets key |
 | CTL-AUD-02 | Production's anchors are retention-locked. Staging's are not |
+| DR-01, DR-02, DR-03, CTL-RES-01 | Production's database is regional HA, and a zonal one is refused. Point-in-time recovery keeps 7 days of logs, and 35 daily backups are kept in Singapore |
+| DR-02, DR-04 | The weekly export is kept 35 days and each month's first a year, in `fyniq-audit` for production, locked there; only the instance writes it, and the jobs' account may only start it |
 | NFR-COST-01 | Budgets are variables, with alerts at 50%, 80% and 100% and no Pub/Sub cap |
 
 ## First apply (the founder)
@@ -138,7 +141,7 @@ show which resources change and how, never their values, because this repository
 - **Database access.** Each service's `FYNIQ_DATABASE_URL` is a secret, with a password for its own
   role, over the private IP and TLS. The value is added out of band, never in state.
 - **The anchors' lock** is irreversible, so only production sets it. Its retention is a variable
-  with no default.
+  with no default. The weekly export's buckets are locked with it.
 
 ## Not verified yet (needs the cloud)
 
@@ -158,6 +161,9 @@ assumptions, not facts.
 - `[verify in staging]` That Direct VPC egress counts as internal traffic for Hydra's admin port.
 - `[verify in staging]` That Cloud Tasks queues and the Scheduler's OIDC tokens work without an App
   Engine app or an explicit token-creator grant.
+- `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
+  (a write across projects under that project's key), that `db.export` succeeds with the custom role
+  alone, and how long an export of production takes.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
 - `[verify]` The production anchor retention, with the accountant (§14, AUD-06).
 - `[verify]` The project IDs.

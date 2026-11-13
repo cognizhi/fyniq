@@ -3,6 +3,7 @@
 # req: NFR-COST-01
 # req: CTL-IAM-03
 # req: SEC-30
+# req: DR-04
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -59,6 +60,10 @@ run "production" {
   assert {
     condition     = jsondecode(output.gcp_config).anchors.bucket == module.anchors.bucket && strcontains(jsondecode(output.gcp_config).anchors.key_version, "/cryptoKeyVersions/1")
     error_message = "the services sign and store anchors where the anchors module made them"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports.weekly == module.db_export.buckets.weekly && jsondecode(output.gcp_config).exports.monthly == "fyniq-production-db-monthly"
+    error_message = "the jobs export into the buckets the db-export module made in fyniq-audit (DR-04)"
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")

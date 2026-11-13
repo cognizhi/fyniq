@@ -40,15 +40,21 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
 
 ### D1. The weekly export and the monthly backups (DR-02, DR-04, NFR-DR-01)
 
-- **A module, `db-export`.** Cloud Scheduler calls Cloud SQL's export API each Sunday at 03:00 SGT, as its own
-  account, which may only export (the pattern of `nonprod-scan`). It writes `gs://<audit bucket>/weekly/<date>.sql.gz`
-  into a bucket in `fyniq-audit` (the anchors' project in production; staging's own):
-  - under its own key, versioned;
-  - with a 35-day retention policy, locked in production;
-  - and a lifecycle that deletes weekly exports after 35 days.
-- **The monthly copy.** The first export of each month is also written to `monthly/` and kept a year (DR-02's monthly
-  backups). Exporting twice costs little; one bucket and one lock policy cover both. A second Scheduler job on the first
-  Sunday does it.
+- **A module, `db-export`.** Two buckets beside the anchors (`fyniq-audit` in production; staging's own), under their
+  own key, versioned, in Singapore:
+  - `fyniq-<env>-db-weekly`, with a 35-day retention policy, locked in production, and a lifecycle that deletes each
+    export the day after;
+  - `fyniq-<env>-db-monthly`, the same for a year (DR-02's monthly backups).
+  The instance's own account writes the exports; the jobs' account holds a custom role that may only start an export
+  and read the instance (the pattern of `nonprod-scan`).
+- **As built (11 Nov 2026): a platform job, not Cloud Scheduler.** The tick's platform job `db.export` calls Cloud SQL's
+  export API each Sunday at 03:00 SGT through `ports.DatabaseBackup` (the Cloud SQL adapter; `pg_dump` locally). A
+  Scheduler job sends a fixed body, so each run would name the same file, and a locked bucket refuses to replace one:
+  the job names each export by the Singapore time it started (`weekly/fyniq-<date>-<time>.sql.gz`), so a retry writes a
+  new file. In a month's first seven days it also writes the month's copy into the monthly bucket. Its heartbeat's
+  absence alert (D6) covers a missed week.
+- **Regional HA in production** is a precondition of the environment module: a zonal production database is refused
+  (DR-01).
 - **What it covers.** Loss of `fyniq-prod`: RPO up to 7 days. Point-in-time recovery covers 5 minutes; regional HA
   covers zone loss.
 - **Shredding.** The register the PDPA work built is re-applied on restore (`audit-recover`, §11.8), so an export holds

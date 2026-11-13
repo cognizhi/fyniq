@@ -13,10 +13,12 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 2. Backups and the DR copy (slice 2)
 
-- [ ] 2.1 `infra/gcp/modules/db-export` (D1): the weekly export as its own export-only account into a CMEK bucket in the
+- [x] 2.1 `infra/gcp/modules/db-export` (D1): the weekly export as its own export-only account into a CMEK bucket in the
   audit project (35 days, locked in production), and the first Sunday's monthly copy kept a year, with a module test
   `[live-verify]`; the stack wires it. `// req: DR-02`, `// req: DR-04`, `// req: NFR-DR-01`
-- [ ] 2.2 The environment's module test asserts regional HA in production, PITR with 7 days of logs, 35 daily backups
+  - As built: the platform job `db.export` runs it as the jobs' account, with a custom role that may only export and
+    read the instance; the month's copy goes into its own bucket kept a year (design D1).
+- [x] 2.2 The environment's module test asserts regional HA in production, PITR with 7 days of logs, 35 daily backups
   and their location in Singapore. `// req: DR-01`, `// req: DR-02`, `// req: DR-03`
 
 ## 3. Records and attachment storage (slice 3)

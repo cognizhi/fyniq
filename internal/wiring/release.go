@@ -3,6 +3,7 @@
 package wiring
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -55,6 +57,14 @@ type Config struct {
 	// Scanner is the private scanner service, clamd behind an HTTP front (FR-DOC-08, SEC-24; PRD-001 rev 0.247): its URL,
 	// its audience and its callers' accounts; without it, or FYNIQ_CLAMD_ADDR, no file can be attached.
 	Scanner gcp.Callers `json:"scanner"`
+	// Exports is the weekly export's instance and buckets (DR-02, DR-04; p1-operations-dr design D1): the instance's
+	// resource name (projects/<project>/instances/<name>), its database, and the weekly and monthly buckets in the audit
+	// project. Without it the export job fails, which its heartbeat's absence alert shows.
+	Exports struct {
+		Instance string `json:"instance"`
+		Database string `json:"database"`
+		backup.Buckets
+	} `json:"exports"`
 	// PlatformRanges are the platform's own networks (its subnet and the range its database is peered on), which no
 	// registered private endpoint reaches (SEC-37).
 	PlatformRanges []string `json:"platform_ranges"`
@@ -156,6 +166,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = outbound
+	// The weekly export (DR-02, DR-04), as the jobs' account [live-verify].
+	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
+		kit.Backup = gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)
+		kit.ExportBuckets = c.Exports.Buckets
+	}
 	// The platform's posture and logs, read as the jobs' account (SEC-33, CTL-DP-03) [live-verify].
 	kit.Posture = gcp.NewSecurityCenter(gcp.SecurityCenterAPI, "projects/"+projectOf(c.Job), tokens, google)
 	kit.Logs = gcp.NewLogging(gcp.LoggingAPI, projectOf(c.Job), tokens, google)
