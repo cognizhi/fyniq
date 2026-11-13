@@ -3,6 +3,7 @@ package migration
 import (
 	"archive/zip"
 	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -353,5 +354,51 @@ func TestAFileThatIsNoWorkbookIsRefused(t *testing.T) {
 	var re *sheet.ReadError
 	if _, err := Read([]byte("PK not really")); !errors.As(err, &re) {
 		t.Errorf("not a workbook: %v", err)
+	}
+}
+
+// The parallel month's fixture is the sample at the end of October, as scripts/workbook_parallel_fixture.py derives it
+// and its record says: its "as of" 31 October, the membership's and the spreads' October on the Trial Balance, every
+// other figure the sample's.
+// req: data/migration Parallel run (M5)
+func TestTheParallelFixtureIsTheSampleAtOctobersEnd(t *testing.T) {
+	var meta struct {
+		Base, Fixture struct{ File, SHA256 string }
+		AsOf          string `json:"as_of"`
+		October       []struct{ Account, Movement string }
+	}
+	raw, err := os.ReadFile("../../test/migration/workbook-parallel.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &meta); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile("../../test/migration/workbook-parallel.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := sha256.Sum256(sample(t))
+	sum := sha256.Sum256(b)
+	if hex.EncodeToString(sum[:]) != meta.Fixture.SHA256 || hex.EncodeToString(base[:]) != meta.Base.SHA256 {
+		t.Fatalf("the fixture or its base differs from the record: rerun the script, never edit the file")
+	}
+	w, s := read(t, b), read(t, sample(t))
+	if w.Settings.AsOf.Format(time.DateOnly) != meta.AsOf || len(meta.October) != 7 {
+		t.Fatalf("the parallel month: as of %s, %d October movements", w.Settings.AsOf, len(meta.October))
+	}
+	moved := map[string]string{}
+	for _, m := range meta.October {
+		moved[m.Account] = m.Movement
+	}
+	for i, r := range w.TrialBalance {
+		want := s.TrialBalance[i].Movements[9]
+		if m, ok := moved[r.Code]; ok {
+			d, _, _ := apd.NewFromString(m)
+			want = add(want, d)
+		}
+		if r.Movements[9].Cmp(cmp.Or(want, new(apd.Decimal))) != 0 {
+			t.Errorf("account %s's October: %s, not %s", r.Code, r.Movements[9].Text('f'), want.Text('f'))
+		}
 	}
 }

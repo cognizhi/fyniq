@@ -101,9 +101,10 @@
       "description": "The latest sign-off of the report and its register; absent before the first."
     },
     "status": {
-      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4).",
+      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; not_started: the parallel month has no valid workbook yet, so its report holds no figures (M5); ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4).",
       "enum": [
         "not_committed",
+        "not_started",
         "ready",
         "signed"
       ],

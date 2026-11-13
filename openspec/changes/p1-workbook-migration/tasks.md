@@ -129,6 +129,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [ ] 6.1 M5: the workbook at the end of the parallel month uploaded and that month reconciled the same way, then
   signed. M6: the frozen workbook archived as evidence under retention, its hash recorded, the record closed and read
   only. Tests `// req: data/migration Parallel run (M5)`, `// req: data/migration Go-live and workbook archive (M6)`.
+  (Slice 16 built M5, rev 0.268: `POST .../parallel/workbook` once M4 is signed (000336 lets the step and its files in),
+  its validation report, `GET .../parallel`, its register's decisions and the stepped-up sign-off;
+  `test/migration/workbook-parallel.xlsx`, derived from the sample by `scripts/workbook_parallel_fixture.py`;
+  TestTheParallelMonthIsReconciledAndSigned. Left: M6.)
 
 ## 7. Generic import (FR-MIG-03)
 

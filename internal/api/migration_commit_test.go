@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -1131,5 +1132,122 @@ func TestTheAccountantDecidesTheRegisterAndSignsIt(t *testing.T) {
 	if after.Status != "ready" || after.SignOff == nil || after.SignOff.Current || after.SignOff.SHA256 != rec.ReportSHA256 && after.SignOff.SHA256 == "" ||
 		stale != 1 || after.Undecided < 3 {
 		t.Errorf("after the books moved: status %s, %+v, %d stale, %d undecided", after.Status, after.SignOff, stale, after.Undecided)
+	}
+}
+
+// decideAll decides every line of a report that has no decision that counts, a difference as a and a check as b, and
+// returns the report's ETag after them.
+func decideAll(t *testing.T, e *env, tok, path string) string {
+	t.Helper()
+	r := e.call(http.MethodGet, path, tok, nil)
+	var rec MigrationReconciliation
+	if err := json.Unmarshal([]byte(r.Raw), &rec); r.Status != http.StatusOK || err != nil {
+		t.Fatalf("%s: %d %s", path, r.Status, r.Raw)
+	}
+	tag := r.Header.Get("ETag")
+	decide := func(key, class string) {
+		d := e.call(http.MethodPatch, path+"/register/"+key, tok, map[string]any{"class": class, "note": "Decided in the rehearsal"}, "If-Match", tag)
+		if d.Status != http.StatusOK {
+			t.Fatalf("deciding %s: %d %s", key, d.Status, d.Raw)
+		}
+		tag = d.Header.Get("ETag")
+	}
+	for _, d := range rec.Differences {
+		if d.Decision == nil || d.Decision.Stale {
+			decide(d.Key, "a")
+		}
+	}
+	for _, c := range rec.Checks {
+		if !c.Same && (c.Decision == nil || c.Decision.Stale) {
+			decide(c.Key, "b")
+		}
+	}
+	return tag
+}
+
+// The parallel month (§17.1 M5, rev 0.268): its workbook is refused until the parity report is signed; then the workbook
+// as it stands at the end of October (its one transaction the co-working membership, and the October month of the
+// sample's spreads, which Fyniq releases too) is uploaded, validated without a mapping, and reconciled through 31
+// October. Until Fyniq records October's membership too, the bank's and the rent's
+// October differ; the register's lines M4 decided on the same figures still count. Recorded in Fyniq, October agrees, and
+// the Accountant, stepped up, signs the parallel month.
+// req: data/migration Parallel run (M5)
+// req: data/migration Parallel month signed off
+// req: FR-MIG-02
+func TestTheParallelMonthIsReconciledAndSigned(t *testing.T) {
+	f, id := importedSample(t)
+	e := f.e
+	accountant, ctrl := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Controller)
+	parallel, err := os.ReadFile("../../test/migration/workbook-parallel.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	upload := func() response {
+		return e.upload("/v1/migrations/"+id+"/parallel/workbook", ctrl, nil, "Parallel.xlsx", parallel, "If-Match", e.migrationTag(id))
+	}
+	e.problemIs(upload(), "uploadMigrationParallelWorkbook", 409, migration.CodeParallel)
+	if r := e.call(http.MethodGet, "/v1/migrations/"+id+"/parallel", accountant, nil); r.str("status") != "not_started" {
+		t.Errorf("the parallel month before its workbook: %s", r.Raw)
+	}
+
+	e.runCatalogue()
+	path := "/v1/migrations/" + id + "/reconciliation"
+	if s := e.call(http.MethodPost, path+"/sign-off", accountant, nil, "If-Match", decideAll(t, e, accountant, path)); s.Status != http.StatusOK {
+		t.Fatalf("signing the parity report: %d %s", s.Status, s.Raw)
+	}
+	if r := upload(); r.Status != http.StatusAccepted {
+		t.Fatalf("uploading the parallel month's workbook: %d %s", r.Status, r.Raw)
+	}
+	e.validate()
+	if r := e.call(http.MethodGet, "/v1/migrations/"+id+"/parallel/report", accountant, nil); r.str("state") != "valid" || r.str("as_of") != "2026-10-31" {
+		t.Fatalf("the parallel month's validation report: %s", r.Raw)
+	}
+	read := func() MigrationReconciliation {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/migrations/"+id+"/parallel", accountant, nil)
+		var rec MigrationReconciliation
+		if err := json.Unmarshal([]byte(r.Raw), &rec); r.Status != http.StatusOK || err != nil {
+			t.Fatalf("the parallel month: %d %v %s", r.Status, err, r.Raw)
+		}
+		return rec
+	}
+	rec := read()
+	var october []string
+	for _, d := range rec.Differences {
+		if d.Month == "2026-10" {
+			october = append(october, d.Key+" "+d.Difference)
+		} else if d.Decision == nil || d.Decision.Stale {
+			t.Errorf("M4's line %s needs deciding again: %+v", d.Key, d.Decision)
+		}
+	}
+	if rec.Status != "ready" || rec.Through != "2026-10" || rec.Undecided != 4 || strings.Join(october, ", ") !=
+		"1020.2026-10.movement 2180.00, 1020.2026-10.closing 2180.00, 6310.2026-10.movement -2180.00, 6310.2026-10.closing -2180.00" {
+		t.Fatalf("the parallel month before October is in Fyniq: %s, %d undecided, %v", rec.Status, rec.Undecided, october)
+	}
+
+	// October recorded in Fyniq too: the parallel month agrees, and is signed.
+	codes := map[string]string{}
+	for _, a := range e.call(http.MethodGet, "/v1/accounts?limit=500", accountant, nil).Body["items"].([]any) {
+		codes[a.(map[string]any)["code"].(string)] = a.(map[string]any)["id"].(string)
+	}
+	for range 2 { // in two halves, each within the self-approval threshold
+		if j := e.postFounderJournal("2026-10-01", founderLine(codes["6310"], "1090.00", "", ""), founderLine(codes["1020"], "-1090.00", "", "")); j.Status != http.StatusOK {
+			t.Fatalf("October's membership: %d %s", j.Status, j.Raw)
+		}
+	}
+	rec = read()
+	if rec.Undecided != 0 || rec.SignOff != nil {
+		t.Fatalf("the parallel month with October in Fyniq: %d undecided, %+v", rec.Undecided, rec.Differences)
+	}
+	pp := "/v1/migrations/" + id + "/parallel"
+	tag := e.call(http.MethodGet, pp, accountant, nil).Header.Get("ETag")
+	signed := e.call(http.MethodPost, pp+"/sign-off", accountant, nil, "If-Match", tag)
+	if signed.Status != http.StatusOK || signed.str("status") != "signed" {
+		t.Fatalf("signing the parallel month: %d %s", signed.Status, signed.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, pp+"/sign-off", accountant, nil, "If-Match", signed.Header.Get("ETag")), "signMigrationParallel", 409, migration.CodeRegister)
+	// M4's report still reads its own sign-off: the parallel month changed nothing it compares.
+	if r := e.call(http.MethodGet, path, accountant, nil); r.str("status") != "signed" {
+		t.Errorf("the parity report after the parallel month: %s", r.str("status"))
 	}
 }
