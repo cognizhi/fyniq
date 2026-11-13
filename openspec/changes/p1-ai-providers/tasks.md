@@ -8,7 +8,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   `// req: platform/local-mode Local AI in replay and live mode`.
 - [x] 1.2 The `Screening` port and its local stub flagging the red-team corpus patterns (design D12); the real Model
   Armor adapter `[live-verify]`. Test `// req: platform/local-mode Local AI in replay and live mode`.
-- [ ] 1.3 DEV-09's local-only adapters: the developer's `claude` or `codex` command-line agent as a subprocess, its
+- [x] 1.3 DEV-09's local-only adapters: the developer's `claude` or `codex` command-line agent as a subprocess, its
   sign-in never read, its model named from its configuration, what it lacks declared; absent from release images and
   refused outside `FYNIQ_ENV=local` (archtest and the image check). Tests `// req: DEV-09`.
 
