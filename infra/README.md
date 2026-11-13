@@ -20,7 +20,7 @@ Infrastructure workflow does nothing.
 | `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
 | `gcp/modules/db-export/` | The weekly export of the database (DR-02, DR-04): two buckets beside the anchors (`fyniq-audit` in production) under their own CMEK key, in Singapore: each Sunday's export kept 35 days and each month's first kept a year, both locked in production. The instance's own account writes the exports; the jobs' account may only start an export and read it (the platform job `db.export`) |
 | `gcp/modules/evidence/` | The records' and attachments' buckets (DR-07, CTL-AUD-03), in the environment's project, in Singapore, under their own CMEK key: staging (what is not yet a record; the app deletes each file in its time, and a backstop deletes report exports after 7 days) and evidence, with Object Retention Lock on, so the API sets each committed file's retain-until in Locked mode. The api reads committed files; the worker and the jobs commit them with a role that may never delete one |
-| `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
+| `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs, the database's pgAudit entries and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
 | `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
 | `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, the evidence buckets, security logs, the edge, the budget and, in staging, the non-production scan |
@@ -167,6 +167,8 @@ assumptions, not facts.
 - `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
   (a write across projects under that project's key), that `db.export` succeeds with the custom role
   alone, and how long an export of production takes.
+- `[live-verify]` That Cloud SQL writes pgAudit's entries to its `postgres.log` with `AUDIT:`, so the security
+  sink's filter keeps them (CTL-AUD-04).
 - `[live-verify]` The restore drill: that the clone's permissions are enough (`[verify]` whether Cloud SQL
   also asks for `cloudsql.instances.create`), that the IAM conditions match Cloud SQL's resource names, that
   the jobs reach the copy's private address as their own database role (and its TLS), and how long a

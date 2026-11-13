@@ -51,7 +51,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 5. Database and platform logs (slice 5)
 
-- [ ] 5.1 The security-logs sink gains pgAudit's entries (D4), with its module test `[live-verify]`; CTL-AUD-04's check
+- [x] 5.1 The security-logs sink gains pgAudit's entries (D4), with its module test `[live-verify]`; CTL-AUD-04's check
   becomes `cloud` on that test. `// req: CTL-AUD-04`, and the audit trail's database and platform logs layer
 
 ## 6. Observability (slice 6)

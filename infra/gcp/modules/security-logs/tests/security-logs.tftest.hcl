@@ -1,5 +1,7 @@
 # req: SEC-30
 # req: AUD-06
+# req: CTL-AUD-04
+# req: data/audit-trail Database and platform logs layer
 
 mock_provider "google" {
   mock_resource "google_logging_project_bucket_config" {
@@ -44,8 +46,9 @@ run "production_keeps_its_security_logs_in_the_audit_project" {
   assert {
     condition = (google_logging_project_sink.security.unique_writer_identity && strcontains(google_logging_project_sink.security.filter, "cloudaudit.googleapis.com") &&
       strcontains(google_logging_project_sink.security.filter, "fyniq.security_alert") &&
+      strcontains(google_logging_project_sink.security.filter, "(resource.type=\"cloudsql_database\" AND logName:\"postgres.log\" AND textPayload:\"AUDIT:\")") &&
     google_logging_project_sink.security.destination == "logging.googleapis.com/projects/fyniq-audit/locations/asia-southeast1/buckets/fyniq-production-security")
-    error_message = "the sink sends the audit logs and the security alerts to the bucket"
+    error_message = "the sink sends the audit logs, the database's pgAudit entries and the security alerts to the bucket"
   }
   assert {
     condition = (length(google_project_iam_member.sink_writer) == 1 && google_project_iam_member.sink_writer[0].role == "roles/logging.bucketWriter" &&
