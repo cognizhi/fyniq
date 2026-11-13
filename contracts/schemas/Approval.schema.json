@@ -205,7 +205,8 @@
         "ai_connection.credential",
         "ai_connection.enable",
         "ai_data_policy.change",
-        "ai_connection.allow_model"
+        "ai_connection.allow_model",
+        "ai_connection.price"
       ],
       "examples": [
         "organisation_setting.change"

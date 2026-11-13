@@ -774,6 +774,37 @@ components:
       required:
         - model
       type: object
+    AIModelPrice:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The currency the provider bills in.
+          examples:
+            - USD
+          maxLength: 3
+          minLength: 3
+          type: string
+        model:
+          description: The provider's ID for it, as the connection's list shows it.
+          examples:
+            - gpt-6
+          maxLength: 200
+          minLength: 1
+          type: string
+        rates:
+          description: At least an input and an output rate.
+          items:
+            $ref: "#/components/schemas/AIPriceRateEntry"
+          maxItems: 40
+          minItems: 2
+          type:
+            - array
+            - "null"
+      required:
+        - model
+        - currency
+        - rates
+      type: object
     AIModelProbe:
       additionalProperties: false
       properties:
@@ -798,6 +829,12 @@ components:
     AIPrice:
       additionalProperties: false
       properties:
+        approval:
+          description: "An Owner's price: the request its second approver approved (AI-82)."
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e
+          format: uuid
+          type: string
         catalogue:
           description: The catalogue download it came from, which every estimate made with it is reproduced with (AI-85).
           examples:
@@ -821,7 +858,7 @@ components:
           format: date-time
           type: string
         decided_by:
-          description: The Owner who confirmed or declined it.
+          description: The Owner who confirmed or declined it, or withdrew their own.
           examples:
             - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
           type: string
@@ -864,7 +901,7 @@ components:
           format: date-time
           type: string
         recorded_by:
-          description: The system user for a read; the Owner for an entered price.
+          description: The system user for a read; for an Owner's price, the Owner who entered it.
           examples:
             - system:ai.prices.read
           type: string
@@ -891,12 +928,13 @@ components:
             - litellm
           type: string
         status:
-          description: "active: in force; pending: waiting for an Owner's review, the version before it staying in force."
+          description: "active: in force; pending: waiting for an Owner's review, the version before it staying in force; withdrawn: an Owner's price its Owner withdrew."
           enum:
             - active
             - pending
             - superseded
             - declined
+            - withdrawn
           examples:
             - active
           type: string
@@ -1046,6 +1084,39 @@ components:
         - kind
         - above
         - unit
+        - amount
+      type: object
+    AIPriceRateEntry:
+      additionalProperties: false
+      properties:
+        above:
+          description: The prompt length in tokens above which it applies; 0 or absent for the base rate.
+          examples:
+            - 0
+          format: int64
+          minimum: 0
+          type: integer
+        amount:
+          description: "A plain decimal above zero with at most 10 decimal places: per million tokens, per image or per request as the kind's unit says."
+          examples:
+            - "3"
+          maxLength: 25
+          type: string
+        kind:
+          enum:
+            - input
+            - output
+            - cache_read
+            - cache_write
+            - cache_write_1h
+            - reasoning
+            - input_image
+            - request
+          examples:
+            - input
+          type: string
+      required:
+        - kind
         - amount
       type: object
     AIPriceReview:
@@ -3084,6 +3155,7 @@ components:
             - ai_connection.enable
             - ai_data_policy.change
             - ai_connection.allow_model
+            - ai_connection.price
           examples:
             - organisation_setting.change
           type: string
@@ -50411,6 +50483,193 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: C
+  /v1/ai/connections/{connection_id}/models/price:
+    post:
+      description: "An Owner prices a model the connection's provider lists, when no source prices it or its source's price should not apply (AI-82): rates per million tokens, per image or per request, as plain decimals above zero, in the provider's currency, with at least an input and an output rate. It is dual controlled: the answer is the approval request, which a second approver approves. In force, it is labelled with who entered it, and no later read overwrites it until the Owner withdraws it. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6)."
+      operationId: priceAIConnectionModel
+      parameters:
+        - description: The connection's ID.
+          in: path
+          name: connection_id
+          required: true
+          schema:
+            description: The connection's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIModelPrice"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `AI-PRICE-03` The Owner's price is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to put an Owner's price on a model
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-PRICE-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: A
   /v1/ai/connections/{connection_id}/models/probe:
     post:
       description: "Asks a model the connection's provider lists for a few tokens of synthetic text, with the connection's credential (AI-80): a list says what exists, not what this credential may call, so a model joins the allow-list only after a probe on its connection succeeds. A provider's access or not-found refusal marks the model not callable (AI-81). Sends nothing of the organisation's. Side effects: the probe's result on the model and its audit event ai_model.probed. On the never-list for the AI and MCP (§9.6)."
@@ -51333,6 +51592,132 @@ paths:
       x-fyniq-exempt:
         Idempotency-Key: "A version is reviewed once: a second review is refused as no longer pending, so the request is idempotent by itself."
         Prefer: A review decides one version, with nothing to preview.
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        right: A
+  /v1/ai/prices/{price_id}/withdraw:
+    post:
+      description: "The Owner withdraws an Owner's price in force at once (AI-82): never held back, as a model without it is priced again from its source or stays unpriced, and an unpriced model on a usage-based connection serves no route. The connection's models are priced again from the latest download straight away. Side effects: the audit event ai_price.withdrawn. On the never-list for the AI and MCP (§9.6)."
+      operationId: withdrawAIPrice
+      parameters:
+        - description: The Owner's price in force.
+          in: path
+          name: price_id
+          required: true
+          schema:
+            description: The Owner's price in force.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIPrice"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-PRICE-04` Only an Owner's price in force can be withdrawn; `STORAGE-AI-PRICE-01` A price is kept as recorded, and an Owner's price is never overwritten by a read; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Withdraw an Owner's price
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-PRICE-04
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-AI-PRICE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: "A price is withdrawn once: a second withdrawal is refused as no longer in force, so the request is idempotent by itself."
+        Prefer: Withdrawing is never held back; there is nothing to preview.
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: A

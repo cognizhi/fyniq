@@ -358,6 +358,58 @@ func (q *Queries) InsertAIPriceRate(ctx context.Context, arg InsertAIPriceRatePa
 	return err
 }
 
+const insertOwnerAIPrice = `-- name: InsertOwnerAIPrice :one
+INSERT INTO fyniq.ai_price (connection_id, model, number, source, match, currency, status, recorded_by, recorded_at, approval_id)
+VALUES ($1, $2,
+  (SELECT coalesce(max(p.number), 0) + 1 FROM fyniq.ai_price p WHERE p.connection_id = $1 AND p.model = $2),
+  'owner', 'entered', $3, 'active', $4, $5, $6)
+RETURNING organisation_id, id, connection_id, model, number, source, catalogue_id, catalogue_key, match, currency, ignored, status, review, review_detail, recorded_by, recorded_at, created_xact, approval_id, decided_by, decided_at
+`
+
+type InsertOwnerAIPriceParams struct {
+	ConnectionID uuid.UUID
+	Model        string
+	Currency     string
+	RecordedBy   string
+	RecordedAt   time.Time
+	ApprovalID   *uuid.UUID
+}
+
+func (q *Queries) InsertOwnerAIPrice(ctx context.Context, arg InsertOwnerAIPriceParams) (FyniqAiPrice, error) {
+	row := q.db.QueryRow(ctx, insertOwnerAIPrice,
+		arg.ConnectionID,
+		arg.Model,
+		arg.Currency,
+		arg.RecordedBy,
+		arg.RecordedAt,
+		arg.ApprovalID,
+	)
+	var i FyniqAiPrice
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.ConnectionID,
+		&i.Model,
+		&i.Number,
+		&i.Source,
+		&i.CatalogueID,
+		&i.CatalogueKey,
+		&i.Match,
+		&i.Currency,
+		&i.Ignored,
+		&i.Status,
+		&i.Review,
+		&i.ReviewDetail,
+		&i.RecordedBy,
+		&i.RecordedAt,
+		&i.CreatedXact,
+		&i.ApprovalID,
+		&i.DecidedBy,
+		&i.DecidedAt,
+	)
+	return i, err
+}
+
 const latestAIPriceCatalogue = `-- name: LatestAIPriceCatalogue :one
 SELECT id, source, url, fetched_at, sha256, size, licence, licence_url, licence_sha256, outcome, failure, entries, document, recorded_at FROM fyniq.ai_price_catalogues WHERE source = $1 AND outcome = 'valid' ORDER BY fetched_at DESC, id DESC LIMIT 1
 `

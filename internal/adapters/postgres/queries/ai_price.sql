@@ -21,6 +21,13 @@ VALUES (sqlc.arg(connection_id), sqlc.arg(model),
   sqlc.arg(status), sqlc.narg(review), sqlc.narg(review_detail), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
 RETURNING *;
 
+-- name: InsertOwnerAIPrice :one
+INSERT INTO fyniq.ai_price (connection_id, model, number, source, match, currency, status, recorded_by, recorded_at, approval_id)
+VALUES (sqlc.arg(connection_id), sqlc.arg(model),
+  (SELECT coalesce(max(p.number), 0) + 1 FROM fyniq.ai_price p WHERE p.connection_id = sqlc.arg(connection_id) AND p.model = sqlc.arg(model)),
+  'owner', 'entered', sqlc.arg(currency), 'active', sqlc.arg(recorded_by), sqlc.arg(recorded_at), sqlc.arg(approval_id))
+RETURNING *;
+
 -- name: InsertAIPriceRate :exec
 INSERT INTO fyniq.ai_price_rate (price_id, kind, above, unit, amount)
 VALUES (sqlc.arg(price_id), sqlc.arg(kind), sqlc.arg(above), sqlc.arg(unit), sqlc.arg(amount)::numeric);

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -251,6 +252,41 @@ func matrixAIPrice(e *env) string {
 	return p.ID.String()
 }
 
+// matrixAIOwnerPrice is a new Owner's price of gpt-4 in force on the matrix's connection, written as the database's
+// superuser with its triggers held back, as its approved request would leave it (AI-82).
+func matrixAIOwnerPrice(e *env) string {
+	e.t.Helper()
+	connection := matrixAIConnection(e, "Matrix off", false)
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	defer c.Close(ctx)
+	tx, err := c.Begin(ctx)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var id string
+	if _, err := tx.Exec(ctx, "SET LOCAL session_replication_role = replica"); err != nil {
+		e.t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE fyniq.ai_price SET status = 'superseded' WHERE organisation_id = $1 AND model = 'gpt-4' AND status = 'active'`,
+		e.books.Org); err != nil {
+		e.t.Fatal(err)
+	}
+	if err := tx.QueryRow(ctx, `INSERT INTO fyniq.ai_price (organisation_id, connection_id, model, number, source, match, currency, status,
+	  recorded_by, recorded_at, approval_id) SELECT $1, $2, 'gpt-4', coalesce(max(number), 0) + 1, 'owner', 'entered', 'USD', 'active', 'user:matrix',
+	  now(), gen_random_uuid() FROM fyniq.ai_price WHERE organisation_id = $1 AND model = 'gpt-4' RETURNING id`, e.books.Org, connection).Scan(&id); err != nil {
+		e.t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		e.t.Fatal(err)
+	}
+	return id
+}
+
 // matrixAIConnections are the authorisation matrix's rows of AI connections (AI-72): reading under any right on "AI
 // providers and model routes"; asking to create, change, re-key and switch one on under its C, stepped up, as previews;
 // switching one off under its C, as a preview. The AI holds no right on the row, so none of it reaches the AI or MCP
@@ -302,6 +338,14 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	},
 	"listAIPriceCatalogues": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/price-catalogues", tok, nil), nil
+	},
+	"priceAIConnectionModel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/price", steppedUp(e, tok),
+			map[string]any{"model": "gpt-5", "currency": "USD", "rates": []any{map[string]any{"kind": "input", "amount": "1"},
+				map[string]any{"kind": "output", "amount": "4"}}}, "Prefer", "return=preview"), nil
+	},
+	"withdrawAIPrice": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/prices/"+matrixAIOwnerPrice(e)+"/withdraw", tok, nil), nil
 	},
 	"reviewAIPrice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/prices/"+matrixAIPrice(e)+"/review", tok, map[string]any{"decision": "decline"}), nil

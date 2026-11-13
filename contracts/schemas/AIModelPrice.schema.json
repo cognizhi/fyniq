@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The currency the provider bills in.",
+      "examples": [
+        "USD"
+      ],
+      "maxLength": 3,
+      "minLength": 3,
+      "type": "string"
+    },
+    "model": {
+      "description": "The provider's ID for it, as the connection's list shows it.",
+      "examples": [
+        "gpt-6"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "rates": {
+      "description": "At least an input and an output rate.",
+      "items": {
+        "$ref": "AIPriceRateEntry.schema.json"
+      },
+      "maxItems": 40,
+      "minItems": 2,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "model",
+    "currency",
+    "rates"
+  ],
+  "title": "AIModelPrice",
+  "type": "object"
+}

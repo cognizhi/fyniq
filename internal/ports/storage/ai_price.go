@@ -82,13 +82,17 @@ type AIPrices interface {
 	// Get is one version; ports.ErrNotFound when the organisation has none such.
 	Get(ctx context.Context, id uuid.UUID) (AIPrice, error)
 	// Record adds a model's next version with its rates, in force or waiting: the database supersedes what it replaces
-	// and refuses to overwrite an Owner's price (CodeAIPrice). Audited as ai_price.changed, by the recorder.
+	// and refuses to overwrite an Owner's price, or to record one without its approved request (CodeAIPrice). Audited as
+	// ai_price.changed, by the recorder.
 	Record(ctx context.Context, p AIPrice) (AIPrice, error)
 	// Checked records that a model's price was looked for at, and why it got no new price ("" when it did).
 	Checked(ctx context.Context, connection uuid.UUID, model, unpriced string, at time.Time) error
 	// Decide records an Owner's review of a waiting version: confirm puts it in force, decline keeps the one before.
 	// Audited as ai_price.confirmed or ai_price.declined.
 	Decide(ctx context.Context, id uuid.UUID, confirm bool, by string, at time.Time) (AIPrice, error)
+	// Withdraw withdraws an Owner's price in force, by whom and when (AI-82): audited as ai_price.withdrawn. CodeAIPrice
+	// for any other version.
+	Withdraw(ctx context.Context, id uuid.UUID, by string, at time.Time) (AIPrice, error)
 	// Catalogue is one catalogue download; ports.ErrNotFound when there is none such.
 	Catalogue(ctx context.Context, id uuid.UUID) (AIPriceCatalogue, error)
 	// LatestCatalogue is source's newest valid download; ports.ErrNotFound when it has none.
