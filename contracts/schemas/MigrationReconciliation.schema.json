@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "The Fyniq accounts compared.",
+      "examples": [
+        64
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "books_start": {
+      "description": "The books start.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "checks": {
+      "description": "The workbook's Checks rows against Fyniq's.",
+      "items": {
+        "$ref": "MigrationCheckParity.schema.json"
+      },
+      "type": "array"
+    },
+    "checks_differ": {
+      "description": "The workbook's checks whose status Fyniq's do not share.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "checks_run_at": {
+      "description": "When Fyniq's checks last ran; absent when they never did.",
+      "examples": [
+        "2026-11-13T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "differences": {
+      "description": "The figures that differ, by account, month and figure: the difference register's lines.",
+      "items": {
+        "$ref": "MigrationDifference.schema.json"
+      },
+      "type": "array"
+    },
+    "figures": {
+      "description": "The figures compared.",
+      "examples": [
+        1216
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision Fyniq's figures were read at (ENG-46).",
+      "examples": [
+        4211
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "path": {
+      "description": "The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of.",
+      "enum": [
+        "history",
+        "clean_start"
+      ],
+      "examples": [
+        "history"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8).",
+      "examples": [
+        "5d1e…"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand.",
+      "enum": [
+        "not_committed",
+        "ready"
+      ],
+      "examples": [
+        "ready"
+      ],
+      "type": "string"
+    },
+    "through": {
+      "description": "The last month compared: the workbook's as-of.",
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "path",
+    "books_start",
+    "through",
+    "ledger_revision",
+    "accounts",
+    "figures",
+    "differences",
+    "checks",
+    "checks_differ",
+    "sha256"
+  ],
+  "title": "MigrationReconciliation",
+  "type": "object"
+}

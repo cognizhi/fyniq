@@ -400,6 +400,10 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	"getMigrationCommit": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/commit", tok, nil), nil
 	},
+	// The matrix's import is not committed: a role allowed to read gets the report with nothing in it.
+	"getMigrationReconciliation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/reconciliation", tok, nil), nil
+	},
 }
 
 // unsigned gives the matrix's mapping a version of its own when the latest is signed, as another row signed it: a
