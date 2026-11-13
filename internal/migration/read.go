@@ -13,12 +13,11 @@ import (
 	"github.com/cognizhi/fyniq/internal/sheet"
 )
 
-// The sheets the import reads (design D5); each is required, and a missing one is a problem the report names. The
-// Forecast sheet's drivers are read with the forecast (task 4.6).
+// The sheets the import reads (design D5); each is required, and a missing one is a problem the report names.
 var sheets = []string{
 	"Settings", "Accounts", "Items", "Contacts", "Employees", "Lists",
 	"Transactions", "Invoices", "Bills", "Quotes & Orders", "Doc Lines", "Payroll", "Timesheets", "Assets", "Journal",
-	"Recurring", "Bank Rec", "Budget", "Funding", "Trial Balance", "Checks", "Carry Forward",
+	"Recurring", "Bank Rec", "Budget", "Forecast", "Funding", "Trial Balance", "Checks", "Carry Forward",
 }
 
 // Read reads the published workbook into the model (FR-MIG-01): every sheet the import uses, its problems collected
@@ -68,6 +67,7 @@ func Read(data []byte) (*Workbook, error) {
 	w.readRecurring(grids["Recurring"], base)
 	w.readBankRec(grids["Bank Rec"], base)
 	w.readBudget(grids["Budget"], base)
+	w.readForecast(grids["Forecast"])
 	w.readFunding(grids["Funding"], base)
 	w.readTrialBalance(grids["Trial Balance"], base)
 	w.readChecks(grids["Checks"])
@@ -153,6 +153,23 @@ func (w *Workbook) readSettings(g sheet.Grid) {
 	s.YearEnd = date("Financial year end")
 	s.AsOf = date("Report 'as of' date")
 	s.ClosedTo = date("Books closed up to")
+	s.LastActual = date("Last month with complete actuals")
+	number := func(prefix string) *apd.Decimal {
+		v, r := label(prefix)
+		if v == "" {
+			return nil
+		}
+		d, _, err := apd.NewFromString(v)
+		if err != nil || d.Form != apd.Finite {
+			w.Problems = append(w.Problems, Problem{Sheet: "Settings", Row: r, Column: prefix, Severity: Error, Code: CodeValue,
+				Message: fmt.Sprintf("%q is not a number", v), Fix: "Enter a number"})
+			return nil
+		}
+		return d
+	}
+	s.StartUpYears = number("Forecast years qualifying for start-up exemption")
+	s.LossesBroughtForward = number("Unutilised tax losses brought forward")
+	s.TaxLag = number("Months after year-end that tax is paid")
 	reg, _ := label("GST registered?")
 	s.GSTRegistered = strings.EqualFold(reg, "yes")
 	if terms, r := label("Default payment terms"); terms != "" {

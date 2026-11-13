@@ -73,6 +73,12 @@ type Settings struct {
 	GSTRegistered  bool
 	PaymentTerms   *apd.Decimal
 	SystemAccounts map[string]string // the system account's name on the sheet to its code
+	// What the forecast reads (rev 0.264): the last month with complete actuals, and the tax estimate's start-up
+	// years, losses brought forward and months to its payment.
+	LastActual           time.Time
+	StartUpYears         *apd.Decimal
+	LossesBroughtForward *apd.Decimal
+	TaxLag               *apd.Decimal
 }
 
 // Account is a row of Accounts.
@@ -316,6 +322,7 @@ type Workbook struct {
 	Recurring    []Recurring
 	BankRecs     []BankRec
 	Budget       []BudgetLine
+	Forecast     Forecast
 	Holdings     []Holding
 	Instruments  []Instrument
 	TrialBalance []TrialBalance

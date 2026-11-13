@@ -721,6 +721,11 @@ func TestACleanStartCarriesTheBalancesForward(t *testing.T) {
 		x["totals"].(map[string]any)["income_year"] != "95800.00" || x["totals"].(map[string]any)["costs_year"] != "145560.00" {
 		t.Errorf("the clean start's budget: %v", x)
 	}
+	// Its forecast reads the books from the last closed month, as they begin at the cut-over (rev 0.264).
+	if fc := e.call(http.MethodGet, "/v1/forecasts", accountant, nil); len(fc.Body["items"].([]any)) != 1 ||
+		fc.Body["items"].([]any)[0].(map[string]any)["plan"].(map[string]any)["last_actual"] != nil {
+		t.Errorf("the clean start's forecast: %s", fc.Raw)
+	}
 	for _, path := range []string{"/v1/recurring-invoices", "/v1/recurring-bills", "/v1/recurring-journals"} {
 		if r := e.call(http.MethodGet, path, accountant, nil); len(r.Body["items"].([]any)) != 1 {
 			t.Errorf("%s: %s", path, r.Raw)
@@ -867,5 +872,50 @@ func TestTheRecurringRowsAndTheBudgetCarryOn(t *testing.T) {
 				break
 			}
 		}
+	}
+}
+
+// The Forecast sheet is the company's forecast (design D5, task 4.6; rev 0.264): recorded, with the sheet's drivers,
+// its 11 people and hires, 3 purchases, 3 funding events and its Base, Best and Worst levers, from the workbook's last
+// month of actuals. Its books' figures at August's end are the ones the sheet shows: Fyniq's imported books give the
+// forecast the workbook's cash, receivables and payables (FR-MIG-02).
+// req: FR-MIG-01
+// req: FR-MIG-02
+// req: FR-PLN-02
+func TestTheForecastStartsFromTheWorkbooksBooks(t *testing.T) {
+	f, _ := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := e.call(http.MethodGet, "/v1/forecasts", accountant, nil)
+	items, _ := l.Body["items"].([]any)
+	if l.Status != http.StatusOK || len(items) != 1 {
+		t.Fatalf("the forecasts: %d %s", l.Status, l.Raw)
+	}
+	fc := items[0].(map[string]any)
+	plan := fc["plan"].(map[string]any)
+	scenarios := plan["scenarios"].([]any)
+	if fc["status"] != "recorded" || plan["horizon"] != float64(36) || plan["last_actual"] != "2026-08" || plan["buffer_months"] != float64(6) ||
+		len(plan["headcount"].([]any)) != 11 || len(plan["capex"].([]any)) != 3 || len(plan["funding"].([]any)) != 3 || len(plan["opex"].([]any)) != 7 ||
+		len(scenarios) != 3 || scenarios[2].(map[string]any)["levers"].(map[string]any)["churn"] != "1.3" ||
+		plan["revenue"].(map[string]any)["arpa"] != "120.00" || plan["tax"].(map[string]any)["start_up_years"] != float64(3) {
+		t.Errorf("the forecast: %v", fc)
+	}
+	r := e.call(http.MethodGet, "/v1/forecasts/"+fc["id"].(string)+"/results", accountant, nil)
+	books, _ := r.Body["books"].(map[string]any)
+	cents := func(d *apd.Decimal) string {
+		x := new(apd.Decimal)
+		if _, err := apd.BaseContext.WithPrecision(40).Quantize(x, d, -2); err != nil {
+			t.Fatal(err)
+		}
+		return x.Text('f')
+	}
+	if r.Status != http.StatusOK || books["start"] != "2026-09" || books["cash"] != cents(w.Forecast.Cash) ||
+		books["receivables"] != cents(w.Forecast.Receivables) || books["payables"] != cents(w.Forecast.Payables) {
+		t.Errorf("the forecast's books: %d, the sheet's cash %s, receivables %s, payables %s: %v", r.Status, cents(w.Forecast.Cash),
+			cents(w.Forecast.Receivables), cents(w.Forecast.Payables), books)
 	}
 }

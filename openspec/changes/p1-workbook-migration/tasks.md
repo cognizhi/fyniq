@@ -87,14 +87,18 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   assets carried at the workbook's depreciation; the 2700 balance a line per SAFE of the Funding sheet.) Test
   `// req: data/migration History or opening balances import (M3)` (clean start) on the fixture:
   TestACleanStartCarriesTheBalancesForward.
-- [ ] 4.6 Both paths: active Recurring rows from the cut-over on; Budget as an approved version; the Forecast drivers
+- [x] 4.6 Both paths: active Recurring rows from the cut-over on; Budget as an approved version; the Forecast drivers
   as a forecast document; Funding as the equity register's holdings [accountant to confirm]; Timesheets and per-person
   Employees rows reported as kept in the archive. Tests on the fixture, `// req: FR-MIG-01`. (Slice 10 built Funding
   (rev 0.262): the holdings before the books start in the register, the seed round's row as a cash issue, the SAFE as an
   instrument, the option pool warned and archived; with it the history's trial balance equals the workbook's on every
   account. Slice 11 built Recurring and Budget (rev 0.263): the invoice, bill and journal rows as recurring ones from
   after the as-of, the bank transaction rows archived with a warning, the Budget as a recorded original budget per
-  financial year from the books start; TestTheRecurringRowsAndTheBudgetCarryOn. Left: the Forecast drivers.)
+  financial year from the books start; TestTheRecurringRowsAndTheBudgetCarryOn. Slice 12 built the Forecast (rev
+  0.264): its drivers, plans and Base, Best and Worst levers as a recorded forecast, from the workbook's last actual
+  month on the history (a clean start's from the last closed month); TestTheForecastStartsFromTheWorkbooksBooks shows
+  the imported books give it the sheet's cash, receivables and payables. Timesheets and the per-person Employees rows
+  were reported as kept in the archive since slice 1.)
 
 ## 5. Reconciliation (M4)
 

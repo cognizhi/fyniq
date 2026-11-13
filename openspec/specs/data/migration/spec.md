@@ -67,6 +67,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **AND** a Recurring bank transaction, an inactive row and one Fyniq cannot schedule stay in the archived workbook with a warning
 - **AND** the Budget sheet becomes a recorded original budget for each financial year its months reach from the books start
 
+#### Scenario: The forecast from the workbook's drivers (rev 0.264)
+- **WHEN** either path is imported
+- **THEN** the Forecast sheet's drivers, plans and Base, Best and Worst levers become a recorded forecast with the Settings sheet's tax settings
+- **AND** on the history it starts from the workbook's last actual month, so the books give it the cash, receivables and payables the sheet shows
+- **AND** on a clean start it reads its books from the last closed month
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 
