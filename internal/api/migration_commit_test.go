@@ -458,6 +458,35 @@ func TestTheHistoryPostsAsTheWorkbookDid(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantStatus(t, e.checked("books.opening-clearing"), "ok")
+
+	// Quotes and orders in the workbook's states, their numbers kept; nothing of them posts.
+	quotes := byNumber(e.call(http.MethodGet, "/v1/quotes", accountant, nil), "number")
+	if quotes["Q-0001"]["status"] != "accepted" || quotes["Q-0002"]["status"] != "sent" || quotes["Q-0003"]["status"] != "declined" {
+		t.Errorf("the quotes: %v", quotes)
+	}
+	if orders := byNumber(e.call(http.MethodGet, "/v1/purchase-orders", accountant, nil), "number"); orders["PO-0001"]["status"] != "closed" {
+		t.Errorf("the purchase order: %v", orders)
+	}
+	// The assets: the MacBooks bought before the books start with the S$3,000.00 the opening balances carry on 1590; the
+	// laptops and monitors from the lines their cost posted on; each depreciated to 30 September as the workbook did.
+	assets := byNumber(e.call(http.MethodGet, "/v1/fixed-assets", accountant, nil), "name")
+	for name, want := range map[string][2]string{"MacBook Pro fleet (bought 2025)": {"3000.00", "6000.00"}, "Laptops x3 (engineering)": {"0.00", "1950.00"},
+		"Monitors & docking stations": {"0.00", "333.33"}} {
+		a, ok := assets[name]
+		if !ok {
+			t.Errorf("the asset %s is not registered: %v", name, assets)
+			continue
+		}
+		amt := func(v any) string {
+			if m, ok := v.(map[string]any); ok {
+				return fmt.Sprint(m["amount"])
+			}
+			return "0.00" // none
+		}
+		if amt(a["opening_accumulated"]) != want[0] || amt(a["accumulated_depreciation"]) != want[1] {
+			t.Errorf("%s: opening %v, accumulated %v; want %v", name, a["opening_accumulated"], a["accumulated_depreciation"], want)
+		}
+	}
 }
 
 // trialBalance is the organisation's trial balance through a month, each account's balance with debits positive, as the
@@ -510,7 +539,7 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 	tb := trialBalance(t, e, f.as(f.ahkow, authz.Accountant), "2026-09")
-	waiting := map[string]string{"1020": "-700000.00", "1590": "", "6610": "", "2100": "", "2110": "", "6011": "", "6012": "", "6013": "", "6020": "",
+	waiting := map[string]string{"1020": "-700000.00", "2100": "", "2110": "", "6011": "", "6012": "", "6013": "", "6020": "",
 		"6030": "", "2700": "", "3020": ""}
 	for _, x := range w.TrialBalance {
 		want := x.Closing[8]
