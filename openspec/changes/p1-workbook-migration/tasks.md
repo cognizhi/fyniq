@@ -115,14 +115,15 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   report's hash once every line counts and the checks ran; TestTheAccountantDecidesTheRegisterAndSignsIt, and the
   database's rules in TestAttackTheMigrationCommitKeepsItsRules. G4-016's revaluation is class b by its account's role:
   the sample's import posts no revaluation, so its fixture case waits for the period close of the parallel month.)
-- [ ] 5.2 The rest of M4's parity (`data/migration` Parity check (M4): the AR and AP open items, the GST F5 for the last
+- [x] 5.2 The rest of M4's parity (`data/migration` Parity check (M4): the AR and AP open items, the GST F5 for the last
   return, and payroll totals), found missing from these tasks while building 5.1: each invoice and bill open at the
   as-of against the workbook's AR & AP sheet (by number, the amount due in its currency); the last return's F5 boxes
   against the workbook's GST Return sheet; each month's payroll totals (gross, CPF, SDL, SHG, net) against the Payroll
   sheet. Each difference a register line of its own key, in the report and its sign-off. Tests on the fixture,
   `// req: data/migration Parity check (M4)`. (Slice 15 built the open items and the payroll totals, rev 0.267: every
   open total and pay run of the sample agrees; the fixture copies the AR & AP sheet. Left: the F5 comparison, once
-  p1-gst makes the F5 return; the report names it as not compared.)
+  p1-gst makes the F5 return; the report names it as not compared.) (13 Nov 2026: the F5 comparison moved to p1-gst
+  task 7.2, which builds the F5 return it compares; until then the report names `gst_f5` as not compared.)
 
 ## 6. The parallel month and the archive (M5, M6)
 
@@ -212,10 +213,13 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   expected. `// req: QA-MIG-01`, `// req: data/migration Parity check (M4)`.
   (Slice 24: TestTheRehearsalRunsM1ToM6, about 23 seconds: the sample's register holds only its four class a cents
   on the depreciation, each decided; no class b line arises from the sample.)
-- [ ] 10.2 `docs/security/threat-models/migration-and-export.md` (design D13); the build plan's paragraph on what was
+- [x] 10.2 `docs/security/threat-models/migration-and-export.md` (design D13); the build plan's paragraph on what was
   built; `make check`, `make test`, `make test-e2e` and `make differential` pass.
   (Slice 23 wrote the threat model, recorded D13's audit events as built, added `import.run` and
   TestAnInfectedUploadIsRefused. Left: the build plan's paragraph and the full runs at the finish.)
+  (Slice 29 wrote the build plan's paragraph. The full runs on the finished stack, 13 Nov 2026: `make check` and
+  `make test` pass, `make differential` 4 passed, `make test-e2e` 21 passed. A first `make test` ran out of the local
+  Docker disk; its rerun passed whole.)
 
 ## Workflow follow-up
 

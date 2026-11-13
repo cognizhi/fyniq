@@ -400,6 +400,29 @@ and month to the cent. It also builds FR-GL-06's opening open items through a cl
 the generic import with the workbook's sheets as templates, and the full tenant export. The whole path is rehearsed on
 the synthetic sample workbook.
 
+It was built on 12 and 13 Nov 2026, in #584, #586 to #596, #603 to #614 and #615 to #618, one pull request per slice,
+stacked on #583 (PRD-001 rev 0.255 to 0.273). The parts:
+- the named-sheet reader, the pinned sample fixture, `RND-IMPORT` and the typed model, and the validation report by
+  sheet, row and column (M1);
+- the mapping onto Fyniq's chart, GST codes, dimensions, people and plans, versioned and signed by the Accountant (M2);
+- the commit as one approval by an Owner who did not ask, then resumable batches through the commands a person's entry
+  takes, each record naming its row: the set-up, the year's history or a clean start from Carry Forward, the opening
+  open items through 3900 Opening balance clearing [accountant to confirm], payroll as a summary journal a month,
+  funding, the recurring rows, the budget and the forecast (M3);
+- the parity report by account and month to the cent, with the open items and the payroll totals, and the difference
+  register decided a, b or c and signed by the Accountant (M4); then the parallel month the same way (M5);
+- go-live: the migration's files copied to the retention-locked store with their hashes, and the migration closed (M6);
+- the generic import of the ten entities of design D9, from templates laid out as the workbook's sheets, with a dry run;
+- the full tenant export: every table catalogued as exported or excluded, one ZIP with a manifest of hashes, asked for
+  by one person, approved by another and saved by its requester within 24 hours [counsel to confirm the sealed values
+  in clear];
+- the screens `workbook-import` and `data-export`, with their guides compiled into `kb/`;
+- the threat model `docs/security/threat-models/migration-and-export.md`, and the rehearsal of M1 to M6 on the sample.
+
+The F5 comparison moved to `p1-gst`'s task 7.2, which builds the F5 return it compares. Two things wait beyond it: the
+cloud parts' `[live-verify]` (the staging bucket's signed links, and the worker's key to open the sealed values), and
+the founders' own migration on the real workbook, which `p1-launch-readiness` lists.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

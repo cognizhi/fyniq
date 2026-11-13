@@ -245,7 +245,9 @@ See proposal.md for why. What exists today and shapes the approach:
 
 **D10. The full tenant export (FR-MIG-04).**
 - An approval object `tenant_export`: the Administrator or the Owner asks, and the Owner and a second approver sign
-  (Appendix D's "Tenant export").
+  (Appendix D's "Tenant export"). As built (rev 0.273), by Appendix D's cells and the connectors' precedent: whoever
+  holds C on the row asks (the Administrator; an Owner who also holds it), and one other person who holds its A
+  approves (an Owner who did not ask, FM-1), so the export always takes two people.
 - The worker writes a ZIP:
   - each table of the organisation as RFC 4180 CSV, with decimal strings, ISO dates and formula-safe cells;
   - each document's versions as JSON;
@@ -284,7 +286,9 @@ See proposal.md for why. What exists today and shapes the approach:
 
 **D13. Ports, audit and the threat model.**
 - No new port: the blob store keeps the uploaded workbook, the archive and the export; the outbox runs the validation,
-  the commit, the reconciliation and the export; the clock dates them.
+  the commit, the reconciliation and the export; the clock dates them. As built: the storage port gained `TenantData`,
+  a reader on the existing port for the export (rev 0.273); the commit runs as API-role batches (rev 0.258); and the
+  reconciliation is worked out on each read.
 - An uploaded workbook passes the scanner service before it is read.
 - Audit events:
   - `migration.started`, `migration.workbook_received`, `migration.validated`, `migration.mapping_signed`,
