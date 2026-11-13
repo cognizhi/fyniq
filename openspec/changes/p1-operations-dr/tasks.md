@@ -93,7 +93,7 @@ module tests on mock providers and tagged `[live-verify]`.
 
 ## 10. Cost (slice 10)
 
-- [ ] 10.1 The idle-compute alert (D9) in `infra/`, with a module test `[live-verify]`; `docs/runbooks/cost-review.md`
+- [x] 10.1 The idle-compute alert (D9) in `infra/`, with a module test `[live-verify]`; `docs/runbooks/cost-review.md`
   and the `cost-model` review before go-live; NFR-COST-01 and NFR-COST-03 recorded as the budget module's.
   `// req: NFR-COST-01`, `// req: NFR-COST-02`, `// req: NFR-COST-03`, `// req: NFR-COST-04`
 

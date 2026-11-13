@@ -30,6 +30,18 @@ variable "channels" {
   type        = list(string)
 }
 
+variable "idle_services" {
+  description = "Every Cloud Run service whose compute must not be billed while idle (NFR-COST-02), by name."
+  type        = list(string)
+  default     = []
+}
+
+variable "warm_services" {
+  description = "The services kept warm on purpose, whose idle compute is a listed fixed fee (production's scanner, rev 0.249)."
+  type        = list(string)
+  default     = []
+}
+
 variable "availability" {
   description = "The share of requests answered without a server error each month (NFR-AVAIL-01: 99.9% at P1)."
   type        = number
@@ -111,6 +123,38 @@ resource "google_monitoring_alert_policy" "burn" {
   }
   documentation {
     content   = "The service answers more server errors than its 99.9% monthly objective allows (NFR-AVAIL-01). Read its traces of failed requests in Cloud Trace, every one of which is kept, and its logs; open an incident if users are affected (docs/runbooks/incident-response.md)."
+    mime_type = "text/markdown"
+  }
+}
+
+# Idle cost (NFR-COST-02; rev 0.249): a service billed for compute through an hour in which it answered no request is
+# compute billed while idle, which only the listed fixed fees may be; the warm services are those fees. PromQL over Cloud
+# Run's own metrics [live-verify the query].
+locals {
+  watched = [for s in var.idle_services : s if !contains(var.warm_services, s)]
+  idle_query = join(" ", [
+    "sum by (service_name) (rate(run_googleapis_com:container_billable_instance_time{monitored_resource=\"cloud_run_revision\",service_name=~\"${join("|", local.watched)}\"}[1h])) > 0",
+    "unless sum by (service_name) (rate(run_googleapis_com:request_count{monitored_resource=\"cloud_run_revision\"}[1h])) > 0",
+  ])
+}
+
+resource "google_monitoring_alert_policy" "idle" {
+  count                 = length(local.watched) > 0 ? 1 : 0
+  project               = var.project
+  display_name          = "Fyniq ${var.environment}: compute billed while idle"
+  combiner              = "OR"
+  severity              = "WARNING"
+  notification_channels = var.channels
+  conditions {
+    display_name = "A service billed for an hour in which it answered no request"
+    condition_prometheus_query_language {
+      query               = local.idle_query
+      duration            = "0s"
+      evaluation_interval = "300s"
+    }
+  }
+  documentation {
+    content   = "A Cloud Run service was billed for compute through an hour in which it answered no request: a minimum instance, CPU always allocated, or a request that never ends. With nobody using Fyniq only the fixed fees of §12.6 may be billed (NFR-COST-02). Check the service's scaling settings against infra/ and its instances in Cloud Run."
     mime_type = "text/markdown"
   }
 }

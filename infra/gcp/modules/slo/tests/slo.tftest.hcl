@@ -2,6 +2,7 @@
 # req: NFR-PERF-01
 # req: NFR-OBS-01
 # req: CTL-RES-03
+# req: NFR-COST-02
 
 mock_provider "google" {
   mock_resource "google_monitoring_slo" {
@@ -43,5 +44,30 @@ run "the_slos_page_the_founders" {
   assert {
     condition     = strcontains(google_monitoring_dashboard.slo.dashboard_json, "run.googleapis.com/request_latencies")
     error_message = "a dashboard of the requests and their answer times"
+  }
+}
+
+# Idle cost: every service but the warm scanner is watched for compute billed in an hour with no request, and the
+# founders are told; with no services to watch there is no policy (NFR-COST-02).
+run "compute_billed_while_idle_alerts_the_founders" {
+  command = plan
+  variables {
+    idle_services = ["api", "worker", "render", "scanner"]
+    warm_services = ["scanner"]
+  }
+  assert {
+    condition = (length(google_monitoring_alert_policy.idle) == 1 &&
+      strcontains(google_monitoring_alert_policy.idle[0].conditions[0].condition_prometheus_query_language[0].query, "service_name=~\"api|worker|render\"") &&
+      strcontains(google_monitoring_alert_policy.idle[0].conditions[0].condition_prometheus_query_language[0].query, "unless") &&
+    length(google_monitoring_alert_policy.idle[0].notification_channels) == 2)
+    error_message = "the services but the warm scanner are watched for compute billed with no request, to the founders"
+  }
+}
+
+run "nothing_watched_no_policy" {
+  command = plan
+  assert {
+    condition     = length(google_monitoring_alert_policy.idle) == 0
+    error_message = "no idle policy without services to watch"
   }
 }

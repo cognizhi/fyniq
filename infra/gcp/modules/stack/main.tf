@@ -201,6 +201,9 @@ module "slo" {
   environment = var.environment
   services    = [for name, s in module.spec.spec.services : name if s.public]
   channels    = module.environment.alert_channels
+  # NFR-COST-02: every service is idle when nobody uses Fyniq, but production's warm scanner, a listed fixed fee.
+  idle_services = keys(module.spec.spec.services)
+  warm_services = var.environment == "production" ? ["scanner"] : []
 }
 
 # The heartbeat's absence alerts: the platform owner first, the Owners by escalation (NFR-OBS-02, CTL-RES-05).
