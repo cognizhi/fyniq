@@ -521,3 +521,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-13] compile | docs/user-guide/data-export.md → settings.data (new: Settings › Data and export, the full tenant export, FR-MIG-04)
 
 ## [2026-11-13] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Data region and retention section names Settings › Data and export)
+
+## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (new: Settings › Import, M1 and M2 and the generic import); docs/user-guide/data-export.md → settings.data (links Settings › Import)
