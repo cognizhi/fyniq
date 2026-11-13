@@ -1,0 +1,107 @@
+{
+  "id": "openai",
+  "name": "OpenAI",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "OpenAI's models through the Responses API, with an API key.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "model-provider",
+      "trigger": "system-rule",
+      "trigger_rule": "A model call an agent makes through its route: a person's question to the assistant, or a run of a scheduled agent the Owner enabled. AI proposes; it never writes the books.",
+      "on_pause": "hold",
+      "on_disable": "cancel",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "base_url": {
+        "type": "string",
+        "title": "API base",
+        "description": "The OpenAI API's base, or a data-residency base the organisation's project uses.",
+        "default": "https://api.openai.com/v1",
+        "pattern": "^https://"
+      },
+      "timeout_seconds": {
+        "type": "integer",
+        "title": "Timeout",
+        "description": "Seconds a call may take before it fails over or stops.",
+        "minimum": 5,
+        "maximum": 600,
+        "default": 120
+      },
+      "retries": {
+        "type": "integer",
+        "title": "Retries",
+        "description": "Retries of a call the provider refused as overloaded or rate limited, with backoff.",
+        "minimum": 0,
+        "maximum": 5,
+        "default": 2
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_key",
+      "title": "API key",
+      "description": "An OpenAI project API key, limited to the models it may call.",
+      "used_by": [
+        "ai",
+        "worker"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [
+    "know-how",
+    "business-figures",
+    "personal-data",
+    "payroll",
+    "restricted"
+  ],
+  "regions": [
+    "US",
+    "configured"
+  ],
+  "destinations": [
+    {
+      "configured": "base_url",
+      "port": 443
+    },
+    {
+      "host": "api.openai.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "model": {
+    "features": [
+      "tools",
+      "strict-output",
+      "streaming",
+      "images",
+      "pdf",
+      "caching",
+      "reasoning"
+    ],
+    "auth": [
+      "api-key"
+    ],
+    "list_models": "GET /v1/models"
+  },
+  "health_check": "Counts the provider's refusals, rate limits and failed connections in recent calls, and the model list's last read.",
+  "test_action": "Lists the connection's models, then asks the picked model a few tokens of synthetic text and reports what it answered with: its model, its usage and the capabilities it proved.",
+  "local_substitute": "Recorded answers by default, a developer's own key with FYNIQ_AI_LIVE=1 on the synthetic sample company; a fake Responses API in tests.",
+  "limits": {
+    "requests_per_minute": 600,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 60
+  }
+}
