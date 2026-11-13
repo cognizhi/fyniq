@@ -252,3 +252,132 @@ func (m migrations) SignOff(ctx context.Context, s storage.MigrationSignOff) (st
 	}
 	return out, m.u.event(ctx, "migration."+out.Subject+"_signed", "migration_run", out.RunID, nil, changes)
 }
+
+func (m migrations) MappingVersion(ctx context.Context, id uuid.UUID) (storage.MigrationMapping, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationMapping{}, err
+	}
+	r, err := m.u.q.GetMigrationMapping(ctx, id)
+	if err != nil {
+		return storage.MigrationMapping{}, mapError(err)
+	}
+	return toMigrationMapping(r), nil
+}
+
+func toMigrationCommit(r sqlcdb.FyniqMigrationCommit) storage.MigrationCommit {
+	return storage.MigrationCommit{ID: r.ID, RunID: r.RunID, ApprovalID: r.ApprovalID, Path: r.Path, StepID: r.StepID, MappingID: r.MappingID,
+		Records: int(r.Records), Status: r.Status, ApprovedBy: r.ApprovedBy, ApprovedAt: r.ApprovedAt, CommittedAt: r.CommittedAt}
+}
+
+func toMigrationRecord(r sqlcdb.FyniqMigrationRecord) storage.MigrationRecord {
+	return storage.MigrationRecord{ID: r.ID, RunID: r.RunID, CommitID: r.CommitID, Key: r.Key, Kind: r.Kind, Sheet: r.Sheet, Row: int(r.RowNumber),
+		RecordType: r.RecordType, RecordID: r.RecordID, ImportedBy: r.ImportedBy, ImportedAt: r.ImportedAt}
+}
+
+func (m migrations) Commit(ctx context.Context, run uuid.UUID) (storage.MigrationCommit, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationCommit{}, err
+	}
+	r, err := m.u.q.GetMigrationCommit(ctx, run)
+	if err != nil {
+		return storage.MigrationCommit{}, mapError(err)
+	}
+	return toMigrationCommit(r), nil
+}
+
+func (m migrations) StartCommit(ctx context.Context, c storage.MigrationCommit) (storage.MigrationCommit, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationCommit{}, err
+	}
+	r, err := m.u.q.InsertMigrationCommit(ctx, sqlcdb.InsertMigrationCommitParams{RunID: c.RunID, ApprovalID: c.ApprovalID, Path: c.Path, StepID: c.StepID,
+		MappingID: c.MappingID, Records: int32(min(max(c.Records, 0), 1<<30)), // #nosec G115 -- bounded
+		ApprovedBy: c.ApprovedBy, ApprovedAt: c.ApprovedAt})
+	if err != nil {
+		return storage.MigrationCommit{}, mapError(err)
+	}
+	out := toMigrationCommit(r)
+	return out, m.u.event(ctx, "migration.commit_approved", "migration_run", out.RunID, nil, map[string][2]any{"commit_id": {nil, out.ID.String()},
+		"approval_id": {nil, out.ApprovalID.String()}, "path": {nil, out.Path}, "step_id": {nil, out.StepID.String()},
+		"mapping_id": {nil, out.MappingID.String()}, "records": {nil, out.Records}, "status": {nil, out.Status}})
+}
+
+func (m migrations) Records(ctx context.Context, commit uuid.UUID) ([]storage.MigrationRecord, error) {
+	if err := m.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := m.u.q.ListMigrationRecords(ctx, commit)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MigrationRecord, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toMigrationRecord(r))
+	}
+	return out, nil
+}
+
+func (m migrations) Import(ctx context.Context, x storage.MigrationRecord) (storage.MigrationRecord, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationRecord{}, err
+	}
+	r, err := m.u.q.InsertMigrationRecord(ctx, sqlcdb.InsertMigrationRecordParams{RunID: x.RunID, CommitID: x.CommitID, Key: x.Key, Kind: x.Kind,
+		Sheet: x.Sheet, RowNumber: int32(min(max(x.Row, 0), 1<<30)), // #nosec G115 -- bounded
+		RecordType: x.RecordType, RecordID: x.RecordID, ImportedBy: x.ImportedBy, ImportedAt: x.ImportedAt})
+	if err != nil {
+		return storage.MigrationRecord{}, mapError(err)
+	}
+	out := toMigrationRecord(r)
+	return out, m.u.event(ctx, "migration.record_imported", "migration_run", out.RunID, nil, map[string][2]any{"commit_id": {nil, out.CommitID.String()},
+		"key": {nil, out.Key}, "kind": {nil, out.Kind}, "sheet": {nil, out.Sheet}, "row": {nil, out.Row}, "record_type": {nil, out.RecordType},
+		"record_id": {nil, out.RecordID.String()}})
+}
+
+func (m migrations) Committed(ctx context.Context, id uuid.UUID, at time.Time) (storage.MigrationCommit, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationCommit{}, err
+	}
+	r, err := m.u.q.CommitMigrationCommit(ctx, sqlcdb.CommitMigrationCommitParams{ID: id, CommittedAt: &at})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.MigrationCommit{}, &storage.Error{Code: storage.CodeMigration, Message: "the commit is not running",
+			Hint: "A commit is committed once, when its last record is imported"}
+	}
+	if err != nil {
+		return storage.MigrationCommit{}, mapError(err)
+	}
+	out := toMigrationCommit(r)
+	return out, m.u.event(ctx, "migration.committed", "migration_run", out.RunID, nil, map[string][2]any{"commit_id": {nil, out.ID.String()},
+		"status": {storage.CommitRunning, out.Status}, "records": {nil, out.Records}})
+}
+
+func (m migrations) RecordOf(ctx context.Context, recordType string, id uuid.UUID) (storage.MigrationRecord, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationRecord{}, err
+	}
+	r, err := m.u.q.MigrationRecordOf(ctx, sqlcdb.MigrationRecordOfParams{RecordType: recordType, RecordID: id})
+	if err != nil {
+		return storage.MigrationRecord{}, mapError(err)
+	}
+	return toMigrationRecord(r), nil
+}
+
+func (m migrations) LockCommit(ctx context.Context, id uuid.UUID) (storage.MigrationCommit, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationCommit{}, err
+	}
+	r, err := m.u.q.LockMigrationCommit(ctx, id)
+	if err != nil {
+		return storage.MigrationCommit{}, mapError(err)
+	}
+	return toMigrationCommit(r), nil
+}
+
+func (m migrations) RecordByKey(ctx context.Context, commit uuid.UUID, key string) (storage.MigrationRecord, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationRecord{}, err
+	}
+	r, err := m.u.q.GetMigrationRecordByKey(ctx, sqlcdb.GetMigrationRecordByKeyParams{CommitID: commit, Key: key})
+	if err != nil {
+		return storage.MigrationRecord{}, mapError(err)
+	}
+	return toMigrationRecord(r), nil
+}

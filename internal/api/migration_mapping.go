@@ -246,10 +246,11 @@ func registerMigrationMapping(a *API) {
 		Summary: "Change the mapping",
 		Description: "Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the " +
 			"workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The " +
-			"new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. " +
+			"new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Once the " +
+			"import is committed the mapping is fixed (MIGRATION-14). " +
 			"Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview saves nothing.",
-	}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, migration.CodeMapping}, writes...),
+	}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, migration.CodeMapping, migration.CodeCommit}, writes...),
 		func(ctx context.Context, in *migrationMappingChangeInput) (*migrationMappingWriteOutput, error) {
 			id, err := parseID("migration_id", in.MigrationID)
 			if err != nil {
@@ -269,6 +270,9 @@ func registerMigrationMapping(a *API) {
 					return MigrationMappingView{}, err
 				}
 				if err := checkIfMatch(in.IfMatch, s.etag()); err != nil {
+					return MigrationMappingView{}, err
+				}
+				if err := migrationFixed(ctx, u, id); err != nil {
 					return MigrationMappingView{}, err
 				}
 				next, unknown := s.mapping.Apply(change)
@@ -307,9 +311,9 @@ func registerMigrationMapping(a *API) {
 		Description: "The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 " +
 			"minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a " +
 			"workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own " +
-			"sign-off. Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. " +
+			"sign-off, and once the import is committed nothing is signed (MIGRATION-14). Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. " +
 			"Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeSessionRequired, CodeStepUpRequired, migration.CodeMapping, migration.CodeNotSignable}, writes...),
+	}, append([]string{CodeSessionRequired, CodeStepUpRequired, migration.CodeMapping, migration.CodeNotSignable, migration.CodeCommit}, writes...),
 		func(ctx context.Context, in *migrationMappingSignInput) (*migrationMappingWriteOutput, error) {
 			id, err := parseID("migration_id", in.MigrationID)
 			if err != nil {
@@ -329,6 +333,9 @@ func registerMigrationMapping(a *API) {
 					return MigrationMappingView{}, err
 				}
 				if err := checkIfMatch(in.IfMatch, s.etag()); err != nil {
+					return MigrationMappingView{}, err
+				}
+				if err := migrationFixed(ctx, u, id); err != nil {
 					return MigrationMappingView{}, err
 				}
 				steps, err := u.Migrations().Steps(ctx, id)

@@ -8509,6 +8509,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/migrations/{migration_id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the commit
+         * @description The import's commit (§17.1 M3, rev 0.258): none before it is asked for; pending, with its request and path, while an Owner's approval waits; then running and committed, with the approval and how many of the records it plans are imported, by kind. Read-only; no side effects.
+         */
+        get: operations["getMigrationCommit"];
+        put?: never;
+        /**
+         * Ask to commit the import
+         * @description M3 (§17.1, FR-MIG-01, rev 0.258): asks to import the workbook by the founders' choice, its history or a clean start, as one approval request over the latest workbook, its validation report and the signed mapping. An Owner who did not ask approves it, stepped up (FM-1); approving records the commit, which runCommit then imports in batches. A workbook that is not valid, a mapping not signed off, or a migration committed already is MIGRATION-14, and so is a workbook two of whose rows would import as one record. A new upload or mapping version before the approval voids it. Needs a person signed in who passed step-up, and If-Match with the mapping's ETag. Side effects: the approval request, its notifications, audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestMigrationCommit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/commit:run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import the next batch
+         * @description Imports the approved commit's next batch (rev 0.258): at most 50 records not yet imported, in the plan's order, each through the domain command a person's request uses and in its own transaction with its migration record, which names its business key, its sheet and row and the commit, whose approval it carries out. Send it again until the commit is committed: closing the page pauses the import, and the next batch resumes at the first record not yet imported. A record that cannot be imported stops the batch with MIGRATION-13, naming its row, what is wrong and how to fix it; the records before it stay imported. Before the approval it is MIGRATION-14. Side effects: the records, their audit events, migration.record_imported for each, and migration.committed after the last. Prefer: return=preview lists the records the next batch would import and imports nothing; before the approval, the first batch of the latest valid workbook by its latest mapping, by the path asked for (history when none is).
+         */
+        post: operations["runMigrationCommit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/migrations/{migration_id}/mapping": {
         parameters: {
             query?: never;
@@ -8528,7 +8572,7 @@ export interface paths {
         head?: never;
         /**
          * Change the mapping
-         * @description Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         * @description Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Once the import is committed the mapping is fixed (MIGRATION-14). Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
          */
         patch: operations["changeMigrationMapping"];
         trace?: never;
@@ -8544,7 +8588,7 @@ export interface paths {
         put?: never;
         /**
          * Sign the mapping
-         * @description The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off. Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off, and once the import is committed nothing is signed (MIGRATION-14). Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["signMigrationMapping"];
         delete?: never;
@@ -8584,7 +8628,7 @@ export interface paths {
         put?: never;
         /**
          * Upload the frozen workbook
-         * @description M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt. Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing.
+         * @description M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt, until the import is committed (MIGRATION-14). Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing.
          */
         post: operations["uploadMigrationWorkbook"];
         delete?: never;
@@ -14531,13 +14575,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -14674,7 +14718,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -14716,7 +14760,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -31835,6 +31879,85 @@ export interface components {
              */
             workbook_type?: string;
         };
+        MigrationBatchView: {
+            /**
+             * Format: uuid
+             * @description The request that asks for it, and once approved commits it: each imported record names it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6c10
+             */
+            approval_id?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T11:00:00Z
+             */
+            approved_at?: string;
+            /**
+             * @description The Owner who approved it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            approved_by?: string;
+            /**
+             * Format: date-time
+             * @description When the last record was imported.
+             * @example 2026-11-13T11:04:00Z
+             */
+            committed_at?: string;
+            /**
+             * Format: int64
+             * @description The records imported.
+             * @example 50
+             */
+            done: number;
+            /**
+             * Format: uuid
+             * @description The commit, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10
+             */
+            id?: string;
+            /**
+             * Format: int64
+             * @description The records this batch imported; with Prefer: return=preview, none.
+             * @example 50
+             */
+            imported: number;
+            /** @description The records imported, by kind. */
+            kinds: components["schemas"]["MigrationCommitKind"][];
+            /**
+             * Format: uuid
+             * @description The signed mapping version it imports by, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d10
+             */
+            mapping_id?: string;
+            /** @description The next record to import; absent once the commit is committed. */
+            next?: components["schemas"]["MigrationCommitNext"];
+            /**
+             * @description The founders' choice at M3, once asked for.
+             * @example history
+             * @enum {string}
+             */
+            path?: "history" | "clean_start";
+            /** @description With Prefer: return=preview, the records the next batch would import, in order; before the approval, the first batch of the latest valid workbook by its latest mapping. */
+            planned?: components["schemas"]["MigrationCommitNext"][] | null;
+            /**
+             * @description none: not asked for; pending: its approval waits for an Owner; running while records are left to import, in batches; committed once every record is.
+             * @example running
+             * @enum {string}
+             */
+            status: "none" | "pending" | "running" | "committed";
+            /**
+             * Format: uuid
+             * @description The M1 step whose workbook it imports, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+             */
+            step_id?: string;
+            /**
+             * Format: int64
+             * @description The records it plans, once asked for.
+             * @example 118
+             */
+            total: number;
+        };
         MigrationCodeMap: {
             /**
              * @description The sg-gst pack's code.
@@ -31852,6 +31975,119 @@ export interface components {
              * @example SR
              */
             workbook: string;
+        };
+        MigrationCommitKind: {
+            /**
+             * Format: int64
+             * @description How many are imported.
+             * @example 16
+             */
+            done: number;
+            /**
+             * @description What the rows became, such as contact, item or bank_rule.
+             * @example contact
+             */
+            kind: string;
+        };
+        MigrationCommitNext: {
+            /**
+             * @description Its business key from its row, unique in the commit.
+             * @example contact:harbourline logistics pte ltd
+             */
+            key: string;
+            /**
+             * @description What the row becomes.
+             * @example contact
+             */
+            kind: string;
+            /**
+             * Format: int64
+             * @description Its row; 0 for a sheet's settings as a whole.
+             * @example 6
+             */
+            row: number;
+            /**
+             * @description The workbook's sheet.
+             * @example Contacts
+             */
+            sheet: string;
+        };
+        MigrationCommitRequest: {
+            /**
+             * @description history: the current financial year's history from the books start; clean_start: Carry Forward's balances and open items at the cut-over, the day after the workbook's as-of date (§17.1 M3).
+             * @example history
+             * @enum {string}
+             */
+            path: "history" | "clean_start";
+        };
+        MigrationCommitView: {
+            /**
+             * Format: uuid
+             * @description The request that asks for it, and once approved commits it: each imported record names it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6c10
+             */
+            approval_id?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T11:00:00Z
+             */
+            approved_at?: string;
+            /**
+             * @description The Owner who approved it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            approved_by?: string;
+            /**
+             * Format: date-time
+             * @description When the last record was imported.
+             * @example 2026-11-13T11:04:00Z
+             */
+            committed_at?: string;
+            /**
+             * Format: int64
+             * @description The records imported.
+             * @example 50
+             */
+            done: number;
+            /**
+             * Format: uuid
+             * @description The commit, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10
+             */
+            id?: string;
+            /** @description The records imported, by kind. */
+            kinds: components["schemas"]["MigrationCommitKind"][];
+            /**
+             * Format: uuid
+             * @description The signed mapping version it imports by, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d10
+             */
+            mapping_id?: string;
+            /**
+             * @description The founders' choice at M3, once asked for.
+             * @example history
+             * @enum {string}
+             */
+            path?: "history" | "clean_start";
+            /**
+             * @description none: not asked for; pending: its approval waits for an Owner; running while records are left to import, in batches; committed once every record is.
+             * @example running
+             * @enum {string}
+             */
+            status: "none" | "pending" | "running" | "committed";
+            /**
+             * Format: uuid
+             * @description The M1 step whose workbook it imports, once approved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+             */
+            step_id?: string;
+            /**
+             * Format: int64
+             * @description The records it plans, once asked for.
+             * @example 118
+             */
+            total: number;
         };
         MigrationFileView: {
             /**
@@ -32004,7 +32240,7 @@ export interface components {
         };
         MigrationProblem: {
             /**
-             * @description The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is.
+             * @description The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is; -11 the mapping does not fit the set-up; -13 two rows would import as one record.
              * @example MIGRATION-04
              */
             code: string;
@@ -111352,6 +111588,400 @@ export interface operations {
             };
         };
     };
+    getMigrationCommit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationCommitView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestMigrationCommit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MigrationCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    runMigrationCommit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationBatchView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `MIGRATION-14` The import cannot be committed or run now; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `MIGRATION-13` A record of the workbook could not be imported. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getMigrationMapping: {
         parameters: {
             query?: never;
@@ -111534,7 +112164,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -111686,7 +112316,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -111960,7 +112590,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
             409: {
                 headers: {
                     [name: string]: unknown;

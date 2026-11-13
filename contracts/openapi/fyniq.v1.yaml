@@ -1948,6 +1948,7 @@ components:
             - investor_right
             - controller_entry
             - budget
+            - migration_commit
           examples:
             - organisation_setting
           type: string
@@ -2014,6 +2015,7 @@ components:
             - investor_right.record
             - controller_entry.record
             - budget.record
+            - migration.commit
           examples:
             - organisation_setting.change
           type: string
@@ -2263,6 +2265,7 @@ components:
             - investor_right
             - controller_entry
             - budget
+            - migration_commit
           examples:
             - organisation_setting
           type: string
@@ -2386,6 +2389,7 @@ components:
             - investor_right
             - controller_entry
             - budget
+            - migration_commit
           examples:
             - organisation_setting
           type: string
@@ -26757,6 +26761,108 @@ components:
         - fyniq
         - action
       type: object
+    MigrationBatchView:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: "The request that asks for it, and once approved commits it: each imported record names it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6c10
+          format: uuid
+          type: string
+        approved_at:
+          description: When.
+          examples:
+            - "2026-11-13T11:00:00Z"
+          format: date-time
+          type: string
+        approved_by:
+          description: The Owner who approved it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        committed_at:
+          description: When the last record was imported.
+          examples:
+            - "2026-11-13T11:04:00Z"
+          format: date-time
+          type: string
+        done:
+          description: The records imported.
+          examples:
+            - 50
+          format: int64
+          type: integer
+        id:
+          description: The commit, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10
+          format: uuid
+          type: string
+        imported:
+          description: "The records this batch imported; with Prefer: return=preview, none."
+          examples:
+            - 50
+          format: int64
+          type: integer
+        kinds:
+          description: The records imported, by kind.
+          items:
+            $ref: "#/components/schemas/MigrationCommitKind"
+          type: array
+        mapping_id:
+          description: The signed mapping version it imports by, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d10
+          format: uuid
+          type: string
+        next:
+          $ref: "#/components/schemas/MigrationCommitNext"
+          description: The next record to import; absent once the commit is committed.
+        path:
+          description: The founders' choice at M3, once asked for.
+          enum:
+            - history
+            - clean_start
+          examples:
+            - history
+          type: string
+        planned:
+          description: "With Prefer: return=preview, the records the next batch would import, in order; before the approval, the first batch of the latest valid workbook by its latest mapping."
+          items:
+            $ref: "#/components/schemas/MigrationCommitNext"
+          type:
+            - array
+            - "null"
+        status:
+          description: "none: not asked for; pending: its approval waits for an Owner; running while records are left to import, in batches; committed once every record is."
+          enum:
+            - none
+            - pending
+            - running
+            - committed
+          examples:
+            - running
+          type: string
+        step_id:
+          description: The M1 step whose workbook it imports, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+          format: uuid
+          type: string
+        total:
+          description: The records it plans, once asked for.
+          examples:
+            - 118
+          format: int64
+          type: integer
+      required:
+        - imported
+        - status
+        - total
+        - done
+        - kinds
+      type: object
     MigrationCodeMap:
       additionalProperties: false
       properties:
@@ -26783,6 +26889,153 @@ components:
       required:
         - workbook
         - fyniq
+      type: object
+    MigrationCommitKind:
+      additionalProperties: false
+      properties:
+        done:
+          description: How many are imported.
+          examples:
+            - 16
+          format: int64
+          type: integer
+        kind:
+          description: What the rows became, such as contact, item or bank_rule.
+          examples:
+            - contact
+          type: string
+      required:
+        - kind
+        - done
+      type: object
+    MigrationCommitNext:
+      additionalProperties: false
+      properties:
+        key:
+          description: Its business key from its row, unique in the commit.
+          examples:
+            - contact:harbourline logistics pte ltd
+          type: string
+        kind:
+          description: What the row becomes.
+          examples:
+            - contact
+          type: string
+        row:
+          description: Its row; 0 for a sheet's settings as a whole.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        sheet:
+          description: The workbook's sheet.
+          examples:
+            - Contacts
+          type: string
+      required:
+        - key
+        - kind
+        - sheet
+        - row
+      type: object
+    MigrationCommitRequest:
+      additionalProperties: false
+      properties:
+        path:
+          description: "history: the current financial year's history from the books start; clean_start: Carry Forward's balances and open items at the cut-over, the day after the workbook's as-of date (§17.1 M3)."
+          enum:
+            - history
+            - clean_start
+          examples:
+            - history
+          type: string
+      required:
+        - path
+      type: object
+    MigrationCommitView:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: "The request that asks for it, and once approved commits it: each imported record names it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6c10
+          format: uuid
+          type: string
+        approved_at:
+          description: When.
+          examples:
+            - "2026-11-13T11:00:00Z"
+          format: date-time
+          type: string
+        approved_by:
+          description: The Owner who approved it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        committed_at:
+          description: When the last record was imported.
+          examples:
+            - "2026-11-13T11:04:00Z"
+          format: date-time
+          type: string
+        done:
+          description: The records imported.
+          examples:
+            - 50
+          format: int64
+          type: integer
+        id:
+          description: The commit, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10
+          format: uuid
+          type: string
+        kinds:
+          description: The records imported, by kind.
+          items:
+            $ref: "#/components/schemas/MigrationCommitKind"
+          type: array
+        mapping_id:
+          description: The signed mapping version it imports by, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d10
+          format: uuid
+          type: string
+        path:
+          description: The founders' choice at M3, once asked for.
+          enum:
+            - history
+            - clean_start
+          examples:
+            - history
+          type: string
+        status:
+          description: "none: not asked for; pending: its approval waits for an Owner; running while records are left to import, in batches; committed once every record is."
+          enum:
+            - none
+            - pending
+            - running
+            - committed
+          examples:
+            - running
+          type: string
+        step_id:
+          description: The M1 step whose workbook it imports, once approved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+          format: uuid
+          type: string
+        total:
+          description: The records it plans, once asked for.
+          examples:
+            - 118
+          format: int64
+          type: integer
+      required:
+        - status
+        - total
+        - done
+        - kinds
       type: object
     MigrationFileView:
       additionalProperties: false
@@ -27032,7 +27285,7 @@ components:
       additionalProperties: false
       properties:
         code:
-          description: "The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is."
+          description: "The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is; -11 the mapping does not fit the set-up; -13 two rows would import as one record."
           examples:
             - MIGRATION-04
           type: string
@@ -134893,6 +135146,499 @@ paths:
       x-fyniq-permission:
         capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
         right: V
+  /v1/migrations/{migration_id}/commit:
+    get:
+      description: "The import's commit (§17.1 M3, rev 0.258): none before it is asked for; pending, with its request and path, while an Owner's approval waits; then running and committed, with the approval and how many of the records it plans are imported, by kind. Read-only; no side effects."
+      operationId: getMigrationCommit
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationCommitView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the commit
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        right: V
+    post:
+      description: "M3 (§17.1, FR-MIG-01, rev 0.258): asks to import the workbook by the founders' choice, its history or a clean start, as one approval request over the latest workbook, its validation report and the signed mapping. An Owner who did not ask approves it, stepped up (FM-1); approving records the commit, which runCommit then imports in batches. A workbook that is not valid, a mapping not signed off, or a migration committed already is MIGRATION-14, and so is a workbook two of whose rows would import as one record. A new upload or mapping version before the approval voids it. Needs a person signed in who passed step-up, and If-Match with the mapping's ETag. Side effects: the approval request, its notifications, audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
+      operationId: requestMigrationCommit
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MigrationCommitRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to commit the import
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - APR-06
+        - MIGRATION-14
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        note: A person signed in to Fyniq, stepped up in the last 5 minutes.
+        right: C
+  /v1/migrations/{migration_id}/commit:run:
+    post:
+      description: "Imports the approved commit's next batch (rev 0.258): at most 50 records not yet imported, in the plan's order, each through the domain command a person's request uses and in its own transaction with its migration record, which names its business key, its sheet and row and the commit, whose approval it carries out. Send it again until the commit is committed: closing the page pauses the import, and the next batch resumes at the first record not yet imported. A record that cannot be imported stops the batch with MIGRATION-13, naming its row, what is wrong and how to fix it; the records before it stay imported. Before the approval it is MIGRATION-14. Side effects: the records, their audit events, migration.record_imported for each, and migration.committed after the last. Prefer: return=preview lists the records the next batch would import and imports nothing; before the approval, the first batch of the latest valid workbook by its latest mapping, by the path asked for (history when none is)."
+      operationId: runMigrationCommit
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationBatchView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `MIGRATION-14` The import cannot be committed or run now; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MIGRATION-13` A record of the workbook could not be imported."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Import the next batch
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - MIGRATION-13
+        - MIGRATION-14
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Each record imports in its own transaction under its business key, so a repeat finds those records imported and continues after them (rev 0.258).
+        If-Match: A batch continues after the records already imported, whatever the progress its sender read; two batches at once import each record once, under the commit's lock (rev 0.258).
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        right: C
   /v1/migrations/{migration_id}/mapping:
     get:
       description: "M2 (§17.1, design D4): the workbook's set-up mapped onto Fyniq's, as its latest version. Accounts map by code onto the organisation's chart (or the standard chart a new organisation loads), the workbook's 7040 onto Fyniq's 7050, and an account Fyniq lacks is created from the Accounts sheet; GST codes onto the sg-gst pack's; departments and projects as dimension values (rev 0.254); budget lines onto their report group's first account; bank rules in their order. Each problem against the organisation's set-up now is an error that stops the Accountant's sign-off. A valid workbook proposes a version, keeping the choices of the one before. Read-only; no side effects."
@@ -135018,7 +135764,7 @@ paths:
         capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
         right: V
     patch:
-      description: "Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      description: "Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Once the import is committed the mapping is fixed (MIGRATION-14). Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: changeMigrationMapping
       parameters:
         - description: The migration.
@@ -135127,7 +135873,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
         "412":
           content:
             application/problem+json:
@@ -135218,6 +135964,7 @@ paths:
         - API-NOT-FOUND-01
         - API-RATE-01
         - MIGRATION-11
+        - MIGRATION-14
         - STORAGE-DUPLICATE-01
         - STORAGE-LOCK-01
         - STORAGE-MIGRATION-01
@@ -135228,7 +135975,7 @@ paths:
         right: C
   /v1/migrations/{migration_id}/mapping/sign-off:
     post:
-      description: "The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off. Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off, and once the import is committed nothing is signed (MIGRATION-14). Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: signMigrationMapping
       parameters:
         - description: The migration.
@@ -135325,7 +136072,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
         "412":
           content:
             application/problem+json:
@@ -135404,6 +136151,7 @@ paths:
         - API-RATE-01
         - MIGRATION-11
         - MIGRATION-12
+        - MIGRATION-14
         - STORAGE-DUPLICATE-01
         - STORAGE-LOCK-01
         - STORAGE-MIGRATION-01
@@ -135535,7 +136283,7 @@ paths:
         right: V
   /v1/migrations/{migration_id}/workbook:
     post:
-      description: "M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt. Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing."
+      description: "M1 (§17.1, FR-MIG-01): uploads the frozen workbook, as multipart/form-data, and validates it in the background. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then kept as uploaded, hashed, as M1's evidence (personal data: the workbook holds each employee's pay). The validation reads every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the last validation is done, validates the new workbook as a new attempt, until the import is committed (MIGRATION-14). Needs If-Match with the migration's ETag, so the workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing."
       operationId: uploadMigrationWorkbook
       parameters:
         - description: The migration.
@@ -135682,7 +136430,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries."
         "412":
           content:
             application/problem+json:
@@ -135782,6 +136530,7 @@ paths:
         - DOC-07
         - DOC-08
         - DOC-09
+        - MIGRATION-14
         - STORAGE-DUPLICATE-01
         - STORAGE-LOCK-01
         - STORAGE-MIGRATION-01

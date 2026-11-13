@@ -1135,6 +1135,18 @@ member_invitation | expires_at | timestamp with time zone | not null |
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 
 member_invitation | withdrawn_at | timestamp with time zone | null | 
+migration_commit | organisation_id | uuid | not null | current_org()
+migration_commit | id | uuid | not null | uuidv7()
+migration_commit | run_id | uuid | not null | 
+migration_commit | approval_id | uuid | not null | 
+migration_commit | path | text | not null | 
+migration_commit | step_id | uuid | not null | 
+migration_commit | mapping_id | uuid | not null | 
+migration_commit | records | integer | not null | 
+migration_commit | status | text | not null | 'running'::text
+migration_commit | approved_by | text | not null | 
+migration_commit | approved_at | timestamp with time zone | not null | 
+migration_commit | committed_at | timestamp with time zone | null | 
 migration_file | organisation_id | uuid | not null | current_org()
 migration_file | id | uuid | not null | uuidv7()
 migration_file | run_id | uuid | not null | 
@@ -1157,6 +1169,18 @@ migration_mapping | mapping | jsonb | not null |
 migration_mapping | mapping_sha256 | text | not null | 
 migration_mapping | made_by | text | not null | 
 migration_mapping | made_at | timestamp with time zone | not null | 
+migration_record | organisation_id | uuid | not null | current_org()
+migration_record | id | uuid | not null | uuidv7()
+migration_record | run_id | uuid | not null | 
+migration_record | commit_id | uuid | not null | 
+migration_record | key | text | not null | 
+migration_record | kind | text | not null | 
+migration_record | sheet | text | not null | 
+migration_record | row_number | integer | not null | 
+migration_record | record_type | text | not null | 
+migration_record | record_id | uuid | not null | 
+migration_record | imported_by | text | not null | 
+migration_record | imported_at | timestamp with time zone | not null | 
 migration_run | organisation_id | uuid | not null | current_org()
 migration_run | id | uuid | not null | uuidv7()
 migration_run | status | text | not null | 'open'::text
@@ -2170,7 +2194,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -2198,7 +2222,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -3796,6 +3820,28 @@ member_invitation | member_invitation_roles_known | CHECK ((((cardinality(roles)
 member_invitation | member_invitation_roles_not_null | NOT NULL roles
 member_invitation | member_invitation_used_once | CHECK ((((accepted_at IS NULL) = (accepted_by IS NULL)) AND ((accepted_at IS NULL) OR (withdrawn_at IS NULL))))
 member_invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+migration_commit | migration_commit_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+migration_commit | migration_commit_approval_id_not_null | NOT NULL approval_id
+migration_commit | migration_commit_approved_at_not_null | NOT NULL approved_at
+migration_commit | migration_commit_approved_by_format | CHECK ((approved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+migration_commit | migration_commit_approved_by_not_null | NOT NULL approved_by
+migration_commit | migration_commit_committed | CHECK (((status = 'committed'::text) = (committed_at IS NOT NULL)))
+migration_commit | migration_commit_id_not_null | NOT NULL id
+migration_commit | migration_commit_mapping_fkey | FOREIGN KEY (organisation_id, mapping_id) REFERENCES migration_mapping(organisation_id, id)
+migration_commit | migration_commit_mapping_id_not_null | NOT NULL mapping_id
+migration_commit | migration_commit_organisation_id_not_null | NOT NULL organisation_id
+migration_commit | migration_commit_path_known | CHECK ((path = ANY (ARRAY['history'::text, 'clean_start'::text])))
+migration_commit | migration_commit_path_not_null | NOT NULL path
+migration_commit | migration_commit_pkey | PRIMARY KEY (organisation_id, id)
+migration_commit | migration_commit_records_not_null | NOT NULL records
+migration_commit | migration_commit_records_range | CHECK (((records >= 1) AND (records <= 100000)))
+migration_commit | migration_commit_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES migration_run(organisation_id, id)
+migration_commit | migration_commit_run_id_not_null | NOT NULL run_id
+migration_commit | migration_commit_status_known | CHECK ((status = ANY (ARRAY['running'::text, 'committed'::text])))
+migration_commit | migration_commit_status_not_null | NOT NULL status
+migration_commit | migration_commit_step_fkey | FOREIGN KEY (organisation_id, step_id) REFERENCES migration_step(organisation_id, id)
+migration_commit | migration_commit_step_id_not_null | NOT NULL step_id
+migration_commit | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 migration_file | migration_file_added_at_not_null | NOT NULL added_at
 migration_file | migration_file_added_by_format | CHECK ((added_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 migration_file | migration_file_added_by_not_null | NOT NULL added_by
@@ -3839,6 +3885,29 @@ migration_mapping | migration_mapping_version_key | UNIQUE (organisation_id, run
 migration_mapping | migration_mapping_version_not_null | NOT NULL version
 migration_mapping | migration_mapping_version_positive | CHECK ((version >= 1))
 migration_mapping | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+migration_record | migration_record_commit_fkey | FOREIGN KEY (organisation_id, commit_id) REFERENCES migration_commit(organisation_id, id)
+migration_record | migration_record_commit_id_not_null | NOT NULL commit_id
+migration_record | migration_record_id_not_null | NOT NULL id
+migration_record | migration_record_imported_at_not_null | NOT NULL imported_at
+migration_record | migration_record_imported_by_format | CHECK ((imported_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+migration_record | migration_record_imported_by_not_null | NOT NULL imported_by
+migration_record | migration_record_key | UNIQUE (organisation_id, commit_id, key)
+migration_record | migration_record_key_length | CHECK (((length(key) >= 1) AND (length(key) <= 300)))
+migration_record | migration_record_key_not_null | NOT NULL key
+migration_record | migration_record_kind_format | CHECK ((kind ~ '^[a-z][a-z_]{0,39}$'::text))
+migration_record | migration_record_kind_not_null | NOT NULL kind
+migration_record | migration_record_organisation_id_not_null | NOT NULL organisation_id
+migration_record | migration_record_pkey | PRIMARY KEY (organisation_id, id)
+migration_record | migration_record_record_id_not_null | NOT NULL record_id
+migration_record | migration_record_record_type_not_null | NOT NULL record_type
+migration_record | migration_record_row_number_not_null | NOT NULL row_number
+migration_record | migration_record_row_range | CHECK (((row_number >= 0) AND (row_number <= 1048576)))
+migration_record | migration_record_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES migration_run(organisation_id, id)
+migration_record | migration_record_run_id_not_null | NOT NULL run_id
+migration_record | migration_record_sheet_length | CHECK (((length(btrim(sheet)) >= 1) AND (length(btrim(sheet)) <= 40)))
+migration_record | migration_record_sheet_not_null | NOT NULL sheet
+migration_record | migration_record_type_format | CHECK ((record_type ~ '^[a-z][a-z_]{0,39}$'::text))
+migration_record | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 migration_run | migration_run_id_not_null | NOT NULL id
 migration_run | migration_run_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 migration_run | migration_run_organisation_id_not_null | NOT NULL organisation_id
@@ -5204,8 +5273,13 @@ CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organis
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
+CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
+CREATE INDEX migration_commit_mapping ON fyniq.migration_commit USING btree (organisation_id, mapping_id)
+CREATE INDEX migration_commit_step ON fyniq.migration_commit USING btree (organisation_id, step_id)
 CREATE INDEX migration_file_run ON fyniq.migration_file USING btree (organisation_id, run_id, added_at)
 CREATE INDEX migration_mapping_step ON fyniq.migration_mapping USING btree (organisation_id, step_id)
+CREATE INDEX migration_record_made ON fyniq.migration_record USING btree (organisation_id, record_type, record_id)
+CREATE INDEX migration_record_run ON fyniq.migration_record USING btree (organisation_id, run_id)
 CREATE INDEX migration_signoff_run ON fyniq.migration_signoff USING btree (organisation_id, run_id, signed_at)
 CREATE INDEX migration_step_checks ON fyniq.migration_step USING btree (organisation_id, checks_file_id) WHERE (checks_file_id IS NOT NULL)
 CREATE INDEX migration_step_run ON fyniq.migration_step USING btree (organisation_id, run_id, started_at)
@@ -5433,10 +5507,14 @@ CREATE UNIQUE INDEX ledger_purged_entry_pkey ON fyniq.ledger_purged_entry USING 
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX migration_commit_one ON fyniq.migration_commit USING btree (organisation_id, run_id)
+CREATE UNIQUE INDEX migration_commit_pkey ON fyniq.migration_commit USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_file_pkey ON fyniq.migration_file USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_file_storage_key ON fyniq.migration_file USING btree (organisation_id, storage_key)
 CREATE UNIQUE INDEX migration_mapping_pkey ON fyniq.migration_mapping USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_mapping_version_key ON fyniq.migration_mapping USING btree (organisation_id, run_id, version)
+CREATE UNIQUE INDEX migration_record_key ON fyniq.migration_record USING btree (organisation_id, commit_id, key)
+CREATE UNIQUE INDEX migration_record_pkey ON fyniq.migration_record USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_run_one ON fyniq.migration_run USING btree (organisation_id)
 CREATE UNIQUE INDEX migration_run_pkey ON fyniq.migration_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_signoff_mapping ON fyniq.migration_signoff USING btree (organisation_id, mapping_id) WHERE (mapping_id IS NOT NULL)
@@ -5621,6 +5699,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_record DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_signoff DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
@@ -5705,6 +5784,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_pri
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kpi_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_input', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_commit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.money_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'id')
@@ -5915,14 +5995,21 @@ CREATE TRIGGER ledger_purged_entry_no_truncate BEFORE TRUNCATE ON fyniq.ledger_p
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
+CREATE TRIGGER migration_commit_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_commit FOR EACH ROW EXECUTE FUNCTION migration_commit_guard()
+CREATE TRIGGER migration_commit_no_truncate BEFORE TRUNCATE ON fyniq.migration_commit FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_file_fixed BEFORE INSERT ON fyniq.migration_file FOR EACH ROW EXECUTE FUNCTION migration_commit_guard()
 CREATE TRIGGER migration_file_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_file FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_file_no_truncate BEFORE TRUNCATE ON fyniq.migration_file FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_mapping_fixed BEFORE INSERT ON fyniq.migration_mapping FOR EACH ROW EXECUTE FUNCTION migration_commit_guard()
 CREATE TRIGGER migration_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_mapping FOR EACH ROW EXECUTE FUNCTION migration_mapping_guard()
 CREATE TRIGGER migration_mapping_no_truncate BEFORE TRUNCATE ON fyniq.migration_mapping FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_record_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_record FOR EACH ROW EXECUTE FUNCTION migration_commit_guard()
+CREATE TRIGGER migration_record_no_truncate BEFORE TRUNCATE ON fyniq.migration_record FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER migration_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_run FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_run_no_truncate BEFORE TRUNCATE ON fyniq.migration_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER migration_signoff_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_signoff FOR EACH ROW EXECUTE FUNCTION migration_mapping_guard()
 CREATE TRIGGER migration_signoff_no_truncate BEFORE TRUNCATE ON fyniq.migration_signoff FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_step_fixed BEFORE INSERT ON fyniq.migration_step FOR EACH ROW EXECUTE FUNCTION migration_commit_guard()
 CREATE TRIGGER migration_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_step FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_step_no_truncate BEFORE TRUNCATE ON fyniq.migration_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER money_account_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.money_account FOR EACH ROW EXECUTE FUNCTION money_account_guard()
@@ -6148,8 +6235,10 @@ ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (or
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+migration_commit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+migration_record | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_signoff | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6323,8 +6412,10 @@ ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
 ledger_revision | enabled | forced
 member_invitation | enabled | forced
+migration_commit | enabled | forced
 migration_file | enabled | forced
 migration_mapping | enabled | forced
+migration_record | enabled | forced
 migration_run | enabled | forced
 migration_signoff | enabled | forced
 migration_step | enabled | forced
@@ -6603,6 +6694,7 @@ member_names() → TABLE(user_id uuid, display_name text) | security definer | s
 member_sign_ins() → TABLE(user_id uuid, last_sign_in timestamp with time zone, step_up_method text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 730a2c7376a7b64b9bf0e585b149ee49
 members_second_factor(since timestamp with time zone) → TABLE(user_id uuid, passkeys integer, sessions_with integer, sessions_without integer, last_without timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 069e54faf0ce32b2f36de53f37ad6500
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
+migration_commit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 90f4f22633b2741e1cc4d875adee06cc
 migration_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | def4b1a574f1c8e5715b1a5f94e3dd5b
 migration_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9ea57520443e370b72de498593324b3e
 money_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e476d7ba9a85e485d5ab2f1665b4c59c

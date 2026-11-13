@@ -1479,6 +1479,21 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqMigrationCommit struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	ApprovalID     uuid.UUID
+	Path           string
+	StepID         uuid.UUID
+	MappingID      uuid.UUID
+	Records        int32
+	Status         string
+	ApprovedBy     string
+	ApprovedAt     time.Time
+	CommittedAt    *time.Time
+}
+
 type FyniqMigrationFile struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1505,6 +1520,21 @@ type FyniqMigrationMapping struct {
 	MappingSha256  string
 	MadeBy         string
 	MadeAt         time.Time
+}
+
+type FyniqMigrationRecord struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	CommitID       uuid.UUID
+	Key            string
+	Kind           string
+	Sheet          string
+	RowNumber      int32
+	RecordType     string
+	RecordID       uuid.UUID
+	ImportedBy     string
+	ImportedAt     time.Time
 }
 
 type FyniqMigrationRun struct {

@@ -33,6 +33,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **THEN** each project becomes a value of the project dimension and each department a value of the department dimension, with their tags on transactions, invoices, bills and journals carried over
 - **AND** the Timesheets sheet and the per-person employee rows stay in the archived workbook
 
+#### Scenario: One approved commit, run in resumable batches (rev 0.258)
+- **WHEN** the import is committed
+- **THEN** it is one approval request, prepared under C on "Workbook import (migration)" and approved by an Owner who did not prepare it, over the workbook, its validation report and the signed mapping
+- **AND** once approved it runs in batches of at most 50 records, each one request on the API's own database role through the domain commands, each record in its own transaction with its business key, its sheet and row and the approval
+- **AND** closing the page pauses it, the next batch resumes at the first record not yet imported, and the approval is its one entry in the weekly review
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 

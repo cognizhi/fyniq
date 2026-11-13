@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "done": {
+      "description": "How many are imported.",
+      "examples": [
+        16
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "kind": {
+      "description": "What the rows became, such as contact, item or bank_rule.",
+      "examples": [
+        "contact"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "done"
+  ],
+  "title": "MigrationCommitKind",
+  "type": "object"
+}

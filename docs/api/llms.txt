@@ -539,6 +539,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/migrations` (listMigrations): List the migrations
 - `POST /v1/migrations` (startMigration): Start the migration from the workbook
 - `GET /v1/migrations/{migration_id}` (getMigration): Get the migration
+- `GET /v1/migrations/{migration_id}/commit` (getMigrationCommit): Get the commit
+- `POST /v1/migrations/{migration_id}/commit` (requestMigrationCommit): Ask to commit the import
+- `POST /v1/migrations/{migration_id}/commit:run` (runMigrationCommit): Import the next batch
 - `GET /v1/migrations/{migration_id}/mapping` (getMigrationMapping): Get the mapping
 - `PATCH /v1/migrations/{migration_id}/mapping` (changeMigrationMapping): Change the mapping
 - `POST /v1/migrations/{migration_id}/mapping/sign-off` (signMigrationMapping): Sign the mapping

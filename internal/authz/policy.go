@@ -120,10 +120,10 @@ const (
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
-// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203).
+// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets}
+	Budgets, WorkbookImport}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -1557,6 +1557,13 @@ var (
 	SignMigrationMapping = Policy{Operation: "signMigrationMapping", Capability: WorkbookSignOffs, Need: Approve,
 		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
 
+	// The commit (§17.1 M3, rev 0.258): prepared under C, approved by an Owner who did not prepare it through the
+	// approval request, then run in batches by anyone who may prepare it.
+	RequestMigrationCommit = Policy{Operation: "requestMigrationCommit", Capability: WorkbookImport, Need: Create,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+	RunMigrationCommit = Policy{Operation: "runMigrationCommit", Capability: WorkbookImport, Need: Create}
+	GetMigrationCommit = Policy{Operation: "getMigrationCommit", Capability: WorkbookImport, Need: View}
+
 	// The heartbeat drill register (NFR-OBS-02, CTL-RES-05 Q; p1-operations-dr design D6), as the restore drills.
 	ListHeartbeatDrills  = Policy{Operation: "listHeartbeatDrills", Capability: ComplianceCenter, Need: View}
 	RecordHeartbeatDrill = Policy{Operation: "recordHeartbeatDrill", Capability: ComplianceCenter, Need: Create}
@@ -1790,7 +1797,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

@@ -6,9 +6,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -158,10 +160,17 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 	rep := e.call(http.MethodGet, "/v1/migrations/"+id+"/report", e.as(authz.Auditor), nil)
 	sheets, _ := rep.Body["sheets"].([]any)
 	problems, _ := rep.Body["problems"].([]any)
-	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(1) ||
+	// Three warnings: the Timesheets and the bank rule to a money account kept in the archive, and the sample's
+	// placeholder UEN, which the import leaves out.
+	var warned []string
+	for _, p := range problems {
+		warned = append(warned, fmt.Sprint(p.(map[string]any)["code"], " ", p.(map[string]any)["sheet"]))
+	}
+	slices.Sort(warned)
+	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(3) ||
 		rep.str("format") != migration.ReportFormat || rep.str("base_currency") != "SGD" || rep.str("books_start") != "2026-01-01" ||
-		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 22 || len(problems) != 1 ||
-		problems[0].(map[string]any)["code"] != migration.CodeArchived {
+		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 22 ||
+		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Lists, "+migration.CodeArchived+" Timesheets" {
 		t.Fatalf("the report: %d %s", rep.Status, rep.Raw)
 	}
 	for _, s := range sheets {
@@ -361,10 +370,48 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	"signMigrationMapping": func(e *env, tok string) (response, func() bool) {
 		id := matrixMigration(e)
 		signable(e, id)
+		unsigned(e, id)
 		was, tag := e.migrationMapping(id)
 		r := e.call(http.MethodPost, "/v1/migrations/"+id+"/mapping/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview", "If-Match", tag)
 		return r, func() bool { now, _ := e.migrationMapping(id); return now.Raw == was.Raw }
 	},
+	"requestMigrationCommit": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		signable(e, id)
+		if m, tag := e.migrationMapping(id); m.Body["signed"] != true {
+			if s := e.call(http.MethodPost, "/v1/migrations/"+id+"/mapping/sign-off", steppedUp(e, e.as(authz.Accountant)), nil, "If-Match", tag); s.Status != http.StatusOK {
+				e.t.Fatalf("signing the matrix's mapping: %d %s", s.Status, s.Raw)
+			}
+		}
+		_, tag := e.migrationMapping(id)
+		r := e.call(http.MethodPost, "/v1/migrations/"+id+"/commit", steppedUp(e, tok), map[string]any{"path": "history"}, "Prefer", "return=preview", "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/migrations/"+id+"/commit", e.as(authz.Auditor), nil).str("status") == "none"
+		}
+	},
+	"runMigrationCommit": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		return e.call(http.MethodPost, "/v1/migrations/"+id+"/commit:run", tok, nil, "Prefer", "return=preview"), nil
+	},
+	"getMigrationCommit": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/commit", tok, nil), nil
+	},
+}
+
+// unsigned gives the matrix's mapping a version of its own when the latest is signed, as another row signed it: a
+// version is signed once.
+func unsigned(e *env, id string) {
+	e.t.Helper()
+	m, tag := e.migrationMapping(id)
+	if m.Body["signed"] != true {
+		return
+	}
+	lines, _ := m.Body["budget_lines"].([]any)
+	l := lines[0].(map[string]any)
+	if r := e.call(http.MethodPatch, "/v1/migrations/"+id+"/mapping", e.as(authz.Accountant), map[string]any{"budget_lines": []map[string]any{{"line": l["line"],
+		"account": l["account"]}}}, "If-Match", tag); r.Status != 200 {
+		e.t.Fatalf("a new version of the matrix's mapping: %d %s", r.Status, r.Raw)
+	}
 }
 
 // signable makes the matrix's mapping signable when it lists errors: the matrix's other rows create accounts under the

@@ -68,6 +68,7 @@ const operations: Record<Approval["operation"], string> = {
   "investor_right.record": "Record an investor's rights",
   "controller_entry.record": "Record a registrable controller conclusion",
   "budget.record": "Approve and lock a budget",
+  "migration.commit": "Commit the workbook import",
 };
 
 export function operationLabel(op: string): string {
@@ -126,6 +127,7 @@ const objects: Record<string, string> = {
   investor_right: "Investor rights",
   controller_entry: "Registrable controller entry",
   budget: "Budget",
+  migration_commit: "Workbook import",
 };
 
 export function objectLabel(t: string): string {

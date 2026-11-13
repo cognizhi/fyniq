@@ -124,7 +124,8 @@
         "round_scenario",
         "investor_right",
         "controller_entry",
-        "budget"
+        "budget",
+        "migration_commit"
       ],
       "examples": [
         "organisation_setting"
@@ -193,7 +194,8 @@
         "round_scenario.approve",
         "investor_right.record",
         "controller_entry.record",
-        "budget.record"
+        "budget.record",
+        "migration.commit"
       ],
       "examples": [
         "organisation_setting.change"

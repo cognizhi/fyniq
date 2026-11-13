@@ -24,6 +24,113 @@ func (q *Queries) AnyJournalEntry(ctx context.Context) (bool, error) {
 	return posted, err
 }
 
+const commitMigrationCommit = `-- name: CommitMigrationCommit :one
+UPDATE fyniq.migration_commit SET status = 'committed', committed_at = $1
+ WHERE id = $2 AND status = 'running'
+RETURNING organisation_id, id, run_id, approval_id, path, step_id, mapping_id, records, status, approved_by, approved_at, committed_at
+`
+
+type CommitMigrationCommitParams struct {
+	CommittedAt *time.Time
+	ID          uuid.UUID
+}
+
+// A running commit, committed; none when it is not running.
+func (q *Queries) CommitMigrationCommit(ctx context.Context, arg CommitMigrationCommitParams) (FyniqMigrationCommit, error) {
+	row := q.db.QueryRow(ctx, commitMigrationCommit, arg.CommittedAt, arg.ID)
+	var i FyniqMigrationCommit
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.ApprovalID,
+		&i.Path,
+		&i.StepID,
+		&i.MappingID,
+		&i.Records,
+		&i.Status,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
+		&i.CommittedAt,
+	)
+	return i, err
+}
+
+const getMigrationCommit = `-- name: GetMigrationCommit :one
+SELECT organisation_id, id, run_id, approval_id, path, step_id, mapping_id, records, status, approved_by, approved_at, committed_at FROM fyniq.migration_commit WHERE run_id = $1
+`
+
+// A migration's commit: at most one (rev 0.254).
+func (q *Queries) GetMigrationCommit(ctx context.Context, runID uuid.UUID) (FyniqMigrationCommit, error) {
+	row := q.db.QueryRow(ctx, getMigrationCommit, runID)
+	var i FyniqMigrationCommit
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.ApprovalID,
+		&i.Path,
+		&i.StepID,
+		&i.MappingID,
+		&i.Records,
+		&i.Status,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
+		&i.CommittedAt,
+	)
+	return i, err
+}
+
+const getMigrationMapping = `-- name: GetMigrationMapping :one
+SELECT organisation_id, id, run_id, version, step_id, mapping, mapping_sha256, made_by, made_at FROM fyniq.migration_mapping WHERE id = $1
+`
+
+func (q *Queries) GetMigrationMapping(ctx context.Context, id uuid.UUID) (FyniqMigrationMapping, error) {
+	row := q.db.QueryRow(ctx, getMigrationMapping, id)
+	var i FyniqMigrationMapping
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.Version,
+		&i.StepID,
+		&i.Mapping,
+		&i.MappingSha256,
+		&i.MadeBy,
+		&i.MadeAt,
+	)
+	return i, err
+}
+
+const getMigrationRecordByKey = `-- name: GetMigrationRecordByKey :one
+SELECT organisation_id, id, run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at FROM fyniq.migration_record WHERE commit_id = $1 AND key = $2
+`
+
+type GetMigrationRecordByKeyParams struct {
+	CommitID uuid.UUID
+	Key      string
+}
+
+func (q *Queries) GetMigrationRecordByKey(ctx context.Context, arg GetMigrationRecordByKeyParams) (FyniqMigrationRecord, error) {
+	row := q.db.QueryRow(ctx, getMigrationRecordByKey, arg.CommitID, arg.Key)
+	var i FyniqMigrationRecord
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.CommitID,
+		&i.Key,
+		&i.Kind,
+		&i.Sheet,
+		&i.RowNumber,
+		&i.RecordType,
+		&i.RecordID,
+		&i.ImportedBy,
+		&i.ImportedAt,
+	)
+	return i, err
+}
+
 const getMigrationRun = `-- name: GetMigrationRun :one
 SELECT organisation_id, id, status, started_by, started_at FROM fyniq.migration_run WHERE id = $1
 `
@@ -63,6 +170,53 @@ func (q *Queries) GetMigrationStep(ctx context.Context, id uuid.UUID) (FyniqMigr
 		&i.StartedBy,
 		&i.StartedAt,
 		&i.ValidatedAt,
+	)
+	return i, err
+}
+
+const insertMigrationCommit = `-- name: InsertMigrationCommit :one
+INSERT INTO fyniq.migration_commit (run_id, approval_id, path, step_id, mapping_id, records, approved_by, approved_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7, $8)
+RETURNING organisation_id, id, run_id, approval_id, path, step_id, mapping_id, records, status, approved_by, approved_at, committed_at
+`
+
+type InsertMigrationCommitParams struct {
+	RunID      uuid.UUID
+	ApprovalID uuid.UUID
+	Path       string
+	StepID     uuid.UUID
+	MappingID  uuid.UUID
+	Records    int32
+	ApprovedBy string
+	ApprovedAt time.Time
+}
+
+func (q *Queries) InsertMigrationCommit(ctx context.Context, arg InsertMigrationCommitParams) (FyniqMigrationCommit, error) {
+	row := q.db.QueryRow(ctx, insertMigrationCommit,
+		arg.RunID,
+		arg.ApprovalID,
+		arg.Path,
+		arg.StepID,
+		arg.MappingID,
+		arg.Records,
+		arg.ApprovedBy,
+		arg.ApprovedAt,
+	)
+	var i FyniqMigrationCommit
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.ApprovalID,
+		&i.Path,
+		&i.StepID,
+		&i.MappingID,
+		&i.Records,
+		&i.Status,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
+		&i.CommittedAt,
 	)
 	return i, err
 }
@@ -159,6 +313,57 @@ func (q *Queries) InsertMigrationMapping(ctx context.Context, arg InsertMigratio
 		&i.MappingSha256,
 		&i.MadeBy,
 		&i.MadeAt,
+	)
+	return i, err
+}
+
+const insertMigrationRecord = `-- name: InsertMigrationRecord :one
+INSERT INTO fyniq.migration_record (run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10)
+RETURNING organisation_id, id, run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at
+`
+
+type InsertMigrationRecordParams struct {
+	RunID      uuid.UUID
+	CommitID   uuid.UUID
+	Key        string
+	Kind       string
+	Sheet      string
+	RowNumber  int32
+	RecordType string
+	RecordID   uuid.UUID
+	ImportedBy string
+	ImportedAt time.Time
+}
+
+func (q *Queries) InsertMigrationRecord(ctx context.Context, arg InsertMigrationRecordParams) (FyniqMigrationRecord, error) {
+	row := q.db.QueryRow(ctx, insertMigrationRecord,
+		arg.RunID,
+		arg.CommitID,
+		arg.Key,
+		arg.Kind,
+		arg.Sheet,
+		arg.RowNumber,
+		arg.RecordType,
+		arg.RecordID,
+		arg.ImportedBy,
+		arg.ImportedAt,
+	)
+	var i FyniqMigrationRecord
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.CommitID,
+		&i.Key,
+		&i.Kind,
+		&i.Sheet,
+		&i.RowNumber,
+		&i.RecordType,
+		&i.RecordID,
+		&i.ImportedBy,
+		&i.ImportedAt,
 	)
 	return i, err
 }
@@ -325,6 +530,43 @@ func (q *Queries) ListMigrationFiles(ctx context.Context, runID uuid.UUID) ([]Fy
 	return items, nil
 }
 
+const listMigrationRecords = `-- name: ListMigrationRecords :many
+SELECT organisation_id, id, run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at FROM fyniq.migration_record WHERE commit_id = $1 ORDER BY imported_at, id
+`
+
+func (q *Queries) ListMigrationRecords(ctx context.Context, commitID uuid.UUID) ([]FyniqMigrationRecord, error) {
+	rows, err := q.db.Query(ctx, listMigrationRecords, commitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqMigrationRecord
+	for rows.Next() {
+		var i FyniqMigrationRecord
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.RunID,
+			&i.CommitID,
+			&i.Key,
+			&i.Kind,
+			&i.Sheet,
+			&i.RowNumber,
+			&i.RecordType,
+			&i.RecordID,
+			&i.ImportedBy,
+			&i.ImportedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMigrationRuns = `-- name: ListMigrationRuns :many
 SELECT organisation_id, id, status, started_by, started_at FROM fyniq.migration_run ORDER BY started_at, id
 `
@@ -426,6 +668,61 @@ func (q *Queries) ListMigrationSteps(ctx context.Context, runID uuid.UUID) ([]Fy
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockMigrationCommit = `-- name: LockMigrationCommit :one
+SELECT organisation_id, id, run_id, approval_id, path, step_id, mapping_id, records, status, approved_by, approved_at, committed_at FROM fyniq.migration_commit WHERE id = $1 FOR UPDATE
+`
+
+// A commit, locked until the unit of work ends: its batches import one record at a time.
+func (q *Queries) LockMigrationCommit(ctx context.Context, id uuid.UUID) (FyniqMigrationCommit, error) {
+	row := q.db.QueryRow(ctx, lockMigrationCommit, id)
+	var i FyniqMigrationCommit
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.ApprovalID,
+		&i.Path,
+		&i.StepID,
+		&i.MappingID,
+		&i.Records,
+		&i.Status,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
+		&i.CommittedAt,
+	)
+	return i, err
+}
+
+const migrationRecordOf = `-- name: MigrationRecordOf :one
+SELECT organisation_id, id, run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at FROM fyniq.migration_record WHERE record_type = $1 AND record_id = $2 ORDER BY imported_at LIMIT 1
+`
+
+type MigrationRecordOfParams struct {
+	RecordType string
+	RecordID   uuid.UUID
+}
+
+// The row a record came from.
+func (q *Queries) MigrationRecordOf(ctx context.Context, arg MigrationRecordOfParams) (FyniqMigrationRecord, error) {
+	row := q.db.QueryRow(ctx, migrationRecordOf, arg.RecordType, arg.RecordID)
+	var i FyniqMigrationRecord
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.CommitID,
+		&i.Key,
+		&i.Kind,
+		&i.Sheet,
+		&i.RowNumber,
+		&i.RecordType,
+		&i.RecordID,
+		&i.ImportedBy,
+		&i.ImportedAt,
+	)
+	return i, err
 }
 
 const validateMigrationStep = `-- name: ValidateMigrationStep :one

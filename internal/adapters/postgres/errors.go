@@ -206,6 +206,7 @@ var fyCodes = map[string]string{
 	"FY324": storage.CodeHeartbeatDrill,  // a heartbeat drill changed or removed (000318)
 	"FY325": storage.CodeMigration,       // a migration in an organisation with a posted entry, a step changed twice, or anything removed (000325)
 	"FY326": storage.CodeMigration,       // a mapping version out of order, a sign-off of anything but the latest version, or any change (000327)
+	"FY327": storage.CodeMigration,       // a change once the migration has a commit, or a commit or record out of its rules (000330)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -255,6 +256,8 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"migration_step_one_validating":             {storage.CodeDuplicate, "a workbook of this step is being validated already"},
 	"migration_mapping_version_key":             {storage.CodeVersion, "the mapping changed since it was read"},
 	"migration_signoff_mapping":                 {storage.CodeDuplicate, "that version of the mapping is signed already"},
+	"migration_commit_one":                      {storage.CodeDuplicate, "the migration is committed already"},
+	"migration_record_key":                      {storage.CodeDuplicate, "the record is imported already"},
 	"quote_outcome_once":                        {storage.CodeQuoteOutcome, "the quote has an outcome already"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
 	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},

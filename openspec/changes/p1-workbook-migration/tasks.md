@@ -61,13 +61,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 4. The commit (M3)
 
-- [ ] 4.1 The commit as one approved operation (design D3): prepared by the Controller or Accountant, committed by the
-  Owner under FM-1, run by the migration principal on the Owner's behalf, each record with the approval and its
-  workbook origin, resumable by each row's business key, listed once in the weekly review.
-  `POST /v1/migrations/{id}/commit` with the founders' choice (`history` or `clean_start`). Tests
+- [x] 4.1 The commit as one approved request (design D3, rev 0.258): prepared under C on "Workbook import (migration)",
+  approved by an Owner who did not prepare it (FM-1), then run in batches of at most 50 records on the API's role, each
+  record in its own transaction with its business key, its workbook origin and the approval, resumable, and the
+  approval the import's one entry in the weekly review. `POST /v1/migrations/{id}/commit` with the founders' choice
+  (`history` or `clean_start`), `POST /v1/migrations/{id}/commit:run`, `GET /v1/migrations/{id}/commit`. Tests
   `TestACommitResumesWhereItStopped`, `TestEveryImportedRecordNamesItsRow` (`// req: FR-MIG-01`).
-- [ ] 4.2 The set-up: profile and settings, dimensions, chart, contacts, items, FX rates, bank rules, money accounts.
-  Test `// req: data/migration Set-up import and mapping review (M2)` on the fixture.
+- [x] 4.2 The set-up: profile and settings, dimensions, chart, contacts, items, FX rates, bank rules, money accounts.
+  Test `// req: data/migration Set-up import and mapping review (M2)` on the fixture. (As built: the profile with the
+  first financial year's missing months; the GST registration from the books start, quarterly [accountant to confirm];
+  the standard chart for an organisation without one, then the accounts the mapping creates, money accounts among them
+  in the base currency; a UEN not in ACRA's form and a bank rule to a money account are warnings, left out.)
 - [ ] 4.3 History of the current financial year (design D5): opening balances with opening items; invoices with Doc
   Lines and spreads; bills; quotes and orders; Transactions as receipts, bill payments or categorised bank
   transactions; journals; assets with past depreciation. Test `// req: data/migration History or opening balances

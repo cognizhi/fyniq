@@ -291,3 +291,182 @@ func TestAttackTheMigrationMappingKeepsItsRules(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The commit keeps its rules (migration 000330, FY327): it is recorded only under its own approved request, of the
+// migration's latest valid workbook and its latest mapping, signed; once, as one per migration; a record joins only its
+// running commit, each key once; the commit is committed only when it holds every record it planned, and then takes
+// no record; from the commit on, no workbook or mapping version is added; nothing changes or goes; the worker writes
+// none of it; another organisation sees none of it.
+// req: FR-MIG-01
+// req: AUD-01
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Commit A Pte Ltd"), books(t, "Commit B Pte Ltd")
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	hash := func(c string) string { return strings.Repeat(c, 64) }
+	requester, owner := founder(t, api, a.Org, 1, now), founder(t, api, a.Org, 2, now)
+	var run storage.MigrationRun
+	var step storage.MigrationStep
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if run, err = u.Migrations().Start(ctx, "user:x", now); err != nil {
+			return err
+		}
+		step, _, err = u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, migrationFile(run.ID, a.Org, "Hub.xlsx", now))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	checks := migrationFile(run.ID, a.Org, "checks.csv", now)
+	checks.MediaType, checks.DataClass, checks.AddedBy = "text/csv", storage.ClassGeneral, "system:migration.validate"
+	var v1 storage.MigrationMapping
+	if err := worker.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if _, err = u.Migrations().Validated(ctx, step.ID, checks, storage.MigrationReport{State: storage.StepValid, Report: []byte(`{}`),
+			ReportSHA256: hash("b"), ValidatedAt: now}); err != nil {
+			return err
+		}
+		v1, err = u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 1, StepID: step.ID, Mapping: []byte(`{"v":1}`), SHA256: hash("c"),
+			MadeBy: "system:migration.validate", MadeAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var v2 storage.MigrationMapping
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if _, err = u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v1.ID,
+			SubjectSHA256: v1.SHA256, SignedBy: "user:y", SignedAt: now}); err != nil {
+			return err
+		}
+		v2, err = u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 2, StepID: step.ID, Mapping: []byte(`{"v":2}`), SHA256: hash("d"),
+			MadeBy: "user:x", MadeAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	other := request(t, api, a.Org, requester, "budget", uuid.NewString(), "budget.record", `{"execute":{}}`, []storage.ApprovalStep{{Quorum: 1}}, now)
+	approved := request(t, api, a.Org, requester, "migration_commit", run.ID.String(), "migration.commit", `{"execute":{}}`, []storage.ApprovalStep{{Quorum: 1}}, now)
+	for _, r := range []storage.ApprovalRequest{other, approved} {
+		if err := signs(api, a.Org, r, 1, owner, now); err != nil {
+			t.Fatal(err)
+		}
+		if err := decides(api, a.Org, r, "approved", now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pending := request(t, api, a.Org, requester, "migration_commit", run.ID.String(), "migration.commit", `{"execute":{}}`, []storage.ApprovalStep{{Quorum: 1}}, now)
+	commit := func(approval, mapping uuid.UUID, records int) storage.MigrationCommit {
+		return storage.MigrationCommit{RunID: run.ID, ApprovalID: approval, Path: storage.PathHistory, StepID: step.ID, MappingID: mapping, Records: records,
+			ApprovedBy: "user:" + owner.String(), ApprovedAt: now}
+	}
+	start := func(c storage.MigrationCommit) (storage.MigrationCommit, error) {
+		var out storage.MigrationCommit
+		err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.Migrations().StartCommit(ctx, c)
+			return err
+		})
+		return out, err
+	}
+	for what, c := range map[string]storage.MigrationCommit{
+		"a commit under a request still pending":       commit(pending.ID, v2.ID, 2),
+		"a commit under another object's request":      commit(other.ID, v2.ID, 2),
+		"a commit by a mapping that is not the latest": commit(approved.ID, v1.ID, 2),
+		"a commit by a mapping not signed":             commit(approved.ID, v2.ID, 2),
+	} {
+		if _, err := start(c); !storageCode(err, storage.CodeMigration) {
+			t.Errorf("%s: %v", what, err)
+		}
+	}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().SignOff(ctx, storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffMapping, MappingID: &v2.ID, SubjectSHA256: v2.SHA256,
+			SignedBy: "user:y", SignedAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := start(commit(approved.ID, v2.ID, 2))
+	if err != nil || c.Status != storage.CommitRunning || c.Records != 2 {
+		t.Fatalf("the commit: %+v %v", c, err)
+	}
+	if _, err := start(commit(approved.ID, v2.ID, 2)); !storageCode(err, storage.CodeDuplicate) {
+		t.Errorf("a second commit: %v", err)
+	}
+
+	record := func(key string) storage.MigrationRecord {
+		return storage.MigrationRecord{RunID: run.ID, CommitID: c.ID, Key: key, Kind: "contact", Sheet: "Contacts", Row: 6, RecordType: "contact",
+			RecordID: uuid.New(), ImportedBy: "user:x", ImportedAt: now}
+	}
+	in := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return api.Do(ctx, a.Org, fn) }
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Import(ctx, record("contact:a")); return err }); err != nil {
+		t.Fatal(err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Import(ctx, record("contact:a")); return err }); !storageCode(err, storage.CodeDuplicate) {
+		t.Errorf("a key imported twice: %v", err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Committed(ctx, c.ID, now); return err }); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("committed with a record left: %v", err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Migrations().Import(ctx, record("contact:b")); err != nil {
+			return err
+		}
+		done, err := u.Migrations().Committed(ctx, c.ID, now)
+		if err == nil && (done.Status != storage.CommitCommitted || done.CommittedAt == nil) {
+			t.Errorf("the committed commit: %+v", done)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for what, fn := range map[string]func(ctx context.Context, u storage.UnitOfWork) error{
+		"a record after the commit": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Import(ctx, record("contact:c"))
+			return err
+		},
+		"committing twice": func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Committed(ctx, c.ID, now); return err },
+		"a workbook after the commit": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, _, err := u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, migrationFile(run.ID, a.Org, "Late.xlsx", now))
+			return err
+		},
+		"a mapping version after the commit": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Map(ctx, storage.MigrationMapping{RunID: run.ID, Version: 3, StepID: step.ID, Mapping: []byte(`{}`), SHA256: hash("e"),
+				MadeBy: "user:x", MadeAt: now})
+			return err
+		},
+	} {
+		if err := in(fn); !storageCode(err, storage.CodeMigration) {
+			t.Errorf("%s: %v", what, err)
+		}
+	}
+	for _, x := range []struct {
+		what, role, stmt string
+		args             []any
+		states           []string
+	}{
+		{"the worker recording a commit", "fyniq_worker", `INSERT INTO fyniq.migration_commit (run_id, approval_id, path, step_id, mapping_id, records, approved_by, approved_at)
+		  VALUES ($1, $2, 'history', $3, $4, 1, 'user:x', now())`, []any{run.ID, approved.ID, step.ID, v2.ID}, []string{"42501"}},
+		{"the API changing a record", "fyniq_api", `UPDATE fyniq.migration_record SET row_number = 7`, nil, []string{"42501"}},
+		{"the API changing a commit's records", "fyniq_api", `UPDATE fyniq.migration_commit SET records = 1`, nil, []string{"42501"}},
+		{"the owner reopening the commit", "fyniq_migrator", `UPDATE fyniq.migration_commit SET status = 'running', committed_at = NULL`, nil, []string{"FY327", "23514"}},
+		{"the owner changing a record", "fyniq_migrator", `UPDATE fyniq.migration_record SET row_number = 7`, nil, []string{"FY327"}},
+		{"the owner removing a record", "fyniq_migrator", `DELETE FROM fyniq.migration_record`, nil, []string{"FY327"}},
+		{"the owner removing the commit", "fyniq_migrator", `DELETE FROM fyniq.migration_commit`, nil, []string{"FY327", "23503"}},
+		{"the owner emptying the records", "fyniq_migrator", `TRUNCATE fyniq.migration_record`, nil, []string{"FY060", "FY061"}},
+	} {
+		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, x.args...); return err })
+		wantState(t, x.what, err, x.states...)
+	}
+	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Migrations().Commit(ctx, run.ID); err == nil {
+			t.Error("another organisation reads the commit")
+		}
+		records, err := u.Migrations().Records(ctx, c.ID)
+		if err == nil && len(records) != 0 {
+			t.Errorf("another organisation sees %d records", len(records))
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
