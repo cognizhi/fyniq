@@ -117,3 +117,15 @@ RETURNING *;
 
 -- name: GetMigrationDifference :one
 SELECT * FROM fyniq.migration_difference WHERE run_id = sqlc.arg(run_id) AND line_key = sqlc.arg(line_key);
+
+-- name: InsertMigrationArchive :one
+INSERT INTO fyniq.migration_archive (run_id, file_id, locked_key, sha256, retain_until, archived_by, archived_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(file_id), sqlc.arg(locked_key), sqlc.arg(sha256), sqlc.arg(retain_until), sqlc.arg(archived_by),
+  sqlc.arg(archived_at))
+RETURNING *;
+
+-- name: ListMigrationArchive :many
+SELECT * FROM fyniq.migration_archive WHERE run_id = sqlc.arg(run_id) ORDER BY archived_at, id;
+
+-- name: CloseMigrationRun :one
+UPDATE fyniq.migration_run SET status = 'closed' WHERE id = sqlc.arg(id) AND status = 'open' RETURNING *;

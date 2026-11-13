@@ -1479,6 +1479,18 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqMigrationArchive struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	FileID         uuid.UUID
+	LockedKey      string
+	Sha256         string
+	RetainUntil    time.Time
+	ArchivedBy     string
+	ArchivedAt     time.Time
+}
+
 type FyniqMigrationCommit struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
