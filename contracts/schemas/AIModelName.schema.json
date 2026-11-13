@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "description": "The provider's ID for it, as the connection's list shows it.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "model"
+  ],
+  "title": "AIModelName",
+  "type": "object"
+}

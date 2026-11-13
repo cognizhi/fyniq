@@ -261,6 +261,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"ai_connection_name":                        {storage.CodeDuplicate, "the organisation has an AI connection of that name already"},
 	"ai_data_policy_version":                    {storage.CodeVersion, "the data-class policy changed since it was read"},
 	"ai_data_policy_no_restricted":              {storage.CodeAIConnection, "restricted data never goes to an AI provider"},
+	"ai_model_allowed_probed":                   {storage.CodeAIConnection, "a model joins the allow-list only once listed, probed and callable"},
 	"migration_step_one_validating":             {storage.CodeDuplicate, "a workbook of this step is being validated already"},
 	"migration_mapping_version_key":             {storage.CodeVersion, "the mapping changed since it was read"},
 	"migration_signoff_mapping":                 {storage.CodeDuplicate, "that version of the mapping is signed already"},

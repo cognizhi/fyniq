@@ -14794,6 +14794,53 @@ Every model the connection's provider has listed (AI-80), with its state (AI-81)
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/ai/connections/{connection_id}/models/allow`
+
+**Ask to put a model on an AI connection's allow-list** (`allowAIConnectionModel`)
+
+Asks to allow a model the connection's provider lists and a probe on the connection proved (AI-72, AI-80): there is no typed model ID. A model serves an agent only once its qualification passes too (AI-78). It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner approves. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AIModelName`](../../contracts/schemas/AIModelName.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-MODEL-02` The model has not been probed on this connection, or is no longer listed or callable; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-MODEL-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/connections/{connection_id}/models/probe`
+
+**Probe a listed model on an AI connection** (`probeAIConnectionModel`)
+
+Asks a model the connection's provider lists for a few tokens of synthetic text, with the connection's credential (AI-80): a list says what exists, not what this credential may call, so a model joins the allow-list only after a probe on its connection succeeds. A provider's access or not-found refusal marks the model not callable (AI-81). Sends nothing of the organisation's. Side effects: the probe's result on the model and its audit event ai_model.probed. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Request body:** [`AIModelName`](../../contracts/schemas/AIModelName.schema.json)
+- **Responses:**
+  - `200` OK [`AIModel`](../../contracts/schemas/AIModel.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/ai/connections/{connection_id}/models/refresh`
 
 **Read an AI connection's model list from its provider now** (`refreshAIConnectionModels`)
@@ -14805,6 +14852,28 @@ Refresh from provider (AI-80): reads the connection's list now with its credenti
   - `connection_id` (path, required): The connection's ID.
 - **Responses:**
   - `200` OK [`AIModelList`](../../contracts/schemas/AIModelList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/connections/{connection_id}/models/remove`
+
+**Take a model off an AI connection's allow-list** (`removeAIConnectionModel`)
+
+Takes a model off the connection's allow-list at once (AI-72): never held back for a second person. Every route step that names it is skipped, so the agent runs on its next step (AI-76). Side effects: the audit event ai_model.removed. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Request body:** [`AIModelName`](../../contracts/schemas/AIModelName.schema.json)
+- **Responses:**
+  - `200` OK [`AIModel`](../../contracts/schemas/AIModel.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.

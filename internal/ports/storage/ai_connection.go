@@ -38,6 +38,7 @@ type AIConnection struct {
 	Billing         string
 	Quota           json.RawMessage // a subscription's; nil for usage-based billing
 	DataHandling    json.RawMessage // its data-handling declaration (AI-75, AI-88); {} until declared
+	AutoQualify     bool            // newly listed models queued for the agents' evals (AI-81); off by default
 	State           string
 	Version         int
 	CreatedBy       string
@@ -108,6 +109,10 @@ type AIModel struct {
 	LastListed    time.Time
 	Listed        bool
 	NotCallableAt *time.Time
+	Allowed       bool       // on the connection's allow-list (AI-72)
+	ProbedAt      *time.Time // the last probe on this connection
+	ProbeOK       bool
+	ProbeDetail   string // what the probe answered with, or why it failed
 }
 
 // AIModelListRead is one read of a connection's model list (AI-84).
@@ -134,4 +139,11 @@ type AIModels interface {
 	Reads(ctx context.Context, connection uuid.UUID, limit int) ([]AIModelListRead, error)
 	// LastComplete is a connection's latest complete read, or ports.ErrNotFound when it has none.
 	LastComplete(ctx context.Context, connection uuid.UUID) (AIModelListRead, error)
+	// Probe records a probe of a listed model on its connection: ok, or failed with why; a provider's access or
+	// not-found refusal marks it not callable (AI-81). Audited on the connection as ai_model.probed. ports.ErrNotFound for
+	// a model the provider never listed.
+	Probe(ctx context.Context, connection uuid.UUID, model string, ok, refused bool, detail string, at time.Time) (AIModel, error)
+	// Allow puts a model on the connection's allow-list as approval approved, or takes it off (nil approval): audited as
+	// ai_model.allowed or ai_model.removed. CodeAIConnection when the database refuses it: unprobed, unlisted or refused.
+	Allow(ctx context.Context, connection uuid.UUID, model string, allowed bool, approval *uuid.UUID) (AIModel, error)
 }

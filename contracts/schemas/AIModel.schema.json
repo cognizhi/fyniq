@@ -9,6 +9,13 @@
       ],
       "type": "string"
     },
+    "allowed": {
+      "description": "On the connection's allow-list: the models a route may name (AI-72).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "context_window": {
       "description": "The context window the list reports: a hint the probe still proves.",
       "examples": [
@@ -53,6 +60,10 @@
       ],
       "type": "string"
     },
+    "probe": {
+      "$ref": "AIModelProbe.schema.json",
+      "description": "The last probe on this connection: a few tokens of synthetic text (AI-80)."
+    },
     "reports": {
       "description": "What the list reports it supports, as the provider names it: hints, never proof (AI-71).",
       "items": {
@@ -93,7 +104,8 @@
     "state",
     "reports",
     "first_listed",
-    "last_listed"
+    "last_listed",
+    "allowed"
   ],
   "title": "AIModel",
   "type": "object"

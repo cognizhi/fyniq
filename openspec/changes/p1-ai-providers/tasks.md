@@ -48,7 +48,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 4. Model lists and prices
 
-- [ ] 4.1 Model lists: `ai_model_list_read` and `ai_model`; reads on a stored credential, a test, an enable, daily at
+- [x] 4.1 Model lists: `ai_model_list_read` and `ai_model`; reads on a stored credential, a test, an enable, daily at
   06:00 SGT, a not-found error and Refresh, page by page to a cap, complete, partial or failed; states; a picked
   model probed before the allow-list; a retired or unlisted model leaving after a complete read; the last good list
   kept on failure; no list, no connection (`AI_MODEL_LIST_UNAVAILABLE`); automatic qualification off by default.
