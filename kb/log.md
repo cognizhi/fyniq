@@ -525,3 +525,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (new: Settings › Import, M1 and M2 and the generic import); docs/user-guide/data-export.md → settings.data (links Settings › Import)
 
 ## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (M3's commit and M4's register and sign-off)
+
+## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (M5's parallel month and M6's archive and go-live)
