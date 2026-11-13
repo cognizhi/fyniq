@@ -166,6 +166,13 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   nor excluded. Downloaded by the requester for 24 hours, recorded as a sensitive export (AUD-05). Sealed values in
   clear [counsel to confirm]. Tests `// req: FR-MIG-04` (the manifest's hashes match the files; a second approver is
   needed; another person cannot download it), `// req: AUD-05`.
+  (Slice 21 built the writer: `reportexport.WriteTenant` and the catalogue in `internal/reportexport/catalogue.go`, every
+  table with an organisation_id exported or excluded with why (idempotency keys, the outbox, rate-limit and refusal
+  counters, person keys, connector secret references, the platform's tenant directory), token hashes dropped, a vendor's
+  bank account number and the released payment files opened in clear; the database functions tenant_tables and
+  tenant_rows (000340) read as the worker, under its grants and row-level security;
+  TestTheTenantExportCataloguesEveryTable, TestTheTenantExportWritesTheOrganisation. Left: the approval object, the
+  request and the worker's job, the download for 24 hours and AUD-05.)
 
 ## 9. Screens, help and the guide
 
