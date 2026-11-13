@@ -3,7 +3,7 @@ key: compliance.controls
 title: See whether the controls hold
 mode: expert
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-01, FR-CTL-05, SEC-32]
+requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02]
 ---
 
 # See whether the controls hold
@@ -79,3 +79,21 @@ Steps are only ever added, each in the audit trail. Never write a secret, a toke
 incident. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor
 read it.
 
+## Restore drills
+
+The **Restore drills** tab is the register of full restore drills: proof that the books come back after the worst.
+
+- **Every four weeks** Fyniq copies its database as it was an hour earlier, checks the ledger and the audit trail on the
+  copy, and removes the copy. Nobody has to do anything: the control **CTL-RES-02** shows whether the latest copy
+  passed, and its owners are told when one fails.
+- **Each quarter** people run the full drill, by the restore drill runbook: the weekly copy of the database is restored
+  somewhere separate, as if the production platform were lost, and timed.
+
+After a full drill, the DPO selects **Record a drill** and gives the day, the scenario, what was restored from, how much
+data the copy lacked and how long the recovery took, in minutes, and ticks what worked on the restored copy: the
+ledger's check, the audit trail's check, documents, keys, sign-in, the scheduled jobs and the queued work. A drill
+counts as **Recovered** only when every one worked. The next full drill is due 3 months after the last that recovered;
+the review **Restore drill** under **Reviews and attestations** says when.
+
+Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the
+Controller, the Accountant and the Auditor read it.

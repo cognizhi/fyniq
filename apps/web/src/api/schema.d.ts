@@ -3452,6 +3452,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/restore-drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the restore drills
+         * @description The restore drill register (DR-06, CTL-RES-02): each full drill run by docs/runbooks/restore-drill.md, with its scenario, what it restored from, the data lost and the time taken, and DR-06's checks on the restored copy; a drill counts as recovered only when every check passed. The monthly drill the platform runs itself is the job restore.drill, in the audit trail. Read-only; no side effects.
+         */
+        get: operations["listRestoreDrills"];
+        put?: never;
+        /**
+         * Record a restore drill
+         * @description Records a full restore drill (DR-06, CTL-RES-02 Q): its scenario, what it restored from, the data lost and the time taken, and whether the ledger's and the audit chain's verifications, documents, keys, sign-in, the tick and the outbox each worked on the restored copy. The next full drill is due 3 months after the last that recovered. Side effects: the drill, the audit event restore_drill.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["recordRestoreDrill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/reviews": {
         parameters: {
             query?: never;
@@ -3461,7 +3485,7 @@ export interface paths {
         };
         /**
          * List the recurring reviews and attestations
-         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches and the breach runbook's tabletop exercises. Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
+         * @description Every recurring review people sign off (CMP-03): the review log (weekly, Founder mode), the access review (each quarter), the accountant's review (each quarter, Founder mode), the close's sign-off (monthly), each break-glass's post-review, the policy acknowledgements, the risk reviews, the personal-data inventory's quarterly review, the impact assessments, the access and correction requests, the breaches, the breach runbook's tabletop exercises, the overseas transfers and the quarterly full restore drill (the installation's). Each comes with its owner role, what waits and when it falls due, how much is overdue under its own rule, its latest sign-off, its evidence, the page where it is signed off, and the controls whose attestation check reads it. Read-only; no side effects.
          */
         get: operations["listComplianceReviews"];
         put?: never;
@@ -20064,7 +20088,7 @@ export interface components {
              * @example access-review
              * @enum {string}
              */
-            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop" | "transfers";
+            kind: "review-log" | "access-review" | "accountant-review" | "close-signoff" | "break-glass-review" | "policy-acknowledgement" | "risk-review" | "data-inventory" | "dpia" | "pd-requests" | "breach" | "breach-tabletop" | "transfers" | "restore-drill";
             /** @description The latest sign-off; none before the first. */
             last_sign_off?: components["schemas"]["ComplianceSignOff"];
             /**
@@ -36825,6 +36849,174 @@ export interface components {
              * @example The bank's statement for 16–17 Oct imported
              */
             resolution: string;
+        };
+        RestoreDrillInput: {
+            /**
+             * @description The audit chain's verification passed on the copy.
+             * @example true
+             */
+            audit_chain: boolean;
+            /**
+             * Format: int64
+             * @description The data the copy lacked, in minutes (NFR-DR-01).
+             * @example 10080
+             */
+            data_lost_minutes: number;
+            /**
+             * @description Documents and evidence opened from the copy.
+             * @example true
+             */
+            documents: boolean;
+            /**
+             * @description What it found and what changed. Never a secret, a token, a full NRIC or a bank number (SEC-15).
+             * @example Importing the export took 40 minutes; the runbook now starts it first.
+             */
+            findings: string;
+            /**
+             * Format: date
+             * @description When it was held, today or earlier.
+             * @example 2026-11-15
+             */
+            held_on: string;
+            /**
+             * @description The keys decrypted the sealed fields and signed an anchor.
+             * @example true
+             */
+            keys: boolean;
+            /**
+             * @description The ledger's verification passed on the copy.
+             * @example true
+             */
+            ledger: boolean;
+            /**
+             * @description The outbox's unfinished work was reconciled.
+             * @example true
+             */
+            outbox: boolean;
+            /**
+             * @description What the copy was made from: the weekly export or the point in time.
+             * @example The weekly export of 2026-11-08
+             */
+            restored_from: string;
+            /**
+             * @description The scenario it rehearsed (docs/runbooks/restore-drill.md).
+             * @example project_loss
+             * @enum {string}
+             */
+            scenario: "project_loss" | "corruption" | "zone_failure";
+            /**
+             * @description People signed in to the copy.
+             * @example true
+             */
+            sign_in: boolean;
+            /**
+             * @description The Scheduler's tick ran the platform jobs.
+             * @example true
+             */
+            tick: boolean;
+            /**
+             * Format: int64
+             * @description How long the recovery took, in minutes (NFR-DR-02).
+             * @example 185
+             */
+            took_minutes: number;
+        };
+        RestoreDrillView: {
+            /**
+             * @description The audit chain's verification passed on the copy (NFR-DR-03).
+             * @example true
+             */
+            audit_chain: boolean;
+            /**
+             * Format: int64
+             * @description The data the copy lacked, in minutes before the drill's starting point (NFR-DR-01).
+             * @example 10080
+             */
+            data_lost_minutes: number;
+            /**
+             * @description Documents and evidence opened from the copy.
+             * @example true
+             */
+            documents: boolean;
+            /**
+             * @description What it found and what changed.
+             * @example Importing the export took 40 minutes; the runbook now starts it first.
+             */
+            findings: string;
+            /**
+             * Format: date
+             * @description When it was held.
+             * @example 2026-11-15
+             */
+            held_on: string;
+            /**
+             * Format: uuid
+             * @description The drill.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /**
+             * @description The keys decrypted the sealed fields and signed an anchor.
+             * @example true
+             */
+            keys: boolean;
+            /**
+             * @description The ledger's verification passed on the copy (NFR-DR-03).
+             * @example true
+             */
+            ledger: boolean;
+            /**
+             * @description The outbox's unfinished work was reconciled (outbox-after-restore).
+             * @example true
+             */
+            outbox: boolean;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-15T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description Whether the drill counts as recovered: every check passed (DR-06).
+             * @example true
+             */
+            recovered: boolean;
+            /**
+             * @description What the copy was made from: the weekly export or the point in time.
+             * @example The weekly export of 2026-11-08
+             */
+            restored_from: string;
+            /**
+             * @description The scenario it rehearsed (NFR-DR-01, NFR-DR-02): the loss of the production project (the weekly export restored into an isolated project), database corruption or operator error (point-in-time recovery), or a zone's failure (failover).
+             * @example project_loss
+             * @enum {string}
+             */
+            scenario: "project_loss" | "corruption" | "zone_failure";
+            /**
+             * @description People signed in to the copy.
+             * @example true
+             */
+            sign_in: boolean;
+            /**
+             * @description The Scheduler's tick ran the platform jobs.
+             * @example true
+             */
+            tick: boolean;
+            /**
+             * Format: int64
+             * @description How long the recovery took, in minutes (NFR-DR-02).
+             * @example 185
+             */
+            took_minutes: number;
+        };
+        RestoreDrillsOutputBody: {
+            /** @description The drills, oldest first. */
+            items: components["schemas"]["RestoreDrillView"][];
         };
         RetainedEarnings: {
             /**
@@ -68397,6 +68589,231 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRestoreDrills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreDrillsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordRestoreDrill: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreDrillInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreDrillView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RESTORE-DRILL-01` A restore drill, once recorded, never changes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

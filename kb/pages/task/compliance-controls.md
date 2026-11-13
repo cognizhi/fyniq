@@ -2,9 +2,9 @@
 key: compliance.controls
 type: task
 title: See whether the controls hold
-summary: Every control with its status, owner, frameworks, checks and evidence; the framework filter; the notice when one fails; the incident register
+summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident and restore drill registers
 sources:
-  - docs/user-guide/compliance-controls.md sha256:76fcf43725c771bf26f3e7d7e811cf50b773614ea6579b5b6e3e37253078ec56
+  - docs/user-guide/compliance-controls.md sha256:0f2f050fa165a2aecf47b5aaca5bdea4faf7bf79496ad9ad3dbf6abf9964318e
 data_class: general
 taint: trusted
 status: published
@@ -28,6 +28,10 @@ aliases:
   - open an incident
   - we were hacked
   - incident severity
+  - restore drill
+  - disaster recovery test
+  - can we restore the books
+  - backup test
 ---
 
 # See whether the controls hold
@@ -85,3 +89,14 @@ aliases:
 - The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
 
 (src: docs/user-guide/compliance-controls.md#the-incident-register)
+
+## Restore drills
+
+- The **Restore drills** tab is the register of full restore drills: proof that the books come back after the worst.
+- **Every four weeks** Fyniq copies its database as it was an hour earlier, checks the ledger and the audit trail on the copy, and removes the copy. The control **CTL-RES-02** shows whether the latest copy passed; its owners are told when one fails.
+- **Each quarter** people run the full drill by the restore drill runbook: the weekly copy of the database restored somewhere separate, as if the production platform were lost, and timed.
+- **Record a drill** (the DPO): the day, the scenario, what was restored from, how much data the copy lacked and how long the recovery took, in minutes, and what worked on the restored copy: the ledger's check, the audit trail's check, documents, keys, sign-in, the scheduled jobs and the queued work.
+- A drill counts as **Recovered** only when every one worked. The next full drill is due 3 months after the last that recovered; the review **Restore drill** under **Reviews and attestations** says when.
+- Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
+
+(src: docs/user-guide/compliance-controls.md#restore-drills)

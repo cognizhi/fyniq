@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers", "restore-drill"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -101,7 +101,7 @@ func (r *Review) settle(none string) {
 }
 
 // Reviews are the organisation's recurring reviews at now, in ReviewKinds' order (design D6), read in u.
-func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review, error) {
+func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installation bool) ([]Review, error) {
 	o, err := u.Organisation(ctx)
 	if err != nil {
 		return nil, err
@@ -173,6 +173,10 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 	if err != nil {
 		return nil, err
 	}
+	drills, err := u.Compliance().RestoreDrills(ctx)
+	if err != nil {
+		return nil, err
+	}
 	catalogue, err := registry.LoadInventory()
 	if err != nil {
 		return nil, err
@@ -211,6 +215,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 		breachReview(breaches, today),
 		tabletopReview(members, exercises, today),
 		transfersReview(catalogue.Flows, transfers, today),
+		restoreDrillReview(members, drills, today, installation),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -221,7 +226,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Review
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
 	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request",
-	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date"}
+	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date", "restore-drill": "quarterly"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 
@@ -663,6 +668,52 @@ func tabletopReview(members []storage.Member, exercises []storage.BreachExercise
 		r.DueOn = &due
 	}
 	r.settle(fmt.Sprintf("The next tabletop exercise is due by %s.", dayOf(due)))
+	return r
+}
+
+// The full restore drill (CTL-RES-02 Q, DR-06): the weekly export restored into an isolated project by
+// docs/runbooks/restore-drill.md each quarter, the next due 3 months after the last that recovered, or after the
+// organisation began; it waits from 30 days before. A drill whose checks did not all pass is recorded but does not count.
+// It is the platform's: it applies in the installation's organisation only.
+func restoreDrillReview(members []storage.Member, drills []storage.RestoreDrill, today time.Time, installation bool) Review {
+	r := Review{Kind: "restore-drill", Owner: "dpo", Where: "/compliance/controls",
+		Evidence: "Each drill with its scenario, what it restored from, the data lost, the time taken and DR-06's checks"}
+	if !installation {
+		r.Status = ReviewNotApplicable
+		r.Detail = "The platform's restore drills are recorded in the installation's own organisation."
+		return r
+	}
+	from := today
+	for _, m := range members {
+		if d := m.Since.UTC().Truncate(24 * time.Hour); d.Before(from) {
+			from = d
+		}
+	}
+	var last *time.Time
+	for _, d := range drills {
+		if !d.Recovered() {
+			continue
+		}
+		r.signed(d.RecordedBy, d.RecordedAt)
+		if last == nil || d.HeldOn.After(*last) {
+			held := d.HeldOn
+			last = &held
+		}
+	}
+	if last != nil {
+		from = *last
+	}
+	due := from.AddDate(0, 3, 0)
+	if !today.Before(due.AddDate(0, 0, -30)) {
+		r.wait(due, today.After(due))
+		r.Detail = fmt.Sprintf("The next full restore drill is due by %s.", dayOf(due))
+		if n := len(drills); n > 0 && !drills[n-1].Recovered() {
+			r.Detail += fmt.Sprintf(" The last, on %s, did not recover: it does not count.", dayOf(drills[n-1].HeldOn))
+		}
+	} else {
+		r.DueOn = &due
+	}
+	r.settle(fmt.Sprintf("The next full restore drill is due by %s.", dayOf(due)))
 	return r
 }
 

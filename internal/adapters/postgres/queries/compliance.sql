@@ -295,3 +295,18 @@ INSERT INTO fyniq.pd_transfer (transfer_id, version, flow, recipient, countries,
 VALUES (sqlc.arg(transfer_id), sqlc.arg(version), sqlc.narg(flow), sqlc.arg(recipient), sqlc.arg(countries), sqlc.arg(data), sqlc.arg(purpose),
   sqlc.arg(basis), sqlc.arg(assessed_on), sqlc.arg(assessed_by), sqlc.arg(evidence), sqlc.arg(next_review_on), sqlc.arg(state),
   sqlc.arg(saved_by), sqlc.arg(saved_at));
+
+-- name: ListRestoreDrills :many
+-- The organisation's restore drills, oldest first (DR-06).
+SELECT id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+       findings, recorded_by, recorded_at
+FROM fyniq.restore_drill ORDER BY held_on, recorded_at, id;
+
+-- name: InsertRestoreDrill :one
+INSERT INTO fyniq.restore_drill (held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys,
+                                 sign_in, tick, outbox, findings, recorded_by, recorded_at)
+VALUES (sqlc.arg(held_on), sqlc.arg(scenario), sqlc.arg(restored_from), sqlc.arg(data_lost_minutes), sqlc.arg(took_minutes), sqlc.arg(ledger),
+        sqlc.arg(audit_chain), sqlc.arg(documents), sqlc.arg(keys), sqlc.arg(sign_in), sqlc.arg(tick), sqlc.arg(outbox), sqlc.arg(findings),
+        sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+          findings, recorded_by, recorded_at;

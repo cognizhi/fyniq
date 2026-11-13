@@ -359,7 +359,7 @@ func (r Runner) Statuses(ctx context.Context, org uuid.UUID, rep *Report) error 
 		for _, run := range runs {
 			in.Runs[RunKey(run.Control, run.Frequency, run.Check)] = run
 		}
-		reviews, err := Reviews(ctx, u, in.Now)
+		reviews, err := Reviews(ctx, u, in.Now, inst)
 		if err != nil {
 			return err
 		}

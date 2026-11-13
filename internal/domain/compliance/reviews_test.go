@@ -28,6 +28,8 @@ func reviewIs(t *testing.T, what string, r Review, status string, waiting, overd
 // req: FR-CTL-06
 // req: FM-3
 // req: compliance/compliance-center Attestation recorded
+// req: CTL-RES-02
+// req: DR-06
 func TestEachReviewReadsItsOwnSource(t *testing.T) {
 	now := time.Date(2099, 11, 20, 4, 0, 0, 0, time.UTC)
 	today := Day(now)
@@ -212,6 +214,26 @@ func TestEachReviewReadsItsOwnSource(t *testing.T) {
 		reviewIs(t, "one two months ago", tabletopReview(members, []storage.BreachExercise{recent}, today), ReviewSigned, 0, 0, "The next tabletop exercise is due by")
 		older := storage.BreachExercise{HeldOn: today.AddDate(0, -5, -10), RecordedBy: "user:" + alice.String(), RecordedAt: now}
 		reviewIs(t, "due within 30 days", tabletopReview(members, []storage.BreachExercise{older}, today), ReviewDue, 1, 0, "due by")
+	})
+
+	t.Run("the full restore drill", func(t *testing.T) {
+		members := []storage.Member{{UserID: alice, Since: today.AddDate(-1, 0, 0)}}
+		r := restoreDrillReview(members, nil, today, false)
+		if r.Status != ReviewNotApplicable || !strings.Contains(r.Detail, "installation") {
+			t.Errorf("outside the installation: %+v", r)
+		}
+		reviewIs(t, "none in a year", restoreDrillReview(members, nil, today, true), ReviewOverdue, 1, 1, "due by")
+		drill := func(held time.Time, outbox bool) storage.RestoreDrill {
+			return storage.RestoreDrill{HeldOn: held, Ledger: true, AuditChain: true, Documents: true, Keys: true, SignIn: true, Tick: true, Outbox: outbox,
+				RecordedBy: "user:" + alice.String(), RecordedAt: now}
+		}
+		reviewIs(t, "one a month ago", restoreDrillReview(members, []storage.RestoreDrill{drill(today.AddDate(0, -1, 0), true)}, today, true),
+			ReviewSigned, 0, 0, "The next full restore drill is due by")
+		reviewIs(t, "due within 30 days", restoreDrillReview(members, []storage.RestoreDrill{drill(today.AddDate(0, -2, -10), true)}, today, true),
+			ReviewDue, 1, 0, "due by")
+		// A drill whose outbox failed does not count: the one before it decides, and the review says why.
+		r = restoreDrillReview(members, []storage.RestoreDrill{drill(today.AddDate(0, -4, 0), true), drill(today.AddDate(0, 0, -3), false)}, today, true)
+		reviewIs(t, "the last did not recover", r, ReviewOverdue, 1, 1, "did not recover")
 	})
 
 	t.Run("the risk reviews", func(t *testing.T) {

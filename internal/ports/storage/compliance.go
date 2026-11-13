@@ -365,6 +365,36 @@ type BreachExercise struct {
 	RecordedAt time.Time
 }
 
+// CodeRestoreDrill is the database's refusal to change or remove a recorded restore drill (FY323).
+const CodeRestoreDrill = "STORAGE-RESTORE-DRILL-01"
+
+// RestoreDrill is a full restore drill a person ran by docs/runbooks/restore-drill.md (DR-06, NFR-DR-01, NFR-DR-02,
+// CTL-RES-02 Q; p1-operations-dr design D2): its scenario, what it restored from, the data lost and the time taken, and
+// DR-06's checks on the restored copy.
+type RestoreDrill struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string // project_loss, corruption or zone_failure
+	RestoredFrom    string
+	DataLostMinutes int
+	TookMinutes     int
+	Ledger          bool // the ledger's verification passed on the copy
+	AuditChain      bool // the audit chain's verification passed on the copy
+	Documents       bool // the documents opened
+	Keys            bool // the keys decrypted and signed
+	SignIn          bool // people signed in
+	Tick            bool // the Scheduler's tick ran the jobs
+	Outbox          bool // the outbox's work was reconciled
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// Recovered reports whether the drill counts as recovered: every one of DR-06's checks passed.
+func (d RestoreDrill) Recovered() bool {
+	return d.Ledger && d.AuditChain && d.Documents && d.Keys && d.SignIn && d.Tick && d.Outbox
+}
+
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
 type Compliance interface {
 	// Policies is the policy library (CMP-07).
@@ -412,6 +442,10 @@ type Compliance interface {
 	OpenIncident(ctx context.Context, i Incident) (Incident, error)
 	// StepIncident adds an incident's step, audited as incident.<step>; CodeIncident when it is out of order.
 	StepIncident(ctx context.Context, id uuid.UUID, s IncidentStep) error
+	// RestoreDrills are the organisation's restore drills, oldest first (DR-06).
+	RestoreDrills(ctx context.Context) ([]RestoreDrill, error)
+	// RecordRestoreDrill records a restore drill, audited as restore_drill.recorded.
+	RecordRestoreDrill(ctx context.Context, d RestoreDrill) (RestoreDrill, error)
 	// BreachExercises are the tabletop exercises, oldest first (CTL-DP-06).
 	BreachExercises(ctx context.Context) ([]BreachExercise, error)
 	// RecordBreachExercise records a tabletop exercise, audited as breach_exercise.recorded.

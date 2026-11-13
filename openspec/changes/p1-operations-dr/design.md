@@ -94,6 +94,12 @@ The survey of 11 Nov 2026 (`efe03cf4`, the hardening's last slice) found this st
     `job restore.drill`, which the job's own outcome passes or fails, and the drill records `restore.drilled` in the
     installation's trail, retried once because the local copy ends every connection to the database.
   - Locally `make restore-drill` runs `jobs restore-drill`.
+- **As built (slice 4b):** the quarterly drill is recorded in a register (`fyniq.restore_drill`, insert-only, FY323)
+  with its scenario, what it restored from, the data lost and the time taken, and DR-06's seven checks; it counts as
+  recovered only when all passed. The DPO records it (Appendix D gives the Compliance Center's create to the DPO
+  alone), and the review `restore-drill` applies in the installation's organisation only. **Found while writing the
+  runbook `[verify]`:** the evidence bucket and the fields' key live in the production project, so a drill of that
+  project's loss cannot open documents or sealed fields; the owner decides whether they move to `fyniq-audit`.
 - *Alternatives:* both drills in a drill project, and the quarterly drill alone (the owner's decision).
 
 ### D3. Records and attachment storage (DR-07, NFR-RET-01, CTL-AUD-03)

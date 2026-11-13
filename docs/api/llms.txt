@@ -219,6 +219,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
 - `POST /v1/compliance/policies/{key}/versions` (publishPolicyVersion): Publish a policy's next version
 - `POST /v1/compliance/policies/{key}/versions/{version}/acknowledgements` (acknowledgePolicyVersion): Acknowledge a policy
+- `GET /v1/compliance/restore-drills` (listRestoreDrills): List the restore drills
+- `POST /v1/compliance/restore-drills` (recordRestoreDrill): Record a restore drill
 - `GET /v1/compliance/reviews` (listComplianceReviews): List the recurring reviews and attestations
 - `GET /v1/compliance/risks` (listRisks): List the risk register
 - `POST /v1/compliance/risks` (createRisk): Add a risk to the register
