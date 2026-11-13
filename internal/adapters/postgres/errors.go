@@ -212,6 +212,7 @@ var fyCodes = map[string]string{
 	"FY330": storage.CodeAIConnection,    // an AI connection removed, switched on at creation, a version skipped or unrecorded, or rewritten (000343)
 	"FY331": storage.CodeAIConnection,    // a data-class policy version out of order, changed or removed (000345)
 	"FY332": storage.CodeAIConnection,    // a listed model removed or moved, or a model list's read changed (000347)
+	"FY333": storage.CodeAIPrice,         // a price or its rates changed or removed, a state it cannot move to, or an Owner's price overwritten (000350)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

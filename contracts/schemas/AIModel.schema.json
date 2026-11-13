@@ -60,6 +60,29 @@
       ],
       "type": "string"
     },
+    "pending_price": {
+      "$ref": "AIPrice.schema.json",
+      "description": "A price waiting for the Owner's review: a normalised match, or a rate that fell by more than half (AI-85)."
+    },
+    "price": {
+      "$ref": "AIPrice.schema.json",
+      "description": "Its price in force, with its source (AI-82)."
+    },
+    "price_checked": {
+      "description": "When its price was last looked for.",
+      "examples": [
+        "2026-11-14T06:15:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "priced": {
+      "description": "It has a price in force.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "probe": {
       "$ref": "AIModelProbe.schema.json",
       "description": "The last probe on this connection: a few tokens of synthetic text (AI-80)."
@@ -75,6 +98,13 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "serves": {
+      "description": "It may serve a route as far as its price goes: a usage-based connection's model needs a price in force, as its cost could not otherwise be budgeted; a subscription or a self-hosted server needs none (AI-82).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
     },
     "shutdown": {
       "description": "The provider's retirement or shutdown date (AI-84).",
@@ -97,6 +127,13 @@
         "available"
       ],
       "type": "string"
+    },
+    "unpriced": {
+      "description": "Why the last look found no new price for it: never priced by a guess (AI-82).",
+      "examples": [
+        "no entry of anthropic names claude-test-9"
+      ],
+      "type": "string"
     }
   },
   "required": [
@@ -105,7 +142,9 @@
     "reports",
     "first_listed",
     "last_listed",
-    "allowed"
+    "allowed",
+    "priced",
+    "serves"
   ],
   "title": "AIModel",
   "type": "object"

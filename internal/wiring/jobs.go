@@ -117,6 +117,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		connector.CleanupJob: k.CleanupJob(clock),
 		ai.DailyJob:          k.AIModels(clock).Daily, // AI-80: every connection's model list, at 06:00 SGT
+		ai.PriceJob:          k.AIPrices(clock).Daily, // AI-82: the price catalogue, and every model priced from it, at 06:15 SGT
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
@@ -380,9 +381,15 @@ func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
 		Tenant: reportexport.TenantSources{Evidence: k.Evidence, Staging: k.Staging, Fields: k.Fields}}
 }
 
+// AIPrices read the model price catalogue and price the AI connections' models from it (AI-82, AI-85).
+func (k *Kit) AIPrices(clock ports.Clock) ai.Pricer {
+	return ai.Pricer{Store: k.Store, Catalogues: k.Store, Blobs: k.Blobs, Catalogue: k.Prices, Connectors: k.Connectors, Clock: clock}
+}
+
 // AIModels read AI connections' model lists from their providers through the connector runtime (AI-80, AI-84).
 func (k *Kit) AIModels(clock ports.Clock) ai.Lister {
-	return ai.Lister{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock}
+	d := k.dispatcher(clock)
+	return ai.Lister{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock, Outbox: &d}
 }
 
 // Migrations validate uploaded workbooks in the background, keeping each report and Checks export in the staging store

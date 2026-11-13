@@ -17,6 +17,7 @@ func init() {
 		{Port: "models", Name: "replay", Local: true},
 		{Port: "screening", Name: "stub", Local: true},
 		{Port: "models", Name: "cli-agent", Local: true},
+		{Port: "prices", Name: "files", Local: true},
 	} {
 		runtime.RegisterAdapter(a)
 	}

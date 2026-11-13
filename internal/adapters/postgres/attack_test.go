@@ -517,6 +517,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"fx_feed_rate.rate": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, v, "1.35")
 	},
+	"ai_price_rate.amount": func(t *testing.T, b porttest.Books, v string) error { return rawAIPriceRate(t, b, v) },
 	"fx_feed_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, "1.35", v)
 	},
@@ -612,6 +613,32 @@ func rawFeedRate(t *testing.T, rate, quote string) error {
 	_, err := conn(t, "fyniq_migrator").Exec(ctx, `INSERT INTO fyniq.fx_feed_rate (base_currency, currency, on_date, rate, quote, quote_form, feed)
 VALUES ('SGD', 'EUR', '1999-01-04', $1::numeric, $2::numeric, 'base-per-unit', 'Attack')`, rate, quote)
 	return err
+}
+
+// rawAIPriceRate records a model's price with one rate as the table's owner with the triggers held back (AI-85), so only
+// the amount's own checks can fail. Its connection closes at once, as the test holds many.
+func rawAIPriceRate(t *testing.T, b porttest.Books, amount string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.ai_price (connection_id, model, number, source, catalogue_id, catalogue_key, match, currency,
+  status, recorded_by, recorded_at) VALUES (gen_random_uuid(), 'gpt-attack', 1, 'litellm', gen_random_uuid(), 'gpt-attack', 'exact', 'USD',
+  'active', 'system:attack-test', now()) RETURNING id`).Scan(&id); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_price_rate (price_id, kind, unit, amount) VALUES ($1, 'input', 'per_million_tokens', $2::numeric)`,
+			id, amount)
+		return err
+	})
 }
 
 // rawExplanation explains rent's November variance as the API role, so only the amounts' own checks can fail.

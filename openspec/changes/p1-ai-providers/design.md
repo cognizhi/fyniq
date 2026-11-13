@@ -81,6 +81,13 @@ See proposal.md for why. What exists today:
 - The worker reads LiteLLM's public catalogue daily through the egress guard; Google's catalogue is read by the `gcp`
   adapter `[live-verify]`. A normalised match needs an Owner's confirmation; a suspicious drop keeps the old price
   until reviewed; an Owner's price is never overwritten.
+- As built (task 4.2): the downloads are a global table, `ai_price_catalogue`, like the exchange-rate feed, read through
+  a view and written only by the worker through `record_ai_price_catalogue`; the document is kept in the file store
+  under its SHA-256, and a document that no longer matches its digest is never used. A manifest names how the catalogue
+  names its provider (`price_catalogue`, by authentication or preset) `[verify: each name in LiteLLM's catalogue]`; a
+  provider it does not name stays unpriced. A key with the provider's own prefix is an exact match. A normalised match
+  waits for the Owner each time its price changes, and a price the Owner declined is not proposed again. A rate the
+  catalogue gives as zero leaves the model unpriced; batch, flex, priority, audio and search rates are listed, not used.
 - Metering amounts are not ledger money: each call's cost is kept exactly (`NUMERIC(24,10)`) in the price's currency
   and in SGD at the organisation's rate for the day, never as a binary float; screens round by RND-DISPLAY; provider
   invoices are entered as bills, where the ledger's rules apply (AI-77).
@@ -158,7 +165,8 @@ See proposal.md for why. What exists today:
 
 **D13. The API and the screens.**
 - `/v1/ai/connections` (and each one's models, refresh, probe, credential, enable and disable), `/v1/ai/presets`,
-  `/v1/ai/routes` and `/v1/ai/routes/{agent}`, `/v1/ai/prices`, `/v1/ai/usage`, `/v1/ai/activity`, `/v1/ai/settings`
+  `/v1/ai/routes` and `/v1/ai/routes/{agent}`, the prices (on each connection's models, `/v1/ai/price-catalogues` and
+  `/v1/ai/prices/{id}/review`; as built in task 4.2), `/v1/ai/usage`, `/v1/ai/activity`, `/v1/ai/settings`
   (the switch, budgets): admin operations, on the never-list for the AI and MCP (§9.6).
 - Settings › AI: `ai-settings`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`, `ai-route-editor`,
   `ai-usage`, `ai-activity-log`; `my-ai-plan` under Profile, showing P2's option as not offered.

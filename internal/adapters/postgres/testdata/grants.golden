@@ -34,6 +34,10 @@ fyniq_api       SELECT    ai_model
 fyniq_api       UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, max_output, name, not_callable_at, probe_detail, probe_ok, probed_at, provider_created, reports, shutdown_at)
 fyniq_api       INSERT    ai_model_list_read (added, connection_id, failure, outcome, pages, read_at, read_by, removed, trigger)
 fyniq_api       SELECT    ai_model_list_read
+fyniq_api       SELECT    ai_price
+fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
+fyniq_api       SELECT    ai_price_catalogues
+fyniq_api       SELECT    ai_price_rate
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
@@ -587,6 +591,9 @@ fyniq_readonly  SELECT    ai_connection_version
 fyniq_readonly  SELECT    ai_data_policy
 fyniq_readonly  SELECT    ai_model
 fyniq_readonly  SELECT    ai_model_list_read
+fyniq_readonly  SELECT    ai_price
+fyniq_readonly  SELECT    ai_price_catalogues
+fyniq_readonly  SELECT    ai_price_rate
 fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    announcement
 fyniq_readonly  SELECT    announcement_dismissal
@@ -766,9 +773,15 @@ fyniq_worker    SELECT    ai_connection_version
 fyniq_worker    SELECT    ai_data_policy
 fyniq_worker    INSERT    ai_model (alias_of, allowed, connection_id, context_window, first_listed_at, last_listed_at, listed, max_output, model, name, not_callable_at, provider_created, reports, shutdown_at)
 fyniq_worker    SELECT    ai_model
-fyniq_worker    UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, max_output, name, not_callable_at, provider_created, reports, shutdown_at)
+fyniq_worker    UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, max_output, name, not_callable_at, price_checked_at, provider_created, reports, shutdown_at, unpriced)
 fyniq_worker    INSERT    ai_model_list_read (added, connection_id, failure, outcome, pages, read_at, read_by, removed, trigger)
 fyniq_worker    SELECT    ai_model_list_read
+fyniq_worker    INSERT    ai_price (catalogue_id, catalogue_key, connection_id, currency, ignored, match, model, number, recorded_at, recorded_by, review, review_detail, source, status)
+fyniq_worker    SELECT    ai_price
+fyniq_worker    UPDATE    ai_price (status)
+fyniq_worker    SELECT    ai_price_catalogues
+fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
+fyniq_worker    SELECT    ai_price_rate
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal
@@ -997,6 +1010,7 @@ fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   reapply_shredding()
 fyniq_worker    EXECUTE   rebuild_balances()
+fyniq_worker    EXECUTE   record_ai_price_catalogue()
 fyniq_worker    EXECUTE   record_feed_rate()
 fyniq_worker    EXECUTE   records_years()
 fyniq_worker    SELECT    recurring_bill

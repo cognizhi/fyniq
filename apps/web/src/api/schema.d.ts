@@ -620,6 +620,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/price-catalogues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the price catalogue's downloads
+         * @description Each daily download of LiteLLM's public model price catalogue, newest first (AI-85): the same for every organisation, with its SHA-256, size, source, licence check and whether it was valid or why it was refused. Only a valid download prices anything. A page at a time. Read-only; no side effects.
+         */
+        get: operations["listAIPriceCatalogues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/prices/{price_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a model's price waiting for the Owner
+         * @description The Owner confirms or declines a price a read could not put in force by itself (AI-82, AI-85): a match found only after removing a provider prefix or a version date, or a rate that fell by more than half. Confirm puts it in force; decline keeps the price before it. An Owner's own price is never replaced by a read. Side effects: the audit event ai_price.confirmed or ai_price.declined. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["reviewAIPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -14563,10 +14603,30 @@ export interface components {
              * @example Claude Opus 4.6
              */
             name?: string;
+            /** @description A price waiting for the Owner's review: a normalised match, or a rate that fell by more than half (AI-85). */
+            pending_price?: components["schemas"]["AIPrice"];
+            /** @description Its price in force, with its source (AI-82). */
+            price?: components["schemas"]["AIPrice"];
+            /**
+             * Format: date-time
+             * @description When its price was last looked for.
+             * @example 2026-11-14T06:15:00Z
+             */
+            price_checked?: string;
+            /**
+             * @description It has a price in force.
+             * @example true
+             */
+            priced: boolean;
             /** @description The last probe on this connection: a few tokens of synthetic text (AI-80). */
             probe?: components["schemas"]["AIModelProbe"];
             /** @description What the list reports it supports, as the provider names it: hints, never proof (AI-71). */
             reports: string[];
+            /**
+             * @description It may serve a route as far as its price goes: a usage-based connection's model needs a price in force, as its cost could not otherwise be budgeted; a subscription or a self-hosted server needs none (AI-82).
+             * @example true
+             */
+            serves: boolean;
             /**
              * Format: date-time
              * @description The provider's retirement or shutdown date (AI-84).
@@ -14579,6 +14639,11 @@ export interface components {
              * @enum {string}
              */
             state: "new" | "available" | "deprecated" | "no_longer_listed" | "not_callable";
+            /**
+             * @description Why the last look found no new price for it: never priced by a guess (AI-82).
+             * @example no entry of anthropic names claude-test-9
+             */
+            unpriced?: string;
         };
         AIModelList: {
             /**
@@ -14655,6 +14720,171 @@ export interface components {
             detail?: string;
             /** @example true */
             ok: boolean;
+        };
+        AIPrice: {
+            /**
+             * Format: uuid
+             * @description The catalogue download it came from, which every estimate made with it is reproduced with (AI-85).
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+             */
+            catalogue?: string;
+            /**
+             * @description The source's entry it matched.
+             * @example claude-opus-4-6
+             */
+            catalogue_key?: string;
+            /** @example USD */
+            currency: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * @description The Owner who confirmed or declined it.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            decided_by?: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            id: string;
+            /** @description The source's rates Fyniq does not price with. */
+            ignored: string[];
+            /**
+             * @description exact: the source names this provider and model; normalised: only after removing a provider prefix or a version date, so an Owner confirms it; entered: an Owner's price.
+             * @example exact
+             * @enum {string}
+             */
+            match: "exact" | "normalised" | "entered";
+            /**
+             * Format: int64
+             * @description The version of this model's price, from 1.
+             * @example 1
+             */
+            number: number;
+            rates: components["schemas"]["AIPriceRate"][];
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:15:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description The system user for a read; the Owner for an entered price.
+             * @example system:ai.prices.read
+             */
+            recorded_by: string;
+            /**
+             * @description Why it waits, or waited, for an Owner's review.
+             * @example drop
+             * @enum {string}
+             */
+            review?: "normalised" | "drop";
+            /** @example input fell from 3 to 1.2 */
+            review_detail?: string;
+            /**
+             * @description Where the price came from (AI-82).
+             * @example litellm
+             * @enum {string}
+             */
+            source: "provider_list" | "google_billing" | "litellm" | "owner";
+            /**
+             * @description active: in force; pending: waiting for an Owner's review, the version before it staying in force.
+             * @example active
+             * @enum {string}
+             */
+            status: "active" | "pending" | "superseded" | "declined";
+        };
+        AIPriceCatalogue: {
+            /**
+             * Format: int64
+             * @description The chat models it prices.
+             * @example 2150
+             */
+            entries: number;
+            /**
+             * @description Why it was rejected.
+             * @example the catalogue prices 12 chat models, fewer than 100: it is not a whole catalogue
+             */
+            failure?: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T06:15:00Z
+             */
+            fetched_at: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+             */
+            id: string;
+            /**
+             * @description What the licence check found; absent when it failed.
+             * @example MIT, outside enterprise/
+             */
+            licence?: string;
+            /** @example 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae */
+            licence_sha256: string;
+            /** @example https://raw.githubusercontent.com/BerriAI/litellm/main/LICENSE */
+            licence_url: string;
+            /**
+             * @description Only a valid download prices anything; a rejected one changes no price.
+             * @example valid
+             * @enum {string}
+             */
+            outcome: "valid" | "rejected";
+            /** @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 4072360
+             */
+            size: number;
+            /**
+             * @example litellm
+             * @enum {string}
+             */
+            source: "litellm";
+            /** @example https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json */
+            url: string;
+        };
+        AIPriceCataloguePage: {
+            items: components["schemas"]["AIPriceCatalogue"][];
+            /** @example eyJhZnRlciI6IjEwMDAifQ */
+            next_cursor?: string;
+        };
+        AIPriceRate: {
+            /**
+             * Format: int64
+             * @description The prompt length in tokens above which it applies; 0 for the base rate. A call above a tier the price gives is priced at that tier, or unpriced for a kind the tier lacks.
+             * @example 0
+             */
+            above: number;
+            /**
+             * @description An exact decimal, in the price's currency, read from the source's text, never as a binary float.
+             * @example 3
+             */
+            amount: string;
+            /**
+             * @description What it prices; reasoning, when absent, is priced as output.
+             * @example input
+             * @enum {string}
+             */
+            kind: "input" | "output" | "cache_read" | "cache_write" | "cache_write_1h" | "reasoning" | "input_image" | "request";
+            /**
+             * @example per_million_tokens
+             * @enum {string}
+             */
+            unit: "per_million_tokens" | "per_image" | "per_request";
+        };
+        AIPriceReview: {
+            /**
+             * @description confirm puts the price in force; decline keeps the one before it.
+             * @example confirm
+             * @enum {string}
+             */
+            decision: "confirm" | "decline";
         };
         AccentOption: {
             /** @example #0F766E */
@@ -49810,6 +50040,195 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAIPriceCatalogues: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPriceCataloguePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reviewAIPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The price version waiting for a review. */
+                price_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIPriceReview"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPrice"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-PRICE-02` The price is not waiting for that review; `STORAGE-AI-PRICE-01` A price is kept as recorded, and an Owner's price is never overwritten by a read; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
