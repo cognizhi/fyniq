@@ -204,7 +204,8 @@
         "ai_connection.change",
         "ai_connection.credential",
         "ai_connection.enable",
-        "ai_data_policy.change"
+        "ai_data_policy.change",
+        "ai_connection.allow_model"
       ],
       "examples": [
         "organisation_setting.change"

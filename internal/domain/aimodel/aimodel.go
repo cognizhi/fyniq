@@ -17,6 +17,10 @@ import (
 // AI_MODEL_LIST_UNAVAILABLE (AI-80).
 const CodeListUnavailable = "AI-MODEL-01"
 
+// CodeNotProbed is a model asked onto the allow-list without a successful probe on its connection, or one no longer
+// listed or callable (AI-80, AI-81).
+const CodeNotProbed = "AI-MODEL-02"
+
 // The outcomes of a read (AI-84).
 const (
 	Complete = "complete"
@@ -63,6 +67,7 @@ type Model struct {
 	LastListed    time.Time
 	Listed        bool // listed by the last complete read
 	NotCallableAt *time.Time
+	Allowed       bool // on the connection's allow-list (AI-72)
 }
 
 // State is the state m shows at now (AI-81).
@@ -142,6 +147,11 @@ func Merge(kept []Model, listed []ports.ListedModel, outcome string, now time.Ti
 				out[i].Listed = false
 				removed++
 			}
+		}
+	}
+	for i := range out {
+		if out[i].Allowed && !Callable(out[i], now) {
+			out[i].Allowed = false // retired, no longer listed or refused: off the allow-list by itself (AI-81)
 		}
 	}
 	return out, added, removed

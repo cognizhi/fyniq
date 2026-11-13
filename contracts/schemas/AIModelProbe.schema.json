@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "examples": [
+        "2026-11-14T06:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "detail": {
+      "description": "What it answered with, or why it failed.",
+      "examples": [
+        "answered as claude-opus-4-6 in 4 tokens"
+      ],
+      "type": "string"
+    },
+    "ok": {
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "ok",
+    "at"
+  ],
+  "title": "AIModelProbe",
+  "type": "object"
+}

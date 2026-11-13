@@ -395,6 +395,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAIConnections(a)
 	registerAIDataPolicy(a)
 	registerAIModels(a)
+	registerAIAllowList(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerShredding(a)

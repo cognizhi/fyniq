@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -203,7 +204,12 @@ func matrixAIConnection(e *env, name string, on bool) string {
 			return err
 		}
 		if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: c.ID, Trigger: "refresh", Outcome: "complete", Pages: 1, Added: 1,
-			ReadBy: "user:matrix", ReadAt: now}, []storage.AIModel{{ConnectionID: c.ID, Model: "gpt-6", FirstListed: now, LastListed: now, Listed: true}}); err != nil {
+			ReadBy: "user:matrix", ReadAt: now}, []storage.AIModel{{ConnectionID: c.ID, Model: "gpt-6", FirstListed: now, LastListed: now, Listed: true},
+			{ConnectionID: c.ID, Model: "gpt-5", FirstListed: now, LastListed: now, Listed: true},
+			{ConnectionID: c.ID, Model: "gpt-4", FirstListed: now, LastListed: now, Listed: true}}); err != nil {
+			return err
+		}
+		if _, err := u.AIModels().Probe(ctx, c.ID, "gpt-6", true, false, "answered", now); err != nil {
 			return err
 		}
 		if on {
@@ -254,6 +260,18 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	},
 	"refreshAIConnectionModels": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/refresh", tok, nil), nil
+	},
+	"probeAIConnectionModel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/probe", tok,
+			map[string]any{"model": "gpt-5"}), nil
+	},
+	"allowAIConnectionModel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/allow", steppedUp(e, tok),
+			map[string]any{"model": "gpt-6"}, "Prefer", "return=preview"), nil
+	},
+	"removeAIConnectionModel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/remove", tok,
+			map[string]any{"model": "gpt-4"}), nil
 	},
 	"getAIDataPolicy": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/data-policy", tok, nil), nil
@@ -376,10 +394,11 @@ func TestWhereTheAIMaySendData(t *testing.T) {
 // fakeModels is a provider whose list is the models it holds, two to a page; refuse fails its first page, and broken its
 // second.
 type fakeModels struct {
-	mu     sync.Mutex
-	ids    []string
-	refuse error
-	broken bool
+	mu      sync.Mutex
+	ids     []string
+	refuse  error
+	broken  bool
+	refused map[string]bool // models the provider answers not found
 }
 
 func (f *fakeModels) provider(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
@@ -387,6 +406,9 @@ func (f *fakeModels) provider(context.Context, storage.UnitOfWork, storage.AICon
 }
 func (f *fakeModels) Capabilities() ports.ModelCapabilities { return ports.ModelCapabilities{} }
 func (f *fakeModels) Call(_ context.Context, r ports.ModelRequest) (ports.ModelResponse, error) {
+	if f.refused[r.Model] {
+		return ports.ModelResponse{}, fmt.Errorf("example answered 404 (not_found_error): %w", ports.ErrModelNotFound)
+	}
 	return ports.ModelResponse{Model: r.Model, StopReason: ports.StopEnd, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "ok"}},
 		Usage: ports.ModelUsage{Input: 3, Output: 1}}, nil
 }
@@ -498,4 +520,78 @@ func TestModelListsComeFromTheProvider(t *testing.T) {
 	if listed != 5 {
 		t.Errorf("the trail records %d reads, not 5", listed)
 	}
+}
+
+// A model joins a connection's allow-list only once its provider lists it, a probe on the connection proved it, and
+// the Owner approved the request (AI-72, AI-80); it leaves at once when taken off, and by itself when the provider
+// refuses it or a complete read no longer lists it (AI-81). Automatic qualification starts off (AI-81).
+// req: AI-72
+// req: AI-80
+// req: AI-81
+// asvs: V8.2.1
+func TestModelsJoinTheAllowListProbedAndApproved(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
+	models := &fakeModels{ids: []string{"m1", "m2", "m3"}, refused: map[string]bool{}}
+	e.api.deps.AIProviders = models.provider
+	asked := e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Allowed", "connector": "openai", "auth": "api-key",
+		"billing": map[string]any{"mode": "usage"}, "credential": "sk-proj-" + "fixture0123456789abcdef"})
+	if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	c := e.call(http.MethodGet, "/v1/ai/connections", admin, nil).Body["items"].([]any)[0].(map[string]any)
+	id := c["id"].(string)
+	if c["auto_qualify"] != false {
+		t.Errorf("automatic qualification starts on: %v", c["auto_qualify"])
+	}
+	base := "/v1/ai/connections/" + id + "/models/"
+	e.call(http.MethodPost, base+"refresh", admin, nil)
+	model := func(m string) map[string]any {
+		t.Helper()
+		for _, x := range e.call(http.MethodGet, "/v1/ai/connections/"+id+"/models", admin, nil).Body["models"].([]any) {
+			if x.(map[string]any)["model"] == m {
+				return x.(map[string]any)
+			}
+		}
+		t.Fatalf("%s is not listed", m)
+		return nil
+	}
+
+	e.problemIs(e.call(http.MethodPost, base+"allow", admin, map[string]any{"model": "m1"}), "allowAIConnectionModel", 409, aimodel.CodeNotProbed)
+	e.problemIs(e.call(http.MethodPost, base+"probe", admin, map[string]any{"model": "typed-by-hand"}), "probeAIConnectionModel", 404, CodeNotFound)
+	if p := e.call(http.MethodPost, base+"probe", admin, map[string]any{"model": "m1"}); p.Status != http.StatusOK ||
+		p.Body["probe"].(map[string]any)["ok"] != true || p.Body["allowed"] != false {
+		t.Fatalf("probing m1: %d %s", p.Status, p.Raw)
+	}
+	allow := e.call(http.MethodPost, base+"allow", admin, map[string]any{"model": "m1"})
+	e.problemIs(f.decide(admin, allow.str("id"), "approve", hashOf(allow)), "approveApproval", 403, approval.CodeOwnRequest)
+	if d := f.decide(owner, allow.str("id"), "approve", hashOf(allow)); d.Status != http.StatusOK {
+		t.Fatalf("approving m1: %d %s", d.Status, d.Raw)
+	}
+	if m := model("m1"); m["allowed"] != true {
+		t.Fatalf("m1 after approval: %v", m)
+	}
+	if r := e.call(http.MethodPost, base+"remove", admin, map[string]any{"model": "m1"}); r.Status != http.StatusOK || r.Body["allowed"] != false {
+		t.Fatalf("taking m1 off: %d %s", r.Status, r.Raw)
+	}
+
+	// m2 allowed, then refused by the provider: not callable and off the list; m3 allowed, then no longer listed: off.
+	for _, m := range []string{"m2", "m3"} {
+		e.call(http.MethodPost, base+"probe", admin, map[string]any{"model": m})
+		a := e.call(http.MethodPost, base+"allow", admin, map[string]any{"model": m})
+		if d := f.decide(owner, a.str("id"), "approve", hashOf(a)); d.Status != http.StatusOK {
+			t.Fatalf("approving %s: %d %s", m, d.Status, d.Raw)
+		}
+	}
+	models.refused["m2"] = true
+	if p := e.call(http.MethodPost, base+"probe", admin, map[string]any{"model": "m2"}); p.str("state") != "not_callable" || p.Body["allowed"] != false {
+		t.Fatalf("m2 refused: %s", p.Raw)
+	}
+	models.ids = []string{"m1", "m2"}
+	e.call(http.MethodPost, base+"refresh", admin, nil)
+	if m := model("m3"); m["allowed"] != false || m["state"] != "no_longer_listed" {
+		t.Fatalf("m3 no longer listed: %v", m)
+	}
+	e.problemIs(e.call(http.MethodPost, base+"allow", admin, map[string]any{"model": "m3"}), "allowAIConnectionModel", 409, aimodel.CodeNotProbed)
 }

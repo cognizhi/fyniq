@@ -44,7 +44,7 @@ func toDomain(ms []storage.AIModel) []aimodel.Model {
 	for _, m := range ms {
 		out = append(out, aimodel.Model{ID: m.Model, Name: m.Name, AliasOf: m.AliasOf, Created: m.Created, Shutdown: m.Shutdown,
 			ContextWindow: m.ContextWindow, MaxOutput: m.MaxOutput, Reports: m.Reports, FirstListed: m.FirstListed, LastListed: m.LastListed,
-			Listed: m.Listed, NotCallableAt: m.NotCallableAt})
+			Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed})
 	}
 	return out
 }
@@ -54,7 +54,7 @@ func fromDomain(connection uuid.UUID, ms []aimodel.Model) []storage.AIModel {
 	for _, m := range ms {
 		out = append(out, storage.AIModel{ConnectionID: connection, Model: m.ID, Name: m.Name, AliasOf: m.AliasOf, Created: m.Created,
 			Shutdown: m.Shutdown, ContextWindow: m.ContextWindow, MaxOutput: m.MaxOutput, Reports: m.Reports, FirstListed: m.FirstListed,
-			LastListed: m.LastListed, Listed: m.Listed, NotCallableAt: m.NotCallableAt})
+			LastListed: m.LastListed, Listed: m.Listed, NotCallableAt: m.NotCallableAt, Allowed: m.Allowed})
 	}
 	return out
 }

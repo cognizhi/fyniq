@@ -98,3 +98,23 @@ func TestTheListKeepsItselfCurrent(t *testing.T) {
 		t.Errorf("listed again: %d %+v %+v", added, kept[0], kept[2])
 	}
 }
+
+// A model on the allow-list leaves it by itself when a complete read no longer lists it, its shutdown date passes, or
+// the provider refuses it (AI-81); a partial read leaves it on.
+// req: AI-81
+// req: AI-72
+func TestTheAllowListKeepsOnlyCallableModels(t *testing.T) {
+	gone := now.Add(-time.Hour)
+	kept := []aimodel.Model{{ID: "a", Listed: true, Allowed: true, FirstListed: now}, {ID: "b", Listed: true, Allowed: true, FirstListed: now},
+		{ID: "c", Listed: true, Allowed: true, FirstListed: now}, {ID: "d", Listed: true, Allowed: true, FirstListed: now}}
+	refused := now
+	kept[3].NotCallableAt = &refused
+	out, _, _ := aimodel.Merge(kept, []ports.ListedModel{{ID: "a"}}, aimodel.Partial, now)
+	if !out[1].Allowed {
+		t.Error("a partial read took a model off")
+	}
+	out, _, _ = aimodel.Merge(kept, []ports.ListedModel{{ID: "a"}, {ID: "c", Shutdown: &gone}}, aimodel.Complete, now)
+	if !out[0].Allowed || out[1].Allowed || out[2].Allowed || out[3].Allowed {
+		t.Errorf("the allow-list after a complete read: %+v", out)
+	}
+}

@@ -251,6 +251,7 @@ var codeFacts = map[string]struct {
 	aipolicy.CodePolicy:           {422, "The data-class policy cannot send that class there"},
 	aipolicy.CodeNotAllowed:       {409, "The connection may not receive that class of data"},
 	aimodel.CodeListUnavailable:   {409, "The connection's model list has not been read whole"},
+	aimodel.CodeNotProbed:         {409, "The model has not been probed on this connection, or is no longer listed or callable"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
 	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},

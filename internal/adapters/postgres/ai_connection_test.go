@@ -171,6 +171,8 @@ func TestAttackTheAIConnectionKeepsItsRules(t *testing.T) {
 		{"a complete read with why it failed", "fyniq_api", `INSERT INTO fyniq.ai_model_list_read (connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at)
 		  SELECT id, 'refresh', 'complete', 1, 0, 0, 'x', 'user:x', now() FROM fyniq.ai_connection`, []string{"23514"}},
 		{"the AI reading the models", "fyniq_ai", `SELECT count(*) FROM fyniq.ai_model`, []string{"42501"}},
+		{"a model allowed unprobed", "fyniq_api", `UPDATE fyniq.ai_model SET allowed = true`, []string{"23514"}},
+		{"the worker passing a probe", "fyniq_worker", `UPDATE fyniq.ai_model SET probe_ok = true, probed_at = now()`, []string{"42501"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
 		wantState(t, x.what, err, x.states...)

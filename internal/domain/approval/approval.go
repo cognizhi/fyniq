@@ -291,6 +291,8 @@ const (
 	OpAIConnectionCredential = "ai_connection.credential"
 	// OpAIConnectionEnable switches it on (AI-72).
 	OpAIConnectionEnable = "ai_connection.enable"
+	// OpAIConnectionAllowModel puts a listed model the connection probed on its allow-list (AI-72, AI-80).
+	OpAIConnectionAllowModel = "ai_connection.allow_model"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
 )
@@ -340,6 +342,7 @@ var Operations = map[string]string{
 	OpAIConnectionCredential:   ObjectAIConnection,
 	OpAIConnectionEnable:       ObjectAIConnection,
 	OpAIDataPolicyChange:       ObjectAIDataPolicy,
+	OpAIConnectionAllowModel:   ObjectAIConnection,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
