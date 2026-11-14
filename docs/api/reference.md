@@ -10405,6 +10405,26 @@ A ledger entry with its lines and where it comes from (FR-UX-04, the Trace panel
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+### `POST /v1/metrics:query`
+
+**Query the semantic layer** (`queryMetrics`)
+
+A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll or a department is refused; by customer it needs a view of invoices, by vendor of bills.
+- **Request body:** [`MetricsQuery`](../../contracts/schemas/MetricsQuery.schema.json)
+- **Responses:**
+  - `200` OK [`MetricsResult`](../../contracts/schemas/MetricsResult.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger; `SEMANTIC-01` Not a measure of the semantic layer; `SEMANTIC-02` The measure is not split so; `SEMANTIC-03` The measure is not given at that grain; `SEMANTIC-04` Not a member of the dimension.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `REPORT-03`, `REPORT-04`, `SEMANTIC-01`, `SEMANTIC-02`, `SEMANTIC-03`, `SEMANTIC-04`
+
 ### `GET /v1/report-exports`
 
 **List my exports** (`listReportExports`)

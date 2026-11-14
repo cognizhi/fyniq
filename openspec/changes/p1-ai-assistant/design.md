@@ -109,6 +109,14 @@ AI-28).**
   version.
 - Limits per tool call (AI-04): a row cap (50), column allow-lists per record type, a statement timeout (5 s), and a
   token budget per result (a larger result is summarised by the tool, with the facts kept and the rest counted).
+- As built (task 2.1): `internal/semantic` and `POST /v1/metrics:query` (Reports, an unqualified view; by customer it also
+  needs a view of invoices, by vendor of bills). Organisation measures come from the KPIs' month figures (`kpi.Read`,
+  exact) and values (`kpi.Compute`, rounded by RND-KPI, so a KPI fact is the KPI page's); flows sum over the months,
+  stocks are at the last month's end, a KPI is one month's. `account_movement` and `account_balance` come from the trial
+  balance; receivables by customer and payables by vendor from the sub-ledgers at the last month's end, in the base
+  currency; revenue, gross profit, EBITDA, net profit and costs by department from the profit and loss's pivot, with a
+  fact for the lines with none. A fact's ID is a hash of what it is and the revision. The query saves nothing, so it is
+  exempt from Idempotency-Key and Prefer, and it is the one POST the assistant's token may call.
 
 **D7. Grounding and rendering (AI-08, AI-21, AI-69, AI-22).**
 - The model answers in a structured output: segments of text and references `{fact: F…}` or `{calc: …}`; it writes no

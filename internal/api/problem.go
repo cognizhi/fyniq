@@ -80,6 +80,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/semantic"
 )
 
 // Problem is an RFC 9457 problem details object (FR-INT-07): a stable code (the same codes as
@@ -270,6 +271,10 @@ var codeFacts = map[string]struct {
 	airoute.CodeRoute:             {422, "The route is not valid"},
 	airoute.CodeStep:              {422, "A step of the route cannot serve it"},
 	airoute.CodeAgent:             {404, "Not an agent of this release"},
+	semantic.CodeMeasure:          {422, "Not a measure of the semantic layer"},
+	semantic.CodeDimension:        {422, "The measure is not split so"},
+	semantic.CodeGrain:            {422, "The measure is not given at that grain"},
+	semantic.CodeMember:           {422, "Not a member of the dimension"},
 	airoute.CodeNoRoute:           {409, "The agent has no route"},
 	airoute.CodeUnhandled:         {422, "The route does not handle the call's data"},
 	airoute.CodeNoStep:            {409, "No step of the route can take the call"},

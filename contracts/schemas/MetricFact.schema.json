@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "An amount's currency: the base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "dimension": {
+      "examples": [
+        "customer"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The period's first day; a stock's date.",
+      "examples": [
+        "2026-07-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The fact's ID: an answer cites it, and platform code renders the figure from it (AI-08).",
+      "examples": [
+        "F3a9c0d1e2b4f5a6"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision it was read at (ENG-46).",
+      "examples": [
+        1204
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "lineage": {
+      "description": "The API path of the report it comes from.",
+      "examples": [
+        "/v1/reports/statements/pl?from=2026-07\u0026to=2026-09\u0026revision=1204"
+      ],
+      "type": "string"
+    },
+    "measure": {
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    },
+    "member": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "type": "string"
+    },
+    "member_name": {
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    },
+    "sign": {
+      "description": "How the value is signed.",
+      "examples": [
+        "what is owed, positive; a credit with the party, negative"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "What it is, in words.",
+      "examples": [
+        "the profit and loss's revenue"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The period's last day; a stock's date.",
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "undefined": {
+      "description": "Why the fact has no value: never 0.",
+      "examples": [
+        "no revenue in the month"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "enum": [
+        "amount",
+        "percent",
+        "months",
+        "ratio",
+        "days"
+      ],
+      "examples": [
+        "amount"
+      ],
+      "type": "string"
+    },
+    "value": {
+      "description": "Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.",
+      "examples": [
+        "125000.00"
+      ],
+      "type": "string"
+    },
+    "words": {
+      "description": "What stands for the value, such as Not burning.",
+      "examples": [
+        "Not burning"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "measure",
+    "name",
+    "unit",
+    "from",
+    "to",
+    "sign",
+    "ledger_revision",
+    "source",
+    "lineage"
+  ],
+  "title": "MetricFact",
+  "type": "object"
+}
