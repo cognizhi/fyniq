@@ -55,6 +55,23 @@ type ApprovalStep struct {
 	Users  []uuid.UUID `json:"users"`
 }
 
+// ApprovalRule is a rule of an approval policy (FR-APR-01, rev 0.178): its conditions and the steps a request that
+// matches them takes.
+type ApprovalRule struct {
+	Conditions ApprovalConditions `json:"conditions"`
+	Steps      []ApprovalStep     `json:"steps"`
+}
+
+// ApprovalConditions are a rule's conditions, each written out so the database compares them exactly: the amount at
+// or above which it holds, "" for none; and the departments (dimension values), accounts and vendors it names, empty
+// for none.
+type ApprovalConditions struct {
+	AmountAtLeast string      `json:"amount_at_least"`
+	Departments   []uuid.UUID `json:"departments"`
+	Accounts      []uuid.UUID `json:"accounts"`
+	Vendors       []uuid.UUID `json:"vendors"`
+}
+
 // ApprovalSignature is a signed approval or rejection: the electronic signature of §14.2 (FR-APR-03).
 type ApprovalSignature struct {
 	ID           uuid.UUID
@@ -124,7 +141,8 @@ type ApprovalPolicy struct {
 	ID         uuid.UUID
 	ObjectType string
 	Version    int
-	Steps      []ApprovalStep
+	Steps      []ApprovalStep // its default steps
+	Rules      []ApprovalRule // ordered: the first that matches a request decides its steps (rev 0.178)
 	RequestID  uuid.UUID
 	CreatedBy  uuid.UUID // who asked for it
 	CreatedAt  time.Time
@@ -135,6 +153,7 @@ type NewApprovalPolicy struct {
 	ObjectType string
 	Version    int
 	Steps      []ApprovalStep
+	Rules      []ApprovalRule
 	RequestID  uuid.UUID
 	CreatedBy  uuid.UUID
 	CreatedAt  time.Time
