@@ -3,8 +3,10 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 
@@ -142,5 +144,42 @@ func TestTheSearchFindsTheTextHoweverItsWordsFall(t *testing.T) {
 		if got := found(query); got != want {
 			t.Errorf("%q found it: %t, want %t", query, got, want)
 		}
+	}
+}
+
+// A search for text that more documents hold than a page reads the newest documents first and stops at a full page
+// (p1-operations-dr task 13.13): its page is the whole search's first page, in the same order. Here 22 journals say
+// "window rent": the search with no group (a page of 21) answers from the newest, and the search of journals alone (a
+// page of 101, which they do not fill) from the trigram indexes; the first 20 agree.
+// req: FR-UX-02
+// req: NFR-PERF-01
+func TestASearchForCommonTextReadsTheNewestFirst(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	for i := range 22 {
+		draft := e.draft("10.00")
+		draft["memo"] = fmt.Sprintf("Window rent %d", i)
+		draft["date"] = fmt.Sprintf("2026-10-%02d", 1+i)
+		if r := e.call(http.MethodPost, "/v1/journals", acc, draft); r.Status != http.StatusCreated {
+			t.Fatalf("createJournal = %d: %s", r.Status, r.Raw)
+		}
+	}
+	ids := func(query string) []any {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/search?q="+url.QueryEscape("window rent")+query, acc, nil)
+		if r.Status != http.StatusOK {
+			t.Fatalf("%q: %d %s", query, r.Status, r.Raw)
+		}
+		var out []any
+		for _, x := range r.Body["results"].([]any) {
+			if m := x.(map[string]any); m["group"] == "journals" {
+				out = append(out, m["id"])
+			}
+		}
+		return out
+	}
+	page, all := ids(""), ids("&group=journals")
+	if len(page) != 20 || len(all) != 22 || !slices.Equal(page, all[:20]) {
+		t.Fatalf("the newest first: %d %v; the whole search: %d %v", len(page), page, len(all), all)
 	}
 }

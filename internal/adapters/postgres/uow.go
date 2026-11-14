@@ -654,19 +654,52 @@ func (r documents) Search(ctx context.Context, f storage.DocumentSearch) ([]stor
 	if f.Text != "" {
 		needle = &f.Text
 	}
+	page := int32(min(max(f.Limit, 1), 1000)) // 1 to 1,000
+	if needle != nil && !f.Either && f.Min == nil && f.Max == nil {
+		// Text alone: the newest documents first; the whole search only when they do not fill the page and are not every
+		// document of the types (NFR-PERF-01).
+		recent, err := r.u.q.SearchRecentDocuments(ctx, sqlcdb.SearchRecentDocumentsParams{Types: types, Claimant: claimant,
+			WindowSize: searchWindow, Needle: f.Text, PageSize: page})
+		if err != nil {
+			return nil, mapError(err)
+		}
+		whole := len(recent) == int(page)
+		if !whole {
+			n, err := r.u.q.CountDocumentsOfTypes(ctx, sqlcdb.CountDocumentsOfTypesParams{Types: types, UpTo: searchWindow + 1})
+			if err != nil {
+				return nil, mapError(err)
+			}
+			whole = n <= searchWindow // the window held every document of the types
+		}
+		if whole {
+			rows := make([]sqlcdb.SearchDocumentsRow, len(recent))
+			for i, x := range recent {
+				rows[i] = sqlcdb.SearchDocumentsRow(x)
+			}
+			return documentHits(rows), nil
+		}
+	}
 	rows, err := r.u.q.SearchDocuments(ctx, sqlcdb.SearchDocumentsParams{Types: types, Claimant: claimant, Either: f.Either, Needle: needle, Words: likeWords(f.Text),
-		AmountMin: f.Min, AmountMax: f.Max, MinInclusive: f.MinInclusive, MaxInclusive: f.MaxInclusive,
-		PageSize: int32(min(max(f.Limit, 1), 1000))}) // 1 to 1,000
+		AmountMin: f.Min, AmountMax: f.Max, MinInclusive: f.MinInclusive, MaxInclusive: f.MaxInclusive, PageSize: page})
 	if err != nil {
 		return nil, mapError(err)
 	}
+	return documentHits(rows), nil
+}
+
+// searchWindow is how many of the newest documents a search for text alone reads before it asks the trigram indexes
+// (SearchRecentDocuments).
+const searchWindow = 1000
+
+// documentHits are a search's rows as hits.
+func documentHits(rows []sqlcdb.SearchDocumentsRow) []storage.DocumentHit {
 	out := make([]storage.DocumentHit, len(rows))
 	for i, row := range rows {
 		out[i] = storage.DocumentHit{Document: storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
 			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy), PostedBy: str(row.PostedBy),
 			PostedAt: row.PostedAt, Date: row.Date}, Party: row.Party, Amount: row.Amount, Currency: row.Currency}
 	}
-	return out, nil
+	return out
 }
 
 func (r documents) OfContact(ctx context.Context, contact uuid.UUID, limit int) ([]storage.Document, error) {
@@ -1011,6 +1044,29 @@ func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]
 	return out, r.linesOf(ctx, out, ids, at)
 }
 
+func (r ledger) EntriesOfPeriod(ctx context.Context, period uuid.UUID, afterRevision int64, limit int) ([]storage.Entry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if limit < 1 || limit > 10000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d entries", limit), Hint: "Ask for 1 to 10,000"}
+	}
+	rows, err := r.u.q.EntriesOfPeriodAfter(ctx, sqlcdb.EntriesOfPeriodAfterParams{PeriodID: period, AfterRevision: afterRevision,
+		PageSize: int32(limit)}) // #nosec G115 -- 1 to 10,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Entry, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	at := make(map[uuid.UUID]int, len(rows))
+	for _, x := range rows {
+		at[x.ID] = len(out)
+		ids = append(ids, x.ID)
+		out = append(out, toEntry(sqlcdb.GetEntryRow(x)))
+	}
+	return out, r.linesOf(ctx, out, ids, at)
+}
+
 // linesOf reads the lines of entries out, whose IDs are ids, at out's index at, in one query.
 func (r ledger) linesOf(ctx context.Context, out []storage.Entry, ids []uuid.UUID, at map[uuid.UUID]int) error {
 	if len(ids) == 0 {
@@ -1034,6 +1090,32 @@ func (r ledger) OfSourceType(ctx context.Context, sourceType string) ([]storage.
 		return nil, err
 	}
 	rows, err := r.u.q.EntriesOfSourceType(ctx, sourceType)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Entry, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	at := make(map[uuid.UUID]int, len(rows))
+	for _, x := range rows {
+		at[x.ID] = len(out)
+		ids = append(ids, x.ID)
+		out = append(out, toEntry(sqlcdb.GetEntryRow(x)))
+	}
+	return out, r.linesOf(ctx, out, ids, at)
+}
+
+func (r ledger) OfSources(ctx context.Context, sourceIDs []uuid.UUID) ([]storage.Entry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if len(sourceIDs) == 0 {
+		return nil, nil
+	}
+	sources := make([]string, len(sourceIDs))
+	for i, id := range sourceIDs {
+		sources[i] = id.String()
+	}
+	rows, err := r.u.q.EntriesOfSources(ctx, sources)
 	if err != nil {
 		return nil, mapError(err)
 	}

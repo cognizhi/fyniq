@@ -379,6 +379,11 @@ By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250 t
   116 ms, posting 40 ms, a 10,000-line import 29 s and a 1 M-line export 2m57s.
 - Building also found that the local stack's services shared no data directory (each its own tmpfs and keys): they
   share one volume now. The local restore drill runs only when asked, since its copy stops the database's connections.
+- At 10 M lines the checks' refreshes stacked up and each walked the ledger, a search for a common word read every
+  document, and a bank line's match read a busy account's fortnight: one refresh runs at a time, a month's cash flow
+  and the evidence check read their pages, a search reads the newest documents first, and the match its amount's
+  lines (migration 000323). The local 10 M-line run met every gated budget: reads 14 ms, reports 150 ms, posting 30 ms,
+  a 10,000-line import 24 s and a 1 M-line export 38 s; the 1 M-line run again, reads 11 ms and the import 12 s.
 
 One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists, with
 whether GitHub's runners hold the 10 M-line run `[verify]`.

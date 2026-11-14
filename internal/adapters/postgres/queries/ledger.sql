@@ -69,7 +69,7 @@ LIMIT sqlc.arg(row_limit);
 
 -- name: AccountLinesWithAmount :many
 -- AccountLines in a currency of exactly an amount (NFR-PERF-04): what a bank line may be the money of, on the account's
--- index by the line's own date.
+-- lines of that amount by date (journal_line_account_amount), however busy the account.
 SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
        e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
        coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
@@ -109,6 +109,16 @@ WHERE ledger_revision > sqlc.arg(after_revision)
 ORDER BY ledger_revision
 LIMIT sqlc.arg(page_size);
 
+-- name: EntriesOfPeriodAfter :many
+-- A period's entries after a ledger revision, in revision order, a page at a time, without their lines (LinesOfEntries
+-- reads them), on journal_entry_period_revision: a month's cash flow reads its month alone (NFR-PERF-02, INV-11).
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE period_id = sqlc.arg(period_id) AND ledger_revision > sqlc.arg(after_revision)
+ORDER BY ledger_revision
+LIMIT sqlc.arg(page_size);
+
 -- name: EntriesOfSourceType :many
 -- Every entry of a source type, in revision order, without their lines (LinesOfEntries reads them), on
 -- journal_entry_source_type (NFR-PERF-02).
@@ -126,6 +136,15 @@ FROM fyniq.journal_line l
 LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
 WHERE l.entry_id = ANY(sqlc.arg(entry_ids)::uuid[])
 ORDER BY l.entry_id, l.line_no;
+
+-- name: EntriesOfSources :many
+-- Every entry naming one of the source documents, reversals included, in revision order, without their lines
+-- (LinesOfEntries reads them), on journal_entry_source_idx: a page of documents' entries at once (NFR-PERF-01).
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_id = ANY(sqlc.arg(source_ids)::text[])
+ORDER BY ledger_revision;
 
 -- name: EntryIDsOfSource :many
 -- Every entry naming a source document, reversals included, in revision order: an asset's months of depreciation.

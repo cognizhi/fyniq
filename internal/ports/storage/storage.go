@@ -298,6 +298,9 @@ type Ledger interface {
 	// Entries are the entries posted after a ledger revision, in revision order, with their lines, at most limit: the
 	// replay walks them a page at a time (ENG-06, QA-ENG-06).
 	Entries(ctx context.Context, afterRevision int64, limit int) ([]Entry, error)
+	// EntriesOfPeriod are a period's entries posted after a ledger revision, in revision order, with their lines, at most
+	// limit: a month's cash flow reads its month alone, not the whole ledger (NFR-PERF-02, INV-11).
+	EntriesOfPeriod(ctx context.Context, period uuid.UUID, afterRevision int64, limit int) ([]Entry, error)
 	// ByIdentity returns the entry posted with a posting identity. When the purge after retention removed it (AUD-10),
 	// it returns its document's carry-forward instead, marked by Carries.
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
@@ -321,6 +324,9 @@ type Ledger interface {
 	// OfSource are every entry naming a source document by its ID, reversals included, in revision order, with their
 	// lines: an asset's months of depreciation (FR-FA-02). After a purge, a document's carry-forward is among them.
 	OfSource(ctx context.Context, sourceID uuid.UUID) ([]Entry, error)
+	// OfSources are OfSource's entries for many source documents at once, in revision order: a page of documents' entries
+	// in two reads, not three an entry (NFR-PERF-01).
+	OfSources(ctx context.Context, sourceIDs []uuid.UUID) ([]Entry, error)
 	// PurgedOfSource are the tombstones of a source document's postings the purge after retention removed (AUD-10), in
 	// the order they were posted: what says that its postings were purged.
 	PurgedOfSource(ctx context.Context, sourceID uuid.UUID) ([]PurgedPosting, error)

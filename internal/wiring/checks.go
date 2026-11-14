@@ -3,6 +3,7 @@ package wiring
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -30,7 +31,24 @@ func (k *Kit) Checks(clock ports.Clock) checks.Runner {
 func (k *Kit) CheckKinds(clock ports.Clock) map[string]func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 	r := k.Checks(clock)
 	return map[string]func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error{
-		checks.RefreshKind: func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {
+		checks.RefreshKind: func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+			// One refresh at a time: while one that took its lease first runs, this one waits a minute and is delivered
+			// again, so a burst of changes on a large ledger never stacks refreshes up (NFR-PERF-01; p1-operations-dr task
+			// 13.13). A row without a lease waits behind any that runs.
+			until := clock.Now().Add(24 * time.Hour)
+			if row.LeaseUntil != nil {
+				until = *row.LeaseUntil
+			}
+			var ahead *storage.OutboxRow
+			if err := k.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+				ahead, err = u.Outbox().Ahead(ctx, checks.RefreshKind, row.ID, until, clock.Now())
+				return err
+			}); err != nil {
+				return err
+			}
+			if ahead != nil {
+				return outbox.Held{For: checks.Pace, Reason: "another refresh of the checks is running"}
+			}
 			_, err := r.Paced(ctx, org) // at most once a minute through a burst of changes
 			return err
 		},

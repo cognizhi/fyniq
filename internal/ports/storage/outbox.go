@@ -75,6 +75,10 @@ type Outbox interface {
 	// Work that a burst of changes would ask for many times is asked for once while a row waits (the checks' refresh,
 	// FR-CTL-01), and a request that joins it names that row (FR-INT-11).
 	Waiting(ctx context.Context, kind string) (*OutboxRow, error)
+	// Ahead is a row of a kind that runs under a lease not expired at now and took it before row did: its lease ends
+	// first, or at the same time with a lower ID. nil when none does. Work that must not overlap itself, such as the
+	// checks' refresh, waits while a row ahead of it runs, so of rows delivered together the first runs (NFR-PERF-01).
+	Ahead(ctx context.Context, kind string, row uuid.UUID, leaseUntil, now time.Time) (*OutboxRow, error)
 	// MarkDispatched records the task a row was sent as, and when it is overdue.
 	MarkDispatched(ctx context.Context, id uuid.UUID, taskName string, deadline time.Time) error
 	// Lease gives the row to holder until until, counting an attempt. ok is false when the row is

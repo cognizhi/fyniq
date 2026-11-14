@@ -235,7 +235,7 @@ type AccountLinesWithAmountRow struct {
 }
 
 // AccountLines in a currency of exactly an amount (NFR-PERF-04): what a bank line may be the money of, on the account's
-// index by the line's own date.
+// lines of that amount by date (journal_line_account_amount), however busy the account.
 func (q *Queries) AccountLinesWithAmount(ctx context.Context, arg AccountLinesWithAmountParams) ([]AccountLinesWithAmountRow, error) {
 	rows, err := q.db.Query(ctx, accountLinesWithAmount,
 		arg.AccountID,
@@ -357,6 +357,71 @@ func (q *Queries) EntriesAfter(ctx context.Context, arg EntriesAfterParams) ([]E
 	return items, nil
 }
 
+const entriesOfPeriodAfter = `-- name: EntriesOfPeriodAfter :many
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE period_id = $1 AND ledger_revision > $2
+ORDER BY ledger_revision
+LIMIT $3
+`
+
+type EntriesOfPeriodAfterParams struct {
+	PeriodID      uuid.UUID
+	AfterRevision int64
+	PageSize      int32
+}
+
+type EntriesOfPeriodAfterRow struct {
+	ID              uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	PeriodID        uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	RuleVersion     string
+	ReversesEntryID *uuid.UUID
+	Memo            *string
+	RecordedAt      time.Time
+}
+
+// A period's entries after a ledger revision, in revision order, a page at a time, without their lines (LinesOfEntries
+// reads them), on journal_entry_period_revision: a month's cash flow reads its month alone (NFR-PERF-02, INV-11).
+func (q *Queries) EntriesOfPeriodAfter(ctx context.Context, arg EntriesOfPeriodAfterParams) ([]EntriesOfPeriodAfterRow, error) {
+	rows, err := q.db.Query(ctx, entriesOfPeriodAfter, arg.PeriodID, arg.AfterRevision, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EntriesOfPeriodAfterRow
+	for rows.Next() {
+		var i EntriesOfPeriodAfterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.PeriodID,
+			&i.PostingIdentity,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.RuleVersion,
+			&i.ReversesEntryID,
+			&i.Memo,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const entriesOfSourceType = `-- name: EntriesOfSourceType :many
 SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
        source_version, rule_version, reverses_entry_id, memo, recorded_at
@@ -391,6 +456,64 @@ func (q *Queries) EntriesOfSourceType(ctx context.Context, sourceType string) ([
 	var items []EntriesOfSourceTypeRow
 	for rows.Next() {
 		var i EntriesOfSourceTypeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.PeriodID,
+			&i.PostingIdentity,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.RuleVersion,
+			&i.ReversesEntryID,
+			&i.Memo,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const entriesOfSources = `-- name: EntriesOfSources :many
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_id = ANY($1::text[])
+ORDER BY ledger_revision
+`
+
+type EntriesOfSourcesRow struct {
+	ID              uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	PeriodID        uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	RuleVersion     string
+	ReversesEntryID *uuid.UUID
+	Memo            *string
+	RecordedAt      time.Time
+}
+
+// Every entry naming one of the source documents, reversals included, in revision order, without their lines
+// (LinesOfEntries reads them), on journal_entry_source_idx: a page of documents' entries at once (NFR-PERF-01).
+func (q *Queries) EntriesOfSources(ctx context.Context, sourceIds []string) ([]EntriesOfSourcesRow, error) {
+	rows, err := q.db.Query(ctx, entriesOfSources, sourceIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EntriesOfSourcesRow
+	for rows.Next() {
+		var i EntriesOfSourcesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.LedgerRevision,

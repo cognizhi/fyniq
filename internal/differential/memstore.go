@@ -108,6 +108,16 @@ func (l memLedger) Entries(_ context.Context, after int64, limit int) ([]storage
 	return out, nil
 }
 
+func (l memLedger) EntriesOfPeriod(_ context.Context, period uuid.UUID, after int64, limit int) ([]storage.Entry, error) {
+	var out []storage.Entry
+	for _, e := range l.m.entries {
+		if e.PeriodID == period && e.LedgerRevision > after && len(out) < limit {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
 func (l memLedger) Revision(context.Context) (int64, error) { return int64(len(l.m.entries)), nil }
 
 func (l memLedger) AccountLinesAfter(ctx context.Context, account uuid.UUID, from, to time.Time, after *storage.LineKey,

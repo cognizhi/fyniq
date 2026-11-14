@@ -1,6 +1,7 @@
 package financials
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -121,6 +122,7 @@ type flow struct {
 	paidOut, paidIn                           money.Money            // investing
 	financed                                  map[string]money.Money // by cash-flow line
 	nonCash                                   []NonCash
+	nonCashRevisions                          []int64         // each non-cash transaction's entry's revision, for sortNonCash
 	others                                    map[string]bool // the accounts behind other
 	cashStart, cashEnd                        money.Money
 	equityStart, equityEnd                    money.Money
@@ -128,6 +130,21 @@ type flow struct {
 	sharesNonCash                             money.Money // shares issued for non-cash consideration (D14)
 	// nonCashIssues are the register's issues for non-cash consideration, by ID: the entries their shares came from.
 	nonCashIssues map[string]bool
+}
+
+// sortNonCash puts the non-cash transactions in their entries' revision order, which a walk month by month loses.
+func (f *flow) sortNonCash() {
+	at := make([]int, len(f.nonCash))
+	for i := range at {
+		at[i] = i
+	}
+	slices.SortStableFunc(at, func(a, b int) int { return cmp.Compare(f.nonCashRevisions[a], f.nonCashRevisions[b]) })
+	sorted := make([]NonCash, len(at))
+	revisions := make([]int64, len(at))
+	for i, j := range at {
+		sorted[i], revisions[i] = f.nonCash[j], f.nonCashRevisions[j]
+	}
+	f.nonCash, f.nonCashRevisions = sorted, revisions
 }
 
 func newFlow(base money.Currency) *flow {
@@ -187,7 +204,18 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 		out[i] = newFlow(base)
 		out[i].nonCashIssues = nonCash
 	}
-	err = balance.EachEntry(ctx, u, r.Revision, func(e storage.Entry) error {
+	// The columns' months alone, not the whole ledger (p1-operations-dr task 13.13): month by month, so the non-cash
+	// transactions are put back in revision order after.
+	var periods []uuid.UUID
+	for _, p := range r.All {
+		for i := range cols {
+			if inColumn[i][p.ID] {
+				periods = append(periods, p.ID)
+				break
+			}
+		}
+	}
+	err = balance.EachEntryIn(ctx, u, periods, r.Revision, func(e storage.Entry) error {
 		for i := range cols {
 			if !inColumn[i][e.PeriodID] {
 				continue
@@ -203,6 +231,7 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 	}
 	at := balance.At(r.Revision)
 	for i, c := range cols {
+		out[i].sortNonCash()
 		first := index[c.Periods[0].ID]
 		if first > 0 {
 			start, err := balance.PositionAt(ctx, u, base, at, r.All, r.All[first-1])
@@ -481,6 +510,7 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 		if e.Source.Type == ledger.SourceShareIssue && !f.nonCashIssues[e.Source.ID] { // a cash issue, paid in earlier (rev 0.207)
 			label = "Allotted from share application monies"
 		}
+		f.nonCashRevisions = append(f.nonCashRevisions, e.LedgerRevision)
 		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: label,
 			Entry: e.ID, Section: section})
 	case act == investing && cashOf.Sign() < 0:

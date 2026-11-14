@@ -149,10 +149,19 @@ module tests on mock providers and tagged `[live-verify]`.
 - [x] 13.12 The balance sheet's movement in equity read from balances and the equity accounts' lines, not every entry.
   `// req: NFR-PERF-02`, `// req: INV-11` The full differential agrees with the oracle; balance sheet p95 118 ms at 1 M
   lines (from 1.9 s).
-- [ ] 13.13 At 10 M lines the harness exports a 1 M-line range (NFR-PERF-05's size); the local 1 M and 10 M runs meet
+- [x] 13.13 At 10 M lines the harness exports a 1 M-line range (NFR-PERF-05's size); the local 1 M and 10 M runs meet
   every gated budget. `// req: QA-PERF-01` Building found the local stack's services each kept their own data directory
   in a 64 MB tmpfs: an export of 1 M lines did not fit, a file one service wrote the other could not read, and each made
   its own keys. They now share a volume, and a key is made once (`loadOrCreateSeed`). The 1 M run met every gated budget.
+  The 10 M run then missed the reads (p95 10 s), the import (6m23s) and the export (more than 6 minutes): eighteen
+  refreshes of the checks ran at once, each laying every open month's cash flow by walking the whole ledger and reading
+  each posted journal's entries one by one for the evidence check; a search for a word in every document read them all;
+  and a bank line's match read a busy account's 15 days of lines. Now a refresh waits while one ahead of it runs
+  (`outbox.Held`, `Outbox().Ahead`), a month's cash flow reads its month (`EntriesOfPeriod`), the evidence check a page
+  of journals and their entries at once (`OfSources`), a search the newest documents first, and the match its amount's
+  lines (migration 000323). The 10 M run met every gated budget: reads p95 14 ms, reports 150 ms, posting 30 ms, a
+  10,000-line import 24 s, a 1 M-line export 38 s; a refresh of the checks took 3m03s (from 9m43s). The 1 M run again:
+  reads 11 ms, reports 106 ms, posting 25 ms, the import 12 s, the export 16 s.
 
 ## Workflow follow-up
 

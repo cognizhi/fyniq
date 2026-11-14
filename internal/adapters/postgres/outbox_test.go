@@ -344,3 +344,63 @@ func TestHeldWorkSpendsNoAttempt(t *testing.T) {
 		t.Fatalf("held three times, then run: %+v after %d runs", got, runs.Load())
 	}
 }
+
+// Work held for a wait of its own is delivered again after that wait, not HoldFor, and spends no attempt; Ahead names
+// the row of its kind that runs under a live lease taken first (here at the same time, with a lower ID), never the row
+// asking, and none once that row finished. So the checks' refresh runs one at a time (p1-operations-dr task 13.13).
+// req: NFR-PERF-01
+// req: FR-CTL-01
+func TestWorkHeldForItsOwnWaitWhileAnotherOfItsKindRuns(t *testing.T) {
+	b := books(t, "Held while another runs Pte Ltd")
+	worker := store(t, "fyniq_worker")
+	var h *harness
+	var runs atomic.Int32
+	h = newHarness(t, map[string]outbox.Work{
+		"test.serial": func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+			if row.BusinessKey == "fails" {
+				return errors.New("this row fails, so it can be leased by hand")
+			}
+			var other *storage.OutboxRow
+			if err := worker.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+				other, err = u.Outbox().Ahead(ctx, "test.serial", row.ID, *row.LeaseUntil, h.clock.Now())
+				return err
+			}); err != nil {
+				return err
+			}
+			if other != nil {
+				return outbox.Held{For: time.Minute, Reason: "another runs"}
+			}
+			runs.Add(1)
+			return nil
+		},
+	})
+	first := h.enqueue(t, b.Org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "test.serial", BusinessKey: "fails", MaxAttempts: 10})
+	now := h.clock.Now()
+	if err := worker.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, ok, err := u.Outbox().Lease(ctx, first.ID, "worker-2", now, now.Add(10*time.Minute))
+		if err == nil && !ok {
+			err = errors.New("the failed row could not be leased")
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second := h.enqueue(t, b.Org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "test.serial"})
+	got := outboxRow(t, b.Org, second.ID)
+	if got.State != storage.OutboxDispatched || got.Attempts != 1 || got.MaxAttempts != 6 || got.Deadline == nil ||
+		!got.Deadline.Equal(now.Add(time.Minute)) || runs.Load() != 0 {
+		t.Fatalf("held while another runs: %+v after %d runs; want dispatched again in a minute", got, runs.Load())
+	}
+	if err := worker.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Outbox().Finish(ctx, first.ID, "worker-2", storage.OutboxDone, "")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	token, _ := h.tokens.Token("worker")
+	if code := h.deliver(t, "worker", token, b.Org, second.ID); code != http.StatusOK {
+		t.Fatalf("the delivery after the other finished: %d", code)
+	}
+	if got := outboxRow(t, b.Org, second.ID); got.State != storage.OutboxDone || runs.Load() != 1 {
+		t.Fatalf("after the other finished: %+v after %d runs; want done after one", got, runs.Load())
+	}
+}
