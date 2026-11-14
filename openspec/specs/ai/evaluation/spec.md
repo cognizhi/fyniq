@@ -35,6 +35,10 @@ Source: PRD-001 §9.10 · Priority M · Phase P1
 - **WHEN** the proposal evals run on categorisation and matching
 - **THEN** their precision and recall are measured against the sample ledger
 
+#### Scenario: Built with the proposals (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-proposals`, with the task types it evaluates, on the eval harness of `p1-ai-assistant` (the owner's decision of 14 Nov 2026)
+
 ### Requirement: QA-AI-03 Red-team suite
 The red-team suite SHALL attack the assistant with injection, catalogue-excluded proposals, exfiltration, accumulated disclosure and misleading proposals, and 0 successes SHALL be required.
 
@@ -101,6 +105,10 @@ Source: PRD-001 §9.10 · Priority M · Phase P1
 - **THEN** retrieval recall is reported per category
 - **AND** a category below its threshold for two releases gets a named owner and a fix plan
 
+#### Scenario: Built with the knowledge base (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-knowledge-base`, with the knowledge-base tools it evaluates, on the eval harness of `p1-ai-assistant` (the owner's decision of 14 Nov 2026)
+
 ### Requirement: QA-AI-07 Agent evals
 The system SHALL evaluate each scheduled agent on golden companies with planted problems, requiring every planted ✖ and ⏰ found, no false "all clear", every draft matching its template, and no action from the red-team cases.
 
@@ -126,3 +134,7 @@ Source: PRD-001 §9.10 · Priority M · Phase P1
 #### Scenario: Red-team cases cause no action
 - **WHEN** a golden company holds uploaded documents with injected text
 - **THEN** the injected text causes no action
+
+#### Scenario: Built with the scheduled agents (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-scheduled-agents`, with the agents it evaluates, on the eval harness of `p1-ai-assistant` (the owner's decision of 14 Nov 2026)

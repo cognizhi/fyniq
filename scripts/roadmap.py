@@ -75,7 +75,7 @@ ch("p1-compliance-center", F1, 5, "The control dashboard, attestations, the risk
 ch("p1-pdpa-retention", F1, 5, "The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding", ["p1-documents-evidence", "p1-audit-explorer"], "—", "Counsel confirms before payroll data is loaded (Q39)", "Security (#4)", "Launch (before payroll data)")
 # Wave 6: AI and MCP (security boundary)
 ch("p1-ai-providers", F1, 6, "One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources", ["p1-connector-framework"], "Replay mode offline; live local tests through DEV-09's adapters or an API key", "A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09)", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
-ch("p1-ai-assistant", F1, 6, "On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, guardrails against the OWASP LLM risks, the eval suites, Ask, explain and simulate", ["p1-ai-providers", "p1-reports"], "Evals in replay; live runs with the local AI provider", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
+ch("p1-ai-assistant", F1, 6, "On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, numeric grounding and the calculator, guardrails against the OWASP LLM risks, the eval harness with the golden questions and the red team, Ask, explain and simulate", ["p1-ai-providers", "p1-reports"], "Evals in replay; live runs with the local AI provider", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
 ch("p1-knowledge-base", F1, 6, "The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing", ["p1-ai-assistant"], "—", "—", "Security (#4)", "After go-live")
 ch("p1-ai-proposals", F1, 6, "The proposal principles, the task catalogue of Appendix E, approval of AI work, numeric grounding, idempotent execution through the executor, undo, kill switches and budgets, the red-team cases", ["p1-ai-assistant", "p1-approval-engine"], "—", "—", "Security (#4)", "After go-live")
 ch("p1-mcp-first-party", F1, 6, "The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01", ["p1-ai-proposals"], "Option (b) with a local key; Cloud KMS at the cloud gate", "Security review #4", "Security (#4)", "After go-live")
@@ -216,6 +216,11 @@ BY_ID.update({
     # The owner's decision of 13 Nov 2026 (PRD-001 rev 0.275): with the AI at launch, its activity log and kill switch
     # come with the model calls they record and stop, ahead of the proposals.
     "AI-12": "p1-ai-providers", "AI-13": "p1-ai-providers",
+    # The owner's decisions of 14 Nov 2026 (PRD-001 rev 0.277): each eval suite is built with what it evaluates, and the
+    # rules the assistant rests on are built with it, their proposal parts filling in with p1-ai-proposals.
+    "QA-AI-02": "p1-ai-proposals", "QA-AI-06": "p1-knowledge-base", "QA-AI-07": "p1-scheduled-agents",
+    "AI-P1": "p1-ai-assistant", "AI-P2": "p1-ai-assistant", "AI-P6": "p1-ai-assistant", "AI-P7": "p1-ai-assistant",
+    "AI-P8": "p1-ai-assistant", "AI-08": "p1-ai-assistant",
     "CTL-MCP-01": "p1-mcp-first-party", "CTL-MCP-02": "p1-mcp-first-party", "CTL-MCP-03": "p1-mcp-first-party",
     "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
     "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
@@ -264,6 +269,8 @@ TITLE = [
     ("ledger/posting-rules", r"Payment-provider", "p1-payment-providers"),
     ("ledger/posting-rules", r"GST codes", "p1-gst"),
     ("data/backup-and-recovery", r"^Retention of AI conversations", "p1-ai-assistant"),  # rev 0.245: built with the conversations
+    ("ai/proposals", r"^The orchestrator holds no write credential", "p1-ai-assistant"),  # rev 0.277: built with the assistant
+    ("ai/guardrails", r"^External agents and MCP clients", "p1-mcp-first-party"),  # rev 0.277: built with the MCP server
     ("data/backup-and-recovery", r"^Retention|Personal data in immutable|Shredded keys", "p1-pdpa-retention"),
     ("data/migration", r"Parallel run|Go-live and workbook", "p1-go-live"),
     ("data/audit-trail", r"Database and platform logs", "p1-operations-dr"),

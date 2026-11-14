@@ -18,6 +18,10 @@ Source: PRD-001 §9.1
 - **WHEN** the AI answers with figures
 - **THEN** each figure is cited
 
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+
 ### Requirement: AI-P2 AI never changes data directly
 The AI SHALL never change data directly: it SHALL have no write path to the ledger, documents, settings or users.
 
@@ -39,6 +43,10 @@ Source: PRD-001 §9.1
 - **GIVEN** an AI that uses an `integration` credential
 - **WHEN** it acts
 - **THEN** it is bounded by that client's scopes and approval policies (AI-34)
+
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
 
 ### Requirement: AI-P3 Every change the AI wants is a catalogue proposal
 Every change the AI wants SHALL be a proposal of a type from the approved task catalogue, and anything not in the catalogue SHALL NOT be proposable.
@@ -96,6 +104,10 @@ Source: PRD-001 §9.1
 - **WHEN** the AI gives an answer
 - **THEN** the numeric grounding check (AI-08) runs on it
 
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+
 ### Requirement: AI-P7 Untrusted content stays data
 Bank descriptions, emails, uploaded documents and web content SHALL never instruct the assistant: untrusted content SHALL stay data.
 
@@ -110,6 +122,10 @@ Source: PRD-001 §9.1
 - **WHEN** it leads the AI to want a change
 - **THEN** the change can still only be a catalogue proposal that a human approves
 
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+
 ### Requirement: AI-P8 Everything the AI does is audited
 Everything the AI does SHALL be audited and visible to the user (their own) and to the Owner and Compliance (all).
 
@@ -119,6 +135,11 @@ Source: PRD-001 §9.1
 - **WHEN** the AI does anything
 - **THEN** it is recorded in the AI activity log (AI-12)
 - **AND** the user sees their own records, and the Owner and Compliance see all of them
+
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+- **AND** its proposals' parts fill in with `p1-ai-proposals`
 
 ### Requirement: Proposal lifecycle
 A proposal SHALL move through the states Draft, Invalid, Pending, Approved, Rejected, Expired, Superseded, Executing, Executed, Stale and Failed, by the transitions below only.
@@ -315,6 +336,11 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** the assistant answers
 - **THEN** the answer says which part it could not establish and gives no figure for it
 - **AND** the reused figure keeps its fact ID or is read again
+
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+- **AND** the grounding of proposal summaries fills in with `p1-ai-proposals`
 
 ### Requirement: AI-09 Two approvers for tier 3
 Tier 3 task types SHALL need two different human approvers, in every team mode.
@@ -548,6 +574,16 @@ Source: PRD-001 §9.3
 - **THEN** it validates them against the catalogue's schema and the domain validators
 - **AND** performs a dry run (the domain command in a rolled-back transaction or a pure simulation)
 - **AND** stores the proposal with its computed impact
+
+#### Scenario: Reached and metered through the API (rev 0.277)
+- **WHEN** a person asks the assistant something
+- **THEN** the browser calls the `api` service, which authenticates the session, admits the turn and hands it to the orchestrator with a short-lived, audience-bound, read-only delegated token for that person, never the session itself
+- **AND** the orchestrator's model calls go through the `api` service's model router, which holds the provider keys and meters each call, so the orchestrator calls no provider and holds no secret
+
+#### Scenario: Built with the assistant (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-ai-assistant`, ahead of go-live, since the assistant launches and rests on it (the owner's decision of 14 Nov 2026)
+- **AND** the proposal service it hands output to fills in with `p1-ai-proposals`
 
 ### Requirement: The executor runs approved proposals as the approving human
 A separate proposal executor identity SHALL run only approved proposals, re-validate them against current data, check the dry run's base versions, and execute the frozen payload as the approving human, with the AI recorded as originator.
