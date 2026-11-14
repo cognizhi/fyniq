@@ -67,7 +67,9 @@ describe("Forecast", () => {
     expect(tile.querySelector(".fy-tile__value")!.textContent).toBe("7 months");
     expect(within(tile).getByText("With it: 12+ months")).toBeTruthy();
     expect(within(document.querySelector('[data-forecast="cash-out"]') as HTMLElement).getByText("Jul 2027")).toBeTruthy();
-    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("FY2027 plan");
+    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("FY2027 plan"); // a draft's plan is open
+    expect(screen.getByRole("button", { name: "Hide the plan" })).toBeTruthy();
+    expect(runway.compareDocumentPosition(screen.getByRole("heading", { name: "Plan" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect((screen.getByLabelText("Other expenses 1: What it is") as HTMLInputElement).value).toBe("Rent");
     expect((screen.getByLabelText("Worst: Hiring delay (months)") as HTMLInputElement).value).toBe("3");
     const compare = screen.getByRole("table", { name: /Every scenario's key results/ });
@@ -75,6 +77,27 @@ describe("Forecast", () => {
     fireEvent.click(screen.getByRole("button", { name: "Worst" }));
     expect(await screen.findByRole("img", { name: /Cash by month, Worst/ })).toBeTruthy();
     await noViolations(document.body);
+  });
+
+  // req: FR-PLN-03
+  it("puts the results first, and folds a recorded forecast's plan until asked (rev 0.247)", async () => {
+    answer({
+      "GET /v1/forecasts": { status: 200, body: { items: [{ id, status: "recorded", version: 2, plan }] } },
+      [`GET /v1/forecasts/${id}`]: { status: 200, body: { id, status: "recorded", version: 2, plan }, headers: { ETag: `"2-posted"` } },
+      [`GET /v1/forecasts/${id}/results`]: { status: 200, body: results },
+    });
+    renderPage(Forecast, { path: "/planning/forecast", session: accountant, mode: "expert" });
+    const runway = await screen.findByText("Runway, without the funding planned");
+    const planHeading = screen.getByRole("heading", { name: "Plan" });
+    expect(runway.compareDocumentPosition(planHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const toggle = screen.getByRole("button", { name: "Show the plan it was worked out from" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull(); // folded: hidden from everyone, assistive technology too
+    await noViolations(document.body);
+    fireEvent.click(toggle);
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("FY2027 plan");
+    expect(screen.getByLabelText("Name").matches(":disabled")).toBe(true); // a recorded plan is read-only
+    expect(screen.getByRole("button", { name: "Hide the plan" }).getAttribute("aria-expanded")).toBe("true");
   });
 
   it("saves a draft with its ETag and records it", async () => {
