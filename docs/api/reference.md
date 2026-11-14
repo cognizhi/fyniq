@@ -15392,12 +15392,12 @@ Asks a question in one of the caller's own conversations, with what it is about 
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `AI-ROUTER-05` The AI is switched off.
+  - `409` Conflict: `AI-LIMIT-03` The conversation is full; `AI-ROUTER-05` The AI is switched off.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
-  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `429` Too Many Requests: `AI-LIMIT-01` Too many questions a minute; `AI-LIMIT-02` Too many questions today; `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `AI-ASSISTANT-02` The AI service did not answer.
-- **Error codes:** `AI-ASSISTANT-01`, `AI-ASSISTANT-02`, `AI-ROUTER-05`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+- **Error codes:** `AI-ASSISTANT-01`, `AI-ASSISTANT-02`, `AI-LIMIT-01`, `AI-LIMIT-02`, `AI-LIMIT-03`, `AI-ROUTER-05`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
 ## Import
 

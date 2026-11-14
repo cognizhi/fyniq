@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,12 +43,22 @@ type AssistantService struct {
 
 // The codes of the assistant's refusals.
 const (
-	CodeAIPersonOnly = "AI-ASSISTANT-01" // only a person signed in asks the assistant
-	CodeAIService    = "AI-ASSISTANT-02" // the AI service is not reachable, or did not finish
+	CodeAIPersonOnly        = "AI-ASSISTANT-01" // only a person signed in asks the assistant
+	CodeAIService           = "AI-ASSISTANT-02" // the AI service is not reachable, or did not finish
+	CodeAIPerMinute         = "AI-LIMIT-01"     // more questions a minute than ai.questions_per_minute
+	CodeAIPerDay            = "AI-LIMIT-02"     // more questions in 24 hours than ai.questions_per_day
+	CodeAIConversationLimit = "AI-LIMIT-03"     // the conversation has ai.conversation_turns questions
 )
 
-// maxHistory is how many earlier turns a turn carries to the model, until the compaction of task 5.3.
-const maxHistory = 20
+// The settings of the assistant's limits (AI-23, design D9).
+const (
+	settingAIPerMinute    = "ai.questions_per_minute"
+	settingAIPerDay       = "ai.questions_per_day"
+	settingAIReads        = "ai.reads_per_question"
+	settingAIConversation = "ai.conversation_turns"
+	verbatimTurns         = 20 // the earlier turns a turn carries whole; older ones are summarised, their facts kept
+	maxEarlierFacts       = 200
+)
 
 // AIConversationIn starts a conversation.
 type AIConversationIn struct {
@@ -377,7 +388,7 @@ func registerAssistant(a *API) {
 	}, "Idempotency-Key", "Each question is a turn of its own: asked again, it is answered again."),
 		"Prefer", "An answer cannot be previewed without asking."),
 		"If-Match", "Asking adds a turn and leaves the conversation as it was: there is no version of it to match."),
-		[]string{CodeNotFound, CodeAIPersonOnly, CodeAIService, airoute.CodeSwitchOff})
+		[]string{CodeNotFound, CodeAIPersonOnly, CodeAIService, airoute.CodeSwitchOff, CodeAIPerMinute, CodeAIPerDay, CodeAIConversationLimit})
 	sse.Register(a.API, ask, map[string]any{"status": AITurnStatus{}, "answer": AITurn{}, "error": Problem{}},
 		func(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 			a.askTurn(ctx, in, send)
@@ -407,6 +418,8 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	var turn storage.AITurn
 	var token string
 	var history []ports.ModelMessage
+	var cited []aitool.Fact
+	var limits aiLimits
 	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		c, err := ownConversation(ctx, u, p, in.ConversationID)
 		if err != nil {
@@ -425,7 +438,10 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		if err != nil {
 			return err
 		}
-		history = historyOf(earlier)
+		if limits, err = a.admit(ctx, u, p.UserID, len(earlier), today); err != nil {
+			return err
+		}
+		history, cited = historyOf(earlier)
 		var about json.RawMessage
 		if in.Body.Context != nil {
 			about, _ = json.Marshal(in.Body.Context)
@@ -443,7 +459,8 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	}
 	// The turn is kept and its token ended whatever happens to the stream from here.
 	keep := context.WithoutCancel(ctx)
-	answer, err := a.askService(ctx, assistant.Question{Token: token, Text: turn.Question, Context: contextWords(in.Body.Context), History: history}, send)
+	answer, err := a.askService(ctx, assistant.Question{Token: token, Text: turn.Question, Context: contextWords(in.Body.Context), History: history,
+		Earlier: cited, MaxReads: limits.reads}, send)
 	finished := a.deps.Clock.Now()
 	turn.AnsweredAt = &finished
 	var calls []storage.AIToolCall
@@ -492,18 +509,104 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	}
 }
 
-// historyOf is a conversation's earlier answered turns as the model reads them: each question and its answer.
-func historyOf(turns []storage.AITurn) []ports.ModelMessage {
-	var out []ports.ModelMessage
-	start := max(len(turns)-maxHistory, 0)
-	for _, t := range turns[start:] {
-		if t.Status != storage.TurnAnswered {
-			continue
+// aiLimits are the limits a turn runs under.
+type aiLimits struct{ reads int }
+
+// admit refuses a turn past the person's limits or the conversation's (AI-23, design D9): questions a minute and in the
+// last 24 hours, and questions in one conversation; a refused turn is not kept. It gives the reads a turn may make.
+func (a *API) admit(ctx context.Context, u storage.UnitOfWork, user uuid.UUID, turns int, today time.Time) (aiLimits, error) {
+	value := func(key string) (int, error) {
+		v, err := settingOn(ctx, u, key, today)
+		if err != nil {
+			return 0, err
 		}
+		return strconv.Atoi(v)
+	}
+	perMinute, err := value(settingAIPerMinute)
+	if err != nil {
+		return aiLimits{}, err
+	}
+	perDay, err := value(settingAIPerDay)
+	if err != nil {
+		return aiLimits{}, err
+	}
+	most, err := value(settingAIConversation)
+	if err != nil {
+		return aiLimits{}, err
+	}
+	reads, err := value(settingAIReads)
+	if err != nil {
+		return aiLimits{}, err
+	}
+	now := a.deps.Clock.Now()
+	if n, err := u.AIConversations().Asked(ctx, user, now.Add(-time.Minute)); err != nil {
+		return aiLimits{}, err
+	} else if n >= perMinute {
+		return aiLimits{}, problem(CodeAIPerMinute, fmt.Sprintf("You asked %d questions in the last minute, the most the organisation allows.", n),
+			"Wait a minute and ask again")
+	}
+	if n, err := u.AIConversations().Asked(ctx, user, now.Add(-24*time.Hour)); err != nil {
+		return aiLimits{}, err
+	} else if n >= perDay {
+		return aiLimits{}, problem(CodeAIPerDay, fmt.Sprintf("You asked %d questions in the last 24 hours, the most the organisation allows.", n),
+			"Ask again later, or ask an Owner to raise ai.questions_per_day")
+	}
+	if turns >= most {
+		return aiLimits{}, problem(CodeAIConversationLimit, fmt.Sprintf("This conversation has %d questions, the most one may hold.", turns),
+			"Start a new conversation")
+	}
+	return aiLimits{reads: reads}, nil
+}
+
+// historyOf is a conversation's earlier answered turns as the model reads them, and the facts they cited, which the
+// turn may cite again (AI-08). The last 20 come whole, each question and its answer; older ones are summarised in one
+// message, with the facts they cited kept by ID (design D9).
+func historyOf(turns []storage.AITurn) ([]ports.ModelMessage, []aitool.Fact) {
+	var answered []storage.AITurn
+	for _, t := range turns {
+		if t.Status == storage.TurnAnswered {
+			answered = append(answered, t)
+		}
+	}
+	var out []ports.ModelMessage
+	var cited []aitool.Fact
+	seen := map[string]bool{}
+	keep := func(t storage.AITurn) []string {
+		var facts []aitool.Fact
+		_ = json.Unmarshal(t.Facts, &facts)
+		byID := map[string]aitool.Fact{}
+		for _, f := range facts {
+			byID[f.ID] = f
+		}
+		var ids []string
+		for _, id := range t.Cited {
+			if f, ok := byID[id]; ok && !seen[id] && len(cited) < maxEarlierFacts {
+				seen[id], cited = true, append(cited, f)
+			}
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	split := max(len(answered)-verbatimTurns, 0)
+	if split > 0 {
+		var b strings.Builder
+		b.WriteString("Earlier in this conversation, summarised (the facts they cited are still yours to cite by ID):")
+		for _, t := range answered[:split] {
+			ids := keep(t)
+			b.WriteString("\n- Asked: " + t.Question)
+			if len(ids) > 0 {
+				b.WriteString(" Answered citing " + strings.Join(ids, ", ") + ".")
+			}
+		}
+		out = append(out, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: b.String()}}},
+			ports.ModelMessage{Role: ports.RoleAssistant, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Noted."}}})
+	}
+	for _, t := range answered[split:] {
+		keep(t)
 		out = append(out, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: t.Question}}},
 			ports.ModelMessage{Role: ports.RoleAssistant, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: t.Answer}}})
 	}
-	return out
+	return out, cited
 }
 
 // contextWords is what a person asks about, as the model reads it.

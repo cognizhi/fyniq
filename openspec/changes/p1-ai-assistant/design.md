@@ -241,6 +241,13 @@ AI-28).**
 - Per person: 20 turns a minute and 200 a day (settings, dual controlled); per turn: at most 8 tool calls and the
   route's output cap; per conversation: 40 turns, compacting the oldest into a summary that keeps their facts by ID
   past 20. Token and money budgets are the router's (AI-13, AI-86).
+- As built (task 5.3): four settings, each dual controlled: `ai.questions_per_minute` (20), `ai.questions_per_day` (200,
+  over the last 24 hours), `ai.reads_per_question` (8, 1 to 20) and `ai.conversation_turns` (40). `askAIConversation`
+  admits a turn within them before keeping it (AI-LIMIT-01 and 02, 429; AI-LIMIT-03, 409, asking for a new
+  conversation) and hands the AI service the reads it may make, which the tool loop stops at, answering in part. Past
+  20 answered turns the oldest are summarised in one message, each question and the facts it cited by ID; the facts the
+  conversation's answers cited go to the AI service with the question, so an answer may cite an earlier fact again and
+  pass the figures' check (AI-08), and the turn keeps it with its own.
 
 **D10. Prompts and models gated (AI-24, CMP-AI-03).**
 - System prompts are versioned files in `contracts/ai/prompts/` with their hash recorded on every turn; a prompt change

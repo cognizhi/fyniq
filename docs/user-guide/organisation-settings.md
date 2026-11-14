@@ -136,9 +136,9 @@ takes, such as INV-0042.
 ## Settings that need a second approver
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
-  incoming-funds alerts expire, the AI assistant, the AI's access to pay and the fields it never reads, details in
-  notification email and the sign-out after inactivity need a second approver before they change: they show **Needs a
-  second approver**.
+  incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads and its limits,
+  details in notification email and the sign-out after inactivity need a second approver before they change: they show
+  **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -176,6 +176,18 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 - **Fields the AI never reads**: none unless changed. Add field names of your own, separated by commas, such as
   `notes, memo`, to keep them from the AI too. You can add to the list, never take a field off the list above.
   Changing it needs a second approver.
+
+## AI limits
+
+- The assistant answers within limits, so a script or a slip cannot run up the AI's cost. Each needs a second approver
+  to change.
+- **Questions a person may ask the assistant a minute**: 20 unless changed, from 1 to 1,000. **A day**: 200 unless
+  changed, from 1 to 100,000, counted over the last 24 hours. Past either, the assistant says so and answers again
+  once it eases.
+- **Reads of the books for one question**: 8 unless changed, from 1 to 20. A question needing more is answered in
+  part, saying so; ask about one thing at a time.
+- **Questions in one conversation**: 40 unless changed, from 2 to 200. Past 20, the oldest questions are summarised,
+  keeping the figures they cited; at the limit, start a new conversation.
 
 ## Payment terms
 

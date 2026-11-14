@@ -56125,7 +56125,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `AI-ROUTER-05` The AI is switched off. */
+            /** @description Conflict: `AI-LIMIT-03` The conversation is full; `AI-ROUTER-05` The AI is switched off. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -56143,7 +56143,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            /** @description Too Many Requests: `AI-LIMIT-01` Too many questions a minute; `AI-LIMIT-02` Too many questions today; `API-RATE-01` Too many requests. */
             429: {
                 headers: {
                     /** @description What is left of the limit (r) and the seconds until the window ends (t). */
