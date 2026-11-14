@@ -736,6 +736,18 @@
       "label": "Enter a price",
       "tooltip": "The Owner's own price, per million tokens in the provider's currency, for a model no source prices; it applies once a second approver approves it."
     },
+    "settings.ai-routes": {
+      "label": "Model routes",
+      "tooltip": "Which connection and model each agent runs on, its fallbacks, the data it handles, and whether each step is qualified."
+    },
+    "settings.ai-route": {
+      "label": "Route",
+      "tooltip": "The data this agent may send and the steps it tries in order: each a connection that is on and a model its allow-list holds."
+    },
+    "ai.route-save": {
+      "label": "Save the route",
+      "tooltip": "A change that only narrows where data goes is saved at once; a new connection, model or class waits for the Owner or a second approver."
+    },
     "ai.data-handling": {
       "label": "Where its prompts go",
       "tooltip": "Where the provider processes and keeps what it is sent, whether it trains on it, and the evidence; changing it needs a second approver."
