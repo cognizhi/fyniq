@@ -12340,7 +12340,7 @@ export interface paths {
         put?: never;
         /**
          * Recover your account
-         * @description Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new passkey; your other sessions and tokens end; your recovery codes are replaced; and for 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back. Side effects: the recovery, ten new codes (shown once), the revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice to you and every Owner. Wrong, used or expired codes change nothing. It takes no Idempotency-Key: a response with codes is never stored.
+         * @description Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new passkey; your other sessions and tokens end; your recovery codes are replaced; and while your account cools off (24 hours, or up to 72 as an organisation of yours set its hold after a recovery, the longest of them) approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back. Side effects: the recovery, ten new codes (shown once), the revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice to you and every Owner. Wrong, used or expired codes change nothing. It takes no Idempotency-Key: a response with codes is never stored.
          */
         post: operations["recoverAccount"];
         delete?: never;
@@ -39009,11 +39009,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description What it holds: switch is "true" or "false"; minutes, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.
+             * @description What it holds: switch is "true" or "false"; minutes, hours, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.
              * @example days
              * @enum {string}
              */
-            kind: "switch" | "minutes" | "days" | "months" | "years" | "amount_sgd" | "percent" | "text" | "account_code" | "choice";
+            kind: "switch" | "minutes" | "hours" | "days" | "months" | "years" | "amount_sgd" | "percent" | "text" | "account_code" | "choice";
             /**
              * @description Its name.
              * @example Payment terms for invoices

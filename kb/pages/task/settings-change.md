@@ -4,14 +4,14 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:025baefc7e7d2dec8c56c2bdbc8b825ec27df7b3d36c385e950ea23aafe349dc
+  - docs/user-guide/organisation-settings.md sha256:f9895caa5f2be883087588ca19811ac9a138a63b244efb99589fb92698126b93
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-09
+compiled_at: 2026-11-12
 aliases:
   - reset to recommended
   - change a setting

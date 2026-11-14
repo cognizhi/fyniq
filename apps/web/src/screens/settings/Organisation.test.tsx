@@ -39,6 +39,7 @@ describe("Organisation settings", () => {
     expect(valueText("switch", "true")).toBe("On");
     expect(valueText("days", "1")).toBe("1 day");
     expect(valueText("minutes", "30")).toBe("30 minutes");
+    expect(valueText("hours", "24")).toBe("24 hours");
     expect(valueText("years", "7")).toBe("7 years");
     expect(valueText("months", "6")).toBe("6 months");
     expect(valueText("months", "1")).toBe("1 month");

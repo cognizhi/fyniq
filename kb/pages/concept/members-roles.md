@@ -4,14 +4,14 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:844f7c14c68abc44b5c06fce47f45aea1f98ef72b45feedb3a8269d800c7bb40
+  - docs/user-guide/members-and-roles.md sha256:2a569805b4bc5b807d9fca3cd5f865d854d6d08eaa13d76d174b64194ded6942
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-12
 aliases:
   - permissions
   - give someone access

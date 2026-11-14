@@ -71,8 +71,9 @@ your passkeys, recover your account:
 4. Keep the ten new recovery codes Fyniq shows once, then add a new passkey on your profile.
 
 - Your other sessions end, and you and every Owner are told.
-- For 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass
-  and confirming others' recoveries wait.
+- For 24 hours, or up to 72 as your organisation set its **Hold after an account recovery**, approving,
+  releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others'
+  recoveries wait.
 - Email alone or a support request never recovers an account.
 
 ## Ask to join by your email domain

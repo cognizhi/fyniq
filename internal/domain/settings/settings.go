@@ -28,6 +28,7 @@ type Kind string
 const (
 	Switch    Kind = "switch"     // "true" or "false"
 	Minutes   Kind = "minutes"    // a whole number of minutes
+	Hours     Kind = "hours"      // a whole number of hours
 	Days      Kind = "days"       // a whole number of days
 	Years     Kind = "years"      // a whole number of years
 	Months    Kind = "months"     // a whole number of months
@@ -218,6 +219,9 @@ var Catalogue = []Definition{
 	{Key: "security.idle_timeout_minutes", Group: "Security", Label: "Sign out after inactivity", Kind: Minutes, Recommended: "30",
 		Reason: "A session ends after 30 minutes without a request, whatever happens it ends 12 hours after sign-in (SEC-05; the owner's decision of 6 Nov 2026)",
 		Guide:  guide + "sign-out-after-inactivity", Requirement: "SEC-05", DualControl: true, Min: "5", Max: "60"},
+	{Key: "security.recovery_cooling_off_hours", Group: "Security", Label: "Hold after an account recovery", Kind: Hours, Recommended: "24",
+		Reason: "For 24 hours after a person recovers their account, they cannot approve, release payments, change bank details, roles or sign-ins (SEC-35; the owner's decision of 12 Nov 2026)",
+		Guide:  guide + "hold-after-an-account-recovery", Requirement: "SEC-35", DualControl: true, Min: "24", Max: "72"},
 }
 
 // Lookup returns the setting with key, if there is one.
@@ -267,7 +271,7 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send true or false")
 		}
 		return raw, nil
-	case Minutes, Days, Months, Years:
+	case Minutes, Hours, Days, Months, Years:
 		if !whole.MatchString(raw) {
 			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", d.Kind, d.Min, d.Max))
 		}

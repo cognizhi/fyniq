@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:025baefc7e7d2dec8c56c2bdbc8b825ec27df7b3d36c385e950ea23aafe349dc
+  - docs/user-guide/organisation-settings.md sha256:f9895caa5f2be883087588ca19811ac9a138a63b244efb99589fb92698126b93
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-09
+compiled_at: 2026-11-12
 aliases:
   - data protection officer
   - DPO contact
@@ -300,6 +300,14 @@ The calendar itself: [[compliance.calendar]].
 - Someone in several organisations has a session that follows the organisation they are signed in to ([[preferences.security]]).
 
 (src: docs/user-guide/organisation-settings.md#sign-out-after-inactivity)
+
+## Hold after an account recovery
+
+- After a person recovers their account, they cannot approve, release payments, change bank details, roles or sign-ins, use break-glass or confirm others' recoveries for 24 hours, by default.
+- It can be set from 24 to 72 hours; changing it needs a second approver.
+- Someone in several organisations is held for the longest of theirs.
+
+(src: docs/user-guide/organisation-settings.md#hold-after-an-account-recovery)
 
 ## Variances at the close
 
