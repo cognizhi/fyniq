@@ -1456,6 +1456,10 @@
       "label": "Only the lines of",
       "tooltip": "The lines of a dimension value alone, such as a department's: their opening balance, lines and running balance."
     },
+    "statement.trace": {
+      "label": "Trace",
+      "tooltip": "Follow this figure to the accounts it is made of, their ledger lines, the document each line came from and that document's history."
+    },
     "statement.export": {
       "label": "Export",
       "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, a PDF to print, or CSV. Each export is recorded in the audit trail."

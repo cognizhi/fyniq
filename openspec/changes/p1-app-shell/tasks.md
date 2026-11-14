@@ -69,6 +69,16 @@
   `approvals.test.tsx` "the Inbox's keys". **Left:** bank lines and help pages in the search, the Inbox's other groups as
   their modules arrive, grouping by due date, and bulk actions where safe.)
 - [ ] 2.3 Drill-down to the Trace panel, side peeks and split view, keyboard-first entry and the shortcut sheet. Tests `// req: FR-UX-04`, `// req: FR-UX-05` and `// req: FR-UX-06`
+  (12 Nov 2026, in part: the Trace panel (`shell/Trace.tsx`, docs/design/screens TracePanel), opened from any account
+  figure, group total or section total of a statement as a side sheet that keeps the report (the `trace` search
+  parameter, so Back closes it): 1 the accounts a total is made of; 2 an account's ledger lines read as at the
+  statement's revision (`getGeneralLedger`'s new `as_at_revision`, `balance.GeneralLedgerAt`; FR-RPT-08); 3 a line's
+  entry and source document (`getLedgerEntry`: the entry, its lines, and its document's type, number, status, date,
+  customer or supplier and page); 4 that document's history from the audit trail, for those whose roles read it.
+  Guide `financial-statements.md` (Trace a figure to its source), compiled into `reports.statements`. Tests
+  `TestALedgerEntryTracesToItsSource`, `TestTheGeneralLedgerAsAtARevision`, the matrix's row, `Trace.test.tsx`,
+  `statements.test.tsx`. **Left:** the Trace panel from Home's tiles and the other reports; side peeks over lists and
+  the split view for matching; keyboard-first entry and the shortcut sheet.)
 
 ## 3. Grids, records and correctness
 

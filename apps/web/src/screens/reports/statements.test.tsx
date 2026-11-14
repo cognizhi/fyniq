@@ -112,21 +112,36 @@ describe("the statements' periods", () => {
 // req: FR-RPT-08
 // req: FR-UX-04
 describe("a financial statement", () => {
-  it("lays out the P&L with its % of revenue, opens an account's lines in the general ledger, and says the month is open; axe finds nothing", async () => {
+  it("lays out the P&L with its % of revenue, says the month is open, and traces an account's figure to its lines as at its revision; axe finds nothing", async () => {
     answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/statements/pl": { status: 200, body: pl } });
     renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant });
     const table = await screen.findByRole("table", { name: /Profit and loss from 1 Oct 2026 to 31 Oct 2026/ });
     expect(screen.getByText(/Management statements · 1 Oct 2026 to 31 Oct 2026 · SGD/)).toBeTruthy();
     expect(within(table).getByRole("columnheader", { name: "% of revenue" })).toBeTruthy();
-    const figure = within(table).getAllByRole("link", { name: "5,000.00" })[0]!;
-    expect(figure.getAttribute("href")).toMatch(/^\/reports\/general-ledger\?/);
-    expect(decodeURIComponent(figure.getAttribute("href")!)).toContain("a-4010");
+    const figure = within(table).getAllByRole("button", { name: "5,000.00" })[0]!;
     expect(within(table).getByRole("rowheader", { name: "Gross profit" })).toBeTruthy();
     expect(within(table).getByText("80.0%")).toBeTruthy();
     expect(screen.getByText(/is not closed yet/)).toBeTruthy();
     expect(screen.getByText(/Read at ledger revision 42/)).toBeTruthy();
     expect(seen.find((s) => s.path === "/v1/reports/statements/pl")!.query).toContain("columns=total");
     await noViolations(document.body);
+    // The figure opens the Trace panel at its ledger lines, read as at the statement's revision (FR-UX-04, FR-RPT-08).
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/reports/statements/pl": { status: 200, body: pl },
+      "GET /v1/reports/general-ledger": {
+        status: 200,
+        body: { from: "2026-10-01", to: "2026-10-31", currency: "SGD", ledger_revision: 42, accounts: [{ account_id: "a-4010", code: "4010", name: "Subscription revenue",
+          opening: m("0.00"), debits: m("0.00"), credits: m("5000.00"), closing: m("-5000.00"), lines: [] }] },
+      },
+    });
+    fireEvent.click(figure);
+    const panel = await screen.findByRole("dialog", { name: "Subscription revenue" });
+    expect(await within(panel).findByText(/No lines from 1 Oct 2026 to 31 Oct 2026/)).toBeTruthy();
+    const gl = seen.find((s) => s.path === "/v1/reports/general-ledger")!;
+    expect(gl.query).toContain("as_at_revision=42");
+    expect(gl.query).toContain("a-4010");
+    expect(within(panel).getByText(/Read at ledger revision 42/)).toBeTruthy();
   });
 
   it("shows a failed check, a restated presentation and the cash flow's transactions that moved no money", async () => {
@@ -154,7 +169,7 @@ describe("a financial statement", () => {
   });
 
   // req: FR-DIM-02
-  it("asks for the P&L by dimension or of one value, labels its columns as the API names them, and opens a value's lines", async () => {
+  it("asks for the P&L by dimension or of one value, labels its columns as the API names them, and traces a value's lines", async () => {
     const byDept: Statement = {
       ...pl,
       columns: [
@@ -178,6 +193,11 @@ describe("a financial statement", () => {
       "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }] } },
       "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }] } },
       "GET /v1/reports/statements/pl": (_b, req) => ({ status: 200, body: req.url.includes("columns=dimension") ? byDept : pl }),
+      "GET /v1/reports/general-ledger": {
+        status: 200,
+        body: { from: "2026-10-01", to: "2026-10-31", currency: "SGD", ledger_revision: 42, accounts: [{ account_id: "a4000", code: "4000", name: "Sales",
+          opening: m("0.00"), debits: m("0.00"), credits: m("100.00"), closing: m("-100.00"), lines: [] }] },
+      },
     });
     renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant, mode: "expert" });
     await screen.findByRole("table");
@@ -187,9 +207,12 @@ describe("a financial statement", () => {
     expect(await screen.findByRole("columnheader", { name: "ENG Engineering" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "No Department" })).toBeTruthy();
     expect((screen.getByLabelText("Compare with") as HTMLSelectElement).disabled).toBe(true);
-    const engineering = screen.getAllByRole("link", { name: "100.00" })[0]!;
-    expect(decodeURIComponent(engineering.getAttribute("href") ?? "")).toContain('dimension_value_id=["v1"]');
-    expect(screen.queryByRole("link", { name: "10.00" })).toBeNull(); // the lines with no department: the general ledger cannot pick them out
+    expect(screen.queryByRole("button", { name: "10.00" })).toBeNull(); // the lines with no department: the general ledger cannot pick them out
+    fireEvent.click(screen.getAllByRole("button", { name: "100.00" })[0]!);
+    expect(await screen.findByRole("dialog", { name: "Sales" })).toBeTruthy();
+    await vi.waitFor(() => expect(seen.find((s) => s.path === "/v1/reports/general-ledger")?.query).toContain("dimension_value_id=v1"));
+    fireEvent.click(screen.getByRole("button", { name: "Close the trace and return to the report" }));
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.change(screen.getByLabelText("Only for"), { target: { value: "v1" } });
     await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/reports/statements/pl" && s.query.includes("dimension_value_id=v1"))).toBe(true));
   });
@@ -247,8 +270,8 @@ describe("a P&L beside its plans", () => {
     const table = await screen.findByRole("table");
     await within(table).findByRole("columnheader", { name: "Budget" });
     expect(within(table).getAllByText("6,000.00", { selector: "td" }).length).toBeGreaterThan(0);
-    expect(within(table).queryByRole("link", { name: "6,000.00" })).toBeNull();
-    expect(within(table).getAllByRole("link", { name: "5,000.00" }).length).toBeGreaterThan(0);
+    expect(within(table).queryByRole("button", { name: "6,000.00" })).toBeNull();
+    expect(within(table).getAllByRole("button", { name: "5,000.00" }).length).toBeGreaterThan(0);
     await noViolations(document.body);
 
     fireEvent.change(screen.getByLabelText("Compare with"), { target: { value: "forecast" } });

@@ -314,6 +314,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerForeignMoneyAccounts(a)
 	registerChecklist(a)
 	registerReports(a)
+	registerLedgerEntries(a)
 	registerFinancials(a)
 	registerFinancialExports(a)
 	registerManagementReports(a)
