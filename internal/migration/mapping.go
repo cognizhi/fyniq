@@ -80,6 +80,7 @@ type PersonMap struct {
 	Contact     string `json:"contact"`
 	Director    bool   `json:"director,omitempty"`
 	Shareholder bool   `json:"shareholder,omitempty"`
+	Investor    bool   `json:"investor,omitempty"` // holds a SAFE or note of the Funding sheet (rev 0.262)
 }
 
 // AccountMap is a workbook account and the Fyniq account it maps onto: one Fyniq has, or one created from the
@@ -433,6 +434,11 @@ func (w *Workbook) Propose(t Target, previous *Mapping) Mapping {
 	return m
 }
 
+// esop says whether a cap table row is the option pool, which is no holder (FR-EQ-19).
+func esop(h Holding) bool {
+	return strings.Contains(strings.ToLower(h.Kind+" "+h.Security), "esop") || strings.Contains(strings.ToLower(h.Kind), "pool")
+}
+
 // personName is the contact a name the workbook gives a person becomes: without a role in brackets, as "Alex Tan
 // (CEO)" is Alex Tan.
 func personName(name string) string {
@@ -458,19 +464,23 @@ func (w *Workbook) people(m Mapping, previous []PersonMap) []PersonMap {
 			return
 		}
 		if i, ok := index[p.Workbook]; ok {
-			out[i].Director, out[i].Shareholder = out[i].Director || p.Director, out[i].Shareholder || p.Shareholder
+			out[i].Director, out[i].Shareholder, out[i].Investor = out[i].Director || p.Director, out[i].Shareholder || p.Shareholder, out[i].Investor || p.Investor
 			return
 		}
 		if b, ok := before[p.Workbook]; ok {
-			p.Contact, p.Director, p.Shareholder = b.Contact, b.Director, b.Shareholder
+			p.Contact, p.Director, p.Shareholder, p.Investor = b.Contact, b.Director, b.Shareholder, b.Investor
 		}
 		index[p.Workbook] = len(out)
 		out = append(out, p)
 	}
-	for _, h := range w.Holdings {
-		if strings.EqualFold(h.Kind, "Founder") {
-			add(PersonMap{Workbook: h.Holder, Sheet: "Funding", Row: h.Row, Contact: personName(h.Holder), Director: true, Shareholder: true})
+	for _, h := range w.Holdings { // the cap table's holders: its founders directors too (rev 0.262)
+		if !esop(h) {
+			add(PersonMap{Workbook: h.Holder, Sheet: "Funding", Row: h.Row, Contact: personName(h.Holder), Director: strings.EqualFold(h.Kind, "Founder"),
+				Shareholder: true})
 		}
+	}
+	for _, x := range w.Instruments { // the SAFEs' and notes' investors
+		add(PersonMap{Workbook: x.Investor, Sheet: "Funding", Row: x.Row, Contact: personName(x.Investor), Investor: true})
 	}
 	role := map[string]string{} // the workbook's account to the role of the Fyniq account it maps onto
 	for _, a := range m.Accounts {
@@ -737,7 +747,8 @@ func (m Mapping) Apply(c Change) (Mapping, []Problem) {
 			missing("person", p.Workbook)
 			continue
 		}
-		next.People[i].Contact, next.People[i].Director, next.People[i].Shareholder = strings.TrimSpace(p.Contact), p.Director, p.Shareholder
+		next.People[i].Contact, next.People[i].Director, next.People[i].Shareholder, next.People[i].Investor = strings.TrimSpace(p.Contact), p.Director,
+			p.Shareholder, p.Investor
 	}
 	for _, r := range c.BankRules {
 		i := slices.IndexFunc(next.BankRules, func(x RuleMap) bool { return x.Order == r.Order })

@@ -203,7 +203,9 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	resumed := e.run(id, e.as(authz.Controller))
+	// Anyone the policy lets run it resumes it, but only a person signed in to Fyniq (rev 0.262).
+	e.problemIs(e.run(id, e.as(authz.Controller)), "runMigrationCommit", 409, migration.CodeCommit)
+	resumed := e.run(id, f.as(f.weiling, authz.Controller))
 	if resumed.Status != http.StatusOK || resumed.Body["imported"].(float64) < 1 || resumed.Body["done"].(float64) <= done {
 		t.Fatalf("resuming: %d %s", resumed.Status, resumed.Raw)
 	}
@@ -218,10 +220,10 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 		t.Fatalf("a batch after the commit: %d %s", again.Status, again.Raw)
 	}
 
-	// Each record once: 16 contacts and the 2 founders, 5 items, 28 bank rules (the 29th, to a money account, is a
-	// transfer, kept in the archive).
+	// Each record once: 16 contacts, the 2 founders and the Funding sheet's 2 other holders and SAFE investor (rev
+	// 0.262), 5 items, 28 bank rules (the 29th, to a money account, is a transfer, kept in the archive).
 	if l := e.call(http.MethodGet, "/v1/contacts?limit=100", accountant, nil); strings.Count(l.Raw, `"legal_name":"Harbourline Logistics Pte Ltd"`) != 1 ||
-		strings.Count(l.Raw, `"legal_name":"Alex Tan"`) != 1 || len(l.Body["items"].([]any)) != 18 {
+		strings.Count(l.Raw, `"legal_name":"Alex Tan"`) != 1 || len(l.Body["items"].([]any)) != 21 {
 		t.Errorf("the contacts: %s", l.Raw)
 	}
 	if l := e.call(http.MethodGet, "/v1/items?limit=100", accountant, nil); len(l.Body["items"].([]any)) != 5 {
@@ -550,10 +552,12 @@ func trialBalanceFrom(t *testing.T, e *env, tok, from, to string) map[string]*ap
 }
 
 // The Transactions sheet brings every account to the workbook's own balance (design D5, D8): at 30 September, the
-// sample's "as of", each account's balance in Fyniq equals the workbook's trial balance to the cent, but those the
-// records not yet built move: payroll's summary journals (task 4.4), the assets' depreciation (task 4.3) and the Funding
-// sheet's share issue and SAFE (task 4.6), whose two Transactions rows of S$700,000 into 1020 wait for them as lines.
-// Each Transactions row is a line of its money account's statement, a transfer's two sides a line each.
+// sample's "as of", each account's balance in Fyniq equals the workbook's trial balance to the cent, with the pay runs,
+// the depreciation and the Funding sheet's records (rev 0.262): the seed round's S$500,000 to share application monies
+// and on to 3020 by its cash issue, the SAFE's S$200,000 to 2700 naming its instrument. Each Transactions row is a line
+// of its money account's statement, a transfer's two sides a line each, and none is left unreconciled. The register of
+// members holds what the cap table does: the founders' and angels' 9,800,000 shares before the books start, the seed
+// round's 2,000,000 from 15 June.
 // req: data/migration History or opening balances import (M3)
 // req: FR-MIG-01
 // req: FR-BNK-09
@@ -564,8 +568,8 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tb := trialBalance(t, e, f.as(f.ahkow, authz.Accountant), "2026-09")
-	waiting := map[string]string{"1020": "-700000.00", "2700": "", "3020": ""}
+	accountant := f.as(f.ahkow, authz.Accountant)
+	tb := trialBalance(t, e, accountant, "2026-09")
 	for _, x := range w.TrialBalance {
 		want := x.Closing[8]
 		if want == nil {
@@ -579,13 +583,17 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 		if _, err := apd.BaseContext.WithPrecision(40).Sub(diff, got, want); err != nil {
 			t.Fatal(err)
 		}
-		short, ok := waiting[x.Code]
-		switch {
-		case !ok && !diff.IsZero():
+		if !diff.IsZero() {
 			t.Errorf("account %s %s: %s in Fyniq; the workbook's %s", x.Code, x.Name, got.Text('f'), want.Text('f'))
-		case ok && short != "" && diff.Text('f') != short:
-			t.Errorf("account %s: %s short of the workbook's %s, not %s", x.Code, diff.Text('f'), want.Text('f'), short)
 		}
+	}
+	for at, issued := range map[string]string{"2025-12-31": "9800000", "2026-06-14": "9800000", "2026-06-15": "11800000", "2026-09-30": "11800000"} {
+		if c := e.call(http.MethodGet, "/v1/cap-table?at="+at, accountant, nil); c.Status != http.StatusOK || c.str("issued") != issued {
+			t.Errorf("the cap table at %s: %d %s", at, c.Status, c.Raw)
+		}
+	}
+	if x := tb["2040"]; x != nil && !x.IsZero() {
+		t.Errorf("share application monies hold %s", x.Text('f'))
 	}
 	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		lines, err := u.Banking().Lines(ctx, storage.BankLineFilter{})
@@ -601,7 +609,7 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 				waitingLines++
 			}
 		}
-		if len(lines) != len(w.Transactions)+transfers || transfers != 23 || waitingLines != 2 {
+		if len(lines) != len(w.Transactions)+transfers || transfers != 23 || waitingLines != 0 {
 			t.Errorf("the lines: %d for %d rows, %d transfers' other sides, %d waiting", len(lines), len(w.Transactions), transfers, waitingLines)
 		}
 		return nil
@@ -684,5 +692,66 @@ func TestImportedPayRunsKeepTheAmountsPaid(t *testing.T) {
 	}
 	if runs != len(due) || runs != 9 {
 		t.Errorf("%d pay runs for the workbook's %d months", runs, len(due))
+	}
+}
+
+// A clean start carries the balances forward (§17.1 M3, design D5; rev 0.261): the books start the day after the
+// workbook's "as of", 1 October 2026; every account opens at the Carry Forward sheet's balance, the receivables and
+// payables held by the open invoices, bills and the credit note as opening items, so 3900 nets to zero; the assets open
+// with the depreciation the workbook worked to 30 September; none of the history is imported.
+// req: data/migration History or opening balances import (M3)
+// req: FR-MIG-01
+// req: FR-GL-06
+func TestACleanStartCarriesTheBalancesForward(t *testing.T) {
+	f, _ := committedAs(t, "clean_start")
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := e.call(http.MethodGet, "/v1/organisation/profile", accountant, nil); p.str("books_start") != "2026-10-01" || p.str("first_year_end") != "2026-12-31" {
+		t.Fatalf("the profile: %s", p.Raw)
+	}
+	// The register of members holds every share of the cap table from before the books start (rev 0.262).
+	if c := e.call(http.MethodGet, "/v1/cap-table?at=2026-09-30", accountant, nil); c.Status != http.StatusOK || c.str("issued") != "11800000" {
+		t.Errorf("the cap table: %d %s", c.Status, c.Raw)
+	}
+	tb := trialBalanceFrom(t, e, accountant, "2026-10", "2026-10")
+	types := map[string]string{}
+	for _, a := range w.Accounts {
+		types[a.Code] = a.Type
+	}
+	credit := map[string]bool{"Liability": true, "Equity": true, "Revenue": true, "Other Income": true}
+	for _, b := range w.CarryForward.Balances {
+		want := new(apd.Decimal)
+		if b.Balance != nil {
+			want.Set(b.Balance)
+		}
+		if credit[types[b.Code]] {
+			want.Neg(want)
+		}
+		got := tb[b.Code]
+		if got == nil {
+			got = new(apd.Decimal)
+		}
+		if got.Cmp(want) != 0 {
+			t.Errorf("account %s opens at %s; Carry Forward carries %s", b.Code, got.Text('f'), want.Text('f'))
+		}
+	}
+	if x := tb["3900"]; x != nil && !x.IsZero() {
+		t.Errorf("3900 holds %s", x.Text('f'))
+	}
+	invoices := byNumber(e.call(http.MethodGet, "/v1/invoices", accountant, nil), "number")
+	credits := byNumber(e.call(http.MethodGet, "/v1/invoices?kind=credit_note", accountant, nil), "number")
+	if invoices["INV-0109"]["opening_item"] != true || credits["CN-0001"]["opening_item"] != true || len(invoices) != 5 {
+		t.Errorf("the open items: %v %v", invoices, credits)
+	}
+	if j := e.call(http.MethodGet, "/v1/journals", accountant, nil); len(j.Body["items"].([]any)) != 0 {
+		t.Errorf("a clean start imported journals: %s", j.Raw)
+	}
+	assets := byNumber(e.call(http.MethodGet, "/v1/fixed-assets", accountant, nil), "name")
+	if a := assets["Laptops x3 (engineering)"]; a == nil || fmt.Sprint(a["opening_accumulated"].(map[string]any)["amount"]) != "1950.00" {
+		t.Errorf("the laptops carried: %v", a)
 	}
 }

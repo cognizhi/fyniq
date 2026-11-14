@@ -460,6 +460,10 @@ func registerMigrationCommit(a *API) {
 			}
 			p, _ := authn.From(ctx)
 			preview := wantsPreview(in.Prefer)
+			if !preview && p.UserID == uuid.Nil { // the register of members names who recorded the shares the import records (rev 0.262)
+				return nil, problem(migration.CodeCommit, "A batch of the import is run by a person signed in to Fyniq, whom the register of members names as recording its shares.",
+					"Sign in to the web app and run the batch there.")
+			}
 			var c *storage.MigrationCommit
 			var file storage.MigrationFile
 			var mapping storage.MigrationMapping
@@ -566,7 +570,8 @@ func registerMigrationCommit(a *API) {
 			audit := storage.AuditFrom(ctx)
 			audit.ApprovalIDs = append(audit.ApprovalIDs, c.ApprovalID.String())
 			audit.Reason = "The workbook import, approved in " + c.ApprovalID.String() + " (FR-MIG-01)"
-			progress, err := migration.Batch(storage.WithAudit(ctx, audit), a.deps.Store, p.Organisation, *c, plan, migration.BatchSize, uploader(ctx), a.deps.Clock.Now)
+			progress, err := migration.Batch(storage.WithAudit(ctx, audit), a.deps.Store, p.Organisation, *c, plan, migration.BatchSize, uploader(ctx), p.UserID,
+				a.deps.Clock.Now)
 			var ie *migration.ImportError
 			if errors.As(err, &ie) {
 				return nil, importProblem(ie)

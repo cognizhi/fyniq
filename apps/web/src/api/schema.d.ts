@@ -32398,6 +32398,11 @@ export interface components {
              */
             director?: boolean;
             /**
+             * @description Marked investor: holds a SAFE or note of the Funding sheet (rev 0.262).
+             * @example false
+             */
+            investor?: boolean;
+            /**
              * Format: int64
              * @description Its row; ignored in a change.
              * @example 127

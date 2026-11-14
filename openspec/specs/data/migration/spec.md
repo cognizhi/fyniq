@@ -55,6 +55,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **THEN** each row is a line of its money account's statement, and a transfer between two money accounts a line on each side
 - **AND** each line becomes the receipt of the invoice it names, the payment of the bill it names, a transfer, or a categorised bank transaction
 
+#### Scenario: The Funding sheet's cap table and SAFEs (rev 0.262)
+- **WHEN** the Funding sheet is imported
+- **THEN** each holding issued before the books start is in the register of members with no entry, and one a Transactions row pays for later is that row's money to share application monies and a cash issue effective on its day
+- **AND** each SAFE or note is a recorded instrument, which its line on 2700 names, a clean start's 2700 balance a line for each
+- **AND** the option pool stays in the archived workbook with a warning, and the import's equity records need no evidence attached, the archived workbook being their evidence
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 
