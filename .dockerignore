@@ -24,6 +24,7 @@
 !evals/evals.go
 !contracts/ai/ai.go
 !contracts/ai/tools/
+!contracts/ai/prompts/
 !evals/*/suite.json
 !package.json
 !pnpm-lock.yaml

@@ -68,6 +68,19 @@ AI-28).**
   IAM invoker in the cloud `[live-verify]`; the Compose network locally), and it calls back on the API's internal
   listener (D4).
 - Alternative: run the loop inside the API process: rejected, as the API holds write credentials (SEC-03, golden rule 5).
+- As built (task 5.1): `internal/assistant` and `cmd/ai`. `POST /turns` takes the turn's delegated token, the question,
+  what it is about and the earlier turns, for the API alone (its service token of the class `assistant`: local HMAC, or
+  Google's for the api's account in the cloud `[live-verify]`), and streams `status`, `tool`, `text` and `done`, or
+  `error` in the API's words. The loop asks `callAIModel` for the `chat` agent with `contracts/ai/prompts/chat@1.md` and
+  the registry's tools by name, runs each tool call through `callAITool` (calc it runs itself, on the facts the turn
+  read), gives the results back as tool results under their calls, and stops at 8 reads with a plain message (task 5.3
+  makes the limits settings). The answer keeps every fact the turn read, the prompt's name and SHA-256 (AI-24), the
+  model calls' runs and each tool call's outcome, for the turn's record (task 6.1). What it sends a model and what it
+  answers pass the output filter again (AI-20). The AI service's own token to the API is local HMAC, or Google's for the
+  internal API's audience as the ai invoker (FYNIQ_GCP's `ai` and `api` entries) `[live-verify]`. The internal tool
+  operation now widens the turn's classes by what each read carries (a record or a party's figure may name a person:
+  personal data; a statutory value: know-how), so the turn's later calls are routed for them (AI-83). An
+  architecture test keeps the database, the wiring, the API, the router and the model connectors out of `cmd/ai`.
 
 **D4. The AI service's calls into the API.**
 - An internal listener of the API (its own port, never behind the load balancer) serves two operations for the AI

@@ -18,6 +18,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cognizhi/fyniq/internal/aitool"
+	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -127,8 +129,32 @@ func registerToolCalls(a *API) {
 		if err := a.screenResult(ctx, &out); err != nil {
 			return nil, err
 		}
+		if err := a.widenTurn(ctx, toolClasses(tool.Name, in.Body.Input)); err != nil {
+			return nil, err
+		}
 		out.Tool, out.Version = tool.Name, tool.Version
 		return &aiToolCallOutput{Body: out}, nil
+	})
+}
+
+// toolClasses are the classes of data a tool's read carries (AI-83): a record or a party's figure may name a person, so
+// it is personal data too; a statutory value is know-how. The turn's later model calls are routed for them.
+func toolClasses(tool string, in map[string]any) []string {
+	by, _ := in["by"].(string)
+	switch {
+	case tool == "packs.get":
+		return []string{aipolicy.KnowHow}
+	case strings.HasPrefix(tool, "records."), tool == "lineage.explain", tool == "checks.explain", by == "customer" || by == "vendor":
+		return []string{aipolicy.Business, aipolicy.Personal}
+	}
+	return []string{aipolicy.Business}
+}
+
+// widenTurn records that the turn read classes, so every later model call of it is routed for them (AI-83).
+func (a *API) widenTurn(ctx context.Context, classes []string) error {
+	p, _ := authn.From(ctx)
+	return a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.AIGrants().Widen(ctx, p.Turn, classes, a.deps.Clock.Now())
 	})
 }
 
