@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The Fyniq account's code; the workbook's accounts that map onto it are added.",
+      "examples": [
+        "6510"
+      ],
+      "type": "string"
+    },
+    "difference": {
+      "description": "Fyniq's less the workbook's.",
+      "examples": [
+        "-0.01"
+      ],
+      "type": "string"
+    },
+    "fyniq": {
+      "description": "Fyniq's figure in the base currency, debit positive.",
+      "examples": [
+        "620.00"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The line's key in the difference register: the Fyniq account's code, the month (YYYY-MM) and the figure, or the code and opening.",
+      "examples": [
+        "6510.2026-03.movement"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end.",
+      "enum": [
+        "opening",
+        "movement",
+        "closing"
+      ],
+      "examples": [
+        "movement"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month (YYYY-MM); absent for the opening.",
+      "examples": [
+        "2026-03"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "name": {
+      "description": "The account's name in Fyniq.",
+      "examples": [
+        "Depreciation"
+      ],
+      "type": "string"
+    },
+    "proposed_class": {
+      "description": "The class proposed (design D8): a, a cent allocation on a spread or depreciation account within a cent a month; b, a deliberate rule change on a revaluation or statutory account; empty when none fits, for the Accountant to decide.",
+      "enum": [
+        "",
+        "a",
+        "b",
+        "c"
+      ],
+      "examples": [
+        "a"
+      ],
+      "type": "string"
+    },
+    "workbook": {
+      "description": "The workbook's, from its Trial Balance sheet after RND-IMPORT.",
+      "examples": [
+        "620.01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "account",
+    "name",
+    "kind",
+    "fyniq",
+    "workbook",
+    "difference",
+    "proposed_class"
+  ],
+  "title": "MigrationDifference",
+  "type": "object"
+}

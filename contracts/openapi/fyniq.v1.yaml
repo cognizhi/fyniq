@@ -27045,6 +27045,59 @@ components:
         - done
         - kinds
       type: object
+    MigrationCheckParity:
+      additionalProperties: false
+      properties:
+        fyniq:
+          description: Fyniq's checks of the number.
+          items:
+            $ref: "#/components/schemas/MigrationFyniqCheck"
+          type: array
+        missing:
+          description: Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).
+          examples:
+            - false
+          type: boolean
+        name:
+          description: What the workbook checks.
+          examples:
+            - Debits equal credits (trial balance)
+          type: string
+        number:
+          description: The workbook check's number, which is its Appendix C.1 number.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        row:
+          description: Its row on the Checks sheet.
+          examples:
+            - 7
+          format: int64
+          type: integer
+        same:
+          description: "Whether the worst of Fyniq's statuses is the workbook's: a different one needs a register line or a fix."
+          examples:
+            - true
+          type: boolean
+        workbook:
+          description: "Its status in the workbook: fine ✔, review ⚠ or blocked ✖."
+          enum:
+            - fine
+            - review
+            - blocked
+          examples:
+            - fine
+          type: string
+      required:
+        - number
+        - name
+        - row
+        - workbook
+        - fyniq
+        - same
+        - missing
+      type: object
     MigrationCodeMap:
       additionalProperties: false
       properties:
@@ -27219,6 +27272,74 @@ components:
         - done
         - kinds
       type: object
+    MigrationDifference:
+      additionalProperties: false
+      properties:
+        account:
+          description: The Fyniq account's code; the workbook's accounts that map onto it are added.
+          examples:
+            - "6510"
+          type: string
+        difference:
+          description: Fyniq's less the workbook's.
+          examples:
+            - "-0.01"
+          type: string
+        fyniq:
+          description: Fyniq's figure in the base currency, debit positive.
+          examples:
+            - "620.00"
+          type: string
+        key:
+          description: "The line's key in the difference register: the Fyniq account's code, the month (YYYY-MM) and the figure, or the code and opening."
+          examples:
+            - 6510.2026-03.movement
+          type: string
+        kind:
+          description: "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end."
+          enum:
+            - opening
+            - movement
+            - closing
+          examples:
+            - movement
+          type: string
+        month:
+          description: The month (YYYY-MM); absent for the opening.
+          examples:
+            - 2026-03
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        name:
+          description: The account's name in Fyniq.
+          examples:
+            - Depreciation
+          type: string
+        proposed_class:
+          description: "The class proposed (design D8): a, a cent allocation on a spread or depreciation account within a cent a month; b, a deliberate rule change on a revaluation or statutory account; empty when none fits, for the Accountant to decide."
+          enum:
+            - ""
+            - a
+            - b
+            - c
+          examples:
+            - a
+          type: string
+        workbook:
+          description: The workbook's, from its Trial Balance sheet after RND-IMPORT.
+          examples:
+            - "620.01"
+          type: string
+      required:
+        - key
+        - account
+        - name
+        - kind
+        - fyniq
+        - workbook
+        - difference
+        - proposed_class
+      type: object
     MigrationFileView:
       additionalProperties: false
       properties:
@@ -27292,6 +27413,30 @@ components:
         - data_class
         - added_by
         - added_at
+      type: object
+    MigrationFyniqCheck:
+      additionalProperties: false
+      properties:
+        key:
+          description: The check's key.
+          examples:
+            - books.debits-equal-credits
+          type: string
+        status:
+          description: Its status at its last run.
+          enum:
+            - ok
+            - warning
+            - error
+            - due
+            - not_assessed
+            - failed
+          examples:
+            - ok
+          type: string
+      required:
+        - key
+        - status
       type: object
     MigrationLineMap:
       additionalProperties: false
@@ -27645,6 +27790,95 @@ components:
         - code
         - message
         - fix
+      type: object
+    MigrationReconciliation:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: The Fyniq accounts compared.
+          examples:
+            - 64
+          format: int64
+          type: integer
+        books_start:
+          description: The books start.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        checks:
+          description: The workbook's Checks rows against Fyniq's.
+          items:
+            $ref: "#/components/schemas/MigrationCheckParity"
+          type: array
+        checks_differ:
+          description: The workbook's checks whose status Fyniq's do not share.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        checks_run_at:
+          description: When Fyniq's checks last ran; absent when they never did.
+          examples:
+            - "2026-11-13T09:00:00Z"
+          format: date-time
+          type: string
+        differences:
+          description: "The figures that differ, by account, month and figure: the difference register's lines."
+          items:
+            $ref: "#/components/schemas/MigrationDifference"
+          type: array
+        figures:
+          description: The figures compared.
+          examples:
+            - 1216
+          format: int64
+          type: integer
+        ledger_revision:
+          description: The ledger revision Fyniq's figures were read at (ENG-46).
+          examples:
+            - 4211
+          format: int64
+          type: integer
+        path:
+          description: "The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of."
+          enum:
+            - history
+            - clean_start
+          examples:
+            - history
+          type: string
+        sha256:
+          description: "The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8)."
+          examples:
+            - 5d1e…
+          type: string
+        status:
+          description: "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand."
+          enum:
+            - not_committed
+            - ready
+          examples:
+            - ready
+          type: string
+        through:
+          description: "The last month compared: the workbook's as-of."
+          examples:
+            - 2026-09
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      required:
+        - status
+        - path
+        - books_start
+        - through
+        - ledger_revision
+        - accounts
+        - figures
+        - differences
+        - checks
+        - checks_differ
+        - sha256
       type: object
     MigrationReportView:
       additionalProperties: false
@@ -136570,6 +136804,127 @@ paths:
         capability: "Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)"
         note: A person signed in to Fyniq, stepped up in the last 5 minutes.
         right: A
+  /v1/migrations/{migration_id}/reconciliation:
+    get:
+      description: "The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) the Accountant decides. The workbook's Checks rows are compared, by their Appendix C.1 number, with the statuses of Fyniq's checks at their last run. sha256 is what the sign-off names. Before the import is committed, status not_committed and no figures. Read-only; no side effects."
+      operationId: getMigrationReconciliation
+      parameters:
+        - description: The migration.
+          in: path
+          name: migration_id
+          required: true
+          schema:
+            description: The migration.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MigrationReconciliation"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the reconciliation
+      tags:
+        - Migration
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+        right: V
   /v1/migrations/{migration_id}/report:
     get:
       description: "M1's latest validation report (FR-MIG-01, design D2): the workbook's company, base currency and dates, each sheet's rows the import reads, and every problem with its sheet, row and column, what is wrong and how to fix it. An error stops the commit; a row the workbook did not post (✖) is a warning and is not imported. While the workbook is validating, the state says so: poll the operation, then read again. Before a workbook is uploaded there is none to read. Read-only; no side effects."

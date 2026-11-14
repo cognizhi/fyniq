@@ -107,7 +107,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   workbook's Checks rows against Fyniq's C.1 checks; the parity report and register signed together (the Accountant,
   step-up, over their hash). `GET /v1/migrations/{id}/reconciliation`, `PATCH .../register/{line}`,
   `POST .../reconciliation/sign-off`. Tests `// req: FR-MIG-02`, `// req: QA-MIG-01`, `// req: G4-016` (the open USD
-  receivables' revaluation as class b), `// req: data/migration Parity check (M4)`.
+  receivables' revaluation as class b), `// req: data/migration Parity check (M4)`. (Slice 13 built the report, rev
+  0.265: `GET .../reconciliation` with each figure that differs as a register line and its proposed class, and the
+  checks by C.1 number; the sample's history differs only in two depreciation months by a cent; a clean start's openings
+  equal Carry Forward. Left: the register's decisions and the sign-off.)
 
 ## 6. The parallel month and the archive (M5, M6)
 

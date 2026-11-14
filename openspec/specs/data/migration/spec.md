@@ -101,6 +101,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **THEN** the revaluation postings (or their suppression before cut-over, as decided) appear in the migration difference register by account and month
 - **AND** the trial balance otherwise matches to the cent
 
+#### Scenario: The parity report (rev 0.265)
+- **WHEN** a committed import is reconciled
+- **THEN** each account's opening and each month's movement and closing through the workbook's as-of are compared with its Trial Balance sheet after RND-IMPORT, a clean start's openings with the Carry Forward sheet
+- **AND** each figure that differs is a register line with a proposed class: a on a spread or depreciation account within a cent a month, b on a revaluation or statutory account, else none for the accountant
+- **AND** the workbook's Checks rows are compared by their C.1 number with Fyniq's at their last run, one never run counting as different
+
 ### Requirement: FR-MIG-03 Generic import
 The system SHALL provide a generic CSV/XLSX import for each entity, with templates and a dry run.
 

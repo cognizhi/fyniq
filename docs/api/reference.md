@@ -14166,6 +14166,27 @@ The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), ov
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `MIGRATION-11`, `MIGRATION-12`, `MIGRATION-14`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/migrations/{migration_id}/reconciliation`
+
+**Get the reconciliation** (`getMigrationReconciliation`)
+
+The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) the Accountant decides. The workbook's Checks rows are compared, by their Appendix C.1 number, with the statuses of Fyniq's checks at their last run. sha256 is what the sign-off names. Before the import is committed, status not_committed and no figures. Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+- **Responses:**
+  - `200` OK [`MigrationReconciliation`](../../contracts/schemas/MigrationReconciliation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/migrations/{migration_id}/report`
 
 **Get the validation report** (`getMigrationReport`)

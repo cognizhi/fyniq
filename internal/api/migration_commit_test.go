@@ -919,3 +919,106 @@ func TestTheForecastStartsFromTheWorkbooksBooks(t *testing.T) {
 			cents(w.Forecast.Receivables), cents(w.Forecast.Payables), books)
 	}
 }
+
+// The reconciliation compares the imported books with the workbook's own engine (§17.1 M4, design D8): before the
+// commit there is nothing to reconcile, and the report holds no figures; on the sample's history, of 1,615 figures of 85 accounts (each opening, and each
+// month's movement and closing through September) only the depreciation of June and September differs, by a cent, which
+// the closings absorb: class a proposed, a cent allocation. A journal posted since moves two accounts' September
+// movement and closing, with no class proposed. The workbook's checks are compared, by their C.1 number, with Fyniq's
+// at their last run: never run, they differ; run, each is the same exactly when the worst of Fyniq's statuses is the
+// workbook's. A clean start compares each opening with the Carry Forward sheet's balance: none differs.
+// req: FR-MIG-02
+// req: QA-MIG-01
+// req: data/migration Parity check (M4)
+func TestTheReconciliationComparesTheBooksWithTheWorkbook(t *testing.T) {
+	{
+		f := freshFounders(t)
+		accountant := f.as(f.ahkow, authz.Accountant)
+		id := signedMigration(f, accountant)
+		if r := f.e.call(http.MethodGet, "/v1/migrations/"+id+"/reconciliation", accountant, nil); r.Status != http.StatusOK || r.str("status") != "not_committed" ||
+			len(r.Body["differences"].([]any)) != 0 || r.Body["figures"] != float64(0) {
+			t.Fatalf("before the commit: %d %s", r.Status, r.Raw)
+		}
+	}
+	f, id := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	path := "/v1/migrations/" + id + "/reconciliation"
+	r := e.call(http.MethodGet, path, accountant, nil)
+	var rec MigrationReconciliation
+	if err := json.Unmarshal([]byte(r.Raw), &rec); r.Status != http.StatusOK || err != nil {
+		t.Fatalf("the reconciliation: %d %v %s", r.Status, err, r.Raw)
+	}
+	keys := func(rec MigrationReconciliation) string {
+		var out []string
+		for _, d := range rec.Differences {
+			out = append(out, d.Key+" "+d.Difference+" "+d.Proposed)
+		}
+		return strings.Join(out, ", ")
+	}
+	if rec.Status != "ready" || rec.Path != "history" || rec.BooksStart != "2026-01-01" || rec.Through != "2026-09" || rec.Accounts != 85 || rec.Figures != 1615 ||
+		keys(rec) != "1590.2026-06.movement 0.01 a, 1590.2026-09.movement 0.01 a, 6610.2026-06.movement -0.01 a, 6610.2026-09.movement -0.01 a" ||
+		rec.ReportSHA256 == "" {
+		t.Fatalf("the sample's reconciliation: %s", r.Raw)
+	}
+	for _, d := range rec.Differences {
+		if d.Fyniq != "616.66" && d.Fyniq != "-616.66" || d.Workbook != "616.67" && d.Workbook != "-616.67" {
+			t.Errorf("the depreciation's cent: %+v", d)
+		}
+	}
+	if again := e.call(http.MethodGet, path, accountant, nil); again.str("sha256") != rec.ReportSHA256 {
+		t.Errorf("the same books give another hash: %s", again.Raw)
+	}
+	// Never run, Fyniq's checks are not assessed, which no workbook status is.
+	for _, c := range rec.Checks {
+		if !c.Missing && c.Same {
+			t.Errorf("check %d is the same before any run: %+v", c.Number, c)
+		}
+	}
+
+	// A journal posted since the import moves two accounts' September.
+	codes := map[string]string{}
+	for _, a := range e.call(http.MethodGet, "/v1/accounts?limit=500", accountant, nil).Body["items"].([]any) {
+		codes[a.(map[string]any)["code"].(string)] = a.(map[string]any)["id"].(string)
+	}
+	if j := e.postFounderJournal("2026-09-15", founderLine(codes["6410"], "100.00", "", ""), founderLine(codes["1020"], "-100.00", "", "")); j.Status != http.StatusOK {
+		t.Fatalf("the journal: %d %s", j.Status, j.Raw)
+	}
+	e.runCatalogue()
+	var after MigrationReconciliation
+	if r := e.call(http.MethodGet, path, accountant, nil); json.Unmarshal([]byte(r.Raw), &after) != nil || after.ReportSHA256 == rec.ReportSHA256 ||
+		!strings.Contains(keys(after), "1020.2026-09.movement -100.00 , 1020.2026-09.closing -100.00 , 1590.2026-06.movement") ||
+		!strings.Contains(keys(after), "6410.2026-09.movement 100.00 , 6410.2026-09.closing 100.00 ") || len(after.Differences) != 8 {
+		t.Fatalf("after the journal: %s", r.Raw)
+	}
+	// Run, each check is the same exactly when the worst of Fyniq's is the workbook's.
+	rank := map[string]int{"ok": 0, "warning": 1, "due": 1, "error": 2}
+	status := map[int]string{0: "fine", 1: "review", 2: "blocked"}
+	differ := 0
+	for _, c := range after.Checks {
+		worst, assessed := 0, true
+		for _, x := range c.Fyniq {
+			r, ok := rank[x.Status]
+			assessed = assessed && ok
+			worst = max(worst, r)
+		}
+		want := len(c.Fyniq) == 0 || assessed && status[worst] == c.Workbook
+		if c.Same != want || c.Missing != (len(c.Fyniq) == 0) {
+			t.Errorf("check %d: %+v", c.Number, c)
+		}
+		if !c.Same {
+			differ++
+		}
+	}
+	if after.ChecksRunAt == nil || after.ChecksDiffer != differ || after.Checks[0].Number != 1 || !after.Checks[0].Same {
+		t.Errorf("the checks: %d differ, %+v", differ, after.Checks)
+	}
+
+	// A clean start: each opening against the Carry Forward sheet's balance.
+	cf, cid := committedAs(t, "clean_start")
+	var clean MigrationReconciliation
+	if r := cf.e.call(http.MethodGet, "/v1/migrations/"+cid+"/reconciliation", cf.as(cf.ahkow, authz.Accountant), nil); json.Unmarshal([]byte(r.Raw), &clean) != nil ||
+		clean.Path != "clean_start" || clean.BooksStart != "2026-10-01" || clean.Through != "2026-09" || clean.Figures != clean.Accounts || len(clean.Differences) != 0 {
+		t.Errorf("the clean start's reconciliation: %s", r.Raw)
+	}
+}
