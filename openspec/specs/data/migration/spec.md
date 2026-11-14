@@ -142,6 +142,11 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **THEN** each becomes a draft keeping the file's number, posted later through its own approvals
 - **AND** a row naming a contact, item, account or project the organisation does not have refuses the file, saying to import it first
 
+#### Scenario: Opening balances and plans import as drafts (rev 0.272)
+- **WHEN** a file of opening balances, FX rates, bank rules or budgets is imported
+- **THEN** the opening balances and each financial year's budget become drafts approved later, and the FX rates and bank rules are recorded as by hand
+- **AND** a bank rule goes after the organisation's own, and one giving a money account refuses the file
+
 ### Requirement: FR-MIG-04 Full tenant export
 The Owner SHALL be able to export all of the organisation's data and documents in open formats (CSV/JSON plus files), with a manifest and hashes, under dual control.
 

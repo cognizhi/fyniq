@@ -16,7 +16,7 @@ import (
 func TestTheGenericImportReadsItsTemplatesAndTheWorkbooksSheets(t *testing.T) {
 	sgd := money.MustLookup("SGD")
 	created := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
-	if got := ImportEntities(); strings.Join(got, ",") != "accounts,bills,contacts,invoices,items,journals" {
+	if got := ImportEntities(); strings.Join(got, ",") != "accounts,bank-rules,bills,budgets,contacts,fx-rates,invoices,items,journals,opening-balances" {
 		t.Errorf("the entities: %v", got)
 	}
 	for _, entity := range ImportEntities() {
@@ -26,7 +26,8 @@ func TestTheGenericImportReadsItsTemplatesAndTheWorkbooksSheets(t *testing.T) {
 				t.Fatalf("%s's %s template: %v", entity, format, err)
 			}
 			w, err := ReadImport(entity, b, sgd)
-			if err != nil || len(w.Problems) != 0 || len(w.Contacts)+len(w.Items)+len(w.Accounts) != 0 {
+			if err != nil || len(w.Problems) != 0 || len(w.Contacts)+len(w.Items)+len(w.Accounts)+len(w.Journal)+len(w.Invoices)+len(w.Bills)+len(w.Rates)+len(w.BankRules)+len(w.Budget) != 0 ||
+				w.read != 0 {
 				t.Errorf("%s's empty %s template: %v %+v", entity, format, err, w)
 			}
 		}
@@ -68,6 +69,30 @@ func TestTheGenericImportReadsItsTemplatesAndTheWorkbooksSheets(t *testing.T) {
 	if err != nil || len(w.Journal) != len(sample.Journal) || len(w.journals()) != len(sample.journals()) {
 		t.Errorf("the workbook's Journal sheet: %v, %d lines", err, len(w.Journal))
 	}
+
+	// The Lists sheet's sections, the Budget sheet and the Accounts sheet's opening balances (rev 0.272).
+	w, err = ReadImport("fx-rates", sampleBytes(t), sgd)
+	if err != nil || len(w.Rates) == 0 || len(w.Rates) != len(sample.Rates) || w.Rates[0].Currency != sample.Rates[0].Currency || len(w.BankRules) != 0 {
+		t.Errorf("the workbook's FX rates: %v, %d rates", err, len(w.Rates))
+	}
+	w, err = ReadImport("bank-rules", sampleBytes(t), sgd)
+	if err != nil || len(w.BankRules) == 0 || len(w.BankRules) != len(sample.BankRules) || w.BankRules[0].Contains != sample.BankRules[0].Contains || len(w.Rates) != 0 {
+		t.Errorf("the workbook's bank rules: %v, %d rules", err, len(w.BankRules))
+	}
+	w, err = ReadImport("budgets", sampleBytes(t), sgd)
+	if err != nil || len(w.Budget) == 0 || len(w.Budget) != len(sample.Budget) || w.Budget[0].Line != sample.Budget[0].Line {
+		t.Errorf("the workbook's Budget sheet: %v, %d lines", err, len(w.Budget))
+	}
+	w, err = ReadImport("opening-balances", sampleBytes(t), sgd)
+	if err != nil || len(w.Accounts) != len(sample.Accounts) || w.Accounts[0].Code != sample.Accounts[0].Code {
+		t.Errorf("the workbook's opening balances: %v, %d accounts", err, len(w.Accounts))
+	}
+	rt, _ := Template("fx-rates", "csv", created)
+	if w, err := ReadImport("fx-rates", append(rt, []byte("USD,2026-10-15,1.2950\r\nEUR,2026-10-01,1.4\r\n")...), sgd); err != nil || len(w.Rates) != 2 ||
+		w.Rates[0].Rate.Text('f') != "1.295" || w.Rates[1].Origin.Row != 3 || w.read != 2 {
+		t.Errorf("a file of FX rates: %v %+v", err, w)
+	}
+
 	jt, _ := Template("journals", "csv", created)
 	if w, err := ReadImport("journals", append(jt, []byte(",2026-03-31,6310,No entry,10,,,,\r\n")...), sgd); err != nil {
 		t.Errorf("a line with no entry: %v", err)

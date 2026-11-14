@@ -426,16 +426,24 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/holders/{contact_id}` (getHolder): Get a holder
 - `POST /v1/imports/accounts` (importAccounts): Import accounts of the chart
 - `GET /v1/imports/accounts/template` (getAccountsTemplate): Get the template for accounts of the chart
+- `POST /v1/imports/bank-rules` (importBankRules): Import bank rules
+- `GET /v1/imports/bank-rules/template` (getBankRulesTemplate): Get the template for bank rules
 - `POST /v1/imports/bills` (importBills): Import bills and vendor credits, as drafts
 - `GET /v1/imports/bills/template` (getBillsTemplate): Get the template for bills and vendor credits, as drafts
+- `POST /v1/imports/budgets` (importBudgets): Import budgets, as drafts
+- `GET /v1/imports/budgets/template` (getBudgetsTemplate): Get the template for budgets, as drafts
 - `POST /v1/imports/contacts` (importContacts): Import contacts
 - `GET /v1/imports/contacts/template` (getContactsTemplate): Get the template for contacts
+- `POST /v1/imports/fx-rates` (importFxRates): Import monthly FX rates
+- `GET /v1/imports/fx-rates/template` (getFxRatesTemplate): Get the template for monthly FX rates
 - `POST /v1/imports/invoices` (importInvoices): Import invoices and credit notes, as drafts
 - `GET /v1/imports/invoices/template` (getInvoicesTemplate): Get the template for invoices and credit notes, as drafts
 - `POST /v1/imports/items` (importItems): Import items
 - `GET /v1/imports/items/template` (getItemsTemplate): Get the template for items
 - `POST /v1/imports/journals` (importJournals): Import journals, as drafts
 - `GET /v1/imports/journals/template` (getJournalsTemplate): Get the template for journals, as drafts
+- `POST /v1/imports/opening-balances` (importOpeningBalances): Import opening balances, as a draft
+- `GET /v1/imports/opening-balances/template` (getOpeningBalancesTemplate): Get the template for opening balances, as a draft
 - `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
 - `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
 - `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone

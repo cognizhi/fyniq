@@ -10,7 +10,11 @@
         "accounts",
         "journals",
         "invoices",
-        "bills"
+        "bills",
+        "fx-rates",
+        "bank-rules",
+        "opening-balances",
+        "budgets"
       ],
       "examples": [
         "contacts"

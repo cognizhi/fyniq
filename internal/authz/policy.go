@@ -488,7 +488,10 @@ var (
 	// 0.49, provisional). Changing them once posted is high-risk (FM-1) and arrives with a second person's approval.
 	GetOpeningBalances     = Policy{Operation: "getOpeningBalances", Capability: Journals, Need: View}
 	ReplaceOpeningBalances = Policy{Operation: "replaceOpeningBalances", Capability: Journals, Need: Create}
-	PostOpeningBalances    = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
+	// The generic import's opening balances (FR-MIG-03, rev 0.272): a draft, posted later through its approval.
+	GetOpeningBalancesTemplate = Policy{Operation: "getOpeningBalancesTemplate", Capability: Journals, Need: View}
+	ImportOpeningBalances      = Policy{Operation: "importOpeningBalances", Capability: Journals, Need: Create}
+	PostOpeningBalances        = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
 	// Changing posted opening balances is a high-risk action in every team mode (FM-1; rev 0.66): whoever posts journals
 	// asks, and another person who holds A on Journals approves it through the approval engine.
 	RequestOpeningBalancesEdit = Policy{Operation: "requestOpeningBalancesEdit", Capability: Journals, Need: Post,
@@ -580,13 +583,16 @@ var (
 	GetYearEnd = Policy{Operation: "getYearEnd", Capability: PeriodClose, Need: View}
 	// Exchange rates (FR-GL-05, ENG-40; rev 0.70) are month-end work: read with the close (V), entered and withdrawn by the
 	// members who run its checks (C: the Accountant, the Controller). Postings take them through the cascade, whoever posts.
-	ListFxRates       = Policy{Operation: "listFxRates", Capability: PeriodClose, Need: View}
-	GetFxRate         = Policy{Operation: "getFxRate", Capability: PeriodClose, Need: View}
-	ListFeedRates     = Policy{Operation: "listFeedRates", Capability: PeriodClose, Need: View}
-	LookupFxRate      = Policy{Operation: "lookupFxRate", Capability: PeriodClose, Need: View}
-	CreateFxRate      = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
-	BulkCreateFxRates = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
-	WithdrawFxRate    = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
+	ListFxRates   = Policy{Operation: "listFxRates", Capability: PeriodClose, Need: View}
+	GetFxRate     = Policy{Operation: "getFxRate", Capability: PeriodClose, Need: View}
+	ListFeedRates = Policy{Operation: "listFeedRates", Capability: PeriodClose, Need: View}
+	LookupFxRate  = Policy{Operation: "lookupFxRate", Capability: PeriodClose, Need: View}
+	CreateFxRate  = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
+	// The generic import's FX rates (FR-MIG-03, rev 0.272), as recording them by hand.
+	GetFxRatesTemplate = Policy{Operation: "getFxRatesTemplate", Capability: PeriodClose, Need: View}
+	ImportFxRates      = Policy{Operation: "importFxRates", Capability: PeriodClose, Need: Create}
+	BulkCreateFxRates  = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
+	WithdrawFxRate     = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
 	// The month-end revaluation (FR-GL-04; rev 0.73) is close work too: previewed with the close (V), run by the members
 	// who run its checks (C).
 	GetFxRevaluation  = Policy{Operation: "getFxRevaluation", Capability: PeriodClose, Need: View}
@@ -945,8 +951,11 @@ var (
 	UndoBankTransfer       = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
 	// Rules are written under C (FR-BNK-05); a reconciliation is prepared under C on "Bank reconciliation sign-off" and
 	// signed under A, by another person (FR-BNK-10, FM-5).
-	ListBankRules             = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
-	CreateBankRule            = Policy{Operation: "createBankRule", Capability: BankTransactions, Need: Create}
+	ListBankRules  = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
+	CreateBankRule = Policy{Operation: "createBankRule", Capability: BankTransactions, Need: Create}
+	// The generic import's bank rules (FR-MIG-03, rev 0.272): each suggests until an approver makes it auto-apply.
+	GetBankRulesTemplate      = Policy{Operation: "getBankRulesTemplate", Capability: BankTransactions, Need: View}
+	ImportBankRules           = Policy{Operation: "importBankRules", Capability: BankTransactions, Need: Create}
 	GetBankRule               = Policy{Operation: "getBankRule", Capability: BankTransactions, Need: View}
 	ReplaceBankRule           = Policy{Operation: "replaceBankRule", Capability: BankTransactions, Need: Create}
 	BackTestBankRule          = Policy{Operation: "backTestBankRule", Capability: BankTransactions, Need: View}
@@ -1484,8 +1493,11 @@ var (
 // copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
 // who asked. A department's budget holder (C dept) waits for members to carry their department.
 var (
-	ListBudgets           = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
-	CreateBudget          = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
+	CreateBudget = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	// The generic import's budgets (FR-MIG-03, rev 0.272): each financial year's a draft, approved later.
+	GetBudgetsTemplate    = Policy{Operation: "getBudgetsTemplate", Capability: Budgets, Need: View, Unqualified: true}
+	ImportBudgets         = Policy{Operation: "importBudgets", Capability: Budgets, Need: Create, Unqualified: true}
 	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true}
 	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
@@ -1836,7 +1848,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, GetFxRatesTemplate, ImportFxRates, GetBankRulesTemplate, ImportBankRules, GetOpeningBalancesTemplate, ImportOpeningBalances, GetBudgetsTemplate, ImportBudgets, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

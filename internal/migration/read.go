@@ -275,18 +275,26 @@ func (w *Workbook) readLists(g sheet.Grid) {
 		}
 	}
 	if from := marked(g, "✍ MONTHLY FX RATES", 0); from >= 0 {
-		t := w.section("Lists", g, from)
-		for _, r := range t.rows() {
-			w.Rates = append(w.Rates, Rate{Origin: Origin{"Lists", r}, Currency: t.text(r, "Currency"),
-				Month: t.date(r, "Month (any date in it)"), Rate: t.number(r, "Rate (1 unit = ? base)")})
-		}
+		w.readRates(w.section("Lists", g, from))
 	}
 	if from := marked(g, "✍ BANK IMPORT RULES", 0); from >= 0 {
-		t := w.section("Lists", g, from)
-		for _, r := range t.rows() {
-			w.BankRules = append(w.BankRules, BankRule{Origin: Origin{"Lists", r}, Contains: t.text(r, "If bank description contains"),
-				Account: codeOf(t.text(r, "…use category")), GST: t.text(r, "GST code (optional)")})
-		}
+		w.readRules(w.section("Lists", g, from))
+	}
+}
+
+// readRates reads the monthly FX rates of the Lists sheet's section, or of a file of them.
+func (w *Workbook) readRates(t table) {
+	for _, r := range t.rows() {
+		w.Rates = append(w.Rates, Rate{Origin: Origin{"Lists", r}, Currency: t.text(r, "Currency"),
+			Month: t.date(r, "Month (any date in it)"), Rate: t.number(r, "Rate (1 unit = ? base)")})
+	}
+}
+
+// readRules reads the bank import rules of the Lists sheet's section, or of a file of them.
+func (w *Workbook) readRules(t table) {
+	for _, r := range t.rows() {
+		w.BankRules = append(w.BankRules, BankRule{Origin: Origin{"Lists", r}, Contains: t.text(r, "If bank description contains"),
+			Account: codeOf(t.text(r, "…use category")), GST: t.text(r, "GST code (optional)")})
 	}
 }
 

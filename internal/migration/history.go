@@ -261,13 +261,27 @@ func (w *Workbook) balancesRecord(m Mapping, rows []Account, sheet string) (Reco
 			var lines []ledger.JournalLine
 			for _, a := range rows {
 				acc, ok := byCode[m.accountOf(a.Code)]
-				if !ok {
+				switch {
+				case !ok && w.drafts:
+					return Made{}, Refused{{Code: CodeMapping, Field: "account", Row: a.Row, Message: fmt.Sprintf("names account %s, which the organisation does not have", a.Code),
+						Fix: "Use the code of one of the chart's accounts"}}
+				case !ok:
 					return Made{}, Refused{{Code: CodeMapping, Field: "account", Message: fmt.Sprintf("account %s maps onto %s, which the organisation does not have", a.Code, m.accountOf(a.Code)),
 						Fix: "Map it onto an account of the chart, and sign the mapping again"}}
 				}
-				amt, err := amount(a.Opening, base, credit[a.Type], "opening_balance")
+				side := credit[a.Type]
+				if a.Type == "" { // a file's balance is on its account's own side, as the chart has it
+					side = acc.Type == storage.Liability || acc.Type == storage.Equity || acc.Type == storage.Revenue
+				}
+				amt, err := amount(a.Opening, base, side, "opening_balance")
 				if err != nil {
 					return Made{}, err
+				}
+				if w.drafts && slices.Contains([]string{ledger.RoleConvertibleInstruments, ledger.RoleDirectorLoan, ledger.RoleDeferredRemuneration,
+					ledger.RoleShareApplicationMonies}, string(acc.Role)) {
+					return Made{}, Refused{{Code: CodeValue, Field: "opening_balance", Row: a.Row,
+						Message: fmt.Sprintf("account %s's opening balance names the person or instrument it is owed to or by, which a file does not", a.Code),
+						Fix:     "Leave the row out, and enter that balance on the opening balances page"}}
 				}
 				line := ledger.JournalLine{AccountID: acc.ID, Amount: amt, Description: "Opening balance of " + a.Code + " " + a.Name}
 				switch string(acc.Role) {
@@ -298,9 +312,13 @@ func (w *Workbook) balancesRecord(m Mapping, rows []Account, sheet string) (Reco
 				lines = append(lines, line)
 			}
 			svc := journal.Service{Store: e.Store}
-			doc, err := svc.SaveOpening(ctx, e.Org, "The opening balances of the workbook (FR-MIG-01)", lines)
-			if err != nil {
-				return Made{}, err
+			memo := "The opening balances of the workbook (FR-MIG-01)"
+			if w.drafts {
+				memo = "The opening balances imported from a file (FR-MIG-03)"
+			}
+			doc, err := svc.SaveOpening(ctx, e.Org, memo, lines)
+			if err != nil || w.drafts { // a file's are a draft, posted later through their approval
+				return Made{Type: "document", ID: doc.ID}, err
 			}
 			_, err = svc.PostOpening(ctx, e.Org)
 			return Made{Type: "document", ID: doc.ID}, err

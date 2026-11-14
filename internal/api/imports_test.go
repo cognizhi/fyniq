@@ -3,6 +3,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -93,16 +94,22 @@ var matrixImports = map[string]func(e *env, tok string) (response, func() bool){
 
 func init() {
 	files := map[string]string{
-		"contacts": "Matrix Imports Pte Ltd,Customer,,,,SGD,30,,SG,\r\n",
-		"items":    "MTX-1,Matrix service,,Service,hour,10,,SR,Yes,\r\n",
-		"accounts": "6996,Matrix expense,Expense,Other expenses,,G&A,No,,Yes,\r\n",
-		"journals": "MJ-1,2026-10-01,6310,Matrix rent,10,,,,\r\nMJ-1,2026-10-01,1020,Matrix rent,,10,,,\r\n",
-		"invoices": "MINV-1,2026-10-01,Matrix Imports Pte Ltd,4010,Matrix service,,100,,,,,,,,,,\r\n",
-		"bills":    "MB-1,2026-10-01,Matrix Imports Pte Ltd,6310,Matrix rent,,100,,,,,,,,,,\r\n",
+		"contacts":         "Matrix Imports Pte Ltd,Customer,,,,SGD,30,,SG,\r\n",
+		"items":            "MTX-1,Matrix service,,Service,hour,10,,SR,Yes,\r\n",
+		"accounts":         "6996,Matrix expense,Expense,Other expenses,,G&A,No,,Yes,\r\n",
+		"journals":         "MJ-1,2026-10-01,6310,Matrix rent,10,,,,\r\nMJ-1,2026-10-01,1020,Matrix rent,,10,,,\r\n",
+		"invoices":         "MINV-1,2026-10-01,Matrix Imports Pte Ltd,4010,Matrix service,,100,,,,,,,,,,\r\n",
+		"bills":            "MB-1,2026-10-01,Matrix Imports Pte Ltd,6310,Matrix rent,,100,,,,,,,,,,\r\n",
+		"fx-rates":         "USD,2026-10-01,1.30\r\n",
+		"bank-rules":       "MATRIX PAYMENT,6310,\r\n",
+		"opening-balances": "1020,Bank,100.00\r\n",
+		"budgets":          "2026-01-01,6310,1,1,1,1,1,1,1,1,1,1,1,1,\r\n",
 	}
 	ops := map[string][2]string{"contacts": {"getContactsTemplate", "importContacts"}, "items": {"getItemsTemplate", "importItems"},
 		"accounts": {"getAccountsTemplate", "importAccounts"}, "journals": {"getJournalsTemplate", "importJournals"},
-		"invoices": {"getInvoicesTemplate", "importInvoices"}, "bills": {"getBillsTemplate", "importBills"}}
+		"invoices": {"getInvoicesTemplate", "importInvoices"}, "bills": {"getBillsTemplate", "importBills"},
+		"fx-rates": {"getFxRatesTemplate", "importFxRates"}, "bank-rules": {"getBankRulesTemplate", "importBankRules"},
+		"opening-balances": {"getOpeningBalancesTemplate", "importOpeningBalances"}, "budgets": {"getBudgetsTemplate", "importBudgets"}}
 	for entity, op := range ops {
 		matrixImports[op[0]] = func(e *env, tok string) (response, func() bool) {
 			return e.call(http.MethodGet, "/v1/imports/"+entity+"/template", tok, nil), nil
@@ -176,5 +183,87 @@ func TestTheGenericImportMakesDocumentsDrafts(t *testing.T) {
 	e.problemIs(r, "importInvoices", 422, migration.CodeGeneric)
 	if !strings.Contains(r.Raw, `"rows[2].contact"`) || !strings.Contains(r.Raw, "Import the contact first") {
 		t.Errorf("the unknown customer: %s", r.Raw)
+	}
+}
+
+// The generic import's opening balances and plans (FR-MIG-03; rev 0.272): monthly FX rates recorded as by hand; bank
+// rules after the organisation's own, each suggesting; the opening balances a draft, each on its account's own side,
+// posted later through its approval; a financial year's budget a draft, in the organisation's years. A rule giving a
+// money account, a balance on an account the chart does not have and a budget's months before the books start each
+// refuse the file, naming their row.
+// req: FR-MIG-03
+func TestTheGenericImportEntersOpeningBalancesAndPlans(t *testing.T) {
+	e := newEnv(t)
+	ctrl, acct := e.as(authz.Controller), e.as(authz.Accountant)
+	tag := e.call(http.MethodGet, "/v1/organisation/profile", ctrl, nil).Header.Get("ETag")
+	if p := e.call(http.MethodPatch, "/v1/organisation/profile", ctrl, map[string]any{"fy_start_month": 1, "books_start": "2026-10-01",
+		"first_year_end": "2026-12-31"}, "If-Match", tag); p.Status != http.StatusOK {
+		t.Fatalf("the books start: %d %s", p.Status, p.Raw)
+	}
+	tpl := func(entity, tok string) string {
+		return e.call(http.MethodGet, "/v1/imports/"+entity+"/template", tok, nil).Raw
+	}
+	items := func(path, tok string) []map[string]any {
+		t.Helper()
+		var out []map[string]any
+		for _, x := range e.call(http.MethodGet, path, tok, nil).Body["items"].([]any) {
+			out = append(out, x.(map[string]any))
+		}
+		return out
+	}
+	rent, sales := e.books.Rent.Code, e.books.Sales.Code
+
+	r := e.upload("/v1/imports/fx-rates", ctrl, nil, "rates.csv", []byte(tpl("fx-rates", ctrl)+"USD,2026-10-15,1.2950\r\nEUR,2026-10-01,1.4500\r\n"))
+	if r.Status != http.StatusCreated || r.Body["made"] != float64(2) || r.Body["rows"] != float64(2) || len(items("/v1/fx/rates?currency=USD", ctrl)) != 1 {
+		t.Errorf("the FX rates: %d %s", r.Status, r.Raw)
+	}
+
+	if own := e.call(http.MethodPost, "/v1/bank-rules", acct, e.ruleDraft("Own rule")); own.Status != http.StatusCreated {
+		t.Fatalf("the organisation's own rule: %d %s", own.Status, own.Raw)
+	}
+	r = e.upload("/v1/imports/bank-rules", acct, nil, "rules.csv", []byte(tpl("bank-rules", acct)+"GOOGLE,"+rent+",TX\r\nZOOM,"+rent+",\r\n"))
+	if r.Status != http.StatusCreated || r.Body["made"] != float64(2) {
+		t.Fatalf("the bank rules: %d %s", r.Status, r.Raw)
+	}
+	positions := map[string]any{}
+	for _, x := range items("/v1/bank-rules", acct) {
+		positions[x["name"].(string)] = x["position"]
+	}
+	if positions["Own rule"] != float64(1) || positions["Contains GOOGLE"] != float64(2) || positions["Contains ZOOM"] != float64(3) {
+		t.Errorf("the rules' places: %v", positions)
+	}
+	money := e.chartMoneyAccount().Code
+	r = e.upload("/v1/imports/bank-rules", acct, nil, "rules.csv", []byte(tpl("bank-rules", acct)+"SWEEP,"+money+",\r\n"))
+	e.problemIs(r, "importBankRules", 422, migration.CodeGeneric)
+	if !strings.Contains(r.Raw, `"rows[2].account_id"`) {
+		t.Errorf("a rule giving a money account: %s", r.Raw)
+	}
+
+	r = e.upload("/v1/imports/opening-balances", acct, nil, "opening.csv", []byte(tpl("opening-balances", acct)+e.books.Bank.Code+",Bank,10000.00\r\n"+
+		sales+",Sales,10000.00\r\n"))
+	if r.Status != http.StatusCreated || r.Body["made"] != float64(1) || r.Body["rows"] != float64(2) {
+		t.Fatalf("the opening balances: %d %s", r.Status, r.Raw)
+	}
+	ob := e.call(http.MethodGet, "/v1/opening-balances", acct, nil)
+	if ob.Body["status"] != "draft" || !strings.Contains(ob.Raw, `"amount":"10000.00"`) || !strings.Contains(ob.Raw, `"amount":"-10000.00"`) {
+		t.Errorf("the opening balances' draft: %s", ob.Raw)
+	}
+	r = e.upload("/v1/imports/opening-balances", acct, nil, "opening.csv", []byte(tpl("opening-balances", acct)+e.books.Bank.Code+",Bank,5.00\r\n9999,None,5.00\r\n"))
+	e.problemIs(r, "importOpeningBalances", 422, migration.CodeGeneric)
+	if !strings.Contains(r.Raw, `"rows[3].account"`) {
+		t.Errorf("a balance on an account the chart does not have: %s", r.Raw)
+	}
+
+	r = e.upload("/v1/imports/budgets", acct, nil, "budgets.csv", []byte(tpl("budgets", acct)+"2026-10-01,"+rent+",100.00,200.00,300.00,,,,,,,,,,\r\n"))
+	if r.Status != http.StatusCreated || r.Body["made"] != float64(1) {
+		t.Fatalf("the budgets: %d %s", r.Status, r.Raw)
+	}
+	if bs := items("/v1/budgets", acct); len(bs) != 1 || bs[0]["status"] != "draft" || !strings.Contains(fmt.Sprint(bs[0]["budget"]), "Budget FY2026 (imported)") {
+		t.Errorf("the imported budget: %v", bs)
+	}
+	r = e.upload("/v1/imports/budgets", acct, nil, "budgets.csv", []byte(tpl("budgets", acct)+"2026-01-01,"+rent+",5.00,,,,,,,,,,,,\r\n"))
+	e.problemIs(r, "importBudgets", 422, migration.CodeGeneric)
+	if !strings.Contains(r.Raw, "fall before the books start") || !strings.Contains(r.Raw, `"rows[2].`) {
+		t.Errorf("a budget before the books start: %s", r.Raw)
 	}
 }

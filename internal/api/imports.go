@@ -22,7 +22,7 @@ import (
 // ImportReport is what a file of the generic import makes, or would make on a dry run: its rows' records, and every
 // problem with its row and column, what is wrong and how to fix it.
 type ImportReport struct {
-	Entity   string             `json:"entity" enum:"contacts,items,accounts,journals,invoices,bills" doc:"What the file holds." example:"contacts"`
+	Entity   string             `json:"entity" enum:"contacts,items,accounts,journals,invoices,bills,fx-rates,bank-rules,opening-balances,budgets" doc:"What the file holds." example:"contacts"`
 	FileName string             `json:"file_name" doc:"As the uploader named it." example:"contacts.csv"`
 	Rows     int                `json:"rows" doc:"The rows read." example:"42"`
 	Made     int                `json:"made" doc:"The records made: every row's, or none, as a file is imported whole or not at all; on a dry run, the ones it would make." example:"42"`
@@ -55,17 +55,22 @@ type (
 // importPolicies are each entity's operations: the template is read under its own right V, the import made under C,
 // as entering its records by hand is (FR-MIG-03: each entity needs its own Appendix D row's C).
 var importPolicies = map[string][2]authz.Policy{
-	"contacts": {authz.GetContactsTemplate, authz.ImportContacts},
-	"items":    {authz.GetItemsTemplate, authz.ImportItems},
-	"accounts": {authz.GetAccountsTemplate, authz.ImportAccounts},
-	"journals": {authz.GetJournalsTemplate, authz.ImportJournals},
-	"invoices": {authz.GetInvoicesTemplate, authz.ImportInvoices},
-	"bills":    {authz.GetBillsTemplate, authz.ImportBills},
+	"contacts":         {authz.GetContactsTemplate, authz.ImportContacts},
+	"items":            {authz.GetItemsTemplate, authz.ImportItems},
+	"accounts":         {authz.GetAccountsTemplate, authz.ImportAccounts},
+	"journals":         {authz.GetJournalsTemplate, authz.ImportJournals},
+	"invoices":         {authz.GetInvoicesTemplate, authz.ImportInvoices},
+	"bills":            {authz.GetBillsTemplate, authz.ImportBills},
+	"fx-rates":         {authz.GetFxRatesTemplate, authz.ImportFxRates},
+	"bank-rules":       {authz.GetBankRulesTemplate, authz.ImportBankRules},
+	"opening-balances": {authz.GetOpeningBalancesTemplate, authz.ImportOpeningBalances},
+	"budgets":          {authz.GetBudgetsTemplate, authz.ImportBudgets},
 }
 
 // importNames are each entity's words in the contract.
 var importNames = map[string]string{"contacts": "contacts", "items": "items", "accounts": "accounts of the chart",
-	"journals": "journals, as drafts", "invoices": "invoices and credit notes, as drafts", "bills": "bills and vendor credits, as drafts"}
+	"journals": "journals, as drafts", "invoices": "invoices and credit notes, as drafts", "bills": "bills and vendor credits, as drafts",
+	"fx-rates": "monthly FX rates", "bank-rules": "bank rules", "opening-balances": "opening balances, as a draft", "budgets": "budgets, as drafts"}
 
 func registerImports(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
@@ -100,7 +105,10 @@ func registerImports(a *API) {
 				"CSV or an .xlsx workbook, at most 1,000 rows. The file is an untrusted upload: its type is decided from its content and it is " +
 				"scanned for malware (FR-DOC-08). Each row becomes its record through the command that enters it by hand, with its checks, in " +
 				"any organisation; a journal, an invoice or a bill is made a draft, keeping the file's number, and is posted later through its " +
-				"own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. A file is " +
+				"own approvals (rev 0.271); an invoices .xlsx file itemises an invoice on its Doc Lines sheet, as the workbook does. Opening " +
+				"balances, each on its account's own side, are saved as the draft the opening balances page posts; each financial year's " +
+				"budget is a draft; a bank rule goes after the organisation's own and suggests until an approver makes it auto-apply " +
+				"(rev 0.272). A file is " +
 				"imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with " +
 				"its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side " +
 				"effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.",

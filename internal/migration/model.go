@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
+
+	"github.com/cognizhi/fyniq/internal/domain/period"
 )
 
 // The model's problem codes (ENG-23).
@@ -310,7 +312,11 @@ type Balance struct {
 type Workbook struct {
 	// drafts makes its journals, invoices and bills drafts, posted later through their approvals: the generic import's
 	// (rev 0.271); the workbook import posts them, its commit approved as a whole.
-	drafts       bool
+	drafts bool
+	// read is how many rows of a generic import's file hold something (FR-MIG-03); calendar is the organisation's
+	// financial years, which a budgets file's months fall in (rev 0.272).
+	read         int
+	calendar     *period.Calendar
 	Settings     Settings
 	Accounts     []Account
 	Items        []Item

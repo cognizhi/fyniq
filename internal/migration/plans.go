@@ -3,6 +3,7 @@ package migration
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -269,14 +270,23 @@ type budgetMonth struct {
 // line is the account a P&L line maps onto (design D4), its amounts month by month in the base currency, signed as the
 // P&L shows them: positive for income and costs, a discount negated [accountant to confirm]; the lines of one account
 // added, and an account with no amount left out.
+//
+// A budgets file (FR-MIG-03; rev 0.272) names each line's account by its code, its amounts as the budget enters them,
+// in the organisation's financial years; each year's budget is a draft, approved later as any budget is.
 func (w *Workbook) budgets(m Mapping, path string) []Record {
 	accountOf := map[string]string{}
 	for _, l := range m.BudgetLines {
 		accountOf[l.Line] = l.Account
 	}
+	if w.drafts {
+		for _, b := range w.Budget {
+			accountOf[b.Line] = codeOf(b.Line)
+		}
+	}
 	sums := map[budgetMonth]*apd.Decimal{}
 	var accounts []string
 	seen := map[string]bool{}
+	rowOf := map[string]int{} // each account's first row
 	var origin Origin
 	for _, b := range w.Budget {
 		code := accountOf[b.Line]
@@ -293,13 +303,14 @@ func (w *Workbook) budgets(m Mapping, path string) []Record {
 			if !seen[code] {
 				seen[code] = true
 				accounts = append(accounts, code)
+				rowOf[code] = b.Row
 			}
 			k := budgetMonth{code, firstOf(b.Year).AddDate(0, i, 0)}
 			if sums[k] == nil {
 				sums[k] = new(apd.Decimal)
 			}
 			y := new(apd.Decimal).Set(x)
-			if strings.Contains(strings.ToLower(b.Line), "discount") {
+			if strings.Contains(strings.ToLower(b.Line), "discount") && !w.drafts {
 				y.Neg(y)
 			}
 			if _, err := apd.BaseContext.WithPrecision(40).Add(sums[k], sums[k], y); err != nil {
@@ -311,16 +322,30 @@ func (w *Workbook) budgets(m Mapping, path string) []Record {
 		return nil
 	}
 	cal := period.Calendar{BooksStart: w.BooksStart(path), FirstYearEnd: w.firstYearEnd(w.BooksStart(path))}
+	if w.calendar != nil {
+		cal = *w.calendar
+	}
 	years := map[int]bool{}
 	var numbers []int
+	var early time.Time
 	for k := range sums {
-		if n := cal.Number(k.month.AddDate(0, 1, -1)); n > 0 && !years[n] {
+		n := cal.Number(k.month.AddDate(0, 1, -1))
+		if n == 0 && (early.IsZero() || k.month.Before(early)) {
+			early = k.month
+		}
+		if n > 0 && !years[n] {
 			years[n] = true
 			numbers = append(numbers, n)
 		}
 	}
 	slices.Sort(numbers)
 	var out []Record
+	if w.drafts && !early.IsZero() { // a file's months before the books start would be left out unsaid
+		out = append(out, Record{Key: "budget:early", Kind: KindBudget, Origin: origin, make: func(context.Context, storage.UnitOfWork, *Env) (Made, error) {
+			return Made{}, Refused{{Code: CodeValue, Field: "Financial year starting", Message: fmt.Sprintf("the budget's months from %s fall before the books start, %s",
+				early.Format("Jan 2006"), cal.BooksStart.Format(time.DateOnly)), Fix: "Budget the financial years from the books start on"}}
+		}})
+	}
 	for _, n := range numbers {
 		y := cal.Year(n)
 		out = append(out, Record{Key: "budget:" + y.StartsOn.Format(time.DateOnly), Kind: KindBudget, Origin: origin,
@@ -329,10 +354,18 @@ func (w *Workbook) budgets(m Mapping, path string) []Record {
 				if err != nil {
 					return Made{}, err
 				}
-				b := budget.Budget{Name: "Budget FY" + y.EndsOn.Format("2006") + " (from the workbook)", Kind: budget.KindOriginal,
+				name := "Budget FY" + y.EndsOn.Format("2006") + " (from the workbook)"
+				if w.drafts {
+					name = "Budget FY" + y.EndsOn.Format("2006") + " (imported)"
+				}
+				b := budget.Budget{Name: name, Kind: budget.KindOriginal,
 					Year: y.StartsOn.Format(time.DateOnly), Lines: []budget.BudgetLine{}}
 				for _, code := range accounts {
 					acc, err := account(ctx, u, "account", code)
+					var refusals Refused
+					if errors.As(err, &refusals) && w.drafts {
+						refusals[0].Row, refusals[0].Field = rowOf[code], "P&L line"
+					}
 					if err != nil {
 						return Made{}, err
 					}
@@ -351,8 +384,8 @@ func (w *Workbook) budgets(m Mapping, path string) []Record {
 					}
 				}
 				doc, err := budget.DraftIn(ctx, u, b)
-				if err != nil {
-					return Made{}, err
+				if err != nil || w.drafts { // a file's budget is a draft, approved later as any budget is
+					return Made{Type: "document", ID: doc.ID}, err
 				}
 				doc, err = budget.RecordIn(ctx, u, doc.ID)
 				return Made{Type: "document", ID: doc.ID}, err
