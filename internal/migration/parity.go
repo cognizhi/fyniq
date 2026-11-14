@@ -18,6 +18,13 @@ const (
 	FigureOpening  = "opening"
 	FigureMovement = "movement"
 	FigureClosing  = "closing"
+	// The rest of M4's parity (rev 0.267): what a customer owes or a supplier is owed at the as-of, and a month's
+	// payroll totals: net pay, what is due to the CPF Board (CPF, SDL and SHG), and the employer's cost.
+	FigureReceivable       = "receivable"
+	FigurePayable          = "payable"
+	FigurePayrollNet       = "payroll_net"
+	FigurePayrollStatutory = "payroll_statutory"
+	FigurePayrollCost      = "payroll_cost"
 )
 
 // CodeRegister is a decision or a sign-off the register refuses: a line the report does not have, a workbook defect
@@ -40,6 +47,14 @@ type Books struct {
 	Movement map[string]map[time.Time]*apd.Decimal // by the month's first day
 	Roles    map[string]string                     // each account's role
 	Names    map[string]string
+	// The open items at the as-of (rev 0.267): what each customer owes and each supplier is owed, by the contact's ID,
+	// the documents' carrying amounts in the base currency; the contacts the import made, by its record keys
+	// (contact:… and person:…); and each contact's name.
+	Receivable, Payable map[string]*apd.Decimal
+	Contacts            map[string]string
+	ContactNames        map[string]string
+	// PayrollLines are the imported pay runs' lines, by the month's first day and the account's code (rev 0.267).
+	PayrollLines map[time.Time]map[string]*apd.Decimal
 }
 
 // Figure is one figure of the parity: Fyniq's and the workbook's, and their difference (Fyniq less the workbook).
@@ -52,13 +67,21 @@ type Figure struct {
 	Workbook   *apd.Decimal
 	Difference *apd.Decimal
 	Proposed   string // the class proposed for a difference, "" when none fits
+	Contact    string // a receivable's or payable's contact ID, or others for the workbook's contacts not on Contacts
 }
 
 // Key is the figure's key in the difference register, which names it in a path: its account, month and kind, such as
 // 6610.2026-06.movement, or its account and opening.
 func (f Figure) Key() string {
-	if f.Kind == FigureOpening {
+	switch f.Kind {
+	case FigureOpening:
 		return f.Account + ".opening"
+	case FigureReceivable:
+		return "ar." + f.Contact
+	case FigurePayable:
+		return "ap." + f.Contact
+	case FigurePayrollNet, FigurePayrollStatutory, FigurePayrollCost:
+		return "payroll." + f.Month.Format("2006-01") + "." + strings.TrimPrefix(f.Kind, "payroll_")
 	}
 	return f.Account + "." + f.Month.Format("2006-01") + "." + f.Kind
 }
@@ -93,6 +116,9 @@ func add(a, b *apd.Decimal) *apd.Decimal {
 	}
 	return out
 }
+
+// plus is add, which a function adding figures cannot call by that name.
+func plus(a, b *apd.Decimal) *apd.Decimal { return add(a, b) }
 
 func sub(a, b *apd.Decimal) *apd.Decimal {
 	return add(a, new(apd.Decimal).Neg(cmp.Or(b, new(apd.Decimal))))
@@ -230,7 +256,129 @@ func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
 	if path == storage.PathCleanStart {
 		p.Through = firstOf(w.Settings.AsOf)
 	}
+	figure := func(f Figure) {
+		p.Figures++
+		f.Fyniq, f.Workbook = cmp.Or(f.Fyniq, new(apd.Decimal)), cmp.Or(f.Workbook, new(apd.Decimal))
+		if f.Difference = sub(f.Fyniq, f.Workbook); !f.Difference.IsZero() {
+			p.Differences = append(p.Differences, f)
+		}
+	}
+	w.reconcileOpenItems(m, b, figure)
+	if path == storage.PathHistory {
+		w.reconcilePayroll(m, b, figure)
+	}
 	return p
+}
+
+// figureFn adds a figure to the parity: the comparison of fyniq with workbook, a difference when they are not equal.
+type figureFn func(f Figure)
+
+// reconcileOpenItems compares what each customer owes and each supplier is owed at the as-of (§17.1 M4, rev 0.267): the
+// AR & AP sheet's totals by contact, credits included, against the carrying amounts of Fyniq's open documents, on the
+// accounts receivable and payable; a contact the workbook does not have on Contacts is others.
+func (w *Workbook) reconcileOpenItems(m Mapping, b Books, add figureFn) {
+	control := func(role string) string {
+		for code, r := range b.Roles {
+			if r == role {
+				return code
+			}
+		}
+		return ""
+	}
+	idOf := func(name string) string {
+		if strings.HasPrefix(name, "All others") {
+			return "others"
+		}
+		key := strings.ToLower(strings.TrimSpace(name))
+		if id, ok := b.Contacts["contact:"+key]; ok {
+			return id
+		}
+		if id, ok := b.Contacts["person:"+strings.ToLower(personName(name))]; ok {
+			return id
+		}
+		return "others"
+	}
+	side := func(kind string, sheet []OpenBalance, fyniq map[string]*apd.Decimal, account string) {
+		workbook, names := map[string]*apd.Decimal{}, map[string]string{}
+		for _, o := range sheet {
+			id := idOf(o.Contact)
+			workbook[id], names[id] = plus(workbook[id], o.Total), o.Contact
+		}
+		ids := map[string]bool{}
+		for id := range workbook {
+			ids[id] = true
+		}
+		for id := range fyniq {
+			ids[id] = true
+		}
+		ordered := make([]string, 0, len(ids))
+		for id := range ids {
+			ordered = append(ordered, id)
+		}
+		slices.Sort(ordered)
+		for _, id := range ordered {
+			add(Figure{Account: account, Name: cmp.Or(b.ContactNames[id], names[id]), Kind: kind, Contact: id, Fyniq: fyniq[id], Workbook: workbook[id]})
+		}
+	}
+	side(FigureReceivable, w.Receivables, b.Receivable, control(ledger.RoleAccountsReceivable))
+	side(FigurePayable, w.Payables, b.Payable, control(ledger.RoleAccountsPayable))
+}
+
+// reconcilePayroll compares each month's payroll totals (§17.1 M4, rev 0.267): the Payroll sheet's rows against the
+// imported pay run's lines (design D7): net pay against what it credits to salaries payable, what is due to the CPF
+// Board (employee and employer CPF, SDL and SHG) against what it credits to the CPF payable, and the employer's cost
+// (gross pay, employer CPF and SDL) against what it debits.
+func (w *Workbook) reconcilePayroll(m Mapping, b Books, add figureFn) {
+	sys := w.Settings.SystemAccounts
+	salaries, cpf := m.accountOf(sys[sysSalaries]), m.accountOf(sys[sysCPF])
+	type totals struct{ net, statutory, cost *apd.Decimal }
+	workbook := map[time.Time]*totals{}
+	for _, r := range w.Payroll {
+		end := r.MonthEnd
+		if end.IsZero() {
+			end = time.Date(r.Month.Year(), r.Month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+		}
+		t := workbook[firstOf(end)]
+		if t == nil {
+			t = &totals{}
+			workbook[firstOf(end)] = t
+		}
+		t.net = plus(t.net, r.Net)
+		t.statutory = plus(plus(plus(plus(t.statutory, r.EmployeeCPF), r.EmployerCPF), r.SDL), r.SHG)
+		t.cost = plus(plus(plus(t.cost, r.Gross), r.EmployerCPF), r.SDL)
+	}
+	months := map[time.Time]bool{}
+	for mo := range workbook {
+		months[mo] = true
+	}
+	for mo := range b.PayrollLines {
+		months[mo] = true
+	}
+	ordered := make([]time.Time, 0, len(months))
+	for mo := range months {
+		ordered = append(ordered, mo)
+	}
+	slices.SortFunc(ordered, func(a, b time.Time) int { return a.Compare(b) })
+	for _, mo := range ordered {
+		f := &totals{}
+		for code, x := range b.PayrollLines[mo] {
+			switch {
+			case code == salaries:
+				f.net = plus(f.net, new(apd.Decimal).Neg(x))
+			case code == cpf:
+				f.statutory = plus(f.statutory, new(apd.Decimal).Neg(x))
+			case x.Sign() > 0:
+				f.cost = plus(f.cost, x)
+			}
+		}
+		t := workbook[mo]
+		if t == nil {
+			t = &totals{}
+		}
+		add(Figure{Name: "Payroll " + mo.Format("January 2006"), Kind: FigurePayrollNet, Month: mo, Fyniq: f.net, Workbook: t.net})
+		add(Figure{Name: "Payroll " + mo.Format("January 2006"), Kind: FigurePayrollStatutory, Month: mo, Fyniq: f.statutory, Workbook: t.statutory})
+		add(Figure{Name: "Payroll " + mo.Format("January 2006"), Kind: FigurePayrollCost, Month: mo, Fyniq: f.cost, Workbook: t.cost})
+	}
 }
 
 // CompareChecks compares the workbook's Checks rows with Fyniq's checks of their Appendix C.1 number (design D8): each

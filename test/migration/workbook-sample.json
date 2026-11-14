@@ -26,13 +26,14 @@
     "Budget",
     "Forecast",
     "Funding",
+    "AR & AP",
     "Trial Balance",
     "Checks",
     "Carry Forward"
   ],
   "fixture": {
     "file": "workbook-sample.xlsx",
-    "sha256": "2dcf748747118c6d0d719017ce30e460781d273958c2dd51c871e681050c30c2"
+    "sha256": "0a5a5cb9f8f91598dfd76393ad2b8dd5c563a222951cca6004e514fda25ea26e"
   },
   "data": "synthetic (DEV-08): the workbook's sample company"
 }

@@ -120,7 +120,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   as-of against the workbook's AR & AP sheet (by number, the amount due in its currency); the last return's F5 boxes
   against the workbook's GST Return sheet; each month's payroll totals (gross, CPF, SDL, SHG, net) against the Payroll
   sheet. Each difference a register line of its own key, in the report and its sign-off. Tests on the fixture,
-  `// req: data/migration Parity check (M4)`.
+  `// req: data/migration Parity check (M4)`. (Slice 15 built the open items and the payroll totals, rev 0.267: every
+  open total and pay run of the sample agrees; the fixture copies the AR & AP sheet. Left: the F5 comparison, once
+  p1-gst makes the F5 return; the report names it as not compared.)
 
 ## 6. The parallel month and the archive (M5, M6)
 

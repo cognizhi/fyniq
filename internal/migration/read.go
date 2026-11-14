@@ -17,7 +17,7 @@ import (
 var sheets = []string{
 	"Settings", "Accounts", "Items", "Contacts", "Employees", "Lists",
 	"Transactions", "Invoices", "Bills", "Quotes & Orders", "Doc Lines", "Payroll", "Timesheets", "Assets", "Journal",
-	"Recurring", "Bank Rec", "Budget", "Forecast", "Funding", "Trial Balance", "Checks", "Carry Forward",
+	"Recurring", "Bank Rec", "Budget", "Forecast", "Funding", "AR & AP", "Trial Balance", "Checks", "Carry Forward",
 }
 
 // Read reads the published workbook into the model (FR-MIG-01): every sheet the import uses, its problems collected
@@ -69,6 +69,7 @@ func Read(data []byte) (*Workbook, error) {
 	w.readBudget(grids["Budget"], base)
 	w.readForecast(grids["Forecast"])
 	w.readFunding(grids["Funding"], base)
+	w.readOpenBalances(grids["AR & AP"], base)
 	w.readTrialBalance(grids["Trial Balance"], base)
 	w.readChecks(grids["Checks"])
 	w.readCarryForward(grids["Carry Forward"], base)
@@ -467,6 +468,45 @@ func (w *Workbook) readBudget(g sheet.Grid, base money.Currency) {
 		}
 		w.Budget = append(w.Budget, b)
 	}
+}
+
+// readOpenBalances reads the AR & AP sheet's two tables of who owes whom (rev 0.267): the receivables by customer and the
+// payables by supplier, each with its headers on the row after its title and its rows to its TOTAL; the row of others not
+// on Contacts only when it holds something.
+func (w *Workbook) readOpenBalances(g sheet.Grid, base money.Currency) {
+	if len(g.Rows) == 0 {
+		return // a missing sheet is a problem already
+	}
+	const names = 1 // column B
+	table := func(title string) []OpenBalance {
+		top := 0
+		for r := 1; r <= len(g.Rows) && top == 0; r++ {
+			if strings.HasPrefix(strings.TrimSpace(g.Cell(r, names)), title) {
+				top = r
+			}
+		}
+		if top == 0 {
+			w.Problems = append(w.Problems, Problem{Sheet: "AR & AP", Severity: Error, Code: CodeColumn,
+				Message: fmt.Sprintf("the AR & AP sheet has no section %q", title), Fix: "Import the workbook as it is published"})
+			return nil
+		}
+		t := w.headed("AR & AP", g, top+1)
+		var out []OpenBalance
+		for r := top + 2; r <= len(g.Rows); r++ {
+			name := t.text(r, "Name (largest first)")
+			if strings.HasPrefix(name, "TOTAL") {
+				break
+			}
+			total := t.calculated(r, "Total", base)
+			if name == "" || strings.HasPrefix(name, "All others") && (total == nil || total.IsZero()) {
+				continue
+			}
+			out = append(out, OpenBalance{Origin: Origin{"AR & AP", r}, Contact: name, Total: total})
+		}
+		return out
+	}
+	w.Receivables = table("WHO OWES US")
+	w.Payables = table("WHO WE OWE")
 }
 
 // readFunding reads the Funding sheet's first two sections, each with its headers on the row after its title: the cap

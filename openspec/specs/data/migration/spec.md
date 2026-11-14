@@ -113,6 +113,12 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **AND** the Accountant, stepped up, signs the report and the register together over the report's hash once every line has a decision that counts and Fyniq's checks have run
 - **AND** a report is signed once, and books or decisions that change afterwards make another report on which the earlier sign-off is not current
 
+#### Scenario: Open items and payroll totals (rev 0.267)
+- **WHEN** a committed import is reconciled
+- **THEN** each customer's and supplier's open total at the as-of is compared with the workbook's AR & AP sheet, and each month's net pay, CPF Board dues and employer's cost with its Payroll sheet
+- **AND** each difference is a register line of its own
+- **AND** the report names the GST F5 comparison as not compared until Fyniq makes the F5 return
+
 ### Requirement: FR-MIG-03 Generic import
 The system SHALL provide a generic CSV/XLSX import for each entity, with templates and a dry run.
 

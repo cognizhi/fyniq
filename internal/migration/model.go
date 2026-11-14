@@ -250,6 +250,14 @@ type BudgetLine struct {
 	Notes  string
 }
 
+// OpenBalance is a row of the AR & AP sheet: what a customer owes or a supplier is owed at the workbook's as-of, in the
+// base currency, credits included (rev 0.267).
+type OpenBalance struct {
+	Origin
+	Contact string
+	Total   *apd.Decimal
+}
+
 // Holding is a row of Funding's cap table; Instrument a row of its SAFEs and notes.
 type Holding struct {
 	Origin
@@ -323,6 +331,8 @@ type Workbook struct {
 	BankRecs     []BankRec
 	Budget       []BudgetLine
 	Forecast     Forecast
+	Receivables  []OpenBalance // the AR & AP sheet's receivables by customer
+	Payables     []OpenBalance // and its payables by supplier
 	Holdings     []Holding
 	Instruments  []Instrument
 	TrialBalance []TrialBalance

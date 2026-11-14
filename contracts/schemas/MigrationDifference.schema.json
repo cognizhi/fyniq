@@ -35,11 +35,16 @@
       "type": "string"
     },
     "kind": {
-      "description": "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end.",
+      "description": "opening: the balance at the books start; movement: the month's; closing: the balance at the month's end; receivable or payable: what the contact owes or is owed at the as-of, by the AR \u0026 AP sheet (rev 0.267); payroll_net, payroll_statutory, payroll_cost: a month's net pay, what is due to the CPF Board (CPF, SDL, SHG) and the employer's cost, by the Payroll sheet.",
       "enum": [
         "opening",
         "movement",
-        "closing"
+        "closing",
+        "receivable",
+        "payable",
+        "payroll_net",
+        "payroll_statutory",
+        "payroll_cost"
       ],
       "examples": [
         "movement"
