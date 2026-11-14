@@ -41428,7 +41428,7 @@ components:
             - sales.payment_terms_days
           type: string
         kind:
-          description: "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices."
+          description: "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices."
           enum:
             - switch
             - minutes
@@ -41436,6 +41436,7 @@ components:
             - days
             - months
             - years
+            - count
             - amount_sgd
             - percent
             - text

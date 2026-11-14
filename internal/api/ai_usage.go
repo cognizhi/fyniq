@@ -151,13 +151,7 @@ func quotaUse(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection,
 	if err := json.Unmarshal(c.Quota, &q); err != nil {
 		return nil, err
 	}
-	local := now.In(appclock.Singapore)
-	start := time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, appclock.Singapore)
-	resets := start.AddDate(0, 1, 0)
-	if q.Window == "day" {
-		start = time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, appclock.Singapore)
-		resets = start.AddDate(0, 0, 1)
-	}
+	start, resets := q.Period(now, appclock.Singapore)
 	rows, err := u.AICalls().Usage(ctx, start, resets)
 	if err != nil {
 		return nil, err
