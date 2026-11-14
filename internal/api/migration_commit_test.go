@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
@@ -539,8 +540,7 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 	tb := trialBalance(t, e, f.as(f.ahkow, authz.Accountant), "2026-09")
-	waiting := map[string]string{"1020": "-700000.00", "2100": "", "2110": "", "6011": "", "6012": "", "6013": "", "6020": "",
-		"6030": "", "2700": "", "3020": ""}
+	waiting := map[string]string{"1020": "-700000.00", "2700": "", "3020": ""}
 	for _, x := range w.TrialBalance {
 		want := x.Closing[8]
 		if want == nil {
@@ -584,4 +584,80 @@ func TestTheTransactionsBringEveryAccountToTheWorkbooksBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = id
+}
+
+// Imported pay runs keep the amounts paid (FR-MIG-02; design D7, rev 0.254): each month of the Payroll sheet is one
+// posted summary journal on its last day, its credit to the CPF payable what was due to the CPF Board, employee and
+// employer CPF, SDL and SHG, and its salary lines in their employees' departments; the per-employee rows stay in the
+// archived workbook. With the history's Transactions, which paid them, the payroll accounts end each month as the
+// workbook's do (TestTheTransactionsBringEveryAccountToTheWorkbooksBalance).
+// req: FR-MIG-02
+// req: FR-MIG-01
+func TestImportedPayRunsKeepTheAmountsPaid(t *testing.T) {
+	f, _ := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	due := map[string]*apd.Decimal{} // the month's amount due to the CPF Board, as a credit
+	for _, p := range w.Payroll {
+		k := p.MonthEnd.Format(time.DateOnly)
+		if due[k] == nil {
+			due[k] = new(apd.Decimal)
+		}
+		for _, x := range []*apd.Decimal{p.EmployeeCPF, p.EmployerCPF, p.SDL, p.SHG} {
+			if x != nil {
+				if _, err := apd.BaseContext.WithPrecision(40).Sub(due[k], due[k], x); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+	}
+	accounts := byNumber(e.call(http.MethodGet, "/v1/accounts?page_size=500", accountant, nil), "code")
+	cpf, salaries := accounts["2110"]["id"], map[any]bool{accounts["6011"]["id"]: true, accounts["6012"]["id"]: true, accounts["6013"]["id"]: true}
+	runs := 0
+	for _, x := range e.call(http.MethodGet, "/v1/journals?page_size=200", accountant, nil).Body["items"].([]any) {
+		j := x.(map[string]any)
+		if !strings.HasPrefix(fmt.Sprint(j["memo"]), "Payroll ") {
+			continue
+		}
+		runs++
+		if j["status"] != "posted" {
+			t.Errorf("%v is %v", j["memo"], j["status"])
+		}
+		want, ok := due[fmt.Sprint(j["date"])]
+		if !ok {
+			t.Errorf("%v is dated %v, no pay month's last day", j["memo"], j["date"])
+			continue
+		}
+		credit := new(apd.Decimal)
+		j = e.call(http.MethodGet, "/v1/journals/"+fmt.Sprint(j["id"]), accountant, nil).Body
+		for _, y := range j["lines"].([]any) {
+			l := y.(map[string]any)
+			if salaries[l["account_id"]] && len(l["dimension_value_ids"].([]any)) != 1 {
+				t.Errorf("%v: a salary line in no department: %v", j["memo"], l)
+			}
+			if l["account_id"] == cpf {
+				a := l["amount"]
+				if m, ok := a.(map[string]any); ok {
+					a = m["amount"]
+				}
+				d, _, err := apd.NewFromString(fmt.Sprint(a))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := apd.BaseContext.WithPrecision(40).Add(credit, credit, d); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		if credit.Cmp(want) != 0 {
+			t.Errorf("%v: %s to the CPF payable, the workbook's due to the CPF Board %s", j["memo"], credit.Text('f'), want.Text('f'))
+		}
+	}
+	if runs != len(due) || runs != 9 {
+		t.Errorf("%d pay runs for the workbook's %d months", runs, len(due))
+	}
 }

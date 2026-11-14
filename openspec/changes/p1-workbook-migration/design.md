@@ -212,6 +212,10 @@ See proposal.md for why. What exists today and shapes the approach:
 - The amounts are those paid and reported, as the workbook computed them. Where the workbook flagged a difference from
   the statutory tables, that becomes a register item (FR-MIG-02), never a silent change.
 - Memo "Payroll <month> (imported from the workbook)"; approved under Journals (Appendix D's People and HR row).
+- (As built, slice 8) On the month's last day, from each row's calculated gross, CPF, SDL, SHG and net pay and the
+  salary account the workbook worked out; the department is the employee's on the Employees sheet, the expense and
+  payable accounts the Settings sheet's system accounts. Its credit to the CPF payable is what was due to the CPF
+  Board; with the Transactions that paid them, the payroll accounts end each month as the workbook's.
 
 **D8. Reconciliation against the workbook's own engine (FR-MIG-02, QA-MIG-01).**
 - The workbook's Trial Balance sheet is the independent implementation the imported books must agree with: golden

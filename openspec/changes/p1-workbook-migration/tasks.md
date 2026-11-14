@@ -79,7 +79,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   spreads and credit notes, bills and journals, their numbers kept, rev 0.259; slice 6: Transactions as statement
   lines, receipts, payments, transfers and categorisations, rev 0.260; slice 7: quotes and orders, assets with their
   depreciation. Rows to share capital or a SAFE wait for task 4.6.)
-- [ ] 4.4 Payroll as one summary journal a month (design D7, rev 0.254), approved under Journals. Test
+- [x] 4.4 Payroll as one summary journal a month (design D7, rev 0.254), approved under Journals. Test
   `// req: FR-MIG-02` "Imported pay runs keep the amounts paid" on the fixture's months.
 - [ ] 4.5 The clean start from Carry Forward: balances and open items at the cut-over. Test
   `// req: data/migration History or opening balances import (M3)` (clean start) on the fixture.
