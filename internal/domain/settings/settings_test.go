@@ -99,6 +99,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 // Values are read strictly by kind and range, and stored in one form.
 // req: FR-ORG-08
 // req: FR-ORG-04
+// req: AI-02
 func TestValuesAreReadByKindAndRange(t *testing.T) {
 	terms, _ := Lookup("sales.payment_terms_days")
 	capDoc, _ := Lookup("bank.tolerance_cap_document")
@@ -106,6 +107,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 	sw, _ := Lookup("features.projects")
 	region, _ := Lookup("data.region")
 	charges, _ := Lookup("bank.charges_account")
+	fields, _ := Lookup("ai.exclusions")
 	for _, c := range []struct {
 		d       Definition
 		in, out string
@@ -115,6 +117,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{pct, "0", "0"}, {pct, "10", "10"}, {pct, "2.5", "2.5"}, {pct, "2.75", "2.75"},
 		{sw, "true", "true"}, {sw, "false", "false"},
 		{charges, "6460", "6460"}, {charges, "6460.10", "6460.10"},
+		{fields, "", ""}, {fields, "notes", "notes"}, {fields, " memo, notes ,memo", "memo,notes"},
 	} {
 		if v, p := Normalise(c.d, c.in); p != nil || v != c.out {
 			t.Errorf("%s = %q: %q %v; want %q", c.d.Key, c.in, v, p, c.out)
@@ -130,6 +133,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{sw, "yes"}, {sw, "TRUE"},
 		{region, "europe-west1"},
 		{charges, ""}, {charges, "64 60"}, {charges, "-6460"}, {charges, "6460-bank-charges-and-more-than-twenty"},
+		{fields, "Notes"}, {fields, "notes,"}, {fields, "notes;memo"}, {fields, "line.notes"},
 	} {
 		if v, p := Normalise(c.d, c.in); code(p) != CodeValue || v != "" {
 			t.Errorf("%s = %q: want %s, got %q %v", c.d.Key, c.in, CodeValue, v, p)

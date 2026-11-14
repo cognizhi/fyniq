@@ -46,6 +46,8 @@ describe("Organisation settings", () => {
     expect(valueText("count", "5")).toBe("5 times");
     expect(valueText("count", "1")).toBe("1 time");
     expect(valueText("amount_sgd", "1000.00")).toBe("S$1,000.00");
+    expect(valueText("fields", "memo,notes")).toBe("memo, notes");
+    expect(valueText("fields", "")).toBe("None");
     expect(valueText("percent", "3")).toBe("3%");
   });
 

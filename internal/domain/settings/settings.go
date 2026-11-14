@@ -40,6 +40,8 @@ const (
 	AccountCode Kind = "account_code"
 	// Choice is one of the definition's Choices, such as "keep".
 	Choice Kind = "choice"
+	// Fields is a list of field names, such as "notes,memo": comma-separated, each lower-case words joined by underscores.
+	Fields Kind = "fields"
 )
 
 // Definition is one setting: what it holds, its recommended value and why, and the rules a change to it meets.
@@ -69,10 +71,16 @@ var Catalogue = []Definition{
 	{Key: "accounting.signing_step_up", Group: "Approvals", Label: "Second factor to sign the accounting framework and policies", Kind: Switch, Recommended: "true",
 		Reason: "The accountant's signature turns management statements into financial statements, so it asks for a passkey or authenticator app, as other approvals do",
 		Guide:  guide + "accounting-sign-off", Requirement: "FR-ORG-10", DualControl: true},
+	{Key: "ai.exclusions", Group: "AI", Label: "Fields the AI never reads", Kind: Fields, Recommended: "",
+		Reason: "The never-send list (identity numbers, bank account numbers, secrets, home addresses) always applies; add fields of your own, such as notes, to keep them from the AI too",
+		Guide:  guide + "ai-and-personal-data", Requirement: "AI-02", DualControl: true},
 	{Key: "ai.fallbacks_per_day", Group: "AI", Label: "Fallbacks a day before a route needs attention", Kind: Count, Recommended: "5", Min: "1",
 		Max:    "1000",
 		Reason: "A primary that fails over five times in a day is not reliable enough to lead its route: Checks shows it so someone looks",
 		Guide:  guide + "ai-routes", Requirement: "AI-76", DualControl: true},
+	{Key: "ai.payroll_access", Group: "AI", Label: "AI payroll access", Kind: Switch, Recommended: "false",
+		Reason: "Pay stays away from the AI unless an Owner turns this on with a second approver, and then only for people with a payroll right; turning it off takes effect at once",
+		Guide:  guide + "ai-and-personal-data", Requirement: "AI-02", DualControl: true, OffAtOnce: true},
 	{Key: "approvals.break_glass_cap", Group: "Approvals", Label: "Break-glass payment cap", Kind: AmountSGD, Recommended: "20000.00",
 		Reason: "In Founder mode, while the other founder is unreachable, an Owner's break-glass releases waiting payment batches of up to S$20,000 in all; more waits for the other founder (the founders' decision of 16 Oct 2026)",
 		Guide:  guide + "break-glass-payment-cap", Requirement: "FM-8", DualControl: true, Min: "0.00", Max: "1000000.00"},
@@ -258,7 +266,9 @@ var (
 	percent = regexp.MustCompile(`^(0|[1-9][0-9]{0,2})(\.[0-9]{1,2})?$`)
 	// accountCode is the chart's code format (FR-COA-01): the account must also exist when a posting reads it.
 	accountCode = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$`)
-	sgd         = money.MustLookup("SGD")
+	// fieldName is a field's name in the API's JSON, as an exclusion names it.
+	fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
+	sgd       = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
@@ -308,6 +318,22 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send one of " + strings.Join(d.Choices, ", "))
 		}
 		return raw, nil
+	case Fields:
+		var names []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !fieldName.MatchString(n) {
+				return bad("Send field names separated by commas, each in lower case with underscores, such as notes, memo")
+			}
+			if !slices.Contains(names, n) {
+				names = append(names, n)
+			}
+		}
+		if len(names) > 50 {
+			return bad("Send at most 50 field names")
+		}
+		slices.Sort(names)
+		return strings.Join(names, ","), nil
 	case Percent:
 		var v apd.Decimal
 		if !percent.MatchString(raw) {

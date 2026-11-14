@@ -4,15 +4,18 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:c4f58d612337049afdf055dd5f06e468e1bc019d26fe39ca7b76767b7665b743
+  - docs/user-guide/organisation-settings.md sha256:185fa7bf483644d20df204a3e7a5dc22bbecc9bb941a6bc2583b424154649b2b
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-14
+compiled_at: 2026-11-15
 aliases:
+  - AI payroll access
+  - fields the AI never reads
+  - what the AI never sees
   - data protection officer
   - DPO contact
   - GST registration
@@ -152,6 +155,14 @@ The calendar itself: [[compliance.calendar]].
 - Changing it needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#ai-routes)
+
+## AI and personal data
+
+- Some data never reaches the AI, whatever is set: NRIC and FIN numbers, full bank account numbers, passwords and other secrets, and home addresses. Fyniq takes them out of everything the assistant reads, and masks an NRIC or a bank account number found in text, keeping only its last characters.
+- **AI payroll access**: off unless changed. Pay, such as salaries, stays away from the AI; turned on, the AI reads pay only for people who may see payroll themselves. Turning it on needs a second approver; turning it off takes effect at once.
+- **Fields the AI never reads**: none unless changed. Add field names of your own, separated by commas, such as `notes, memo`, to keep them from the AI too; a field can be added to the list, never taken off the never-send list. Changing it needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#ai-and-personal-data)
 
 ## Payment terms
 

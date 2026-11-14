@@ -32,7 +32,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 4. Exclusions and untrusted text
 
-- [ ] 4.1 The exclusion policy (design D8) on every AI-principal read: the never-send fields by record type, payroll
+- [x] 4.1 The exclusion policy (design D8) on every AI-principal read: the never-send fields by record type, payroll
   only with the new setting `ai.payroll_access` (off, dual controlled) and the person's payroll right, an Owner's added
   exclusions (dual controlled, never removing the never-send list); the output filter for NRIC and bank-number shapes.
   Tests `// req: AI-02`, `// req: AI-20`.

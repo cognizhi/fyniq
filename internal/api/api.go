@@ -308,7 +308,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.repayments.AfterPosting = a.afterPosting
 	a.disposals.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
-	cfg.Transformers = append(cfg.Transformers, a.mask)
+	cfg.Transformers = append(cfg.Transformers, a.mask, a.excludeForAI)
 	a.API = humago.New(limitUploads{mux}, cfg)
 	a.UseMiddleware(a.requestContext, a.authenticate, a.limit, a.authorise)
 	registerOrganisation(a)
