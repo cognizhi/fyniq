@@ -355,6 +355,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerApprovals(a)
 	registerApprovalPolicies(a)
 	registerPacks(a)
+	registerStatutoryValues(a)
 	registerTeamMode(a)
 	registerPasskeys(a)
 	registerDevices(a)

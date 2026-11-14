@@ -14097,6 +14097,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/statutory-values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the statutory values in force on a day
+         * @description A pack's values in force on a day (ENG-31): from the organisation's active version in force then, else the version this release carries; each table's rows whose effective dates cover the day (a table without them, such as the GST codes, whole), with the official sources they cite (ENG-30). name keeps one table, or the rows whose first column is it. A pack with no version in force on the day is not found. Read-only; no side effects.
+         */
+        get: operations["getStatutoryValues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/super-admins": {
         parameters: {
             query?: never;
@@ -34995,7 +35015,7 @@ export interface components {
             ledger_revision: number;
             /**
              * @description The API path of the report it comes from.
-             * @example /v1/reports/statements/pl?from=2026-07&to=2026-09&revision=1204
+             * @example /v1/reports/statements/pl?from=2026-07&to=2026-09&as_at_revision=1204
              */
             lineage: string;
             /** @example revenue */
@@ -45139,6 +45159,28 @@ export interface components {
              */
             next_cursor?: string;
         };
+        StatutoryRow: {
+            /**
+             * @description Each column's value, as the pack writes it: decimals as text, dates as YYYY-MM-DD, empty for none.
+             * @example {
+             *       "amount": "1000000.00",
+             *       "currency": "SGD",
+             *       "limit": "registration_threshold"
+             *     }
+             */
+            values: {
+                [key: string]: string;
+            };
+        };
+        StatutoryTable: {
+            /** @description Its columns, in order. */
+            columns: string[];
+            /** @example GST limits in force by date */
+            description?: string;
+            /** @example limits */
+            name: string;
+            rows: components["schemas"]["StatutoryRow"][];
+        };
         StatutoryTests: {
             /**
              * Format: date
@@ -45152,6 +45194,25 @@ export interface components {
             exempt: components["schemas"]["ExemptTestView"];
             /** @description Controllers in force whom the test no longer names, such as one whose shares fell to 25% or less: record the day they ceased, unless other grounds keep them one. */
             lapsed: components["schemas"]["ControllerEntryView"][];
+        };
+        StatutoryValues: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-11-15
+             */
+            on: string;
+            /** @example sg-gst */
+            pack: string;
+            /** @description The official sources the rows cite. */
+            sources: components["schemas"]["PackSource"][];
+            /** @description Its tables, each with its rows in force on the day. */
+            tables: components["schemas"]["StatutoryTable"][];
+            /**
+             * @description The version in force: the organisation's active one, else the one this release carries (ENG-31).
+             * @example sg-gst@2026.3
+             */
+            version: string;
         };
         StatutoryWithdrawal: {
             /**
@@ -155704,6 +155765,97 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getStatutoryValues: {
+        parameters: {
+            query: {
+                /** @description The pack. */
+                pack: string;
+                /** @description The day; left out, the organisation's today. */
+                on?: string;
+                /** @description Only this table, or the rows whose first column is this, such as a limit's or a GST code's name. */
+                name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatutoryValues"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -208,3 +208,45 @@ func TestTheSemanticLayerSplitsByDepartment(t *testing.T) {
 		}
 	}
 }
+
+// A regression test (found building p1-ai-assistant task 3.2, lineage.explain): a fact's lineage link named the general
+// ledger's account as account= and the revision as revision=, which the reports do not take, so the link of an
+// account's fact answered 422 and the others ignored the revision. Every kind of fact's link opens its report, read at
+// the fact's revision.
+// req: AI-68
+func TestEveryFactsLineageOpens(t *testing.T) {
+	e := newEnv(t)
+	kpiBooks(e)
+	reader := e.as(authz.Controller)
+	kinds := map[string]bool{}
+	for _, q := range []map[string]any{
+		{"measure": "revenue", "from": "2026-10", "to": "2026-11"},
+		{"measure": "cash", "from": "2026-10", "to": "2026-11"},
+		{"measure": "net_burn", "from": "2026-11", "to": "2026-11"},
+		{"measure": "gross_margin", "from": "2026-11", "to": "2026-11", "grain": "month"},
+		{"measure": "account_movement", "by": "account", "from": "2026-11", "to": "2026-11"},
+		{"measure": "account_balance", "by": "account", "from": "2026-11", "to": "2026-11"},
+		{"measure": "receivables", "by": "customer", "from": "2026-11", "to": "2026-11"},
+		{"measure": "payables", "by": "vendor", "from": "2026-11", "to": "2026-11"},
+	} {
+		r := e.call(http.MethodPost, "/v1/metrics:query", reader, q)
+		if r.Status != http.StatusOK {
+			t.Fatalf("%v: %d %s", q, r.Status, r.Raw)
+		}
+		for _, f := range r.Body["facts"].([]any) {
+			link := f.(map[string]any)["lineage"].(string)
+			kinds[strings.SplitN(strings.TrimPrefix(link, "/v1/"), "?", 2)[0]] = true
+			if strings.Contains(link, "&revision=") || !strings.Contains(link, "as_at") && !strings.Contains(link, "receivables") && !strings.Contains(link, "payables") {
+				t.Errorf("%v: the link %s is not read at the fact's revision", q["measure"], link)
+			}
+			if got := e.call(http.MethodGet, link, reader, nil); got.Status != http.StatusOK {
+				t.Errorf("%v: its link %s: %d %s", q["measure"], link, got.Status, got.Raw)
+			}
+		}
+	}
+	for _, k := range []string{"reports/statements/pl", "reports/statements/bs", "reports/statements/cf", "kpis", "reports/general-ledger"} {
+		if !kinds[k] {
+			t.Errorf("no fact linked to %s: %v", k, kinds)
+		}
+	}
+}

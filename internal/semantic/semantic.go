@@ -233,18 +233,22 @@ func (r run) fact(from, to time.Time, member, name string) Fact {
 	return f
 }
 
-// lineage is the report a fact comes from, as the API serves it.
+// lineage is the report a fact comes from, as the API serves it, read at the fact's revision.
 func (r run) lineage(from, to time.Time, member string) string {
-	months := fmt.Sprintf("from=%s&to=%s&revision=%d", from.Format("2006-01"), to.Format("2006-01"), r.b.Revision)
+	revision := ""
+	if r.b.Revision > 0 {
+		revision = fmt.Sprintf("&as_at_revision=%d", r.b.Revision)
+	}
+	months := fmt.Sprintf("from=%s&to=%s", from.Format("2006-01"), to.Format("2006-01")) + revision
 	switch {
 	case r.q.By == Account:
-		return "/v1/reports/general-ledger?account=" + member + "&from=" + from.Format(time.DateOnly) + "&to=" + to.Format(time.DateOnly)
+		return "/v1/reports/general-ledger?account_id=" + member + "&from=" + from.Format(time.DateOnly) + "&to=" + to.Format(time.DateOnly) + revision
 	case r.q.By == Customer:
 		return "/v1/receivables?as_at=" + to.Format(time.DateOnly)
 	case r.q.By == Vendor:
 		return "/v1/payables?as_at=" + to.Format(time.DateOnly)
 	case r.m.Kind == Monthly:
-		return "/v1/kpis?month=" + to.Format("2006-01") + fmt.Sprintf("&revision=%d", r.b.Revision)
+		return "/v1/kpis?month=" + to.Format("2006-01") + revision
 	case r.m.Key == "net_burn":
 		return "/v1/reports/statements/cf?" + months
 	case r.m.Kind == Stock:

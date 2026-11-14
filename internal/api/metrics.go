@@ -58,7 +58,7 @@ type MetricFact struct {
 	Sign       string `json:"sign" doc:"How the value is signed." example:"what is owed, positive; a credit with the party, negative"`
 	Revision   int64  `json:"ledger_revision" doc:"The ledger revision it was read at (ENG-46)." example:"1204"`
 	Source     string `json:"source" doc:"What it is, in words." example:"the profit and loss's revenue"`
-	Lineage    string `json:"lineage" doc:"The API path of the report it comes from." example:"/v1/reports/statements/pl?from=2026-07&to=2026-09&revision=1204"`
+	Lineage    string `json:"lineage" doc:"The API path of the report it comes from." example:"/v1/reports/statements/pl?from=2026-07&to=2026-09&as_at_revision=1204"`
 }
 
 // MetricsResult is a query's facts, read at one ledger revision.
