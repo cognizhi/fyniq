@@ -60,6 +60,20 @@
       ],
       "type": "string"
     },
+    "natures": {
+      "description": "Each supplier resident for tax outside Singapore, with the nature of payment its bills record (FR-AP-19, rev 0.259).",
+      "items": {
+        "$ref": "MigrationNatureMap.schema.json"
+      },
+      "type": "array"
+    },
+    "people": {
+      "description": "The Funding sheet's founders and everyone named on a director's or subscriber's account, each the contact they become (rev 0.259).",
+      "items": {
+        "$ref": "MigrationPersonMap.schema.json"
+      },
+      "type": "array"
+    },
     "problems": {
       "description": "What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off.",
       "items": {
@@ -133,6 +147,8 @@
     "projects",
     "budget_lines",
     "bank_rules",
+    "people",
+    "natures",
     "problems",
     "errors"
   ],

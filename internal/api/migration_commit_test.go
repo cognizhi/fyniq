@@ -4,18 +4,35 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/migration"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
+
+// freshFounders are the two founders of a new organisation with no chart, no periods and no contacts: the one a
+// workbook is imported into (rev 0.254).
+func freshFounders(t *testing.T) founders {
+	e := newEnv(t)
+	org, err := e.store.CreateOrganisation(context.Background(), storage.NewOrganisation{Name: "Imported Pte Ltd", BaseCurrency: "SGD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.books = porttest.Books{Org: org.ID}
+	relaxEvidence(t, e.store, org.ID)
+	return foundersIn(e)
+}
 
 // signedMigration is f's migration with the sample validated and its mapping signed by the Accountant, as accountant.
 func signedMigration(f founders, accountant string) string {
@@ -27,7 +44,12 @@ func signedMigration(f founders, accountant string) string {
 		e.t.Fatalf("uploading: %d %s", r.Status, r.Raw)
 	}
 	e.validate()
-	_, tag := e.migrationMapping(id)
+	m, tag := e.migrationMapping(id)
+	if c := e.call(http.MethodPatch, "/v1/migrations/"+id+"/mapping", accountant, map[string]any{"natures": natures(m)}, "If-Match", tag); c.Status != http.StatusOK ||
+		c.Body["errors"] != float64(0) {
+		e.t.Fatalf("choosing the natures of payment: %d %s", c.Status, c.Raw)
+	}
+	_, tag = e.migrationMapping(id)
 	if s := e.call(http.MethodPost, "/v1/migrations/"+id+"/mapping/sign-off", accountant, nil, "If-Match", tag); s.Status != http.StatusOK {
 		e.t.Fatalf("signing the mapping: %d %s", s.Status, s.Raw)
 	}
@@ -67,7 +89,7 @@ func (e *env) run(id, tok string) response {
 // req: data/migration History or opening balances import (M3)
 // asvs: V8.2.2, V11.1.1
 func TestACommitResumesWhereItStopped(t *testing.T) {
-	f := newFounders(t)
+	f := freshFounders(t)
 	e := f.e
 	accountant, owner := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Owner)
 	id := signedMigration(f, accountant)
@@ -107,7 +129,7 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 	c := e.call(http.MethodGet, commit, e.as(authz.Auditor), nil)
 	total := int(c.Body["total"].(float64))
 	if c.Status != http.StatusOK || c.str("status") != "running" || c.str("approval_id") != asked.str("id") || c.str("path") != "history" ||
-		c.Body["done"] != float64(0) || total < 150 || c.str("approved_by") != "user:"+f.weiling {
+		c.Body["done"] != float64(0) || total < 100 || c.str("approved_by") != "user:"+f.weiling {
 		t.Fatalf("the approved commit: %d %s", c.Status, c.Raw)
 	}
 	if contacts := e.call(http.MethodGet, "/v1/contacts", accountant, nil); strings.Contains(contacts.Raw, "Harbourline") {
@@ -126,23 +148,36 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 		t.Fatalf("the first batch: %d %s", first.Status, first.Raw)
 	}
 
-	// A bank rule's account put out of use stops the batch at the rule's row; the records before it stay imported. Rule 1
-	// gives a money account and is kept in the archive, so rule 2 is the first imported.
-	var rule1 string
+	// A bank rule's account put out of use stops the batch at the rule's row; the records before it stay imported. The
+	// rule is the last whose account no other rule gives and is not a system account (FR-COA-03), so the first batch has
+	// not imported it.
+	var rule int
 	var acct storage.Account
 	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 		m, _, err := migration.LatestMapping(ctx, u, uuid.MustParse(id))
 		if err != nil {
 			return err
 		}
-		rule1 = m.BankRules[1].Account
-		if acct, err = u.Accounts().ByCode(ctx, rule1); err != nil {
-			return err
+		uses := map[string]int{}
+		for _, r := range m.BankRules {
+			uses[r.Account]++
+		}
+		for _, r := range slices.Backward(m.BankRules) {
+			if uses[r.Account] != 1 {
+				continue
+			}
+			if acct, err = u.Accounts().ByCode(ctx, r.Account); err != nil {
+				return err
+			}
+			if acct.Role == "" {
+				rule = r.Order
+				break
+			}
 		}
 		_, err = u.Accounts().SetActive(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}}), acct.ID, false)
 		return err
-	}); err != nil {
-		t.Fatalf("putting rule 1's account %s out of use: %v", rule1, err)
+	}); err != nil || rule == 0 {
+		t.Fatalf("putting rule %d's account %s out of use: %v", rule, acct.Code, err)
 	}
 	var stopped response
 	for i := 0; i < 10; i++ {
@@ -151,9 +186,9 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 		}
 	}
 	e.problemIs(stopped, "runMigrationCommit", 422, migration.CodeImport)
-	if !strings.Contains(stopped.str("detail"), "Lists row") || !strings.Contains(stopped.str("detail"), "bank-rule:2") ||
+	if !strings.Contains(stopped.str("detail"), "Lists row") || !strings.Contains(stopped.str("detail"), "bank-rule:"+strconv.Itoa(rule)+")") ||
 		!strings.Contains(stopped.str("detail"), "is not an active account") {
-		t.Fatalf("the stop names no row: %s", stopped.Raw)
+		t.Fatalf("the stop names no row of rule %d: %s", rule, stopped.Raw)
 	}
 	held := e.call(http.MethodGet, commit, accountant, nil)
 	done := held.Body["done"].(float64)
@@ -181,9 +216,10 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 		t.Fatalf("a batch after the commit: %d %s", again.Status, again.Raw)
 	}
 
-	// Each record once: 16 contacts, 5 items, 28 bank rules (the 29th, to a money account, is a transfer, kept in the archive).
+	// Each record once: 16 contacts and the 2 founders, 5 items, 28 bank rules (the 29th, to a money account, is a
+	// transfer, kept in the archive).
 	if l := e.call(http.MethodGet, "/v1/contacts?limit=100", accountant, nil); strings.Count(l.Raw, `"legal_name":"Harbourline Logistics Pte Ltd"`) != 1 ||
-		len(l.Body["items"].([]any)) != 16 {
+		strings.Count(l.Raw, `"legal_name":"Alex Tan"`) != 1 || len(l.Body["items"].([]any)) != 18 {
 		t.Errorf("the contacts: %s", l.Raw)
 	}
 	if l := e.call(http.MethodGet, "/v1/items?limit=100", accountant, nil); len(l.Body["items"].([]any)) != 5 {
@@ -222,7 +258,7 @@ func TestACommitResumesWhereItStopped(t *testing.T) {
 // req: FR-MIG-01
 // req: data/migration Set-up import and mapping review (M2)
 func TestEveryImportedRecordNamesItsRow(t *testing.T) {
-	f := newFounders(t)
+	f := freshFounders(t)
 	e := f.e
 	accountant, owner := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Owner)
 	id := signedMigration(f, accountant)
@@ -317,4 +353,108 @@ func TestEveryImportedRecordNamesItsRow(t *testing.T) {
 	if !strings.Contains(trail, asked.str("id")) {
 		t.Error("the imported records' audit events name no approval")
 	}
+}
+
+// importedSample is a fresh organisation with the sample committed, its history included, as the accountant asked and
+// the owner approved.
+func importedSample(t *testing.T) (founders, string) {
+	t.Helper()
+	f := freshFounders(t)
+	accountant, owner := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Owner)
+	id := signedMigration(f, accountant)
+	committed(f, id, accountant, owner, "history")
+	for i := 0; i < 20; i++ {
+		r := f.e.run(id, accountant)
+		if r.Status != http.StatusOK {
+			t.Fatalf("a batch: %d %s", r.Status, r.Raw)
+		}
+		if r.str("status") == "committed" {
+			return f, id
+		}
+	}
+	t.Fatal("the import did not commit in 20 batches")
+	return f, id
+}
+
+// byNumber are a list's items by their field key.
+func byNumber(r response, key string) map[string]map[string]any {
+	out := map[string]map[string]any{}
+	items, _ := r.Body["items"].([]any)
+	for _, x := range items {
+		m := x.(map[string]any)
+		out[fmt.Sprint(m[key])] = m
+	}
+	return out
+}
+
+// decimalIn is an API money object's amount, as a decimal.
+func decimalIn(t *testing.T, v any) *apd.Decimal {
+	t.Helper()
+	m, _ := v.(map[string]any)
+	d, _, err := apd.NewFromString(fmt.Sprint(m["amount"]))
+	if err != nil {
+		t.Fatalf("not an amount: %v", v)
+	}
+	return d
+}
+
+// The history imports as the workbook posted it (§17.1 M3, design D5; rev 0.257, 0.259): every invoice and bill at the
+// total the workbook worked out, in its currency; each invoice and journal keeping the workbook's number, the invoice
+// sequence continuing past the highest; the credit note as a credit note; the draft as a draft; the opening invoice and
+// bill at the books start, whose receivable and payable the opening balances carry on 3900, which nets to zero.
+// req: data/migration History or opening balances import (M3)
+// req: FR-MIG-01
+// req: FR-GL-06
+func TestTheHistoryPostsAsTheWorkbookDid(t *testing.T) {
+	f, _ := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoices := byNumber(e.call(http.MethodGet, "/v1/invoices", accountant, nil), "number")
+	for n, x := range byNumber(e.call(http.MethodGet, "/v1/invoices?kind=credit_note", accountant, nil), "number") {
+		invoices[n] = x
+	}
+	for _, d := range w.Invoices {
+		x, ok := invoices[d.Number]
+		switch {
+		case !ok:
+			t.Errorf("invoice %s is not imported", d.Number)
+		case d.Draft != (x["status"] == "draft"):
+			t.Errorf("invoice %s: status %v, draft %v", d.Number, x["status"], d.Draft)
+		case d.Total != nil && decimalIn(t, x["total"]).Cmp(new(apd.Decimal).Abs(d.Total)) != 0:
+			t.Errorf("invoice %s: total %v; the workbook's %s", d.Number, x["total"], d.Total.Text('f'))
+		case d.OpeningItem != (x["opening_item"] == true):
+			t.Errorf("invoice %s: opening item %v", d.Number, x["opening_item"])
+		}
+	}
+	if invoices["CN-0001"]["kind"] != "credit_note" || invoices["INV-0098"]["date"] != "2025-12-15" && invoices["INV-0098"]["opening_item"] != true {
+		t.Errorf("the credit note and the opening invoice: %v %v", invoices["CN-0001"], invoices["INV-0098"])
+	}
+	bills := byNumber(e.call(http.MethodGet, "/v1/bills", accountant, nil), "supplier_ref")
+	for _, d := range w.Bills {
+		x, ok := bills[d.Number]
+		switch {
+		case !ok:
+			t.Errorf("bill %s is not imported", d.Number)
+		case d.Total != nil && decimalIn(t, x["total"]).Cmp(d.Total) != 0:
+			t.Errorf("bill %s: total %v; the workbook's %s", d.Number, x["total"], d.Total.Text('f'))
+		}
+	}
+	journals := byNumber(e.call(http.MethodGet, "/v1/journals", accountant, nil), "number")
+	if journals["J-0001"]["status"] != "posted" || journals["J-0002"]["status"] != "posted" {
+		t.Errorf("the journals: %v", journals)
+	}
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		seq, err := u.Sequences().Get(ctx, storage.DocumentInvoice)
+		if err == nil && seq.NextNumber != 125 {
+			t.Errorf("the invoice sequence continues at %d, not past INV-0124", seq.NextNumber)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	wantStatus(t, e.checked("books.opening-clearing"), "ok")
 }

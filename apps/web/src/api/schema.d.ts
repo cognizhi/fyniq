@@ -31928,6 +31928,11 @@ export interface components {
              */
             fyniq: string;
             /**
+             * @description Whether the workbook gives it an opening balance; ignored in a change.
+             * @example true
+             */
+            has_opening?: boolean;
+            /**
              * @description An account to create: whether money moves through it.
              * @example false
              */
@@ -31938,10 +31943,20 @@ export interface components {
              */
             name?: string;
             /**
+             * @description On a director's or subscriber's account with an opening balance: the contact, one of the mapping's people, whose balance it is (B.7, rev 0.259).
+             * @example Alex Tan
+             */
+            opening_person?: string;
+            /**
              * @description An account to create: its report group.
              * @example Services & project revenue
              */
             report_group?: string;
+            /**
+             * @description The system role of the Fyniq account it maps onto, if any (FR-COA-03); ignored in a change.
+             * @example director-loan
+             */
+            role?: string;
             /**
              * Format: int64
              * @description Its row on the Accounts sheet; ignored in a change.
@@ -32254,6 +32269,10 @@ export interface components {
             departments?: components["schemas"]["MigrationValueMap"][] | null;
             /** @description GST codes to map again, by the workbook's code. */
             gst_codes?: components["schemas"]["MigrationCodeMap"][] | null;
+            /** @description Suppliers' natures of payment to choose, by the supplier's name. */
+            natures?: components["schemas"]["MigrationNatureMap"][] | null;
+            /** @description People to map again, by the workbook's name. */
+            people?: components["schemas"]["MigrationPersonMap"][] | null;
             /** @description Projects to map again, by the workbook's name. */
             projects?: components["schemas"]["MigrationValueMap"][] | null;
         };
@@ -32285,6 +32304,10 @@ export interface components {
              * @example system:migration.validate
              */
             made_by: string;
+            /** @description Each supplier resident for tax outside Singapore, with the nature of payment its bills record (FR-AP-19, rev 0.259). */
+            natures: components["schemas"]["MigrationNatureMap"][];
+            /** @description The Funding sheet's founders and everyone named on a director's or subscriber's account, each the contact they become (rev 0.259). */
+            people: components["schemas"]["MigrationPersonMap"][];
             /** @description What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off. */
             problems: components["schemas"]["MigrationProblem"][];
             /** @description Each project the records name, as a value of the Project dimension (rev 0.254). */
@@ -32322,6 +32345,63 @@ export interface components {
              * @example 2
              */
             version: number;
+        };
+        MigrationNatureMap: {
+            /**
+             * @description The supplier, by its name on the Contacts sheet: the entry's key.
+             * @example CloudNimbus Hosting
+             */
+            contact: string;
+            /**
+             * @description Where it is resident for tax; ignored in a change.
+             * @example US
+             */
+            country?: string;
+            /**
+             * @description The nature of payment its bills record for the tax agent's withholding decision (FR-AP-19); empty until the Accountant chooses, which stops the sign-off.
+             * @example services_outside_singapore
+             * @enum {string}
+             */
+            nature: "" | "goods" | "software_use" | "software_rights" | "services_in_singapore" | "services_outside_singapore" | "interest" | "movable_rent" | "other";
+            /**
+             * Format: int64
+             * @description Its row on the Contacts sheet; ignored in a change.
+             * @example 12
+             */
+            row?: number;
+        };
+        MigrationPersonMap: {
+            /**
+             * @description The contact's legal name: two names of one person map onto one contact.
+             * @example Alex Tan
+             */
+            contact: string;
+            /**
+             * @description Marked director: a director's account names them (FR-EQ-01).
+             * @example true
+             */
+            director?: boolean;
+            /**
+             * Format: int64
+             * @description Its row; ignored in a change.
+             * @example 127
+             */
+            row?: number;
+            /**
+             * @description Marked shareholder.
+             * @example true
+             */
+            shareholder?: boolean;
+            /**
+             * @description Where the workbook first names them; ignored in a change.
+             * @example Transactions
+             */
+            sheet?: string;
+            /**
+             * @description The name the workbook gives them: the entry's key.
+             * @example Alex Tan (CEO)
+             */
+            workbook: string;
         };
         MigrationProblem: {
             /**

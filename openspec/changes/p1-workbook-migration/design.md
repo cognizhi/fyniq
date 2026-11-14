@@ -138,6 +138,23 @@ See proposal.md for why. What exists today and shapes the approach:
   - journals;
   - payroll, as one summary journal a month (D7);
   - assets, with depreciation run for each past month.
+- (As built, slice 5; rev 0.259) The history goes through the commands a person's request uses:
+  - the opening balances, at the books start, from the Accounts sheet's balances on their side; the receivables and
+    payables on 3900, as the opening items carry them; a director's account's balance in its person's name, with the
+    origin lent or pay (a credit) or paid out (a debit);
+  - each invoice with its Doc Lines (the workbook's resolved description, quantity and price; its discount as a
+    percentage), or one line of its amount; the GST code, rate and due date the workbook used; its spread and project;
+    a negative row as a credit note; a draft as a draft. It keeps the workbook's number, the sequence continuing past
+    the highest of its own form (FR-ORG-04);
+  - each bill with the GST the workbook worked out (its total less its amount), the workbook's number as the
+    supplier's reference, and a non-resident supplier's nature of payment from the mapping (FR-AP-19);
+  - each journal entry, its number kept, a director's account's line in its person's name.
+  - The GST registration starts at the earliest invoice or bill when that is before the books start, as the workbook
+    charged GST on it [accountant to confirm]. Imported records carry no evidence of their own: the workbook kept as
+    M1's evidence, and archived at M6, is theirs (FR-DOC-06).
+  - The mapping (M2) gains the people behind the director's and subscriber's accounts and each non-resident supplier's
+    nature of payment, which the Accountant chooses: the sample's two US suppliers are the mapping's two errors until
+    then.
 - **Clean start**: the Carry Forward sheet's balances as opening balances at the cut-over, and its open invoices and
   bills as opening open items.
 - Both paths:

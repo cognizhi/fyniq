@@ -7,13 +7,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
 
+	billdoc "github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -49,6 +52,30 @@ type Mapping struct {
 	Projects    []ValueMap   `json:"projects"`
 	BudgetLines []LineMap    `json:"budget_lines"`
 	BankRules   []RuleMap    `json:"bank_rules"`
+	// People are the founders and everyone named on a director's or subscriber's account (rev 0.259), as every line on
+	// those accounts names its person (B.7).
+	People []PersonMap `json:"people"`
+	// Natures are the nature of payment of each supplier resident for tax outside Singapore, which its bills record for
+	// the tax agent's withholding decision (FR-AP-19): the workbook keeps none, so the Accountant chooses (rev 0.259).
+	Natures []NatureMap `json:"natures"`
+}
+
+// NatureMap is a non-resident supplier of the Contacts sheet and the nature of payment its bills record.
+type NatureMap struct {
+	Contact string `json:"contact"`
+	Row     int    `json:"row"`
+	Country string `json:"country"`
+	Nature  string `json:"nature"`
+}
+
+// PersonMap is a person the workbook names and the contact they become: a director, a shareholder, or both.
+type PersonMap struct {
+	Workbook    string `json:"workbook"`
+	Sheet       string `json:"sheet"`
+	Row         int    `json:"row"`
+	Contact     string `json:"contact"`
+	Director    bool   `json:"director,omitempty"`
+	Shareholder bool   `json:"shareholder,omitempty"`
 }
 
 // AccountMap is a workbook account and the Fyniq account it maps onto: one Fyniq has, or one created from the
@@ -66,6 +93,11 @@ type AccountMap struct {
 	Function     string `json:"function,omitempty"`
 	MoneyAccount bool   `json:"money_account,omitempty"`
 	DefaultGST   string `json:"default_gst_code,omitempty"`
+	// Role is the system role of the Fyniq account it maps onto (FR-COA-03), and HasOpening whether the workbook gives
+	// it an opening balance; a director's or subscriber's account with one names whose it is (rev 0.259).
+	Role          string `json:"role,omitempty"`
+	HasOpening    bool   `json:"has_opening,omitempty"`
+	OpeningPerson string `json:"opening_person,omitempty"`
 }
 
 // CodeMap is a workbook GST code and the sg-gst code it maps onto.
@@ -100,6 +132,13 @@ type RuleMap struct {
 type TargetAccount struct {
 	Type        storage.AccountType
 	ReportGroup string
+	Role        storage.AccountRole
+}
+
+// personal says whether an account of a role takes a person on each line: a director's account or share application
+// monies (B.7).
+func personal(role string) bool {
+	return role == ledger.RoleDirectorLoan || role == ledger.RoleDeferredRemuneration || role == ledger.RoleShareApplicationMonies
 }
 
 // Target is Fyniq's set-up the mapping maps onto: the organisation's chart, or the standard chart it loads with the
@@ -121,7 +160,7 @@ func TargetOf(ctx context.Context, u storage.UnitOfWork, on time.Time) (Target, 
 	}
 	for _, a := range accounts {
 		if !a.Group {
-			t.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup}
+			t.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup, Role: a.Role}
 		}
 	}
 	if len(t.Accounts) == 0 {
@@ -132,7 +171,7 @@ func TargetOf(ctx context.Context, u storage.UnitOfWork, on time.Time) (Target, 
 		t.Standard = true
 		for _, a := range std {
 			if !a.Group {
-				t.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup}
+				t.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup, Role: a.Role}
 			}
 		}
 	}
@@ -280,21 +319,24 @@ func (w *Workbook) Propose(t Target, previous *Mapping) Mapping {
 		previous = &Mapping{}
 	}
 	m := Mapping{Format: MappingFormat, Accounts: []AccountMap{}, GSTCodes: []CodeMap{}, Departments: []ValueMap{}, Projects: []ValueMap{},
-		BudgetLines: []LineMap{}, BankRules: []RuleMap{}}
+		BudgetLines: []LineMap{}, BankRules: []RuleMap{}, People: []PersonMap{}, Natures: []NatureMap{}}
 	accounts := map[string]AccountMap{}
 	for _, a := range previous.Accounts {
 		accounts[a.Workbook] = a
 	}
 	for _, a := range w.Accounts {
-		e := AccountMap{Workbook: a.Code, Name: a.Name, WorkbookType: a.Type, Row: a.Row}
+		e := AccountMap{Workbook: a.Code, Name: a.Name, WorkbookType: a.Type, Row: a.Row, HasOpening: a.Opening != nil && !a.Opening.IsZero()}
 		if p, ok := accounts[a.Code]; ok {
-			p.Name, p.WorkbookType, p.Row = e.Name, e.WorkbookType, e.Row
+			p.Name, p.WorkbookType, p.Row, p.HasOpening, p.Role = e.Name, e.WorkbookType, e.Row, e.HasOpening, ""
+			if x, ok := t.Accounts[p.Fyniq]; ok && p.Action == Existing {
+				p.Role = string(x.Role)
+			}
 			m.Accounts = append(m.Accounts, p)
 			continue
 		}
 		code := cmp.Or(moved[a.Code], a.Code)
 		if x, ok := t.Accounts[code]; ok {
-			e.Fyniq, e.Action, e.Type = code, Existing, string(x.Type)
+			e.Fyniq, e.Action, e.Type, e.Role = code, Existing, string(x.Type), string(x.Role)
 		} else {
 			e.Fyniq, e.Action, e.Type = a.Code, Create, string(typeOf(a.Type))
 			e.ReportGroup, e.CashFlowLine, e.Function, e.MoneyAccount, e.DefaultGST = a.ReportGroup, a.CashFlowLine, a.Function, a.Money, codeOf(a.DefaultGST)
@@ -365,7 +407,102 @@ func (w *Workbook) Propose(t Target, previous *Mapping) Mapping {
 		}
 		m.BankRules = append(m.BankRules, e)
 	}
+	m.People = w.people(m, previous.People)
+	natures := map[string]string{}
+	for _, n := range previous.Natures {
+		natures[n.Contact] = n.Nature
+	}
+	for _, c := range w.Contacts {
+		role := strings.ToLower(c.Role)
+		country := countryOf(c.Country)
+		if (strings.Contains(role, "supplier") || strings.Contains(role, "vendor") || strings.Contains(role, "both")) && country != "" && country != "SG" {
+			name := strings.TrimSpace(c.Name)
+			m.Natures = append(m.Natures, NatureMap{Contact: name, Row: c.Row, Country: country, Nature: natures[name]})
+		}
+	}
 	return m
+}
+
+// personName is the contact a name the workbook gives a person becomes: without a role in brackets, as "Alex Tan
+// (CEO)" is Alex Tan.
+func personName(name string) string {
+	name = strings.TrimSpace(name)
+	if i := strings.LastIndex(name, " ("); i > 0 && strings.HasSuffix(name, ")") {
+		name = strings.TrimSpace(name[:i])
+	}
+	return name
+}
+
+// people are the Funding sheet's founders, then everyone named on a row to an account m maps onto a director's or
+// subscriber's account, keeping a previous mapping's choices; each director account with an opening balance is
+// given the person named on its rows, or the one founder, when there is exactly one (rev 0.259).
+func (w *Workbook) people(m Mapping, previous []PersonMap) []PersonMap {
+	before := map[string]PersonMap{}
+	for _, p := range previous {
+		before[p.Workbook] = p
+	}
+	var out []PersonMap
+	index := map[string]int{}
+	add := func(p PersonMap) {
+		if p.Workbook = strings.TrimSpace(p.Workbook); p.Workbook == "" {
+			return
+		}
+		if i, ok := index[p.Workbook]; ok {
+			out[i].Director, out[i].Shareholder = out[i].Director || p.Director, out[i].Shareholder || p.Shareholder
+			return
+		}
+		if b, ok := before[p.Workbook]; ok {
+			p.Contact, p.Director, p.Shareholder = b.Contact, b.Director, b.Shareholder
+		}
+		index[p.Workbook] = len(out)
+		out = append(out, p)
+	}
+	for _, h := range w.Holdings {
+		if strings.EqualFold(h.Kind, "Founder") {
+			add(PersonMap{Workbook: h.Holder, Sheet: "Funding", Row: h.Row, Contact: personName(h.Holder), Director: true, Shareholder: true})
+		}
+	}
+	role := map[string]string{} // the workbook's account to the role of the Fyniq account it maps onto
+	for _, a := range m.Accounts {
+		role[a.Workbook] = a.Role
+	}
+	named := map[string]map[string]bool{} // a personal account's people, by the workbook's account
+	name := func(account, person string, o Origin) {
+		r := role[codeOf(account)]
+		if !personal(r) || strings.TrimSpace(person) == "" {
+			return
+		}
+		add(PersonMap{Workbook: person, Sheet: o.Sheet, Row: o.Row, Contact: personName(person), Director: r != ledger.RoleShareApplicationMonies,
+			Shareholder: true})
+		if named[codeOf(account)] == nil {
+			named[codeOf(account)] = map[string]bool{}
+		}
+		named[codeOf(account)][personName(person)] = true
+	}
+	for _, x := range w.Transactions {
+		name(x.Category, x.Contact, x.Origin)
+	}
+	for _, l := range w.Journal {
+		name(l.Account, l.Contact, l.Origin)
+	}
+	var founders []string
+	for _, p := range out {
+		if p.Director && !slices.Contains(founders, p.Contact) {
+			founders = append(founders, p.Contact)
+		}
+	}
+	for i, a := range m.Accounts {
+		if !personal(a.Role) || !a.HasOpening || a.OpeningPerson != "" {
+			continue
+		}
+		switch ns := slices.Collect(maps.Keys(named[a.Workbook])); {
+		case len(ns) == 1:
+			m.Accounts[i].OpeningPerson = ns[0]
+		case len(ns) == 0 && len(founders) == 1:
+			m.Accounts[i].OpeningPerson = founders[0]
+		}
+	}
+	return out
 }
 
 // Check is everything the mapping gets wrong against t (design D4): an error stops the sign-off and the commit.
@@ -465,6 +602,31 @@ func (m Mapping) Check(t Target) []Problem {
 			add("Budget", 0, "P&L line", fmt.Sprintf("the budget line %q goes to %s, a %s account", l.Line, l.Account, typ), "Map it onto a revenue or expense account")
 		}
 	}
+	contacts := map[string]bool{}
+	for _, p := range m.People {
+		if strings.TrimSpace(p.Contact) == "" || len([]rune(p.Contact)) > 200 {
+			add(cmp.Or(p.Sheet, "Funding"), p.Row, "Name", fmt.Sprintf("%q becomes no contact", p.Workbook), "Give the person's legal name, up to 200 characters")
+			continue
+		}
+		contacts[p.Contact] = true
+	}
+	for _, a := range m.Accounts {
+		switch {
+		case !personal(a.Role) || !a.HasOpening:
+		case a.OpeningPerson == "":
+			add("Accounts", a.Row, "Opening balance", fmt.Sprintf("account %s's opening balance is on %s, a %s account, and names no person", a.Workbook, a.Fyniq, a.Role),
+				"Name the director or shareholder whose balance it is, one of the mapping's people")
+		case !contacts[a.OpeningPerson]:
+			add("Accounts", a.Row, "Opening balance", fmt.Sprintf("account %s's opening balance names %q, who is not one of the mapping's people", a.Workbook, a.OpeningPerson),
+				"Name one of the mapping's people")
+		}
+	}
+	for _, n := range m.Natures {
+		if !slices.Contains(billdoc.Natures, n.Nature) {
+			add("Contacts", n.Row, "Country", fmt.Sprintf("%s is resident for tax in %s, and its bills name no nature of payment", n.Contact, n.Country),
+				"Choose the nature of payment its bills are for, such as services performed outside Singapore, for the tax agent's withholding decision (FR-AP-19)")
+		}
+	}
 	for _, r := range m.BankRules {
 		if _, ok := has(r.Account); !ok {
 			add("Lists", 0, "…use category", fmt.Sprintf("bank rule %d (%q) gives %q, which is not an account", r.Order, r.Contains, r.Account),
@@ -487,6 +649,8 @@ type Change struct {
 	Projects    []ValueMap   `json:"projects,omitempty"`
 	BudgetLines []LineMap    `json:"budget_lines,omitempty"`
 	BankRules   []RuleMap    `json:"bank_rules,omitempty"`
+	People      []PersonMap  `json:"people,omitempty"`
+	Natures     []NatureMap  `json:"natures,omitempty"`
 }
 
 // Apply is the mapping with c applied, or what c names that the mapping does not hold.
@@ -497,7 +661,8 @@ func (m Mapping) Apply(c Change) (Mapping, []Problem) {
 			Fix: "Change only what the mapping lists"})
 	}
 	next := Mapping{Format: m.Format, Accounts: slices.Clone(m.Accounts), GSTCodes: slices.Clone(m.GSTCodes), Departments: slices.Clone(m.Departments),
-		Projects: slices.Clone(m.Projects), BudgetLines: slices.Clone(m.BudgetLines), BankRules: slices.Clone(m.BankRules)}
+		Projects: slices.Clone(m.Projects), BudgetLines: slices.Clone(m.BudgetLines), BankRules: slices.Clone(m.BankRules), People: slices.Clone(m.People),
+		Natures: slices.Clone(m.Natures)}
 	for _, a := range c.Accounts {
 		i := slices.IndexFunc(next.Accounts, func(x AccountMap) bool { return x.Workbook == a.Workbook })
 		if i < 0 {
@@ -505,7 +670,12 @@ func (m Mapping) Apply(c Change) (Mapping, []Problem) {
 			continue
 		}
 		was := next.Accounts[i]
-		a.Name, a.WorkbookType, a.Row = was.Name, was.WorkbookType, was.Row
+		a.Name, a.WorkbookType, a.Row, a.HasOpening = was.Name, was.WorkbookType, was.Row, was.HasOpening
+		if a.Action == Existing && a.Fyniq == was.Fyniq {
+			a.Role = was.Role
+		} else if a.Action == Create {
+			a.Role = ""
+		}
 		next.Accounts[i] = a
 	}
 	for _, g := range c.GSTCodes {
@@ -537,6 +707,22 @@ func (m Mapping) Apply(c Change) (Mapping, []Problem) {
 			continue
 		}
 		next.BudgetLines[i].Account = l.Account
+	}
+	for _, n := range c.Natures {
+		i := slices.IndexFunc(next.Natures, func(x NatureMap) bool { return x.Contact == n.Contact })
+		if i < 0 {
+			missing("supplier", n.Contact)
+			continue
+		}
+		next.Natures[i].Nature = n.Nature
+	}
+	for _, p := range c.People {
+		i := slices.IndexFunc(next.People, func(x PersonMap) bool { return x.Workbook == p.Workbook })
+		if i < 0 {
+			missing("person", p.Workbook)
+			continue
+		}
+		next.People[i].Contact, next.People[i].Director, next.People[i].Shareholder = strings.TrimSpace(p.Contact), p.Director, p.Shareholder
 	}
 	for _, r := range c.BankRules {
 		i := slices.IndexFunc(next.BankRules, func(x RuleMap) bool { return x.Order == r.Order })

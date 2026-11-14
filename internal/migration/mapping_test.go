@@ -20,7 +20,7 @@ func standardTarget(t *testing.T) Target {
 		t.Fatal(err)
 	}
 	for _, a := range std {
-		tg.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup}
+		tg.Accounts[a.Code] = TargetAccount{Type: a.Type, ReportGroup: a.ReportGroup, Role: a.Role}
 	}
 	all, err := pack.LoadAll(packs.FS)
 	if err != nil {
@@ -56,8 +56,24 @@ func TestTheSampleMapsOntoANewOrganisation(t *testing.T) {
 	w := read(t, sample(t))
 	tg := standardTarget(t)
 	m := w.Propose(tg, nil)
-	if ps := m.Check(tg); len(ps) != 0 {
+	// The two suppliers resident in the US name no nature of payment: the Accountant chooses each (FR-AP-19, rev 0.259).
+	if ps := m.Check(tg); len(ps) != 2 || !strings.Contains(problemsSay(ps), "CloudNimbus Hosting is resident for tax in US") ||
+		!strings.Contains(problemsSay(ps), "NeuralAPI Labs is resident for tax in US") {
 		t.Fatalf("the sample's mapping:\n%s", problemsSay(ps))
+	}
+	m, _ = m.Apply(Change{Natures: []NatureMap{{Contact: "CloudNimbus Hosting", Nature: "services_outside_singapore"},
+		{Contact: "NeuralAPI Labs", Nature: "services_outside_singapore"}}})
+	if ps := m.Check(tg); len(ps) != 0 {
+		t.Fatalf("the sample's mapping with its natures:\n%s", problemsSay(ps))
+	}
+	// The founders, and the director the 2500 repayment names, as one contact: whose the loan's opening balance is.
+	people := map[string]PersonMap{}
+	for _, p := range m.People {
+		people[p.Workbook] = p
+	}
+	if people["Alex Tan"].Contact != "Alex Tan" || !people["Alex Tan"].Director || people["Priya Nair"].Sheet != "Funding" ||
+		people["Alex Tan (CEO)"].Contact != "Alex Tan" || people["Alex Tan (CEO)"].Row != 127 {
+		t.Errorf("the people: %+v", m.People)
 	}
 	byCode := map[string]AccountMap{}
 	for _, a := range m.Accounts {
@@ -66,7 +82,8 @@ func TestTheSampleMapsOntoANewOrganisation(t *testing.T) {
 			t.Errorf("account %s: %+v", a.Workbook, a)
 		}
 	}
-	if len(m.Accounts) != 83 || byCode["7040"].Fyniq != "7050" || byCode["1010"].Fyniq != "1010" || byCode["5010"].Type != "expense" {
+	if len(m.Accounts) != 83 || byCode["7040"].Fyniq != "7050" || byCode["1010"].Fyniq != "1010" || byCode["5010"].Type != "expense" ||
+		byCode["2500"].Role != "director-loan" || !byCode["2500"].HasOpening || byCode["2500"].OpeningPerson != "Alex Tan" {
 		t.Errorf("the accounts: %d, 7040 %+v", len(m.Accounts), byCode["7040"])
 	}
 	if len(m.GSTCodes) != 12 || m.GSTCodes[0] != (CodeMap{Workbook: "SR", Row: 6, Fyniq: "SR"}) {
@@ -120,7 +137,7 @@ func TestTheSampleMapsOntoANewOrganisation(t *testing.T) {
 			mine.Accounts[code] = x
 		}
 	}
-	own := w.Propose(mine, nil)
+	own := w.Propose(mine, &Mapping{Natures: m.Natures})
 	for _, a := range own.Accounts {
 		if a.Workbook == "6230" && (a.Action != Create || a.Type != string(storage.Expense) || a.ReportGroup != "Technology & software") {
 			t.Errorf("an account to create: %+v", a)

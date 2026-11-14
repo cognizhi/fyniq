@@ -324,6 +324,10 @@ func (w *Workbook) readDocuments(t table, c documentColumns, base money.Currency
 		if hasStatus {
 			d.Status = statusOf(t.text(r, "Status"))
 		}
+		if _, ok := t.cols["Total (own currency)"]; ok && !calculated { // the Invoices and Bills sheets' own figures
+			d.Total, d.GSTUsed, d.RateUsed, d.Due = t.calculated(r, "Total (own currency)", ccy), t.text(r, "GST code used"),
+				t.number(r, "FX rate used"), t.date(r, "Due date")
+		}
 		if kept(t, r, d.Status) {
 			out = append(out, d)
 		}
@@ -351,7 +355,8 @@ func (w *Workbook) readDocLines(g sheet.Grid) {
 	for _, r := range t.rows() {
 		l := DocLine{Origin: Origin{"Doc Lines", r}, Document: t.text(r, "Document # (invoice / quote / order)"), Item: codeOf(t.text(r, "Item")),
 			Description: t.text(r, "Description (blank = item's)"), Quantity: t.number(r, "Qty (blank = 1)"),
-			Price: t.number(r, "Unit price (blank = item's)"), Discount: t.number(r, "Discount %"), Status: statusOf(t.text(r, "Status"))}
+			Price: t.number(r, "Unit price (blank = item's)"), Discount: t.number(r, "Discount %"), Status: statusOf(t.text(r, "Status")),
+			DescriptionUsed: t.text(r, "Description used"), QuantityUsed: t.number(r, "Qty used"), PriceUsed: t.number(r, "Price used")}
 		if kept(t, r, l.Status) {
 			w.DocLines = append(w.DocLines, l)
 		}

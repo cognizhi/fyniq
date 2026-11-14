@@ -32,8 +32,11 @@ type founders struct {
 	third          string // the third member's membership ID
 }
 
-func newFounders(t *testing.T) founders {
-	e := newEnv(t)
+func newFounders(t *testing.T) founders { return foundersIn(newEnv(t)) }
+
+// foundersIn bootstraps e's organisation with the two founders and a third member.
+func foundersIn(e *env) founders {
+	t := e.t
 	owner := e.as(authz.Owner)
 	// Every invitation is made during the founder bootstrap, so each keeps its roles when accepted after.
 	invite := func(name string, roles []string, extra ...any) string {

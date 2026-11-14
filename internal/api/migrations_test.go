@@ -160,17 +160,18 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 	rep := e.call(http.MethodGet, "/v1/migrations/"+id+"/report", e.as(authz.Auditor), nil)
 	sheets, _ := rep.Body["sheets"].([]any)
 	problems, _ := rep.Body["problems"].([]any)
-	// Three warnings: the Timesheets and the bank rule to a money account kept in the archive, and the sample's
-	// placeholder UEN, which the import leaves out.
+	// Five warnings: the Timesheets and the bank rule to a money account kept in the archive, the sample's placeholder
+	// UEN, which the import leaves out, and the two US suppliers' natures of payment, which the mapping asks for.
 	var warned []string
 	for _, p := range problems {
 		warned = append(warned, fmt.Sprint(p.(map[string]any)["code"], " ", p.(map[string]any)["sheet"]))
 	}
 	slices.Sort(warned)
-	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(3) ||
+	if rep.Status != 200 || rep.str("state") != "valid" || rep.Body["errors"] != float64(0) || rep.Body["warnings"] != float64(5) ||
 		rep.str("format") != migration.ReportFormat || rep.str("base_currency") != "SGD" || rep.str("books_start") != "2026-01-01" ||
 		rep.str("as_of") != "2026-09-30" || rep.str("sha256") != hex.EncodeToString(sum[:]) || len(sheets) != 22 ||
-		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Lists, "+migration.CodeArchived+" Timesheets" {
+		strings.Join(warned, ", ") != migration.CodeValue+" Settings, "+migration.CodeArchived+" Lists, "+migration.CodeArchived+" Timesheets, "+
+			migration.CodeMapping+" Contacts, "+migration.CodeMapping+" Contacts" {
 		t.Fatalf("the report: %d %s", rep.Status, rep.Raw)
 	}
 	for _, s := range sheets {
@@ -277,13 +278,14 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 	e.validate()
 	m, tag := e.migrationMapping(id)
 	accounts, _ := m.Body["accounts"].([]any)
-	if m.Status != 200 || m.Body["version"] != float64(1) || m.Body["signed"] != false || m.Body["errors"] != float64(0) || len(accounts) != 83 ||
+	// Its two errors are the US suppliers' natures of payment, which the Accountant chooses (FR-AP-19, rev 0.259).
+	if m.Status != 200 || m.Body["version"] != float64(1) || m.Body["signed"] != false || m.Body["errors"] != float64(2) || len(accounts) != 83 ||
 		m.str("made_by") != "system:migration.validate" || tag != `"1-open"` {
 		t.Fatalf("the proposed mapping: %d %s %s", m.Status, tag, m.Raw)
 	}
 
 	change := map[string]any{"accounts": []map[string]any{{"workbook": "4030", "fyniq": "4031", "action": "create", "type": "revenue",
-		"report_group": "Services & project revenue"}}}
+		"report_group": "Services & project revenue"}}, "natures": natures(m)}
 	e.problemIs(e.call(http.MethodPatch, mapping, ctrl, change, "Idempotency-Key", "c-0"), "changeMigrationMapping", 428, CodeIfMatchRequired)
 	e.problemIs(e.call(http.MethodPatch, mapping, ctrl, map[string]any{"projects": []map[string]any{{"workbook": "Nope", "code": "N", "action": "create"}}},
 		"Idempotency-Key", "c-1", "If-Match", tag), "changeMigrationMapping", 422, CodeInvalid)
@@ -414,6 +416,15 @@ func unsigned(e *env, id string) {
 	}
 }
 
+// natures choose the nature of payment of each non-resident supplier a mapping lists, as the Accountant does.
+func natures(m response) []map[string]any {
+	out := []map[string]any{}
+	for _, x := range m.Body["natures"].([]any) {
+		out = append(out, map[string]any{"contact": x.(map[string]any)["contact"], "nature": "services_outside_singapore"})
+	}
+	return out
+}
+
 // signable makes the matrix's mapping signable when it lists errors: the matrix's other rows create accounts under the
 // workbook's codes, of other types, so every account is created under a code of its own, W and the workbook's, and the
 // budget lines and bank rules follow it.
@@ -423,7 +434,7 @@ func signable(e *env, id string) {
 	if m.Body["errors"] == float64(0) {
 		return
 	}
-	change := map[string][]map[string]any{}
+	change := map[string][]map[string]any{"natures": natures(m)}
 	for _, x := range m.Body["accounts"].([]any) {
 		a := x.(map[string]any)
 		a["fyniq"], a["action"] = "W"+a["workbook"].(string), "create"

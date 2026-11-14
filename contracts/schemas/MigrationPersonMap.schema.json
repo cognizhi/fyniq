@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact": {
+      "description": "The contact's legal name: two names of one person map onto one contact.",
+      "examples": [
+        "Alex Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "director": {
+      "description": "Marked director: a director's account names them (FR-EQ-01).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "row": {
+      "description": "Its row; ignored in a change.",
+      "examples": [
+        127
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "shareholder": {
+      "description": "Marked shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "sheet": {
+      "description": "Where the workbook first names them; ignored in a change.",
+      "examples": [
+        "Transactions"
+      ],
+      "type": "string"
+    },
+    "workbook": {
+      "description": "The name the workbook gives them: the entry's key.",
+      "examples": [
+        "Alex Tan (CEO)"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "workbook",
+    "contact"
+  ],
+  "title": "MigrationPersonMap",
+  "type": "object"
+}

@@ -52,6 +52,26 @@
         "null"
       ]
     },
+    "natures": {
+      "description": "Suppliers' natures of payment to choose, by the supplier's name.",
+      "items": {
+        "$ref": "MigrationNatureMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "people": {
+      "description": "People to map again, by the workbook's name.",
+      "items": {
+        "$ref": "MigrationPersonMap.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "projects": {
       "description": "Projects to map again, by the workbook's name.",
       "items": {

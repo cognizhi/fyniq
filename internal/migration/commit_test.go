@@ -40,6 +40,19 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 		first[KindContact] < first[KindChart] || first[KindBankRule] < first[KindContact] {
 		t.Errorf("the plan's order: %v", first)
 	}
+	// The history (design D5): the opening balances after the set-up, the opening items first, then every invoice, credit
+	// note, bill and journal in date order; a clean start has none of it.
+	if kinds[KindOpeningBalances] != 1 || kinds[KindInvoice]+kinds[KindCreditNote] != 25 || kinds[KindCreditNote] != 1 || kinds[KindBill] != 17 ||
+		kinds[KindJournal] != 2 || first[KindOpeningBalances] < first[KindBankRule] || plan[first[KindOpeningBalances]+1].Key != "invoice:INV-0098" ||
+		plan[first[KindOpeningBalances]+2].Key != "bill:tally & co accounting:TAL-2025-112" {
+		t.Errorf("the history: %v, after the opening balances %s and %s", kinds, plan[first[KindOpeningBalances]+1].Key, plan[first[KindOpeningBalances]+2].Key)
+	}
+	clean, _ := w.Plan(m, storage.PathCleanStart)
+	for _, r := range clean {
+		if r.Kind == KindInvoice || r.Kind == KindOpeningBalances || r.Kind == KindJournal {
+			t.Errorf("a clean start imports the history's %s", r.Key)
+		}
+	}
 	if keys["bank-rule:1"] || !keys["bank-rule:2"] || !w.transferRule(1) {
 		t.Error("the bank rule to a money account is imported")
 	}

@@ -43,6 +43,13 @@
       "minLength": 1,
       "type": "string"
     },
+    "has_opening": {
+      "description": "Whether the workbook gives it an opening balance; ignored in a change.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "money_account": {
       "description": "An account to create: whether money moves through it.",
       "examples": [
@@ -57,10 +64,25 @@
       ],
       "type": "string"
     },
+    "opening_person": {
+      "description": "On a director's or subscriber's account with an opening balance: the contact, one of the mapping's people, whose balance it is (B.7, rev 0.259).",
+      "examples": [
+        "Alex Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
     "report_group": {
       "description": "An account to create: its report group.",
       "examples": [
         "Services \u0026 project revenue"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "The system role of the Fyniq account it maps onto, if any (FR-COA-03); ignored in a change.",
+      "examples": [
+        "director-loan"
       ],
       "type": "string"
     },
