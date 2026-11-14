@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,15 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/fieldseal"
 )
+
+// sealedTexts are the ciphertexts of sealed values in a JSON body.
+var sealedTexts = regexp.MustCompile(`"` + SealedText + `":"[^"]*"`)
+
+// outsideSealed is body with its ciphertexts left out: random base64 can spell a short value by chance, such as "Ada",
+// which says nothing about the value being sealed.
+func outsideSealed(body []byte) string {
+	return sealedTexts.ReplaceAllString(string(body), `"`+SealedText+`":""`)
+}
 
 // A person's personal values in an event about them are sealed under their key (§11.8, rev 0.244; p1-pdpa-retention
 // D8): every name, email address, phone number and address, at any depth, before and after; a proof, an empty value, a
@@ -51,7 +61,7 @@ func TestPersonalValuesAreSealed(t *testing.T) {
 	}
 	body, _ := json.Marshal(out)
 	for _, clear := range []string{"Ada", "ada@example.com", "9123", "Old Road", "New Road", "a@example.com"} {
-		if strings.Contains(string(body), clear) {
+		if strings.Contains(outsideSealed(body), clear) {
 			t.Errorf("the sealed changes hold %q: %s", clear, body)
 		}
 	}
@@ -101,7 +111,7 @@ func TestPersonalValuesAreSealed(t *testing.T) {
 	}
 	e.Changes = out
 	canon, err := e.Canonical()
-	if err != nil || !strings.Contains(string(canon), `"schema":"fyniq-audit-event@3"`) || strings.Contains(string(canon), "Ada") {
+	if err != nil || !strings.Contains(string(canon), `"schema":"fyniq-audit-event@3"`) || strings.Contains(outsideSealed(canon), "Ada") {
 		t.Errorf("the body: %s %v", canon, err)
 	}
 	if _, err := SealPersonal(in, func(string, []byte) (map[string]any, error) { return nil, context.DeadlineExceeded }); err == nil {
