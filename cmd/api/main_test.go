@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/clock"
@@ -55,6 +58,22 @@ func TestEveryRouteIsDocumented(t *testing.T) {
 	}
 	documented := map[string]bool{}
 	for path, methods := range doc.Paths {
+		for m := range methods {
+			documented[strings.ToUpper(m)+" "+path] = true
+		}
+	}
+	// The internal API's operations are the AI service's alone, in their own reviewed contract (PRD-001 §9.3 rev 0.277).
+	raw, err := os.ReadFile("../../contracts/openapi/fyniq-internal.v1.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var internal struct {
+		Paths map[string]map[string]any `yaml:"paths"`
+	}
+	if err := yaml.Unmarshal(raw, &internal); err != nil || len(internal.Paths) == 0 {
+		t.Fatalf("the internal contract: %v", err)
+	}
+	for path, methods := range internal.Paths {
 		for m := range methods {
 			documented[strings.ToUpper(m)+" "+path] = true
 		}

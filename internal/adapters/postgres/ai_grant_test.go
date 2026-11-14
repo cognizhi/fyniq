@@ -130,3 +130,73 @@ func TestAttackAIGrantsReadOnlyForTheirTurn(t *testing.T) {
 		t.Errorf("the kept hash: %x %v", kept, err)
 	}
 }
+
+// What a turn has read only widens (PRD-001 AI-83; p1-ai-assistant task 1.2): the classes a live grant records grow,
+// never shrink, take only the four classes of data, and stop with the turn; the API widens them, nobody else.
+// req: AI-83
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackAGrantsClassesOnlyWiden(t *testing.T) {
+	ctx := context.Background()
+	a := books(t, "Grant classes Pte Ltd")
+	api := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	person := founder(t, api, a.Org, 3, now)
+	turn := uuid.New()
+	_, hash, _ := authn.NewAIToken(a.Org)
+	in := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return api.Do(ctx, a.Org, fn) }
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIGrants().Issue(ctx, storage.AIGrant{TokenHash: hash, UserID: person, Turn: turn, IssuedAt: now, ExpiresAt: now.Add(authn.MaxDelegated)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	read := func() []string {
+		var got []string
+		if err := in(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			got, err = u.AIGrants().Classes(ctx, turn, now)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	if got := read(); len(got) != 0 {
+		t.Fatalf("a new grant has read %v", got)
+	}
+	for _, classes := range [][]string{{"business-figures"}, {"payroll", "business-figures"}, {}} {
+		if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.AIGrants().Widen(ctx, turn, classes, now)
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := read(); len(got) != 2 || got[0] != "business-figures" || got[1] != "payroll" {
+		t.Errorf("what the turn read: %v", got)
+	}
+	for _, x := range []struct {
+		what, role, stmt string
+		states           []string
+	}{
+		{"forgetting a class", "fyniq_api", `UPDATE fyniq.ai_grant SET classes = '{business-figures}'`, []string{"FY340"}},
+		{"a class that is not one", "fyniq_api", `UPDATE fyniq.ai_grant SET classes = classes || '{secrets}'::text[]`, []string{"23514"}},
+		{"the worker widening", "fyniq_worker", `UPDATE fyniq.ai_grant SET classes = classes || '{know-how}'::text[]`, []string{"42501"}},
+		{"the AI widening", "fyniq_ai", `UPDATE fyniq.ai_grant SET classes = classes || '{know-how}'::text[]`, []string{"42501"}},
+	} {
+		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.states...)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { return u.AIGrants().End(ctx, turn, now) }); err != nil {
+		t.Fatal(err)
+	}
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.AIGrants().Widen(ctx, turn, []string{"know-how"}, now)
+	}); !errors.Is(err, ports.ErrNotFound) {
+		t.Errorf("widening after the turn: %v", err)
+	}
+	err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE fyniq.ai_grant SET classes = classes || '{know-how}'::text[]`)
+		return err
+	})
+	wantState(t, "widening an ended grant by hand", err, "FY340")
+}

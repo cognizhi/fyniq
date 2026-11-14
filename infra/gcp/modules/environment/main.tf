@@ -181,6 +181,8 @@ locals {
     invokers = merge(
       { for class, c in local.spec.classes : class => { service_account = local.email["tasks-${class}"], audience = local.url[c.service] } },
       { scheduler = { service_account = local.email["scheduler"], audience = "${local.url["api"]}/internal/tick" } },
+      # The AI service's calls to the api's internal API (PRD-001 §9.3 rev 0.277, p1-ai-assistant design D4) [live-verify].
+      { ai = { service_account = local.email["ai"], audience = "${local.url["api"]}/internal/v1" } },
     )
     anchors  = var.anchors
     evidence = var.evidence

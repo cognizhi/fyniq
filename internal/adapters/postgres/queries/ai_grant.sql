@@ -13,3 +13,11 @@ SELECT coalesce(g.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user
        coalesce(g.roles, '{}')::text[] AS roles,
        coalesce(g.expires_at, 'epoch')::timestamptz AS expires_at
   FROM fyniq.ai_grant_for(sqlc.arg(org)::uuid, sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz) AS g;
+
+-- name: AIGrantClasses :one
+-- A live grant's classes: none when the turn has no live grant.
+SELECT classes FROM fyniq.ai_grant WHERE turn_id = sqlc.arg(turn_id) AND ended_at IS NULL AND expires_at > sqlc.arg(now);
+
+-- name: WidenAIGrant :execrows
+UPDATE fyniq.ai_grant SET classes = ARRAY(SELECT DISTINCT unnest(classes || sqlc.arg(classes)::text[]) ORDER BY 1)
+ WHERE turn_id = sqlc.arg(turn_id) AND ended_at IS NULL AND expires_at > sqlc.arg(now);

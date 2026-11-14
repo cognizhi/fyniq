@@ -90,6 +90,51 @@ func TestTheContractIsTheCode(t *testing.T) {
 	}
 }
 
+const internalContractPath = "../../contracts/openapi/fyniq-internal.v1.yaml"
+
+const internalContractHeader = `# The contract of the API's internal operations (PRD-001 §9.3 rev 0.277; p1-ai-assistant design D4): the AI
+# service's alone, under /internal/v1, never routed by the edge. Reviewed in every pull request that changes it: CI fails
+# when the code and this file differ. Regenerate it with ` + "`make openapi`" + ` and review the diff; never edit it by hand.
+`
+
+// The internal API's reviewed contract and the code agree, as the public one's do, and none of its operations is in the
+// public contract.
+// req: NFR-API-01
+// req: ai/proposals The orchestrator holds no write credential
+func TestTheInternalContractIsTheCode(t *testing.T) {
+	a := testAPI(t)
+	got, err := a.internal.OpenAPI().YAML()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path := range a.internal.OpenAPI().Paths {
+		if !strings.HasPrefix(path, internalBase+"/") || a.OpenAPI().Paths[path] != nil {
+			t.Errorf("%s is internal and public, or outside %s", path, internalBase)
+		}
+	}
+	if *update {
+		version, err := os.ReadFile("../../VERSION")
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := versionLine.ReplaceAll(got, []byte("  version: "+strings.TrimSpace(string(version))+" # x-release-please-version"))
+		if err := os.WriteFile(internalContractPath, append([]byte(internalContractHeader), out...), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(internalContractPath)
+	if err != nil {
+		t.Fatalf("%v (run make openapi)", err)
+	}
+	normal := func(b []byte) string {
+		return string(versionLine.ReplaceAll(bytes.TrimPrefix(b, []byte(internalContractHeader)), []byte("  version: (platform)")))
+	}
+	if normal(got) != normal(want) {
+		t.Errorf("the internal API's code and contracts/openapi/fyniq-internal.v1.yaml differ: run `make openapi` and review the change")
+	}
+}
+
 // lintOperation returns what an operation lacks under NFR-API-01: a description, an example request
 // and response, its permission and its error codes.
 func lintOperation(op *huma.Operation, schemas map[string]*huma.Schema) []string {

@@ -12,6 +12,23 @@ import (
 	"github.com/google/uuid"
 )
 
+const aIGrantClasses = `-- name: AIGrantClasses :one
+SELECT classes FROM fyniq.ai_grant WHERE turn_id = $1 AND ended_at IS NULL AND expires_at > $2
+`
+
+type AIGrantClassesParams struct {
+	TurnID uuid.UUID
+	Now    time.Time
+}
+
+// A live grant's classes: none when the turn has no live grant.
+func (q *Queries) AIGrantClasses(ctx context.Context, arg AIGrantClassesParams) ([]string, error) {
+	row := q.db.QueryRow(ctx, aIGrantClasses, arg.TurnID, arg.Now)
+	var classes []string
+	err := row.Scan(&classes)
+	return classes, err
+}
+
 const aIGrantFor = `-- name: AIGrantFor :one
 SELECT coalesce(g.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user_id,
        coalesce(g.turn_id, '00000000-0000-0000-0000-000000000000')::uuid AS turn_id,
@@ -66,7 +83,7 @@ func (q *Queries) EndAIGrant(ctx context.Context, arg EndAIGrantParams) (int64, 
 const insertAIGrant = `-- name: InsertAIGrant :one
 INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, issued_at, expires_at)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at
+RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at, classes
 `
 
 type InsertAIGrantParams struct {
@@ -95,6 +112,26 @@ func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (F
 		&i.IssuedAt,
 		&i.ExpiresAt,
 		&i.EndedAt,
+		&i.Classes,
 	)
 	return i, err
+}
+
+const widenAIGrant = `-- name: WidenAIGrant :execrows
+UPDATE fyniq.ai_grant SET classes = ARRAY(SELECT DISTINCT unnest(classes || $1::text[]) ORDER BY 1)
+ WHERE turn_id = $2 AND ended_at IS NULL AND expires_at > $3
+`
+
+type WidenAIGrantParams struct {
+	Classes []string
+	TurnID  uuid.UUID
+	Now     time.Time
+}
+
+func (q *Queries) WidenAIGrant(ctx context.Context, arg WidenAIGrantParams) (int64, error) {
+	result, err := q.db.Exec(ctx, widenAIGrant, arg.Classes, arg.TurnID, arg.Now)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

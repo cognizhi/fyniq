@@ -36,7 +36,7 @@ fyniq_api       INSERT    ai_data_policy (approval_id, made_at, made_by, policy,
 fyniq_api       SELECT    ai_data_policy
 fyniq_api       INSERT    ai_grant (expires_at, issued_at, token_hash, turn_id, user_id)
 fyniq_api       SELECT    ai_grant
-fyniq_api       UPDATE    ai_grant (ended_at)
+fyniq_api       UPDATE    ai_grant (classes, ended_at)
 fyniq_api       EXECUTE   ai_grant_for()
 fyniq_api       INSERT    ai_model (alias_of, allowed, connection_id, context_window, first_listed_at, last_listed_at, listed, listed_price, max_output, model, name, not_callable_at, provider_created, reports, shutdown_at)
 fyniq_api       SELECT    ai_model

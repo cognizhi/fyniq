@@ -77,6 +77,14 @@ AI-28).**
   `contracts/openapi/fyniq-internal.v1.yaml`, generated from the code beside the public one.
 - Alternative: the public `/v1` operations for tools too: possible for most, but the internal operation applies the
   registry's limits (D6) in one place, and the model call has no public form.
+- As built (task 1.2): Cloud Run gives a container one port, so the internal API is a second huma API on the API's own
+  port under `/internal/v1`; Caddy and a Cloud Armor rule refuse `/api/internal/` at the edge. Each call needs the AI
+  service's service token (`X-Fyniq-Service-Token`, the `TaskTokens` port's class `ai`: HMAC locally, Google's OIDC
+  tokens for an `ai` invoker in the cloud `[live-verify]`; without that invoker every call is refused) and a live turn's
+  token. `callAIModel` and `streamAIModel` (server-sent events) run the router for the `chat` agent as the turn's
+  person. They route for the union of the classes the AI service names and those the turn's grant has read (000367: the
+  grant's `classes` only widen while it is live), and record the named ones, so the AI service can never send what the
+  turn read to a step the policy keeps it from (AI-83). The request carries no model: the route chooses it.
 
 **D5. One read-tool registry (AI-49's first part, AI-01, AI-P1, AI-03, AI-68).**
 - `contracts/ai/tools/<name>.yaml`: name, description, input JSON Schema (`additionalProperties: false`), output

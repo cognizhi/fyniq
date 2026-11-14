@@ -238,6 +238,7 @@ type FyniqAiGrant struct {
 	IssuedAt       time.Time
 	ExpiresAt      time.Time
 	EndedAt        *time.Time
+	Classes        []string
 }
 
 type FyniqAiModel struct {
