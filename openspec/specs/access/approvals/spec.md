@@ -39,6 +39,12 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** a person who signed a request tries to sign it again, at any step
 - **THEN** the signature is refused with APR-11, and the step needs someone else (rev 0.40)
 
+#### Scenario: Conditions decide the steps
+- **GIVEN** a policy with ordered rules, each with conditions and its own steps, and its default steps (rev 0.178; the owner's decision of 6 Nov 2026, confirmed on 12 Nov 2026 in rev 0.253; provisional until sign-off)
+- **WHEN** a journal, bill, invoice, purchase order or payment batch asks for approval
+- **THEN** the first rule whose conditions all hold decides its steps: an amount at or above, in the base currency; a department, an account or a vendor on the change; when no rule matches, the default steps apply
+- **AND** a policy has at most 10 rules, each with at least one condition, refused otherwise with APR-16, and the request records the rule that chose its steps, which the approver sees
+
 ### Requirement: FR-APR-02 The approver sees exactly what is approved
 The system SHALL show the approver exactly what is approved: the document, the ledger impact (debits and credits), the affected balances and checks, and a diff against the previous version.
 
@@ -47,6 +53,12 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 #### Scenario: Approval view
 - **WHEN** an approver opens an item waiting for their approval
 - **THEN** the document, its ledger impact as debits and credits, the balances it affects and its checks are shown
+
+#### Scenario: What approving would post now
+- **GIVEN** a request waiting for approval (rev 0.177)
+- **WHEN** someone who may see it reads it
+- **THEN** it shows the entries approving it would post now and the balances of the accounts they move before and after, worked out in a transaction that is rolled back
+- **AND** shows instead what would refuse it now, such as a month closed since it was asked for, and keeps nothing
 
 #### Scenario: Diff against the previous version
 - **GIVEN** the record being approved has a previous version
