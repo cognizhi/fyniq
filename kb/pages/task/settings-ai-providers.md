@@ -4,7 +4,7 @@ type: task
 title: Connect the AI to a model provider, and see which data may go where
 summary: Settings › AI › AI providers: connections, which data may go where, adding one; a connection's page: on and off, key, models, qualification, data handling
 sources:
-  - docs/user-guide/ai-providers.md sha256:b0cb860cbcec7e9c54431159a626939d20cf7e5a68ebcf168814c46494e6c607
+  - docs/user-guide/ai-providers.md sha256:e1509e51d4943aa18c004f216e4450354ae8cee82597a66e8084565b5f821dfc
 data_class: general
 taint: trusted
 status: published
@@ -87,7 +87,7 @@ aliases:
 
 ## Its models
 
-- **Models** shows the provider's own list, when it was last read, and **Read it again**; a model the provider stops listing leaves the connection and every route by itself. A list not read for 3 days makes the AI routes check warn ([[checks.overview]]).
+- **Models** shows the provider's own list, when it was last read, and **Read it again**; a model the provider stops listing leaves the connection and every route by itself. A list not read for 3 days makes the AI routes check warn ([[checks.overview]]); one not read whole for 14 days carries no personal data or payroll until it is.
 - **Probe** sends one small test call. **Ask to allow it** needs a passing probe and a second approver; names come only from the provider's list. **Remove** takes a model off at once.
 - Each allowed model shows its price and its source; the Owner can **Confirm it** or **Decline it** when a new price waits for review, **Enter a price** per million input and output tokens (with a second approver) when no source prices it, and **Withdraw your price** at once.
 

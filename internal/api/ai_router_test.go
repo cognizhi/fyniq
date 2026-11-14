@@ -212,3 +212,61 @@ func TestTheRouterFailsOverOnlyToEligibleSteps(t *testing.T) {
 		return err
 	})
 }
+
+// AI-84's stale limit: a connection whose model list has not been read whole for 14 days carries no personal data or
+// payroll, so a call carrying them skips it without sending it anything, while know-how and business figures still
+// go; a partial read does not make it current, and a complete read does.
+// req: AI-84
+func TestAStaleModelListCarriesNoPersonalData(t *testing.T) {
+	e := newEnv(t)
+	aiSwitchedOn(e)
+	sg := routable(e, "Stale Singapore", "SG", []string{"gpt-6"})
+	model := &stepModel{caps: full}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures", "personal-data"}, MadeBy: "user:router",
+			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
+		return err
+	})
+	router := ai.Router{Store: e.api.deps.Store, Clock: e.clock, Provider: func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+		return model, nil
+	}}
+	ask := func(classes ...string) ai.Call {
+		return ai.Call{Agent: "chat", Classes: classes, Actor: "user:router", Request: ports.ModelRequest{MaxTokens: 256,
+			Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Who is on leave?"}}}}}}
+	}
+	read := func(outcome string) {
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			r := storage.AIModelListRead{ConnectionID: sg, Trigger: "refresh", Outcome: outcome, Pages: 1, ReadBy: "user:router", ReadAt: e.clock.Now()}
+			if outcome != "complete" {
+				r.Failure = "page 2 did not answer"
+			}
+			_, err := u.AIModels().Record(ctx, r, []storage.AIModel{{ConnectionID: sg, Model: "gpt-6", FirstListed: e.clock.Now(), LastListed: e.clock.Now(), Listed: true, Allowed: true}})
+			return err
+		})
+	}
+	ctx := context.Background()
+	if _, err := router.Run(ctx, e.books.Org, ask("personal-data")); err != nil {
+		t.Fatalf("a list read today: %v", err)
+	}
+
+	e.clock.Advance(airoute.ListStale + time.Hour)
+	sent := model.calls
+	res, err := router.Run(ctx, e.books.Org, ask("business-figures", "personal-data"))
+	var re *airoute.Error
+	if !errors.As(err, &re) || re.Code != airoute.CodeNoStep || len(res.Attempts) != 1 || res.Attempts[0].Outcome != "skipped" ||
+		!strings.Contains(res.Attempts[0].Detail, "AI-84") || model.calls != sent {
+		t.Fatalf("personal data on a stale list: %v %+v", err, res.Attempts)
+	}
+	if _, err := router.Run(ctx, e.books.Org, ask("business-figures")); err != nil {
+		t.Errorf("business figures on a stale list: %v", err)
+	}
+	read("partial")
+	if res, err := router.Run(ctx, e.books.Org, ask("personal-data")); !errors.As(err, &re) || re.Code != airoute.CodeNoStep ||
+		len(res.Attempts) != 1 || !strings.Contains(res.Attempts[0].Detail, "AI-84") {
+		t.Errorf("personal data after a partial read: %v %+v", err, res.Attempts)
+	}
+	read("complete")
+	if _, err := router.Run(ctx, e.books.Org, ask("personal-data")); err != nil {
+		t.Errorf("personal data after a complete read: %v", err)
+	}
+}
