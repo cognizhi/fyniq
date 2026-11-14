@@ -74,3 +74,15 @@ export function sign(value: string): -1 | 0 | 1 {
   if (isZero(value)) return 0;
   return value.startsWith("-") ? -1 : 1;
 }
+
+// percent is the whole percentage part is of whole, rounded down, exactly: 0 when whole is zero or below. It is for a
+// bar or a label beside the figures, which stay as the server gave them.
+export function percent(part: string, whole: string): number {
+  if (sign(whole) <= 0) return 0;
+  const a = scaled(part);
+  const b = scaled(whole);
+  const scale = Math.max(a.scale, b.scale);
+  const n = a.n * 10n ** BigInt(scale - a.scale) * 100n;
+  const d = b.n * 10n ** BigInt(scale - b.scale);
+  return Number(n / d);
+}

@@ -107,8 +107,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 8. Screens, help and the guide
 
-- [ ] 8.1 `ai-settings` (the switch, budgets) and `ai-usage`, from their fragments; help keys; guide
+- [x] 8.1 `ai-settings` (the switch, budgets) and `ai-usage`, from their fragments; help keys; guide
   `docs/user-guide/ai-settings.md` compiled into `kb/`. Tests `// req: AI-13`, `// req: AI-77`.
+  As built: Settings › AI and AI usage and budgets (design D13); the parts of the `ai-settings` fragment other changes
+  build (proposals, task types, payroll access, exclusions, scheduled agents, connected apps) join with them.
 - [ ] 8.2 `ai-providers` and `ai-provider-connection` (add from an adapter or preset, credential, models from the list,
   probe, billing, data handling, enable with a second approver); help keys; guide `docs/user-guide/ai-providers.md`.
   Tests `// req: AI-72`, `// req: AI-80`.
