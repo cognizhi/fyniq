@@ -128,7 +128,7 @@ var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPoli
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
-	Rights    string // e.g. "CP" for "C/P (limit)"; "" for "—", "Proposal" and other words
+	Rights    string // e.g. "CP" for "C/P (limit)"; "" for "—", "Proposal" and other words (the AI's Proposal views: holds)
 	Qualifier string // the words after the letters, e.g. "limit"; or the whole cell when it has no letters
 }
 
@@ -325,8 +325,9 @@ type Policy struct {
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
 // of "C/P (limit)" and the segregation of duties and Founder-mode rules (SOD-3, FM-1) come from the
-// approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
-// the AI's only write path is a proposal (golden rule 5), which arrives in P1.
+// approval engine (FR-APR, P1). An AI cell of "Proposal" or "Proposal (draft)" grants a view and nothing else through
+// the API (rev 0.278), and one naming a kind of proposal grants nothing: the AI's only write path is a proposal (golden
+// rule 5).
 var (
 	GetOrganisation = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
 	ListAccounts    = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
@@ -2033,6 +2034,11 @@ func holds(p Policy, roles []Role) (Right, bool) {
 		var rights string
 		switch cell := Grants[p.Capability][col]; {
 		case p.Capability == Membership:
+			rights = "V"
+		case col == "AI" && cell.Rights == "" && (cell.Qualifier == "Proposal" || cell.Qualifier == "Proposal (draft)"):
+			// (rev 0.278) Proposal: the AI views the rows, within the person's rights, and may propose for them; it never
+			// creates, approves, posts or releases (§9.5). A proposal of a named kind, such as evidence's doc.attach, is that
+			// proposal only.
 			rights = "V"
 		case p.Unqualified && cell.Qualifier != "" && !slices.Contains(p.Qualified, cell.Qualifier):
 			continue

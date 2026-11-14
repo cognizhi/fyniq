@@ -112,6 +112,16 @@ AI-28).**
   check's, and `packs.get`'s packs equal to those in `packs/`. `lineage.explain` takes a fact's ID with the measure,
   months, dimension, member and revision it came with, so the API can rebuild the fact and refuse an ID that does not
   match, with nothing kept between calls.
+- As built (task 3.2, first part): `callAITool` (`POST /internal/v1/tool-calls`) checks the input against the tool's
+  schema and calls the tool's public read operation in process with the turn's own delegated token, so the person's
+  roles, the masking and the AI's read-only gate apply as they do to any client: `metrics.query`, `records.get`,
+  `records.search`, `checks.list` and `checks.explain`. A refusal comes back as AI-TOOL-03 with the operation's own words,
+  for the model to read. `packs.get` and `lineage.explain` follow in the second part; `calc` runs in the AI service.
+  Building it found that the AI column's "Proposal" was read as no view, which kept the assistant from every invoice,
+  bill, journal, bank line and claim: the owner decided on 15 Nov 2026 (rev 0.278) that Proposal (and Proposal (draft))
+  is a view of those rows within the person's rights and nothing more; a proposal of a named kind (evidence's
+  `doc.attach`, a budget's scenario, a timesheet's draft invoice) is that proposal only, so the AI still opens no
+  evidence file, a person's own bank account's included (§9.6).
 
 **D6. The semantic layer and typed facts (AI-03, AI-68, AI-04).**
 - `internal/semantic` defines named measures (revenue, cost of sales, gross profit, operating expenses, net profit,
@@ -133,6 +143,15 @@ AI-28).**
   currency; revenue, gross profit, EBITDA, net profit and costs by department from the profit and loss's pivot, with a
   fact for the lines with none. A fact's ID is a hash of what it is and the revision. The query saves nothing, so it is
   exempt from Idempotency-Key and Prefer, and it is the one POST the assistant's token may call.
+- As built (task 2.2, with 3.2's first part): `internal/aitool` makes every figure of a read a fact: a money object
+  (`amount`, `currency`) is an amount, a whole number a count, decimal text a number; IDs, versions, line numbers and
+  codes are not figures. A record's fact names the record (`invoice.total`, member the invoice's ID), the place in it
+  (`lines[2].net`), the day it was read, the ledger revision and the operation's path; its ID is a hash of those. A
+  result keeps at most its tool's rows of each list (50), then halves them until it fits the tool's token budget (4,000,
+  at four characters a token), counting what it left out; one that never fits returns only that count. `records.get`
+  keeps an allow-list of fields per kind of record (no contact details, addresses, tax IDs, the people who prepared or
+  posted it, its emails, approvals or free-text notes). The tool's time limit (5 s) bounds the call's context, so its
+  queries are cancelled with it.
 
 **D7. Grounding and rendering (AI-08, AI-21, AI-69, AI-22).**
 - The model answers in a structured output: segments of text and references `{fact: F…}` or `{calc: …}`; it writes no
