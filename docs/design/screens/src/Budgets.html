@@ -1,39 +1,36 @@
-<!-- fyniq-screen {"nav": "planning", "title": "Budgets", "mode": "expert", "heights": {"compact": 1250, "medium": 950, "expanded": 850}} -->
+<!-- fyniq-screen {"nav": "planning", "title": "Budgets", "mode": "expert", "heights": {"compact": 1100, "medium": 950, "expanded": 900}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
-      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#planning">Planning</a><i data-icon="chevron-right"></i><span>Budgets</span></nav>
-      <h1 class="fy-h1">Budget 2026 · revised</h1>
-      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft v2</span><span class="fy-small fy-muted">Copied from Original (approved, locked) with +5% on hosting</span></div>
+      <span class="fy-eyebrow">Planning</span>
+      <h1 class="fy-h1">Budget 2026</h1>
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-2)"><span class="fy-chip fy-chip--good"><i data-icon="lock"></i>Recorded, locked · version 1</span><span class="fy-small fy-muted">The year from 1 Jan 2026, original</span><span class="fy-badge fy-badge--quiet" title="Plans and what-ifs never change the books, a document, a planned date or a batch."><i data-icon="flask-conical"></i>Sandbox: nothing here posts</span></div>
     </div>
-    <div class="fy-pagehead__actions">
-      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="upload"></i>Import XLSX</button>
-      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit for approval</button>
+    <div class="fy-pagehead__actions"><button class="fy-btn fy-btn--ghost" type="button" title="Start an empty original budget for a financial year, then add its lines."><i data-icon="plus"></i>New budget</button><button class="fy-btn fy-btn--ghost" type="button" title="Copy this version into a new draft, each amount × (1 + growth): for another year, or as a revised version of this year's."><i data-icon="copy"></i>Copy with growth</button><button class="fy-btn fy-btn--secondary" type="button" title="Read a budget from a spreadsheet into a new draft; every problem comes back with its row and column."><i data-icon="upload"></i>Import XLSX</button></div>
+  </div>
+  <nav class="fy-tabs" aria-label="Planning"><a href="#planning/cash">Cash ahead</a><a href="#planning/forecast" class="fy-expert-only">Forecast</a><a href="#planning/budgets" class="fy-expert-only" aria-current="page">Budgets</a><a href="#planning/feasibility" class="fy-expert-only">Feasibility</a></nav>
+  <div class="fy-field" style="max-width: 28rem"><label class="fy-label" for="bud-version">Version</label><select class="fy-select" id="bud-version"><option>Budget 2026: Recorded, locked (1 Jan 2026)</option><option>Budget 2026, revised: Draft (1 Jan 2026)</option></select></div>
+  <p class="fy-small"><a href="#approvals/APR-2131">See the approval request</a></p>
+  <section class="fy-card" aria-labelledby="bud-lines">
+    <div class="fy-card__head"><h2 class="fy-h3" id="bud-lines">Lines</h2></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--compact fy-statement">
+        <caption class="fy-sr">Budget 2026, by account and month, in SGD</caption>
+        <thead><tr><th scope="col">Account</th><th scope="col" class="fy-num">Jan 2026</th><th scope="col" class="fy-num">Feb 2026</th><th scope="col" class="fy-num">Mar 2026</th><th scope="col" class="fy-num">Apr 2026</th><th scope="col" class="fy-num">May 2026</th><th scope="col" class="fy-num">Jun 2026</th><th scope="col" class="fy-num">Jul 2026</th><th scope="col" class="fy-num">Aug 2026</th><th scope="col" class="fy-num">Sep 2026</th><th scope="col" class="fy-num">Oct 2026</th><th scope="col" class="fy-num">Nov 2026</th><th scope="col" class="fy-num">Dec 2026</th><th scope="col" class="fy-num">Year</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><span class="fy-acct">4010</span>Subscription revenue</th><td class="fy-num">36,000.00</td><td class="fy-num">38,000.00</td><td class="fy-num">40,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">44,000.00</td><td class="fy-num">46,000.00</td><td class="fy-num">48,000.00</td><td class="fy-num">50,000.00</td><td class="fy-num">52,000.00</td><td class="fy-num">54,000.00</td><td class="fy-num">58,000.00</td><td class="fy-num">62,500.00</td><td class="fy-num fy-strong">570,500.00</td></tr>
+          <tr><th scope="row"><span class="fy-acct">4020</span>Services revenue</th><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num">12,000.00</td><td class="fy-num fy-strong">144,000.00</td></tr>
+          <tr><th scope="row"><span class="fy-acct">5010</span>Cloud hosting</th><td class="fy-num">2,300.00</td><td class="fy-num">2,300.00</td><td class="fy-num">2,300.00</td><td class="fy-num">2,300.00</td><td class="fy-num">2,300.00</td><td class="fy-num">2,300.00</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td><td class="fy-num fy-strong">28,800.00</td></tr>
+          <tr><th scope="row"><span class="fy-acct">6010</span>Salaries</th><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">42,000.00</td><td class="fy-num">52,500.00</td><td class="fy-num fy-strong">514,500.00</td></tr>
+          <tr><th scope="row"><span class="fy-acct">6020</span>Employer CPF</th><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">5,950.00</td><td class="fy-num">7,140.00</td><td class="fy-num fy-strong">72,590.00</td></tr>
+          <tr><th scope="row"><span class="fy-acct">6110</span>Rent and office</th><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num">6,480.00</td><td class="fy-num fy-strong">77,760.00</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Income</th><td class="fy-num">48,000.00</td><td class="fy-num">50,000.00</td><td class="fy-num">52,000.00</td><td class="fy-num">54,000.00</td><td class="fy-num">56,000.00</td><td class="fy-num">58,000.00</td><td class="fy-num">60,000.00</td><td class="fy-num">62,000.00</td><td class="fy-num">64,000.00</td><td class="fy-num">66,000.00</td><td class="fy-num">70,000.00</td><td class="fy-num">74,500.00</td><td class="fy-num fy-strong">714,500.00</td></tr>
+          <tr><th scope="row">Costs</th><td class="fy-num">56,730.00</td><td class="fy-num">56,730.00</td><td class="fy-num">56,730.00</td><td class="fy-num">56,730.00</td><td class="fy-num">56,730.00</td><td class="fy-num">56,730.00</td><td class="fy-num">56,930.00</td><td class="fy-num">56,930.00</td><td class="fy-num">56,930.00</td><td class="fy-num">56,930.00</td><td class="fy-num">56,930.00</td><td class="fy-num">68,620.00</td><td class="fy-num fy-strong">693,650.00</td></tr>
+          <tr><th scope="row">Net</th><td class="fy-num">−8,730.00</td><td class="fy-num">−6,730.00</td><td class="fy-num">−4,730.00</td><td class="fy-num">−2,730.00</td><td class="fy-num">−730.00</td><td class="fy-num">1,270.00</td><td class="fy-num">3,070.00</td><td class="fy-num">5,070.00</td><td class="fy-num">7,070.00</td><td class="fy-num">9,070.00</td><td class="fy-num">13,070.00</td><td class="fy-num">5,880.00</td><td class="fy-num fy-strong">20,850.00</td></tr>
+        </tfoot>
+      </table>
     </div>
-  </div>
-  <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
-    <div class="fy-segmented" role="radiogroup" aria-label="Version"><button type="button" role="radio" aria-checked="false">Original</button><button type="button" role="radio" aria-checked="true">Revised v2</button></div>
-    <button class="fy-filter" type="button" aria-pressed="true">Department: all</button>
-    <span class="fy-small fy-muted">Paste from Excel, fill right with Ctrl+R, type = to calculate</span>
-  </div>
-  <div class="fy-banner fy-banner--info fy-only-compact"><i data-icon="monitor" class="fy-i--20"></i><div class="fy-banner__text"><span>Budgets are easiest to edit on a larger screen. Here you can review and approve.</span></div></div>
-  <div class="fy-tablewrap">
-    <table class="fy-table fy-table--compact fy-statement">
-      <thead><tr><th scope="col">Account</th><th scope="col" class="fy-num">Oct</th><th scope="col" class="fy-num">Nov</th><th scope="col" class="fy-num">Dec</th><th scope="col" class="fy-num">Q4</th><th scope="col" class="fy-num">Actual YTD</th></tr></thead>
-      <tbody>
-        <tr class="fy-group"><td colspan="6">Revenue</td></tr>
-        <tr><td><span class="fy-acct">4010</span>Subscription revenue</td><td class="fy-num">54,000</td><td class="fy-num">61,000</td><td class="fy-num">62,500</td><td class="fy-num">177,500</td><td class="fy-num">398,640</td></tr>
-        <tr><td><span class="fy-acct">4020</span>Services revenue</td><td class="fy-num">24,000</td><td class="fy-num">18,000</td><td class="fy-num">12,000</td><td class="fy-num">54,000</td><td class="fy-num">162,300</td></tr>
-        <tr class="fy-group"><td colspan="6">Expenses</td></tr>
-        <tr><td><span class="fy-acct">6010</span>Salaries, Engineering</td><td class="fy-num">−42,000</td><td class="fy-num">−42,000</td><td class="fy-num">−52,500</td><td class="fy-num">−136,500</td><td class="fy-num">−239,400</td></tr>
-        <tr aria-selected="true"><td><span class="fy-acct">5010</span>Cloud hosting</td><td class="fy-num">−3,045</td><td class="fy-num">−3,045</td><td class="fy-num">−3,045</td><td class="fy-num">−9,135</td><td class="fy-num">−21,095</td></tr>
-        <tr><td><span class="fy-acct">6110</span>Rent and office, WeWork</td><td class="fy-num">−6,800</td><td class="fy-num">−6,800</td><td class="fy-num">−6,800</td><td class="fy-num">−20,400</td><td class="fy-num">−58,320</td></tr>
-      </tbody>
-      <tfoot><tr><td>Net result</td><td class="fy-num">26,155</td><td class="fy-num">27,155</td><td class="fy-num">12,155</td><td class="fy-num">65,465</td><td class="fy-num">242,125</td></tr></tfoot>
-    </table>
-  </div>
-  <section class="fy-ai-card" aria-labelledby="bud-ai">
-    <div class="fy-ai-card__head"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><h2 class="fy-h3 fy-grow" id="bud-ai">Proposed version: Revised v3</h2></div>
-    <div class="fy-ai-card__body"><p class="fy-ai-text">Raises December salaries for the two hires in the hiring plan and cloud hosting to the September run rate (<span class="fy-fact">S$2,861.40</span> a month plus 6%). Opens as a draft version; nothing changes until approved.</p><div class="fy-row"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Open as a draft</button></div></div>
   </section>
 </div>
