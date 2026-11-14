@@ -22,7 +22,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 3. The tool registry
 
-- [ ] 3.1 `contracts/ai/tools/` (design D5): one YAML per tool, generating the model's tool definitions; versioned and
+- [x] 3.1 `contracts/ai/tools/` (design D5): one JSON file per tool (as built), generating the model's tool definitions; versioned and
   contract-tested; `TestTheAIToolsAreReadOnly` checks the real registry. Tests `// req: AI-19`, `// req: AI-P2`.
 - [ ] 3.2 The tools through the internal `tool` operation as the person: `metrics.query`, `records.get`,
   `records.search`, `lineage.explain`, `checks.list`, `checks.explain`, `packs.get`, each returning typed facts. Tests

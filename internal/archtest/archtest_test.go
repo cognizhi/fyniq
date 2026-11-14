@@ -835,15 +835,15 @@ func TestNoNRICAuthenticatesOrLocksAFile(t *testing.T) {
 	}
 }
 
-// CMP-AI-01: every tool of the AI tool registry is read-only (readOnlyHint, as MCP annotates tools). The registry
-// arrives with p1-ai-assistant in contracts/ai/tools/; until it exists the test passes and says why.
+// CMP-AI-01: every tool of the AI tool registry, contracts/ai/tools/*.json, is read-only (readOnlyHint, as MCP annotates
+// tools), read from the files themselves beside internal/aitool's own checks as it loads them.
 // req: CMP-AI-01
 // req: CTL-AI-01
+// req: AI-19
 func TestTheAIToolsAreReadOnly(t *testing.T) {
 	tools, _ := filepath.Glob(filepath.Join(repoRoot(t), "contracts", "ai", "tools", "*.json"))
-	if len(tools) == 0 {
-		t.Log("no AI tool registry yet (contracts/ai/tools/*.json): p1-ai-assistant adds it, and from then every tool must be read-only")
-		return
+	if len(tools) < 8 {
+		t.Fatalf("%d tools in contracts/ai/tools/*.json: the registry has gone (p1-ai-assistant design D5)", len(tools))
 	}
 	for _, path := range tools {
 		var tool struct {

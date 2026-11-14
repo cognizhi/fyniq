@@ -98,9 +98,21 @@ components:
           description: The system prompt, versioned in contracts/ai/prompts/ (AI-24).
           type: string
         tools:
-          description: The read tools the model may call, from the registry (AI-49).
+          description: "The read tools the model may call, by name: it is offered the registry's own definitions, never one the AI service writes (AI-49, AI-19)."
           items:
-            $ref: "#/components/schemas/ModelTool"
+            description: A read tool of the registry (AI-49).
+            enum:
+              - calc
+              - checks.explain
+              - checks.list
+              - lineage.explain
+              - metrics.query
+              - packs.get
+              - records.get
+              - records.search
+            examples:
+              - metrics.query
+            type: string
           type:
             - array
             - "null"
@@ -214,19 +226,6 @@ components:
         schema: {}
       required:
         - name
-        - schema
-      type: object
-    ModelTool:
-      additionalProperties: false
-      properties:
-        description:
-          type: string
-        name:
-          type: string
-        schema: {}
-      required:
-        - name
-        - description
         - schema
       type: object
     ModelUsage:

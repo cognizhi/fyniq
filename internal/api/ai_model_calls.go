@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/ai"
+	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
@@ -34,14 +35,34 @@ type AIModelCall struct {
 type AIModelRequest struct {
 	System    string               `json:"system,omitempty" doc:"The system prompt, versioned in contracts/ai/prompts/ (AI-24)."`
 	Messages  []ports.ModelMessage `json:"messages" nullable:"false" doc:"The conversation, in parts: text, images, PDFs, tool calls and their results."`
-	Tools     []ports.ModelTool    `json:"tools,omitempty" doc:"The read tools the model may call, from the registry (AI-49)."`
+	Tools     []AIToolName         `json:"tools,omitempty" doc:"The read tools the model may call, by name: it is offered the registry's own definitions, never one the AI service writes (AI-49, AI-19)."`
 	Output    *ports.ModelSchema   `json:"output,omitempty" doc:"A strict structured output the answer must match (AI-27)."`
 	MaxTokens int                  `json:"max_tokens" minimum:"1" maximum:"64000" doc:"The answer's output limit." example:"1024"`
 }
 
-// port is the request as the model port takes it.
-func (r AIModelRequest) port() ports.ModelRequest {
-	return ports.ModelRequest{System: r.System, Messages: r.Messages, Tools: r.Tools, Output: r.Output, MaxTokens: r.MaxTokens}
+// AIToolName names a read tool of the registry, contracts/ai/tools (AI-49).
+type AIToolName string
+
+// Schema implements huma.SchemaProvider.
+func (AIToolName) Schema(huma.Registry) *huma.Schema {
+	var names []any
+	for _, t := range aitool.Default().Tools() {
+		names = append(names, t.Name)
+	}
+	return &huma.Schema{Type: "string", Enum: names, Description: "A read tool of the registry (AI-49).", Examples: []any{"metrics.query"}}
+}
+
+// port is the request as the model port takes it, with the registry's definitions of the tools it names.
+func (r AIModelRequest) port() (ports.ModelRequest, error) {
+	names := make([]string, len(r.Tools))
+	for i, t := range r.Tools {
+		names[i] = string(t)
+	}
+	tools, err := aitool.Default().Model(names...)
+	if err != nil {
+		return ports.ModelRequest{}, problem(CodeInvalid, err.Error()+".", "Name the registry's read tools")
+	}
+	return ports.ModelRequest{System: r.System, Messages: r.Messages, Tools: tools, Output: r.Output, MaxTokens: r.MaxTokens}, nil
 }
 
 // AIModelCallResult is a served model call: the answer, the run of its attempts in the activity log, the step and
@@ -85,12 +106,16 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 	if !slices.Contains(assistantAgents, in.Agent) {
 		return ai.Call{}, problem(CodeInvalid, in.Agent+" is not an agent the AI service runs.", "Ask for the chat agent's call")
 	}
+	request, err := in.Request.port()
+	if err != nil {
+		return ai.Call{}, err
+	}
 	declared := make([]string, 0, len(in.Classes))
 	for _, c := range in.Classes {
 		declared = append(declared, string(c))
 	}
 	var classes []string
-	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+	err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		now := a.deps.Clock.Now()
 		read, err := u.AIGrants().Classes(ctx, p.Turn, now)
 		if err != nil {
@@ -105,7 +130,7 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 	if err != nil {
 		return ai.Call{}, err
 	}
-	return ai.Call{Agent: in.Agent, Classes: classes, Request: in.Request.port(), Actor: "user:" + p.UserID.String()}, nil
+	return ai.Call{Agent: in.Agent, Classes: classes, Request: request, Actor: "user:" + p.UserID.String()}, nil
 }
 
 // union is a and b's classes, each once, in order.

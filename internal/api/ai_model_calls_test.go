@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -25,6 +26,7 @@ import (
 // req: AI-P2
 // req: ai/proposals The orchestrator holds no write credential
 // req: AI-83
+// req: AI-19
 // asvs: V8.2.1, V8.3.1
 func TestTheAIServicesModelCallsRunTheRoutersRules(t *testing.T) {
 	e := newEnv(t)
@@ -85,6 +87,26 @@ func TestTheAIServicesModelCallsRunTheRoutersRules(t *testing.T) {
 	s := ask("model-calls:stream", token, service, "business-figures")
 	if s.Status != http.StatusOK || !strings.Contains(s.Raw, "event: text") || !strings.Contains(s.Raw, "event: done") || model.calls != 2 {
 		t.Errorf("a streamed call: %d %s", s.Status, s.Raw)
+	}
+
+	// The model is offered the registry's own tools, named by the AI service; a tool outside the registry, or one the AI
+	// service writes itself, is refused unsent (AI-49, AI-19).
+	withTools := func(tools ...any) response {
+		body := map[string]any{"agent": "chat", "classes": []string{"business-figures"}, "request": map[string]any{"max_tokens": 64, "tools": tools,
+			"messages": []any{map[string]any{"role": "user", "parts": []any{map[string]any{"kind": "text", "text": "What was revenue?"}}}}}}
+		return e.call(http.MethodPost, "/internal/v1/model-calls", token, body, ServiceTokenHeader, service)
+	}
+	metrics, _ := aitool.Default().Get("metrics.query")
+	if r := withTools("metrics.query", "calc"); r.Status != http.StatusOK || len(model.last.Tools) != 2 || model.last.Tools[0].Name != "metrics_query" ||
+		model.last.Tools[0].Description != metrics.Description || string(model.last.Tools[0].Schema) != string(metrics.InputSchema) ||
+		model.last.Tools[1].Name != "calc" {
+		t.Errorf("a call with the registry's tools: %d %s %+v", r.Status, r.Raw, model.last.Tools)
+	}
+	before := model.calls
+	for _, tool := range []any{"records.update", map[string]any{"name": "records_update", "description": "Updates a record.", "schema": map[string]any{}}} {
+		if r := withTools(tool); r.Status != http.StatusUnprocessableEntity || model.calls != before {
+			t.Errorf("a tool not the registry's (%v): %d %s", tool, r.Status, r.Raw)
+		}
 	}
 
 	// Once the turn has read personal data, a call naming only business figures still carries it: nothing goes overseas.

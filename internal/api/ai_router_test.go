@@ -24,11 +24,13 @@ type stepModel struct {
 	fail    error // the error each call answers with, if any
 	partial bool  // stream one event before failing
 	calls   int
+	last    ports.ModelRequest // the last request called
 }
 
 func (s *stepModel) Capabilities() ports.ModelCapabilities { return s.caps }
 func (s *stepModel) Call(_ context.Context, r ports.ModelRequest) (ports.ModelResponse, error) {
 	s.calls++
+	s.last = r
 	if s.fail != nil {
 		return ports.ModelResponse{}, s.fail
 	}
