@@ -72,6 +72,10 @@
       ],
       "type": "string"
     },
+    "model": {
+      "$ref": "CatalogueModel.schema.json",
+      "description": "A model provider's: what its adapter carries, how a connection to it signs in, and the presets a connection may start from; absent for other connectors."
+    },
     "name": {
       "examples": [
         "Zoho ZeptoMail"

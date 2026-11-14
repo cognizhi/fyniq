@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "items": {
+        "description": "How a connection signs in: an API key, the service's own cloud account, an OAuth grant, or none for a self-hosted server.",
+        "enum": [
+          "api-key",
+          "workload-identity",
+          "oauth-grant",
+          "none"
+        ],
+        "examples": [
+          "api-key"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "base_url": {
+      "description": "The endpoint it starts from; absent for a server whose address the connection names.",
+      "examples": [
+        "https://api.moonshot.ai/v1"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "kimi"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Moonshot Kimi"
+      ],
+      "type": "string"
+    },
+    "self_hosted": {
+      "description": "A server the organisation runs, reached only as a registered private endpoint (SEC-37).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "auth",
+    "self_hosted"
+  ],
+  "title": "CataloguePreset",
+  "type": "object"
+}
