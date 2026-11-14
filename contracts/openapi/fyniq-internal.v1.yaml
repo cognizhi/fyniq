@@ -1,0 +1,517 @@
+# The contract of the API's internal operations (PRD-001 §9.3 rev 0.277; p1-ai-assistant design D4): the AI
+# service's alone, under /internal/v1, never routed by the edge. Reviewed in every pull request that changes it: CI fails
+# when the code and this file differ. Regenerate it with `make openapi` and review the diff; never edit it by hand.
+components:
+  schemas:
+    AIModelCall:
+      additionalProperties: false
+      properties:
+        agent:
+          description: "The agent the call is for: its route decides the connection and model (AI-74)."
+          enum:
+            - chat
+          examples:
+            - chat
+          type: string
+        classes:
+          description: The classes of data the AI service says the call carries. The API routes it for these and every class the turn has read, whichever the AI service names (AI-83).
+          items:
+            description: "A class of data: restricted data never goes to an AI provider (AI-75)."
+            enum:
+              - know-how
+              - business-figures
+              - personal-data
+              - payroll
+            examples:
+              - business-figures
+            type: string
+          type: array
+        request:
+          $ref: "#/components/schemas/AIModelRequest"
+      required:
+        - agent
+        - classes
+        - request
+      type: object
+    AIModelCallResult:
+      additionalProperties: false
+      properties:
+        classes:
+          description: "The classes it was routed for: the AI service's and every class the turn has read."
+          items:
+            description: "A class of data: restricted data never goes to an AI provider (AI-75)."
+            enum:
+              - know-how
+              - business-figures
+              - personal-data
+              - payroll
+            examples:
+              - business-figures
+            type: string
+          type: array
+        connection_id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+          format: uuid
+          type: string
+        response:
+          $ref: "#/components/schemas/ModelResponse"
+        run:
+          description: The run its attempts share in the AI activity log (AI-12).
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a42
+          format: uuid
+          type: string
+        step:
+          description: The route's step that served it.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - run
+        - step
+        - connection_id
+        - classes
+        - response
+      type: object
+    AIModelRequest:
+      additionalProperties: false
+      properties:
+        max_tokens:
+          description: The answer's output limit.
+          examples:
+            - 1024
+          format: int64
+          maximum: 64000
+          minimum: 1
+          type: integer
+        messages:
+          description: "The conversation, in parts: text, images, PDFs, tool calls and their results."
+          items:
+            $ref: "#/components/schemas/ModelMessage"
+          type: array
+        output:
+          $ref: "#/components/schemas/ModelSchema"
+          description: A strict structured output the answer must match (AI-27).
+        system:
+          description: The system prompt, versioned in contracts/ai/prompts/ (AI-24).
+          type: string
+        tools:
+          description: The read tools the model may call, from the registry (AI-49).
+          items:
+            $ref: "#/components/schemas/ModelTool"
+          type:
+            - array
+            - "null"
+      required:
+        - messages
+        - max_tokens
+      type: object
+    AIModelText:
+      additionalProperties: false
+      properties:
+        part:
+          $ref: "#/components/schemas/ModelPart"
+        text:
+          type: string
+      type: object
+    FieldProblem:
+      additionalProperties: false
+      properties:
+        code:
+          description: The stable error code.
+          examples:
+            - LEDGER-04
+          type: string
+        field:
+          description: "The JSON path of the field: in the request body (body.…), the query (query.…), a header (header.…), or the saved record a command acts on."
+          examples:
+            - lines[0].account_id
+          type: string
+        fix:
+          description: How to fix it.
+          examples:
+            - Choose an account from the chart of accounts
+          type: string
+        message:
+          description: What is wrong with it.
+          examples:
+            - the account does not exist in this organisation
+          type: string
+      required:
+        - code
+        - field
+        - message
+        - fix
+      type: object
+    ModelMessage:
+      additionalProperties: false
+      properties:
+        parts:
+          items:
+            $ref: "#/components/schemas/ModelPart"
+          type:
+            - array
+            - "null"
+        role:
+          type: string
+      required:
+        - role
+        - parts
+      type: object
+    ModelPart:
+      additionalProperties: false
+      properties:
+        call_id:
+          type: string
+        data:
+          contentEncoding: base64
+          type: string
+        input: {}
+        is_error:
+          type: boolean
+        kind:
+          type: string
+        media_type:
+          type: string
+        raw: {}
+        text:
+          type: string
+        tool:
+          type: string
+      required:
+        - kind
+      type: object
+    ModelResponse:
+      additionalProperties: false
+      properties:
+        model:
+          type: string
+        parts:
+          items:
+            $ref: "#/components/schemas/ModelPart"
+          type:
+            - array
+            - "null"
+        stop_reason:
+          type: string
+        usage:
+          $ref: "#/components/schemas/ModelUsage"
+        version:
+          type: string
+      required:
+        - parts
+        - stop_reason
+        - usage
+        - model
+      type: object
+    ModelSchema:
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        schema: {}
+      required:
+        - name
+        - schema
+      type: object
+    ModelTool:
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+        schema: {}
+      required:
+        - name
+        - description
+        - schema
+      type: object
+    ModelUsage:
+      additionalProperties: false
+      properties:
+        cache_read:
+          format: int64
+          type: integer
+        cache_write:
+          format: int64
+          type: integer
+        input:
+          format: int64
+          type: integer
+        output:
+          format: int64
+          type: integer
+        reasoning:
+          format: int64
+          type: integer
+      required:
+        - input
+        - output
+      type: object
+    Problem:
+      additionalProperties: false
+      properties:
+        code:
+          description: The stable error code (ENG-23).
+          examples:
+            - JOURNAL-02
+          type: string
+        detail:
+          description: What went wrong this time, in plain English.
+          examples:
+            - The journal is posted, not a draft.
+          type: string
+        errors:
+          description: Every invalid field, all at once.
+          items:
+            $ref: "#/components/schemas/FieldProblem"
+          type:
+            - array
+            - "null"
+        fix:
+          description: How to fix it.
+          examples:
+            - Only a draft can be posted; reverse a posted journal instead.
+          type: string
+        instance:
+          description: The request this occurrence belongs to; quote it to support.
+          examples:
+            - urn:fyniq:request:01JA2B3C4D5E6F7G8H9J0K1M2N
+          format: uri
+          type: string
+        status:
+          description: The HTTP status code.
+          examples:
+            - 409
+          format: int64
+          type: integer
+        title:
+          description: A short summary of the problem type; it never changes between occurrences.
+          examples:
+            - The journal is not a draft
+          type: string
+        type:
+          description: A URI naming the problem; one per code.
+          examples:
+            - urn:fyniq:problem:JOURNAL-02
+          format: uri
+          type: string
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - code
+      type: object
+info:
+  description: "The operations only the AI service calls (PRD-001 §9.3 rev 0.277): the model calls of the assistant's turns, run by the API's model router so the provider keys, the budgets and the metering stay in the API. Never routed by the edge. Each call carries the AI service's service token (X-Fyniq-Service-Token) and the turn's delegated read token (Authorization: Bearer fyai_…), which names the person the turn is for."
+  license:
+    identifier: MIT
+    name: MIT
+  title: Fyniq internal API
+  version: 0.0.0 # x-release-please-version
+openapi: 3.1.0
+paths:
+  /internal/v1/model-calls:
+    post:
+      description: "Runs the agent's route for the turn's person (AI-74, AI-76): the AI switch, the budgets (AI-86), the data-class policy for the classes the AI service names and every class the turn has read (AI-83), failover only to an eligible step, and the record of every attempt in the AI activity log (AI-12). The provider keys stay in the API (PRD-001 §9.3 rev 0.277)."
+      operationId: callAIModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIModelCall"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIModelCallResult"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Bad Gateway
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Call a model for a turn
+      tags:
+        - Assistant
+      x-fyniq-error-codes:
+        - AI-BUDGET-02
+        - AI-ROUTER-01
+        - AI-ROUTER-02
+        - AI-ROUTER-03
+        - AI-ROUTER-04
+        - AI-ROUTER-05
+        - API-AUTH-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+  /internal/v1/model-calls:stream:
+    post:
+      description: "As callAIModel, streamed as server-sent events: text as it comes, then the served call (done), or the refusal (error), with its code. The AI switch is checked as the answer streams, and a switched-off AI stops it within seconds (AI-13)."
+      operationId: streamAIModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIModelCall"
+        required: true
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                description: Each oneOf object in the array represents one possible Server Sent Events (SSE) message, serialized as UTF-8 text according to the SSE specification.
+                items:
+                  oneOf:
+                    - properties:
+                        data:
+                          $ref: "#/components/schemas/AIModelCallResult"
+                        event:
+                          const: done
+                          description: The event name.
+                          type: string
+                        id:
+                          description: The event ID.
+                          type: integer
+                        retry:
+                          description: The retry time in milliseconds.
+                          type: integer
+                      required:
+                        - data
+                        - event
+                      title: Event done
+                      type: object
+                    - properties:
+                        data:
+                          $ref: "#/components/schemas/Problem"
+                        event:
+                          const: error
+                          description: The event name.
+                          type: string
+                        id:
+                          description: The event ID.
+                          type: integer
+                        retry:
+                          description: The retry time in milliseconds.
+                          type: integer
+                      required:
+                        - data
+                        - event
+                      title: Event error
+                      type: object
+                    - properties:
+                        data:
+                          $ref: "#/components/schemas/AIModelText"
+                        event:
+                          const: text
+                          description: The event name.
+                          type: string
+                        id:
+                          description: The event ID.
+                          type: integer
+                        retry:
+                          description: The retry time in milliseconds.
+                          type: integer
+                      required:
+                        - data
+                        - event
+                      title: Event text
+                      type: object
+                title: Server Sent Events
+                type: array
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Bad Gateway
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Stream a model call for a turn
+      tags:
+        - Assistant
+      x-fyniq-error-codes:
+        - AI-BUDGET-02
+        - AI-ROUTER-01
+        - AI-ROUTER-02
+        - AI-ROUTER-03
+        - AI-ROUTER-04
+        - AI-ROUTER-05
+        - API-AUTH-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+servers:
+  - description: "The api service, from the AI service only: the Compose network, or Cloud Run's internal ingress."
+    url: http://api:8080
+tags:
+  - description: What the AI service asks the API for while it answers a turn.
+    name: Assistant

@@ -34,6 +34,10 @@ run "the_edge_screens_every_request" {
     error_message = "Log4Shell lookups are denied from the start"
   }
   assert {
+    condition     = length([for r in google_compute_security_policy.edge.rule : r if r.match[0].expr[0].expression == "request.path.startsWith('/api/internal/')" && !r.preview && r.action == "deny(404)"]) == 1
+    error_message = "the API's internal operations, the AI service's alone, are refused at the edge (PRD-001 §9.3 rev 0.277)"
+  }
+  assert {
     condition     = google_compute_security_policy.edge.adaptive_protection_config[0].layer_7_ddos_defense_config[0].enable
     error_message = "adaptive protection is on"
   }

@@ -181,6 +181,7 @@ ai_grant | turn_id | uuid | not null |
 ai_grant | issued_at | timestamp with time zone | not null | 
 ai_grant | expires_at | timestamp with time zone | not null | 
 ai_grant | ended_at | timestamp with time zone | null | 
+ai_grant | classes | text[] | not null | '{}'::text[]
 ai_model | organisation_id | uuid | not null | current_org()
 ai_model | id | uuid | not null | uuidv7()
 ai_model | connection_id | uuid | not null | 
@@ -2510,6 +2511,8 @@ ai_data_policy | ai_data_policy_version | UNIQUE (organisation_id, version)
 ai_data_policy | ai_data_policy_version_not_null | NOT NULL version
 ai_data_policy | ai_data_policy_version_positive | CHECK ((version >= 1))
 ai_data_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_grant | ai_grant_classes | CHECK ((classes <@ ARRAY['know-how'::text, 'business-figures'::text, 'personal-data'::text, 'payroll'::text]))
+ai_grant | ai_grant_classes_not_null | NOT NULL classes
 ai_grant | ai_grant_ended | CHECK (((ended_at IS NULL) OR (ended_at >= issued_at)))
 ai_grant | ai_grant_expires_at_not_null | NOT NULL expires_at
 ai_grant | ai_grant_id_not_null | NOT NULL id
@@ -7281,7 +7284,7 @@ ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalo
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
 ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_id uuid, OUT turn_id uuid, OUT roles text[], OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 849d7114d3f03ce72b04acfd7752af7b
-ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 65bcc4ed8e750766aea0d9ad1fb47825
+ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9192d71bbd7b7a3c49a44519d076a1e
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
