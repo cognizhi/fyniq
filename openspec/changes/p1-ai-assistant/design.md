@@ -281,6 +281,12 @@ AI-28).**
   of what the model read, never its input. Someone else's turn that read payroll is masked (its question withheld) for
   a reader who may not see payroll unmasked, and an unmasked one is audited as `ai_activity.read` (FR-PAY-13, AUD-05).
   Settings › AI › AI activity shows them above the model calls, each with a link to its model calls.
+- As built (task 6.3): `fyniq.ai_purge_conversations` (000372), a security-definer function only the worker runs,
+  removes in the transaction's organisation every conversation its person deleted and every one whose last question was
+  asked before the cut, with its turns, reads and feedback, setting `fyniq.ai_purge` for its own work only; the worker
+  holds no DELETE, and the API and the AI's role cannot run it. The platform job `ai.conversations.purge` runs it daily
+  at 01:55 Singapore time in every organisation, the cut `retention.ai_conversations_days` (365) before now, and records
+  each purge as `ai_conversation.purged` with its counts; its heartbeat is watched as every scheduled job's is.
 
 **D12. The panel (FR-UX-17, screen `ai-assistant-panel`).**
 - A side panel from the shell (⌘J / Ctrl+J; "Ask about this" on records, report cells and figures), docked, a sheet or

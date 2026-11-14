@@ -7448,6 +7448,7 @@ ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_
 ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9192d71bbd7b7a3c49a44519d076a1e
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
+ai_purge_conversations(p_before timestamp with time zone, OUT conversations integer, OUT turns integer) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7fe0af9f8f3135d573b9063e73a9ab00
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
 ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric, p_tokens bigint) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d7de60573770113c34cae08e8f814277
 ai_route_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6410526861d59ed27a7d790937a0f2c

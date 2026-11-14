@@ -72,6 +72,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},
+		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
+			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
+			return err
+		},
 		"pdpa.shred": func(ctx context.Context) error { // §11.8: years past their retention listed, approved runs shredded
 			_, err := audit.ShredAll(ctx, k.Store, k.Blobs, k.Signer, k.TellShredding(clock), clock)
 			return err

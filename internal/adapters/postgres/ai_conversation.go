@@ -230,3 +230,14 @@ func (r aiConversations) Give(ctx context.Context, f storage.AIFeedback) (storag
 	return f, r.u.event(ctx, "ai_feedback.given", "ai_feedback", id, nil, map[string][2]any{"feedback": {nil, map[string]any{
 		"turn_id": f.Turn.String(), "rating": f.Rating}}})
 }
+
+func (r aiConversations) Purge(ctx context.Context, before time.Time) (int, int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, 0, err
+	}
+	row, err := r.u.q.PurgeAIConversations(ctx, before)
+	if err != nil {
+		return 0, 0, mapError(err)
+	}
+	return int(row.Conversations), int(row.Turns), nil
+}
