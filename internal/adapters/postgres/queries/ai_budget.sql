@@ -1,9 +1,15 @@
 -- name: AIBudgetsUsed :many
-SELECT b.*, (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN r.actual ELSE coalesce(r.amount, 0) END), 0)::text
-               FROM fyniq.ai_reservation r
-              WHERE r.month = sqlc.arg(month)
-                AND (b.scope = 'organisation' OR (b.scope = 'agent' AND r.agent = b.subject)
-                     OR (b.scope = 'connection' AND r.connection_id::text = b.subject) OR (b.scope = 'person' AND r.person = b.subject)))::text AS used
+SELECT b.*, (CASE WHEN b.scope IN ('tokens_organisation', 'tokens_person') THEN
+               (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN coalesce(r.actual_tokens, 0) ELSE coalesce(r.tokens, 0) END), 0)::text
+                  FROM fyniq.ai_reservation r
+                 WHERE r.month = sqlc.arg(month) AND (b.scope = 'tokens_organisation' OR r.person = b.subject))
+             ELSE
+               (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN r.actual ELSE coalesce(r.amount, 0) END), 0)::text
+                  FROM fyniq.ai_reservation r
+                 WHERE r.month = sqlc.arg(month)
+                   AND (b.scope = 'organisation' OR (b.scope = 'agent' AND r.agent = b.subject)
+                        OR (b.scope = 'connection' AND r.connection_id::text = b.subject) OR (b.scope = 'person' AND r.person = b.subject)))
+             END)::text AS used
 FROM fyniq.ai_budget b ORDER BY b.scope, b.subject;
 
 -- name: GetAIBudget :one
@@ -21,7 +27,7 @@ RETURNING *;
 
 -- name: ReserveAI :one
 SELECT fyniq.ai_reserve(sqlc.arg(run), sqlc.arg(step)::integer, sqlc.arg(agent), sqlc.arg(connection), sqlc.arg(person), sqlc.arg(month),
-  sqlc.narg(amount)::numeric)::text AS reservation;
+  sqlc.narg(amount)::numeric, sqlc.arg(tokens)::bigint)::text AS reservation;
 
 -- name: SettleAI :exec
-SELECT fyniq.ai_settle(sqlc.arg(reservation), sqlc.narg(actual)::numeric, sqlc.arg(known)::boolean);
+SELECT fyniq.ai_settle(sqlc.arg(reservation), sqlc.narg(actual)::numeric, sqlc.arg(actual_tokens)::bigint, sqlc.arg(known)::boolean);

@@ -13,11 +13,17 @@ import (
 )
 
 const aIBudgetsUsed = `-- name: AIBudgetsUsed :many
-SELECT b.organisation_id, b.id, b.scope, b.subject, b.amount, b.version, b.alerted, b.set_by, b.set_at, (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN r.actual ELSE coalesce(r.amount, 0) END), 0)::text
-               FROM fyniq.ai_reservation r
-              WHERE r.month = $1
-                AND (b.scope = 'organisation' OR (b.scope = 'agent' AND r.agent = b.subject)
-                     OR (b.scope = 'connection' AND r.connection_id::text = b.subject) OR (b.scope = 'person' AND r.person = b.subject)))::text AS used
+SELECT b.organisation_id, b.id, b.scope, b.subject, b.amount, b.version, b.alerted, b.set_by, b.set_at, (CASE WHEN b.scope IN ('tokens_organisation', 'tokens_person') THEN
+               (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN coalesce(r.actual_tokens, 0) ELSE coalesce(r.tokens, 0) END), 0)::text
+                  FROM fyniq.ai_reservation r
+                 WHERE r.month = $1 AND (b.scope = 'tokens_organisation' OR r.person = b.subject))
+             ELSE
+               (SELECT coalesce(sum(CASE WHEN r.state = 'settled' THEN r.actual ELSE coalesce(r.amount, 0) END), 0)::text
+                  FROM fyniq.ai_reservation r
+                 WHERE r.month = $1
+                   AND (b.scope = 'organisation' OR (b.scope = 'agent' AND r.agent = b.subject)
+                        OR (b.scope = 'connection' AND r.connection_id::text = b.subject) OR (b.scope = 'person' AND r.person = b.subject)))
+             END)::text AS used
 FROM fyniq.ai_budget b ORDER BY b.scope, b.subject
 `
 
@@ -130,7 +136,7 @@ func (q *Queries) InsertAIBudget(ctx context.Context, arg InsertAIBudgetParams) 
 
 const reserveAI = `-- name: ReserveAI :one
 SELECT fyniq.ai_reserve($1, $2::integer, $3, $4, $5, $6,
-  $7::numeric)::text AS reservation
+  $7::numeric, $8::bigint)::text AS reservation
 `
 
 type ReserveAIParams struct {
@@ -141,6 +147,7 @@ type ReserveAIParams struct {
 	Person     string
 	Month      string
 	Amount     *string
+	Tokens     int64
 }
 
 func (q *Queries) ReserveAI(ctx context.Context, arg ReserveAIParams) (string, error) {
@@ -152,6 +159,7 @@ func (q *Queries) ReserveAI(ctx context.Context, arg ReserveAIParams) (string, e
 		arg.Person,
 		arg.Month,
 		arg.Amount,
+		arg.Tokens,
 	)
 	var reservation string
 	err := row.Scan(&reservation)
@@ -159,17 +167,23 @@ func (q *Queries) ReserveAI(ctx context.Context, arg ReserveAIParams) (string, e
 }
 
 const settleAI = `-- name: SettleAI :exec
-SELECT fyniq.ai_settle($1, $2::numeric, $3::boolean)
+SELECT fyniq.ai_settle($1, $2::numeric, $3::bigint, $4::boolean)
 `
 
 type SettleAIParams struct {
-	Reservation uuid.UUID
-	Actual      *string
-	Known       bool
+	Reservation  uuid.UUID
+	Actual       *string
+	ActualTokens int64
+	Known        bool
 }
 
 func (q *Queries) SettleAI(ctx context.Context, arg SettleAIParams) error {
-	_, err := q.db.Exec(ctx, settleAI, arg.Reservation, arg.Actual, arg.Known)
+	_, err := q.db.Exec(ctx, settleAI,
+		arg.Reservation,
+		arg.Actual,
+		arg.ActualTokens,
+		arg.Known,
+	)
 	return err
 }
 

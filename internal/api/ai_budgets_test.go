@@ -181,3 +181,78 @@ func TestBudgetsAdmitOnlyWhatTheyCover(t *testing.T) {
 		t.Errorf("a subscription's quota: %s", u.Raw)
 	}
 }
+
+// Token budgets (AI-13): the organisation's and a person's month of tokens bound every call, whatever it costs. The
+// Owner sets them as tokens:organisation and tokens:person:<id>; a call whose most tokens they cannot cover is not sent,
+// its person's reaching 80% raises the alert, and the budgets show what the month used in tokens.
+// req: AI-13
+// req: AI-86
+func TestTokenBudgetsBoundEveryCall(t *testing.T) {
+	e := newEnv(t)
+	aiSwitchedOn(e)
+	f := foundersIn(e)
+	owner := f.as(f.weiling, authz.Owner)
+	sg := routable(e, "Tokens primary", "SG", nil, "gpt-6")
+	pricedInBase(e, sg, "gpt-6")
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures"}, MadeBy: "user:tokens",
+			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
+		return err
+	})
+	model := &stepModel{caps: full}
+	router := ai.Router{Store: e.api.deps.Store, Clock: e.clock, Outbox: e.api.deps.Outbox,
+		Provider: func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+			return model, nil
+		}}
+	ask := ai.Call{Agent: "chat", Classes: []string{"business-figures"}, Actor: "user:" + f.ahkow, Request: ports.ModelRequest{MaxTokens: 1024,
+		Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "What was revenue?"}}}}}}
+	set := func(key, match string, amount any) response {
+		return e.call(http.MethodPut, "/v1/ai/budgets/"+key, owner, map[string]any{"amount": amount}, "If-Match", match)
+	}
+	ctx := context.Background()
+	spent := func(err error) bool {
+		var be *aibudget.Error
+		return errors.As(err, &be) && be.Code == aibudget.CodeSpent
+	}
+
+	e.problemIs(set("tokens:agent:chat", `"0"`, "1000"), "setAIBudget", 422, aibudget.CodeBudget)
+	e.problemIs(set("tokens:organisation", `"0"`, "1.5"), "setAIBudget", 422, aibudget.CodeBudget)
+	if r := set("tokens:organisation", `"0"`, "1000"); r.Status != http.StatusOK || r.str("unit") != "tokens" || r.str("key") != "tokens:organisation" {
+		t.Fatalf("the organisation's tokens: %d %s", r.Status, r.Raw)
+	}
+	// A call that could use 1,024 tokens of output alone is not sent against 1,000.
+	if _, err := router.Run(ctx, e.books.Org, ask); !spent(err) || model.calls != 0 {
+		t.Fatalf("past the organisation's tokens: %v", err)
+	}
+	if r := set("tokens:organisation", `"1"`, "1000000"); r.Status != http.StatusOK {
+		t.Fatalf("raising it: %d %s", r.Status, r.Raw)
+	}
+	if r := set("tokens:person:"+f.ahkow, `"0"`, "3000"); r.Status != http.StatusOK || r.str("subject") != "user:"+f.ahkow {
+		t.Fatalf("a person's tokens: %d %s", r.Status, r.Raw)
+	}
+	// Each answer uses 1,500 tokens (1,000 in, 500 out), and a call reserves a little over 1,024 (its prompt and all its
+	// output): the second call's reservation reaches 80% of the person's 3,000, and a third could not be covered.
+	for i := range 2 {
+		if _, err := router.Run(ctx, e.books.Org, ask); err != nil {
+			t.Fatalf("call %d: %v", i+1, err)
+		}
+	}
+	if _, err := router.Run(ctx, e.books.Org, ask); !spent(err) {
+		t.Errorf("past the person's tokens: %v", err)
+	}
+	key := uuid.NewSHA1(uuid.NameSpaceOID, []byte(e.books.Org.String()+" ai-budget tokens_person user:"+f.ahkow+" "+aibudget.Month(e.clock.Now())))
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		yes, err := u.Notifications().Emitted(ctx, notify.AIBudgetType, key)
+		if err == nil && !yes {
+			t.Error("no alert at 80% of the person's tokens")
+		}
+		return err
+	})
+	got := e.call(http.MethodGet, "/v1/ai/budgets", owner, nil)
+	for _, b := range got.Body["budgets"].([]any) {
+		b := b.(map[string]any)
+		if b["key"] == "tokens:person:"+f.ahkow && (b["used"] != "3000" || b["unit"] != "tokens" || b["alerted"] != true) {
+			t.Errorf("the person's tokens: %v", b)
+		}
+	}
+}
