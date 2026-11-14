@@ -41,13 +41,17 @@ describe("Compliance › Privacy notices and consent", () => {
       "GET /v1/compliance/consent-purposes": { status: 200, body: { items: [newsletter] } },
       "GET /v1/compliance/consents": { status: 200, body: { items: [{ id: "c-1", purpose_id: "p-1", person: "contact:k-1", event: "given", at: "2026-11-08T02:00:00Z", recorded_by: "user:u-1" }] } },
       "GET /v1/contacts": { status: 200, body: { items: [{ id: "k-1", legal_name: "Ada Tan" }, { id: "k-2", legal_name: "Ben Lee" }] } },
+      "GET /v1/members": { status: 200, body: { items: [{ user_id: "u-1", display_name: "Arjun Rao" }] } },
       "POST /v1/compliance/consent-purposes": { status: 201, body: { ...newsletter, id: "p-2", name: "Events" } },
       "POST /v1/compliance/consents": { status: 201, body: { id: "c-2", purpose_id: "p-1", person: "contact:k-2", event: "given", at: "2026-11-09T02:00:00Z", recorded_by: "user:u-1" } },
     });
     renderPage(PrivacyNotices, { path: "/compliance/privacy/notices", session: dpo });
     const purposes = await screen.findByRole("list", { name: "Purposes and consent" });
     expect(within(purposes).getByText("1 consent standing")).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Consents given and withdrawn" })).toBeTruthy();
+    // A record names its person, not their reference.
+    const records = screen.getByRole("list", { name: "Consents given and withdrawn" });
+    expect(await within(records).findByText(/^Ada Tan · /)).toBeTruthy();
+    expect(within(records).queryByText(/contact:k-1/)).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Add a purpose" }));
     let dialog = await screen.findByRole("dialog");
