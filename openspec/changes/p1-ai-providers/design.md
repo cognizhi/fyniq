@@ -236,6 +236,14 @@ See proposal.md for why. What exists today:
   (the switch, budgets): admin operations, on the never-list for the AI and MCP (§9.6).
 - Settings › AI: `ai-settings`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`, `ai-route-editor`,
   `ai-usage`, `ai-activity-log`; `my-ai-plan` under Profile, showing P2's option as not offered.
+- As built (task 8.1): Settings › AI (`/settings/ai`) shows the switch (the Owner's "Turn all AI off now", after a
+  second look; "Ask to turn it on" for anyone who may change settings, answered with the approval request), the
+  budgets in money and tokens with what the month used (only the Owner adds, changes or removes one), and the providers
+  and routes at a glance; AI usage and budgets (`/settings/ai/usage`) shows a month at a time, by agent, connection and
+  model, and person, beside their budgets, and each subscription's quota. Two departures from the fragments: a budget
+  change is the Owner's alone, not "needs a second Owner", since FM-1 does not name AI budgets and AI-77 and AI-86 ask
+  for none (the PRD wins; the owner may decide otherwise); and the usage page has no cost-per-day chart, which needs a
+  daily series the usage operation does not give yet. Percentages are exact (BigInt), rounded down for display.
 
 **D14. Audit events and checks.**
 - Audit events (AUD-01): `ai_connection.requested`, `.enabled`, `.disabled`, `.changed`, `.credential_stored` (never

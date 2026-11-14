@@ -141,7 +141,7 @@ The calendar itself: [[compliance.calendar]].
 
 - Switching a feature off hides it from menus and pages.
 - Recommended: **Multi-currency** on; **Payroll**, **Projects and time** and **Portals for customers and investors** off.
-- The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once.
+- The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once ([[settings.ai]]).
 
 (src: docs/user-guide/organisation-settings.md#features)
 
