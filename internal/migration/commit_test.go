@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -60,6 +61,14 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 		if r.Kind == KindInvoice || r.Kind == KindOpeningBalances || r.Kind == KindJournal {
 			t.Errorf("a clean start imports the history's %s", r.Key)
 		}
+	}
+	// Quotes and orders, the assets and their depreciation to the "as of", last.
+	if kinds[KindQuote] != 3 || kinds[KindPurchaseOrder] != 1 || kinds[KindAsset] != 3 || kinds[KindDepreciation] != 1 ||
+		plan[len(plan)-1].Kind != KindDepreciation {
+		t.Errorf("the quotes, orders and assets: %v, last %s", kinds, plan[len(plan)-1].Key)
+	}
+	if got := openingAccumulated(w.Assets[0], w.Settings.BooksStart, money.MustLookup("SGD")); got.Text('f') != "3000.00" {
+		t.Errorf("the MacBooks' depreciation before the books start: %s, not the 3000.00 the opening balances carry", got.Text('f'))
 	}
 	if keys["bank-rule:1"] || !keys["bank-rule:2"] || !w.transferRule(1) {
 		t.Error("the bank rule to a money account is imported")

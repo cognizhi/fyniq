@@ -230,6 +230,20 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.U
 			Message: fmt.Sprintf("%q is not a UEN in ACRA's form: the import leaves it out", uen),
 			Fix:     "Enter the UEN in Settings › Organisation once the import is committed, or correct it in the workbook"})
 	}
+	for _, a := range w.Assets {
+		if !a.Disposed.IsZero() {
+			w.Problems = append(w.Problems, Problem{Sheet: "Assets", Row: a.Row, Column: "Disposal date", Severity: Warning, Code: CodeArchived,
+				Message: fmt.Sprintf("%s was disposed of on %s: the import registers it, not its disposal", a.Description, a.Disposed.Format(time.DateOnly)),
+				Fix:     "Record its disposal in Fixed assets once the import is committed"})
+		}
+	}
+	for _, q := range w.QuotesOrders {
+		k := strings.ToLower(q.Kind)
+		if !strings.Contains(k, "quote") && !strings.Contains(k, "order") {
+			w.Problems = append(w.Problems, Problem{Sheet: "Quotes & Orders", Row: q.Row, Column: "Type", Severity: Warning, Code: CodeArchived,
+				Message: fmt.Sprintf("%s is a %q, neither a quote nor an order: it is kept in the archive", q.Number, q.Kind), Fix: "Nothing to do"})
+		}
+	}
 	for i, r := range w.BankRules {
 		if w.transferRule(i + 1) {
 			w.Problems = append(w.Problems, Problem{Sheet: "Lists", Row: r.Row, Column: "…use category", Severity: Warning, Code: CodeArchived,

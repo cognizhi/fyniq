@@ -35,7 +35,7 @@ var credit = map[string]bool{"Liability": true, "Equity": true, "Revenue": true,
 type dated struct {
 	Record
 	on    time.Time
-	order int // on one day: invoices, then bills, then journals, then the money that moved
+	order int // on one day: invoices and quotes, bills, journals, the money that moved, assets, then depreciation
 }
 
 // history is the current financial year's records (design D5): the opening balances at the books start with the
@@ -69,6 +69,18 @@ func (w *Workbook) history(m Mapping) []Record {
 	statements, rows := w.transactions(m)
 	out = append(out, statements...)
 	rest = append(rest, rows...)
+	for _, q := range w.QuotesOrders {
+		if x, ok := w.quoteRecord(m, q); ok {
+			rest = append(rest, x)
+		}
+	}
+	start := w.BooksStart(storage.PathHistory)
+	for _, a := range w.Assets {
+		rest = append(rest, w.assetRecord(m, a, start))
+	}
+	if len(w.Assets) > 0 {
+		rest = append(rest, w.depreciationRecord())
+	}
 	byDate := func(a, b dated) int {
 		return cmp.Or(a.on.Compare(b.on), cmp.Compare(a.order, b.order), cmp.Compare(a.Row, b.Row))
 	}
@@ -255,6 +267,85 @@ func (w *Workbook) openingBalances(m Mapping) (Record, bool) {
 		}}, true
 }
 
+// docLines are the Doc Lines of a document's number.
+func (w *Workbook) docLines(number string) []DocLine {
+	var out []DocLine
+	for _, l := range w.DocLines {
+		if strings.EqualFold(strings.TrimSpace(l.Document), strings.TrimSpace(number)) {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// salesLines are an invoice's, quote's or order's lines (FR-AR-01, FR-AR-03): its Doc Lines, each with the workbook's
+// resolved description, quantity and price, its discount, and its item's revenue account; or one line of its amount
+// before GST. spread, when given, spreads each line as the document says.
+func (w *Workbook) salesLines(ctx context.Context, u storage.UnitOfWork, e *Env, number string, net *apd.Decimal, description string, accountID uuid.UUID,
+	gst string, values []uuid.UUID, cur money.Currency, spread func(*invoicedoc.Line)) ([]invoicedoc.Line, error) {
+	if spread == nil {
+		spread = func(*invoicedoc.Line) {}
+	}
+	lines := w.docLines(number)
+	if len(lines) == 0 {
+		price, err := money.ParseUnitPrice(textOf(net), cur, "amount")
+		if err != nil {
+			return nil, Refused{{Code: CodeValue, Field: "amount", Message: err.Error(), Fix: "Enter the amount before GST in the workbook"}}
+		}
+		l := invoicedoc.Line{Description: description, Quantity: mustQuantity("1"), UnitPrice: price, AccountID: accountID, GSTCode: gst, Values: values}
+		spread(&l)
+		if l.GSTCode == "" {
+			if l.GSTCode, err = defaultGST(ctx, u, l.AccountID); err != nil {
+				return nil, err
+			}
+		}
+		return []invoicedoc.Line{l}, nil
+	}
+	var out []invoicedoc.Line
+	for _, x := range lines {
+		l := invoicedoc.Line{Description: cmp.Or(x.DescriptionUsed, x.Description, description), Discount: percent(x.Discount), AccountID: accountID,
+			GSTCode: gst, Values: values}
+		if x.Item != "" {
+			id, ok := e.Made("item:" + x.Item)
+			if !ok {
+				return nil, Refused{{Code: CodeImport, Field: "item", Message: fmt.Sprintf("Doc Lines row %d names the item %s, which is not imported", x.Row, x.Item),
+					Fix: "Add the item to the Items sheet"}}
+			}
+			l.ItemID = &id
+			if it, err := u.Items().Get(ctx, id); err == nil {
+				if it.RevenueAccountID != nil {
+					l.AccountID = *it.RevenueAccountID
+				}
+				l.GSTCode = cmp.Or(l.GSTCode, it.GSTCode)
+			}
+		}
+		var err error
+		if l.GSTCode == "" {
+			if l.GSTCode, err = defaultGST(ctx, u, l.AccountID); err != nil {
+				return nil, err
+			}
+		}
+		if l.Quantity, err = money.ParseQuantity(textOf(cmp.Or(x.QuantityUsed, x.Quantity, apd.New(1, 0))), "quantity"); err != nil {
+			return nil, Refused{{Code: CodeValue, Field: "quantity", Message: fmt.Sprintf("Doc Lines row %d: %v", x.Row, err), Fix: "Enter the quantity in the workbook"}}
+		}
+		if l.UnitPrice, err = money.ParseUnitPrice(textOf(cmp.Or(x.PriceUsed, x.Price)), cur, "unit_price"); err != nil {
+			return nil, Refused{{Code: CodeValue, Field: "unit_price", Message: fmt.Sprintf("Doc Lines row %d: %v", x.Row, err), Fix: "Enter the unit price in the workbook"}}
+		}
+		spread(&l)
+		out = append(out, l)
+	}
+	return out, nil
+}
+
+// defaultGST is the GST code a line on an account starts with, as the workbook falls back to its category's.
+func defaultGST(ctx context.Context, u storage.UnitOfWork, account uuid.UUID) (string, error) {
+	if account == uuid.Nil {
+		return "", nil
+	}
+	a, err := u.Accounts().Get(ctx, account)
+	return a.DefaultGSTCode, err
+}
+
 // percent is a workbook discount, a fraction such as 0.1, as the percentage a line keeps ("10").
 func percent(d *apd.Decimal) string {
 	if d == nil || d.IsZero() {
@@ -272,12 +363,6 @@ func percent(d *apd.Decimal) string {
 // due date the workbook used; its project. It keeps the workbook's number (rev 0.259) and posts on its date, or at the
 // books start as an opening item (rev 0.257); a draft stays a draft.
 func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
-	var lines []DocLine
-	for _, l := range w.DocLines {
-		if strings.EqualFold(strings.TrimSpace(l.Document), strings.TrimSpace(d.Number)) {
-			lines = append(lines, l)
-		}
-	}
 	// A row of a negative amount is a credit note to the customer (FR-AR-04), entered with positive amounts.
 	creditNote := d.Net != nil && d.Net.Sign() < 0
 	kind, typ := KindInvoice, storage.DocumentInvoice
@@ -321,42 +406,12 @@ func (w *Workbook) invoiceRecord(m Mapping, d Document) Record {
 					}
 				}
 			}
-			if len(lines) == 0 {
-				net := d.Net
-				if creditNote {
-					net = new(apd.Decimal).Neg(d.Net)
-				}
-				price, err := money.ParseUnitPrice(textOf(net), cur, "amount")
-				if err != nil {
-					return Made{}, Refused{{Code: CodeValue, Field: "amount", Message: err.Error(), Fix: "Enter the amount before GST in the workbook"}}
-				}
-				l := invoicedoc.Line{Description: cmp.Or(d.Description, "Invoice "+d.Number), Quantity: mustQuantity("1"), UnitPrice: price, AccountID: category.ID,
-					GSTCode: gst, Values: values}
-				spread(&l)
-				draft.Lines = []invoicedoc.Line{l}
+			net := d.Net
+			if creditNote {
+				net = new(apd.Decimal).Neg(d.Net)
 			}
-			for _, x := range lines {
-				l := invoicedoc.Line{Description: cmp.Or(x.DescriptionUsed, x.Description, d.Description), Discount: percent(x.Discount), AccountID: category.ID,
-					GSTCode: gst, Values: values}
-				if x.Item != "" {
-					id, ok := e.Made("item:" + x.Item)
-					if !ok {
-						return Made{}, Refused{{Code: CodeImport, Field: "item", Message: fmt.Sprintf("Doc Lines row %d names the item %s, which is not imported", x.Row, x.Item),
-							Fix: "Add the item to the Items sheet"}}
-					}
-					l.ItemID = &id
-					if it, err := u.Items().Get(ctx, id); err == nil && it.RevenueAccountID != nil {
-						l.AccountID = *it.RevenueAccountID
-					}
-				}
-				if l.Quantity, err = money.ParseQuantity(textOf(cmp.Or(x.QuantityUsed, x.Quantity, apd.New(1, 0))), "quantity"); err != nil {
-					return Made{}, Refused{{Code: CodeValue, Field: "quantity", Message: fmt.Sprintf("Doc Lines row %d: %v", x.Row, err), Fix: "Enter the quantity in the workbook"}}
-				}
-				if l.UnitPrice, err = money.ParseUnitPrice(textOf(cmp.Or(x.PriceUsed, x.Price)), cur, "unit_price"); err != nil {
-					return Made{}, Refused{{Code: CodeValue, Field: "unit_price", Message: fmt.Sprintf("Doc Lines row %d: %v", x.Row, err), Fix: "Enter the unit price in the workbook"}}
-				}
-				spread(&l)
-				draft.Lines = append(draft.Lines, l)
+			if draft.Lines, err = w.salesLines(ctx, u, e, d.Number, net, cmp.Or(d.Description, "Invoice "+d.Number), category.ID, gst, values, cur, spread); err != nil {
+				return Made{}, err
 			}
 			svc := journal.Invoices{Store: e.Store, Clock: e.Clock}
 			create := svc.Create

@@ -72,12 +72,13 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   first financial year's missing months; the GST registration from the books start, quarterly [accountant to confirm];
   the standard chart for an organisation without one, then the accounts the mapping creates, money accounts among them
   in the base currency; a UEN not in ACRA's form and a bank rule to a money account are warnings, left out.)
-- [ ] 4.3 History of the current financial year (design D5): opening balances with opening items; invoices with Doc
+- [x] 4.3 History of the current financial year (design D5): opening balances with opening items; invoices with Doc
   Lines and spreads; bills; quotes and orders; Transactions as receipts, bill payments or categorised bank
   transactions; journals; assets with past depreciation. Test `// req: data/migration History or opening balances
   import (M3)` (history) on the fixture. (Part built in slice 5: the opening balances with the opening items, invoices with Doc Lines,
   spreads and credit notes, bills and journals, their numbers kept, rev 0.259; slice 6: Transactions as statement
-  lines, receipts, payments, transfers and categorisations, rev 0.260. Left: quotes and orders, assets.)
+  lines, receipts, payments, transfers and categorisations, rev 0.260; slice 7: quotes and orders, assets with their
+  depreciation. Rows to share capital or a SAFE wait for task 4.6.)
 - [ ] 4.4 Payroll as one summary journal a month (design D7, rev 0.254), approved under Journals. Test
   `// req: FR-MIG-02` "Imported pay runs keep the amounts paid" on the fixture's months.
 - [ ] 4.5 The clean start from Carry Forward: balances and open items at the cut-over. Test

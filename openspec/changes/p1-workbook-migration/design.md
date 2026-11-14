@@ -166,6 +166,15 @@ See proposal.md for why. What exists today and shapes the approach:
   non-resident supplier, which its bills post with (FR-AP-19). Rows to share capital or to a SAFE wait as lines for
   the Funding sheet's share issue and SAFE (task 4.6). At the sample's as-of, every account the import has built equals
   the workbook's trial balance.
+- (As built, slice 7) Quotes and orders in the workbook's states, their numbers kept: a quote or sales order sent,
+  accepted (the workbook's "Invoiced" too, whose invoice is its own Invoices row) or declined; a purchase order approved,
+  and closed once received or billed; a line of the amount alone takes the contact's usual category, as the workbook
+  keeps none, and a blank GST code the item's or the account's default. Assets: one bought before the books start is
+  an opening asset with the depreciation the workbook carried for it then, straight-line by month from its start to
+  the month before the books start, rounded once [accountant to confirm]; one bought since is registered from the bill
+  or bank transaction line its cost posted on; their depreciation runs to the "as of" as the history's last record. A
+  disposed asset is registered with a warning, its disposal recorded after the import. At the sample's "as of", the
+  depreciation equals the workbook's to the cent.
 - **Clean start**: the Carry Forward sheet's balances as opening balances at the cut-over, and its open invoices and
   bills as opening open items.
 - Both paths:
