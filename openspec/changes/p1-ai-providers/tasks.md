@@ -101,8 +101,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 - [x] 7.1 C.2 #55, with a fixture that triggers each of its six conditions. Tests `// req: C.2 #55`.
   As built: the check `ai.model-routes` (area AI), and the setting `ai.fallbacks_per_day` (design D14).
-- [ ] 7.2 The AI inventory in the Compliance Center (connections, models, routes; prompts and tool versions as later
+- [x] 7.2 The AI inventory in the Compliance Center (connections, models, routes; prompts and tool versions as later
   changes add them; owners and data categories) beside the AI DPIA in the DPIA register. Tests `// req: CMP-AI-02`.
+  As built: `GET /v1/compliance/ai-inventory` and its card on Data protection's Impact assessments tab (design D14).
 
 ## 8. Screens, help and the guide
 

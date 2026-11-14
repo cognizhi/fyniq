@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asked_by": {
+      "description": "Who asked for it.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "changed_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "classes": {
+      "description": "The data classes the routes send it.",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "connector": {
+      "examples": [
+        "anthropic"
+      ],
+      "type": "string"
+    },
+    "endpoint": {
+      "description": "The one host its calls go to (SEC-36).",
+      "examples": [
+        "asia-southeast1-aiplatform.googleapis.com"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "models": {
+      "description": "The models on its allow-list.",
+      "items": {
+        "description": "A model's ID, as its provider names it.",
+        "examples": [
+          "claude-opus-4-6"
+        ],
+        "maxLength": 200,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "name": {
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "type": "string"
+    },
+    "processed_in": {
+      "description": "Where its prompts are processed, from its data-handling declaration (AI-88).",
+      "items": {
+        "description": "An ISO 3166 country code.",
+        "examples": [
+          "SG"
+        ],
+        "pattern": "^[A-Z]{2}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "state": {
+      "description": "enabled: in use; disabled: waiting for approval, or switched off.",
+      "enum": [
+        "disabled",
+        "enabled"
+      ],
+      "examples": [
+        "enabled"
+      ],
+      "type": "string"
+    },
+    "training": {
+      "description": "Whether the provider trains on them, the least favourable its declaration says.",
+      "enum": [
+        "no",
+        "yes",
+        "unknown"
+      ],
+      "examples": [
+        "no"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "connector",
+    "endpoint",
+    "state",
+    "processed_in",
+    "models",
+    "classes",
+    "asked_by",
+    "changed_at"
+  ],
+  "title": "AIInventoryConnection",
+  "type": "object"
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "examples": [
+        "assistant"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        "14"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "version"
+  ],
+  "title": "AIInventoryVersion",
+  "type": "object"
+}
