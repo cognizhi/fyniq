@@ -609,9 +609,15 @@ func registerPaymentBatchRelease(a *API) {
 					on = d.Format("2 Jan 2006")
 				}
 				summary := fmt.Sprintf("%s %s: %s, %s SGD, on %s by %s", verb, name, payments, b.Total.String(), on, strings.ToUpper(b.Stored.Method))
+				var vendors approval.Facts // FR-APR-01: the vendors it pays, for the policy's rules
+				for _, pay := range b.Payments {
+					if pay.Director == uuid.Nil && !pay.Payee.IsPerson() && !slices.Contains(vendors.Vendors, pay.Payee.ContactID) {
+						vendors.Vendors = append(vendors.Vendors, pay.Payee.ContactID)
+					}
+				}
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPaymentBatch, ObjectKey: id.String(), Operation: op, Summary: summary,
 					Execute: map[string]any{"batch_id": id.String(), "version": fmt.Sprint(doc.Version)}, Diff: diff,
-					Amounts: []approval.Amount{{Amount: b.Total.String(), Currency: paymentbatch.SGD.Code}}})
+					Amounts: []approval.Amount{{Amount: b.Total.String(), Currency: paymentbatch.SGD.Code}}, Facts: vendors})
 			})
 			if err != nil {
 				return nil, err

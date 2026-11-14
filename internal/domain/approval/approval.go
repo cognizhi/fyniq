@@ -496,7 +496,8 @@ type Policy struct {
 	Version    string // recorded in the envelope; a pending request keeps it (G4-057)
 	Number     int    // the organisation's version of it; 0 for the built-in policy
 	Steps      []Step
-	Fixed      bool // no organisation changes it: the policy for approval policies
+	Rules      []Rule // ordered: the first whose conditions hold decides a request's steps (rev 0.178)
+	Fixed      bool   // no organisation changes it: the policy for approval policies
 }
 
 // Label is the version string of an organisation's version n of an object type's policy.
