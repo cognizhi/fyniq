@@ -405,7 +405,7 @@ function ProvidersCard({ agents, connections }: { agents?: Agent[]; connections?
           Providers and model routes
         </h2>
       </div>
-      <div className="fy-card__body">
+      <div className="fy-card__body fy-stack fy-stack--3">
         <dl className="fy-dl">
           <div>
             <dt>Connections on</dt>
@@ -424,6 +424,9 @@ function ProvidersCard({ agents, connections }: { agents?: Agent[]; connections?
           </div>
         </dl>
         <p className="fy-small fy-secondary">A connection or model serves an agent only after it passes that agent's evals and a second approver approves it.</p>
+        <Link className="fy-btn fy-btn--secondary fy-btn--sm self-start" to="/settings/ai/providers">
+          {helpText("settings.ai-providers").label}
+        </Link>
       </div>
     </section>
   );
