@@ -51,13 +51,13 @@ type MigrationStepView struct {
 // MigrationFileView is a file a migration keeps.
 type MigrationFileView struct {
 	ID             string `json:"id" format:"uuid" doc:"The file." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a30"`
-	Kind           string `json:"kind" enum:"workbook,checks" doc:"workbook: as uploaded; checks: the Checks export made from one." example:"workbook"`
+	Kind           string `json:"kind" enum:"workbook,checks,pdf" doc:"workbook: as uploaded; checks: the Checks export made from one; pdf: a PDF of the workbook's reports, for the archive (M6)." example:"workbook"`
 	FileName       string `json:"file_name" doc:"As the uploader named it, or checks.csv." example:"Cognizhi-Finance-Hub.xlsx"`
 	MediaType      string `json:"media_type" doc:"Decided from the content." example:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"`
 	Size           int64  `json:"size_bytes" doc:"Its size in bytes." example:"6684378"`
 	SHA256         string `json:"sha256" doc:"The SHA-256 of the file as kept." example:"4d8057dc…"`
 	OriginalSHA256 string `json:"original_sha256" doc:"The SHA-256 of the file as received." example:"4d8057dc…"`
-	DataClass      string `json:"data_class" enum:"general,payroll" doc:"payroll for a workbook, which holds the pay of each employee; general for a Checks export." example:"payroll"`
+	DataClass      string `json:"data_class" enum:"general,payroll" doc:"payroll for a workbook, which holds the pay of each employee, and for a PDF of its reports; general for a Checks export." example:"payroll"`
 	AddedBy        string `json:"added_by" doc:"Who added it: a person, or the validation." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"`
 	AddedAt        string `json:"added_at" format:"date-time" doc:"When." example:"2026-11-13T09:05:00Z"`
 }

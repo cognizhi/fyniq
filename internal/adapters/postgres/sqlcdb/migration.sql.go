@@ -24,6 +24,23 @@ func (q *Queries) AnyJournalEntry(ctx context.Context) (bool, error) {
 	return posted, err
 }
 
+const closeMigrationRun = `-- name: CloseMigrationRun :one
+UPDATE fyniq.migration_run SET status = 'closed' WHERE id = $1 AND status = 'open' RETURNING organisation_id, id, status, started_by, started_at
+`
+
+func (q *Queries) CloseMigrationRun(ctx context.Context, id uuid.UUID) (FyniqMigrationRun, error) {
+	row := q.db.QueryRow(ctx, closeMigrationRun, id)
+	var i FyniqMigrationRun
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Status,
+		&i.StartedBy,
+		&i.StartedAt,
+	)
+	return i, err
+}
+
 const commitMigrationCommit = `-- name: CommitMigrationCommit :one
 UPDATE fyniq.migration_commit SET status = 'committed', committed_at = $1
  WHERE id = $2 AND status = 'running'
@@ -198,6 +215,48 @@ func (q *Queries) GetMigrationStep(ctx context.Context, id uuid.UUID) (FyniqMigr
 		&i.StartedBy,
 		&i.StartedAt,
 		&i.ValidatedAt,
+	)
+	return i, err
+}
+
+const insertMigrationArchive = `-- name: InsertMigrationArchive :one
+INSERT INTO fyniq.migration_archive (run_id, file_id, locked_key, sha256, retain_until, archived_by, archived_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7)
+RETURNING organisation_id, id, run_id, file_id, locked_key, sha256, retain_until, archived_by, archived_at
+`
+
+type InsertMigrationArchiveParams struct {
+	RunID       uuid.UUID
+	FileID      uuid.UUID
+	LockedKey   string
+	Sha256      string
+	RetainUntil time.Time
+	ArchivedBy  string
+	ArchivedAt  time.Time
+}
+
+func (q *Queries) InsertMigrationArchive(ctx context.Context, arg InsertMigrationArchiveParams) (FyniqMigrationArchive, error) {
+	row := q.db.QueryRow(ctx, insertMigrationArchive,
+		arg.RunID,
+		arg.FileID,
+		arg.LockedKey,
+		arg.Sha256,
+		arg.RetainUntil,
+		arg.ArchivedBy,
+		arg.ArchivedAt,
+	)
+	var i FyniqMigrationArchive
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.FileID,
+		&i.LockedKey,
+		&i.Sha256,
+		&i.RetainUntil,
+		&i.ArchivedBy,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
@@ -565,6 +624,40 @@ func (q *Queries) LatestMigrationMapping(ctx context.Context, runID uuid.UUID) (
 		&i.MadeAt,
 	)
 	return i, err
+}
+
+const listMigrationArchive = `-- name: ListMigrationArchive :many
+SELECT organisation_id, id, run_id, file_id, locked_key, sha256, retain_until, archived_by, archived_at FROM fyniq.migration_archive WHERE run_id = $1 ORDER BY archived_at, id
+`
+
+func (q *Queries) ListMigrationArchive(ctx context.Context, runID uuid.UUID) ([]FyniqMigrationArchive, error) {
+	rows, err := q.db.Query(ctx, listMigrationArchive, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqMigrationArchive
+	for rows.Next() {
+		var i FyniqMigrationArchive
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.RunID,
+			&i.FileID,
+			&i.LockedKey,
+			&i.Sha256,
+			&i.RetainUntil,
+			&i.ArchivedBy,
+			&i.ArchivedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listMigrationDifferences = `-- name: ListMigrationDifferences :many

@@ -28,7 +28,21 @@ const (
 const (
 	MigrationWorkbook = "workbook" // as uploaded
 	MigrationChecks   = "checks"   // the Checks export made from it
+	MigrationPDF      = "pdf"      // a PDF of the workbook's reports, for the archive (M6, rev 0.269)
 )
+
+// MigrationArchive is a migration's file copied write-once to the retention-locked store at M6 (rev 0.269): its copy's
+// key and hash, and how long the store keeps it.
+type MigrationArchive struct {
+	ID          uuid.UUID
+	RunID       uuid.UUID
+	FileID      uuid.UUID
+	LockedKey   string
+	SHA256      string
+	RetainUntil time.Time
+	ArchivedBy  string
+	ArchivedAt  time.Time
+}
 
 // MigrationRun is the organisation's move from the workbook (FR-MIG-01, §17.1): one per organisation, started only
 // in one without a posted entry (rev 0.254).
@@ -229,6 +243,16 @@ type Migrations interface {
 	Committed(ctx context.Context, id uuid.UUID, at time.Time) (MigrationCommit, error)
 	// RecordOf is the migration record that made a record: ports.ErrNotFound when the import did not make it.
 	RecordOf(ctx context.Context, recordType string, id uuid.UUID) (MigrationRecord, error)
+	// AddPDF keeps a PDF of the workbook's reports on the migration, for the archive (M6), audited as
+	// migration.pdf_received.
+	AddPDF(ctx context.Context, f MigrationFile) (MigrationFile, error)
+	// Archive records a file's copy in the retention-locked store, audited as migration.file_archived; Archives are the
+	// run's copies.
+	Archive(ctx context.Context, a MigrationArchive) (MigrationArchive, error)
+	Archives(ctx context.Context, run uuid.UUID) ([]MigrationArchive, error)
+	// Close closes the migration at M6, read only from then on, audited as migration.archived: CodeMigration while its
+	// parallel month is not signed or a file of it is not archived.
+	Close(ctx context.Context, run uuid.UUID) (MigrationRun, error)
 	// Decisions are the run's decisions on its difference register's lines, by line.
 	Decisions(ctx context.Context, run uuid.UUID) ([]MigrationDecision, error)
 	// Decide decides a line of the register: the first decision of a line when d.Version is 0, else the line again at

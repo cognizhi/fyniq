@@ -450,3 +450,65 @@ func (m migrations) Decide(ctx context.Context, d storage.MigrationDecision) (st
 		"fyniq": field(b.Fyniq, out.Fyniq), "workbook": field(b.Workbook, out.Workbook)}
 	return out, m.u.event(ctx, "migration.difference_decided", "migration_run", out.RunID, nil, changes)
 }
+
+func (m migrations) AddPDF(ctx context.Context, f storage.MigrationFile) (storage.MigrationFile, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationFile{}, err
+	}
+	f.Kind = storage.MigrationPDF
+	file, err := m.addFile(ctx, f)
+	if err != nil {
+		return storage.MigrationFile{}, err
+	}
+	return file, m.u.event(ctx, "migration.pdf_received", "migration_run", f.RunID, nil, map[string][2]any{"file_id": {nil, file.ID.String()},
+		"file_name": {nil, file.FileName}, "size_bytes": {nil, file.Size}, "sha256": {nil, file.SHA256}, "original_sha256": {nil, file.OriginalSHA256}})
+}
+
+func toMigrationArchive(r sqlcdb.FyniqMigrationArchive) storage.MigrationArchive {
+	return storage.MigrationArchive{ID: r.ID, RunID: r.RunID, FileID: r.FileID, LockedKey: r.LockedKey, SHA256: r.Sha256, RetainUntil: r.RetainUntil,
+		ArchivedBy: r.ArchivedBy, ArchivedAt: r.ArchivedAt}
+}
+
+func (m migrations) Archive(ctx context.Context, a storage.MigrationArchive) (storage.MigrationArchive, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationArchive{}, err
+	}
+	r, err := m.u.q.InsertMigrationArchive(ctx, sqlcdb.InsertMigrationArchiveParams{RunID: a.RunID, FileID: a.FileID, LockedKey: a.LockedKey, Sha256: a.SHA256,
+		RetainUntil: a.RetainUntil, ArchivedBy: a.ArchivedBy, ArchivedAt: a.ArchivedAt})
+	if err != nil {
+		return storage.MigrationArchive{}, mapError(err)
+	}
+	out := toMigrationArchive(r)
+	return out, m.u.event(ctx, "migration.file_archived", "migration_run", out.RunID, nil, map[string][2]any{"file_id": {nil, out.FileID.String()},
+		"locked_key": {nil, out.LockedKey}, "sha256": {nil, out.SHA256}, "retain_until": {nil, out.RetainUntil.Format(time.RFC3339)}})
+}
+
+func (m migrations) Archives(ctx context.Context, run uuid.UUID) ([]storage.MigrationArchive, error) {
+	if err := m.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := m.u.q.ListMigrationArchive(ctx, run)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MigrationArchive, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toMigrationArchive(r))
+	}
+	return out, nil
+}
+
+func (m migrations) Close(ctx context.Context, run uuid.UUID) (storage.MigrationRun, error) {
+	if err := m.u.check(); err != nil {
+		return storage.MigrationRun{}, err
+	}
+	r, err := m.u.q.CloseMigrationRun(ctx, run)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.MigrationRun{}, &storage.Error{Code: storage.CodeMigration, Message: "the migration is closed already"}
+	}
+	if err != nil {
+		return storage.MigrationRun{}, mapError(err)
+	}
+	out := toMigrationRun(r)
+	return out, m.u.event(ctx, "migration.archived", "migration_run", out.ID, nil, map[string][2]any{"status": {"open", out.Status}})
+}

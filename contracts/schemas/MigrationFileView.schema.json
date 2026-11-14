@@ -18,7 +18,7 @@
       "type": "string"
     },
     "data_class": {
-      "description": "payroll for a workbook, which holds the pay of each employee; general for a Checks export.",
+      "description": "payroll for a workbook, which holds the pay of each employee, and for a PDF of its reports; general for a Checks export.",
       "enum": [
         "general",
         "payroll"
@@ -44,10 +44,11 @@
       "type": "string"
     },
     "kind": {
-      "description": "workbook: as uploaded; checks: the Checks export made from one.",
+      "description": "workbook: as uploaded; checks: the Checks export made from one; pdf: a PDF of the workbook's reports, for the archive (M6).",
       "enum": [
         "workbook",
-        "checks"
+        "checks",
+        "pdf"
       ],
       "examples": [
         "workbook"

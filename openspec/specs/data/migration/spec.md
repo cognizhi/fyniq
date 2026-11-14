@@ -218,3 +218,8 @@ Source: PRD-001 §17.1
 - **WHEN** Fyniq goes live
 - **THEN** the workbook is locked
 - **AND** its read-only archive, with its PDFs, is stored with a hash for the retention period
+
+#### Scenario: Go-live archives and closes the migration (rev 0.269)
+- **WHEN** the parallel month is signed and a person with C on the import, stepped up, archives it
+- **THEN** each of the migration's files, its workbooks, Checks exports and the PDFs of the workbook's reports, is copied write-once to the retention-locked store with its hash, kept for the records' retention
+- **AND** the migration closes, read only, never before every file is archived

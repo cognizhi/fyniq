@@ -19,6 +19,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
@@ -1175,6 +1176,13 @@ func decideAll(t *testing.T, e *env, tok, path string) string {
 // req: data/migration Parallel month signed off
 // req: FR-MIG-02
 func TestTheParallelMonthIsReconciledAndSigned(t *testing.T) {
+	parallelMonthSigned(t)
+}
+
+// parallelMonthSigned imports the sample, signs its parity report and its parallel month, and returns the founders and
+// the migration.
+func parallelMonthSigned(t *testing.T) (founders, string) {
+	t.Helper()
 	f, id := importedSample(t)
 	e := f.e
 	accountant, ctrl := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Controller)
@@ -1249,5 +1257,62 @@ func TestTheParallelMonthIsReconciledAndSigned(t *testing.T) {
 	// M4's report still reads its own sign-off: the parallel month changed nothing it compares.
 	if r := e.call(http.MethodGet, path, accountant, nil); r.str("status") != "signed" {
 		t.Errorf("the parity report after the parallel month: %s", r.str("status"))
+	}
+	return f, id
+}
+
+// Go-live (§17.1 M6, rev 0.269): a PDF of the workbook's reports joins the migration; the workbook is archived, stepped
+// up: each of the migration's five files (M1's and M5's workbooks and Checks exports, and the PDF) copied to the
+// retention-locked store with its hash, kept until the end of 2033's financial year, seven years after 2026's; the
+// migration closes, read only: no workbook, decision or archive again.
+// req: data/migration Go-live and workbook archive (M6)
+// req: data/migration Archive stored with a hash
+// req: FR-DOC-07
+func TestTheWorkbookIsArchivedAndTheMigrationClosed(t *testing.T) {
+	f, id := parallelMonthSigned(t)
+	e := f.e
+	accountant, ctrl := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Controller)
+	base := "/v1/migrations/" + id
+	if r := e.upload(base+"/archive/pdfs", ctrl, nil, "Statements.pdf", []byte("%PDF-1.7 the workbook's statements"), "If-Match", e.migrationTag(id)); r.Status != http.StatusCreated ||
+		!strings.Contains(r.Raw, `"kind":"pdf"`) {
+		t.Fatalf("the PDF: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.upload(base+"/archive/pdfs", ctrl, nil, "Statements.pdf", sampleWorkbook(t), "If-Match", e.migrationTag(id)), "uploadMigrationArchivePDF", 422, CodeInvalid)
+	notSteppedUp := e.principal(authn.Principal{Subject: "founder-" + f.weiling, UserID: uuid.MustParse(f.weiling), Client: "web", Class: authn.ClassUser,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Controller}})
+	e.problemIs(e.call(http.MethodPost, base+"/archive", notSteppedUp, nil, "If-Match", e.migrationTag(id)), "archiveMigration", 403, CodeStepUpRequired)
+	r := e.call(http.MethodPost, base+"/archive", ctrl, nil, "If-Match", e.migrationTag(id))
+	var archive MigrationArchiveView
+	if err := json.Unmarshal([]byte(r.Raw), &archive); r.Status != http.StatusOK || err != nil || archive.Status != "closed" || len(archive.Copies) != 5 {
+		t.Fatalf("the archive: %d %v %s", r.Status, err, r.Raw)
+	}
+	files := map[string]string{}
+	for _, x := range e.call(http.MethodGet, base, accountant, nil).Body["files"].([]any) {
+		files[x.(map[string]any)["id"].(string)] = x.(map[string]any)["sha256"].(string)
+	}
+	until := time.Date(2034, 1, 1, 0, 0, 0, 0, clock.Singapore)
+	for _, c := range archive.Copies {
+		key := "migrations/" + e.books.Org.String() + "/" + id + "/" + c.FileID
+		ret, err := e.blobs.RetentionOf(context.Background(), key)
+		if c.SHA256 != files[c.FileID] || !c.RetainUntil.Equal(until) || err != nil || !ret.RetainUntil.Equal(until) || !ret.Locked {
+			t.Errorf("the copy of %s (%s): %+v, retention %+v %v", c.FileID, c.Kind, c, ret, err)
+		}
+	}
+	if m := e.call(http.MethodGet, base, accountant, nil); m.str("status") != "closed" {
+		t.Errorf("the migration after the archive: %s", m.Raw)
+	}
+	// Read only now.
+	if r := e.upload(base+"/parallel/workbook", ctrl, nil, "Late.xlsx", sampleWorkbook(t), "If-Match", e.migrationTag(id)); r.Status != http.StatusConflict {
+		t.Errorf("a workbook after the archive: %d %s", r.Status, r.Raw)
+	}
+	pr := e.call(http.MethodGet, base+"/parallel", accountant, nil)
+	if d := e.call(http.MethodPatch, base+"/parallel/register/6610.2026-06.movement", accountant, map[string]any{"class": "a"}, "If-Match", pr.Header.Get("ETag")); d.Status != http.StatusConflict {
+		t.Errorf("a decision after the archive: %d %s", d.Status, d.Raw)
+	}
+	if again := e.call(http.MethodPost, base+"/archive", ctrl, nil, "If-Match", e.migrationTag(id)); again.Status != http.StatusConflict {
+		t.Errorf("archiving again: %d %s", again.Status, again.Raw)
+	}
+	if g := e.call(http.MethodGet, base+"/archive", accountant, nil); len(g.Body["copies"].([]any)) != 5 || g.str("status") != "closed" {
+		t.Errorf("the archive read: %s", g.Raw)
 	}
 }

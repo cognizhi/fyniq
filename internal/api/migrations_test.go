@@ -342,10 +342,11 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 // pastPolicy are the operations the matrix's organisation never reaches a success of, as its state never allows one,
 // each with the code the API answers past its policy: allowed means that code, refused the policy's 403. The workbook
 // import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
-// commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268).
+// commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268), nor signs it to archive (rev 0.269).
 var pastPolicy = map[string]string{"decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
-	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound}
+	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
+	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel}
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample
@@ -438,6 +439,23 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	"signMigrationParallel": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/migrations/"+matrixMigration(e)+"/parallel/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview",
 			"If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
+	},
+	// The archive (rev 0.269): a PDF needs the committed import (MIGRATION-14), the archive the signed parallel month
+	// (MIGRATION-16), past their policy; the archive's read answers the open migration with no copy.
+	"uploadMigrationArchivePDF": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		return e.upload("/v1/migrations/"+id+"/archive/pdfs", tok, nil, "Statements.pdf", []byte("%PDF-1.7 matrix statements"), "Prefer", "return=preview",
+			"If-Match", e.migrationTag(id)), nil
+	},
+	"getMigrationArchive": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/archive", tok, nil), nil
+	},
+	"archiveMigration": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		r := e.call(http.MethodPost, "/v1/migrations/"+id+"/archive", steppedUp(e, tok), nil, "Prefer", "return=preview", "If-Match", e.migrationTag(id))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/migrations/"+id, e.as(authz.Auditor), nil).str("status") == "open"
+		}
 	},
 	"signMigrationReconciliation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/migrations/"+matrixMigration(e)+"/reconciliation/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview",
