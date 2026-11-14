@@ -23,26 +23,27 @@ const (
 // the period or date it is of, the record or member it belongs to, how it is signed, the ledger revision it was read at
 // and where it comes from. An answer cites a figure by its fact's ID, and platform code renders it from the fact (AI-08).
 type Fact struct {
-	ID          string `json:"id" doc:"The fact's ID, which an answer cites (AI-08)." example:"F3a9c0d1e2b4f5a6"`
-	Measure     string `json:"measure" doc:"What it is: a measure of the semantic layer, or a record's field, such as invoice.total." example:"invoice.total"`
-	Name        string `json:"name,omitempty" doc:"The measure's name; for a record's field, where it is in the record." example:"lines[2].net"`
-	Value       string `json:"value,omitempty" doc:"Exact decimal text; absent when the fact has no value." example:"1250.00"`
-	Words       string `json:"words,omitempty" doc:"What stands for the value, such as Not burning." example:"Not burning"`
-	Undefined   string `json:"undefined,omitempty" doc:"Why the fact has no value: never 0." example:"no revenue in the month"`
-	Unit        string `json:"unit" enum:"amount,count,number,percent,months,ratio,days" example:"amount"`
-	Currency    string `json:"currency,omitempty" doc:"An amount's currency." example:"SGD"`
-	From        string `json:"from,omitempty" format:"date" doc:"The period's first day; a stock's date." example:"2026-07-01"`
-	To          string `json:"to,omitempty" format:"date" doc:"The period's last day; a stock's date." example:"2026-09-30"`
-	AsAt        string `json:"as_at,omitempty" format:"date" doc:"The day a record's figure was read." example:"2026-10-15"`
-	Dimension   string `json:"dimension,omitempty" doc:"What the member is: a semantic dimension, or the kind of record." example:"invoice"`
-	Member      string `json:"member,omitempty" doc:"The member or record it belongs to." example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"`
-	MemberName  string `json:"member_name,omitempty" example:"Acme Pte Ltd"`
-	Sign        string `json:"sign" doc:"How the value is signed." example:"as the record shows it"`
-	Revision    int64  `json:"ledger_revision" doc:"The ledger revision it was read at (ENG-46)." example:"1204"`
-	Source      string `json:"source" doc:"What it is, in words." example:"the invoice's total"`
-	Lineage     string `json:"lineage" doc:"The API path it was read from." example:"/v1/invoices/0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"`
-	Pack        string `json:"pack,omitempty" doc:"A statutory value's pack (AI-53)." example:"sg-gst"`
-	PackVersion string `json:"pack_version,omitempty" doc:"A statutory value's pack version (AI-53)." example:"sg-gst@2026.3"`
+	ID          string   `json:"id" doc:"The fact's ID, which an answer cites (AI-08)." example:"F3a9c0d1e2b4f5a6"`
+	Measure     string   `json:"measure" doc:"What it is: a measure of the semantic layer, or a record's field, such as invoice.total." example:"invoice.total"`
+	Name        string   `json:"name,omitempty" doc:"The measure's name; for a record's field, where it is in the record." example:"lines[2].net"`
+	Value       string   `json:"value,omitempty" doc:"Exact decimal text; absent when the fact has no value." example:"1250.00"`
+	Words       string   `json:"words,omitempty" doc:"What stands for the value, such as Not burning." example:"Not burning"`
+	Undefined   string   `json:"undefined,omitempty" doc:"Why the fact has no value: never 0." example:"no revenue in the month"`
+	Unit        string   `json:"unit" enum:"amount,count,number,percent,months,ratio,days" example:"amount"`
+	Currency    string   `json:"currency,omitempty" doc:"An amount's currency." example:"SGD"`
+	From        string   `json:"from,omitempty" format:"date" doc:"The period's first day; a stock's date." example:"2026-07-01"`
+	To          string   `json:"to,omitempty" format:"date" doc:"The period's last day; a stock's date." example:"2026-09-30"`
+	AsAt        string   `json:"as_at,omitempty" format:"date" doc:"The day a record's figure was read." example:"2026-10-15"`
+	Dimension   string   `json:"dimension,omitempty" doc:"What the member is: a semantic dimension, or the kind of record." example:"invoice"`
+	Member      string   `json:"member,omitempty" doc:"The member or record it belongs to." example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"`
+	MemberName  string   `json:"member_name,omitempty" example:"Acme Pte Ltd"`
+	Sign        string   `json:"sign" doc:"How the value is signed." example:"as the record shows it"`
+	Revision    int64    `json:"ledger_revision" doc:"The ledger revision it was read at (ENG-46)." example:"1204"`
+	Source      string   `json:"source" doc:"What it is, in words." example:"the invoice's total"`
+	Lineage     string   `json:"lineage" doc:"The API path it was read from." example:"/v1/invoices/0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"`
+	Inputs      []string `json:"inputs,omitempty" doc:"A calculated fact's input facts, by ID (AI-68, AI-P6)." example:"[\"F3a9c0d1e2b4f5a6\"]"`
+	Pack        string   `json:"pack,omitempty" doc:"A statutory value's pack (AI-53)." example:"sg-gst"`
+	PackVersion string   `json:"pack_version,omitempty" doc:"A statutory value's pack version (AI-53)." example:"sg-gst@2026.3"`
 }
 
 // Subject is what a read's figures are of: its measures' prefix (the kind of record, or the read), the record it is,

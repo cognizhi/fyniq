@@ -133,6 +133,13 @@ AI-28).**
   Building it found that a fact's link named the general ledger's account `account=` and the revision `revision=`,
   which the reports do not take (task 2.1's slip); the links now use `account_id` and `as_at_revision`, and a test opens
   every kind of fact's link.
+- As built (task 3.3): `aitool.Calc`, which the AI service runs (the API's `callAITool` refuses `calc`): sums,
+  differences, products, quotients, percentage changes (from the first, of its size) and shares, in exact decimals (apd,
+  60 digits) on the conversation's facts by ID and on plain decimal constants, rounded once by RND-DISPLAY (half away from
+  zero, 2 places by default; a calculated figure is shown, never posted). Amounts combine in one currency only, a product
+  holds one amount at most, and a constant divided by an amount is refused; a fact the conversation did not read, or one
+  without a value, is refused (CALC-01 to CALC-04, each with what to do). The result is a fact (`calc.<op>`) with the IDs
+  of its input facts (`inputs`, AI-68), the latest revision among them, and their period when they share one.
 
 **D6. The semantic layer and typed facts (AI-03, AI-68, AI-04).**
 - `internal/semantic` defines named measures (revenue, cost of sales, gross profit, operating expenses, net profit,
