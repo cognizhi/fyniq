@@ -47,6 +47,7 @@ type ModelRequest struct {
 	System    string               `json:"system,omitempty"`
 	Messages  []ports.ModelMessage `json:"messages"`
 	Tools     []string             `json:"tools,omitempty"`
+	Output    *ports.ModelSchema   `json:"output,omitempty"`
 	MaxTokens int                  `json:"max_tokens"`
 }
 
@@ -140,10 +141,21 @@ const (
 	StopToolLimit = "tool_limit"
 )
 
+// Grounding is how the answer's figures were checked (AI-08): whether it was asked for again, what failed the first
+// time, and how many figures or words were withheld after.
+type Grounding struct {
+	Regenerated bool     `json:"regenerated"`
+	Failures    []string `json:"failures,omitempty"`
+	Withheld    int      `json:"withheld"`
+}
+
 // Answer is a turn's answer: its text, every fact it read, the prompt it was told (AI-24), the model calls' runs in the
 // activity log, its tool calls and how it ended.
 type Answer struct {
 	Text         string           `json:"text"`
+	Segments     []Segment        `json:"segments"`
+	Cited        []string         `json:"cited"`
+	Grounding    Grounding        `json:"grounding"`
 	Facts        []aitool.Fact    `json:"facts"`
 	Prompt       string           `json:"prompt"`
 	PromptSHA256 string           `json:"prompt_sha256"`
@@ -175,7 +187,8 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	for _, t := range tools.Tools() {
 		names = append(names, t.Name)
 	}
-	out := Answer{Prompt: a.Prompt.Name(), PromptSHA256: a.Prompt.SHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{}}
+	out := Answer{Prompt: a.Prompt.Name(), PromptSHA256: a.Prompt.SHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{},
+		Segments: []Segment{}, Cited: []string{}}
 	facts := map[string]aitool.Fact{}
 	known := func(id string) (aitool.Fact, bool) { f, ok := facts[id]; return f, ok }
 	keep := func(fs []aitool.Fact) {
@@ -197,7 +210,7 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	}
 	for calls := 0; ; {
 		res, err := a.Backend.CallModel(ctx, q.Token, ModelCall{Agent: Agent, Classes: []string{aipolicy.Business},
-			Request: ModelRequest{System: a.Prompt.Text, Messages: messages, Tools: names, MaxTokens: maxTokens}})
+			Request: ModelRequest{System: a.Prompt.Text, Messages: messages, Tools: names, Output: answerOutput, MaxTokens: maxTokens}})
 		if err != nil {
 			return out, err
 		}
@@ -211,7 +224,20 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 			}
 		}
 		if len(asked) == 0 {
-			out.Text, out.Stop = aiexclusion.Filter(textOf(res.Response)), StopAnswered
+			s, fails := parse(textOf(res.Response), known)
+			if len(fails) > 0 && !out.Grounding.Regenerated {
+				// Asked for once more, with what failed (AI-08).
+				out.Grounding.Regenerated, out.Grounding.Failures = true, fails
+				messages = append(messages, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText,
+					Text: "Your answer did not pass the figures' check: " + strings.Join(fails, "; ") + ". Answer again in the same shape, " +
+						"each figure a fact segment that says what the fact is, or say what could not be established."}}})
+				continue
+			}
+			if len(fails) > 0 {
+				s, out.Grounding.Withheld = withhold(s, known)
+			}
+			text, cited := Render(s, known)
+			out.Segments, out.Cited, out.Text, out.Stop = s.Segments, cited, aiexclusion.Filter(text), StopAnswered
 			break
 		}
 		if calls+len(asked) > limit {
@@ -308,6 +334,16 @@ func resultText(r ToolResult) (string, error) {
 	}
 	b, err = json.Marshal(aiexclusion.Apply(tree, aiexclusion.Policy{Payroll: true}))
 	return string(b), err
+}
+
+// parse reads the model's structured answer and checks it (AI-08): an answer not in its shape fails as a whole.
+func parse(text string, known func(string) (aitool.Fact, bool)) (Structured, []string) {
+	var s Structured
+	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &s); err != nil {
+		return Structured{Segments: []Segment{{Missing: "an answer to the question"}}},
+			[]string{"the answer is not in its shape (an object with segments): " + err.Error()}
+	}
+	return s, failures(s, known)
 }
 
 // textOf is an answer's words.

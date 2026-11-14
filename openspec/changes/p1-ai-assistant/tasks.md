@@ -49,7 +49,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   context assembly, versioned prompts in `contracts/ai/prompts/` (hash recorded per turn), model calls and tools
   through the API; the Compose service, its image and budget. Tests `// req: AI-P2`, `// req: AI-28`,
   `// req: AI-24`, `// req: ai/proposals The orchestrator holds no write credential`.
-- [ ] 5.2 Grounding and rendering (design D7): structured answers citing facts, figures rendered from their facts,
+- [x] 5.2 Grounding and rendering (design D7): structured answers citing facts, figures rendered from their facts,
   attribution checked, one regeneration then "could not establish"; the Markdown subset. Tests `// req: AI-08`,
   `// req: AI-21`, `// req: AI-69` (G4-089, G4-090).
 - [ ] 5.3 Limits (design D9): turns per person a minute and a day, tool calls per turn, conversation length with

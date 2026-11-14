@@ -194,6 +194,16 @@ AI-28).**
   in full; no images, no HTML, no remote fetch) (AI-69); every AI message carries the violet accent and the AI badge
   (AI-22).
 - Alternative: free text checked after the fact by matching numbers: weaker against right-value-wrong-fact (G4-089).
+- As built (task 5.2): the model calls ask for a strict structured output (`answer`): segments of `text` (Markdown, no
+  figure but a date or an ordinal), `fact` (an ID with the measure, member, first and last day and currency the
+  sentence gives it) and `missing` (what could not be established). The assistant checks each fact segment against the
+  fact the turn read (G4-089) and each text segment for a stray figure; a failure asks once more, naming what failed,
+  and what still fails becomes "(I could not establish this figure)" or "(a figure not established)" (G4-090). Platform
+  code renders each figure from its fact, rounded once by RND-DISPLAY: an amount in its currency's decimals with
+  thousands separated and a true minus, a percentage and months to one decimal, a ratio to two, days and counts whole.
+  The Markdown subset drops images and raw HTML and shows any link but Fyniq's own with its address in full (AI-69).
+  The answer records whether it was asked for again, what failed, how much was withheld and the facts it cites. The
+  prompt says so as `chat@2`; `chat@1` stays as its history.
 
 **D8. Exclusions, untrusted text and screening (AI-02, AI-20, AI-18, AI-P7, AI-25, CTL-AI-06).**
 - The exclusion policy runs in the API on every AI-principal read, before data leaves for the AI service: never-send

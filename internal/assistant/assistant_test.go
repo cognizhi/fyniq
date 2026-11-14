@@ -58,6 +58,20 @@ func text(s string) ports.ModelResponse {
 	return ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: s}}, StopReason: ports.StopEnd}
 }
 
+// answer is a structured answer of segments, as the model gives it.
+func answer(segments ...assistant.Segment) ports.ModelResponse {
+	b, _ := json.Marshal(assistant.Structured{Segments: segments})
+	return text(string(b))
+}
+
+// words is a segment of words.
+func words(s string) assistant.Segment { return assistant.Segment{Text: s} }
+
+// cite is a fact segment saying what f is.
+func cite(f aitool.Fact) assistant.Segment {
+	return assistant.Segment{Fact: f.ID, Measure: f.Measure, Member: f.Member, From: f.From, To: f.To, Currency: f.Currency}
+}
+
 func prompt(t *testing.T) assistant.Prompt {
 	t.Helper()
 	p, err := assistant.DefaultPrompt(assistant.Agent)
@@ -82,12 +96,19 @@ var costs = aitool.Fact{ID: "F00000000000000bb", Measure: "costs", Value: "10000
 // req: AI-24
 // req: ai/proposals The orchestrator holds no write credential
 func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
+	known := func(id string) (aitool.Fact, bool) {
+		return map[string]aitool.Fact{revenue.ID: revenue, costs.ID: costs}[id], id == revenue.ID || id == costs.ID
+	}
+	diff, err := aitool.Calc(aitool.CalcInput{Op: "subtract", Operands: []aitool.Operand{{Fact: revenue.ID}, {Fact: costs.ID}}}, known)
+	if err != nil {
+		t.Fatal(err)
+	}
 	b := &api{
 		answers: []ports.ModelResponse{
 			{Parts: []ports.ModelPart{toolCall("c1", "metrics_query", `{"measure":"revenue","from":"2026-07","to":"2026-09"}`),
 				toolCall("c2", "metrics_query", `{"measure":"costs","from":"2026-07","to":"2026-09"}`)}},
 			{Parts: []ports.ModelPart{toolCall("c3", "calc", `{"op":"subtract","operands":[{"fact":"F00000000000000aa"},{"fact":"F00000000000000bb"}]}`)}},
-			text("Revenue less costs was 25,000.00 in July to September."),
+			answer(words("Revenue less costs was "), cite(diff), words(" from July to September 2026.")),
 		},
 		results: map[string]assistant.ToolResult{"metrics.query": {Tool: "metrics.query", Version: 1, Facts: []aitool.Fact{revenue, costs}}},
 	}
@@ -102,7 +123,8 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Text != "Revenue less costs was 25,000.00 in July to September." || out.Stop != assistant.StopAnswered || len(out.Runs) != 3 {
+	if out.Text != "Revenue less costs was SGD 25,000.00 from July to September 2026." || out.Stop != assistant.StopAnswered || len(out.Runs) != 3 ||
+		out.Grounding.Regenerated || !slices.Equal(out.Cited, []string{diff.ID}) {
 		t.Errorf("the answer: %+v", out)
 	}
 	if !slices.Equal(kinds, []string{"status", "tool", "tool", "tool", "text", "done"}) {
@@ -120,7 +142,7 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 	if len(out.Facts) != 3 || calc == nil || calc.Value != "25000.00" || !slices.Equal(calc.Inputs, []string{revenue.ID, costs.ID}) {
 		t.Errorf("the facts: %+v", out.Facts)
 	}
-	if out.Prompt != "chat@1" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
+	if out.Prompt != "chat@2" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
 		t.Errorf("the record: %+v", out)
 	}
 
@@ -155,7 +177,8 @@ func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 		answers: []ports.ModelResponse{
 			{Parts: []ports.ModelPart{toolCall("c1", "records_get", `{"kind":"invoice","id":"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"}`),
 				toolCall("c2", "records_update", `{}`), toolCall("c3", "calc", `{"op":"add","operands":[{"fact":"F00000000000000ff"},{"constant":"1"}]}`)}},
-			text("I could not read it. The customer's NRIC is S1234567D."),
+			answer(words("I could not read it. The customer's NRIC is S1234567D.")),
+			answer(words("I could not read it. The customer's NRIC is S1234567D.")),
 		},
 		refuse: map[string]*assistant.Problem{"records.get": refused},
 	}
@@ -172,8 +195,8 @@ func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 	if out.ToolCalls[0].Outcome != assistant.OutcomeRefused || out.ToolCalls[0].Code != "AI-TOOL-03" || out.ToolCalls[1].Code != "AI-TOOL-01" {
 		t.Errorf("the tool calls: %+v", out.ToolCalls)
 	}
-	if strings.Contains(out.Text, "S1234567D") || !strings.Contains(out.Text, "S****567D") {
-		t.Errorf("the answer's NRIC: %q", out.Text)
+	if strings.Contains(out.Text, "1234567") || !out.Grounding.Regenerated || out.Grounding.Withheld != 1 {
+		t.Errorf("the answer's NRIC: %q %+v", out.Text, out.Grounding)
 	}
 
 	many := make([]ports.ModelPart, assistant.DefaultToolCalls+1)
@@ -200,12 +223,12 @@ func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 // told, named and hashed as its file is; a file not named <agent>@<version>.md is refused.
 // req: AI-24
 func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
-	b, err := os.ReadFile("../../contracts/ai/prompts/chat@1.md")
+	b, err := os.ReadFile("../../contracts/ai/prompts/chat@2.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(b)
-	if p := prompt(t); p.Version != 1 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@1" {
+	if p := prompt(t); p.Version != 2 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@2" {
 		t.Errorf("chat's prompt: %s %d", p.Name(), len(p.Text))
 	}
 	fsys := fstest.MapFS{"prompts/chat@1.md": {Data: []byte("one")}, "prompts/chat@12.md": {Data: []byte("twelve")}, "prompts/other@3.md": {Data: []byte("x")}}
@@ -217,5 +240,103 @@ func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
 	}
 	if _, err := assistant.LoadPrompt(fsys, "secretary"); err == nil {
 		t.Error("an agent with no prompt loaded")
+	}
+}
+
+// Figures are bound to their facts (AI-08, AI-21; G4-089, G4-090): asked for August revenue from customer A, with B's
+// August and A's July read too, an answer citing B's fact as A's, or July's as August's, fails and is asked for once
+// more with the failures named; one that still fails withholds the figure and says it could not be established; words
+// that hold a figure fail the same way; a figure is rendered from its fact, never from the model's words.
+// req: AI-08
+// req: AI-21
+func TestFiguresAreBoundToTheirFacts(t *testing.T) {
+	a := aitool.Fact{ID: "F000000000000000a", Measure: "receivables", Value: "1250.5", Unit: aitool.UnitAmount, Currency: "SGD", From: "2026-08-31",
+		To: "2026-08-31", Dimension: "customer", Member: "cust-a", MemberName: "Acme Pte Ltd", Revision: 3}
+	bFact := a
+	bFact.ID, bFact.Member, bFact.MemberName = "F000000000000000b", "cust-b", "Beta Pte Ltd"
+	july := a
+	july.ID, july.From, july.To = "F000000000000000c", "2026-07-31", "2026-07-31"
+	read := ports.ModelResponse{Parts: []ports.ModelPart{toolCall("c1", "metrics_query", `{"measure":"receivables","by":"customer"}`)}}
+	results := map[string]assistant.ToolResult{"metrics.query": {Tool: "metrics.query", Version: 1, Facts: []aitool.Fact{a, bFact, july}}}
+	misattributed := cite(bFact)
+	misattributed.Member = "cust-a"
+	ask := func(answers ...ports.ModelResponse) (assistant.Answer, *api) {
+		t.Helper()
+		b := &api{answers: append([]ports.ModelResponse{read}, answers...), results: results}
+		out, err := (&assistant.Assistant{Backend: b, Prompt: prompt(t)}).Answer(context.Background(), assistant.Question{Token: "fyai_t",
+			Text: "What does Acme owe us at the end of August?"}, func(assistant.Event) error { return nil })
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out, b
+	}
+
+	// Right the first time: rendered from the fact, with its currency's decimals.
+	out, b := ask(answer(words("Acme owes "), cite(a), words(" at 31 August 2026.")))
+	if out.Text != "Acme owes SGD 1,250.50 at 31 August 2026." || out.Grounding.Regenerated || b.calls[1].Request.Output == nil {
+		t.Errorf("a grounded answer: %q %+v", out.Text, out.Grounding)
+	}
+
+	// B's fact given as A's, then right: asked for again with the failure named.
+	out, b = ask(answer(words("Acme owes "), misattributed), answer(words("Acme owes "), cite(a)))
+	last := b.calls[len(b.calls)-1].Request.Messages
+	if !out.Grounding.Regenerated || len(out.Grounding.Failures) != 1 || !strings.Contains(out.Grounding.Failures[0], "member") ||
+		!strings.Contains(last[len(last)-1].Parts[0].Text, "member") || out.Text != "Acme owes SGD 1,250.50" {
+		t.Errorf("a misattributed figure, then right: %q %+v", out.Text, out.Grounding)
+	}
+
+	// July's given as August's, twice: withheld.
+	wrongMonth := cite(july)
+	wrongMonth.From, wrongMonth.To = "2026-08-31", "2026-08-31"
+	out, _ = ask(answer(words("Acme owes "), wrongMonth), answer(words("Acme owes "), wrongMonth))
+	if out.Grounding.Withheld != 1 || strings.Contains(out.Text, "1,250.50") || !strings.Contains(out.Text, "could not establish") {
+		t.Errorf("a figure that stays wrong: %q %+v", out.Text, out.Grounding)
+	}
+
+	// A figure in the words, an unknown fact, and an answer not in its shape.
+	for name, bad := range map[string]ports.ModelResponse{
+		"a figure in words": answer(words("Acme owes 1,250.50 at 31 August 2026.")),
+		"an unknown fact":   answer(words("Acme owes "), assistant.Segment{Fact: "F00000000000000ff", Measure: "receivables"}),
+		"not its shape":     text("Acme owes SGD 1,250.50."),
+	} {
+		out, _ := ask(bad, bad)
+		if !out.Grounding.Regenerated || out.Grounding.Withheld == 0 && name != "not its shape" || strings.Contains(out.Text, "1,250") {
+			t.Errorf("%s: %q %+v", name, out.Text, out.Grounding)
+		}
+	}
+}
+
+// A figure as the answer shows it (RND-DISPLAY) and the Markdown subset (AI-69): images and raw HTML go, links to other
+// sites show their address in full, Fyniq's own links stay.
+// req: AI-69
+// req: AI-08
+func TestTheAnswerIsRenderedInFyniqsWords(t *testing.T) {
+	for _, c := range []struct {
+		f    aitool.Fact
+		want string
+	}{
+		{aitool.Fact{Value: "1234567.891", Unit: aitool.UnitAmount, Currency: "SGD"}, "SGD 1,234,567.89"},
+		{aitool.Fact{Value: "-500", Unit: aitool.UnitAmount, Currency: "JPY"}, "JPY −500"},
+		{aitool.Fact{Value: "45.25", Unit: "percent"}, "45.3%"},
+		{aitool.Fact{Value: "18.04", Unit: "months"}, "18.0 months"},
+		{aitool.Fact{Value: "1.2", Unit: "ratio"}, "1.20×"},
+		{aitool.Fact{Value: "12", Unit: aitool.UnitCount}, "12"},
+		{aitool.Fact{Words: "Not burning", Unit: "months"}, "Not burning"},
+	} {
+		if got := assistant.Figure(c.f); got != c.want {
+			t.Errorf("Figure(%+v) = %q, want %q", c.f, got, c.want)
+		}
+	}
+	for in, want := range map[string]string{
+		"See ![chart](https://evil.example/c?d=x) here":            "See  here",
+		"Read [the guide](https://example.com/guide)":              "Read the guide (https://example.com/guide)",
+		"Open [the invoice](/sales/invoices/01928f6e)":             "Open [the invoice](/sales/invoices/01928f6e)",
+		"Not [this](//evil.example/x)":                             "Not this (//evil.example/x)",
+		"<b>bold</b> and <img src=x onerror=y> **kept**":           "bold and  **kept**",
+		"- a list\n- of points\n\n| a | b |\n|---|---|\n| c | d |": "- a list\n- of points\n\n| a | b |\n|---|---|\n| c | d |",
+	} {
+		if got := assistant.Markdown(in); got != want {
+			t.Errorf("Markdown(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
