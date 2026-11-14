@@ -108,8 +108,11 @@ func (e *ImportError) Unwrap() error { return e.Err }
 func (w *Workbook) Plan(m Mapping, path string) ([]Record, []Problem) {
 	var out []Record
 	out = append(out, w.setUp(m, path)...)
-	if path == storage.PathHistory {
+	switch path {
+	case storage.PathHistory:
 		out = append(out, w.history(m)...)
+	case storage.PathCleanStart:
+		out = append(out, w.cleanStart(m)...)
 	}
 	seen := map[string]Origin{}
 	var probs []Problem

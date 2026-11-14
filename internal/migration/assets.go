@@ -208,7 +208,7 @@ func openingAccumulated(a Asset, start time.Time, cur money.Currency) *apd.Decim
 // assetRecord registers an asset of the Assets sheet (FR-FA-01): one bought before the books start as an opening asset,
 // with the depreciation the workbook carried for it then (its opening balances hold it on 1590); one bought since from
 // the line of the bill or bank transaction its cost posted on. Its depreciation runs with the history's last record.
-func (w *Workbook) assetRecord(m Mapping, a Asset, start time.Time) dated {
+func (w *Workbook) assetRecord(m Mapping, a Asset, start time.Time, carried bool) dated {
 	opening := a.Bought.Before(start)
 	on := a.Bought
 	if opening {
@@ -244,7 +244,11 @@ func (w *Workbook) assetRecord(m Mapping, a Asset, start time.Time) dated {
 			}
 			d := journal.AssetDraft{Name: a.Description, Notes: a.Notes, Residual: residual, LifeMonths: life, Method: asset.StraightLine, Start: from}
 			if opening {
-				acc0, err := amount(openingAccumulated(a, start, base), base, false, "accumulated")
+				accumulated := openingAccumulated(a, start, base)
+				if carried && a.Accumulated != nil { // a clean start carries the depreciation the workbook worked to its "as of"
+					accumulated = a.Accumulated
+				}
+				acc0, err := amount(accumulated, base, false, "accumulated")
 				if err != nil {
 					return Made{}, err
 				}
@@ -298,4 +302,29 @@ func (w *Workbook) depreciationRecord() dated {
 			o, err := u.Organisation(ctx)
 			return Made{Type: "organisation", ID: o.ID}, err
 		}}}
+}
+
+// cleanStart is a clean start's records at the cut-over (§17.1 M3, design D5): the Carry Forward sheet's balances as the
+// opening balances, its open invoices, bills and credits as opening items (FR-GL-06, rev 0.257, 0.261), and the assets
+// as opening assets with the depreciation the workbook worked to its "as of"; one disposed of before the cut-over is
+// left in the archive.
+func (w *Workbook) cleanStart(m Mapping) []Record {
+	var out []Record
+	if r, ok := w.carriedBalances(m); ok {
+		out = append(out, r)
+	}
+	for _, d := range w.CarryForward.Invoices {
+		out = append(out, w.invoiceRecord(m, d))
+	}
+	for _, d := range w.CarryForward.Bills {
+		out = append(out, w.billRecord(m, d))
+	}
+	start := w.BooksStart(storage.PathCleanStart)
+	for _, a := range w.Assets {
+		if !a.Disposed.IsZero() && a.Disposed.Before(start) {
+			continue
+		}
+		out = append(out, w.assetRecord(m, a, start, true).Record)
+	}
+	return out
 }

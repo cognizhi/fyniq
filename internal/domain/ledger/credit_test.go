@@ -98,6 +98,12 @@ func TestEveryVendorCreditRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 			{"a USD credit with the GST stated in SGD", Bill{ID: creditID, Version: 2, Date: day, Memo: "Vercel CN-3", Currency: usd, Rate: usdRate(t, "1.34"),
 				Lines: []BillLine{line}}},
 		},
+		RuleOpeningVendorCredit: {
+			{"rev 0.261: an SGD opening credit from a supplier", openingBill(Bill{ID: creditID, Version: 1, Date: day, Memo: "Atlassian CN-20", Currency: sgd,
+				Lines: []BillLine{billLine(t, software, "200.00", "18.00", sgd, true)}})},
+			{"rev 0.261: a USD opening credit at its rate", openingBill(Bill{ID: creditID, Version: 2, Date: day, Memo: "Vercel CN-21", Currency: usd, Rate: usdRate(t, "1.34"),
+				Lines: []BillLine{billLine(t, hosting, "150.00", "0.00", usd, false)}})},
+		},
 	}
 	for rule := range VendorCreditRules {
 		if len(cases[rule]) == 0 {

@@ -266,19 +266,21 @@ func IsInvoice(doc storage.Document) bool {
 // IsCreditNote says whether a document is a credit note to a customer (FR-AR-04).
 func IsCreditNote(doc storage.Document) bool { return doc.Type == storage.DocumentCreditNote }
 
-// IsOpening says whether an invoice's version is an opening item (FR-GL-06; rev 0.257), which posts under
-// opening_invoice@1.
+// IsOpening says whether an invoice's or a credit note's version is an opening item (FR-GL-06; rev 0.257, 0.261), which
+// posts under opening_invoice@1 or opening_credit_note@1.
 func IsOpening(doc storage.Document) bool {
 	var p struct {
 		OpeningItem bool `json:"opening_item"`
 	}
-	return doc.Type == storage.DocumentInvoice && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
+	return (doc.Type == storage.DocumentInvoice || doc.Type == storage.DocumentCreditNote) && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
 }
 
 // IdentityOf is the posting identity of an invoice's or a credit note's version under the rule it posts with:
-// credit_note@1, opening_invoice@1 for an opening item, else invoice@1.
+// opening_credit_note@1 or opening_invoice@1 for an opening item, credit_note@1, else invoice@1.
 func IdentityOf(doc storage.Document) string {
 	switch {
+	case IsCreditNote(doc) && IsOpening(doc):
+		return ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleOpeningCreditNote)
 	case IsCreditNote(doc):
 		return ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
 	case IsOpening(doc):
@@ -450,17 +452,13 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 
 	// The rate: as typed, else the cascade's for the invoice's date (ENG-40).
 	inv := ledger.Invoice{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Customer, doc)}
-	// An opening item posts at the books start (FR-GL-06; rev 0.257); a credit note never is one.
+	// An opening item, an invoice or a credit note, posts at the books start (FR-GL-06; rev 0.257, 0.261).
 	if d.OpeningItem {
-		if credit {
-			add(ledger.CodeOpeningItem, "opening_item", "a credit note is never an opening item", "Credit the opening invoice with a credit note dated from the books start")
-		} else {
-			o, err := u.Organisation(ctx)
-			if err != nil {
-				return Prepared{}, nil, err
-			}
-			inv.Opening = o.Profile.BooksStart
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return Prepared{}, nil, err
 		}
+		inv.Opening = o.Profile.BooksStart
 	}
 	var found fx.Found
 	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
@@ -652,7 +650,7 @@ func credited(ctx context.Context, u storage.UnitOfWork, self uuid.UUID, d Draft
 		if n.ID == self {
 			continue
 		}
-		took, err := receivable(ctx, u, ledger.CreditNoteIdentity(n.ID, n.Version, ledger.RuleCreditNote), inv.Currency)
+		took, err := receivable(ctx, u, IdentityOf(n), inv.Currency)
 		if err != nil {
 			return time.Time{}, nil, nil, err
 		}

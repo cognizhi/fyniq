@@ -23,6 +23,8 @@ var asCredit = strings.NewReplacer(
 	"A bill's total is more than zero; record what a supplier owes the company as a vendor credit", "A credit note's total is more than zero",
 	"the bill's", "the credit note's",
 	"the bill", "the credit note",
+	"this bill", "this credit note",
+	"an ordinary bill", "an ordinary credit note",
 	"bill's", "credit note's",
 )
 
@@ -62,7 +64,8 @@ func PostVendorCredit(b Bill, s Settings) (Entry, error) {
 // VendorCreditRules are every vendor credit rule version the engine has posted with, by name: like Rules, a version is
 // never removed or changed while an entry names it.
 var VendorCreditRules = map[string]BillRule{
-	RuleVendorCredit: PostVendorCredit,
+	RuleVendorCredit:        PostVendorCredit,
+	RuleOpeningVendorCredit: PostOpeningVendorCredit,
 }
 
 // ReplayVendorCredit re-runs the rule version that posted a vendor credit's entry over the same version (ENG-06).

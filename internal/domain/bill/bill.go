@@ -259,18 +259,21 @@ func IsBill(doc storage.Document) bool {
 	return doc.Type == storage.DocumentBill || doc.Type == storage.DocumentVendorCredit
 }
 
-// IsOpening says whether a bill's version is an opening item (FR-GL-06; rev 0.257), which posts under opening_bill@1.
+// IsOpening says whether a bill's or a vendor credit's version is an opening item (FR-GL-06; rev 0.257, 0.261), which
+// posts under opening_bill@1 or opening_vendor_credit@1.
 func IsOpening(doc storage.Document) bool {
 	var p struct {
 		OpeningItem bool `json:"opening_item"`
 	}
-	return doc.Type == storage.DocumentBill && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
+	return (doc.Type == storage.DocumentBill || doc.Type == storage.DocumentVendorCredit) && json.Unmarshal(doc.Payload, &p) == nil && p.OpeningItem
 }
 
 // IdentityOf is the posting identity of a bill's or a vendor credit's version under the rule it posts with:
 // vendor_credit@1, opening_bill@1 for an opening item, else bill@1.
 func IdentityOf(doc storage.Document) string {
 	switch {
+	case doc.Type == storage.DocumentVendorCredit && IsOpening(doc):
+		return ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleOpeningVendorCredit)
 	case doc.Type == storage.DocumentVendorCredit:
 		return ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
 	case IsOpening(doc):
@@ -438,17 +441,13 @@ func PrepareAt(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 
 	// The rate: as typed, else the cascade's for the bill's date (ENG-40).
 	b := ledger.Bill{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Supplier, d)}
-	// An opening item posts at the books start (FR-GL-06; rev 0.257); a supplier's credit note never is one.
+	// An opening item, a bill or a supplier's credit note, posts at the books start (FR-GL-06; rev 0.257, 0.261).
 	if d.OpeningItem {
-		if doc.Type == storage.DocumentVendorCredit {
-			add(ledger.CodeOpeningItem, "opening_item", "a supplier's credit note is never an opening item", "Enter the credit note dated from the books start")
-		} else {
-			o, err := u.Organisation(ctx)
-			if err != nil {
-				return Prepared{}, nil, err
-			}
-			b.Opening = o.Profile.BooksStart
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return Prepared{}, nil, err
 		}
+		b.Opening = o.Profile.BooksStart
 	}
 	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
 		f, err := fx.Lookup(ctx, u, base, d.Currency, d.Date)

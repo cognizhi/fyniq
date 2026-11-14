@@ -158,8 +158,18 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 		}
 		b.Lines = append(b.Lines, line)
 	}
-	if credit && x.OpeningItem {
-		return ledger.Entry{}, false // a supplier's credit note is never an opening item
+	if credit && x.OpeningItem { // rev 0.261: a supplier's credit open at the books start
+		start, ok := r.booksStart()
+		if !ok {
+			return ledger.Entry{}, false
+		}
+		b.Opening = &start
+		e, err := ledger.PostOpeningVendorCredit(b, r.settings)
+		if err != nil || !r.fits(e) {
+			return ledger.Entry{}, false
+		}
+		r.hold(d.ID, date, e, ledger.RoleAccountsPayable)
+		return e, true
 	}
 	if credit {
 		e, err := ledger.PostVendorCredit(b, r.settings)

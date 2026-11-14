@@ -591,6 +591,11 @@ Source: PRD-001 §B.2
 - **THEN** it posts at the books start Dr 1100 (an invoice) or Cr 2010 (a bill) with its total in its currency at its rate under RND-FX, and the same base amount the other way on 3900 Opening balance clearing in the base currency (opening_invoice@1, opening_bill@1)
 - **AND** one dated on or after the books start, one that spreads, deducts a deposit or withholds tax is refused [accountant to confirm]
 
+#### Scenario: Credits open at the books start (rev 0.261)
+- **WHEN** a credit note to a customer or a supplier's credit note, open at the books start, is posted as an opening item
+- **THEN** it posts at the books start Cr 1100 or Dr 2010 with its total in its currency at its rate, and the same base amount the other way on 3900 (opening_credit_note@1, opening_vendor_credit@1)
+- **AND** it is applied or refunded later as any credit [accountant to confirm]
+
 ### Requirement: Payroll per employee-month
 Payroll SHALL compute CPF, SDL and SHG once per employee-month (calendar month, per employer) on the total wages payable in that month, across all its runs and corrections.
 

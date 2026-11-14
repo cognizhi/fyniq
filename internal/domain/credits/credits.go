@@ -163,7 +163,7 @@ func CreditOf(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledger.
 		if err != nil {
 			return Credit{}, err
 		}
-		e, err := u.Ledger().ByIdentity(ctx, ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit))
+		e, err := u.Ledger().ByIdentity(ctx, bill.IdentityOf(doc))
 		if err != nil {
 			return Credit{}, err
 		}

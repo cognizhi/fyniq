@@ -406,7 +406,7 @@
           "required": ["percent"],
           "properties": {"percent": {"type": "string"}}
         },
-        "opening_item": {"description": "A bill received before settings.books_start and unpaid then: it posts at the books' start (opening_bill@1, FR-GL-06, rev 0.257).", "type": "boolean"}
+        "opening_item": {"description": "A bill received before settings.books_start and unpaid then: it posts at the books' start (opening_bill@1, FR-GL-06, rev 0.257); a supplier's credit open then, under opening_vendor_credit@1 (rev 0.261).", "type": "boolean"}
       }
     },
     "settlement": {
@@ -483,7 +483,7 @@
             "properties": {"deposit": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}}
           }
         },
-        "opening_item": {"description": "An invoice issued before settings.books_start and unpaid then: it posts at the books' start (opening_invoice@1, FR-GL-06, rev 0.257).", "type": "boolean"}
+        "opening_item": {"description": "An invoice issued before settings.books_start and unpaid then: it posts at the books' start (opening_invoice@1, FR-GL-06, rev 0.257); a credit note open then, under opening_credit_note@1 (rev 0.261).", "type": "boolean"}
       }
     },
     "customerDeposit": {

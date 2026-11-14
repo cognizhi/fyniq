@@ -72,6 +72,8 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	out := CheckedInvoice{Prepared: p, Problems: probs}
 	post := ledger.PostInvoice
 	switch {
+	case invoice.IsCreditNote(doc) && p.Draft.OpeningItem:
+		post = ledger.PostOpeningCreditNote // FR-GL-06 (rev 0.261): a credit open at the books start
 	case invoice.IsCreditNote(doc):
 		post = ledger.PostCreditNote
 	case p.Draft.OpeningItem:
@@ -583,15 +585,20 @@ func replayInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	for _, l := range stored.Lines {
 		taxed = taxed || s.Accounts[l.AccountID].Role == ledger.RoleGSTControl
 	}
-	if e.RuleVersion == ledger.RuleOpeningInvoice {
-		// An opening item posts no GST line (FR-GL-06): it charged GST when its receivable is more than its lines' nets.
+	if e.RuleVersion == ledger.RuleOpeningInvoice || e.RuleVersion == ledger.RuleOpeningCreditNote {
+		// An opening item posts no GST line (FR-GL-06): it charged GST when its receivable is more than its lines' nets,
+		// a credit's the other way (rev 0.261).
 		nets := money.Zero(i.Currency)
 		for _, l := range i.Lines {
 			nets, _ = nets.Add(l.Net)
 		}
 		for _, l := range stored.Lines {
 			if s.Accounts[l.AccountID].Role == ledger.RoleAccountsReceivable && l.Amount.Currency() == i.Currency {
-				taxed = !l.Amount.Equal(nets)
+				amount := l.Amount
+				if e.RuleVersion == ledger.RuleOpeningCreditNote {
+					amount = amount.Neg()
+				}
+				taxed = !amount.Equal(nets)
 			}
 		}
 	}

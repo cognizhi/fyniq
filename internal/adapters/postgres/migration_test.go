@@ -398,13 +398,22 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 			RecordID: uuid.New(), ImportedBy: "user:x", ImportedAt: now}
 	}
 	in := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return api.Do(ctx, a.Org, fn) }
-	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Import(ctx, record("contact:a")); return err }); err != nil {
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Import(ctx, record("contact:a"))
+		return err
+	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Import(ctx, record("contact:a")); return err }); !storageCode(err, storage.CodeDuplicate) {
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Import(ctx, record("contact:a"))
+		return err
+	}); !storageCode(err, storage.CodeDuplicate) {
 		t.Errorf("a key imported twice: %v", err)
 	}
-	if err := in(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Committed(ctx, c.ID, now); return err }); !storageCode(err, storage.CodeMigration) {
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Committed(ctx, c.ID, now)
+		return err
+	}); !storageCode(err, storage.CodeMigration) {
 		t.Errorf("committed with a record left: %v", err)
 	}
 	if err := in(func(ctx context.Context, u storage.UnitOfWork) error {
@@ -424,7 +433,10 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 			_, err := u.Migrations().Import(ctx, record("contact:c"))
 			return err
 		},
-		"committing twice": func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Migrations().Committed(ctx, c.ID, now); return err },
+		"committing twice": func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Migrations().Committed(ctx, c.ID, now)
+			return err
+		},
 		"a workbook after the commit": func(ctx context.Context, u storage.UnitOfWork) error {
 			_, _, err := u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, migrationFile(run.ID, a.Org, "Late.xlsx", now))
 			return err

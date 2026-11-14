@@ -56,11 +56,19 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 		kinds[KindReceipt]+kinds[KindBillPayment]+kinds[KindTransfer]+kinds[KindBankTransaction] != len(w.Transactions)-2 || kinds[KindMoneyAccount] != 7 {
 		t.Errorf("the transactions: %v of %d rows", kinds, len(w.Transactions))
 	}
+	// A clean start (§17.1 M3, rev 0.261): after the set-up, the Carry Forward sheet's balances and its 6 open invoices,
+	// one a credit note, and 3 open bills as opening items, and the 3 assets as opening assets; none of the history.
 	clean, _ := w.Plan(m, storage.PathCleanStart)
+	got := map[string]int{}
 	for _, r := range clean {
-		if r.Kind == KindInvoice || r.Kind == KindOpeningBalances || r.Kind == KindJournal {
+		got[r.Kind]++
+		switch r.Kind {
+		case KindJournal, KindPayroll, KindStatement, KindReceipt, KindTransfer, KindBankTransaction, KindDepreciation, KindQuote:
 			t.Errorf("a clean start imports the history's %s", r.Key)
 		}
+	}
+	if got[KindOpeningBalances] != 1 || got[KindInvoice] != 5 || got[KindCreditNote] != 1 || got[KindBill] != 3 || got[KindAsset] != 3 {
+		t.Errorf("the clean start: %v", got)
 	}
 	// Payroll: one summary journal for each of the sheet's 9 months (design D7).
 	if kinds[KindPayroll] != 9 {

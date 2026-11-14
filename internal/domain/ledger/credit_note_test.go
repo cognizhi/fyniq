@@ -109,6 +109,12 @@ func TestEveryCreditNoteRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 			{"two cents of rounding the other way", Invoice{ID: creditNoteID, Version: 1, Date: day, Memo: "Globex CN-0004", Currency: usd, Rate: usdRate(t, "1.33335"),
 				Lines: []InvoiceLine{invoiceLine(t, consulting, "0.05", usd, "OS", ""), invoiceLine(t, consulting, "0.05", usd, "OS", "")}}},
 		},
+		RuleOpeningCreditNote: {
+			{"rev 0.261: an SGD opening credit note", openingInvoice(Invoice{ID: creditNoteID, Version: 1, Date: day, Memo: "Acme Analytics CN-0009", Currency: sgd,
+				Lines: []InvoiceLine{invoiceLine(t, consulting, "1000.00", sgd, "SR", "0.09")}})},
+			{"rev 0.261: a USD opening credit note at its rate", openingInvoice(Invoice{ID: creditNoteID, Version: 2, Date: day, Memo: "Globex CN-0010", Currency: usd,
+				Rate: usdRate(t, "1.32"), Lines: []InvoiceLine{invoiceLine(t, consulting, "400.00", usd, "OS", "")}})},
+		},
 	}
 	for rule := range CreditNoteRules {
 		if len(cases[rule]) == 0 {

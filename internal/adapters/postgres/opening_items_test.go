@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -20,7 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Opening open items through the posting services (FR-GL-06, Appendix B.2; rev 0.257) [accountant to confirm]. The books
+// Opening open items through the posting services (FR-GL-06, Appendix B.2; rev 0.257, 0.261) [accountant to confirm]. The books
 // start on 1 October 2026. Globex's USD invoice of 1,000.00, issued on 20 September and unpaid then, at 1.35, posts on 1
 // October: Dr 1100 USD 1,000.00 (S$1,350.00), Cr 3900 S$1,350.00, with no revenue or GST. Atlassian's bill of S$500.00
 // with GST 45.00, received on 25 September, posts then: Dr 3900 S$545.00, Cr 2010 S$545.00. The AR and AP sub-ledgers
@@ -114,6 +115,28 @@ func TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt(t *testing.T) {
 		t.Fatalf("the opening bill: %s: %v", legsOf(t, s, b.Org, e), err)
 	}
 
+	// Credits open at the books start (rev 0.261): a credit note of S$109.00 to the customer of the taxed invoice credits
+	// 1100 and debits 3900; a supplier's credit of S$54.50 debits 2010 and credits 3900; each at the books start.
+	cn, err := invoices.CreateCredit(ctx, b.Org, invoice.Draft{CustomerID: b.Customer.ID, Date: time.Date(2026, 9, 29, 0, 0, 0, 0, time.UTC), Currency: sgd,
+		OpeningItem: true, Lines: []invoice.Line{invoiceLine(t, b, "1", "100.00", "", "SR", "SGD")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e, err = invoices.Post(ctx, b.Org, cn.ID); err != nil || legsOf(t, s, b.Org, e) != "1100 -109 SGD = -109; 3900 109 SGD = 109" || !e.PostingDate.Equal(start) ||
+		e.RuleVersion != ledger.RuleOpeningCreditNote {
+		t.Fatalf("the opening credit note: %s under %s: %v", legsOf(t, s, b.Org, e), e.RuleVersion, err)
+	}
+	vc, err := bills.CreateCredit(ctx, b.Org, bill.Draft{SupplierID: b.Supplier.ID, SupplierRef: "AU-CN-07", Date: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC),
+		Currency: sgd, OpeningItem: true, Lines: []bill.Line{{AccountID: b.Rent.ID, Description: "September rent refund", Net: sgdOf(t, "50.00"), GSTCode: "TX",
+			GST: sgdOf(t, "4.50")}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e, err = bills.Post(ctx, b.Org, vc.ID); err != nil || legsOf(t, s, b.Org, e) != "2010 54.5 SGD = 54.5; 3900 -54.5 SGD = -54.5" ||
+		e.RuleVersion != ledger.RuleOpeningVendorCredit {
+		t.Fatalf("the opening vendor credit: %s under %s: %v", legsOf(t, s, b.Org, e), e.RuleVersion, err)
+	}
+
 	// The sub-ledgers agree with their control accounts from the books start (INV-07).
 	agree := func(on time.Time, ar, payable string) {
 		t.Helper()
@@ -137,7 +160,7 @@ func TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	agree(start, "1459.00", "545.00")
+	agree(start, "1350.00", "490.50")
 
 	// Paid after the books start: settled at its stored rate, the difference realised.
 	paid := moneyOf(t, "1000.00", "USD")
@@ -146,9 +169,14 @@ func TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt(t *testing.T) {
 	if err != nil || legsOf(t, s, b.Org, rc.Entry) != "1100 -1000 USD = -1350; 1030 1000 USD = 1360; 7030 -10 SGD = -10" {
 		t.Fatalf("the receipt: %s: %v", legsOf(t, s, b.Org, rc.Entry), err)
 	}
-	agree(porttest.Day(10, 31), "109.00", "545.00")
+	// The opening credit note applied to the taxed invoice settles both (FR-AR-04).
+	if _, err := (journal.CustomerCreditApplications{Store: s}).Apply(ctx, b.Org, customercredit.Draft{CreditID: cn.ID, InvoiceID: taxed.ID,
+		Date: porttest.Day(10, 22), Amount: sgdOf(t, "109.00")}); err != nil {
+		t.Fatalf("applying the opening credit note: %v", err)
+	}
+	agree(porttest.Day(10, 31), "0.00", "490.50")
 
-	// The clearing account holds what the opening balances will carry: S$1,459.00 against AR, S$545.00 against AP.
+	// The clearing account holds what the opening balances will carry: S$1,350.00 against AR, S$490.50 against AP.
 	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		lines, err := u.Ledger().AccountLines(ctx, clearing.ID, porttest.Day(1, 1), porttest.Day(12, 31), 100)
 		sum := money.Zero(sgd)
@@ -156,8 +184,8 @@ func TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt(t *testing.T) {
 			x, _ := money.ParseStored(string(l.BaseAmount), sgd)
 			sum, _ = sum.Add(x)
 		}
-		if err == nil && sum.String() != "-914.00" {
-			t.Errorf("3900 holds %s, want -914.00", sum)
+		if err == nil && sum.String() != "-859.50" {
+			t.Errorf("3900 holds %s, want -859.50", sum)
 		}
 		return err
 	}); err != nil {
@@ -177,7 +205,7 @@ func TestOpeningItemsPostAtTheBooksStartAndSettleAfterIt(t *testing.T) {
 
 	// Every entry replays under the rule that posted it (ENG-06).
 	r, err := journal.ReplayOrganisation(ctx, s, b.Org)
-	if err != nil || len(r.Mismatches) != 0 || r.Entries < 4 {
+	if err != nil || len(r.Mismatches) != 0 || r.Entries < 6 { // an application in the base currency posts nothing
 		t.Errorf("the replay: %+v %v", r, err)
 	}
 }
