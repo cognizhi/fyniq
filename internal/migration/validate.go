@@ -244,6 +244,26 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.U
 				Fix:     "Record the pool's resolution in Cap table › Options once the import is committed (FR-EQ-19)"})
 		}
 	}
+	for _, r := range w.Recurring { // what the import leaves of the Recurring sheet (rev 0.263)
+		kind := strings.ToLower(strings.TrimSpace(r.Kind))
+		_, scheduled := w.scheduleOf(r)
+		var why, fix string
+		switch {
+		case !r.Active:
+			why, fix = "is not active", "Nothing to do"
+		case kind == recurringTransaction:
+			why, fix = "repeats a bank transaction, which the bank feed or statement brings", "Add a bank rule for it in Banking › Rules if it should categorise itself"
+		case kind != recurringInvoice && kind != recurringBill && kind != recurringJournal:
+			why, fix = fmt.Sprintf("makes a %q, neither an invoice, a bill nor a journal", r.Kind), "Set it up in Fyniq once the import is committed"
+		case !scheduled:
+			why, fix = fmt.Sprintf("repeats %q from %s, which Fyniq cannot schedule after the workbook's as of", r.Every, r.First.Format(time.DateOnly)),
+				"Set it up in Fyniq once the import is committed: every 1, 3, 6 or 12 months, or every 1 or 2 weeks for an invoice"
+		default:
+			continue
+		}
+		w.Problems = append(w.Problems, Problem{Sheet: "Recurring", Row: r.Row, Column: "Create a…", Severity: Warning, Code: CodeArchived,
+			Message: fmt.Sprintf("%s %s: it is kept in the archive", recurringName(r), why), Fix: fix})
+	}
 	for _, q := range w.QuotesOrders {
 		k := strings.ToLower(q.Kind)
 		if !strings.Contains(k, "quote") && !strings.Contains(k, "order") {

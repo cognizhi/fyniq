@@ -116,6 +116,8 @@ func (w *Workbook) Plan(m Mapping, path string) ([]Record, []Problem) {
 	case storage.PathCleanStart:
 		out = append(out, w.cleanStart(m)...)
 	}
+	out = append(out, w.recurring(m)...)
+	out = append(out, w.budgets(m, path)...)
 	seen := map[string]Origin{}
 	var probs []Problem
 	for _, r := range out {
