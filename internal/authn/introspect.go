@@ -146,6 +146,8 @@ type Local struct {
 	Dev      Authenticator
 	OAuth    Authenticator
 	Sessions Authenticator
+	// AI takes the assistant's delegated read tokens (AIGrants); nil refuses them.
+	AI Authenticator
 }
 
 // Authenticate implements Authenticator.
@@ -153,6 +155,11 @@ func (l Local) Authenticate(ctx context.Context, c Credentials) (Principal, erro
 	switch {
 	case strings.HasPrefix(c.Authorization, "Bearer "+DevPrefix):
 		return l.Dev.Authenticate(ctx, Credentials{Authorization: c.Authorization})
+	case strings.HasPrefix(c.Authorization, "Bearer "+AITokenPrefix):
+		if l.AI == nil {
+			return Principal{}, ErrUnauthenticated
+		}
+		return l.AI.Authenticate(ctx, Credentials{Authorization: c.Authorization})
 	case c.Authorization != "":
 		if l.OAuth == nil {
 			return Principal{}, ErrUnauthenticated

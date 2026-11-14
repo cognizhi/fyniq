@@ -50,14 +50,19 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// tokens is the fake authenticator: a token is a key of the map.
+// tokens is the fake authenticator: a token is a key of the map; the assistant's delegated read tokens go to ai, the
+// real one.
 type tokens struct {
 	mu sync.Mutex
 	m  map[string]authn.Principal
+	ai authn.Authenticator
 }
 
-func (f *tokens) Authenticate(_ context.Context, c authn.Credentials) (authn.Principal, error) {
+func (f *tokens) Authenticate(ctx context.Context, c authn.Credentials) (authn.Principal, error) {
 	authorization := c.Authorization
+	if strings.HasPrefix(authorization, "Bearer "+authn.AITokenPrefix) && f.ai != nil {
+		return f.ai.Authenticate(ctx, c)
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	p, ok := f.m[strings.TrimPrefix(authorization, "Bearer ")]
@@ -110,6 +115,7 @@ func newEnv(t *testing.T) *env {
 	orgs++
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
+	e.tokens.ai = authn.AIGrants{Store: store, Clock: e.clock}
 	relaxEvidence(t, store, e.books.Org)
 	if e.blobs, err = local.NewDir(t.TempDir()); err != nil {
 		t.Fatal(err)

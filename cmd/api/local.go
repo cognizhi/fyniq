@@ -34,6 +34,10 @@ func init() {
 	// is configured, Hydra's access tokens for the API's audience: each only by its own checker.
 	newAuthenticator = func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator {
 		l := firstParty(clock, sessions)
+		// The assistant's delegated read tokens, one per turn (PRD-001 §9.3 rev 0.277); never at consent (firstParty).
+		if grants, ok := sessions.(storage.AIGrantLookup); ok {
+			l.AI = authn.AIGrants{Store: grants, Clock: clock}
+		}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			// Hydra's access tokens for the API's audience, introspected and cached for at most 30 s (ADR-T3).
 			l.OAuth = &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}

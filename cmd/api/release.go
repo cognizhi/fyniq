@@ -41,6 +41,10 @@ func init() {
 		}
 		if _, err := releaseSignIn(); err == nil && sessions != nil {
 			r.Sessions = authn.Sessions{Store: sessions, Clock: clock, Cookie: authn.SessionCookie(true)}
+			// The assistant's delegated read tokens, one per turn, issued only for a signed-in person (PRD-001 §9.3 rev 0.277).
+			if grants, ok := sessions.(storage.AIGrantLookup); ok {
+				r.AI = authn.AIGrants{Store: grants, Clock: clock}
+			}
 		}
 		if r.OAuth == nil && r.Sessions == nil {
 			return authn.NotYet{}
