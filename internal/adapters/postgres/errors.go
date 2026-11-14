@@ -262,6 +262,7 @@ var fyCodes = map[string]string{
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
+	"ai_feedback_once":                          {storage.CodeDuplicate, "the person rated this answer already"},
 	"statutory_pack_activation_two_people":      {storage.CodePack, "the person who proposed activating the pack version cannot approve it (SOD-10)"},
 	"statutory_pack_activation_version_key":     {storage.CodeDuplicate, "the organisation has activated that pack version already"},
 	"statutory_pack_activation_approval_fkey":   {storage.CodePack, "an activation names an approval request of this organisation"},

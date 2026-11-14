@@ -11,6 +11,7 @@ import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { AIFeedbackReview } from "./AIFeedbackReview";
 import { aiAgents, members, personName } from "./AISettings";
 import { classWords } from "./AIRoutes";
 import { SettingsPage } from "./SettingsPage";
@@ -52,7 +53,9 @@ interface Filter {
 export function AIActivity() {
   const id = useId();
   const h = helpText("settings.ai-activity");
-  const { organisation } = useSignedIn();
+  const { organisation, session } = useSignedIn();
+  // The Owner and the Administrator review feedback on the assistant's answers (QA-AI-05).
+  const reviewer = (session.roles ?? []).some((r) => r === "owner" || r === "administrator");
   const base = organisation?.base_currency ?? "SGD";
   const [filter, setFilter] = useState<Filter>({ agent: "", person: "", run: "", from: "", to: "" });
   const agents = useQuery({ queryKey: ["ai-routes"], queryFn: aiAgents, retry: false });
@@ -265,6 +268,7 @@ export function AIActivity() {
           </div>
         )}
       </section>
+      {reviewer && <AIFeedbackReview personName={(p) => personName(p, names)} />}
       <section className="fy-card" aria-labelledby={`${id}-entries`}>
         <div className="fy-card__head">
           <h2 className="fy-h3" id={`${id}-entries`}>

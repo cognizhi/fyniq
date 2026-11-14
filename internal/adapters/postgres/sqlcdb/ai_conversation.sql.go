@@ -61,6 +61,136 @@ func (q *Queries) AIConversationsOfUser(ctx context.Context, arg AIConversations
 	return items, nil
 }
 
+const aIFeedbackOfConversation = `-- name: AIFeedbackOfConversation :many
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE t.conversation_id = $1 AND f.user_id = $2
+`
+
+type AIFeedbackOfConversationParams struct {
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+}
+
+type AIFeedbackOfConversationRow struct {
+	ID         uuid.UUID
+	TurnID     uuid.UUID
+	UserID     uuid.UUID
+	Rating     string
+	Reason     string
+	GivenAt    time.Time
+	ReviewedBy *uuid.UUID
+	ReviewedAt *time.Time
+	Decision   *string
+}
+
+func (q *Queries) AIFeedbackOfConversation(ctx context.Context, arg AIFeedbackOfConversationParams) ([]AIFeedbackOfConversationRow, error) {
+	rows, err := q.db.Query(ctx, aIFeedbackOfConversation, arg.ConversationID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AIFeedbackOfConversationRow
+	for rows.Next() {
+		var i AIFeedbackOfConversationRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TurnID,
+			&i.UserID,
+			&i.Rating,
+			&i.Reason,
+			&i.GivenAt,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.Decision,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const aIFeedbackPage = `-- name: AIFeedbackPage :many
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision,
+  t.conversation_id, t.user_id AS asker, t.question, t.answer, t.classes
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE ($1::text IS NULL OR ($1::text = 'waiting' AND f.decision IS NULL) OR f.decision = $1::text)
+  AND ($2::text IS NULL OR f.rating = $2::text)
+  AND ($3::timestamptz IS NULL OR (f.given_at, f.id) < ($3::timestamptz, $4::uuid))
+ORDER BY f.given_at DESC, f.id DESC
+LIMIT $5
+`
+
+type AIFeedbackPageParams struct {
+	State    *string
+	Rating   *string
+	BeforeAt *time.Time
+	BeforeID uuid.UUID
+	MaxRows  int32
+}
+
+type AIFeedbackPageRow struct {
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	UserID         uuid.UUID
+	Rating         string
+	Reason         string
+	GivenAt        time.Time
+	ReviewedBy     *uuid.UUID
+	ReviewedAt     *time.Time
+	Decision       *string
+	ConversationID uuid.UUID
+	Asker          uuid.UUID
+	Question       string
+	Answer         string
+	Classes        []string
+}
+
+func (q *Queries) AIFeedbackPage(ctx context.Context, arg AIFeedbackPageParams) ([]AIFeedbackPageRow, error) {
+	rows, err := q.db.Query(ctx, aIFeedbackPage,
+		arg.State,
+		arg.Rating,
+		arg.BeforeAt,
+		arg.BeforeID,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AIFeedbackPageRow
+	for rows.Next() {
+		var i AIFeedbackPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TurnID,
+			&i.UserID,
+			&i.Rating,
+			&i.Reason,
+			&i.GivenAt,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.Decision,
+			&i.ConversationID,
+			&i.Asker,
+			&i.Question,
+			&i.Answer,
+			&i.Classes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const aIToolCallsOfTurn = `-- name: AIToolCallsOfTurn :many
 SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
 FROM fyniq.ai_tool_call WHERE turn_id = $1 ORDER BY n
@@ -446,6 +576,52 @@ func (q *Queries) GetAIConversation(ctx context.Context, id uuid.UUID) (GetAICon
 	return i, err
 }
 
+const getAIFeedback = `-- name: GetAIFeedback :one
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision,
+  t.conversation_id, t.user_id AS asker, t.question, t.answer, t.classes
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE f.id = $1
+`
+
+type GetAIFeedbackRow struct {
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	UserID         uuid.UUID
+	Rating         string
+	Reason         string
+	GivenAt        time.Time
+	ReviewedBy     *uuid.UUID
+	ReviewedAt     *time.Time
+	Decision       *string
+	ConversationID uuid.UUID
+	Asker          uuid.UUID
+	Question       string
+	Answer         string
+	Classes        []string
+}
+
+func (q *Queries) GetAIFeedback(ctx context.Context, id uuid.UUID) (GetAIFeedbackRow, error) {
+	row := q.db.QueryRow(ctx, getAIFeedback, id)
+	var i GetAIFeedbackRow
+	err := row.Scan(
+		&i.ID,
+		&i.TurnID,
+		&i.UserID,
+		&i.Rating,
+		&i.Reason,
+		&i.GivenAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.Decision,
+		&i.ConversationID,
+		&i.Asker,
+		&i.Question,
+		&i.Answer,
+		&i.Classes,
+	)
+	return i, err
+}
+
 const insertAIConversation = `-- name: InsertAIConversation :one
 INSERT INTO fyniq.ai_conversation (user_id, title, created_at)
 VALUES ($1, $2, $3)
@@ -572,4 +748,29 @@ func (q *Queries) PurgeAIConversations(ctx context.Context, before time.Time) (P
 	var i PurgeAIConversationsRow
 	err := row.Scan(&i.Conversations, &i.Turns)
 	return i, err
+}
+
+const reviewAIFeedback = `-- name: ReviewAIFeedback :execrows
+UPDATE fyniq.ai_feedback SET reviewed_by = $1, reviewed_at = $2, decision = $3
+WHERE id = $4 AND decision IS NULL
+`
+
+type ReviewAIFeedbackParams struct {
+	ReviewedBy *uuid.UUID
+	ReviewedAt *time.Time
+	Decision   *string
+	ID         uuid.UUID
+}
+
+func (q *Queries) ReviewAIFeedback(ctx context.Context, arg ReviewAIFeedbackParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reviewAIFeedback,
+		arg.ReviewedBy,
+		arg.ReviewedAt,
+		arg.Decision,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

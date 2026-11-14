@@ -40,6 +40,10 @@
     "context": {
       "$ref": "AITurnContext.schema.json"
     },
+    "feedback": {
+      "$ref": "AITurnRating.schema.json",
+      "description": "Your rating of its answer, once given (QA-AI-05)."
+    },
     "id": {
       "examples": [
         "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"

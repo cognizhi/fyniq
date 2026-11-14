@@ -98,6 +98,34 @@ type AIFeedback struct {
 	Decision   string
 }
 
+// The states of feedback in its review (QA-AI-05): waiting for an Owner or Administrator, or decided.
+const (
+	FeedbackWaiting   = "waiting"
+	FeedbackGolden    = "golden"    // it joins the golden set
+	FeedbackDismissed = "dismissed" // it does not
+)
+
+// AIFeedbackEntry is feedback with the turn it rates, for its review: what was asked, the answer and the classes of
+// data the turn read.
+type AIFeedbackEntry struct {
+	AIFeedback
+	Conversation uuid.UUID
+	Asker        uuid.UUID
+	Question     string
+	Answer       string
+	Classes      []string
+}
+
+// AIFeedbackQuery selects feedback for its review, newest first, before a cursor's, at most Limit: in one state (""
+// for all) and of one rating ("" for both).
+type AIFeedbackQuery struct {
+	State    string
+	Rating   string
+	BeforeAt *time.Time
+	BeforeID uuid.UUID
+	Limit    int
+}
+
 // AIConversations keeps the assistant's conversations, their turns, the turns' tool calls and feedback.
 type AIConversations interface {
 	// Create keeps a new conversation, audited.
@@ -123,6 +151,15 @@ type AIConversations interface {
 	Asked(ctx context.Context, user uuid.UUID, since time.Time) (int, error)
 	// Give keeps a person's feedback on a turn, once, audited.
 	Give(ctx context.Context, f AIFeedback) (AIFeedback, error)
+	// Ratings are a person's feedback on the turns of a conversation, by turn.
+	Ratings(ctx context.Context, conversation, user uuid.UUID) (map[uuid.UUID]AIFeedback, error)
+	// Feedback is the feedback the query selects, with the turns it rates.
+	Feedback(ctx context.Context, q AIFeedbackQuery) ([]AIFeedbackEntry, error)
+	// FeedbackEntry is one feedback with its turn; ports.ErrNotFound when there is none.
+	FeedbackEntry(ctx context.Context, id uuid.UUID) (AIFeedbackEntry, error)
+	// Review keeps an Owner's or Administrator's decision on feedback waiting, once, audited: FeedbackGolden or
+	// FeedbackDismissed; ports.ErrNotFound when it is not waiting.
+	Review(ctx context.Context, id, by uuid.UUID, decision string, at time.Time) error
 	// Purge removes the conversations their people deleted and those whose last question was asked before a time, with
 	// their turns, reads and feedback (§11.9): the worker's alone. It gives how many conversations and turns went.
 	Purge(ctx context.Context, before time.Time) (conversations, turns int, err error)

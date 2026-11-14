@@ -57,6 +57,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/ai/connections/{connection_id}/models/remove` (removeAIConnectionModel): Take a model off an AI connection's allow-list
 - `GET /v1/ai/data-policy` (getAIDataPolicy): Get the AI's data-class policy
 - `PUT /v1/ai/data-policy` (changeAIDataPolicy): Ask to change the AI's data-class policy
+- `GET /v1/ai/feedback` (listAIFeedback): List feedback on the assistant's answers
+- `POST /v1/ai/feedback/{feedback_id}/review` (reviewAIFeedback): Review feedback on an answer of the assistant
 - `GET /v1/ai/presets` (getAIPresets): Get the route presets
 - `GET /v1/ai/price-catalogues` (listAIPriceCatalogues): List the price catalogue's downloads
 - `POST /v1/ai/prices/{price_id}/review` (reviewAIPrice): Review a model's price waiting for the Owner
@@ -88,6 +90,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/assistant/conversations/{conversation_id}` (getAIConversation): Get a conversation with the assistant
 - `DELETE /v1/assistant/conversations/{conversation_id}` (deleteAIConversation): Delete a conversation with the assistant
 - `POST /v1/assistant/conversations/{conversation_id}/turns` (askAIConversation): Ask the assistant
+- `POST /v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback` (giveAIFeedback): Rate an answer of the assistant
 - `GET /v1/audit/events` (listAuditEvents): List the audit trail's events
 - `GET /v1/audit/events/{event_id}` (getAuditEvent): Get an audit event
 - `POST /v1/audit/exports` (requestAuditTrailExport): Ask for the audit trail's export

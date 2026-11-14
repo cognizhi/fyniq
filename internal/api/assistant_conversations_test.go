@@ -58,6 +58,45 @@ var matrixConversations = map[string]func(e *env, tok string) (response, func() 
 		return e.call(http.MethodPost, "/v1/assistant/conversations/"+matrixConversation(e, tok)+"/turns", steppedUp(e, tok),
 			map[string]any{"question": "What was revenue?"}), nil
 	},
+	"giveAIFeedback": func(e *env, tok string) (response, func() bool) {
+		c := matrixConversation(e, tok)
+		return e.call(http.MethodPost, "/v1/assistant/conversations/"+c+"/turns/"+matrixAnswered(e, c).String()+"/feedback",
+			steppedUp(e, tok), map[string]any{"rating": "up", "reason": "Matrix"}), nil
+	},
+	"listAIFeedback": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/feedback", steppedUp(e, tok), nil), nil
+	},
+	"reviewAIFeedback": func(e *env, tok string) (response, func() bool) {
+		turn := matrixAnswered(e, matrixConversation(e, tok))
+		var id uuid.UUID
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			fb, err := u.AIConversations().Give(ctx, storage.AIFeedback{Turn: turn, UserID: uuid.MustParse(matrixApprover(e)), Rating: "up", Reason: "Matrix",
+				GivenAt: e.clock.Now()})
+			id = fb.ID
+			return err
+		})
+		return e.call(http.MethodPost, "/v1/ai/feedback/"+id.String()+"/review", steppedUp(e, tok), map[string]any{"decision": "dismissed"}), nil
+	},
+}
+
+// matrixAnswered is an answered turn in a conversation, made directly in the store.
+func matrixAnswered(e *env, conversation string) uuid.UUID {
+	var id uuid.UUID
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := u.AIConversations().Get(ctx, uuid.MustParse(conversation))
+		if err != nil {
+			return err
+		}
+		t, err := u.AIConversations().Ask(ctx, storage.AITurn{Conversation: c.ID, UserID: c.UserID, Question: "What was revenue?", AskedAt: e.clock.Now()})
+		if err != nil {
+			return err
+		}
+		at := e.clock.Now()
+		t.Status, t.Answer, t.AnsweredAt = storage.TurnAnswered, "Answered.", &at
+		id = t.ID
+		return u.AIConversations().Finish(ctx, t, nil)
+	})
+	return id
 }
 
 // matrixConversation is a conversation of the stepped-up principal behind tok, made directly in the store.
