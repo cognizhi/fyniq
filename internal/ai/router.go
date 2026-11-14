@@ -178,6 +178,15 @@ func (r Router) load(ctx context.Context, org uuid.UUID, call Call) (storage.AIR
 					st.state.Callable = aimodel.Callable(aimodel.Model{ID: m.Model, Shutdown: m.Shutdown, Listed: m.Listed, NotCallableAt: m.NotCallableAt}, now)
 				}
 			}
+			last, err := u.AIModels().LastComplete(ctx, c.ID)
+			switch {
+			case errors.Is(err, ports.ErrNotFound):
+				st.state.ListStale = true
+			case err != nil:
+				return err
+			default:
+				st.state.ListStale = now.Sub(last.ReadAt) > airoute.ListStale
+			}
 			quals, err := u.AIQualifications().Latest(ctx, c.ID)
 			if err != nil {
 				return err

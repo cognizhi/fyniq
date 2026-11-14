@@ -75,7 +75,7 @@ on its route. Every connection starts off.
 
 - **Models** shows the provider's own list: when it was last read, and **Read it again**. Fyniq keeps no list of its
   own, so a model the provider stops listing leaves the connection and every route by itself. A list not read for 3
-  days makes the AI routes check warn.
+  days makes the AI routes check warn; one not read whole for 14 days carries no personal data or payroll until it is.
 - **Probe** sends one small test call to a model and records whether it answered.
 - **Ask to allow it** needs a passing probe and a second approver. Model names only ever come from the provider's
   list; you cannot type one.
