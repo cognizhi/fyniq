@@ -35,7 +35,7 @@
 
 ## 2. Policies
 
-- [ ] 2.1 Policies per object type, with conditions and ordered steps with a quorum. Test `// req: FR-APR-01`
+- [x] 2.1 Policies per object type, with conditions and ordered steps with a quorum. Test `// req: FR-APR-01`
   (20 Oct 2026, provisional (PRD rev 0.36): policies are code, `approval.Policies`, one per object type with a version
   string each envelope records, ordered steps naming an Appendix D row and a quorum; the three built are one step,
   quorum 1, A on the row (the Owner). Rev 0.40: policies are each organisation's versioned data (migration 000039,
@@ -47,6 +47,16 @@
   `TestStepsAreSignedInOrderToTheirQuorum`, `TestAPolicysStepsCanBeSigned`, `TestAttackApprovalStepsAreSignedInOrder`,
   `TestStepsAreSignedInOrderAndRechecked`. **Left:** conditions (amount, entity, department, account, vendor, risk
   tier), with the first object types that carry them (wave 2's documents).)
+  (6 Nov 2026, conditions, on the owner's decision of PRD-001 rev 0.178: a policy is up to 10 ordered rules and its
+  default steps; the first rule whose conditions all hold decides a request's steps (`approval.Policy.StepsFor`), else
+  the default steps. A rule sets at least one of an amount at or above (base currency), departments (Department
+  dimension values on a line), accounts a line posts to, and vendors (APR-16 otherwise). Journals (debits and lines),
+  bills, invoices, purchase orders and payment batches (their vendors) carry their facts; a condition on what a change
+  does not carry never holds. The request records the rule (`policy_rule`), shown on the approval page. Migrations 000229
+  and 000230 (`approval_rules_valid`; FY105 compares the rules too). Screen: the rules editor in Change policy. Tests
+  `TestTheFirstMatchingRuleDecidesTheSteps`, `TestAPolicysRulesChooseARequestsSteps`, the `ruled` case of
+  `TestAttackApprovalPoliciesAreApprovedVersions`, `TeamMode.test.tsx`, `approvals.test.tsx`. **Left:** entity, with
+  several entities; risk tier, with AI proposals; pay runs, expense claims and credit notes as their approvals arrive.)
 - [x] 2.2 Policy changes are approval-gated (SOD-8) and versioned; a pending approval keeps its version, and a change restarts it. Test `// req: FR-APR-09` (G4-057)
   (20 Oct 2026, provisional (PRD rev 0.40): `PATCH /v1/approval-policies/{object_type}` always answers 202 with an
   `approval_policy.change` request; the Administrator (C on "Approval policies, AI catalogue") asks, the Owner or the
@@ -57,11 +67,17 @@
   /v1/approval-policies` and `GET /v1/approval-policies/{object_type}` (with its history). Tests:
   `TestApprovalPolicyChangesAreApprovedAndKept`, `TestAttackApprovalPoliciesAreApprovedVersions`. The pack-version
   half of G4-057 arrives with pack activation (task 4.1).)
-- [ ] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
+- [x] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
   (20 Oct 2026: `GET /v1/approvals` and `GET /v1/approvals/{id}` show the envelope, its hash, what the request changes
   before and after, the signatures and whether the caller may sign; a request is shown to its requester and to whoever
   holds a right on its object's Appendix D row, never to the AI. **Left:** the ledger impact, affected balances and
   checks, with wave 2's documents.)
+  (6 Nov 2026, PRD-001 rev 0.177: reading a waiting request carries its change out in a rolled-back unit of work, as a
+  preview does, and shows the entries it would post now (`impact.entries`), the balance of each account and currency they
+  post to before and after through their latest date (`impact.balances`, through the balance service), or what would
+  refuse it now (`impact.refused`: a check that fails, a month closed since, a record changed); a change that posts
+  nothing shows none, and nothing is kept. The approval page's "What approving it would post"; the guide's "Approve or
+  reject", compiled. Tests `TestAnApproverSeesWhatApprovingWouldPost`, `approvals.test.tsx`.)
 
 ## 3. Team modes and Founder mode
 
@@ -77,7 +93,7 @@
   `TestTeamModeSwitchesAreDualControlled`, `TestASwitchBlocksWhenTheConflictsChange`, `TestAttackTeamModesAreApprovedSwitches`,
   `TestModes`, `TestASwitchWaitsForEveryConflict`. **Left:** Enterprise mode (TEAM-03 until its per-entity approval
   matrices, SSO, SCIM and quarterly access reviews exist); the team-mode screen (5.1).)
-- [ ] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
+- [x] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
   (20 Oct 2026: FM-1 for the objects built: `POST /v1/approvals/{id}/approve` and `/reject` sign the envelope whose
   hash the approver sends; the requester never signs (APR-01, and FY101 in the database); the signer holds A on the
   object's row (the Owner), passes step-up and is a person, never the AI. The final approval executes the change in
@@ -89,6 +105,11 @@
   `GET /v1/review-log` (with the unreviewed and overdue counts: 14 days in Founder mode) and `POST /v1/review-log/reviews`
   (APR-13, APR-14). Tests: `TestTheReviewLog`, `TestAttackTheReviewLogNeverChanges`. **Left:** FM-2, with the first
   documents that carry an amount; the weekly Inbox task, with the Inbox; the Checks warning, with Checks.)
+  (6 Nov 2026: each left item is built. FM-2 on manual journals, bills, invoices, credit notes and purchase orders
+  (`journal_approvals_test.go`, `bills_test.go`, `invoices_test.go`, `credit_notes_test.go`, `purchase_orders_test.go`),
+  and, rev 0.178, reconciled with the policies' rules: the threshold decides whether a document waits, the rules only
+  its steps (`TestAPolicysRulesChooseARequestsSteps`). The weekly review is the Inbox's card with the overdue count
+  (`approvals.test.tsx`), and C.2 #4 (`controls.review-log-overdue`) warns on Checks after 14 days (`access_review_test.go`).)
 - [x] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
   (FM-9 built with `p1-founders-money`: the person settled, repaid or issued shares never approves it (APR-15, FY253),
   and the Accountant's step is added when every member who could sign benefits; tests `TestEveryApproverBenefits`,
@@ -124,14 +145,8 @@
   Tests `TestTheAccountantReviewsAClosedMonth` (G4-109), `TestAttackAnAccountantReviewKeepsItsRules`,
   `TestAQuarterWithoutTheAccountantsReviewWarns`, `accountantreview_test.go`, `AccountantReviews.test.tsx`. FM-6 arrives
   with wave 6. **Left:** notices to management when a query is raised, with the notification types.)
-- [x] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
-  (6 Nov 2026: each control is built and tested on its own (FR-GL-07, FR-GL-08, FM-1, FM-2, FM-4, SOD-6, the team modes);
-  `TestTheControlsHoldTogether` runs them in one company's books: in Founder mode a journal above the threshold posts
-  only on the other founder's approval and a founder whose roles conflict still posts; October closes on two people's
-  acts, the one who ran its checks never attesting; closed, it takes no posting, by hand or by an approval that waited
-  (STORAGE-INV-03), and it reopens only on another's approval; switched to Standard mode by one founder asking as
-  Administrator and the other approving as Owner, the conflict no longer posts (TEAM-04) and roles that do not conflict
-  still do.)
+- [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
+  **Left.**
 
 ## 4. Wire the waiting refusals
 
