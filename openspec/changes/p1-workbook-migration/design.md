@@ -135,7 +135,8 @@ See proposal.md for why. What exists today and shapes the approach:
 
 **D6. Opening open items post through a clearing account [accountant to confirm].**
 - An invoice or bill marked "Opening balance item?" becomes a document of its kind flagged `opening_item`. It posts
-  under `opening_item@1`:
+  at the books start under `opening_invoice@1` or `opening_bill@1` (as built, rev 0.257: one rule version each, so each
+  keeps its replay golden), against 3900 Opening balance clearing:
   - an invoice: Dr Accounts receivable, Cr **Opening balance clearing**;
   - a bill: Dr Opening balance clearing, Cr Accounts payable;
   - each in its currency at its rate, with no revenue, cost or GST.

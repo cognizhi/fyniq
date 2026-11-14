@@ -133,6 +133,8 @@ def _bill_lines(r: Rules, doc: Source, *, credit: bool) -> Posting:
     total = money.total(nets + gsts)
     if not total > 0:
         raise Rejected("total-not-positive")
+    if d.get("opening_item"):
+        return _opening_bill(r, doc, credit=credit, currency=currency, rate=rate, total=total, scheduled=bool(scheduled))
     owed = total
     if "withholding" in d:
         if credit:
@@ -150,6 +152,26 @@ def _bill_lines(r: Rules, doc: Source, *, credit: bool) -> Posting:
         lines.append(r.balance(r.system("fx"), lines))
     item = OpenItem("vendor_credit" if credit else "bill", payable, currency, rate, owed, ap_base)
     return Posting(lines, scheduled, facts=item)
+
+
+def _opening_bill(r: Rules, doc: Source, *, credit: bool, currency: str, rate: Decimal | None, total: Decimal,
+                  scheduled: bool) -> Posting:
+    """An opening bill (FR-GL-06, Appendix B.2 "Opening open items"; rev 0.257) [accountant to confirm]: received before the
+    books' start and unpaid then, it posts at the books' start its total (nets and the GST its supplier stated) on 2010 at
+    its rate, ``RND-FX``, against the opening balance clearing account with that base amount, in the base currency. No
+    cost and no GST: they were the books before. Every rule of a bill holds first; it is never a vendor credit, spreads
+    nothing and withholds no tax."""
+    on = r.opening_day(doc.date)
+    if credit:
+        raise Rejected("opening-vendor-credit")
+    if scheduled:
+        raise Rejected("spread-on-opening-item")
+    if "withholding" in doc.data:
+        raise Rejected("withholding-on-opening-item")
+    payable = r.system("payable")
+    ap_base = r.fx(total, rate)
+    lines = [r.line(payable, currency, money.negate(total), money.negate(ap_base)), r.base_line(r.system("opening_clearing"), ap_base)]
+    return Posting(lines, facts=OpenItem("bill", payable, currency, rate, total, ap_base), on=on)
 
 
 def bill(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:

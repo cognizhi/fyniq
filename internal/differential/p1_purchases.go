@@ -96,6 +96,7 @@ type billDoc struct {
 	Withholding *struct {
 		Percent string `json:"percent"`
 	} `json:"withholding"`
+	OpeningItem bool `json:"opening_item"`
 }
 
 // bill posts a bill (bill@1) or, credit, a vendor credit (vendor_credit@1). Each line's input tax is decided by the
@@ -157,6 +158,9 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 		}
 		b.Lines = append(b.Lines, line)
 	}
+	if credit && x.OpeningItem {
+		return ledger.Entry{}, false // a supplier's credit note is never an opening item
+	}
 	if credit {
 		e, err := ledger.PostVendorCredit(b, r.settings)
 		if err != nil || !r.fits(e) {
@@ -167,6 +171,20 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 	}
 	if x.Withholding != nil {
 		b.Withholding = &ledger.Withholding{RatePercent: x.Withholding.Percent}
+	}
+	if x.OpeningItem { // FR-GL-06 (rev 0.257): received before the books start, it posts at the books start
+		start, ok := r.booksStart()
+		if !ok {
+			return ledger.Entry{}, false
+		}
+		b.Opening = &start
+		e, err := ledger.PostOpeningBill(b, r.settings)
+		if err != nil || !r.fits(e) {
+			return ledger.Entry{}, false
+		}
+		r.keepOpen(d.ID, "bill", e, ledger.RoleAccountsPayable)
+		r.hold(d.ID, date, e, ledger.RoleAccountsPayable)
+		return e, true
 	}
 	e, err := ledger.PostBill(b, r.settings)
 	if err != nil || !r.fits(e) {
@@ -367,4 +385,13 @@ func isPercent(share string, n int64) bool {
 func firstOfMonth(t time.Time) time.Time {
 	y, m, _ := t.Date()
 	return time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)
+}
+
+// booksStart is the scenario's books start, which an opening item posts at (FR-GL-06).
+func (r *p1) booksStart() (time.Time, bool) {
+	if r.s.Settings == nil || r.s.Settings.BooksStart == "" {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.DateOnly, r.s.Settings.BooksStart)
+	return t, err == nil
 }

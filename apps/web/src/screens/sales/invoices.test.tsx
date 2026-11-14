@@ -48,6 +48,7 @@ const states = (extra: Partial<Invoice["states"]> = {}): Invoice["states"] => ({
 const draft: Invoice = {
   id: "v1",
   kind: "invoice",
+  opening_item: false,
   status: "draft",
   version: 1,
   customer: { id: "c1", name: "Acme Analytics Pte Ltd" },

@@ -27,7 +27,7 @@ var (
 // selling is the chart an invoice posts against: the system accounts by role, two revenue accounts, and settings' own.
 func selling() Settings {
 	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
-	for _, a := range []Account{receivables, deferredRev, gstControl, fxRounding, subscribe, consulting, software, bank, group, closed} {
+	for _, a := range []Account{receivables, deferredRev, gstControl, fxRounding, subscribe, consulting, software, bank, group, closed, openingClearing} {
 		s.Accounts[a.ID] = a
 	}
 	return s
@@ -312,6 +312,11 @@ func TestEveryInvoiceRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 				deducting(t, "1090.00", "1090.00", "90.00", sgd))},
 			{"rev 0.127: a USD deposit at another rate", withDeposits(Invoice{ID: invoiceID, Version: 3, Date: day, Memo: "Globex INV-0142", Currency: usd,
 				Rate: usdRate(t, "1.30"), Lines: []InvoiceLine{invoiceLine(t, consulting, "1000.00", usd, "OS", "")}}, deducting(t, "100.00", "140.00", "0.00", usd))},
+		},
+		RuleOpeningInvoice: {
+			{"rev 0.257: an SGD opening invoice", openingInvoice(sgdInvoice(invoiceLine(t, consulting, "2000.00", sgd, "SR", "0.09")))},
+			{"rev 0.257: a USD opening invoice at its rate", openingInvoice(Invoice{ID: invoiceID, Version: 2, Date: day, Memo: "Globex INV-0099", Currency: usd,
+				Rate: usdRate(t, "1.35"), Lines: []InvoiceLine{invoiceLine(t, consulting, "1000.00", usd, "SR", "0.09")}})},
 		},
 	}
 	for rule := range InvoiceRules {

@@ -847,6 +847,19 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #63 Opening balance clearing not at nothing
+The system SHALL warn (⚠) when 3900 Opening balance clearing holds a balance: an opening open item is missing or posted twice, or the opening balances carry another amount than the items (FR-GL-06; rev 0.257).
+
+Source: PRD-001 §C.2
+
+#### Scenario: The clearing account holds a balance
+- **WHEN** 3900 Opening balance clearing holds a balance at the organisation's today
+- **THEN** the check warns (⚠), naming the account and what it holds
+
+#### Scenario: The clearing account nets to zero
+- **WHEN** it holds nothing, or the chart has no opening balance clearing account
+- **THEN** the check passes
+
 ### Requirement: C.2 #62 Reconciliations signed off under an override
 The system SHALL warn (⚠) for each reconciliation of an open month signed off under an override of SOD-5, listing it with its reason for review (§6.4; rev 0.179, the owner's decisions of 6 Nov 2026).
 

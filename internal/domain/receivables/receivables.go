@@ -90,7 +90,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uui
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
-		identity := ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
+		identity := invoice.IdentityOf(doc)
 		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
 			return err
 		}
@@ -340,7 +340,7 @@ func Settlements(ctx context.Context, u storage.UnitOfWork, base money.Currency,
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
-		identity := ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
+		identity := invoice.IdentityOf(doc)
 		if gone, err := subledger.VoidedBy(ctx, u, identity, to); err != nil || gone {
 			return err
 		}

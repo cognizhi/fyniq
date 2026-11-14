@@ -30,7 +30,7 @@ var (
 // purchasing is the chart a bill posts against: the system accounts by role, two expense accounts, and settings' own.
 func purchasing() Settings {
 	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
-	for _, a := range []Account{payables, gstControl, fxRounding, prepaid, whtPayable, software, hosting, bank, group, closed} {
+	for _, a := range []Account{payables, gstControl, fxRounding, prepaid, whtPayable, software, hosting, bank, group, closed, openingClearing} {
 		s.Accounts[a.ID] = a
 	}
 	return s
@@ -393,6 +393,11 @@ func TestEveryBillRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 				Lines: []BillLine{billLine(t, software, "5000.00", "0.00", sgd, false)}}},
 			{"a USD bill, 17% withheld", Bill{ID: billID, Version: 6, Date: day, Memo: "Consultant INV-9", Currency: usd, Rate: usdRate(t, "1.3456"),
 				Withholding: &Withholding{RatePercent: "17"}, Lines: []BillLine{billLine(t, software, "1000.37", "0.00", usd, false)}}},
+		},
+		RuleOpeningBill: {
+			{"rev 0.257: an SGD opening bill", openingBill(sgdBill(billLine(t, software, "500.00", "45.00", sgd, true)))},
+			{"rev 0.257: a USD opening bill at its rate", openingBill(Bill{ID: billID, Version: 2, Date: day, Memo: "Vercel INV-60", Currency: usd, Rate: usdRate(t, "1.34"),
+				Lines: []BillLine{billLine(t, hosting, "1450.00", "0.00", usd, false)}})},
 		},
 	}
 	for rule := range BillRules {

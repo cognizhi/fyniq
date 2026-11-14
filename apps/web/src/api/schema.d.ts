@@ -263,7 +263,7 @@ export interface paths {
         put?: never;
         /**
          * Load the standard chart of accounts
-         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 89 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 90 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["loadStandardChart"];
         delete?: never;
@@ -16558,6 +16558,11 @@ export interface components {
             number?: string;
             /** @description A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18). */
             open?: components["schemas"]["Money"];
+            /**
+             * @description Whether it is an opening item: received before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06).
+             * @example false
+             */
+            opening_item: boolean;
             /** @description What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post. */
             payable?: components["schemas"]["Money"];
             /** @description getBill only: the payments that settle it, earliest first, each marked when it was voided. */
@@ -16694,6 +16699,11 @@ export interface components {
              */
             notes?: string;
             /**
+             * @description A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill.
+             * @example false
+             */
+            opening_item?: boolean;
+            /**
              * Format: uuid
              * @description The supplier: a contact marked as a vendor.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
@@ -16749,6 +16759,11 @@ export interface components {
              * @example Annual renewal, 10 seats
              */
             notes?: string;
+            /**
+             * @description A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill.
+             * @example false
+             */
+            opening_item?: boolean;
             /**
              * @description Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12).
              * @example The supplier credited one seat
@@ -29888,6 +29903,11 @@ export interface components {
             /** @description An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund. */
             open?: components["schemas"]["Money"];
             /**
+             * @description Whether it is an opening item: issued before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06).
+             * @example false
+             */
+            opening_item: boolean;
+            /**
              * Format: date-time
              * @description When it was issued.
              * @example 2026-10-24T09:30:00Z
@@ -30081,6 +30101,11 @@ export interface components {
              */
             notes?: string;
             /**
+             * @description An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice.
+             * @example false
+             */
+            opening_item?: boolean;
+            /**
              * @description The customer's reference for it, such as their purchase order number.
              * @example PO-88213
              */
@@ -30136,6 +30161,11 @@ export interface components {
              * @example Thank you for your business
              */
             notes?: string;
+            /**
+             * @description An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice.
+             * @example false
+             */
+            opening_item?: boolean;
             /**
              * @description Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12).
              * @example The customer's PO number was wrong

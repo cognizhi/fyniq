@@ -203,7 +203,7 @@ func OpenInvoice(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledg
 	if doc.Type != storage.DocumentInvoice || doc.Status != storage.DocumentPosted {
 		return Open{}, &Error{CodeInvoice, fmt.Sprintf("%s is not an issued invoice", cmp(doc.Number, doc.ID.String())), "Choose one of the customer's issued invoices"}
 	}
-	e, err := u.Ledger().ByIdentity(ctx, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice))
+	e, err := u.Ledger().ByIdentity(ctx, invoice.IdentityOf(doc))
 	if err != nil {
 		return Open{}, err
 	}

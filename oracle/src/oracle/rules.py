@@ -170,6 +170,16 @@ class Rules:
             raise Rejected("dimension-required")
         return account
 
+    def opening_day(self, day: date) -> date:
+        """The day an opening item dated ``day`` posts: the books' start, which it must come before (FR-GL-06, rev 0.257;
+        LEDGER-50)."""
+        start = self.settings.books_start
+        if start is None:
+            raise Rejected("opening-item-without-books-start")
+        if not day < start:
+            raise Rejected("opening-item-not-before-books-start")
+        return start
+
     def system(self, key: str) -> str:
         """The organisation's system account ``key`` (Appendix B.5), postable."""
         code = self.settings.accounts.get(key)

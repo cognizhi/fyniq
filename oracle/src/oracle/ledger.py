@@ -347,7 +347,7 @@ class Ledger:
             effect()
         self.books[document.id] = posting.facts
         if posting.lines:  # a registered asset posts nothing itself, only its schedule
-            entry = Entry(document.id, "post", document.date, lines)
+            entry = Entry(document.id, "post", posting.on or document.date, lines)
             self._posted[document.id] = entry
             self._record(entry)
         self._scheduled.append((index, posting.scheduled))

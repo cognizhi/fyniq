@@ -492,8 +492,8 @@ var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-
 // OptionalRoles are system roles the standard chart gives a new organisation that an existing one may lack without its
 // books being wrong (C.1 #7 does not ask for them): share application monies, 2040 (B.7, rev 0.203), which a cash issue
 // needs before its money arrives (FR-EQ-17); and convertible instruments, 2700, whose lines name their SAFE or note
-// (FR-EQ-18).
-var OptionalRoles = []AccountRole{"share-application-monies", "convertible-instruments"}
+// (FR-EQ-18); and opening balance clearing, 3900, which opening open items post against (FR-GL-06; rev 0.257).
+var OptionalRoles = []AccountRole{"share-application-monies", "convertible-instruments", "opening-balance-clearing"}
 
 // AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
 type AccountChange struct {
