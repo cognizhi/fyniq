@@ -20,6 +20,7 @@ import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
 import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, useDimensions, valueCodes, type Errors, type Line } from "./lines";
 import { attachers, JournalEvidence } from "./JournalEvidence";
 import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 export { balances, type Balance, type Errors, type Line } from "./lines";
 
@@ -611,6 +612,7 @@ export function JournalPage() {
           )}
         </div>
         <div className="fy-pagehead__actions fy-from-medium">
+          {j && journalId && <AskAboutThis context={{ kind: "journal", id: journalId, label: title.slice(0, 200) }} />}
           {actions}
           {editActions}
           {reverseButton}

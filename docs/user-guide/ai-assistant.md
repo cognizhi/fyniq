@@ -3,7 +3,7 @@ key: ai.assistant
 title: Ask the assistant about your books
 mode: basic
 roles: [all]
-requirements: [FR-UX-17, AI-08, AI-22, AI-68, AI-69, AI-P8]
+requirements: [FR-UX-17, AI-08, AI-22, AI-68, AI-69, AI-P8, QA-AI-05, FR-PLN-08]
 ---
 
 # Ask the assistant about your books
@@ -15,6 +15,22 @@ requirements: [FR-UX-17, AI-08, AI-22, AI-68, AI-69, AI-P8]
 - Ask in your own words, such as "What was our revenue last month?". The assistant reads the books as you: it sees only
   what you may see, and it changes nothing.
 - Everything the assistant writes is marked **AI** and shown in violet, so you can tell it from what people entered.
+
+## Ask about a record, a report or a figure
+
+- **Ask about this** on an invoice, a bill, a journal, a contact or a report, or on a figure you are tracing, opens
+  the assistant with it as the context: the chip at the top says what you are asking about, and **Remove** takes it
+  off. It is not shown while the AI is switched off.
+
+## Explain and simulate
+
+- **Ask** takes a question in your own words.
+- **Explain** asks the assistant where what you are asking about comes from and what it is made of: the report a
+  figure is read from and the accounts behind it, or what a record holds.
+- **Simulate** works on an invoice or a bill you asked about. It shows the lowest cash balance in the next 90 days,
+  and the first day below your buffer, as they stand and as they would be if it were paid on another day or not in
+  those 90 days. These figures are Fyniq's, not the assistant's, and nothing is saved or changed. **Cash ahead** has
+  more what-ifs.
 
 ## Where each figure comes from
 
@@ -30,6 +46,12 @@ requirements: [FR-UX-17, AI-08, AI-22, AI-68, AI-69, AI-P8]
 - Identity numbers (NRIC and FIN), bank account numbers, secrets and home addresses never reach the assistant, even if
   you type one into a question.
 - Payroll reaches it only if an Owner turns on AI payroll access and you may see payroll yourself.
+
+## Rate an answer
+
+- Under each answer, the thumbs up or down rates it, with a reason in your words. You rate an answer once.
+- An Owner or Administrator reviews each rating with your question and the answer. Only what they add to the golden
+  set is used to test the assistant; see the AI activity page.
 
 ## Your conversations
 

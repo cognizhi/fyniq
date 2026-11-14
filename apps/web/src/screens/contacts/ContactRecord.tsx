@@ -9,6 +9,7 @@ import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { Icon, problemOf } from "../../ui";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 type Money = components["schemas"]["Money"];
 type Row = components["schemas"]["ReceivablesRow"];
@@ -151,6 +152,11 @@ export function ContactRecord() {
             {[c?.customer ? "Customer" : "", c?.vendor ? "Vendor" : "", c?.uen_or_tax_id ?? "", c?.billing_email ?? ""].filter(Boolean).join(" · ")}
           </p>
         </div>
+        {c && (
+          <div className="fy-pagehead__actions">
+            <AskAboutThis context={{ kind: "contact", id: contactId, label: c.legal_name.slice(0, 200) }} />
+          </div>
+        )}
       </div>
       {summary.isError && <Refusal problem={problemOf(summary.error)} title="The balances could not be read" />}
       {s && (

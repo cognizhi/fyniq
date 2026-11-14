@@ -2,9 +2,9 @@
 key: ai.assistant
 type: task
 title: Ask the assistant about your books
-summary: The assistant panel (Ctrl+J or ⌘J): ask in your own words, figures with source chips, what it never sees, your conversations, when it does not answer
+summary: The assistant panel (Ctrl+J or ⌘J): ask about this, explain, simulate, figures with sources, rating answers, what it never sees, conversations
 sources:
-  - docs/user-guide/ai-assistant.md sha256:756092b6dc29fb1f7b408195c7c0664c0a03be1375bb555c4fbd6a3f811985dc
+  - docs/user-guide/ai-assistant.md sha256:30c671e95fdbace509378532f6fb473fe0eef2f90cff1d0a6b17a525de3f6fc7
 data_class: general
 taint: trusted
 status: published
@@ -30,6 +30,19 @@ aliases:
 
 (src: docs/user-guide/ai-assistant.md#what-it-is)
 
+## Ask about a record, a report or a figure
+
+- **Ask about this** on an invoice, bill, journal, contact or report, or on a traced figure, opens the assistant with it as the context chip; **Remove** takes it off. Hidden while the AI is switched off.
+
+(src: docs/user-guide/ai-assistant.md#ask-about-a-record-a-report-or-a-figure)
+
+## Explain and simulate
+
+- **Ask**: your own words. **Explain**: where the thing asked about comes from and what it is made of.
+- **Simulate**, on an invoice or bill asked about: the lowest cash balance in the next 90 days and the first day below the buffer, now and if paid on another day or not in those 90 days. Fyniq's figures, nothing saved; more in **Cash ahead**.
+
+(src: docs/user-guide/ai-assistant.md#explain-and-simulate)
+
 ## Where each figure comes from
 
 - Fyniq writes every figure from the books, never the assistant; a chip beneath the answer names its source, such as a report and its months, and opens that report, ledger or record.
@@ -44,6 +57,12 @@ aliases:
 - Payroll reaches it only with AI payroll access on (an Owner's switch, [[settings.organisation]]) and your own right to see payroll.
 
 (src: docs/user-guide/ai-assistant.md#what-it-never-sees)
+
+## Rate an answer
+
+- Thumbs up or down under each answer, with a reason, once. An Owner or Administrator reviews it with the question and the answer; only what they add to the golden set tests the assistant ([[settings.ai-activity]]).
+
+(src: docs/user-guide/ai-assistant.md#rate-an-answer)
 
 ## Your conversations
 
