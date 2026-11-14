@@ -88,6 +88,9 @@ type Deps struct {
 	// AIProviders builds an AI connection's model provider (AI-70), read in the work's unit of work; nil: the connector
 	// runtime's, through the egress guard to the connection's one host.
 	AIProviders func(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error)
+	// Screening screens what the AI service sends a model, the tools' untrusted text and the models' answers (AI-18,
+	// AI-P7; p1-ai-assistant design D8): Model Armor, or local mode's stub; nil: no AI call is sent and no tool runs.
+	Screening ports.Screening
 	// EvalSuites are the agents' eval suites a model is qualified with (AI-78); nil: the release's, evals.Suites.
 	EvalSuites fs.FS
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer

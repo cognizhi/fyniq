@@ -184,6 +184,11 @@ components:
             - 1
           format: int64
           type: integer
+        withheld:
+          description: What screening found in the result's free text, which is withheld, every quoted text with it (AI-18).
+          examples:
+            - an instruction to ignore earlier instructions
+          type: string
       required:
         - tool
         - version
@@ -594,6 +599,8 @@ paths:
         - AI-ROUTER-03
         - AI-ROUTER-04
         - AI-ROUTER-05
+        - AI-SCREEN-01
+        - AI-SCREEN-02
         - API-AUTH-01
         - API-FAILURE-01
         - API-INPUT-02
@@ -720,6 +727,8 @@ paths:
         - AI-ROUTER-03
         - AI-ROUTER-04
         - AI-ROUTER-05
+        - AI-SCREEN-01
+        - AI-SCREEN-02
         - API-AUTH-01
         - API-FAILURE-01
         - API-INPUT-02
@@ -760,6 +769,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
         "504":
           content:
             application/problem+json:
@@ -770,6 +785,7 @@ paths:
       tags:
         - Assistant
       x-fyniq-error-codes:
+        - AI-SCREEN-02
         - AI-TOOL-01
         - AI-TOOL-02
         - AI-TOOL-03

@@ -204,6 +204,15 @@ AI-28).**
   output filter masks, in any text left, an NRIC or FIN whose check letter is right (S****567D) and a bank-number shape,
   9 to 18 digits whole or in groups split by hyphens or spaces (****6789); a decimal, a date, a word, a path, a UUID and
   a reference numbered within a year (2026-00012) are left alone. The AI service's own filter comes with it (task 5.1).
+- As built (task 4.2): the API's `Screening` dependency (Model Armor from `FYNIQ_MODEL_ARMOR_TEMPLATE` in a release,
+  as the service's account, `[live-verify]`: the template and its role are not provisioned yet; local mode's stub in
+  the stack and the tests) screens three things, failing closed: the person's words and the tools' results in each
+  internal model call before the router sends it, the whole answer before the call is done (a streamed answer ends in
+  an error event instead, and the AI service discards the text it streamed), and each read tool's free text. A tool
+  result quotes its free text as `{"untrusted_text": …}` (descriptions, memos, notes, names, references and the like;
+  AI-18, AI-25: the organisation's own text too), screened with the names its facts carry; a finding withholds every
+  quoted text and name, saying what was found, and keeps the figures. A finding in a model call refuses it
+  (AI-SCREEN-01) and sends nothing; a screening that did not finish, or none set up, refuses either (AI-SCREEN-02).
 
 **D9. Denial of wallet and limits (AI-23).**
 - Per person: 20 turns a minute and 200 a day (settings, dual controlled); per turn: at most 8 tool calls and the

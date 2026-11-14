@@ -101,7 +101,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		OpenClone:     copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
 		DrillOnDemand: true,
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
-		Posture:    local.Posture{},
+		Posture: local.Posture{},
+		// Local mode's stub of Model Armor: it flags the red-team corpus's patterns (QA-AI-03).
+		Screening:  local.Screen{},
 		Scheduling: local.Scheduling{},
 		Logs:       local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}

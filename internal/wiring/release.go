@@ -168,6 +168,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	kit.Egress = outbound
 	kit.ModelTokens = tokens // Claude and Gemini on Agent Platform, with the service's own account (AI-72)
+	// Model Armor screens the AI's prompts, tool results and answers in Singapore (AI-18, AI-P7; p1-ai-assistant design D8),
+	// with the template FYNIQ_MODEL_ARMOR_TEMPLATE names, as the service's own account [live-verify]. Without one no AI
+	// call is sent.
+	if template := os.Getenv("FYNIQ_MODEL_ARMOR_TEMPLATE"); template != "" {
+		endpoint := gcp.ModelArmorAPI(locationOf(template))
+		if kit.Screening, err = gcp.NewModelArmor(endpoint, template, tokens, platform.For(egress.HostOf(endpoint))); err != nil {
+			return nil, err
+		}
+	}
 	// LiteLLM's public model price catalogue, from its one host through the platform's guard (AI-82, AI-85) [live-verify].
 	kit.Prices = litellm.Catalogue{HTTP: platform.Bounded(40<<20, 2*time.Minute).For(litellm.Host)}
 	// Google's Cloud Billing Catalog for Agent Platform's prices, as the service's own account (AI-82 (b)) [live-verify].

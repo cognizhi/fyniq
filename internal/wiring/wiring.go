@@ -66,6 +66,9 @@ type Kit struct {
 	// ModelTokens are the service's own account's tokens, for an AI connection that authenticates with workload identity
 	// (AI-72): the metadata server's in the cloud; nil locally, where such a connection cannot be read.
 	ModelTokens oauth2.TokenSource
+	// Screening screens what the AI sends a model and what it answers (AI-18, AI-P7; p1-ai-assistant design D8): Model
+	// Armor in the cloud, local mode's stub of it; nil: no AI call is sent (fail closed).
+	Screening ports.Screening
 	// Posture and Logs are the platform's open cloud findings and a sample of its logs, which the Compliance Center's
 	// platform verifications read (SEC-33, CTL-DP-03): Security Command Center and Cloud Logging in the cloud, a fake
 	// and the files of a directory locally. Nil: those verifications do not run.
