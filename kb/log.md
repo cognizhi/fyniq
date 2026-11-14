@@ -541,3 +541,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (a connection's own page: turn it on or off, replace the key, its models, qualify a model, where its prompts go)
 
 ## [2026-11-14] compile | docs/user-guide/ai-routes.md → settings.ai-routes (new page: model routes and the route editor, AI-74, AI-76, AI-26)
+
+## [2026-11-14] compile | docs/user-guide/ai-activity.md → settings.ai-activity (new page: the AI activity log and your own AI plan, AI-12, AI-73)

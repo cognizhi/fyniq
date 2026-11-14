@@ -59,6 +59,6 @@ aliases:
 - Select the agent's name; tick the classes of data it may send (personal data and payroll only to steps with evidenced Singapore processing).
 - Up to five steps, each a connection that is on and a model on its allow-list, with a reasoning effort and caching; **Up**, **Down**, **Remove**, **Fill from preset**.
 - **Check it** checks without saving. **Save the route** saves a narrowing change (reordering, removing a step or class, effort, caching) at once; a new connection, model or class waits for the Owner or a second approver and needs every step's model qualified.
-- **Versions** lists every version, who made it and when. The daily fallback threshold is in Organisation settings ([[settings.organisation]]); the budget in AI settings ([[settings.ai]]).
+- **Versions** lists every version, who made it and when (see also [[settings.ai-activity]]). The daily fallback threshold is in Organisation settings ([[settings.organisation]]); the budget in AI settings ([[settings.ai]]).
 
 (src: docs/user-guide/ai-routes.md#change-an-agents-route)
