@@ -25,6 +25,7 @@ describe("Settings › AI activity", () => {
   it("shows every member's entries to the Owner, with fallbacks, versions, exact costs and masked payroll; axe finds nothing", async () => {
     answer({
       "GET /v1/ai/activity": { status: 200, body: { scope: "all", items, next_cursor: "n-1" } },
+      "GET /v1/ai/activity/turns": { status: 200, body: { scope: "all", items: [] } },
       "GET /v1/ai/routes": { status: 200, body: { agents: [{ agent: "chat", name: "Assistant", description: "", handles: [], line: "main" }] } },
       "GET /v1/members": { status: 200, body: { items: [{ user_id: "u-1", display_name: "Ah Kow" }, { user_id: "u-2", display_name: "Wei Ling" }] } },
     });
@@ -49,6 +50,7 @@ describe("Settings › AI activity", () => {
   it("shows a member only their own, filters by agent and day, and narrows to one call's fallbacks", async () => {
     const seen = answer({
       "GET /v1/ai/activity": { status: 200, body: { scope: "own", items: items.slice(0, 2) } },
+      "GET /v1/ai/activity/turns": { status: 200, body: { scope: "own", items: [] } },
       "GET /v1/ai/routes": problem(403, "API-AUTHZ-01"),
       "GET /v1/members": problem(403, "API-AUTHZ-01"),
     });
@@ -80,6 +82,32 @@ describe("Profile › Use your own AI plan", () => {
     renderPage(MyAIPlan, { path: "/settings/profile/ai-plan", session: bookkeeper, mode: "basic" });
     expect(await screen.findByText("Not offered yet")).toBeTruthy();
     expect(screen.getByText("Reusing a chat session or a browser cookie.")).toBeTruthy();
+    await noViolations();
+  });
+
+  it("lists the assistant's questions with their outcome, reads and model calls, a payroll question masked; axe finds nothing", async () => {
+    const turn = (t: Record<string, unknown>) => ({ id: "t-1", conversation_id: "c-1", person: "user:u-1", question: "What was revenue?", status: "answered",
+      runs: ["r-1"], input_tokens: 2400, output_tokens: 310, classes: ["business-figures"], cited: 1, regenerated: false, withheld: 0,
+      tool_calls: [{ tool: "metrics.query", version: 1, outcome: "read", facts: 3, omitted: 0, withheld: false, duration_ms: 120 }],
+      asked_at: "2026-11-15T01:00:00Z", masked: false, ...t });
+    const seen = answer({
+      "GET /v1/ai/activity": { status: 200, body: { scope: "all", items: [] } },
+      "GET /v1/ai/activity/turns": { status: 200, body: { scope: "all", items: [
+        turn({}),
+        turn({ id: "t-2", person: "user:u-2", question: undefined, masked: true, classes: ["payroll"], status: "refused", code: "AI-LIMIT-01", runs: [], tool_calls: [], input_tokens: 0, output_tokens: 0 }),
+      ] } },
+      "GET /v1/ai/routes": { status: 200, body: { agents: [] } },
+      "GET /v1/members": { status: 200, body: { items: [{ user_id: "u-1", display_name: "Ah Kow" }, { user_id: "u-2", display_name: "Wei Ling" }] } },
+    });
+    renderPage(AIActivity, { path: "/settings/ai/activity" });
+    const table = await screen.findByRole("table", { name: "Questions to the assistant" });
+    expect(within(table).getByText("What was revenue?")).toBeTruthy();
+    expect(within(table).getByText("read 3 figures")).toBeTruthy();
+    expect(within(table).getByText("Masked: it read payroll")).toBeTruthy();
+    expect(within(table).getByText("AI-LIMIT-01")).toBeTruthy();
+    expect(within(table).getByText("2,400 / 310")).toBeTruthy();
+    fireEvent.click(within(table).getByRole("button", { name: /Show the model calls of the question/ }));
+    await waitFor(() => expect(seen.some((x) => x.query.includes("run=r-1"))).toBe(true));
     await noViolations();
   });
 });

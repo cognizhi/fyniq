@@ -26,13 +26,27 @@ RETURNING id;
 UPDATE fyniq.ai_turn SET status = sqlc.arg(status), code = sqlc.arg(code), answer = sqlc.arg(answer), segments = sqlc.arg(segments),
   cited = sqlc.arg(cited), facts = sqlc.arg(facts), prompt = sqlc.arg(prompt), prompt_sha256 = sqlc.arg(prompt_sha256), runs = sqlc.arg(runs),
   input_tokens = sqlc.arg(input_tokens), output_tokens = sqlc.arg(output_tokens), regenerated = sqlc.arg(regenerated),
-  withheld = sqlc.arg(withheld), answered_at = sqlc.arg(answered_at)
+  withheld = sqlc.arg(withheld), classes = sqlc.arg(classes), answered_at = sqlc.arg(answered_at)
 WHERE id = sqlc.arg(id) AND status = 'answering';
 
 -- name: AITurnsOfConversation :many
 SELECT id, conversation_id, user_id, question, context, status, code, answer, segments, cited, facts, prompt, prompt_sha256, runs,
-  input_tokens, output_tokens, regenerated, withheld, asked_at, answered_at
+  input_tokens, output_tokens, regenerated, withheld, classes, asked_at, answered_at
 FROM fyniq.ai_turn WHERE conversation_id = sqlc.arg(conversation_id) ORDER BY asked_at, id;
+
+-- name: AITurnsPage :many
+SELECT id, conversation_id, user_id, question, context, status, code, answer, segments, cited, facts, prompt, prompt_sha256, runs,
+  input_tokens, output_tokens, regenerated, withheld, classes, asked_at, answered_at
+FROM fyniq.ai_turn
+WHERE (sqlc.narg(user_id)::uuid IS NULL OR user_id = sqlc.narg(user_id)::uuid)
+  AND asked_at >= sqlc.arg(since) AND asked_at < sqlc.arg(until)
+  AND (sqlc.narg(before_at)::timestamptz IS NULL OR (asked_at, id) < (sqlc.narg(before_at)::timestamptz, sqlc.arg(before_id)::uuid))
+ORDER BY asked_at DESC, id DESC
+LIMIT sqlc.arg(max_rows);
+
+-- name: AIToolCallsOfTurns :many
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+FROM fyniq.ai_tool_call WHERE turn_id = ANY(sqlc.arg(turns)::uuid[]) ORDER BY turn_id, n;
 
 -- name: InsertAIToolCall :exec
 INSERT INTO fyniq.ai_tool_call (turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms)

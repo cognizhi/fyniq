@@ -116,6 +116,61 @@ func (q *Queries) AIToolCallsOfTurn(ctx context.Context, turnID uuid.UUID) ([]AI
 	return items, nil
 }
 
+const aIToolCallsOfTurns = `-- name: AIToolCallsOfTurns :many
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+FROM fyniq.ai_tool_call WHERE turn_id = ANY($1::uuid[]) ORDER BY turn_id, n
+`
+
+type AIToolCallsOfTurnsRow struct {
+	ID           uuid.UUID
+	TurnID       uuid.UUID
+	N            int32
+	Tool         string
+	Version      int32
+	Input        []byte
+	OutputSha256 string
+	Outcome      string
+	Code         string
+	Facts        int32
+	Omitted      int32
+	Withheld     bool
+	DurationMs   int32
+}
+
+func (q *Queries) AIToolCallsOfTurns(ctx context.Context, turns []uuid.UUID) ([]AIToolCallsOfTurnsRow, error) {
+	rows, err := q.db.Query(ctx, aIToolCallsOfTurns, turns)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AIToolCallsOfTurnsRow
+	for rows.Next() {
+		var i AIToolCallsOfTurnsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TurnID,
+			&i.N,
+			&i.Tool,
+			&i.Version,
+			&i.Input,
+			&i.OutputSha256,
+			&i.Outcome,
+			&i.Code,
+			&i.Facts,
+			&i.Omitted,
+			&i.Withheld,
+			&i.DurationMs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const aITurnsAskedSince = `-- name: AITurnsAskedSince :one
 SELECT count(*)::int AS asked FROM fyniq.ai_turn WHERE user_id = $1 AND asked_at >= $2
 `
@@ -134,7 +189,7 @@ func (q *Queries) AITurnsAskedSince(ctx context.Context, arg AITurnsAskedSincePa
 
 const aITurnsOfConversation = `-- name: AITurnsOfConversation :many
 SELECT id, conversation_id, user_id, question, context, status, code, answer, segments, cited, facts, prompt, prompt_sha256, runs,
-  input_tokens, output_tokens, regenerated, withheld, asked_at, answered_at
+  input_tokens, output_tokens, regenerated, withheld, classes, asked_at, answered_at
 FROM fyniq.ai_turn WHERE conversation_id = $1 ORDER BY asked_at, id
 `
 
@@ -157,6 +212,7 @@ type AITurnsOfConversationRow struct {
 	OutputTokens   int64
 	Regenerated    bool
 	Withheld       int32
+	Classes        []string
 	AskedAt        time.Time
 	AnsweredAt     *time.Time
 }
@@ -189,6 +245,100 @@ func (q *Queries) AITurnsOfConversation(ctx context.Context, conversationID uuid
 			&i.OutputTokens,
 			&i.Regenerated,
 			&i.Withheld,
+			&i.Classes,
+			&i.AskedAt,
+			&i.AnsweredAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const aITurnsPage = `-- name: AITurnsPage :many
+SELECT id, conversation_id, user_id, question, context, status, code, answer, segments, cited, facts, prompt, prompt_sha256, runs,
+  input_tokens, output_tokens, regenerated, withheld, classes, asked_at, answered_at
+FROM fyniq.ai_turn
+WHERE ($1::uuid IS NULL OR user_id = $1::uuid)
+  AND asked_at >= $2 AND asked_at < $3
+  AND ($4::timestamptz IS NULL OR (asked_at, id) < ($4::timestamptz, $5::uuid))
+ORDER BY asked_at DESC, id DESC
+LIMIT $6
+`
+
+type AITurnsPageParams struct {
+	UserID   *uuid.UUID
+	Since    time.Time
+	Until    time.Time
+	BeforeAt *time.Time
+	BeforeID uuid.UUID
+	MaxRows  int32
+}
+
+type AITurnsPageRow struct {
+	ID             uuid.UUID
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+	Question       string
+	Context        []byte
+	Status         string
+	Code           string
+	Answer         string
+	Segments       []byte
+	Cited          []string
+	Facts          []byte
+	Prompt         string
+	PromptSha256   string
+	Runs           []uuid.UUID
+	InputTokens    int64
+	OutputTokens   int64
+	Regenerated    bool
+	Withheld       int32
+	Classes        []string
+	AskedAt        time.Time
+	AnsweredAt     *time.Time
+}
+
+func (q *Queries) AITurnsPage(ctx context.Context, arg AITurnsPageParams) ([]AITurnsPageRow, error) {
+	rows, err := q.db.Query(ctx, aITurnsPage,
+		arg.UserID,
+		arg.Since,
+		arg.Until,
+		arg.BeforeAt,
+		arg.BeforeID,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AITurnsPageRow
+	for rows.Next() {
+		var i AITurnsPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.UserID,
+			&i.Question,
+			&i.Context,
+			&i.Status,
+			&i.Code,
+			&i.Answer,
+			&i.Segments,
+			&i.Cited,
+			&i.Facts,
+			&i.Prompt,
+			&i.PromptSha256,
+			&i.Runs,
+			&i.InputTokens,
+			&i.OutputTokens,
+			&i.Regenerated,
+			&i.Withheld,
+			&i.Classes,
 			&i.AskedAt,
 			&i.AnsweredAt,
 		); err != nil {
@@ -223,8 +373,8 @@ const finishAITurn = `-- name: FinishAITurn :execrows
 UPDATE fyniq.ai_turn SET status = $1, code = $2, answer = $3, segments = $4,
   cited = $5, facts = $6, prompt = $7, prompt_sha256 = $8, runs = $9,
   input_tokens = $10, output_tokens = $11, regenerated = $12,
-  withheld = $13, answered_at = $14
-WHERE id = $15 AND status = 'answering'
+  withheld = $13, classes = $14, answered_at = $15
+WHERE id = $16 AND status = 'answering'
 `
 
 type FinishAITurnParams struct {
@@ -241,6 +391,7 @@ type FinishAITurnParams struct {
 	OutputTokens int64
 	Regenerated  bool
 	Withheld     int32
+	Classes      []string
 	AnsweredAt   *time.Time
 	ID           uuid.UUID
 }
@@ -260,6 +411,7 @@ func (q *Queries) FinishAITurn(ctx context.Context, arg FinishAITurnParams) (int
 		arg.OutputTokens,
 		arg.Regenerated,
 		arg.Withheld,
+		arg.Classes,
 		arg.AnsweredAt,
 		arg.ID,
 	)

@@ -551,3 +551,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (AI and personal data: the never-send list, AI payroll access and the fields the AI never reads; p1-ai-assistant task 4.1)
 
 ## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (AI limits: questions a minute and a day, reads per question, questions per conversation; p1-ai-assistant task 5.3)
+
+## [2026-11-15] compile | docs/user-guide/ai-activity.md → settings.ai-activity (questions to the assistant in the AI activity log; p1-ai-assistant task 6.2)

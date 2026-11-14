@@ -4,14 +4,14 @@ type: task
 title: See what the AI did, and use your own AI plan
 summary: Settings › AI activity: every model call, whose entries you see, outcomes, tokens and cost, masked payroll entries, filters; your own AI plan, not offered yet
 sources:
-  - docs/user-guide/ai-activity.md sha256:1d52021deeb5f201e092e7058e6a2514a982023942792dd7ff6a0bccdb8e9ea8
+  - docs/user-guide/ai-activity.md sha256:85432952ad6e62825ad066748c8034bab759c5c98dfc3576a9a48c12eeac5a44
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-14
+compiled_at: 2026-11-15
 aliases:
   - AI activity log
   - what did the AI do
@@ -43,6 +43,13 @@ aliases:
 - **Tokens in / out** and **Cost**, exact, in the base currency at the day's rate, the provider's currency beneath when it differs; no price, no cost. Tiles count served, fell back, failed or stopped, and masked in the entries shown.
 
 (src: docs/user-guide/ai-activity.md#what-each-entry-shows)
+
+## Questions to the assistant
+
+- Each question asked of the assistant, above the model calls: when, who asked (for the Owner and the data protection officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with its code, or **Failed**), whether the answer was asked for again after a figure failed the check, each read of the books with how many figures it read, and its tokens.
+- What a read returned is never shown, only how it went; **Its model calls** shows the calls the question made. Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
+(src: docs/user-guide/ai-activity.md#questions-to-the-assistant)
 
 ## Masked entries
 

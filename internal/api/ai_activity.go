@@ -222,3 +222,184 @@ func aiActivityOut(c storage.AICall, connection string) AIActivityEntry {
 	}
 	return e
 }
+
+// AITurnToolCall is a read a turn made, as it ran (design D11): never its input or what it read, only a hash of that.
+type AITurnToolCall struct {
+	Tool         string `json:"tool" example:"metrics.query"`
+	Version      int    `json:"version" example:"1"`
+	Outcome      string `json:"outcome" enum:"read,refused" example:"read"`
+	Code         string `json:"code,omitempty" doc:"Why it was refused." example:"AI-TOOL-03"`
+	Facts        int    `json:"facts" doc:"How many facts it read." example:"3"`
+	Omitted      int    `json:"omitted" doc:"How many lists its limits cut." example:"0"`
+	Withheld     bool   `json:"withheld" doc:"Screening withheld its free text (AI-18)." example:"false"`
+	DurationMS   int    `json:"duration_ms" example:"120"`
+	OutputSHA256 string `json:"output_sha256,omitempty" doc:"The hash of what the model read of it." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+}
+
+// AITurnActivity is one turn of the assistant in the AI activity log (AI-12): who asked, what, how it ended, the
+// prompt it was told, the model calls' runs, the classes it read and the reads it made.
+type AITurnActivity struct {
+	ID           string           `json:"id" format:"uuid" example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"`
+	Conversation string           `json:"conversation_id" format:"uuid" example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"`
+	Person       string           `json:"person" doc:"Who asked: user:<id>." example:"user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"`
+	Question     string           `json:"question,omitempty" doc:"What was asked; absent when masked." example:"What is our cash runway?"`
+	Status       string           `json:"status" enum:"answering,answered,refused,failed" example:"answered"`
+	Code         string           `json:"code,omitempty" example:"AI-LIMIT-01"`
+	Prompt       string           `json:"prompt,omitempty" doc:"The system prompt it was told, and its hash (AI-24)." example:"chat@2"`
+	PromptSHA256 string           `json:"prompt_sha256,omitempty" example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	Runs         []AIRunID        `json:"runs" nullable:"false" doc:"Its model calls' runs, whose attempts listAIActivity shows."`
+	InputTokens  int64            `json:"input_tokens" example:"2400"`
+	OutputTokens int64            `json:"output_tokens" example:"310"`
+	Classes      []RouteClass     `json:"classes" nullable:"false" doc:"The classes of data it read (AI-83)."`
+	Cited        int              `json:"cited" doc:"How many facts its answer cites." example:"2"`
+	Regenerated  bool             `json:"regenerated" doc:"Its answer failed the figures' check once (AI-08)." example:"false"`
+	Withheld     int              `json:"withheld" doc:"Figures or words withheld after the check." example:"0"`
+	ToolCalls    []AITurnToolCall `json:"tool_calls" nullable:"false"`
+	AskedAt      time.Time        `json:"asked_at" example:"2026-11-15T08:00:00Z"`
+	AnsweredAt   *time.Time       `json:"answered_at,omitempty" example:"2026-11-15T08:00:04Z"`
+	Masked       bool             `json:"masked" doc:"It read payroll and you may not see payroll unmasked: its question is withheld (FR-PAY-13)." example:"false"`
+}
+
+// AIRunID names a model call's run in the AI activity log.
+type AIRunID string
+
+// Schema implements huma.SchemaProvider.
+func (AIRunID) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Format: "uuid", Description: "A model call's run.", Examples: []any{"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a42"}}
+}
+
+// AITurnActivityPage is a page of the assistant's turns in the AI activity log, newest first.
+type AITurnActivityPage struct {
+	Scope      string           `json:"scope" enum:"own,all" doc:"own: your own turns only; all: every member's, for the Owner and the DPO (Appendix D)." example:"own"`
+	Items      []AITurnActivity `json:"items" nullable:"false"`
+	NextCursor string           `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTEtMTRUMDk6MDA6MDBafDAxOTMifQ"`
+}
+
+type (
+	aiTurnActivityInput struct {
+		PageQuery
+		Person string `query:"person" maxLength:"60" doc:"Only this member's turns, by user ID: for the Owner and the DPO; anyone else reads only their own." example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"`
+		From   string `query:"from" format:"date" doc:"Only turns asked on or after this day, in Singapore time." example:"2026-11-01"`
+		To     string `query:"to" format:"date" doc:"Only turns asked on or before this day." example:"2026-11-30"`
+	}
+	aiTurnActivityOutput struct{ Body AITurnActivityPage }
+)
+
+func registerAITurnActivity(a *API) {
+	register(a, authz.ListAITurnActivity, huma.Operation{
+		OperationID: "listAITurnActivity", Method: http.MethodGet, Path: "/v1/ai/activity/turns", Tags: []string{"AI"},
+		Summary: "List the assistant's turns in the AI activity log",
+		Description: "The assistant's turns (AI-12), newest first, a page at a time: who asked, what, how it ended and why, the prompt it was " +
+			"told and its hash, its model calls' runs, its tokens, the classes of data it read, what grounding did, and each read it made " +
+			"with its outcome and counts, never its input or what it read; filtered by person and days. Each member reads their own; the " +
+			"Owner and the DPO read everyone's (Appendix D, rev 0.276). Someone else's turn that read payroll shows masked to a reader who " +
+			"may not see payroll unmasked (FR-PAY-13). Side effects: showing such a turn unmasked writes the audit event ai_activity.read " +
+			"(AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).",
+	}, []string{CodeInvalid, CodeCursor, CodeForbidden, storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, in *aiTurnActivityInput) (*aiTurnActivityOutput, error) {
+		p, _ := authn.From(ctx)
+		all := readsAllAIActivity(p)
+		q := storage.AITurnQuery{From: time.Unix(0, 0).UTC(), To: time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC), Limit: in.PageSize + 1}
+		var bad []FieldProblem
+		switch {
+		case !all:
+			if in.Person != "" && in.Person != p.UserID.String() {
+				return nil, problem(CodeForbidden, "You read only your own turns in the AI activity log.", "Leave person out, or ask the Owner or the DPO, who read everyone's")
+			}
+			q.User = p.UserID
+		case in.Person != "":
+			id, err := uuid.Parse(in.Person)
+			if err != nil {
+				bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "query.person", Message: "is not a user ID", Fix: "Send the member's user ID"})
+			}
+			q.User = id
+		}
+		for _, d := range []struct {
+			raw, field string
+			to         *time.Time
+			next       bool
+		}{{in.From, "query.from", &q.From, false}, {in.To, "query.to", &q.To, true}} {
+			if d.raw == "" {
+				continue
+			}
+			day, err := time.ParseInLocation(time.DateOnly, d.raw, appclock.Singapore)
+			if err != nil {
+				bad = append(bad, FieldProblem{Code: CodeInvalid, Field: d.field, Message: "is not a date", Fix: "Send the day as YYYY-MM-DD"})
+				continue
+			}
+			if d.next {
+				day = day.AddDate(0, 0, 1)
+			}
+			*d.to = day.UTC()
+		}
+		after, err := decodeCursor(in.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		if after != "" {
+			at, id, ok := strings.Cut(after, "|")
+			t, terr := time.Parse(time.RFC3339Nano, at)
+			uid, ierr := uuid.Parse(id)
+			if !ok || terr != nil || ierr != nil {
+				return nil, badCursor()
+			}
+			q.BeforeAt, q.BeforeID = &t, uid
+		}
+		if len(bad) > 0 {
+			return nil, invalid(bad)
+		}
+		out := AITurnActivityPage{Scope: "own", Items: []AITurnActivity{}}
+		if all {
+			out.Scope = "all"
+		}
+		payroll := seesPayroll(p)
+		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			turns, calls, err := u.AIConversations().Page(ctx, q)
+			if err != nil {
+				return err
+			}
+			if len(turns) > in.PageSize {
+				turns = turns[:in.PageSize]
+				last := turns[len(turns)-1]
+				out.NextCursor = encodeCursor(last.AskedAt.UTC().Format(time.RFC3339Nano) + "|" + last.ID.String())
+			}
+			var read []string
+			for _, t := range turns {
+				e := turnActivityOf(t, calls[t.ID])
+				if t.UserID != p.UserID && slices.Contains(t.Classes, aipolicy.Payroll) {
+					if payroll {
+						read = append(read, t.ID.String())
+					} else {
+						e.Masked, e.Question = true, ""
+					}
+				}
+				out.Items = append(out.Items, e)
+			}
+			if len(read) == 0 {
+				return nil
+			}
+			// Showing someone else's turns that read payroll is a read of payroll (AUD-05).
+			first, _ := uuid.Parse(read[0])
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: "ai_activity.read", ObjectType: "ai_turn", ObjectID: first,
+				Changes: map[string][2]any{"turns": {nil, read}}})
+		})
+		return &aiTurnActivityOutput{Body: out}, err
+	})
+}
+
+func turnActivityOf(t storage.AITurn, calls []storage.AIToolCall) AITurnActivity {
+	e := AITurnActivity{ID: t.ID.String(), Conversation: t.Conversation.String(), Person: "user:" + t.UserID.String(), Question: t.Question,
+		Status: t.Status, Code: t.Code, Prompt: t.Prompt, PromptSHA256: t.PromptSHA256, Runs: []AIRunID{}, InputTokens: t.InputTokens,
+		OutputTokens: t.OutputTokens, Classes: []RouteClass{}, Cited: len(t.Cited), Regenerated: t.Regenerated, Withheld: t.Withheld,
+		ToolCalls: []AITurnToolCall{}, AskedAt: t.AskedAt.UTC(), AnsweredAt: t.AnsweredAt}
+	for _, r := range t.Runs {
+		e.Runs = append(e.Runs, AIRunID(r.String()))
+	}
+	for _, c := range t.Classes {
+		e.Classes = append(e.Classes, RouteClass(c))
+	}
+	for _, c := range calls {
+		e.ToolCalls = append(e.ToolCalls, AITurnToolCall{Tool: c.Tool, Version: c.Version, Outcome: c.Outcome, Code: c.Code, Facts: c.Facts,
+			Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: c.DurationMS, OutputSHA256: c.OutputSHA256})
+	}
+	return e
+}

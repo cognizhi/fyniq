@@ -116,7 +116,7 @@ func (r aiConversations) Finish(ctx context.Context, t storage.AITurn, calls []s
 	n, err := r.u.q.FinishAITurn(ctx, sqlcdb.FinishAITurnParams{Status: t.Status, Code: t.Code, Answer: t.Answer, Segments: or(t.Segments, "[]"),
 		Cited: cited, Facts: or(t.Facts, "[]"), Prompt: t.Prompt, PromptSha256: t.PromptSHA256, Runs: runs, InputTokens: t.InputTokens,
 		OutputTokens: t.OutputTokens, Regenerated: t.Regenerated, Withheld: int32(min(max(t.Withheld, 0), 1<<30)), // #nosec G115 -- capped
-		AnsweredAt: t.AnsweredAt, ID: t.ID})
+		Classes: orEmpty(t.Classes), AnsweredAt: t.AnsweredAt, ID: t.ID})
 	if err != nil {
 		return mapError(err)
 	}
@@ -126,7 +126,14 @@ func (r aiConversations) Finish(ctx context.Context, t storage.AITurn, calls []s
 	// The record names how the turn ended and what it used, never the question's or the answer's words (AUD-01, SEC-15).
 	return r.u.event(ctx, "ai_turn."+t.Status, "ai_turn", t.ID, nil, map[string][2]any{"turn": {nil, map[string]any{
 		"conversation_id": t.Conversation.String(), "status": t.Status, "code": t.Code, "prompt": t.Prompt, "prompt_sha256": t.PromptSHA256,
-		"cited": len(cited), "tool_calls": len(calls), "regenerated": t.Regenerated, "withheld": t.Withheld}}})
+		"cited": len(cited), "tool_calls": len(calls), "regenerated": t.Regenerated, "withheld": t.Withheld, "classes": orEmpty(t.Classes)}}})
+}
+
+func orEmpty(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 func (r aiConversations) Turns(ctx context.Context, conversation uuid.UUID) ([]storage.AITurn, error) {
@@ -142,9 +149,47 @@ func (r aiConversations) Turns(ctx context.Context, conversation uuid.UUID) ([]s
 		out = append(out, storage.AITurn{ID: row.ID, Conversation: row.ConversationID, UserID: row.UserID, Question: row.Question,
 			Context: row.Context, Status: row.Status, Code: row.Code, Answer: row.Answer, Segments: row.Segments, Cited: row.Cited, Facts: row.Facts,
 			Prompt: row.Prompt, PromptSHA256: row.PromptSha256, Runs: row.Runs, InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
-			Regenerated: row.Regenerated, Withheld: int(row.Withheld), AskedAt: row.AskedAt, AnsweredAt: row.AnsweredAt})
+			Regenerated: row.Regenerated, Withheld: int(row.Withheld), Classes: row.Classes, AskedAt: row.AskedAt, AnsweredAt: row.AnsweredAt})
 	}
 	return out, nil
+}
+
+func (r aiConversations) Page(ctx context.Context, q storage.AITurnQuery) ([]storage.AITurn, map[uuid.UUID][]storage.AIToolCall, error) {
+	if err := r.u.check(); err != nil {
+		return nil, nil, err
+	}
+	var user *uuid.UUID
+	if q.User != uuid.Nil {
+		user = &q.User
+	}
+	rows, err := r.u.q.AITurnsPage(ctx, sqlcdb.AITurnsPageParams{UserID: user, Since: q.From, Until: q.To, BeforeAt: q.BeforeAt, BeforeID: q.BeforeID,
+		MaxRows: int32(min(max(q.Limit, 1), 501))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	turns := make([]storage.AITurn, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		turns = append(turns, storage.AITurn{ID: row.ID, Conversation: row.ConversationID, UserID: row.UserID, Question: row.Question,
+			Context: row.Context, Status: row.Status, Code: row.Code, Answer: row.Answer, Segments: row.Segments, Cited: row.Cited, Facts: row.Facts,
+			Prompt: row.Prompt, PromptSHA256: row.PromptSha256, Runs: row.Runs, InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
+			Regenerated: row.Regenerated, Withheld: int(row.Withheld), Classes: row.Classes, AskedAt: row.AskedAt, AnsweredAt: row.AnsweredAt})
+		ids = append(ids, row.ID)
+	}
+	calls := map[uuid.UUID][]storage.AIToolCall{}
+	if len(ids) == 0 {
+		return turns, calls, nil
+	}
+	callRows, err := r.u.q.AIToolCallsOfTurns(ctx, ids)
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	for _, row := range callRows {
+		calls[row.TurnID] = append(calls[row.TurnID], storage.AIToolCall{ID: row.ID, Turn: row.TurnID, N: int(row.N), Tool: row.Tool,
+			Version: int(row.Version), Input: row.Input, OutputSHA256: row.OutputSha256, Outcome: row.Outcome, Code: row.Code, Facts: int(row.Facts),
+			Omitted: int(row.Omitted), Withheld: row.Withheld, DurationMS: int(row.DurationMs)})
+	}
+	return turns, calls, nil
 }
 
 func (r aiConversations) ToolCalls(ctx context.Context, turn uuid.UUID) ([]storage.AIToolCall, error) {

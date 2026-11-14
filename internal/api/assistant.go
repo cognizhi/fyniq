@@ -489,6 +489,12 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		turn.Status, turn.Code = storage.TurnFailed, CodeAIService
 	}
 	err = a.deps.Store.Do(keep, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		// The classes the turn read, as its grant has them now: the activity log shows them and masks payroll (AI-12, AI-83).
+		if classes, err := u.AIGrants().Classes(ctx, turn.ID, a.deps.Clock.Now()); err == nil {
+			turn.Classes = classes
+		} else if !errors.Is(err, ports.ErrNotFound) {
+			return err
+		}
 		if err := u.AIConversations().Finish(ctx, turn, calls); err != nil {
 			return err
 		}

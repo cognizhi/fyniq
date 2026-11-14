@@ -51,6 +51,9 @@ var matrixConversations = map[string]func(e *env, tok string) (response, func() 
 	"deleteAIConversation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodDelete, "/v1/assistant/conversations/"+matrixConversation(e, tok), steppedUp(e, tok), nil), nil
 	},
+	"listAITurnActivity": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/activity/turns", steppedUp(e, tok), nil), nil
+	},
 	"askAIConversation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/assistant/conversations/"+matrixConversation(e, tok)+"/turns", steppedUp(e, tok),
 			map[string]any{"question": "What was revenue?"}), nil

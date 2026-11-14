@@ -14663,6 +14663,30 @@ The AI activity log (AI-12), newest first, a page at a time: every attempt of a 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/ai/activity/turns`
+
+**List the assistant's turns in the AI activity log** (`listAITurnActivity`)
+
+The assistant's turns (AI-12), newest first, a page at a time: who asked, what, how it ended and why, the prompt it was told and its hash, its model calls' runs, its tokens, the classes of data it read, what grounding did, and each read it made with its outcome and counts, never its input or what it read; filtered by person and days. Each member reads their own; the Owner and the DPO read everyone's (Appendix D, rev 0.276). Someone else's turn that read payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such a turn unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `person` (query): Only this member's turns, by user ID: for the Owner and the DPO; anyone else reads only their own.
+  - `from` (query): Only turns asked on or after this day, in Singapore time.
+  - `to` (query): Only turns asked on or before this day.
+- **Responses:**
+  - `200` OK [`AITurnActivityPage`](../../contracts/schemas/AITurnActivityPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/ai/budgets`
 
 **Get the AI budgets** (`getAIBudgets`)

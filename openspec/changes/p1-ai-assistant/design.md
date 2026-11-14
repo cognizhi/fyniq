@@ -274,6 +274,13 @@ AI-28).**
   relays the AI service's status, and keeps the answer with its reads (each with a hash of what the model read), or
   the refusal's code, ending the token whatever happens to the stream. The API reaches the AI service at FYNIQ_AI_URL
   locally (Compose: ai:8080) and FYNIQ_GCP's `ai` entry in the cloud `[live-verify]`.
+- As built (task 6.2): a turn keeps the classes of data it read, from its grant as it ends (000370). `listAITurnActivity`
+  (`GET /v1/ai/activity/turns`) lists the turns newest first, each member their own and the Owner and the DPO
+  everyone's: who asked, what, how it ended and its code, the prompt and its hash, the runs (which `listAIActivity`
+  shows by `run`), the tokens, the classes, what grounding did, and each read with its outcome, its counts and the hash
+  of what the model read, never its input. Someone else's turn that read payroll is masked (its question withheld) for
+  a reader who may not see payroll unmasked, and an unmasked one is audited as `ai_activity.read` (FR-PAY-13, AUD-05).
+  Settings › AI › AI activity shows them above the model calls, each with a link to its model calls.
 
 **D12. The panel (FR-UX-17, screen `ai-assistant-panel`).**
 - A side panel from the shell (⌘J / Ctrl+J; "Ask about this" on records, report cells and figures), docked, a sheet or

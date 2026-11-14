@@ -470,6 +470,7 @@ type FyniqAiTurn struct {
 	Withheld       int32
 	AskedAt        time.Time
 	AnsweredAt     *time.Time
+	Classes        []string
 }
 
 type FyniqAllocation struct {
