@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entity": {
+      "description": "What the file holds.",
+      "enum": [
+        "contacts",
+        "items",
+        "accounts"
+      ],
+      "examples": [
+        "contacts"
+      ],
+      "type": "string"
+    },
+    "errors": {
+      "description": "The problems that stop the import.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "file_name": {
+      "description": "As the uploader named it.",
+      "examples": [
+        "contacts.csv"
+      ],
+      "type": "string"
+    },
+    "made": {
+      "description": "The records made: every row's, or none, as a file is imported whole or not at all; on a dry run, the ones it would make.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "problems": {
+      "description": "Every problem, with the row and column as the file numbers them.",
+      "items": {
+        "$ref": "MigrationProblem.schema.json"
+      },
+      "type": "array"
+    },
+    "rows": {
+      "description": "The rows read.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "entity",
+    "file_name",
+    "rows",
+    "made",
+    "errors",
+    "problems"
+  ],
+  "title": "ImportReport",
+  "type": "object"
+}

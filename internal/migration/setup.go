@@ -269,22 +269,9 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 		return Made{Type: "organisation", ID: o.ID}, err
 	}})
 	for _, a := range m.Accounts {
-		if a.Action != Create {
-			continue
+		if a.Action == Create {
+			out = append(out, accountRecord(a, m, s.BaseCurrency))
 		}
-		n := storage.NewAccount{Code: a.Fyniq, Name: a.Name, Type: storage.AccountType(a.Type), AccountAttributes: storage.AccountAttributes{
-			ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount, DefaultGSTCode: m.gstOf(a.DefaultGST)}}
-		if a.MoneyAccount {
-			n.Currency = s.BaseCurrency
-		}
-		out = append(out, Record{Key: "account:" + a.Fyniq, Kind: KindAccount, Origin: Origin{Sheet: "Accounts", Row: a.Row},
-			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-				if err := refused(chart.CheckAccount(n)); err != nil {
-					return Made{}, err
-				}
-				x, err := u.Accounts().Create(ctx, n)
-				return Made{Type: "account", ID: x.ID}, err
-			}})
 	}
 
 	// A money account in Banking for each of the workbook's money accounts the chart keeps as one (FR-BNK-01), of the kind
@@ -389,47 +376,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 		}
 	}
 
-	for _, c := range w.Contacts {
-		out = append(out, Record{Key: "contact:" + strings.ToLower(strings.TrimSpace(c.Name)), Kind: KindContact, Origin: c.Origin,
-			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-				role := strings.ToLower(c.Role)
-				d := storage.ContactDetails{LegalName: strings.TrimSpace(c.Name), Customer: strings.Contains(role, "customer") || strings.Contains(role, "both"),
-					Vendor: strings.Contains(role, "supplier") || strings.Contains(role, "vendor") || strings.Contains(role, "both"),
-					Phone:  strings.TrimSpace(c.Phone), Address: strings.TrimSpace(c.Address), Country: countryOf(c.Country), Currency: strings.TrimSpace(c.Currency)}
-				if email := strings.TrimSpace(c.Email); email != "" {
-					if d.Customer {
-						d.BillingEmail = email
-					}
-					if d.Vendor {
-						d.RemittanceEmail = email
-					}
-				}
-				if c.Terms != nil {
-					days, err := c.Terms.Int64()
-					if err != nil || days < 0 || days > 365 {
-						return Made{}, Refused{{Code: contact.CodeTerms, Field: "payment_terms_days", Message: fmt.Sprintf("%s days is not a whole number from 0 to 365", c.Terms.Text('f')),
-							Fix: "Enter the payment terms in whole days in the workbook"}}
-					}
-					n := int(days)
-					d.PaymentTermsDays = &n
-				}
-				if c.Category != "" {
-					a, err := account(ctx, u, "default_account_id", m.accountOf(c.Category))
-					if err != nil {
-						return Made{}, err
-					}
-					if err := refused(contact.CheckCategory(a)); err != nil {
-						return Made{}, err
-					}
-					d.DefaultAccountID = &a.ID
-				}
-				if err := refused(contact.Check(d)); err != nil {
-					return Made{}, err
-				}
-				x, err := u.Contacts().Create(ctx, d)
-				return Made{Type: "contact", ID: x.ID}, err
-			}})
-	}
+	out = append(out, w.contactRecords(m)...)
 
 	// The people behind the director's and subscriber's accounts (rev 0.259): one contact per person, marked director or
 	// shareholder, from the first row that names them.
@@ -475,38 +422,7 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 			}})
 	}
 
-	for _, it := range w.Items {
-		out = append(out, Record{Key: "item:" + it.Code, Kind: KindItem, Origin: it.Origin, make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
-			typ := storage.ItemProduct
-			switch strings.ToLower(strings.TrimSpace(it.Type)) {
-			case "service", "subscription":
-				typ = storage.ItemService
-			}
-			d := storage.ItemDetails{Name: strings.TrimSpace(it.Name), Description: strings.TrimSpace(it.Description), Type: typ, Unit: strings.TrimSpace(it.Unit),
-				GSTCode: m.gstOf(it.GST)}
-			if it.Price != nil {
-				d.Prices = []storage.ItemPrice{{Currency: s.BaseCurrency, UnitPrice: storage.Decimal(it.Price.Text('f'))}}
-			}
-			if it.RevenueAccount != "" {
-				a, err := account(ctx, u, "revenue_account_id", m.accountOf(it.RevenueAccount))
-				if err != nil {
-					return Made{}, err
-				}
-				if err := refused(item.CheckAccount(a)); err != nil {
-					return Made{}, err
-				}
-				d.RevenueAccountID = &a.ID
-			}
-			if err := refused(append(item.CheckCode(it.Code), item.Check(d)...)); err != nil {
-				return Made{}, err
-			}
-			x, err := u.Items().Create(ctx, it.Code, d)
-			if err == nil && !it.Active {
-				x, err = u.Items().Update(ctx, x.ID, x.Version, x.ItemDetails, false)
-			}
-			return Made{Type: "item", ID: x.ID}, err
-		}})
-	}
+	out = append(out, w.itemRecords(m, s.BaseCurrency)...)
 
 	for _, r := range w.Rates {
 		on := time.Date(r.Month.Year(), r.Month.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -640,4 +556,106 @@ func (w *Workbook) projectRows() map[string]Origin {
 		add(r.Project, r.Origin)
 	}
 	return out
+}
+
+// contactRecords are the Contacts sheet's rows as contacts (design D5), their category mapped by m.
+func (w *Workbook) contactRecords(m Mapping) []Record {
+	var out []Record
+	for _, c := range w.Contacts {
+		out = append(out, Record{Key: "contact:" + strings.ToLower(strings.TrimSpace(c.Name)), Kind: KindContact, Origin: c.Origin,
+			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+				role := strings.ToLower(c.Role)
+				d := storage.ContactDetails{LegalName: strings.TrimSpace(c.Name), Customer: strings.Contains(role, "customer") || strings.Contains(role, "both"),
+					Vendor: strings.Contains(role, "supplier") || strings.Contains(role, "vendor") || strings.Contains(role, "both"),
+					Phone:  strings.TrimSpace(c.Phone), Address: strings.TrimSpace(c.Address), Country: countryOf(c.Country), Currency: strings.TrimSpace(c.Currency)}
+				if email := strings.TrimSpace(c.Email); email != "" {
+					if d.Customer {
+						d.BillingEmail = email
+					}
+					if d.Vendor {
+						d.RemittanceEmail = email
+					}
+				}
+				if c.Terms != nil {
+					days, err := c.Terms.Int64()
+					if err != nil || days < 0 || days > 365 {
+						return Made{}, Refused{{Code: contact.CodeTerms, Field: "payment_terms_days", Message: fmt.Sprintf("%s days is not a whole number from 0 to 365", c.Terms.Text('f')),
+							Fix: "Enter the payment terms in whole days in the workbook"}}
+					}
+					n := int(days)
+					d.PaymentTermsDays = &n
+				}
+				if c.Category != "" {
+					a, err := account(ctx, u, "default_account_id", m.accountOf(c.Category))
+					if err != nil {
+						return Made{}, err
+					}
+					if err := refused(contact.CheckCategory(a)); err != nil {
+						return Made{}, err
+					}
+					d.DefaultAccountID = &a.ID
+				}
+				if err := refused(contact.Check(d)); err != nil {
+					return Made{}, err
+				}
+				x, err := u.Contacts().Create(ctx, d)
+				return Made{Type: "contact", ID: x.ID}, err
+			}})
+	}
+	return out
+}
+
+// itemRecords are the Items sheet's rows as items, priced in base, their revenue account and GST code mapped by m.
+func (w *Workbook) itemRecords(m Mapping, base string) []Record {
+	var out []Record
+	for _, it := range w.Items {
+		out = append(out, Record{Key: "item:" + it.Code, Kind: KindItem, Origin: it.Origin, make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+			typ := storage.ItemProduct
+			switch strings.ToLower(strings.TrimSpace(it.Type)) {
+			case "service", "subscription":
+				typ = storage.ItemService
+			}
+			d := storage.ItemDetails{Name: strings.TrimSpace(it.Name), Description: strings.TrimSpace(it.Description), Type: typ, Unit: strings.TrimSpace(it.Unit),
+				GSTCode: m.gstOf(it.GST)}
+			if it.Price != nil {
+				d.Prices = []storage.ItemPrice{{Currency: base, UnitPrice: storage.Decimal(it.Price.Text('f'))}}
+			}
+			if it.RevenueAccount != "" {
+				a, err := account(ctx, u, "revenue_account_id", m.accountOf(it.RevenueAccount))
+				if err != nil {
+					return Made{}, err
+				}
+				if err := refused(item.CheckAccount(a)); err != nil {
+					return Made{}, err
+				}
+				d.RevenueAccountID = &a.ID
+			}
+			if err := refused(append(item.CheckCode(it.Code), item.Check(d)...)); err != nil {
+				return Made{}, err
+			}
+			x, err := u.Items().Create(ctx, it.Code, d)
+			if err == nil && !it.Active {
+				x, err = u.Items().Update(ctx, x.ID, x.Version, x.ItemDetails, false)
+			}
+			return Made{Type: "item", ID: x.ID}, err
+		}})
+	}
+	return out
+}
+
+// accountRecord is an account the chart lacks, created as the mapping proposes it, a money account in base.
+func accountRecord(a AccountMap, m Mapping, base string) Record {
+	n := storage.NewAccount{Code: a.Fyniq, Name: a.Name, Type: storage.AccountType(a.Type), AccountAttributes: storage.AccountAttributes{
+		ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount, DefaultGSTCode: m.gstOf(a.DefaultGST)}}
+	if a.MoneyAccount {
+		n.Currency = base
+	}
+	return Record{Key: "account:" + a.Fyniq, Kind: KindAccount, Origin: Origin{Sheet: "Accounts", Row: a.Row},
+		make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+			if err := refused(chart.CheckAccount(n)); err != nil {
+				return Made{}, err
+			}
+			x, err := u.Accounts().Create(ctx, n)
+			return Made{Type: "account", ID: x.ID}, err
+		}}
 }

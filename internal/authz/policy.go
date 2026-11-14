@@ -329,6 +329,9 @@ var (
 	GetAccount      = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
 	CreateAccount   = Policy{Operation: "createAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	GetAccountsTemplate = Policy{Operation: "getAccountsTemplate", Capability: ChartOfAccounts, Need: View}
+	ImportAccounts      = Policy{Operation: "importAccounts", Capability: ChartOfAccounts, Need: Create,
+		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	// RequestAccountMerge asks for a merge of an account into another (FR-COA-04, rev 0.174), which A on the row approves
@@ -422,8 +425,14 @@ var (
 	ListItems         = Policy{Operation: "listItems", Capability: ContactsAndItems, Need: View}
 	GetItem           = Policy{Operation: "getItem", Capability: ContactsAndItems, Need: View}
 	CreateItem        = Policy{Operation: "createItem", Capability: ContactsAndItems, Need: Create}
-	UpdateItem        = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
-	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
+	// The generic import (FR-MIG-03, rev 0.270): each entity's template read under its V, its file imported under its C,
+	// as entering the records by hand.
+	GetContactsTemplate = Policy{Operation: "getContactsTemplate", Capability: ContactsAndItems, Need: View}
+	ImportContacts      = Policy{Operation: "importContacts", Capability: ContactsAndItems, Need: Create}
+	GetItemsTemplate    = Policy{Operation: "getItemsTemplate", Capability: ContactsAndItems, Need: View}
+	ImportItems         = Policy{Operation: "importItems", Capability: ContactsAndItems, Need: Create}
+	UpdateItem          = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
+	LoadStandardChart   = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 
 	// Customer groups and their reminder schedules (FR-AR-08) are contact master data.
@@ -1818,7 +1827,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {
