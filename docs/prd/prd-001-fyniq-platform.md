@@ -10,7 +10,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | **Fyniq**, "Intelligence behind every number" (rev 0.9: the founders' chosen name; formerly the working name "Cognizhi Finance Hub Cloud", short "FH Cloud") |
 | Status | Draft for founder review |
-| Revision | 0.276 (14 Nov 2026): who reads the AI activity log, as a row of Appendix D: each member their own entries, the Owner and the DPO all of them (AI-12) |
+| Revision | 0.277 (14 Nov 2026): the assistant's scope and path: each eval suite with what it evaluates, the rules the assistant rests on built with it, and the assistant reached and metered through the `api` service |
 | Date | 15 Oct 2026 (rev 0.24) |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor). (rev 0.19) Second review of rev 0.16–0.19 split by area, one pull request each, before P0 work on that area ([plan](reviews/second-review-plan-2026-10-14.md)). (rev 0.22) The reviews no longer gate building: work proceeds on the best current recommendation, and pages awaiting review show a banner until the area's pull request merges (FR-UX-41) |
@@ -1406,7 +1406,12 @@ flowchart LR
 - The **AI orchestrator** runs the tool loop (client-side tool use). It authenticates the user's
   session and passes an on-behalf-of token to the read API, which applies the user's permissions
   minus AI exclusions. It holds **no** database write credential and no permission to call
-  domain commands.
+  domain commands. (rev 0.277) The owner's decisions of 14 Nov 2026: the browser reaches the orchestrator only
+  through the `api` service, whose operations are in the reviewed contract (golden rule 4): the `api` service
+  authenticates the session, admits the turn and hands it to the orchestrator with a short-lived, audience-bound,
+  read-only delegated token for that person, never the session itself (AI-36). The orchestrator's model calls go
+  through the `api` service's model router (AI-70), which holds the provider keys and meters every call, so the
+  orchestrator calls no provider and holds no secret (CMP-AI-01 unchanged).
 - The **proposal service** is the only place AI output can land. It accepts a `task_type` and
   parameters, validates them against the catalogue's schema and the domain validators, performs a
   **dry run** (the domain command in a rolled-back transaction or a pure simulation) and stores
@@ -2284,14 +2289,14 @@ flowchart TB
   end
   LB -->|static assets| GCS[(Cloud Storage bucket<br/>web app build)]
   LB -->|/api| API[Cloud Run: api<br/>domain commands, read API, auth]
-  LB -->|/ai| AIO[Cloud Run: ai-orchestrator<br/>tool loop, no DB write role]
+  API -->|turns, delegated read token (rev 0.277)| AIO[Cloud Run: ai-orchestrator<br/>tool loop, no DB write role]
   LB -->|/mcp| MCPS[Cloud Run: mcp<br/>resource server, no DB access]
   MCPS -->|token exchange, read tools, propose| API
   LB -->|/oauth2| HY[Cloud Run: Ory Hydra<br/>OAuth 2.1 server, ADR-T3]
   HY -->|login + consent| API
   API --> SQL[(Cloud SQL PostgreSQL 18<br/>regional HA, private IP)]
   AIO -->|read API, propose| API
-  AIO --> VX["Agent Platform (formerly Vertex AI)<br/>Claude models + Model Armor"]
+  API -->|model router (rev 0.277)| VX["Agent Platform (formerly Vertex AI)<br/>Claude models + Model Armor"]
   API -->|outbox row in the same transaction| OB[(Outbox table<br/>in PostgreSQL)]
   API -->|after commit: named task| CT[Cloud Tasks queues<br/>one per worker class]
   SCH[Cloud Scheduler tick<br/>due schedules, outbox sweep, watchdog] --> API
@@ -2316,7 +2321,7 @@ flowchart TB
 |---|---|---|
 | Web app | Single-page application served from Cloud Storage via Cloud CDN | Static; global edge |
 | `api` service | Authentication, authorisation, domain commands (the only write path), read API, semantic layer, approval engine, proposal service; (rev 0.7) writes outbox rows and enqueues their Cloud Tasks; serves the Scheduler tick | Cloud Run autoscaling; (rev 0.7) **min instances 0**: no cost when nobody uses it; the first request after idle pays a cold start (a small static Go binary; target in NFR-PERF-06, rev 0.8) |
-| `ai-orchestrator` | Chat and agent tool loop, Agent Platform (Claude) calls, numeric grounding, AI activity log (via `api`) | Cloud Run; separate service identity with no database write role |
+| `ai-orchestrator` | Chat and agent tool loop, Agent Platform (Claude) calls, numeric grounding, AI activity log (via `api`). (rev 0.277) Superseding its `/ai` route at the load balancer and its own model calls: it is reached only through `api`, with a delegated read token per turn, and its model calls go through `api`'s model router (§9.3) | Cloud Run; separate service identity with no database write role |
 | `mcp` | MCP endpoint (§9.7): validates audience-bound tokens, exchanges them for API tokens, serves the shared tool registry | Cloud Run; its own identity with **no database access at all**; it reaches data only through the API |
 | `oauth` (Ory Hydra) | OAuth 2.1 / OIDC server for integrations and MCP clients (ADR-T3) | Cloud Run; stateless; own database on the shared instance |
 | `proposal-executor` | Executes approved proposals under its own service identity and database role; (rev 0.7) invoked only by its own Cloud Tasks queue, whose OIDC token it alone accepts (previously the `proposal_execution` River queue) | (rev 0.8) Its own Cloud Run service at min instances 0, invoked only through its own queue (ADR-T7); *superseded:* **its own Cloud Run worker pool** (rev 0.2: the draft ran it inside the shared worker, whose identity also processes untrusted integration input) |
@@ -5050,6 +5055,7 @@ the connector pays off as volume grows (a judgement, not a measured threshold).
 | 0.274 | 13 Nov 2026 | The owner's decision of 13 Nov 2026 on open question 25's last undecided row, taken interactively: the company secretary (`p1-company-secretary`) joins the launch subset in full, with the AI secretary's scheduled checks, and with it, whole, the changes it needs: `p1-scheduled-agents`, `p1-ai-assistant` and `p1-ai-providers` (the recommendation was after go-live; then the smallest chain). The launch subset is now complete. No requirement was renumbered or removed. |
 | 0.275 | 13 Nov 2026 | The owner's decision of 13 Nov 2026, taken interactively while proposing `p1-ai-providers`: with the assistant and the scheduled agents at launch (rev 0.274), the AI activity log (AI-12) and the kill switch with token budgets (AI-13) move from `p1-ai-proposals`, which stays after go-live, to `p1-ai-providers`, whose screens already show them; their parts for proposals, task types and knowledge pages fill in as those changes arrive. No requirement was renumbered or removed. Specs: `ai/proposals` (AI-12, AI-13) |
 | 0.276 | 14 Nov 2026 | Who reads the AI activity log (AI-12), as a new row of Appendix D, "AI activity log": each member reads their own entries (V (own)); the Owner and the DPO, AI-12's "Owner/Compliance", read all of them (V); the AI none. An entry that carried payroll shows masked to a reader of someone else's entry without the payroll right, and showing it unmasked is audited (AUD-05). Derived from AI-12 while building `p1-ai-providers` task 6.1; no requirement changed |
+| 0.277 | 14 Nov 2026 | The owner's decisions of 14 Nov 2026, taken interactively while proposing `p1-ai-assistant`: (1) each eval suite is built with what it evaluates: QA-AI-02 (proposal evals) moves to `p1-ai-proposals`, QA-AI-06 (knowledge evals) to `p1-knowledge-base` and QA-AI-07 (agent evals) to `p1-scheduled-agents`, while `p1-ai-assistant` builds the eval harness they run on; by the same rule the guardrail against external agents and MCP clients moves to `p1-mcp-first-party`; (2) the rules the assistant rests on, AI-P1, AI-P2, AI-P6, AI-P7, AI-P8, AI-08 and "The orchestrator holds no write credential", move from `p1-ai-proposals` to `p1-ai-assistant`, their proposal parts filling in with `p1-ai-proposals`, as AI-12 and AI-13 did in rev 0.275; (3) the browser reaches the assistant through the `api` service, not at `/ai`, with a delegated read token per turn (§9.3, §12.3); (4) the orchestrator's model calls are metered through the `api` service's model router (`p1-ai-providers` design D11 (a)), so CMP-AI-01 is unchanged. No requirement was renumbered or removed. Specs: `ai/evaluation` (QA-AI-02, QA-AI-06, QA-AI-07), `ai/guardrails` (external agents and MCP clients), `ai/proposals` (AI-P1, AI-P2, AI-P6, AI-P7, AI-P8, AI-08, the orchestrator's) |
 | 0.138 | 25 Oct 2026 | Built statements of account (`p1-sales` task 7.2; FR-AR-08), provisional until sign-off: the document type `statement` (ST-; FY204; migrations 000139 and 000140), email of purpose `statement` from the invoices sender, the operations `getCustomerStatement`, `createStatement`, `listStatements`, `getStatement` and `emailStatement`, and the statement template's ageing fields and rows. No requirement was renumbered or removed. |
 | 0.137 | 25 Oct 2026 | Built reminders to customers through the Inbox (`p1-sales` task 7.1; FR-AR-08, FR-INT-21), provisional until sign-off, per the owner's decision of 24 Oct 2026: the tables `customer_group` and `sales_reminder` (FY203; migrations 000137 and 000138), the contact's `customer_group_id`, email of purpose `reminder` from the reminders sender, the operations `listCustomerGroups`, `getCustomerGroup`, `createCustomerGroup`, `replaceCustomerGroup`, `listSalesReminders`, `sendSalesReminder` and `skipSalesReminder`, and threats T15 and T16 in `docs/security/threat-models/email-delivery.md`. No requirement was renumbered or removed. |
 | 0.136 | 25 Oct 2026 | Built recurring invoices that the scheduler issues and sends (`p1-sales` task 6.1, the rest; FR-AR-07, FR-AUT-02, FR-APR-01, FM-3, SOD-3), provisional until sign-off, per the owner's decision of 24 Oct 2026 (the worker, fenced by the database): the recurring invoice's `mode` and approved version, the approval object `recurring_invoice` (`recurring_invoice.approve`, requested with `requestRecurringInvoiceApproval`), the review kind `scheduled_issue`, the worker's grants to issue, number, attach, link and email such invoices and the triggers that confine them (FY201, FY202; migrations 000135 and 000136), and the threat model `docs/security/threat-models/scheduled-invoices.md`. No requirement was renumbered or removed. |
