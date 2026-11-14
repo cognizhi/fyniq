@@ -555,3 +555,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/ai-activity.md → settings.ai-activity (questions to the assistant in the AI activity log; p1-ai-assistant task 6.2)
 
 ## [2026-11-15] compile | docs/user-guide/ai-activity.md → settings.ai-activity (feedback on the assistant's answers and its review, QA-AI-05; p1-ai-assistant task 6.4)
+
+## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (the assistant panel; p1-ai-assistant task 7.1), linked from settings.ai-activity

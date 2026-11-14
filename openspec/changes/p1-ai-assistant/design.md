@@ -304,6 +304,17 @@ AI-28).**
   entry; Explain on a figure calls `lineage.explain`; Simulate runs the cash projection's what-if, read-only; the
   disabled, budget, excluded-data and tool-failure states; thumbs up or down with a reason; Expert mode shows the
   facts' accounts and query details. Prepare and "Save as proposal" stay hidden until `p1-ai-proposals`.
+- As built (task 7.1): `src/components/ai/AssistantPanel.tsx`, loaded on first use, opened by the header's
+  **Assistant** button and Ctrl+J or ⌘J, focus returned to the button on close. `.fy-app[data-ai=open]` docks it in
+  expanded; the kit's `.fy-ai` makes it a sheet in medium and full screen in compact. A first question starts a
+  conversation titled by it; the turn's events stream through the generated client (`parseAs: "stream"`), with the
+  status in a polite live region. Answers render from their segments: text in the Markdown subset as React text, never
+  HTML (paragraphs, breaks, items, bold, italic, code, links only to `/` paths), figures as fact chips, and citation
+  chips that open the page `routeOf` maps from each fact's lineage, or name the source when the web app has none.
+  Expert mode lists each fact's measure, value, lineage and ledger revision. The switched-off, budget-spent and
+  full-conversation states are in words; the history lists, opens and deletes (asked once) one's own conversations.
+  `AssistantContext` lets a page open it with a context chip, which task 7.2's "Ask about this" uses. The lanes and
+  feedback arrive with 7.2.
 
 **D13. Evals (QA-AI-01, QA-AI-03, QA-AI-04, QA-AI-05; rev 0.277).**
 - `cmd/evals` gains assistant suites: the golden questions (`evals/golden/`, at least 200 on the sample company, each

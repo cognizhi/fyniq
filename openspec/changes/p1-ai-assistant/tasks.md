@@ -70,7 +70,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 7. The panel
 
-- [ ] 7.1 The assistant panel (`ai-assistant-panel`, design D12): ⌘J and the shell's button, docked, sheet or full
+- [x] 7.1 The assistant panel (`ai-assistant-panel`, design D12): ⌘J and the shell's button, docked, sheet or full
   screen by device class; streaming; citation chips; violet accent and the AI badge on every AI message; the disabled,
   budget, excluded-data and tool-failure states; Expert details; help keys, `docs/user-guide/ai-assistant.md` compiled
   into `kb/`; the `AiPanel` fragment updated locally. Tests `// req: AI-22`, `// req: AI-69`, Vitest with axe.
