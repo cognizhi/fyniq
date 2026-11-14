@@ -291,6 +291,8 @@ ai_reservation | actual | numeric(43,26) | null |
 ai_reservation | state | text | not null | 'held'::text
 ai_reservation | reserved_at | timestamp with time zone | not null | now()
 ai_reservation | settled_at | timestamp with time zone | null | 
+ai_reservation | tokens | bigint | null | 
+ai_reservation | actual_tokens | bigint | null | 
 ai_route | organisation_id | uuid | not null | current_org()
 ai_route | id | uuid | not null | uuidv7()
 ai_route | agent | text | not null | 
@@ -2379,7 +2381,7 @@ ai_budget | ai_budget_id_not_null | NOT NULL id
 ai_budget | ai_budget_one | UNIQUE (organisation_id, scope, subject)
 ai_budget | ai_budget_organisation_id_not_null | NOT NULL organisation_id
 ai_budget | ai_budget_pkey | PRIMARY KEY (organisation_id, id)
-ai_budget | ai_budget_scope_known | CHECK ((scope = ANY (ARRAY['organisation'::text, 'agent'::text, 'connection'::text, 'person'::text])))
+ai_budget | ai_budget_scope_known | CHECK ((scope = ANY (ARRAY['organisation'::text, 'agent'::text, 'connection'::text, 'person'::text, 'tokens_organisation'::text, 'tokens_person'::text])))
 ai_budget | ai_budget_scope_not_null | NOT NULL scope
 ai_budget | ai_budget_set_at_not_null | NOT NULL set_at
 ai_budget | ai_budget_set_by_format | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -2387,11 +2389,13 @@ ai_budget | ai_budget_set_by_not_null | NOT NULL set_by
 ai_budget | ai_budget_subject | CHECK (
 CASE scope
     WHEN 'organisation'::text THEN (subject = ''::text)
+    WHEN 'tokens_organisation'::text THEN (subject = ''::text)
     WHEN 'agent'::text THEN (subject ~ '^[a-z][a-z0-9_.]{1,59}$'::text)
     WHEN 'connection'::text THEN (subject ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text)
     ELSE (subject ~ '^user:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text)
 END)
 ai_budget | ai_budget_subject_not_null | NOT NULL subject
+ai_budget | ai_budget_tokens_whole | CHECK (((scope <> ALL (ARRAY['tokens_organisation'::text, 'tokens_person'::text])) OR (amount = trunc(amount))))
 ai_budget | ai_budget_version_not_null | NOT NULL version
 ai_budget | ai_budget_version_positive | CHECK ((version >= 1))
 ai_budget | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2661,6 +2665,7 @@ ai_reservation | ai_reservation_state_known | CHECK ((state = ANY (ARRAY['held':
 ai_reservation | ai_reservation_state_not_null | NOT NULL state
 ai_reservation | ai_reservation_step | CHECK (((step >= 1) AND (step <= 5)))
 ai_reservation | ai_reservation_step_not_null | NOT NULL step
+ai_reservation | ai_reservation_tokens | CHECK (((tokens >= 0) AND (actual_tokens >= 0) AND ((actual_tokens IS NULL) OR (state = 'settled'::text))))
 ai_route | ai_route_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_route | ai_route_agent_not_null | NOT NULL agent
 ai_route | ai_route_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -7241,7 +7246,7 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e61f76b3fe2a4eb691c487471ba73494
-ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9bf0f6d1e787742dec49df9f9fd1d46e
+ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
@@ -7249,9 +7254,9 @@ ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catal
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
-ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1511f4bc76174e684948c8d9d4f368b7
+ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric, p_tokens bigint) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d7de60573770113c34cae08e8f814277
 ai_route_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6410526861d59ed27a7d790937a0f2c
-ai_settle(p_reservation uuid, p_actual numeric, p_known boolean) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 34d0cac1f01f01c5429d5fe7e232b989
+ai_settle(p_reservation uuid, p_actual numeric, p_actual_tokens bigint, p_known boolean) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 435f8e3af648628c9fb504633451c99a
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | faf46a2ff4eb5c3d17fcbdc8baa47c5b
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd

@@ -14629,7 +14629,7 @@ The AI activity log (AI-12), newest first, a page at a time: every attempt of a 
 
 **Get the AI budgets** (`getAIBudgets`)
 
-The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
+The organisation's monthly AI budgets (AI-77, AI-86, AI-13), in its base currency and in tokens: the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
 
 - **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
 - **Responses:**
@@ -14647,11 +14647,11 @@ The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the o
 
 **Set an AI budget** (`setAIBudget`)
 
-The Owner sets a monthly AI budget in the base currency (AI-77, AI-86): the organisation's, an agent's, a connection's or a person's; a null amount removes it. From the next call the router reserves each attempt's most against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
+The Owner sets a monthly AI budget (AI-77, AI-86, AI-13): in the base currency, the organisation's, an agent's, a connection's or a person's; in tokens, the organisation's (tokens:organisation) or a person's (tokens:person:<user id>), which bound every connection, a subscription's too; a null amount removes it. From the next call the router reserves each attempt's most cost and most tokens against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
 
 - **Permission:** Approve on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
 - **Parameters:**
-  - `budget` (path, required): organisation, agent:<agent>, connection:<id> or person:<user id>.
+  - `budget` (path, required): organisation, agent:<agent>, connection:<id> or person:<user id>; tokens:organisation or tokens:person:<user id> for a token budget.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).

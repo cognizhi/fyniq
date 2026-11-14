@@ -39,8 +39,11 @@ func Spent(message string) error {
 	return refuse(CodeSpent, "budget", message, "Wait for next month, or ask the Owner to raise the budget; accounting, checks and deadlines keep working")
 }
 
-// Scopes are the scopes of a budget.
-var Scopes = []string{"organisation", "agent", "connection", "person"}
+// Scopes are the scopes of a budget: in the base currency, then in tokens (AI-13).
+var Scopes = []string{"organisation", "agent", "connection", "person", "tokens_organisation", "tokens_person"}
+
+// Tokens is whether a scope is a token budget's (AI-13): a month's tokens, whatever the connections cost.
+func Tokens(scope string) bool { return scope == "tokens_organisation" || scope == "tokens_person" }
 
 // AlertAt is the share of a budget, in percent, at which its alert is raised.
 const AlertAt = 80
@@ -48,14 +51,15 @@ const AlertAt = 80
 var (
 	agentID = regexp.MustCompile(`^[a-z][a-z0-9_.]{1,59}$`)
 	amount  = regexp.MustCompile(`^[0-9]{1,14}(\.[0-9]{1,4})?$`)
+	tokens  = regexp.MustCompile(`^[1-9][0-9]{0,14}$`)
 )
 
 // Check checks a budget: a scope Fyniq knows with its subject (none for the organisation, an agent's ID, a connection's
-// ID, or a person as user:<id>), and an amount in the base currency above zero with at most four places, or none to
-// remove it.
+// ID, or a person as user:<id>), and an amount in the base currency above zero with at most four places, or for a token
+// budget a whole number of tokens above zero, or none to remove it.
 func Check(scope, subject, amountText string) error {
 	switch scope {
-	case "organisation":
+	case "organisation", "tokens_organisation":
 		if subject != "" {
 			return refuse(CodeBudget, "subject", "is not empty for the organisation's budget", "Leave it out")
 		}
@@ -67,7 +71,7 @@ func Check(scope, subject, amountText string) error {
 		if _, err := uuid.Parse(subject); err != nil {
 			return refuse(CodeBudget, "subject", "is not a connection's ID", "Name a connection GET /v1/ai/connections lists")
 		}
-	case "person":
+	case "person", "tokens_person":
 		if len(subject) < 6 || subject[:5] != "user:" {
 			return refuse(CodeBudget, "subject", "is not a person as user:<id>", "Name a member as user: and their user ID")
 		}
@@ -75,7 +79,14 @@ func Check(scope, subject, amountText string) error {
 			return refuse(CodeBudget, "subject", "is not a person as user:<id>", "Name a member as user: and their user ID")
 		}
 	default:
-		return refuse(CodeBudget, "scope", "is not organisation, agent, connection or person", "Choose one of them")
+		return refuse(CodeBudget, "scope", "is not organisation, agent, connection or person, or tokens of the organisation or a person",
+			"Choose one of them")
+	}
+	if amountText != "" && Tokens(scope) {
+		if !tokens.MatchString(amountText) {
+			return refuse(CodeBudget, "amount", "is not a whole number of tokens above zero", "Give the monthly tokens, such as 5000000")
+		}
+		return nil
 	}
 	if amountText != "" {
 		d, _, err := apd.NewFromString(amountText)
@@ -105,6 +116,16 @@ const (
 	imageTokens    = 1600
 	defaultOutputs = 8192
 )
+
+// MostTokens are the most tokens a request could use, as a token budget counts them (AI-13).
+func MostTokens(r ports.ModelRequest) int64 {
+	u := MostUsage(r)
+	return u.Input + u.Output
+}
+
+// UsedTokens are the tokens an answer used, as a token budget counts them: input, output and the cache's reads and
+// writes.
+func UsedTokens(u ports.ModelUsage) int64 { return u.Input + u.Output + u.CacheRead + u.CacheWrite }
 
 // MostUsage is the most a request could use: its input estimated generously from its size, and all the output its
 // limit allows (AI-86).

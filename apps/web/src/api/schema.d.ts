@@ -417,7 +417,7 @@ export interface paths {
         };
         /**
          * Get the AI budgets
-         * @description The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
+         * @description The organisation's monthly AI budgets (AI-77, AI-86, AI-13), in its base currency and in tokens: the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.
          */
         get: operations["getAIBudgets"];
         put?: never;
@@ -438,7 +438,7 @@ export interface paths {
         get?: never;
         /**
          * Set an AI budget
-         * @description The Owner sets a monthly AI budget in the base currency (AI-77, AI-86): the organisation's, an agent's, a connection's or a person's; a null amount removes it. From the next call the router reserves each attempt's most against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
+         * @description The Owner sets a monthly AI budget (AI-77, AI-86, AI-13): in the base currency, the organisation's, an agent's, a connection's or a person's; in tokens, the organisation's (tokens:organisation) or a person's (tokens:person:<user id>), which bound every connection, a subscription's too; a null amount removes it. From the next call the router reserves each attempt's most cost and most tokens against it: at 80% the Owner is alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).
          */
         put: operations["setAIBudget"];
         post?: never;
@@ -14625,12 +14625,12 @@ export interface components {
              */
             alerted: boolean;
             /**
-             * @description Per calendar month in Singapore, in the base currency, as an exact decimal; absent when removed.
+             * @description Per calendar month in Singapore: in the base currency as an exact decimal, or a whole number of tokens; absent when removed.
              * @example 50
              */
             amount?: string;
             /**
-             * @description The budget: organisation, agent:<agent>, connection:<id> or person:<user id>.
+             * @description The budget: organisation, agent:<agent>, connection:<id> or person:<user id> in the base currency; tokens:organisation or tokens:person:<user id> in tokens (AI-13).
              * @example agent:chat
              */
             key: string;
@@ -14638,7 +14638,7 @@ export interface components {
              * @example agent
              * @enum {string}
              */
-            scope: "organisation" | "agent" | "connection" | "person";
+            scope: "organisation" | "agent" | "connection" | "person" | "tokens_organisation" | "tokens_person";
             /**
              * Format: date-time
              * @example 2026-11-14T09:00:00Z
@@ -14652,7 +14652,13 @@ export interface components {
              */
             subject?: string;
             /**
-             * @description What this month's reservations hold or settled against it, in the base currency: a reservation whose outcome is unknown counts whole until it is reconciled.
+             * @description base: the base currency; tokens: a month's tokens, whatever the connections cost, so it bounds a subscription too (AI-13).
+             * @example base
+             * @enum {string}
+             */
+            unit: "base" | "tokens";
+            /**
+             * @description What this month's reservations hold or settled against it, in its unit: a reservation whose outcome is unknown counts whole until it is reconciled.
              * @example 12.5
              */
             used: string;
@@ -14677,7 +14683,7 @@ export interface components {
         };
         AIBudgetSet: {
             /**
-             * @description Per calendar month in the base currency, above zero with at most four decimal places; null removes the budget.
+             * @description Per calendar month: in the base currency, above zero with at most four decimal places, or for a token budget a whole number of tokens above zero; null removes the budget.
              * @example 50.00
              */
             amount?: string | null;
@@ -49861,7 +49867,7 @@ export interface operations {
                 "If-Match"?: string;
             };
             path: {
-                /** @description organisation, agent:<agent>, connection:<id> or person:<user id>. */
+                /** @description organisation, agent:<agent>, connection:<id> or person:<user id>; tokens:organisation or tokens:person:<user id> for a token budget. */
                 budget: string;
             };
             cookie?: never;
