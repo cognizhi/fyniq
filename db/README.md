@@ -94,6 +94,10 @@ The registry of online links' hashes (000133, FR-AR-06): `document_link_token` (
 link token, its organisation and its link), written only by `document_link`'s trigger and read only through
 `document_link_route`, which the public read endpoint calls before any tenant is set; no role holds a grant on it, it
 holds no token, and a row never changes or goes (`FY197`).
+The registry of invitations' code hashes (000236, FR-ADM-01): `invitation_code` (the SHA-256 of an invitation's
+one-time code and the organisation that holds it), written only by `member_invitation`'s trigger and read only inside
+`accept_member_invitation`, so a join looks only in the organisation that holds the code; no role holds a grant on it,
+it holds no code, and a row never changes or goes (`FY269`).
 The installation's banners (000108, FR-NTF-03): `installation_announcement` (a Super admin's banner to everyone),
 published and withdrawn only through `publish_installation_announcement` and `withdraw_installation_announcement`, which
 refuse anyone but an active Super admin (`FY085`), and read only through `installation_announcements` (the API); a

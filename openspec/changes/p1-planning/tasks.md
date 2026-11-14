@@ -186,6 +186,19 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
     (`planning.budgets`) and `forecast.md` (`planning.forecast`), each compiled into `kb/pages/task/`.
 - [ ] 8.4 The four fragments checked against the build and the insight canvas republished where they differ (Recipe C).
   `python3 docs/design/screens/build.py check` passes, and the new canvas version is recorded.
+
+  **Progress (10 Nov 2026):** the four fragments are redrawn as built, from the sample company's documents.
+    - **Cash ahead:** the sandbox badge, the 13-week range, an Expert what-if moving a bill with Reset, what moves it
+      with why each falls on its day, and "Not included yet".
+    - **Forecast:** a recorded plan read-only, Base's six tiles with and without the funding, cash by month, the years,
+      and the comparison.
+    - **Budgets:** a recorded, locked version a month a column, with Income, Costs and Net.
+    - **Feasibility:** the workbook's inputs and a marginal study, its figures worked out by the domain's model.
+
+  The inventory rows follow. Paste, fill and `=` in the budget grid arrive with p1-app-shell's grid (FR-UX-07).
+
+  **Waiting:** the publish waits for the design account (the owner's decision of 10 Nov 2026): this Claude account
+  cannot open the insight canvas.
 - [x] 8.5 The threat model `docs/security/threat-models/planning.md`: forecasts, budgets and the cash projection, which
   reads every open item. It covers what-ifs that save nothing, the alert's audience, budget approval and the absence
   of any AI or MCP tool.
