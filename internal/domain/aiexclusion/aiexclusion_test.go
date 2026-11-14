@@ -2,6 +2,7 @@ package aiexclusion_test
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -74,6 +75,25 @@ func TestTheOutputFilterMasksNRICAndBankNumbers(t *testing.T) {
 	} {
 		if got := aiexclusion.Filter(in); got != want {
 			t.Errorf("Filter(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// Found names what Filter would mask, for the trace scan of CTL-AI-06; what Filter leaves, or has masked already, it
+// does not name.
+// req: CTL-AI-06
+func TestFoundNamesWhatTheFilterMasks(t *testing.T) {
+	for in, want := range map[string][]string{
+		"Refund to S1234567D at 012-345678-9":  {aiexclusion.FoundNRIC, aiexclusion.FoundBank},
+		"Paid into 0123456789 at DBS":          {aiexclusion.FoundBank},
+		"FIN g1234567x is his":                 {aiexclusion.FoundNRIC},
+		"Refund to S****567D at ****6789":      nil,
+		"Total 1000000.00 on 2026-10-15":       nil,
+		"FIN g1234567a is not his":             nil,
+		"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b": nil,
+	} {
+		if got := aiexclusion.Found(in); !slices.Equal(got, want) {
+			t.Errorf("Found(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

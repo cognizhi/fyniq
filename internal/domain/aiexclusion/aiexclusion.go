@@ -95,13 +95,39 @@ func Filter(s string) string {
 	if _, err := uuid.Parse(s); err == nil {
 		return s
 	}
-	s = nricShape.ReplaceAllStringFunc(s, func(m string) string {
+	return maskRuns(maskRuns(maskNRIC(s), hyphenRuns), spaceRuns)
+}
+
+// The kinds of value Filter masks, as Found names them.
+const (
+	FoundNRIC = "an NRIC or FIN number"
+	FoundBank = "a bank account number"
+)
+
+// Found names the kinds of value s holds that Filter would mask (CTL-AI-06's trace scan): an NRIC or FIN whose check
+// letter is right, and a bank-number shape.
+func Found(s string) []string {
+	if _, err := uuid.Parse(s); err == nil {
+		return nil
+	}
+	var out []string
+	masked := maskNRIC(s)
+	if masked != s {
+		out = append(out, FoundNRIC)
+	}
+	if maskRuns(maskRuns(masked, hyphenRuns), spaceRuns) != masked {
+		out = append(out, FoundBank)
+	}
+	return out
+}
+
+func maskNRIC(s string) string {
+	return nricShape.ReplaceAllStringFunc(s, func(m string) string {
 		if !evidence.ValidNRIC(m) {
 			return m
 		}
 		return m[:1] + "****" + m[5:]
 	})
-	return maskRuns(maskRuns(s, hyphenRuns), spaceRuns)
 }
 
 // maskRuns masks the runs of digits re finds in s that stand alone and are as long as a bank account number.

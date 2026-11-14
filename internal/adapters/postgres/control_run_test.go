@@ -73,11 +73,12 @@ func TestAttackControlRunsAreTheWorkersRecord(t *testing.T) {
 }
 
 // Each verification finds a breach seeded past the database's own guards, with its triggers off as the superuser can,
-// and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05;
-// p1-compliance-center D4).
+// and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05,
+// CTL-AI-06; p1-compliance-center D4).
 // req: CTL-FIN-08
 // req: CTL-IAM-01
 // req: CTL-AUD-05
+// req: CTL-AI-06
 // req: CMP-01
 // asvs: V2.3.5, V6.3.3, V16.3.3
 func TestEachVerificationFindsItsBreach(t *testing.T) {
@@ -101,8 +102,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 3 {
-			t.Fatalf("want the 3 verifications' runs, got %v", out)
+		if len(out) != 4 {
+			t.Fatalf("want the 4 verifications' runs, got %v", out)
 		}
 		return out
 	}
@@ -181,6 +182,22 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// A turn of the assistant that kept an NRIC in its answer and read payroll with AI payroll access off.
+	var leaky uuid.UUID
+	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := u.AIConversations().Create(ctx, storage.AIConversation{UserID: requester, CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		tu, err := u.AIConversations().Ask(ctx, storage.AITurn{Conversation: c.ID, UserID: requester, Question: "Who is it?", AskedAt: now})
+		if err != nil {
+			return err
+		}
+		leaky, tu.Status, tu.Answer, tu.Classes, tu.AnsweredAt = tu.ID, storage.TurnAnswered, "Their NRIC is S1234567D.", []string{"business-figures", "payroll"}, &now
+		return u.AIConversations().Finish(ctx, tu, nil)
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	got := runs()
 	wantFound := map[string][]compliance.Finding{
@@ -194,6 +211,10 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		"CTL-AUD-05 verify audit.exports-reconciled": {
 			{Kind: "report_export", ID: export.String(), Detail: "Asked for, with no audit event"},
 			{Kind: "evidence.opened", Detail: "Recorded without the request it came from"},
+		},
+		"CTL-AI-06 verify ai.traces": {
+			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn keeps an NRIC or FIN number in its answer"},
+			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn read payroll on a day AI payroll access was off"},
 		},
 	}
 	for key, want := range wantFound {
@@ -216,7 +237,7 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(latest) != 3 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
+		if len(latest) != 4 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil
