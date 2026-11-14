@@ -31,7 +31,7 @@ aliases:
 
 ## What it is
 
-- **Settings → AI → AI providers** (Expert mode) lists where the assistant and the agents send their model calls: each connection to a model provider, with its sign-in, billing and the data it may receive; each agent then picks from them on its route. Every connection starts off. The AI's switch and budgets: [[settings.ai]].
+- **Settings → AI → AI providers** (Expert mode) lists where the assistant and the agents send their model calls: each connection to a model provider, with its sign-in, billing and the data it may receive; each agent then picks from them on its route ([[settings.ai-routes]]). Every connection starts off. The AI's switch and budgets: [[settings.ai]].
 
 (src: docs/user-guide/ai-providers.md#what-it-is)
 
