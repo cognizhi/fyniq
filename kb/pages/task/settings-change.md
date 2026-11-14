@@ -4,18 +4,19 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a2c376cf1ec1fbe3dc56a21b80ec9e1783c3ae0200d328328c6c3b41459fe990
+  - docs/user-guide/organisation-settings.md sha256:8c270def303ad44c9097c42240f472b538c2c45db773507aa7ec529308922003
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-12
+compiled_at: 2026-11-14
 aliases:
   - reset to recommended
   - change a setting
   - effective date
+  - switch off the AI
 ---
 
 # Change or reset an organisation setting, or edit the profile
@@ -35,6 +36,7 @@ aliases:
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, details in notification email and the sign-out after inactivity need a second approver.
 - They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
+- The AI assistant is the exception when it is switched **off**: that takes effect at once, with no second approver, and the AI stops: new requests are refused, and a reply being written stops within seconds. Switching it back on still needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#settings-that-need-a-second-approver)
 

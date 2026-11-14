@@ -110,6 +110,13 @@
       ],
       "type": "boolean"
     },
+    "off_at_once": {
+      "description": "A kill switch (AI-13): turning it off needs no second approver and takes effect at once; turning it on still needs one.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "reason": {
       "description": "Why the recommended value.",
       "examples": [
@@ -187,6 +194,7 @@
     "guide",
     "requirement",
     "needs_second_approver",
+    "off_at_once",
     "set_by_platform",
     "lengthen_only",
     "scheduled",

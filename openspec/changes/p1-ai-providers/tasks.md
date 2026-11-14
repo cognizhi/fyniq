@@ -92,6 +92,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [ ] 6.2 The switch `ai.enabled` (off at once by the Owner; on with a second approver), refusing new calls at once and
   stopping streams within 60 seconds; organisation and per-person token budgets with alerts. The API's
   `/v1/ai/settings`. Tests `// req: AI-13`.
+  Built so far (slice 23): the switch, as the existing setting `features.ai_assistant` (FR-ORG-06), off at once and
+  on with a second approver; the router's checks; `GET /v1/ai/settings` and the Owner's `POST /v1/ai/settings/switch-off`.
+  Left: the organisation's and each person's token budgets.
 
 ## 7. Checks and compliance
 
