@@ -428,7 +428,8 @@ company secretary's agent and the assistant run on models the organisation chose
 With it, the owner moved the AI activity log (AI-12) and the switch with token budgets (AI-13) here from
 `p1-ai-proposals` (rev 0.275), and set who reads the log as a new row of Appendix D (rev 0.276).
 
-It was built on 14 Nov 2026, in #624 to #647 and #649 to #655, one pull request per slice, stacked on #623. The parts:
+It was built on 14 Nov 2026, in #624 to #647 and #649 to #658, one pull request per slice, stacked on #623; #657 and
+#658 close what `/opsx:verify` found (AI-84's stale limit and AI-73's per-model quota rates). The parts:
 - one provider-neutral model port, replayed offline, with a developer's own command-line agent for local runs only
   (DEV-09), and the screening adapters for p1-ai-assistant's guardrails;
 - model-provider connectors over plain HTTP for Anthropic (its API and Agent Platform), OpenAI, Gemini and any
@@ -445,7 +446,9 @@ It was built on 14 Nov 2026, in #624 to #647 and #649 to #655, one pull request 
 - the threat model `docs/security/threat-models/ai-providers.md` for security review #4.
 
 Two things wait beyond it: the live providers, Agent Platform in Singapore and Model Armor, `[live-verify]` in the dev
-cloud with real keys; and ADR-T2's revisit at enablement, which preset the founders' routes start on `[verify]`.
+cloud with real keys; and ADR-T2's revisit at enablement, which preset the founders' routes start on `[verify]`. The owner decided
+on 14 Nov 2026 that the AI service meters its agents' calls through the API (design D11 (a)), so CMP-AI-01 is
+unchanged; `p1-ai-assistant` builds the internal operation.
 
 <!-- roadmap:track P1 Fyniq -->
 
