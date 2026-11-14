@@ -92,6 +92,26 @@ func TestConnectionDefinitions(t *testing.T) {
 		"a quota by the hour": {func(d *aiconnection.Definition) {
 			d.Billing, d.Quota = "subscription", &aiconnection.Quota{Amount: 1, Unit: "tokens", Window: "hour", Fee: "1.00", Currency: "USD"}
 		}, aiconnection.CodeBilling, "billing.quota.window"},
+		"rates without the plan's terms": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "3"}}, nil)
+		}, aiconnection.CodeBilling, "billing.quota.terms"},
+		"a rate of 0": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "0"}}, terms)
+		}, aiconnection.CodeBilling, "billing.quota.rates[0].rate"},
+		"a rate in binary": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "1e2"}}, terms)
+		}, aiconnection.CodeBilling, "billing.quota.rates[0].rate"},
+		"a model named twice": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "1"}, {Model: "m", Rate: "2"}}, terms)
+		}, aiconnection.CodeBilling, "billing.quota.rates[1].model"},
+		"terms not on https": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "1"}},
+				&aiconnection.QuotaTerms{URL: "http://example.com/terms", Title: "Terms", CheckedOn: "2026-11-14"})
+		}, aiconnection.CodeBilling, "billing.quota.terms.url"},
+		"terms read on no day": {func(d *aiconnection.Definition) {
+			d.Billing, d.Quota = "subscription", rated([]aiconnection.QuotaRate{{Model: "m", Rate: "1"}},
+				&aiconnection.QuotaTerms{URL: "https://example.com/terms", Title: "Terms", CheckedOn: "2026-02-30"})
+		}, aiconnection.CodeBilling, "billing.quota.terms.checked_on"},
 	} {
 		d := ok
 		d.Configuration = map[string]any{}
@@ -101,6 +121,39 @@ func TestConnectionDefinitions(t *testing.T) {
 		if !errors.As(err, &e) || e.Code != c.code || e.Field != c.field || e.Fix == "" {
 			t.Errorf("%s: %v; want %s on %s", name, err, c.code, c.field)
 		}
+	}
+}
+
+var terms = &aiconnection.QuotaTerms{URL: "https://example.com/plan-terms", Title: "The plan's terms", CheckedOn: "2026-11-14"}
+
+// rated is a monthly quota of 300 requests with rates and their terms.
+func rated(rates []aiconnection.QuotaRate, t *aiconnection.QuotaTerms) *aiconnection.Quota {
+	return &aiconnection.Quota{Amount: 300, Unit: "requests", Window: "month", Fee: "10.00", Currency: "USD", Rates: rates, Terms: t}
+}
+
+// A plan that draws its quota at different rates per model meters each model's use at its rate, from the plan's
+// published terms, exactly, rounded down to whole units; a model the terms do not name draws at 1 (AI-73).
+// req: AI-73
+func TestAQuotaDrawsAtEachModelsRate(t *testing.T) {
+	cat, err := connectors.Catalogue()
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := rated([]aiconnection.QuotaRate{{Model: "big", Rate: "10"}, {Model: "small", Rate: "0.33"}}, terms)
+	d := aiconnection.Definition{Name: "A plan", Connector: "openai-compatible", Preset: "kimi", Auth: "api-key", Configuration: map[string]any{"preset": "kimi"},
+		Billing: "subscription", Quota: q}
+	if _, err := aiconnection.Check(cat, d); err != nil {
+		t.Fatalf("a plan with rates: %v", err)
+	}
+	// 2 at 10, 3 at 0.33 (0.99) and 4 at 1: 24.99, so 24 drawn.
+	if got := q.Drawn(map[string]int64{"big": 2, "small": 3, "plain": 4}); got != 24 {
+		t.Errorf("drawn: %d", got)
+	}
+	if got := q.Drawn(map[string]int64{"small": 100}); got != 33 {
+		t.Errorf("a third of 100: %d", got)
+	}
+	if q.Units(7, 900) != 7 || (&aiconnection.Quota{Unit: "tokens"}).Units(7, 900) != 900 {
+		t.Error("units")
 	}
 }
 

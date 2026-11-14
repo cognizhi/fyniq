@@ -35,11 +35,26 @@ import (
 
 // AIConnectionQuota is a subscription's quota (AI-73): tokens or requests per window, for a fee.
 type AIConnectionQuota struct {
-	Amount   int64  `json:"amount" minimum:"1" doc:"The tokens or requests the plan allows each window." example:"5000000"`
-	Unit     string `json:"unit" enum:"tokens,requests" doc:"What the quota counts." example:"tokens"`
-	Window   string `json:"window" enum:"day,month" doc:"When the quota resets." example:"month"`
-	Fee      string `json:"fee" pattern:"^[0-9]+(\\.[0-9]{1,4})?$" doc:"The fee for each window, a decimal string." example:"30.00"`
-	Currency string `json:"currency" pattern:"^[A-Z]{3}$" doc:"The fee's currency." example:"USD"`
+	Amount   int64                   `json:"amount" minimum:"1" doc:"The tokens or requests the plan allows each window." example:"5000000"`
+	Unit     string                  `json:"unit" enum:"tokens,requests" doc:"What the quota counts." example:"tokens"`
+	Window   string                  `json:"window" enum:"day,month" doc:"When the quota resets." example:"month"`
+	Fee      string                  `json:"fee" pattern:"^[0-9]+(\\.[0-9]{1,4})?$" doc:"The fee for each window, a decimal string." example:"30.00"`
+	Currency string                  `json:"currency" pattern:"^[A-Z]{3}$" doc:"The fee's currency." example:"USD"`
+	Rates    []AIConnectionQuotaRate `json:"rates,omitempty" maxItems:"100" doc:"The models the plan draws its quota from at another rate, as its published terms say; a model not named draws at 1 (AI-73)."`
+	Terms    *AIConnectionQuotaTerms `json:"terms,omitempty" doc:"The plan's published terms the rates come from; required with rates."`
+}
+
+// AIConnectionQuotaRate is how much of a plan's quota one token or request of a model draws (AI-73).
+type AIConnectionQuotaRate struct {
+	Model string `json:"model" minLength:"1" maxLength:"200" doc:"The model, as the provider lists it." example:"kimi-k2-thinking"`
+	Rate  string `json:"rate" pattern:"^[0-9]{1,6}(\\.[0-9]{1,4})?$" doc:"Units of the quota each token or request draws, a decimal string." example:"3"`
+}
+
+// AIConnectionQuotaTerms are a plan's published terms: the official page, its title and the day it was read.
+type AIConnectionQuotaTerms struct {
+	URL       string `json:"url" pattern:"^https://" maxLength:"2000" doc:"The plan's published terms." example:"https://platform.moonshot.ai/docs/pricing"`
+	Title     string `json:"title" minLength:"1" maxLength:"300" doc:"The page's title." example:"Pricing"`
+	CheckedOn string `json:"checked_on" format:"date" doc:"The day they were read." example:"2026-11-14"`
 }
 
 // AIConnectionBilling is how a connection is billed (AI-73).
@@ -201,6 +216,12 @@ func (d AIConnectionDefinition) domain(connector string) aiconnection.Definition
 	}
 	if q := d.Billing.Quota; q != nil {
 		out.Quota = &aiconnection.Quota{Amount: q.Amount, Unit: q.Unit, Window: q.Window, Fee: q.Fee, Currency: q.Currency}
+		for _, r := range q.Rates {
+			out.Quota.Rates = append(out.Quota.Rates, aiconnection.QuotaRate{Model: r.Model, Rate: r.Rate})
+		}
+		if t := q.Terms; t != nil {
+			out.Quota.Terms = &aiconnection.QuotaTerms{URL: t.URL, Title: t.Title, CheckedOn: t.CheckedOn}
+		}
 	}
 	return out
 }

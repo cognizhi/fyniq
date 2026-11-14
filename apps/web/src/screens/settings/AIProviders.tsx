@@ -291,6 +291,8 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
   const [credential, setCredential] = useState("");
   const [mode, setMode] = useState<"usage" | "subscription">("usage");
   const [quota, setQuota] = useState({ amount: "", unit: "tokens", window: "month", fee: "", currency: "USD" });
+  const [rates, setRates] = useState("");
+  const [terms, setTerms] = useState({ url: "", title: "", checked_on: "" });
   const [values, setValues] = useState<ManifestValues>({});
   const [autoQualify, setAutoQualify] = useState(false);
   const [bad, setBad] = useState<Record<string, string>>({});
@@ -306,10 +308,20 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
     if (mode === "subscription" && (!/^\d+$/.test(quota.amount) || !/^\d+(\.\d{1,4})?$/.test(quota.fee) || !/^[A-Z]{3}$/.test(quota.currency))) {
       errs.quota = "Give the quota as a whole number, the fee as an amount such as 30.00, and the fee's currency, such as USD.";
     }
+    const lines = mode === "subscription" ? rates.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+    const parsed = lines.map((l) => /^(\S+)\s*=\s*(\d{1,6}(?:\.\d{1,4})?)$/.exec(l));
+    if (parsed.some((m) => !m || Number(m[2]) === 0)) errs.rates = "Write one model a line, as model = rate, such as kimi-k2 = 0.5, with a rate above 0.";
+    else if (lines.length > 0 && (!/^https:\/\/\S+$/.test(terms.url) || !terms.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(terms.checked_on))) {
+      errs.terms = "Give the plan's published terms: their https address, their title and the day you read them.";
+    }
     setBad(errs);
     if (Object.keys(errs).length > 0) return;
     setBusy(true);
     setProblem(null);
+    const rated =
+      lines.length > 0
+        ? { rates: parsed.map((m) => ({ model: m?.[1] ?? "", rate: m?.[2] ?? "" })), terms: { url: terms.url, title: terms.title.trim(), checked_on: terms.checked_on } }
+        : {};
     const body = {
       connector: entry.id,
       name: name.trim(),
@@ -319,7 +331,17 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
       billing:
         mode === "usage"
           ? { mode }
-          : { mode, quota: { amount: Number.parseInt(quota.amount, 10), unit: quota.unit as "tokens" | "requests", window: quota.window as "day" | "month", fee: quota.fee, currency: quota.currency } },
+          : {
+              mode,
+              quota: {
+                amount: Number.parseInt(quota.amount, 10),
+                unit: quota.unit as "tokens" | "requests",
+                window: quota.window as "day" | "month",
+                fee: quota.fee,
+                currency: quota.currency,
+                ...rated,
+              },
+            },
       ...(auth === "api-key" ? { credential: credential.trim() } : {}),
       auto_qualify: autoQualify,
     };
@@ -426,6 +448,44 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
               <span className="fy-error" id="ai-conn-quota-err">
                 {bad.quota}
               </span>
+            )}
+            <div className="fy-field col-span-full">
+              <label className="fy-label" htmlFor="ai-conn-rates">
+                Models that draw at another rate (optional)
+              </label>
+              <textarea id="ai-conn-rates" className="fy-input fy-mono" rows={3} value={rates} onChange={(e) => setRates(e.target.value)}
+                aria-invalid={Boolean(bad.rates)} aria-describedby="ai-conn-rates-help" />
+              <span className={bad.rates ? "fy-error" : "fy-help"} id="ai-conn-rates-help">
+                {bad.rates || "One a line, as the plan's terms say, such as kimi-k2 = 0.5: each token or request of it draws that much of the quota. Others draw 1."}
+              </span>
+            </div>
+            {rates.trim() && (
+              <>
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor="ai-conn-terms-url">
+                    The plan's published terms
+                  </label>
+                  <input id="ai-conn-terms-url" className="fy-input fy-mono" value={terms.url} onChange={(e) => setTerms({ ...terms, url: e.target.value })}
+                    aria-describedby="ai-conn-terms-err" />
+                </div>
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor="ai-conn-terms-title">
+                    Their title
+                  </label>
+                  <input id="ai-conn-terms-title" className="fy-input" value={terms.title} onChange={(e) => setTerms({ ...terms, title: e.target.value })} />
+                </div>
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor="ai-conn-terms-day">
+                    Read on
+                  </label>
+                  <input id="ai-conn-terms-day" className="fy-input" type="date" value={terms.checked_on} onChange={(e) => setTerms({ ...terms, checked_on: e.target.value })} />
+                </div>
+                {bad.terms && (
+                  <span className="fy-error col-span-full" id="ai-conn-terms-err">
+                    {bad.terms}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )}

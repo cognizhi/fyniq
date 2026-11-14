@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aibudget"
+	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -254,5 +255,71 @@ func TestTokenBudgetsBoundEveryCall(t *testing.T) {
 		if b["key"] == "tokens:person:"+f.ahkow && (b["used"] != "3000" || b["unit"] != "tokens" || b["alerted"] != true) {
 			t.Errorf("the person's tokens: %v", b)
 		}
+	}
+}
+
+// A plan that draws its quota at different rates per model (AI-73): the connection keeps each model's rate with the
+// plan's published terms it comes from, and the month's usage meters each model at its rate, rounded down; rates
+// without their terms are refused.
+// req: AI-73
+// req: AI-77
+func TestAPlansQuotaDrawsAtEachModelsRate(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Administrator), f.as(f.weiling, authz.Owner)
+	quota := map[string]any{"amount": 300, "unit": "requests", "window": "month", "fee": "19.00", "currency": "USD",
+		"rates": []any{map[string]any{"model": "kimi-big", "rate": "10"}, map[string]any{"model": "kimi-small", "rate": "0.33"}}}
+	create := func(q map[string]any) response {
+		return e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Kimi plan", "connector": "openai-compatible", "preset": "kimi",
+			"auth": "api-key", "configuration": map[string]any{"preset": "kimi"}, "credential": "not-a-real-key-for-tests", "billing": map[string]any{"mode": "subscription", "quota": q}})
+	}
+	e.problemIs(create(quota), "createAIConnection", 422, aiconnection.CodeBilling)
+	quota["terms"] = map[string]any{"url": "https://example.com/plan-terms", "title": "The plan's terms", "checked_on": "2026-10-01"}
+	asked := create(quota)
+	if asked.Status != http.StatusAccepted {
+		t.Fatalf("asking: %d %s", asked.Status, asked.Raw)
+	}
+	if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	list := e.call(http.MethodGet, "/v1/ai/connections", owner, nil)
+	c := list.Body["items"].([]any)[0].(map[string]any)
+	q := c["billing"].(map[string]any)["quota"].(map[string]any)
+	if q["terms"].(map[string]any)["title"] != "The plan's terms" || len(q["rates"].([]any)) != 2 {
+		t.Fatalf("the plan: %s", list.Raw)
+	}
+	id := uuid.MustParse(c["id"].(string))
+
+	// Two requests of the big model (20), three of the small one (0.99) and four of another (4): 24.99, so 24 drawn.
+	now := e.clock.Now()
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		var models []storage.AIModel
+		for _, m := range []string{"kimi-big", "kimi-small", "kimi-plain"} {
+			models = append(models, storage.AIModel{ConnectionID: id, Model: m, FirstListed: now, LastListed: now, Listed: true})
+		}
+		if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: id, Trigger: "refresh", Outcome: "complete", Pages: 1, ReadBy: "user:plans",
+			ReadAt: now}, models); err != nil {
+			return err
+		}
+		for m, n := range map[string]int{"kimi-big": 2, "kimi-small": 3, "kimi-plain": 4} {
+			for range n {
+				if _, err := u.AICalls().Record(ctx, storage.AICall{Run: uuid.Must(uuid.NewV7()), Agent: "chat", RouteVersion: 1, Step: 1, ConnectionID: id,
+					ModelRequested: m, ModelReported: m, Actor: "user:plans", Classes: []string{"business-figures"}, Outcome: "ok", Input: 10, Output: 5,
+					StartedAt: now}); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	u := e.call(http.MethodGet, "/v1/ai/usage", admin, nil)
+	var use map[string]any
+	for _, x := range u.Body["by_connection"].([]any) {
+		if x.(map[string]any)["connection_id"] == id.String() {
+			use, _ = x.(map[string]any)["quota"].(map[string]any)
+		}
+	}
+	if use == nil || use["used"] != float64(24) || use["unit"] != "requests" {
+		t.Errorf("the plan's use: %s", u.Raw)
 	}
 }

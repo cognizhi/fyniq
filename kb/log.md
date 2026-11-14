@@ -545,3 +545,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-14] compile | docs/user-guide/ai-activity.md → settings.ai-activity (new page: the AI activity log and your own AI plan, AI-12, AI-73)
 
 ## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (a list not read whole for 14 days carries no personal data or payroll, AI-84)
+
+## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (models that draw a plan's quota at another rate, AI-73)

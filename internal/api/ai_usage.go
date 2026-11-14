@@ -82,7 +82,7 @@ type AIQuotaUse struct {
 	Amount int64     `json:"amount" example:"5000000"`
 	Unit   string    `json:"unit" enum:"tokens,requests" example:"tokens"`
 	Window string    `json:"window" enum:"day,month" example:"month"`
-	Used   int64     `json:"used" example:"908000"`
+	Used   int64     `json:"used" doc:"What the window drew from the quota: each model's use at its rate from the plan's terms (1 where they name none), rounded down." example:"908000"`
 	Resets time.Time `json:"resets" doc:"When the window starts again, in Singapore." example:"2026-11-30T16:00:00Z"`
 }
 
@@ -156,18 +156,13 @@ func quotaUse(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection,
 	if err != nil {
 		return nil, err
 	}
-	out := &AIQuotaUse{Amount: q.Amount, Unit: q.Unit, Window: q.Window, Resets: resets.UTC()}
+	units := map[string]int64{}
 	for _, r := range rows {
-		if r.ConnectionID != c.ID {
-			continue
-		}
-		if q.Unit == "requests" {
-			out.Used += r.Requests
-		} else {
-			out.Used += r.Input + r.Output + r.CacheRead + r.CacheWrite
+		if r.ConnectionID == c.ID {
+			units[r.Model] += q.Units(r.Requests, r.Input+r.Output+r.CacheRead+r.CacheWrite)
 		}
 	}
-	return out, nil
+	return &AIQuotaUse{Amount: q.Amount, Unit: q.Unit, Window: q.Window, Used: q.Drawn(units), Resets: resets.UTC()}, nil
 }
 
 func registerAIUsage(a *API) {

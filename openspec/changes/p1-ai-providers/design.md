@@ -64,6 +64,10 @@ See proposal.md for why. What exists today:
   Consumer-app tokens, chat sessions, cookies and command-line seats are refused by the auth methods offered (AI-73).
 - Each connection's egress is its base URL's host only; a self-hosted endpoint must be a registered private endpoint
   (SEC-37).
+- As built (verification, slice 34): AI-73's "Per-model quota rates" is the quota's optional `rates` (a model and a
+  decimal rate, at most 100) with the plan's published `terms` (an https page, its title and the day read), required
+  with rates. The usage view and C.2 #55 meter each model's units at its rate, exactly, rounded down to whole units;
+  a model not named draws 1.
 - As built: timeouts and retries are among each provider's settings (its manifest's configuration); the request rate
   limit and the circuit breaker are the connector's, fixed in its manifest, not per connection.
 
