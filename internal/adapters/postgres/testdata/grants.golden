@@ -268,6 +268,12 @@ fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
 fyniq_api       EXECUTE   member_sign_ins()
+fyniq_api       INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
+fyniq_api       SELECT    migration_file
+fyniq_api       INSERT    migration_run (started_at, started_by)
+fyniq_api       SELECT    migration_run
+fyniq_api       INSERT    migration_step (run_id, started_at, started_by, state, step, workbook_file_id)
+fyniq_api       SELECT    migration_step
 fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
 fyniq_api       SELECT    money_account
 fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
@@ -644,6 +650,9 @@ fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
+fyniq_readonly  SELECT    migration_file
+fyniq_readonly  SELECT    migration_run
+fyniq_readonly  SELECT    migration_step
 fyniq_readonly  SELECT    money_account
 fyniq_readonly  SELECT    money_account_source
 fyniq_readonly  SELECT    notification
@@ -873,6 +882,11 @@ fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()
 fyniq_worker    EXECUTE   member_sign_ins()
 fyniq_worker    EXECUTE   members_second_factor()
+fyniq_worker    INSERT    migration_file (added_at, added_by, data_class, file_name, kind, media_type, original_sha256, run_id, sha256, size_bytes, storage_key)
+fyniq_worker    SELECT    migration_file
+fyniq_worker    SELECT    migration_run
+fyniq_worker    SELECT    migration_step
+fyniq_worker    UPDATE    migration_step (checks_file_id, errors, report, report_sha256, state, validated_at, warnings)
 fyniq_worker    SELECT    money_account
 fyniq_worker    SELECT    money_account_source
 fyniq_worker    INSERT    notification (actionable, created_at, email, event_id, severity, type, user_id)

@@ -1485,6 +1485,47 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqMigrationFile struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Kind           string
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	StorageKey     string
+	DataClass      string
+	AddedBy        string
+	AddedAt        time.Time
+}
+
+type FyniqMigrationRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Status         string
+	StartedBy      string
+	StartedAt      time.Time
+}
+
+type FyniqMigrationStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Step           string
+	State          string
+	WorkbookFileID uuid.UUID
+	ChecksFileID   *uuid.UUID
+	Report         []byte
+	ReportSha256   *string
+	Errors         *int32
+	Warnings       *int32
+	StartedBy      string
+	StartedAt      time.Time
+	ValidatedAt    *time.Time
+}
+
 type FyniqMoneyAccount struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -68,6 +68,7 @@ const (
 	StatutoryCalendar   Capability = "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
 	ChecksHealth        Capability = "Checks and books health (rev 0.163)"
 	TenantExport        Capability = "Tenant export"
+	WorkbookImport      Capability = "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
 	AIProviders         Capability = "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
 	PeopleAndHR         Capability = "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
 	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
@@ -80,7 +81,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -261,6 +262,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	TenantExport: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	WorkbookImport: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
 	AIProviders: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
@@ -1536,6 +1540,14 @@ var (
 	ListRestoreDrills  = Policy{Operation: "listRestoreDrills", Capability: ComplianceCenter, Need: View}
 	RecordRestoreDrill = Policy{Operation: "recordRestoreDrill", Capability: ComplianceCenter, Need: Create}
 
+	// The workbook migration (FR-MIG-01, §17.1; p1-workbook-migration design D3, D11): prepared by the Controller or
+	// Accountant, read by the Owner and the Auditor; the AI has no right on it.
+	ListMigrations          = Policy{Operation: "listMigrations", Capability: WorkbookImport, Need: View}
+	StartMigration          = Policy{Operation: "startMigration", Capability: WorkbookImport, Need: Create}
+	GetMigration            = Policy{Operation: "getMigration", Capability: WorkbookImport, Need: View}
+	UploadMigrationWorkbook = Policy{Operation: "uploadMigrationWorkbook", Capability: WorkbookImport, Need: Create}
+	GetMigrationReport      = Policy{Operation: "getMigrationReport", Capability: WorkbookImport, Need: View}
+
 	// The heartbeat drill register (NFR-OBS-02, CTL-RES-05 Q; p1-operations-dr design D6), as the restore drills.
 	ListHeartbeatDrills  = Policy{Operation: "listHeartbeatDrills", Capability: ComplianceCenter, Need: View}
 	RecordHeartbeatDrill = Policy{Operation: "recordHeartbeatDrill", Capability: ComplianceCenter, Need: Create}
@@ -1769,7 +1781,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults)
 
 func index(ps ...Policy) map[string]Policy {

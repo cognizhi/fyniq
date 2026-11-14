@@ -18,7 +18,7 @@ import (
 // Operation is long work the caller asked for, which runs in the background: poll it until it is done.
 type Operation struct {
 	ID          string `json:"id" format:"uuid" doc:"The operation." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
-	Kind        string `json:"kind" enum:"report_export,checks_run" doc:"What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks)." example:"report_export"`
+	Kind        string `json:"kind" enum:"report_export,checks_run,migration_validation" doc:"What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks); migration_validation validates an uploaded workbook (uploadMigrationWorkbook)." example:"report_export"`
 	Status      string `json:"status" enum:"running,succeeded,failed" doc:"running: waiting or under way, and retried after a failure; succeeded: done, so read the resource; failed: it gave up after its attempts, so ask again." example:"succeeded"`
 	Resource    string `json:"resource" doc:"The path of what the work makes or changes: read it for the outcome, such as the export's file or the checks' last run." example:"/v1/report-exports/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
 	RequestedAt string `json:"requested_at" format:"date-time" doc:"When it was asked for." example:"2026-11-07T09:00:00Z"`

@@ -36,6 +36,7 @@ const (
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
 	PlanName         = "RND-PLAN"
+	ImportName       = "RND-IMPORT"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -97,6 +98,31 @@ func plan(x *apd.Decimal, places int) *apd.Decimal {
 	}
 	out.Negative = out.Negative && !out.IsZero()
 	return out
+}
+
+// SpreadsheetDigits is the significant digits a spreadsheet keeps of a number.
+const SpreadsheetDigits = 15
+
+// Saved is RND-IMPORT's reading of a number the workbook saved, typed or calculated (rev 0.255): to a spreadsheet's 15
+// significant digits, half away from zero, without trailing zeros, so 98.09999999999999 is the 98.1 a person sees. A
+// typed amount goes no further: it is never rounded to its currency's minor units.
+func Saved(x *apd.Decimal) *apd.Decimal {
+	c := apd.BaseContext.WithPrecision(SpreadsheetDigits)
+	c.Rounding = apd.RoundHalfUp
+	out := new(apd.Decimal)
+	if _, err := c.Round(out, x); err != nil {
+		panic(fmt.Sprintf("rounding: %s %s to %d digits: %v", ImportName, x.Text('f'), SpreadsheetDigits, err))
+	}
+	out.Reduce(out)
+	out.Negative = out.Negative && !out.IsZero()
+	return out
+}
+
+// Import is RND-IMPORT (rev 0.255): a figure the workbook calculated, read from its saved number = round(Saved(it), cur's
+// minor units), half away from zero, once; -0 shows as 0. The workbook works in binary floating point, so a calculated
+// cent may be saved as 0.009999 or 13080.000006.
+func Import(saved *apd.Decimal, cur money.Currency) *apd.Decimal {
+	return plan(Saved(saved), cur.MinorUnits)
 }
 
 // KPI is RND-KPI (rev 0.161): a KPI's value = round(its exact value, places), half away from zero, once; a value that

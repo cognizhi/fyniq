@@ -70,6 +70,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/succession"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
+	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -233,6 +234,8 @@ var codeFacts = map[string]struct {
 	storage.CodeBreach:            {409, "A breach's steps come in order, and a breach of prescribed data is notifiable"},
 	storage.CodeIncident:          {409, "An incident's steps come in the runbook's order"},
 	storage.CodeRestoreDrill:      {409, "A restore drill, once recorded, never changes"},
+	storage.CodeMigration:         {409, "The migration keeps its record, in an organisation without posted entries"},
+	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	storage.CodeHeartbeatDrill:    {409, "A heartbeat drill, once recorded, never changes"},
 	storage.CodeTransfer:          {409, "A transfer's versions follow each other and keep the flow they cover"},
 	storage.CodeShredding:         {409, "Personal data is shredded only in its approved run, after its retention"},
@@ -990,6 +993,7 @@ var storageFixes = map[string]string{
 	storage.CodeBreach:               "Assess, decide (notifiable for prescribed data or 500 or more people), notify the PDPC, then close: each once and in order",
 	storage.CodeIncident:             "Contain, assess, notify, recover, then review: each once; notify after assessing, recover after containing, review after recovering",
 	storage.CodeRestoreDrill:         "Record the next drill instead",
+	storage.CodeMigration:            "Start the migration in a new organisation without posted entries; upload the workbook again once the last validation is done",
 	storage.CodeHeartbeatDrill:       "Record the next drill instead",
 	storage.CodeTransfer:             "Save a transfer's next version over the one you read; for another flow, retire it and record a new one",
 	storage.CodeShredding:            "Approve a listed run once, at the version you read; the daily run then shreds it, register first",

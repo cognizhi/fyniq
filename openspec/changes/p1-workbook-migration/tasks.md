@@ -4,27 +4,32 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 1. Reading the workbook and the validation report (FR-MIG-01, M1)
 
-- [ ] 1.1 `internal/sheet` reads named sheets with a workbook's bounds (design D1): shared and inline strings, each
+- [x] 1.1 `internal/sheet` reads named sheets with a workbook's bounds (design D1): shared and inline strings, each
   cell's cached value as exact decimal text, columns found by their header on row 5. A workbook saved without its
   calculated values is refused with how to fix it. Tests: the fixture's sheets read; a bomb over each bound stops at it;
   a sheet without cached values is refused. `// req: FR-MIG-01`
-- [ ] 1.2 `scripts/workbook_migration_fixture.py` writes `test/migration/workbook-sample.xlsx` from a pinned commit of
+- [x] 1.2 `scripts/workbook_migration_fixture.py` writes `test/migration/workbook-sample.xlsx` from a pinned commit of
   `zh-sheet-accounting`: the sheets the import reads, values only, with the commit recorded (design D12). Verified by
-  `make check`'s fixture check, which reads the recorded commit and the file's hash.
-- [ ] 1.3 The PRD names `RND-IMPORT` in §10.4 (the workbook's calculated figures rounded half away from zero to cents,
-  once), with a PRD revision. `internal/domain/rounding` gains it, with its pinned cases and the oracle's
+  `TestTheFixtureIsTheRecordedOne`, which checks the file against the hash and commit recorded beside it.
+- [x] 1.3 The PRD names `RND-IMPORT` in §10.4 (the workbook's calculated figures rounded half away from zero to cents,
+  once, after every saved number is read to a spreadsheet's 15 significant digits), with a PRD revision (rev 0.255). `internal/domain/rounding` gains it, with its pinned cases and the oracle's
   implementation. Tests `// req: RND-IMPORT` in Go and in the oracle.
-- [ ] 1.4 `internal/migration`'s typed model of every sheet the import reads (design D2, D5): dates from serial numbers,
+- [x] 1.4 `internal/migration`'s typed model of every sheet the import reads (design D2, D5): dates from serial numbers,
   codes from "code - name" labels, amounts exact; a row the workbook blocked (✖) is reported and kept out. Test
   `// req: FR-MIG-01` reads the fixture into the model and compares its counts and totals with the sheets' own.
-- [ ] 1.5 The migration record: migrations for `migration_run` and `migration_step` (organisation-keyed, forced
-  row-level security, every change audited). Appendix D gains the row "Workbook import (migration)" in the PRD and in
-  `authz.Rows` together (Owner A; Controller and Accountant C; Auditor V; AI none). `POST /v1/migrations` is refused for
-  an organisation with a posted entry (rev 0.254). `POST /v1/migrations/{id}/workbook` (scanned, hashed, kept as M1's
-  evidence with the Checks export) and `GET /v1/migrations/{id}/report`, validating in the background through each
-  command's preview inside a rolled-back transaction. Tests `TestAWorkbookImportGoesOnlyIntoAnOrganisationWithNoPostings`,
+- [x] 1.5 The migration record: migrations for `migration_run`, `migration_step` and `migration_file`
+  (organisation-keyed, forced row-level security, every change audited on the run; 000325, FY325). Appendix D gains the
+  row "Workbook import (migration)" in the PRD and in `authz.Rows` together (Owner A; Controller and Accountant C; Auditor
+  V; AI none). `POST /v1/migrations` is refused for an organisation with a posted entry (MIGRATION-09, rev 0.254; the
+  database refuses it too) and answers the organisation's one migration once started.
+  `POST /v1/migrations/{id}/workbook` (scanned, hashed, kept as M1's evidence, marked payroll) and
+  `GET /v1/migrations/{id}/report`, validating in the background (`migration.validate`, an operation) inside a
+  transaction that rolls back. The Checks export is made from the uploaded workbook's own Checks sheet and kept beside
+  it; a check showing ✖ is an error (MIGRATION-08, §17.1 M1). As built, the validation checks the organisation (no
+  posted entry, the workbook's base currency); the mapping's and each command's previews join the same rolled-back
+  transaction as tasks 2.1 and 4.2–4.6 build them. Tests `TestAWorkbookImportGoesOnlyIntoAnOrganisationWithNoPostings`,
   `TestTheValidationReportCommitsNothing` (`// req: FR-MIG-01`, `// req: data/migration Workbook freeze (M1)`), the
-  matrix's rows, the attack test that a second organisation's migration is not visible.
+  matrix's rows, `TestAttackTheMigrationRecordKeepsItsRules` (another organisation sees none of it).
 
 ## 2. Mapping (M2)
 

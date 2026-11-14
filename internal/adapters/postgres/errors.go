@@ -206,6 +206,7 @@ var fyCodes = map[string]string{
 	"FY322": storage.CodeIncident,        // an incident's step out of order, or any change (000316)
 	"FY323": storage.CodeRestoreDrill,    // a restore drill changed or removed (000317)
 	"FY324": storage.CodeHeartbeatDrill,  // a heartbeat drill changed or removed (000318)
+	"FY325": storage.CodeMigration,       // a migration in an organisation with a posted entry, a step changed twice, or anything removed (000325)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -251,6 +252,8 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"statutory_pack_activation_version_key":     {storage.CodeDuplicate, "the organisation has activated that pack version already"},
 	"statutory_pack_activation_approval_fkey":   {storage.CodePack, "an activation names an approval request of this organisation"},
 	"journal_entry_posting_identity_key":        {storage.CodeDuplicate, "this posting was already made: its posting identity is in use"},
+	"migration_run_one":                         {storage.CodeDuplicate, "the organisation has a migration already"},
+	"migration_step_one_validating":             {storage.CodeDuplicate, "a workbook of this step is being validated already"},
 	"quote_outcome_once":                        {storage.CodeQuoteOutcome, "the quote has an outcome already"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
 	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},
