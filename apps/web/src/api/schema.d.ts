@@ -8597,6 +8597,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/migrations/{migration_id}/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the reconciliation
+         * @description The parity report of a committed import (§17.1 M4, FR-MIG-02, QA-MIG-01; design D8): Fyniq's books against the workbook's own engine, its Trial Balance sheet, to the cent after RND-IMPORT. On the history, each Fyniq account's opening at the books start and its movement and closing each month through the workbook's as-of; on a clean start, its opening against the Carry Forward sheet's balance at the as-of; the workbook's accounts that map onto one Fyniq account are added. Each figure that differs is a line of the difference register, with a proposed class (a, a cent allocation; b, a deliberate rule change) the Accountant decides. The workbook's Checks rows are compared, by their Appendix C.1 number, with the statuses of Fyniq's checks at their last run. sha256 is what the sign-off names. Before the import is committed, status not_committed and no figures. Read-only; no side effects.
+         */
+        get: operations["getMigrationReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/migrations/{migration_id}/report": {
         parameters: {
             query?: never;
@@ -32058,6 +32078,43 @@ export interface components {
              */
             total: number;
         };
+        MigrationCheckParity: {
+            /** @description Fyniq's checks of the number. */
+            fyniq: components["schemas"]["MigrationFyniqCheck"][];
+            /**
+             * @description Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).
+             * @example false
+             */
+            missing: boolean;
+            /**
+             * @description What the workbook checks.
+             * @example Debits equal credits (trial balance)
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The workbook check's number, which is its Appendix C.1 number.
+             * @example 1
+             */
+            number: number;
+            /**
+             * Format: int64
+             * @description Its row on the Checks sheet.
+             * @example 7
+             */
+            row: number;
+            /**
+             * @description Whether the worst of Fyniq's statuses is the workbook's: a different one needs a register line or a fix.
+             * @example true
+             */
+            same: boolean;
+            /**
+             * @description Its status in the workbook: fine ✔, review ⚠ or blocked ✖.
+             * @example fine
+             * @enum {string}
+             */
+            workbook: "fine" | "review" | "blocked";
+        };
         MigrationCodeMap: {
             /**
              * @description The sg-gst pack's code.
@@ -32189,6 +32246,55 @@ export interface components {
              */
             total: number;
         };
+        MigrationDifference: {
+            /**
+             * @description The Fyniq account's code; the workbook's accounts that map onto it are added.
+             * @example 6510
+             */
+            account: string;
+            /**
+             * @description Fyniq's less the workbook's.
+             * @example -0.01
+             */
+            difference: string;
+            /**
+             * @description Fyniq's figure in the base currency, debit positive.
+             * @example 620.00
+             */
+            fyniq: string;
+            /**
+             * @description The line's key in the difference register: the Fyniq account's code, the month (YYYY-MM) and the figure, or the code and opening.
+             * @example 6510.2026-03.movement
+             */
+            key: string;
+            /**
+             * @description opening: the balance at the books start; movement: the month's; closing: the balance at the month's end.
+             * @example movement
+             * @enum {string}
+             */
+            kind: "opening" | "movement" | "closing";
+            /**
+             * @description The month (YYYY-MM); absent for the opening.
+             * @example 2026-03
+             */
+            month?: string;
+            /**
+             * @description The account's name in Fyniq.
+             * @example Depreciation
+             */
+            name: string;
+            /**
+             * @description The class proposed (design D8): a, a cent allocation on a spread or depreciation account within a cent a month; b, a deliberate rule change on a revaluation or statutory account; empty when none fits, for the Accountant to decide.
+             * @example a
+             * @enum {string}
+             */
+            proposed_class: "" | "a" | "b" | "c";
+            /**
+             * @description The workbook's, from its Trial Balance sheet after RND-IMPORT.
+             * @example 620.01
+             */
+            workbook: string;
+        };
         MigrationFileView: {
             /**
              * Format: date-time
@@ -32245,6 +32351,19 @@ export interface components {
              * @example 6684378
              */
             size_bytes: number;
+        };
+        MigrationFyniqCheck: {
+            /**
+             * @description The check's key.
+             * @example books.debits-equal-credits
+             */
+            key: string;
+            /**
+             * @description Its status at its last run.
+             * @example ok
+             * @enum {string}
+             */
+            status: "ok" | "warning" | "error" | "due" | "not_assessed" | "failed";
         };
         MigrationLineMap: {
             /**
@@ -32462,6 +32581,70 @@ export interface components {
              * @example Transactions
              */
             sheet?: string;
+        };
+        MigrationReconciliation: {
+            /**
+             * Format: int64
+             * @description The Fyniq accounts compared.
+             * @example 64
+             */
+            accounts: number;
+            /**
+             * Format: date
+             * @description The books start.
+             * @example 2026-01-01
+             */
+            books_start: string;
+            /** @description The workbook's Checks rows against Fyniq's. */
+            checks: components["schemas"]["MigrationCheckParity"][];
+            /**
+             * Format: int64
+             * @description The workbook's checks whose status Fyniq's do not share.
+             * @example 0
+             */
+            checks_differ: number;
+            /**
+             * Format: date-time
+             * @description When Fyniq's checks last ran; absent when they never did.
+             * @example 2026-11-13T09:00:00Z
+             */
+            checks_run_at?: string;
+            /** @description The figures that differ, by account, month and figure: the difference register's lines. */
+            differences: components["schemas"]["MigrationDifference"][];
+            /**
+             * Format: int64
+             * @description The figures compared.
+             * @example 1216
+             */
+            figures: number;
+            /**
+             * Format: int64
+             * @description The ledger revision Fyniq's figures were read at (ENG-46).
+             * @example 4211
+             */
+            ledger_revision: number;
+            /**
+             * @description The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of.
+             * @example history
+             * @enum {string}
+             */
+            path: "history" | "clean_start";
+            /**
+             * @description The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8).
+             * @example 5d1e…
+             */
+            sha256: string;
+            /**
+             * @description not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand.
+             * @example ready
+             * @enum {string}
+             */
+            status: "not_committed" | "ready";
+            /**
+             * @description The last month compared: the workbook's as-of.
+             * @example 2026-09
+             */
+            through: string;
         };
         MigrationReportView: {
             /**
@@ -112586,6 +112769,111 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMigrationReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationReconciliation"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

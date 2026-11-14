@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fyniq": {
+      "description": "Fyniq's checks of the number.",
+      "items": {
+        "$ref": "MigrationFyniqCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "missing": {
+      "description": "Fyniq has no check of the number (the workbook's own checks of its sheets, such as Reports frozen).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "What the workbook checks.",
+      "examples": [
+        "Debits equal credits (trial balance)"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "The workbook check's number, which is its Appendix C.1 number.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "row": {
+      "description": "Its row on the Checks sheet.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "same": {
+      "description": "Whether the worst of Fyniq's statuses is the workbook's: a different one needs a register line or a fix.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "workbook": {
+      "description": "Its status in the workbook: fine ✔, review ⚠ or blocked ✖.",
+      "enum": [
+        "fine",
+        "review",
+        "blocked"
+      ],
+      "examples": [
+        "fine"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "number",
+    "name",
+    "row",
+    "workbook",
+    "fyniq",
+    "same",
+    "missing"
+  ],
+  "title": "MigrationCheckParity",
+  "type": "object"
+}

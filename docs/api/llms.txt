@@ -545,6 +545,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/migrations/{migration_id}/mapping` (getMigrationMapping): Get the mapping
 - `PATCH /v1/migrations/{migration_id}/mapping` (changeMigrationMapping): Change the mapping
 - `POST /v1/migrations/{migration_id}/mapping/sign-off` (signMigrationMapping): Sign the mapping
+- `GET /v1/migrations/{migration_id}/reconciliation` (getMigrationReconciliation): Get the reconciliation
 - `GET /v1/migrations/{migration_id}/report` (getMigrationReport): Get the validation report
 - `POST /v1/migrations/{migration_id}/workbook` (uploadMigrationWorkbook): Upload the frozen workbook
 - `GET /v1/money-accounts` (listMoneyAccounts): List the money accounts
