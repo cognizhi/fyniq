@@ -416,11 +416,13 @@ func unsigned(e *env, id string) {
 	}
 }
 
-// natures choose the nature of payment of each non-resident supplier a mapping lists, as the Accountant does.
+// natures choose the nature of payment of each non-resident supplier a mapping lists, and enter the tax agent's decision,
+// as the Accountant does.
 func natures(m response) []map[string]any {
 	out := []map[string]any{}
 	for _, x := range m.Body["natures"].([]any) {
-		out = append(out, map[string]any{"contact": x.(map[string]any)["contact"], "nature": "services_outside_singapore"})
+		out = append(out, map[string]any{"contact": x.(map[string]any)["contact"], "nature": "services_outside_singapore", "outcome": "not_applicable",
+			"tax_agent": "Tally & Co Accounting"})
 	}
 	return out
 }

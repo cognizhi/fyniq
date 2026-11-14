@@ -32364,11 +32364,27 @@ export interface components {
              */
             nature: "" | "goods" | "software_use" | "software_rights" | "services_in_singapore" | "services_outside_singapore" | "interest" | "movable_rent" | "other";
             /**
+             * @description The tax agent's decision its bills post with: not_applicable, or withhold at the rate they advised (treaty: a reduced treaty rate); empty until entered, which stops the sign-off.
+             * @example not_applicable
+             * @enum {string}
+             */
+            outcome: "" | "not_applicable" | "withhold" | "treaty";
+            /**
+             * @description The rate withheld, a percentage: only when tax is withheld.
+             * @example 17
+             */
+            rate_percent?: string;
+            /**
              * Format: int64
              * @description Its row on the Contacts sheet; ignored in a change.
              * @example 12
              */
             row?: number;
+            /**
+             * @description The tax agent who decided.
+             * @example Tally & Co Accounting
+             */
+            tax_agent: string;
         };
         MigrationPersonMap: {
             /**

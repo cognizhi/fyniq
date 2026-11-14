@@ -147,6 +147,7 @@ type Transaction struct {
 	Spread                                         *apd.Decimal
 	Reconciled                                     bool
 	Status                                         Status
+	GSTUsed                                        string // the GST code the workbook used, its own or the category's default
 }
 
 // Document is a row of Invoices or of Bills.

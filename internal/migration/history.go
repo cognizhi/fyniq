@@ -35,7 +35,7 @@ var credit = map[string]bool{"Liability": true, "Equity": true, "Revenue": true,
 type dated struct {
 	Record
 	on    time.Time
-	order int // on one day: invoices, then bills, then journals
+	order int // on one day: invoices, then bills, then journals, then the money that moved
 }
 
 // history is the current financial year's records (design D5): the opening balances at the books start with the
@@ -66,6 +66,9 @@ func (w *Workbook) history(m Mapping) []Record {
 	for _, j := range w.journals() {
 		rest = append(rest, dated{Record: w.journalRecord(m, j), on: j[0].Date, order: 3})
 	}
+	statements, rows := w.transactions(m)
+	out = append(out, statements...)
+	rest = append(rest, rows...)
 	byDate := func(a, b dated) int {
 		return cmp.Or(a.on.Compare(b.on), cmp.Compare(a.order, b.order), cmp.Compare(a.Row, b.Row))
 	}

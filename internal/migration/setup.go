@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/banking"
+	billdoc "github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
@@ -51,11 +53,13 @@ const (
 	KindGSTRegistration = "gst_registration"
 	KindChart           = "chart"
 	KindAccount         = "account"
+	KindMoneyAccount    = "money_account"
 	KindDimension       = "dimension"
 	KindDepartment      = "department"
 	KindProject         = "project"
 	KindContact         = "contact"
 	KindPerson          = "person"
+	KindWithholding     = "withholding"
 	KindItem            = "item"
 	KindFXRate          = "fx_rate"
 	KindBankRule        = "bank_rule"
@@ -270,6 +274,38 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 			}})
 	}
 
+	// A money account in Banking for each of the workbook's money accounts the chart keeps as one (FR-BNK-01), of the kind
+	// its name says, in the base currency the workbook keeps its amounts in.
+	for _, a := range w.Accounts {
+		if !a.Money {
+			continue
+		}
+		code := m.accountOf(a.Code)
+		out = append(out, Record{Key: "money-account:" + code, Kind: KindMoneyAccount, Origin: a.Origin,
+			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+				acc, err := account(ctx, u, "account", code)
+				if err != nil {
+					return Made{}, err
+				}
+				all, err := u.Banking().MoneyAccounts(ctx)
+				if err != nil {
+					return Made{}, err
+				}
+				for _, x := range all {
+					if x.AccountID == acc.ID {
+						return Made{Type: "money_account", ID: x.ID}, nil
+					}
+				}
+				if !acc.MoneyAccount {
+					return Made{Type: "account", ID: acc.ID}, nil // the chart keeps it as no money account, such as claims payable
+				}
+				currency := cmp.Or(acc.Currency, s.BaseCurrency)
+				x, err := u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: acc.ID, Kind: moneyKind(a.Name), Name: a.Name,
+					Currency: currency, At: e.Now})
+				return Made{Type: "money_account", ID: x.ID}, err
+			}})
+	}
+
 	// The department and project dimensions, and the values the mapping creates (rev 0.254).
 	firstUse := w.projectRows()
 	for _, set := range []struct {
@@ -408,6 +444,24 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 			}})
 	}
 
+	// The tax agent's decision on withholding for each non-resident supplier, which its bills post with (FR-AP-19).
+	for _, n := range m.Natures {
+		out = append(out, Record{Key: "withholding:" + strings.ToLower(n.Contact), Kind: KindWithholding, Origin: Origin{Sheet: "Contacts", Row: n.Row},
+			make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
+				supplier, err := contactOf(e, n.Contact)
+				if err != nil {
+					return Made{}, err
+				}
+				base, err := baseOf(ctx, u)
+				if err != nil {
+					return Made{}, err
+				}
+				x, err := billdoc.RecordWithholding(ctx, u, storage.NewWithholdingDecision{SupplierID: supplier, Nature: n.Nature, Outcome: n.Outcome,
+					RatePercent: n.RatePercent, TaxAgent: n.TaxAgent, Note: "Entered in the workbook import's mapping (FR-MIG-01)"}, base)
+				return Made{Type: "withholding_decision", ID: x.ID}, err
+			}})
+	}
+
 	for _, it := range w.Items {
 		out = append(out, Record{Key: "item:" + it.Code, Kind: KindItem, Origin: it.Origin, make: func(ctx context.Context, u storage.UnitOfWork, e *Env) (Made, error) {
 			typ := storage.ItemProduct
@@ -488,6 +542,23 @@ func (w *Workbook) setUp(m Mapping, path string) []Record {
 			}})
 	}
 	return out
+}
+
+// moneyKind is the kind of money account an account's name says it is: a card, cash, a payment gateway, a wallet, else a
+// bank account.
+func moneyKind(name string) string {
+	n := strings.ToLower(name)
+	switch {
+	case strings.Contains(n, "card"):
+		return storage.MoneyCard
+	case strings.Contains(n, "cash"):
+		return storage.MoneyCash
+	case strings.Contains(n, "gateway") || strings.Contains(n, "stripe") || strings.Contains(n, "paypal"):
+		return storage.MoneyPaymentGateway
+	case strings.Contains(n, "wallet"):
+		return storage.MoneyWallet
+	}
+	return storage.MoneyBank
 }
 
 // dimensionOf is the organisation's dimension of a kind: ports.ErrNotFound when it has none.

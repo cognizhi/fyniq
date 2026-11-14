@@ -44,6 +44,10 @@ type MigrationNatureMap struct {
 	Row     int    `json:"row,omitempty" doc:"Its row on the Contacts sheet; ignored in a change." example:"12"`
 	Country string `json:"country,omitempty" doc:"Where it is resident for tax; ignored in a change." example:"US"`
 	Nature  string `json:"nature" enum:",goods,software_use,software_rights,services_in_singapore,services_outside_singapore,interest,movable_rent,other" doc:"The nature of payment its bills record for the tax agent's withholding decision (FR-AP-19); empty until the Accountant chooses, which stops the sign-off." example:"services_outside_singapore"`
+	Outcome string `json:"outcome" enum:",not_applicable,withhold,treaty" doc:"The tax agent's decision its bills post with: not_applicable, or withhold at the rate they advised (treaty: a reduced treaty rate); empty until entered, which stops the sign-off." example:"not_applicable"`
+	// The rate and the tax agent of the decision.
+	RatePercent string `json:"rate_percent,omitempty" doc:"The rate withheld, a percentage: only when tax is withheld." example:"17"`
+	TaxAgent    string `json:"tax_agent" maxLength:"200" doc:"The tax agent who decided." example:"Tally & Co Accounting"`
 }
 
 // MigrationPersonMap is a person the workbook names and the contact they become (rev 0.259).
