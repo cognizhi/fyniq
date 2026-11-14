@@ -35,12 +35,6 @@
         "maximum": 600,
         "default": 120
       },
-      "auto_qualify": {
-        "type": "boolean",
-        "title": "Qualify new models automatically",
-        "description": "Each model the provider lists for the first time is run through the evals of every agent whose route uses this connection, on synthetic text within the eval runner's budget, and the results appear on the connection (AI-81). Adding it to the allow-list or to a route stays a person's decision.",
-        "default": false
-      },
       "retries": {
         "type": "integer",
         "title": "Retries",

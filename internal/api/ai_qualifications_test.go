@@ -241,8 +241,8 @@ func TestNewModelsQualifyAutomaticallyWhereItIsOn(t *testing.T) {
 	e := newEnv(t)
 	f := foundersIn(e)
 	admin := f.as(f.ahkow, authz.Owner, authz.Administrator)
-	on := routableOn(e, storage.AIConnection{Name: "Auto on", Connector: "openai", Auth: "api-key", Configuration: []byte(`{"auto_qualify":true}`),
-		Host: "api.openai.com"}, "SG", []string{"gpt-6"})
+	on := routableOn(e, storage.AIConnection{Name: "Auto on", Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`),
+		Host: "api.openai.com", AutoQualify: true}, "SG", []string{"gpt-6"})
 	off := routable(e, "Auto off", "SG", []string{"gpt-6"})
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures"}, MadeBy: "user:auto",

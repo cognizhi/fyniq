@@ -171,15 +171,6 @@ func (q Qualifier) Daily(ctx context.Context) error {
 	return errors.Join(failed...)
 }
 
-// AutoQualifies is whether a connection qualifies its newly listed models automatically: its configuration's
-// auto_qualify, off by default (AI-81).
-func AutoQualifies(c storage.AIConnection) bool {
-	var config struct {
-		Auto bool `json:"auto_qualify"`
-	}
-	return json.Unmarshal(c.Configuration, &config) == nil && config.Auto
-}
-
 // QualifyItem is the outbox item that has the worker qualify model for agent on connection, once for the read that
 // first listed it.
 func QualifyItem(connection uuid.UUID, model, agent string, read uuid.UUID) (storage.NewOutboxItem, error) {
@@ -188,12 +179,13 @@ func QualifyItem(connection uuid.UUID, model, agent string, read uuid.UUID) (sto
 		BusinessKey: "ai-qualify:" + connection.String() + ":" + model + ":" + agent + ":" + read.String()}, err
 }
 
-// newlyListed queues, on a connection whose automatic qualification is on, each model a read listed for the first time
+// newlyListed queues, on a connection whose automatic qualification is on (its auto_qualify, off by default and changed
+// only as a connection change, with a second approver), each model a read listed for the first time
 // for the evals of every agent whose route in force uses that connection (AI-81). Adding it to the allow-list or a
 // route stays a person's decision.
 func newlyListed(ctx context.Context, d *outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, c storage.AIConnection, read uuid.UUID,
 	kept []storage.AIModel, models []storage.AIModel) error {
-	if !AutoQualifies(c) {
+	if !c.AutoQualify {
 		return nil
 	}
 	routes, err := u.AIRoutes().Current(ctx)
@@ -250,7 +242,7 @@ func (q Qualifier) Work() outbox.Work {
 			if c, err = u.AIConnections().Get(ctx, p.Connection); err != nil {
 				return err
 			}
-			if skip = c.State != "enabled" || !AutoQualifies(c); skip {
+			if skip = c.State != "enabled" || !c.AutoQualify; skip {
 				return nil
 			}
 			provider, built = q.Router.Provider(ctx, u, c)
