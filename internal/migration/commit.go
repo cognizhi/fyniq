@@ -118,6 +118,7 @@ func (w *Workbook) Plan(m Mapping, path string) ([]Record, []Problem) {
 	}
 	out = append(out, w.recurring(m)...)
 	out = append(out, w.budgets(m, path)...)
+	out = append(out, w.forecastRecord(path))
 	seen := map[string]Origin{}
 	var probs []Problem
 	for _, r := range out {

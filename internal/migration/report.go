@@ -75,7 +75,8 @@ func (w *Workbook) Report(fileName, sha string) Report {
 		"Employees": len(w.Departments), "Lists": len(w.GSTCodes) + len(w.Currencies) + len(w.Rates) + len(w.BankRules),
 		"Transactions": len(w.Transactions), "Invoices": len(w.Invoices), "Bills": len(w.Bills), "Quotes & Orders": len(w.QuotesOrders),
 		"Doc Lines": len(w.DocLines), "Payroll": len(w.Payroll), "Timesheets": 0, "Assets": len(w.Assets), "Journal": len(w.Journal),
-		"Recurring": len(w.Recurring), "Bank Rec": len(w.BankRecs), "Budget": len(w.Budget), "Funding": len(w.Holdings) + len(w.Instruments),
+		"Recurring": len(w.Recurring), "Bank Rec": len(w.BankRecs), "Budget": len(w.Budget),
+		"Forecast": len(w.Forecast.Opex) + len(w.Forecast.Hires) + len(w.Forecast.Capex) + len(w.Forecast.Funding), "Funding": len(w.Holdings) + len(w.Instruments),
 		"Trial Balance": len(w.TrialBalance), "Checks": len(w.Checks),
 		"Carry Forward": len(w.CarryForward.Balances) + len(w.CarryForward.Invoices) + len(w.CarryForward.Bills),
 	}

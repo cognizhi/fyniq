@@ -85,11 +85,21 @@ func TestTheSamplePlansItsSetUpOnce(t *testing.T) {
 		plan[first[KindRecurringInvoice]-1].Kind != KindDepreciation {
 		t.Errorf("the quotes, orders and assets: %v, %v", kinds, first)
 	}
-	// Then both paths' plans (rev 0.263): the Recurring sheet's invoice, bill and journal rows, its 2 transaction rows
-	// kept in the archive, and the Budget sheet's 2026 as one budget, last.
+	// Then both paths' plans (rev 0.263, 0.264): the Recurring sheet's invoice, bill and journal rows, its 2 transaction
+	// rows kept in the archive, the Budget sheet's 2026 as one budget, and the Forecast sheet as the forecast, last.
 	if kinds[KindRecurringInvoice] != 1 || kinds[KindRecurringBill] != 1 || kinds[KindRecurringJournal] != 1 || kinds[KindBudget] != 1 ||
-		plan[len(plan)-1].Key != "budget:2026-01-01" || got[KindRecurringInvoice] != 1 || got[KindBudget] != 1 {
+		plan[len(plan)-2].Key != "budget:2026-01-01" || plan[len(plan)-1].Key != "forecast" || got[KindRecurringInvoice] != 1 || got[KindBudget] != 1 ||
+		got[KindForecast] != 1 {
 		t.Errorf("the plans: %v, the clean start's %v, last %s", kinds, got, plan[len(plan)-1].Key)
+	}
+	// The Forecast sheet as read: 36 months, the 9 levers, the 7 other expenses, the 11 people of the team and its hires,
+	// 3 purchases and 3 funding events; and the Settings sheet's last actual month and tax settings.
+	f := w.Forecast
+	if f.Horizon.Text('f') != "36" || len(f.Levers) != 9 || f.Levers[1].Values[2].Text('f') != "1.3" || len(f.Opex) != 7 || len(f.Hires) != 11 ||
+		len(f.Capex) != 3 || len(f.Funding) != 3 || f.Hires[3].CPF || !f.Hires[0].CPF || f.Hires[10].Start.Format("2006-01") != "2028-01" ||
+		f.Funding[1].Rate.Text('f') != "0.055" || f.Funding[1].Tenor.Text('f') != "36" || f.Collected[1].Text('f') != "0.6" ||
+		w.Settings.LastActual.Format(time.DateOnly) != "2026-08-31" || w.Settings.StartUpYears.Text('f') != "3" || w.Settings.TaxLag.Text('f') != "9" {
+		t.Errorf("the Forecast sheet: %+v, settings %+v", f, w.Settings)
 	}
 	if got := openingAccumulated(w.Assets[0], w.Settings.BooksStart, money.MustLookup("SGD")); got.Text('f') != "3000.00" {
 		t.Errorf("the MacBooks' depreciation before the books start: %s, not the 3000.00 the opening balances carry", got.Text('f'))
