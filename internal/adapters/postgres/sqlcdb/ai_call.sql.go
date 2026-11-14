@@ -174,6 +174,116 @@ func (q *Queries) AICallsOfRun(ctx context.Context, run uuid.UUID) ([]AICallsOfR
 	return items, nil
 }
 
+const aICallsPage = `-- name: AICallsPage :many
+SELECT id, run_id, agent, route_version, step, fell_back_from, connection_id, model_requested, model_reported, version_reported, actor,
+  classes, outcome, detail, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, coalesce(cost::text, '')::text AS cost, currency,
+  price_id, coalesce(cost_base::text, '')::text AS cost_base, latency_ms, started_at, recorded_at
+FROM fyniq.ai_call
+WHERE ($1::text IS NULL OR actor = $1::text)
+  AND ($2::text IS NULL OR agent = $2::text)
+  AND ($3::uuid IS NULL OR run_id = $3::uuid)
+  AND started_at >= $4 AND started_at < $5
+  AND ($6::timestamptz IS NULL OR (started_at, id) < ($6::timestamptz, $7::uuid))
+ORDER BY started_at DESC, id DESC
+LIMIT $8::integer
+`
+
+type AICallsPageParams struct {
+	Actor    *string
+	Agent    *string
+	Run      *uuid.UUID
+	FromAt   time.Time
+	ToAt     time.Time
+	BeforeAt *time.Time
+	BeforeID *uuid.UUID
+	PageSize int32
+}
+
+type AICallsPageRow struct {
+	ID               uuid.UUID
+	RunID            uuid.UUID
+	Agent            string
+	RouteVersion     int32
+	Step             int32
+	FellBackFrom     *int32
+	ConnectionID     uuid.UUID
+	ModelRequested   string
+	ModelReported    *string
+	VersionReported  *string
+	Actor            string
+	Classes          []string
+	Outcome          string
+	Detail           *string
+	InputTokens      int64
+	OutputTokens     int64
+	CacheReadTokens  int64
+	CacheWriteTokens int64
+	ReasoningTokens  int64
+	Cost             string
+	Currency         *string
+	PriceID          *uuid.UUID
+	CostBase         string
+	LatencyMs        int32
+	StartedAt        time.Time
+	RecordedAt       time.Time
+}
+
+func (q *Queries) AICallsPage(ctx context.Context, arg AICallsPageParams) ([]AICallsPageRow, error) {
+	rows, err := q.db.Query(ctx, aICallsPage,
+		arg.Actor,
+		arg.Agent,
+		arg.Run,
+		arg.FromAt,
+		arg.ToAt,
+		arg.BeforeAt,
+		arg.BeforeID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AICallsPageRow
+	for rows.Next() {
+		var i AICallsPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RunID,
+			&i.Agent,
+			&i.RouteVersion,
+			&i.Step,
+			&i.FellBackFrom,
+			&i.ConnectionID,
+			&i.ModelRequested,
+			&i.ModelReported,
+			&i.VersionReported,
+			&i.Actor,
+			&i.Classes,
+			&i.Outcome,
+			&i.Detail,
+			&i.InputTokens,
+			&i.OutputTokens,
+			&i.CacheReadTokens,
+			&i.CacheWriteTokens,
+			&i.ReasoningTokens,
+			&i.Cost,
+			&i.Currency,
+			&i.PriceID,
+			&i.CostBase,
+			&i.LatencyMs,
+			&i.StartedAt,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recordAICall = `-- name: RecordAICall :one
 SELECT fyniq.record_ai_call($1, $2, $3::integer, $4::integer,
   $5::integer, $6, $7, $8, $9,

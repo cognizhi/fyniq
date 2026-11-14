@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "classes": {
+      "description": "The classes of data it carried (AI-83).",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "connection": {
+      "description": "The connection's name.",
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "type": "string"
+    },
+    "connection_id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "cost": {
+      "description": "Its exact cost in the price's currency; absent when unpriced.",
+      "examples": [
+        "0.006"
+      ],
+      "type": "string"
+    },
+    "cost_base": {
+      "description": "Its cost in the base currency at the day's rate, exact.",
+      "examples": [
+        "0.0081"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "Why it was skipped, stopped or failed, or why it has no cost; absent when masked.",
+      "examples": [
+        "the connection's AI budget is spent this month"
+      ],
+      "type": "string"
+    },
+    "fell_back_from": {
+      "description": "The step before it, which failed or was skipped (AI-76).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "latency_ms": {
+      "examples": [
+        1840
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "masked": {
+      "description": "It carried payroll and you may not see payroll unmasked: its detail is withheld (FR-PAY-13).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "model_reported": {
+      "description": "The model the provider says answered (AI-87).",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    },
+    "model_requested": {
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "ok: served; skipped: not sent, as the detail says; stopped: refused before sending, or cancelled.",
+      "enum": [
+        "ok",
+        "skipped",
+        "busy",
+        "timeout",
+        "not_found",
+        "refused",
+        "failed",
+        "stopped"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "person": {
+      "description": "Who it ran for: user:\u003cid\u003e, or the system for a job.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "route_version": {
+      "description": "The route's version it followed; 0 for a probe or an eval run, outside any route.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "run": {
+      "description": "The run its attempts share: a call and its fallbacks, or an eval run.",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a42"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "started_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "step": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "tokens": {
+      "$ref": "AIActivityTokens.schema.json"
+    },
+    "version_reported": {
+      "description": "Its version, where the provider reports one (AI-87).",
+      "examples": [
+        "20260801"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "run",
+    "agent",
+    "route_version",
+    "step",
+    "connection_id",
+    "connection",
+    "model_requested",
+    "person",
+    "classes",
+    "outcome",
+    "tokens",
+    "latency_ms",
+    "started_at",
+    "masked"
+  ],
+  "title": "AIActivityEntry",
+  "type": "object"
+}

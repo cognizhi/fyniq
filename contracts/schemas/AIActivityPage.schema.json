@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "AIActivityEntry.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjYtMTEtMTRUMDk6MDA6MDBafDAxOTMifQ"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "description": "own: your own entries only; all: every member's, for the Owner and the DPO (Appendix D).",
+      "enum": [
+        "own",
+        "all"
+      ],
+      "examples": [
+        "own"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "scope",
+    "items"
+  ],
+  "title": "AIActivityPage",
+  "type": "object"
+}

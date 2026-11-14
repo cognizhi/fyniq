@@ -70,4 +70,18 @@ type AICalls interface {
 	Record(ctx context.Context, c AICall) (AICall, error)
 	// OfRun are a run's attempts, in order.
 	OfRun(ctx context.Context, run uuid.UUID) ([]AICall, error)
+	// Page are the attempts q names, newest first, at most q.Limit (AI-12).
+	Page(ctx context.Context, q AICallQuery) ([]AICall, error)
+}
+
+// AICallQuery narrows the AI activity log: a person, an agent or a run, the attempts started in [From, To), and those
+// after a page's last, (BeforeAt, BeforeID), newest first.
+type AICallQuery struct {
+	Actor    string // "" for every person
+	Agent    string
+	Run      *uuid.UUID
+	From, To time.Time
+	BeforeAt *time.Time
+	BeforeID uuid.UUID
+	Limit    int
 }
