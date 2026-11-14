@@ -382,6 +382,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerMigrationMapping(a)
 	registerMigrationCommit(a)
 	registerMigrationReconciliation(a)
+	registerMigrationParallel(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerShredding(a)

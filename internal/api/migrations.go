@@ -338,99 +338,7 @@ func registerMigrations(a *API) {
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeUnavailable,
 		migration.CodeCommit}, append(writes, EvidenceCodes...)...),
 		func(ctx context.Context, in *migrationUploadInput) (*migrationUploadOutput, error) {
-			id, err := parseID("migration_id", in.MigrationID)
-			if err != nil {
-				return nil, err
-			}
-			p, _ := authn.From(ctx)
-			if a.deps.Staging == nil || a.deps.Scanner == nil {
-				return nil, problem(CodeUnavailable, "Workbooks cannot be uploaded here: no file store or malware scanner is configured.",
-					"Ask your administrator to configure them (FR-DOC-01).")
-			}
-			up := in.RawBody.Data()
-			if up == nil || up.File.File == nil {
-				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.file", Message: "is missing", Fix: "Send the workbook in the form field file"}})
-			}
-			defer up.File.Close()
-			data, err := io.ReadAll(io.LimitReader(up.File, migration.MaxBytes+1))
-			if err != nil {
-				return nil, problem(CodeMalformed, "The file could not be read in full.", "Send it again.")
-			}
-			file, problems, err := evidence.Check(ctx, a.deps.Scanner, up.File.Filename, data)
-			if err != nil {
-				logFailure(ctx, err)
-				return nil, problem(CodeUnavailable, "The malware scan is not available, so the workbook was not kept.", "Try again in a few minutes.")
-			}
-			var bad []FieldProblem
-			for _, x := range problems {
-				bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
-			}
-			if len(bad) == 0 && file.MediaType != evidence.XLSX {
-				bad = append(bad, FieldProblem{Code: evidence.CodeType, Field: "body.file", Message: "is not an .xlsx workbook",
-					Fix: "Upload the workbook as the published .xlsx, saved after make verify"})
-			}
-			if len(bad) > 0 {
-				return nil, invalid(bad)
-			}
-			now := a.deps.Clock.Now()
-			key := migration.StorageKey(p.Organisation, id, uuid.Must(uuid.NewV7()))
-			if !wantsPreview(in.Prefer) {
-				if err := a.deps.Staging.Put(ctx, key, bytes.NewReader(file.Data)); err != nil {
-					logFailure(ctx, err)
-					return nil, problem(CodeUnavailable, "The workbook could not be stored.", "Try again in a few minutes.")
-				}
-			}
-			request := struct{ Migration, SHA256, Name string }{in.MigrationID, file.OriginalSHA256, file.Name}
-			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, request, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (MigrationUploadView, error) {
-				r, err := migrationRun(ctx, u, id)
-				if err != nil {
-					return MigrationUploadView{}, err
-				}
-				steps, err := u.Migrations().Steps(ctx, r.ID)
-				if err != nil {
-					return MigrationUploadView{}, err
-				}
-				if err := checkIfMatch(in.IfMatch, migrationETag(r, steps)); err != nil {
-					return MigrationUploadView{}, err
-				}
-				if err := migrationFixed(ctx, u, r.ID); err != nil {
-					return MigrationUploadView{}, err
-				}
-				step, kept, err := u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, storage.MigrationFile{RunID: r.ID, FileName: file.Name,
-					MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256, StorageKey: key,
-					DataClass: storage.ClassPayroll, AddedBy: uploader(ctx), AddedAt: now})
-				if err != nil {
-					return MigrationUploadView{}, err
-				}
-				item, err := migration.ValidateItem(step.ID)
-				if err != nil {
-					return MigrationUploadView{}, err
-				}
-				var job storage.OutboxRow
-				if a.deps.Outbox != nil {
-					job, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
-				} else { // no dispatcher here: the tick sends it
-					job, err = u.Outbox().Enqueue(ctx, item)
-				}
-				if err != nil {
-					return MigrationUploadView{}, err
-				}
-				op, err := startOperation(ctx, u, "migration_validation", job.ID, "/v1/migrations/"+r.ID.String()+"/report", now)
-				return MigrationUploadView{Step: migrationStepView(step), File: migrationFileView(kept), OperationID: op.ID.String()}, err
-			})
-			if (err != nil || w.Replayed) && !wantsPreview(in.Prefer) {
-				_ = a.deps.Staging.Delete(context.WithoutCancel(ctx), key) // no row names it
-			}
-			if err != nil {
-				return nil, err
-			}
-			out := &migrationUploadOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}
-			if w.Previewed {
-				out.Body.OperationID = ""
-			} else {
-				out.Location = operationPath(w.Body.OperationID)
-			}
-			return out, nil
+			return a.uploadWorkbook(ctx, in, storage.StepWorkbook, migrationFixed)
 		})
 
 	if op := a.OpenAPI().Paths["/v1/migrations/{migration_id}/workbook"].Post; op != nil && op.RequestBody != nil {
@@ -500,4 +408,106 @@ func migrationReportOf(s storage.MigrationStep) (MigrationReportView, error) {
 			Message: p.Message, Fix: p.Fix})
 	}
 	return v, nil
+}
+
+// uploadWorkbook keeps an uploaded workbook as a step's evidence and validates it in the background: M1's frozen
+// workbook, or M5's at the end of the parallel month (rev 0.268), each once ready says the migration may take it.
+func (a *API) uploadWorkbook(ctx context.Context, in *migrationUploadInput, step string, ready func(ctx context.Context, u storage.UnitOfWork, run uuid.UUID) error) (*migrationUploadOutput, error) {
+	id, err := parseID("migration_id", in.MigrationID)
+	if err != nil {
+		return nil, err
+	}
+	p, _ := authn.From(ctx)
+	if a.deps.Staging == nil || a.deps.Scanner == nil {
+		return nil, problem(CodeUnavailable, "Workbooks cannot be uploaded here: no file store or malware scanner is configured.",
+			"Ask your administrator to configure them (FR-DOC-01).")
+	}
+	up := in.RawBody.Data()
+	if up == nil || up.File.File == nil {
+		return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.file", Message: "is missing", Fix: "Send the workbook in the form field file"}})
+	}
+	defer up.File.Close()
+	data, err := io.ReadAll(io.LimitReader(up.File, migration.MaxBytes+1))
+	if err != nil {
+		return nil, problem(CodeMalformed, "The file could not be read in full.", "Send it again.")
+	}
+	file, problems, err := evidence.Check(ctx, a.deps.Scanner, up.File.Filename, data)
+	if err != nil {
+		logFailure(ctx, err)
+		return nil, problem(CodeUnavailable, "The malware scan is not available, so the workbook was not kept.", "Try again in a few minutes.")
+	}
+	var bad []FieldProblem
+	for _, x := range problems {
+		bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
+	}
+	if len(bad) == 0 && file.MediaType != evidence.XLSX {
+		bad = append(bad, FieldProblem{Code: evidence.CodeType, Field: "body.file", Message: "is not an .xlsx workbook",
+			Fix: "Upload the workbook as the published .xlsx, saved after make verify"})
+	}
+	if len(bad) > 0 {
+		return nil, invalid(bad)
+	}
+	now := a.deps.Clock.Now()
+	key := migration.StorageKey(p.Organisation, id, uuid.Must(uuid.NewV7()))
+	if !wantsPreview(in.Prefer) {
+		if err := a.deps.Staging.Put(ctx, key, bytes.NewReader(file.Data)); err != nil {
+			logFailure(ctx, err)
+			return nil, problem(CodeUnavailable, "The workbook could not be stored.", "Try again in a few minutes.")
+		}
+	}
+	request := struct{ Migration, SHA256, Name string }{in.MigrationID, file.OriginalSHA256, file.Name}
+	w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, request, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (MigrationUploadView, error) {
+		r, err := migrationRun(ctx, u, id)
+		if err != nil {
+			return MigrationUploadView{}, err
+		}
+		steps, err := u.Migrations().Steps(ctx, r.ID)
+		if err != nil {
+			return MigrationUploadView{}, err
+		}
+		if err := checkIfMatch(in.IfMatch, migrationETag(r, steps)); err != nil {
+			return MigrationUploadView{}, err
+		}
+		if err := ready(ctx, u, r.ID); err != nil {
+			return MigrationUploadView{}, err
+		}
+		step, kept, err := u.Migrations().AddWorkbook(ctx, step, storage.MigrationFile{RunID: r.ID, FileName: file.Name,
+			MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256, StorageKey: key,
+			DataClass: storage.ClassPayroll, AddedBy: uploader(ctx), AddedAt: now})
+		if err != nil {
+			return MigrationUploadView{}, err
+		}
+		item, err := migration.ValidateItem(step.ID)
+		if err != nil {
+			return MigrationUploadView{}, err
+		}
+		var job storage.OutboxRow
+		if a.deps.Outbox != nil {
+			job, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
+		} else { // no dispatcher here: the tick sends it
+			job, err = u.Outbox().Enqueue(ctx, item)
+		}
+		if err != nil {
+			return MigrationUploadView{}, err
+		}
+		report := "/v1/migrations/" + r.ID.String() + "/report"
+		if step.Step == storage.StepParallel {
+			report = "/v1/migrations/" + r.ID.String() + "/parallel/report"
+		}
+		op, err := startOperation(ctx, u, "migration_validation", job.ID, report, now)
+		return MigrationUploadView{Step: migrationStepView(step), File: migrationFileView(kept), OperationID: op.ID.String()}, err
+	})
+	if (err != nil || w.Replayed) && !wantsPreview(in.Prefer) {
+		_ = a.deps.Staging.Delete(context.WithoutCancel(ctx), key) // no row names it
+	}
+	if err != nil {
+		return nil, err
+	}
+	out := &migrationUploadOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}
+	if w.Previewed {
+		out.Body.OperationID = ""
+	} else {
+		out.Location = operationPath(w.Body.OperationID)
+	}
+	return out, nil
 }

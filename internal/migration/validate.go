@@ -85,7 +85,9 @@ func (v Validator) Work() func(ctx context.Context, org uuid.UUID, row storage.O
 		if err != nil || step.State != storage.StepValidating {
 			return err
 		}
-		report, checks, proposal, err := v.validate(ctx, org, step.RunID, file)
+		// The parallel month's workbook (M5) goes into books the import made: it is read and reported, and proposes no
+		// mapping (rev 0.268).
+		report, checks, proposal, err := v.validate(ctx, org, step.RunID, file, step.Step != storage.StepParallel)
 		if err != nil {
 			return err
 		}
@@ -130,9 +132,9 @@ func hashOf(b []byte) string {
 	return hex.EncodeToString(s[:])
 }
 
-// validate reads the workbook as kept and checks it: its report, the Checks export made from it, and the mapping it
-// proposes.
-func (v Validator) validate(ctx context.Context, org, run uuid.UUID, file storage.MigrationFile) (Report, []byte, *Mapping, error) {
+// validate reads the workbook as kept and checks it: its report, the Checks export made from it, and, checked against
+// the organisation, the mapping it proposes.
+func (v Validator) validate(ctx context.Context, org, run uuid.UUID, file storage.MigrationFile, against bool) (Report, []byte, *Mapping, error) {
 	empty := (&Workbook{}).ChecksExport()
 	rc, err := v.Files.Get(ctx, file.StorageKey)
 	if err != nil {
@@ -156,6 +158,9 @@ func (v Validator) validate(ctx context.Context, org, run uuid.UUID, file storag
 		return Report{}, nil, nil, err
 	}
 	w.Freeze()
+	if !against {
+		return w.Report(file.FileName, file.SHA256), w.ChecksExport(), nil, nil
+	}
 	// Checked against the organisation inside a transaction that rolls back: validating commits nothing (design D2).
 	var proposal *Mapping
 	err = v.Store.Do(storage.WithPreview(ctx), org, func(ctx context.Context, u storage.UnitOfWork) (err error) {

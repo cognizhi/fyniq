@@ -204,6 +204,11 @@ Source: PRD-001 §17.1
 - **THEN** the workbook and Fyniq are reconciled
 - **AND** the accountant signs off
 
+#### Scenario: The parallel month's workbook reconciled (rev 0.268)
+- **WHEN** the workbook at the end of the parallel month is uploaded once the parity report is signed
+- **THEN** it is read without a mapping and reconciled with Fyniq the same way through its own as-of, its lines in the register M4 began
+- **AND** the Accountant, stepped up, signs its report over its hash once every line has a decision that counts
+
 ### Requirement: Go-live and workbook archive (M6)
 At go-live the workbook SHALL be locked and kept as a read-only archive, with its PDFs, for the retention period.
 

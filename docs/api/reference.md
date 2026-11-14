@@ -14166,6 +14166,138 @@ The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), ov
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `MIGRATION-11`, `MIGRATION-12`, `MIGRATION-14`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/migrations/{migration_id}/parallel`
+
+**Get the parallel month's reconciliation** (`getMigrationParallel`)
+
+The parallel month's report (§17.1 M5, FR-MIG-02; rev 0.268): the latest valid workbook of M5 reconciled with Fyniq's books the same way as M4, through that workbook's as-of: on the history each account's opening and each month's movement and closing; on a clean start each opening against the cut-over's Carry Forward, and each month from the books start, its closing the Carry Forward balance and the workbook's movements since; each contact's open total, and the pay runs the import brought. Its lines are the difference register's, shared with M4: a decision counts while its figures are the report's. sha256, the ETag, is what a decision and the sign-off are made on. Before the import is committed, status not_committed; before a valid workbook of the parallel month, not_started; neither holds figures. Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+- **Responses:**
+  - `200` OK [`MigrationReconciliation`](../../contracts/schemas/MigrationReconciliation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PATCH /v1/migrations/{migration_id}/parallel/register/{line}`
+
+**Decide a line of the parallel month's register** (`decideMigrationParallelDifference`)
+
+The Accountant decides a line of the parallel month's report (§17.1 M5, FR-MIG-02; rev 0.268) as decideMigrationDifference does M4's: a, b or c (a workbook defect with a note), kept with the line's figures, stale once they move. The register is shared: a line M4 decided on the same figures needs no decision again. A line the report does not have is MIGRATION-15; before the import is committed, MIGRATION-14; before a valid workbook of the parallel month, MIGRATION-16. Needs If-Match with the report's ETag. Side effects: the decision and the audit event migration.difference_decided. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+  - `line` (path, required): The line's key, as the report gives it.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`MigrationRegisterChange`](../../contracts/schemas/MigrationRegisterChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MigrationReconciliation`](../../contracts/schemas/MigrationReconciliation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `MIGRATION-16` The parallel month cannot start yet; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `MIGRATION-14`, `MIGRATION-15`, `MIGRATION-16`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/migrations/{migration_id}/parallel/report`
+
+**Get the parallel month's validation report** (`getMigrationParallelReport`)
+
+M5's latest validation report (rev 0.268): the parallel month's workbook as read, each sheet's rows and every problem with its sheet, row and column, what is wrong and how to fix it, as M1's report gives them; an error leaves the workbook invalid, and the parallel month's report reads the latest valid one. Before one is uploaded there is none to read. Read-only; no side effects.
+
+- **Permission:** View on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+- **Responses:**
+  - `200` OK [`MigrationReportView`](../../contracts/schemas/MigrationReportView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/migrations/{migration_id}/parallel/sign-off`
+
+**Sign the parallel month** (`signMigrationParallel`)
+
+The Accountant, stepped up in the last 5 minutes, signs the parallel month's report and its register together (§17.1 M5, FR-MIG-02; rev 0.268), over the report's SHA-256, as signMigrationReconciliation does M4's: refused (MIGRATION-15) while a line has no decision that counts or Fyniq's checks have never run; a report is signed once. Before the import is committed, MIGRATION-14; before a valid workbook of the parallel month, MIGRATION-16. Needs If-Match with the report's ETag. Side effects: the sign-off and the audit event migration.parallel_signed, with the ledger revision the report was read at. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256). A person signed in to Fyniq, stepped up in the last 5 minutes.
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MigrationReconciliation`](../../contracts/schemas/MigrationReconciliation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-15` The difference register refuses it; `MIGRATION-16` The parallel month cannot start yet; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `MIGRATION-14`, `MIGRATION-15`, `MIGRATION-16`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/migrations/{migration_id}/parallel/workbook`
+
+**Upload the parallel month's workbook** (`uploadMigrationParallelWorkbook`)
+
+M5 (§17.1, FR-MIG-02; rev 0.268): uploads the workbook as it stands at the end of the parallel month, recorded in both the workbook and Fyniq, as multipart/form-data, once the import is committed (MIGRATION-14) and its parity report signed (MIGRATION-16). It is an untrusted upload, checked and kept as M1's is, and validated in the background: read and reported, without a mapping, as it goes into the books the import made. The answer is 202 with the step and the operation to poll; then read getMigrationParallelReport, and once valid, getMigrationParallel. Uploading again validates the new workbook as a new attempt. Needs If-Match with the migration's ETag. Side effects: the file, the step, the job, the audit event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview checks the file and saves nothing.
+
+- **Permission:** Create on Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)
+- **Parameters:**
+  - `migration_id` (path, required): The migration.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MigrationUploadView`](../../contracts/schemas/MigrationUploadView.schema.json)
+  - `202` Accepted [`MigrationUploadView`](../../contracts/schemas/MigrationUploadView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-14` The import cannot be committed or run now; `MIGRATION-16` The parallel month cannot start yet; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `MIGRATION-14`, `MIGRATION-16`, `STORAGE-LOCK-01`, `STORAGE-MIGRATION-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/migrations/{migration_id}/reconciliation`
 
 **Get the reconciliation** (`getMigrationReconciliation`)

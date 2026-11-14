@@ -299,7 +299,8 @@ func TestAttackTheMigrationMappingKeepsItsRules(t *testing.T) {
 // none of it; another organisation sees none of it. The difference register (000332, FY328) and the report's sign-off
 // (FY326) wait for the commit to be committed; a line is decided first at version 1 and again only at its version, a
 // workbook defect with a note, a line of its form; the report is signed once; no decision changes line, skips a version
-// or goes.
+// or goes. Once the report is signed, the parallel month's workbook (M5, 000336) joins, and no other step or mapping; its
+// sign-off waits for that workbook to be valid, once per report.
 // req: FR-MIG-01
 // req: FR-MIG-02
 // req: AUD-01
@@ -511,6 +512,38 @@ func TestAttackTheMigrationCommitKeepsItsRules(t *testing.T) {
 		if err := in(fn); !storageCode(err, storage.CodeMigration) {
 			t.Errorf("%s: %v", what, err)
 		}
+	}
+	// The parallel month (000336): with the parity report signed, its workbook (M5) joins, and no other step; its sign-off
+	// waits for that workbook to be valid, and signs each report once.
+	parallel := storage.MigrationSignOff{RunID: run.ID, Subject: storage.SignOffParallel, SubjectSHA256: hash("9"), SignedBy: "user:y", SignedAt: now}
+	signParallel := func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().SignOff(ctx, parallel)
+		return err
+	}
+	if err := in(signParallel); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("the parallel month signed before its workbook: %v", err)
+	}
+	var m5 storage.MigrationStep
+	if err := in(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		m5, _, err = u.Migrations().AddWorkbook(ctx, storage.StepParallel, migrationFile(run.ID, a.Org, "October.xlsx", now))
+		return err
+	}); err != nil {
+		t.Fatalf("the parallel month's workbook: %v", err)
+	}
+	octoberChecks := migrationFile(run.ID, a.Org, "checks.csv", now)
+	octoberChecks.MediaType, octoberChecks.DataClass, octoberChecks.AddedBy = "text/csv", storage.ClassGeneral, "system:migration.validate"
+	if err := worker.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Migrations().Validated(ctx, m5.ID, octoberChecks, storage.MigrationReport{State: storage.StepValid, Report: []byte(`{}`),
+			ReportSHA256: hash("8"), ValidatedAt: now})
+		return err
+	}); err != nil {
+		t.Fatalf("validating the parallel month's workbook: %v", err)
+	}
+	if err := in(signParallel); err != nil {
+		t.Fatalf("the parallel month's sign-off: %v", err)
+	}
+	if err := in(signParallel); !storageCode(err, storage.CodeMigration) {
+		t.Errorf("the parallel month signed twice: %v", err)
 	}
 	for _, x := range []struct {
 		what, role, stmt string

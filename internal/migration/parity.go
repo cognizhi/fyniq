@@ -31,6 +31,9 @@ const (
 // without a note, or a sign-off with a line undecided, Fyniq's checks never run, or the report signed already.
 const CodeRegister = "MIGRATION-15"
 
+// CodeParallel is the parallel month's workbook before its time: the parity report (M4) is not signed yet (rev 0.268).
+const CodeParallel = "MIGRATION-16"
+
 // The classes of a difference (FR-MIG-02, design D8): a, a cent allocation; b, a deliberate rule change; c, a defect of
 // the workbook.
 const (
@@ -131,7 +134,16 @@ func sub(a, b *apd.Decimal) *apd.Decimal {
 // depreciation account within a cent a month, a rule change (b) on a revaluation or statutory account, else none, for
 // the Accountant to decide.
 func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
-	start := w.BooksStart(path)
+	return w.ReconcileFrom(w, m, path, b)
+}
+
+// ReconcileFrom is Reconcile of a workbook later than the one imported, cut (§17.1 M5, rev 0.268): the workbook at the
+// end of the parallel month, its months through its own "as of" against the books from the cut-over on. A clean start's
+// months from the books start compare each movement, and each closing as the cut-over's Carry Forward balance and the
+// workbook's movements since; the payroll totals compare the months the import brought, the months after them showing
+// in the accounts.
+func (w *Workbook) ReconcileFrom(cut *Workbook, m Mapping, path string, b Books) Parity {
+	start := cut.BooksStart(path)
 	p := Parity{From: start}
 	type row struct {
 		opening, atStart *apd.Decimal
@@ -172,10 +184,10 @@ func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
 	carried := map[string]*apd.Decimal{}
 	if path == storage.PathCleanStart {
 		kind := map[string]string{}
-		for _, a := range w.Accounts {
+		for _, a := range cut.Accounts {
 			kind[a.Code] = a.Type
 		}
-		for _, c := range w.CarryForward.Balances {
+		for _, c := range cut.CarryForward.Balances {
 			x := cmp.Or(c.Balance, new(apd.Decimal))
 			if credit[kind[c.Code]] {
 				x = new(apd.Decimal).Neg(x)
@@ -237,12 +249,19 @@ func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
 			r = &row{movement: map[time.Time]*apd.Decimal{}, closing: map[time.Time]*apd.Decimal{}}
 		}
 		p.Accounts++
+		closing := cmp.Or(b.Opening[code], new(apd.Decimal))
 		if path == storage.PathCleanStart {
 			compare(code, FigureOpening, time.Time{}, b.Opening[code], carried[code], 0)
+			continued := cmp.Or(carried[code], new(apd.Decimal))
+			for i, month := range months {
+				moved := b.Movement[code][month]
+				closing, continued = add(closing, moved), add(continued, r.movement[month])
+				compare(code, FigureMovement, month, moved, r.movement[month], 1)
+				compare(code, FigureClosing, month, closing, continued, i+1)
+			}
 			continue
 		}
 		compare(code, FigureOpening, time.Time{}, b.Opening[code], r.opening, 0)
-		closing := cmp.Or(b.Opening[code], new(apd.Decimal))
 		for i, month := range months {
 			moved := b.Movement[code][month]
 			closing = add(closing, moved)
@@ -253,7 +272,7 @@ func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
 	if len(months) > 0 {
 		p.Through = months[len(months)-1]
 	}
-	if path == storage.PathCleanStart {
+	if path == storage.PathCleanStart && p.Through.IsZero() {
 		p.Through = firstOf(w.Settings.AsOf)
 	}
 	figure := func(f Figure) {
@@ -265,7 +284,7 @@ func (w *Workbook) Reconcile(m Mapping, path string, b Books) Parity {
 	}
 	w.reconcileOpenItems(m, b, figure)
 	if path == storage.PathHistory {
-		w.reconcilePayroll(m, b, figure)
+		w.reconcilePayroll(m, b, cut.Settings.AsOf, figure)
 	}
 	return p
 }
@@ -328,7 +347,7 @@ func (w *Workbook) reconcileOpenItems(m Mapping, b Books, add figureFn) {
 // imported pay run's lines (design D7): net pay against what it credits to salaries payable, what is due to the CPF
 // Board (employee and employer CPF, SDL and SHG) against what it credits to the CPF payable, and the employer's cost
 // (gross pay, employer CPF and SDL) against what it debits.
-func (w *Workbook) reconcilePayroll(m Mapping, b Books, add figureFn) {
+func (w *Workbook) reconcilePayroll(m Mapping, b Books, through time.Time, add figureFn) {
 	sys := w.Settings.SystemAccounts
 	salaries, cpf := m.accountOf(sys[sysSalaries]), m.accountOf(sys[sysCPF])
 	type totals struct{ net, statutory, cost *apd.Decimal }
@@ -337,6 +356,9 @@ func (w *Workbook) reconcilePayroll(m Mapping, b Books, add figureFn) {
 		end := r.MonthEnd
 		if end.IsZero() {
 			end = time.Date(r.Month.Year(), r.Month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+		}
+		if end.After(through) {
+			continue // a month the import did not bring
 		}
 		t := workbook[firstOf(end)]
 		if t == nil {

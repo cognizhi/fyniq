@@ -342,8 +342,10 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 // pastPolicy are the operations the matrix's organisation never reaches a success of, as its state never allows one,
 // each with the code the API answers past its policy: allowed means that code, refused the policy's 403. The workbook
 // import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
-// commits one (rev 0.266).
-var pastPolicy = map[string]string{"decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit}
+// commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268).
+var pastPolicy = map[string]string{"decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
+	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
+	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound}
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample
@@ -414,6 +416,28 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	"decideMigrationDifference": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPatch, "/v1/migrations/"+matrixMigration(e)+"/reconciliation/register/6610.2026-06.movement", tok,
 			map[string]any{"class": "a"}, "Prefer", "return=preview", "If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
+	},
+	// The parallel month (rev 0.268) needs the committed import too: allowed answers MIGRATION-14, and its report, which
+	// no workbook of it makes yet, not found (pastPolicy); its reconciliation answers with nothing in it.
+	"uploadMigrationParallelWorkbook": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		was := e.call(http.MethodGet, "/v1/migrations/"+id, e.as(authz.Auditor), nil).Raw
+		r := e.upload("/v1/migrations/"+id+"/parallel/workbook", tok, nil, "October.xlsx", sampleWorkbook(e.t), "Prefer", "return=preview", "If-Match", e.migrationTag(id))
+		return r, func() bool { return e.call(http.MethodGet, "/v1/migrations/"+id, e.as(authz.Auditor), nil).Raw == was }
+	},
+	"getMigrationParallelReport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/parallel/report", tok, nil), nil
+	},
+	"getMigrationParallel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/parallel", tok, nil), nil
+	},
+	"decideMigrationParallelDifference": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPatch, "/v1/migrations/"+matrixMigration(e)+"/parallel/register/6310.2026-10.movement", tok,
+			map[string]any{"class": "a"}, "Prefer", "return=preview", "If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
+	},
+	"signMigrationParallel": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/migrations/"+matrixMigration(e)+"/parallel/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview",
+			"If-Match", `"`+strings.Repeat("0", 64)+`"`), nil
 	},
 	"signMigrationReconciliation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/migrations/"+matrixMigration(e)+"/reconciliation/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview",

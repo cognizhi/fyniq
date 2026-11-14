@@ -545,6 +545,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/migrations/{migration_id}/mapping` (getMigrationMapping): Get the mapping
 - `PATCH /v1/migrations/{migration_id}/mapping` (changeMigrationMapping): Change the mapping
 - `POST /v1/migrations/{migration_id}/mapping/sign-off` (signMigrationMapping): Sign the mapping
+- `GET /v1/migrations/{migration_id}/parallel` (getMigrationParallel): Get the parallel month's reconciliation
+- `PATCH /v1/migrations/{migration_id}/parallel/register/{line}` (decideMigrationParallelDifference): Decide a line of the parallel month's register
+- `GET /v1/migrations/{migration_id}/parallel/report` (getMigrationParallelReport): Get the parallel month's validation report
+- `POST /v1/migrations/{migration_id}/parallel/sign-off` (signMigrationParallel): Sign the parallel month
+- `POST /v1/migrations/{migration_id}/parallel/workbook` (uploadMigrationParallelWorkbook): Upload the parallel month's workbook
 - `GET /v1/migrations/{migration_id}/reconciliation` (getMigrationReconciliation): Get the reconciliation
 - `PATCH /v1/migrations/{migration_id}/reconciliation/register/{line}` (decideMigrationDifference): Decide a line of the register
 - `POST /v1/migrations/{migration_id}/reconciliation/sign-off` (signMigrationReconciliation): Sign the reconciliation
