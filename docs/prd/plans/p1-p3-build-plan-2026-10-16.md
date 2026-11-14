@@ -388,6 +388,18 @@ By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250 t
 One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists, with
 whether GitHub's runners hold the 10 M-line run `[verify]`.
 
+`p1-workbook-migration` was proposed on 12 Nov 2026, next in wave 7, to move the books from the workbook and prove the
+move (FR-MIG-01 to FR-MIG-04, §17.1's M1 to M6). The owner decided three things first (PRD-001 rev 0.254):
+- payroll history comes as one posted summary journal a month, keeping the amounts paid and reported to the CPF Board;
+- an import goes only into an organisation with no posted entries;
+- projects become the project dimension's values, with timesheets kept in the archived workbook.
+
+It reads the workbook sheet by sheet into a validation report before anything is written, commits as one approved
+operation through the commands a person's entry takes, and reconciles with the workbook's own Trial Balance by account
+and month to the cent. It also builds FR-GL-06's opening open items through a clearing account [accountant to confirm],
+the generic import with the workbook's sheets as templates, and the full tenant export. The whole path is rehearsed on
+the synthetic sample workbook.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

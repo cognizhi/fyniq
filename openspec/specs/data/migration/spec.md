@@ -19,6 +19,20 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **WHEN** a workbook import is run
 - **THEN** a validation report is shown before anything is committed
 
+#### Scenario: Payroll as monthly summary journals (rev 0.254)
+- **WHEN** the Payroll sheet is imported
+- **THEN** each month's pay run becomes one posted summary journal keeping the amounts actually paid and reported to the CPF Board (gross pay, employee and employer CPF, SDL, SHG, net pay) by salary account and department
+- **AND** the per-employee rows stay in the archived workbook until the payroll link
+
+#### Scenario: Only into an organisation with no posted entries (rev 0.254)
+- **WHEN** a workbook import is started in an organisation that has posted entries
+- **THEN** it is refused, and a failed or rejected import starts again in a new organisation, never mixed into live books
+
+#### Scenario: Projects and departments as dimension values (rev 0.254)
+- **WHEN** the workbook's projects and the Employees sheet's departments are imported
+- **THEN** each project becomes a value of the project dimension and each department a value of the department dimension, with their tags on transactions, invoices, bills and journals carried over
+- **AND** the Timesheets sheet and the per-person employee rows stay in the archived workbook
+
 ### Requirement: FR-MIG-02 Import reconciliation
 The imported trial balance SHALL equal the workbook's trial balance for every account and month to the cent, except the items in a migration difference register that the accountant signs off.
 
