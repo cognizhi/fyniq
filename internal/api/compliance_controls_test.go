@@ -111,3 +111,19 @@ var matrixControls = map[string]func(e *env, tok string) (response, func() bool)
 		return e.call(http.MethodGet, "/v1/compliance/controls/CTL-FIN-01", tok, nil), nil
 	},
 }
+
+// req: CMP-01
+// A control's words leave out the PRD's revision tags, wherever Appendix F puts them.
+func TestAControlsWordsLeaveOutTheRevisionTags(t *testing.T) {
+	for in, want := range map[string]string{
+		"(rev 0.2) GitHub Actions pinned by SHA; least-privilege workflow permissions (SEC-28)":             "GitHub Actions pinned by SHA; least-privilege workflow permissions (SEC-28)",
+		"GST F5 filed by the due date; (rev 0.8) every in-scope return item has an IRAS acknowledgement ID": "GST F5 filed by the due date; every in-scope return item has an IRAS acknowledgement ID",
+		"DAST baseline scan on staging. (rev 0.246, the owner's decision of 10 Nov 2026) In CI":             "DAST baseline scan on staging. In CI",
+		"COSO P10; SOC2 PI1; Companies Act; (rev 0.19) ACRA's electronic register of members":               "COSO P10; SOC2 PI1; Companies Act; ACRA's electronic register of members",
+		"Payments and payee bank changes are dual-controlled":                                               "Payments and payee bank changes are dual-controlled",
+	} {
+		if got := untagged(in); got != want {
+			t.Errorf("untagged(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
