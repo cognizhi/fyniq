@@ -12447,6 +12447,24 @@ The status of long work the caller asked for, which runs in the background (FR-I
 
 Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02).
 
+### `GET /v1/compliance/ai-inventory`
+
+**Get the AI inventory** (`getAIInventory`)
+
+What the AI uses, beside the AI assistant's impact assessment (CMP-AI-02): each connection, in use or waiting, with the endpoint its calls go to, where prompts are processed, whether the provider trains on them, its allowed models, the data classes the routes send it and who asked for it; each agent's route in force; the data categories the AI processes; the prompts' and the tool registry's versions, none until p1-ai-assistant adds them; and whether the assessment was approved after the AI's last change. It is read from the configuration, so it is always current. Read-only; no side effects.
+
+- **Permission:** View on Compliance Center
+- **Responses:**
+  - `200` OK [`AIInventory`](../../contracts/schemas/AIInventory.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/anonymisations`
 
 **List the anonymised contacts** (`listAnonymisations`)

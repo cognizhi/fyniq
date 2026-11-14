@@ -3256,6 +3256,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/ai-inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI inventory
+         * @description What the AI uses, beside the AI assistant's impact assessment (CMP-AI-02): each connection, in use or waiting, with the endpoint its calls go to, where prompts are processed, whether the provider trains on them, its allowed models, the data classes the routes send it and who asked for it; each agent's route in force; the data categories the AI processes; the prompts' and the tool registry's versions, none until p1-ai-assistant adds them; and whether the assessment was approved after the AI's last change. It is read from the configuration, so it is always current. Read-only; no side effects.
+         */
+        get: operations["getAIInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/anonymisations": {
         parameters: {
             query?: never;
@@ -15054,6 +15074,123 @@ export interface components {
             exclude?: {
                 [key: string]: string[] | null;
             };
+        };
+        AIInventory: {
+            /** @description The data categories the AI processes: every class a route carries. */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /** @description Each connection, in use or waiting, by name. */
+            connections: components["schemas"]["AIInventoryConnection"][];
+            dpia: components["schemas"]["AIInventoryDPIA"];
+            /**
+             * @description The Data Protection Officer the profile names, who keeps it.
+             * @example Arjun Rao
+             */
+            owner?: string;
+            /** @description The prompts' versions: none until p1-ai-assistant adds them. */
+            prompts: components["schemas"]["AIInventoryVersion"][];
+            /** @description Each agent's route in force. */
+            routes: components["schemas"]["AIInventoryRoute"][];
+            /** @description The tool registry's version: none until p1-ai-assistant adds it. */
+            tools: components["schemas"]["AIInventoryVersion"][];
+        };
+        AIInventoryConnection: {
+            /**
+             * @description Who asked for it.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            asked_by: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            changed_at: string;
+            /** @description The data classes the routes send it. */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /** @example anthropic */
+            connector: string;
+            /**
+             * @description The one host its calls go to (SEC-36).
+             * @example asia-southeast1-aiplatform.googleapis.com
+             */
+            endpoint: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            id: string;
+            /** @description The models on its allow-list. */
+            models: string[];
+            /** @example Claude in Singapore */
+            name: string;
+            /** @description Where its prompts are processed, from its data-handling declaration (AI-88). */
+            processed_in: string[];
+            /**
+             * @description enabled: in use; disabled: waiting for approval, or switched off.
+             * @example enabled
+             * @enum {string}
+             */
+            state: "disabled" | "enabled";
+            /**
+             * @description Whether the provider trains on them, the least favourable its declaration says.
+             * @example no
+             * @enum {string}
+             */
+            training?: "no" | "yes" | "unknown";
+        };
+        AIInventoryDPIA: {
+            /** @description Its latest approval. */
+            approved?: components["schemas"]["DPIAApprovalRef"];
+            /**
+             * @description Approved after the AI's last change of a connection or route; otherwise it needs reviewing (CMP-AI-02).
+             * @example true
+             */
+            current: boolean;
+            /** @example ai-assistant */
+            key: string;
+            /**
+             * @description The AI assistant is switched on, so it must be approved (CMP-PD-08).
+             * @example true
+             */
+            required: boolean;
+            /**
+             * @description Why it is current, or what to do.
+             * @example Approved after the last change of the AI's connections and routes.
+             */
+            why: string;
+        };
+        AIInventoryRoute: {
+            /** @example chat */
+            agent: string;
+            /** @description The data classes it carries. */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            made_at: string;
+            /** @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d */
+            made_by: string;
+            steps: components["schemas"]["AIInventoryStep"][];
+            /**
+             * Format: int64
+             * @example 2
+             */
+            version: number;
+        };
+        AIInventoryStep: {
+            /**
+             * @description The connection's name.
+             * @example Claude in Singapore
+             */
+            connection: string;
+            /** @example claude-opus-4-6 */
+            model: string;
+        };
+        AIInventoryVersion: {
+            /** @example assistant */
+            name: string;
+            /** @example 14 */
+            version: string;
         };
         AIModel: {
             /**
@@ -70648,6 +70785,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIInventory"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

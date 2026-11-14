@@ -426,6 +426,7 @@ export const actions = [
   { kind: "action", id: "data-protection.entry", mode: "expert", help: "data-protection.entry", guide: "compliance.data-protection#add-what-the-company-holds-elsewhere" },
   { kind: "action", id: "data-protection.review", mode: "expert", help: "data-protection.review", guide: "compliance.data-protection#review-the-inventory-each-quarter" },
   { kind: "action", id: "data-protection.dpias", mode: "expert", help: "data-protection.dpias", guide: "compliance.data-protection#impact-assessments" },
+  { kind: "action", id: "data-protection.ai-inventory", mode: "expert", help: "data-protection.ai-inventory", guide: "compliance.data-protection#the-ai-inventory" },
   { kind: "action", id: "data-protection.requests", mode: "expert", help: "data-protection.requests", guide: "compliance.data-protection#access-and-correction-requests" },
   { kind: "action", id: "data-protection.breaches", mode: "expert", help: "data-protection.breaches", guide: "compliance.data-protection#breaches" },
   { kind: "action", id: "data-protection.transfers", mode: "expert", help: "data-protection.transfers", guide: "compliance.data-protection#overseas-transfers" },

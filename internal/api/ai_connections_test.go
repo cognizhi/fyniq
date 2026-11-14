@@ -371,6 +371,9 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	"switchOffAI": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/settings/switch-off", tok, nil, "Prefer", "return=preview"), nil
 	},
+	"getAIInventory": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/compliance/ai-inventory", tok, nil), nil
+	},
 	"listAIActivity": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/activity", tok, nil), nil
 	},

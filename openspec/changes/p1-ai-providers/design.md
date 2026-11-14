@@ -245,6 +245,14 @@ See proposal.md for why. What exists today:
 - C.2 #55 flags a route that falls back past its daily threshold, an alias not re-qualified this week, a budget or
   quota within 20%, a model retiring within 30 days, retired or unlisted, and a connection whose list was not read for
   3 days.
+- As built (task 7.2): the AI inventory (CMP-AI-02) is `GET /v1/compliance/ai-inventory`, read under the Compliance
+  Center's row, and a card on Data protection's Impact assessments tab beside the AI assistant's assessment, as the
+  `data-protection` screen designs it. It is read from the configuration, so it never drifts: each connection (in use or
+  waiting) with its endpoint, where prompts are processed and whether the provider trains on them, its allowed models,
+  the classes the routes send it and who asked for it; each route in force; the data categories; the prompts and the
+  tool registry, empty until `p1-ai-assistant`; and its owner, the DPO the profile names. "Kept current" for the DPIA
+  is shown, not enforced: the assessment is current when approved after the last change of a connection or route, and
+  "to review" otherwise.
 - As built (task 7.1): C.2 #55 is the check `ai.model-routes` (area AI, ⚠, owned by the Owner, its items opened under
   "AI providers and model routes"). AI-76's "daily threshold" is not defined in the PRD, so it is the organisation
   setting `ai.fallbacks_per_day`: a whole number (a new setting kind, `count`), recommended 5, from 1 to 1,000, under

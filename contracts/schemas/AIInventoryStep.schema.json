@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connection": {
+      "description": "The connection's name.",
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "type": "string"
+    },
+    "model": {
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "connection"
+  ],
+  "title": "AIInventoryStep",
+  "type": "object"
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "$ref": "DPIAApprovalRef.schema.json",
+      "description": "Its latest approval."
+    },
+    "current": {
+      "description": "Approved after the AI's last change of a connection or route; otherwise it needs reviewing (CMP-AI-02).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "key": {
+      "examples": [
+        "ai-assistant"
+      ],
+      "type": "string"
+    },
+    "required": {
+      "description": "The AI assistant is switched on, so it must be approved (CMP-PD-08).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "why": {
+      "description": "Why it is current, or what to do.",
+      "examples": [
+        "Approved after the last change of the AI's connections and routes."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "required",
+    "current",
+    "why"
+  ],
+  "title": "AIInventoryDPIA",
+  "type": "object"
+}

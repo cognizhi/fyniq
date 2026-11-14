@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classes": {
+      "description": "The data categories the AI processes: every class a route carries.",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "connections": {
+      "description": "Each connection, in use or waiting, by name.",
+      "items": {
+        "$ref": "AIInventoryConnection.schema.json"
+      },
+      "type": "array"
+    },
+    "dpia": {
+      "$ref": "AIInventoryDPIA.schema.json"
+    },
+    "owner": {
+      "description": "The Data Protection Officer the profile names, who keeps it.",
+      "examples": [
+        "Arjun Rao"
+      ],
+      "type": "string"
+    },
+    "prompts": {
+      "description": "The prompts' versions: none until p1-ai-assistant adds them.",
+      "items": {
+        "$ref": "AIInventoryVersion.schema.json"
+      },
+      "type": "array"
+    },
+    "routes": {
+      "description": "Each agent's route in force.",
+      "items": {
+        "$ref": "AIInventoryRoute.schema.json"
+      },
+      "type": "array"
+    },
+    "tools": {
+      "description": "The tool registry's version: none until p1-ai-assistant adds it.",
+      "items": {
+        "$ref": "AIInventoryVersion.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "connections",
+    "routes",
+    "classes",
+    "prompts",
+    "tools",
+    "dpia"
+  ],
+  "title": "AIInventory",
+  "type": "object"
+}

@@ -531,3 +531,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-14] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI assistant switches off at once, AI-13)
 
 ## [2026-11-14] compile | docs/user-guide/organisation-settings.md, docs/user-guide/checks.md → settings.organisation, settings.change, checks.overview (AI routes: the fallbacks threshold and C.2 #55)
+
+## [2026-11-14] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (the AI inventory, CMP-AI-02)
