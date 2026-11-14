@@ -377,3 +377,55 @@ func TestAConnectorReachesOnlyTheEndpointsRegisteredForIt(t *testing.T) {
 		t.Fatalf("an installation connector reached %+v", eps)
 	}
 }
+
+// An AI connection's model provider reads its key by the connection's reference and reaches the connection's one host
+// on 443 only: another host, another port, or a redirect's target is refused before anything is sent; a self-hosted
+// server is reached only when a private endpoint is registered for its connection.
+// req: AI-79
+// req: SEC-36
+// req: SEC-37
+// asvs: V1.3.6
+func TestAModelConnectionReachesOnlyItsOwnHost(t *testing.T) {
+	m, err := connector.Parse(editModel(t, func(map[string]any) {}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got connector.Config
+	b := connector.Binding{Manifest: m, Model: func(c connector.Config) (ports.ModelProvider, error) {
+		got = c
+		return nil, nil
+	}}
+	cat, err := connector.NewCatalogue(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := clock.NewFrozen(time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
+	r := &connector.Runtime{Catalogue: cat, Secrets: connector.NewSecretCache(memSecrets{values: map[ports.SecretRef]string{"ref-1": "k"}}, c),
+		Egress: &egress.Guard{}, Clock: c}
+	ctx := context.Background()
+	conn := storage.AIConnection{ID: uuid.New(), Connector: m.ID, Configuration: []byte(`{}`), Host: "models.example.com", CredentialRef: "ref-1"}
+	if _, err := r.Model(ctx, privateUnit{}, conn); err != nil {
+		t.Fatal(err)
+	}
+	if got.Secrets["api_key"] != "k" {
+		t.Errorf("the key: %q", got.Secrets["api_key"])
+	}
+	for _, url := range []string{"https://elsewhere.example.com/v1/models", "https://models.example.com:8443/v1/models", "http://169.254.169.254/latest/meta-data/"} {
+		resp, err := got.HTTP.Get(url)
+		if err == nil {
+			_ = resp.Body.Close()
+			t.Errorf("%s was reached", url)
+		} else if !errors.Is(err, egress.ErrRefused) {
+			t.Errorf("%s: %v", url, err)
+		}
+	}
+
+	// A self-hosted server with no private endpoint registered for its connection is not reached at all.
+	own := conn
+	own.SelfHosted, own.Host = true, "10.40.0.5"
+	u := privateUnit{eps: privateEndpoints{registered: []storage.PrivateEndpoint{{Service: storage.PrivateEndpointAIModel, Credential: uuid.New(),
+		Address: netip.MustParsePrefix("10.40.0.0/28"), Port: 443, Pin: egress.PinOf([]byte("its key"))}}}}
+	if _, err := r.Model(ctx, u, own); err == nil || !strings.Contains(err.Error(), "SEC-37") {
+		t.Errorf("a self-hosted server without its endpoint: %v", err)
+	}
+}
