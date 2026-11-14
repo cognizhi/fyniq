@@ -227,6 +227,11 @@ See proposal.md for why. What exists today:
   the API or the worker to run the router for it, keeping CMP-AI-01 as it is; (b) CMP-AI-01 widens to append-only
   metering functions in the caller's organisation, a PRD revision with the AI-surface second review; (c) the AI service
   connects with a separate metering role holding only those functions.
+- Decided by the owner on 14 Nov 2026, interactively, after the change was built: **(a)**. The AI service never calls a
+  provider itself: for each model turn it asks an internal API operation, which runs this router (admission, the
+  reservation, the call through the egress guard, the record) and streams the answer back. CMP-AI-01 stays as it is,
+  the AI service holds no provider key, and keys, egress and budgets stay in the one place this change built and
+  tested. `p1-ai-assistant` builds that operation, closed to MCP, agent-class clients and people.
 
 **D12. Local mode (DEV-09, "Local AI in replay and live mode").**
 - Replay by default: a `replay` provider answers from cassettes in `evals/cassettes/` (beside the AI suites, as
