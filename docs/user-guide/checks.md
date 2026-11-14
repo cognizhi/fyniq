@@ -120,5 +120,10 @@ trail.
   sends, from the sending domains' records and, over 30 days, hard bounces at 2% or complaints at
   0.1% with 50 or more sent, or any complaint with fewer; and an integration whose last test failed,
   or whose key expires within 14 days.
+- **AI**: an AI agent's route that fell back more often in a day than the organisation's setting
+  allows (5 unless changed); a moving model alias on a route not re-qualified this week; an AI budget,
+  or a subscription's quota, within 20% of its limit; a model on a route retiring within 30 days, or
+  that its provider no longer lists or refuses; and a connection with a stored key whose model list
+  has not been read successfully for 3 days.
 
 The checks of each module still to come, such as payroll, join as that module is built.

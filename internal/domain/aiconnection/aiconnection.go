@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/cognizhi/fyniq/internal/connector"
@@ -50,6 +51,17 @@ type Quota struct {
 	Window   string `json:"window"` // day or month
 	Fee      string `json:"fee"`    // a decimal string, never a binary number (ENG-10)
 	Currency string `json:"currency"`
+}
+
+// Period is the window of the quota that now falls in, in loc: its calendar day or month (AI-73), and when it resets.
+func (q Quota) Period(now time.Time, loc *time.Location) (start, resets time.Time) {
+	local := now.In(loc)
+	if q.Window == "day" {
+		start = time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+		return start, start.AddDate(0, 0, 1)
+	}
+	start = time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, loc)
+	return start, start.AddDate(0, 1, 0)
 }
 
 // Definition is what a person asks a connection to be.

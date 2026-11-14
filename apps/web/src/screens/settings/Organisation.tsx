@@ -36,6 +36,8 @@ export function valueText(kind: Setting["kind"], v: string): string {
       return `${v} ${v === "1" ? "month" : "months"}`;
     case "years":
       return `${v} ${v === "1" ? "year" : "years"}`;
+    case "count":
+      return `${v} ${v === "1" ? "time" : "times"}`;
     case "amount_sgd":
       return `S$${formatAmount(v)}`;
     case "percent":
@@ -104,7 +106,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
       className="fy-input max-w-72"
       id={id}
       value={value}
-      inputMode={s.kind === "minutes" || s.kind === "hours" || s.kind === "days" || s.kind === "months" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
+      inputMode={s.kind === "minutes" || s.kind === "hours" || s.kind === "days" || s.kind === "months" || s.kind === "years" || s.kind === "count" ? "numeric" : numeric ? "decimal" : undefined}
       onChange={(e) => onChange(e.target.value)}
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
@@ -116,6 +118,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
 function check(s: Setting, v: string): string {
   const t = v.trim();
   if (s.kind === "minutes" || s.kind === "hours" || s.kind === "days" || s.kind === "years") return /^\d{1,6}$/.test(t) ? "" : `Enter a whole number of ${s.kind}.`;
+  if (s.kind === "count") return /^\d{1,6}$/.test(t) ? "" : "Enter a whole number of times.";
   if (s.kind === "amount_sgd") return /^\d{1,14}(\.\d{1,2})?$/.test(t) ? "" : "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.";
   if (s.kind === "percent") return /^\d{1,3}(\.\d{1,4})?$/.test(t) ? "" : "Enter a percentage, such as 3, without the % sign.";
   if (s.kind === "text") return t ? "" : "Enter a value.";

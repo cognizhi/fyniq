@@ -157,6 +157,13 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | Portals for customers and investors | Off | Off until there are customers or investors to invite |
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
 
+## AI routes
+
+- Each AI agent runs on a route: a model on a connection first, then the fallbacks it may use when the first fails.
+- **Fallbacks a day before a route needs attention**: 5 unless changed, from 1 to 1,000. When an agent's route falls
+  back more often than this in a day, **Checks** shows it, so someone looks at the route's first step.
+- Changing it needs a second approver.
+
 ## Payment terms
 
 - **Payment terms for invoices**: an invoice to a customer with no terms of its own falls due

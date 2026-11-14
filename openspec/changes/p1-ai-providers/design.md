@@ -245,6 +245,14 @@ See proposal.md for why. What exists today:
 - C.2 #55 flags a route that falls back past its daily threshold, an alias not re-qualified this week, a budget or
   quota within 20%, a model retiring within 30 days, retired or unlisted, and a connection whose list was not read for
   3 days.
+- As built (task 7.1): C.2 #55 is the check `ai.model-routes` (area AI, ⚠, owned by the Owner, its items opened under
+  "AI providers and model routes"). AI-76's "daily threshold" is not defined in the PRD, so it is the organisation
+  setting `ai.fallbacks_per_day`: a whole number (a new setting kind, `count`), recommended 5, from 1 to 1,000, under
+  dual control as the AI's thresholds are; a route flags when its served fallbacks in the last 24 hours exceed it. A
+  budget is near when 80% of it is used or held this month, a subscription when its window used 80% of its quota; a
+  model retiring within 30 days, or no longer listed or refused, flags its step; a moving alias whose pass for the
+  route's agent is out of date or older than a week flags its step; and a connection with a stored key whose last
+  read that was not a failure is over 3 days old, or that has none 3 days after it was made, flags the connection.
 - The AI inventory in the Compliance Center lists connections, models, routes and, later, prompts and tool versions,
   with owners and data categories, beside the AI DPIA in the DPIA register (CMP-AI-02).
 

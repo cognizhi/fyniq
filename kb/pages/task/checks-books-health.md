@@ -4,14 +4,14 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:a2d555e1d506f81c4628b64adab14b3f9d7bb2f384a2d6f163e14b8d25e12558
+  - docs/user-guide/checks.md sha256:8aae958ebeb7f6d8938ca799b6bee37f4c1bf87e77f03724fe20bed4ff65d1d1
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-02
+compiled_at: 2026-11-14
 aliases:
   - books health
   - checks
@@ -23,6 +23,7 @@ aliases:
   - mark reviewed
   - close checklist
   - runway warning
+  - AI route needs attention
   - acknowledge a warning
   - nightly verification
   - why can't I close the month
@@ -105,6 +106,7 @@ aliases:
 - **Controls**: in Founder mode, a logged action not reviewed by another founder within 14 days; a person whose roles conflict with nothing to cover it; an external person still a member after their roles ended ([[members.remove]]); and an access review not attested 14 days after its quarter ended.
 - **Payments**: a supplier whose bank details were added or changed in the last 30 days with a bill still to pay (confirm the new account on a number already known before paying), and a cash advance open past the claim deadline.
 - **The platform**: a scheduled job (recurring documents, depreciation, the month-end revaluation) that has not run in its time; a statutory pack past its review date or with a later version not activated; an evidence file that no longer matches its fingerprint; the email sent, from the sending domains' records and, over 30 days, 2% hard bounces or 0.1% complaints with 50 or more sent, or any complaint with fewer; and an integration whose last test failed or whose key expires within 14 days ([[settings.integrations]]).
+- **AI**: an AI agent's route that fell back more often in a day than the organisation's setting allows (5 unless changed, [[settings.organisation]]); a moving model alias on a route not re-qualified this week; an AI budget, or a subscription's quota, within 20% of its limit; a model on a route retiring within 30 days, or that its provider no longer lists or refuses; and a connection with a stored key whose model list has not been read successfully for 3 days.
 - The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)
