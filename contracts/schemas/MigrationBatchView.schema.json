@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The request that asks for it, and once approved commits it: each imported record names it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6c10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "approved_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-13T11:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "approved_by": {
+      "description": "The Owner who approved it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "committed_at": {
+      "description": "When the last record was imported.",
+      "examples": [
+        "2026-11-13T11:04:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "done": {
+      "description": "The records imported.",
+      "examples": [
+        50
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The commit, once approved.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "imported": {
+      "description": "The records this batch imported; with Prefer: return=preview, none.",
+      "examples": [
+        50
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "kinds": {
+      "description": "The records imported, by kind.",
+      "items": {
+        "$ref": "MigrationCommitKind.schema.json"
+      },
+      "type": "array"
+    },
+    "mapping_id": {
+      "description": "The signed mapping version it imports by, once approved.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "next": {
+      "$ref": "MigrationCommitNext.schema.json",
+      "description": "The next record to import; absent once the commit is committed."
+    },
+    "path": {
+      "description": "The founders' choice at M3, once asked for.",
+      "enum": [
+        "history",
+        "clean_start"
+      ],
+      "examples": [
+        "history"
+      ],
+      "type": "string"
+    },
+    "planned": {
+      "description": "With Prefer: return=preview, the records the next batch would import, in order; before the approval, the first batch of the latest valid workbook by its latest mapping.",
+      "items": {
+        "$ref": "MigrationCommitNext.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "none: not asked for; pending: its approval waits for an Owner; running while records are left to import, in batches; committed once every record is.",
+      "enum": [
+        "none",
+        "pending",
+        "running",
+        "committed"
+      ],
+      "examples": [
+        "running"
+      ],
+      "type": "string"
+    },
+    "step_id": {
+      "description": "The M1 step whose workbook it imports, once approved.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "total": {
+      "description": "The records it plans, once asked for.",
+      "examples": [
+        118
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "imported",
+    "status",
+    "total",
+    "done",
+    "kinds"
+  ],
+  "title": "MigrationBatchView",
+  "type": "object"
+}

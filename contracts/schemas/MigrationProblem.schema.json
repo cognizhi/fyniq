@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "code": {
-      "description": "The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is.",
+      "description": "The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is; -11 the mapping does not fit the set-up; -13 two rows would import as one record.",
       "examples": [
         "MIGRATION-04"
       ],

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -204,7 +205,8 @@ func LatestMapping(ctx context.Context, u storage.UnitOfWork, run uuid.UUID) (*M
 // Against checks the workbook against the organisation it goes into: one without a posted entry (rev 0.254), with the
 // workbook's base currency; and proposes its mapping onto the organisation's set-up (M2), keeping the choices of the
 // migration's mapping before it. What the mapping gets wrong is reported as a warning, fixed in the mapping before
-// the Accountant signs it. Each record's command preview adds its checks here as it is built.
+// the Accountant signs it. A UEN not in ACRA's form and a bank rule to a money account are warnings, left out of the
+// import; two rows the commit would import as one record are an error.
 func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.UUID) (*Mapping, error) {
 	posted, err := u.Migrations().Posted(ctx)
 	if err != nil {
@@ -223,6 +225,18 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.U
 			Message: fmt.Sprintf("the workbook's base currency is %s; the organisation's is %s", b, o.BaseCurrency),
 			Fix:     fmt.Sprintf("Import the workbook into an organisation whose base currency is %s", b)})
 	}
+	if uen := strings.TrimSpace(w.Settings.UEN); uen != "" && !validUEN(uen) {
+		w.Problems = append(w.Problems, Problem{Sheet: "Settings", Column: "UEN", Severity: Warning, Code: CodeValue,
+			Message: fmt.Sprintf("%q is not a UEN in ACRA's form: the import leaves it out", uen),
+			Fix:     "Enter the UEN in Settings › Organisation once the import is committed, or correct it in the workbook"})
+	}
+	for i, r := range w.BankRules {
+		if w.transferRule(i + 1) {
+			w.Problems = append(w.Problems, Problem{Sheet: "Lists", Row: r.Row, Column: "…use category", Severity: Warning, Code: CodeArchived,
+				Message: fmt.Sprintf("bank rule %d (%q) gives the money account %s: Fyniq records money moving between accounts as a transfer, so the rule is kept in the archive", i+1, r.Contains, codeOf(r.Account)),
+				Fix:     "Nothing to do: the bank import matches both sides of a transfer"})
+		}
+	}
 	target, err := TargetOf(ctx, u, w.Settings.BooksStart)
 	if err != nil {
 		return nil, err
@@ -236,5 +250,8 @@ func (w *Workbook) Against(ctx context.Context, u storage.UnitOfWork, run uuid.U
 		p.Severity, p.Fix = Warning, p.Fix+", in the mapping before it is signed"
 		w.Problems = append(w.Problems, p)
 	}
+	// Two rows the commit would import as one record (rev 0.258).
+	_, dup := w.Plan(m, storage.PathHistory)
+	w.Problems = append(w.Problems, dup...)
 	return &m, nil
 }

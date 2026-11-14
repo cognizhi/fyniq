@@ -80,11 +80,19 @@ See proposal.md for why. What exists today and shapes the approach:
 
 **D3. The target is an organisation with no posted entries (rev 0.254); the import is one approved operation.**
 - The migration record refuses an organisation holding a posted entry.
-- The commit is one request: prepared by the Controller or Accountant and committed by the Owner. Under FM-1 it waits
-  for a second approver when the organisation has another active Owner.
-- The commit runs in the background as an operation, posting as the migration principal on the Owner's behalf. Every
-  document carries the approval's ID and its workbook origin (sheet, row and key), so each figure traces back to its
-  row.
+- The commit is one request: prepared by a person who holds C on "Workbook import (migration)" (the Controller, the
+  Accountant or an Owner) and approved by an Owner who did not prepare it (FM-1). The approval's envelope holds the
+  workbook's SHA-256, its validation report's and the signed mapping's, so a new upload or a changed mapping before
+  the approval voids it.
+- (rev 0.258, the owner's decision of 13 Nov 2026) Once approved, the commit runs in batches of at most 50 records.
+  Each batch is one request on the API's own database role, through the domain commands a person's request uses; each
+  record is written in its own transaction with its migration record: its business key, its sheet and row, and the
+  commit, which names the approval. The web app sends the batches and shows the progress; closing it pauses the
+  import. Not chosen: tasks from the outbox to a new API endpoint (an internet-facing endpoint for Cloud Tasks only);
+  a new `fyniq_migration` role and job (the widest new grant). No role, grant or endpoint is added for background
+  work.
+- Once a commit is approved, the migration's workbook and mapping are fixed: a new upload or mapping version is
+  refused, by the API and by the database (FY325).
 - Each record has a business key from its row, so a commit that stopped part way resumes where it stopped. A rejected
   import is abandoned with its organisation, never undone, since posted history is reversed, never deleted.
 - The weekly review lists the import as one entry (FM-3).
@@ -110,6 +118,15 @@ See proposal.md for why. What exists today and shapes the approach:
   - dimensions, chart, contacts and items;
   - FX rates, by month from the Lists sheet;
   - bank rules, and money accounts (the accounts marked "Money account?").
+- (As built, slice 4) Each set-up record goes through the command a person's request uses, with its rules: the profile
+  and its first financial year (each month the organisation lacks); the GST registration from the books start, filing
+  quarterly in quarters that start with the financial year, as the workbook keeps neither [accountant to confirm]; the
+  standard chart when the organisation has none, then each account the mapping creates; the department and project
+  dimensions and their values; contacts with their role, terms, category and country (the workbook's country names
+  read as ISO codes); items with their base-currency price; the Lists sheet's monthly FX rates; and the bank rules in
+  their order, suggesting until an approver makes one auto-apply (FR-BNK-14). Two cases are warnings of the validation
+  report and left out: a UEN not in ACRA's form (the sample's placeholder), and a bank rule that gives one of the
+  workbook's money accounts, money moving between accounts, which Fyniq records as a transfer the bank import matches.
 - Then, by the founders' choice at M3, one of two paths.
 - **History** of the current financial year:
   - opening balances at the books start, with opening open items (D6);

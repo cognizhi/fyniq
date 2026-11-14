@@ -80,7 +80,7 @@ type MigrationProblem struct {
 	Row      int    `json:"row,omitempty" doc:"The sheet's row; absent for the sheet as a whole." example:"8"`
 	Column   string `json:"column,omitempty" doc:"The column, by its header." example:"Money out"`
 	Severity string `json:"severity" enum:"error,warning" doc:"An error stops the commit; a warning does not." example:"error"`
-	Code     string `json:"code" doc:"The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is." example:"MIGRATION-04"`
+	Code     string `json:"code" doc:"The problem's code: MIGRATION-01 not the workbook; -02 a sheet missing; -03 a column missing; -04 a value not what its column holds; -05 saved without its calculated values; -06 a row the workbook did not post; -07 kept in the archive; -08 a check showing ✖; -09 the organisation holds posted entries; -10 the organisation is not set up as the workbook is; -11 the mapping does not fit the set-up; -13 two rows would import as one record." example:"MIGRATION-04"`
 	Message  string `json:"message" doc:"What is wrong." example:"98.125 has more than 2 decimals"`
 	Fix      string `json:"fix" doc:"How to fix it." example:"Enter it with at most 2 decimals, as the currency has"`
 }
@@ -331,12 +331,12 @@ func registerMigrations(a *API) {
 			"every sheet the import uses within the workbook's bounds and checks it against the organisation inside a transaction that " +
 			"rolls back, so it commits nothing of the import; its report and the Checks export made from the workbook are kept on the " +
 			"step. The answer is 202 with the step and the operation to poll; then read getMigrationReport. Uploading again, once the " +
-			"last validation is done, validates the new workbook as a new attempt. Needs If-Match with the migration's ETag, so the " +
+			"last validation is done, validates the new workbook as a new attempt, until the import is committed (MIGRATION-14). Needs If-Match with the migration's ETag, so the " +
 			"workbook goes on the migration as you read it. Side effects: the file, the step, the job, the audit " +
 			"event migration.workbook_received, and later migration.validated. Idempotent with Idempotency-Key; Prefer: return=preview " +
 			"checks the file and saves nothing.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeUnavailable},
-		append(writes, EvidenceCodes...)...),
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeUnavailable,
+		migration.CodeCommit}, append(writes, EvidenceCodes...)...),
 		func(ctx context.Context, in *migrationUploadInput) (*migrationUploadOutput, error) {
 			id, err := parseID("migration_id", in.MigrationID)
 			if err != nil {
@@ -391,6 +391,9 @@ func registerMigrations(a *API) {
 					return MigrationUploadView{}, err
 				}
 				if err := checkIfMatch(in.IfMatch, migrationETag(r, steps)); err != nil {
+					return MigrationUploadView{}, err
+				}
+				if err := migrationFixed(ctx, u, r.ID); err != nil {
 					return MigrationUploadView{}, err
 				}
 				step, kept, err := u.Migrations().AddWorkbook(ctx, storage.StepWorkbook, storage.MigrationFile{RunID: r.ID, FileName: file.Name,

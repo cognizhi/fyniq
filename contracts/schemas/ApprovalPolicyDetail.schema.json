@@ -86,7 +86,8 @@
         "round_scenario",
         "investor_right",
         "controller_entry",
-        "budget"
+        "budget",
+        "migration_commit"
       ],
       "examples": [
         "organisation_setting"

@@ -58,3 +58,42 @@ SELECT * FROM fyniq.migration_signoff WHERE run_id = sqlc.arg(run_id) ORDER BY s
 INSERT INTO fyniq.migration_signoff (run_id, subject, mapping_id, subject_sha256, signed_by, signed_at)
 VALUES (sqlc.arg(run_id), sqlc.arg(subject), sqlc.narg(mapping_id), sqlc.arg(subject_sha256), sqlc.arg(signed_by), sqlc.arg(signed_at))
 RETURNING *;
+
+-- name: GetMigrationMapping :one
+SELECT * FROM fyniq.migration_mapping WHERE id = sqlc.arg(id);
+
+-- name: GetMigrationCommit :one
+-- A migration's commit: at most one (rev 0.254).
+SELECT * FROM fyniq.migration_commit WHERE run_id = sqlc.arg(run_id);
+
+-- name: InsertMigrationCommit :one
+INSERT INTO fyniq.migration_commit (run_id, approval_id, path, step_id, mapping_id, records, approved_by, approved_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(approval_id), sqlc.arg(path), sqlc.arg(step_id), sqlc.arg(mapping_id), sqlc.arg(records),
+        sqlc.arg(approved_by), sqlc.arg(approved_at))
+RETURNING *;
+
+-- name: CommitMigrationCommit :one
+-- A running commit, committed; none when it is not running.
+UPDATE fyniq.migration_commit SET status = 'committed', committed_at = sqlc.arg(committed_at)
+ WHERE id = sqlc.arg(id) AND status = 'running'
+RETURNING *;
+
+-- name: ListMigrationRecords :many
+SELECT * FROM fyniq.migration_record WHERE commit_id = sqlc.arg(commit_id) ORDER BY imported_at, id;
+
+-- name: InsertMigrationRecord :one
+INSERT INTO fyniq.migration_record (run_id, commit_id, key, kind, sheet, row_number, record_type, record_id, imported_by, imported_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(commit_id), sqlc.arg(key), sqlc.arg(kind), sqlc.arg(sheet), sqlc.arg(row_number), sqlc.arg(record_type),
+        sqlc.arg(record_id), sqlc.arg(imported_by), sqlc.arg(imported_at))
+RETURNING *;
+
+-- name: MigrationRecordOf :one
+-- The row a record came from.
+SELECT * FROM fyniq.migration_record WHERE record_type = sqlc.arg(record_type) AND record_id = sqlc.arg(record_id) ORDER BY imported_at LIMIT 1;
+
+-- name: LockMigrationCommit :one
+-- A commit, locked until the unit of work ends: its batches import one record at a time.
+SELECT * FROM fyniq.migration_commit WHERE id = sqlc.arg(id) FOR UPDATE;
+
+-- name: GetMigrationRecordByKey :one
+SELECT * FROM fyniq.migration_record WHERE commit_id = sqlc.arg(commit_id) AND key = sqlc.arg(key);
