@@ -154,6 +154,8 @@ type UnitOfWork interface {
 	AIQualifications() AIQualifications
 	// AIGrants are the assistant's delegated read grants, one per turn (AI-01, AI-36).
 	AIGrants() AIGrants
+	// AIConversations are the assistant's conversations, turns, tool calls and feedback (AI-12, AI-P8).
+	AIConversations() AIConversations
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).

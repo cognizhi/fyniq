@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fact": {
+      "description": "A figure's fact, among the turn's cited facts.",
+      "examples": [
+        "F3a9c0d1e2b4f5a6"
+      ],
+      "type": "string"
+    },
+    "figure": {
+      "description": "The figure as Fyniq renders it from its fact.",
+      "examples": [
+        "18.0 months"
+      ],
+      "type": "string"
+    },
+    "missing": {
+      "description": "What could not be established.",
+      "examples": [
+        "this figure"
+      ],
+      "type": "string"
+    },
+    "text": {
+      "description": "Words, in Fyniq's Markdown subset.",
+      "examples": [
+        "Cash lasts "
+      ],
+      "type": "string"
+    }
+  },
+  "title": "AISegment",
+  "type": "object"
+}

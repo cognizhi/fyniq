@@ -33,6 +33,8 @@ func TestConventionExemptions(t *testing.T) {
 	for _, op := range []string{"approveJoinRequest", "rejectJoinRequest", "claimJoinDomain"} { // decided or claimed once
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
+	want = append(want, "deleteAIConversation Prefer", "deleteAIConversation If-Match", "askAIConversation Idempotency-Key", "askAIConversation Prefer",
+		"askAIConversation If-Match")
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")

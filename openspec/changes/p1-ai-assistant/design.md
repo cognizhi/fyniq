@@ -254,6 +254,19 @@ AI-28).**
   `retention.ai_conversations_days` (365) and records it (AUD-01).
 - Audit events: `ai_conversation.created`, `.deleted`, `ai_turn.answered`, `ai_feedback.given`, `ai_conversation.
   purged`, setting changes for `ai.payroll_access` and the limits.
+- As built (task 6.1): migration 000369 keeps the four tables append-only under FORCE RLS (FY341: a conversation is
+  only deleted, once; a turn only answered, once; a tool call kept as it ran; feedback only reviewed, once; nothing
+  removed but by the purge, which sets `fyniq.ai_purge` for its transaction in task 6.3), written by the API's role,
+  read by the worker and the read-only role, none of it by the AI's; each is in the tenant export. The operations,
+  under the tag Assistant, are on the AI activity log's row (V own for each member; "—" for the AI, so no AI or MCP
+  client reaches them) and refuse anyone but a person signed in: `createAIConversation`, `listAIConversations`,
+  `getAIConversation` (the turns, their figures rendered from their facts, the cited facts with their lineage),
+  `deleteAIConversation` and `askAIConversation`, which streams `status`, then `answer` with the turn as kept, or
+  `error`. Asking admits the turn (the AI switch, refused before a turn is kept), keeps it answering, issues its
+  delegated token, hands the AI service the question, what it is about (FR-UX-17) and the last 20 answered turns,
+  relays the AI service's status, and keeps the answer with its reads (each with a hash of what the model read), or
+  the refusal's code, ending the token whatever happens to the stream. The API reaches the AI service at FYNIQ_AI_URL
+  locally (Compose: ai:8080) and FYNIQ_GCP's `ai` entry in the cloud `[live-verify]`.
 
 **D12. The panel (FR-UX-17, screen `ai-assistant-panel`).**
 - A side panel from the shell (⌘J / Ctrl+J; "Ask about this" on records, report cells and figures), docked, a sheet or

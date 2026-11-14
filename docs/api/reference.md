@@ -15291,6 +15291,114 @@ Requests, tokens by kind, cost in the base currency, fallbacks and errors per co
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Assistant
+
+Ask the books in plain words: a person's own conversations with the assistant, answered as them through the read tools, every figure from a fact (AI-P1, AI-08); never reachable by the AI or over MCP (§9.6).
+
+### `GET /v1/assistant/conversations`
+
+**List your conversations with the assistant** (`listAIConversations`)
+
+The caller's own conversations with the assistant, newest first, without their turns; a deleted one is left out (AI-P8). Read-only; no side effects.
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`AIConversationPage`](../../contracts/schemas/AIConversationPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `AI-ASSISTANT-01`, `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/assistant/conversations`
+
+**Start a conversation with the assistant** (`createAIConversation`)
+
+Starts a conversation of the caller's own with the assistant (AI-P8): only they read it. Side effects: the conversation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for MCP and agent clients (§9.6).
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AIConversationIn`](../../contracts/schemas/AIConversationIn.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AIConversation`](../../contracts/schemas/AIConversation.schema.json)
+  - `201` Created [`AIConversation`](../../contracts/schemas/AIConversation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `AI-ASSISTANT-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`
+
+### `GET /v1/assistant/conversations/{conversation_id}`
+
+**Get a conversation with the assistant** (`getAIConversation`)
+
+One of the caller's own conversations with its turns: each question, how it ended, the answer with its figures rendered from their facts, and the facts it cites (AI-08, AI-68). Another's, or a deleted one, is not found. Read-only; no side effects.
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `conversation_id` (path, required): The conversation.
+- **Responses:**
+  - `200` OK [`AIConversation`](../../contracts/schemas/AIConversation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `AI-ASSISTANT-01`, `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `DELETE /v1/assistant/conversations/{conversation_id}`
+
+**Delete a conversation with the assistant** (`deleteAIConversation`)
+
+Deletes one of the caller's own conversations: it is no longer listed or read, and the purge removes it (AI-P8). Side effects: the conversation is marked deleted, and its audit event.
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `conversation_id` (path, required): The conversation.
+- **Responses:**
+  - `204` No Content
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `AI-ASSISTANT-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/assistant/conversations/{conversation_id}/turns`
+
+**Ask the assistant** (`askAIConversation`)
+
+Asks a question in one of the caller's own conversations, with what it is about (FR-UX-17), and streams the answer as server-sent events: status while it reads the books, then answer with the turn as kept, or error with what stopped it. The assistant reads as the caller, through the read tools, with a token for this turn alone (AI-01); every figure in the answer is rendered from a fact it read (AI-08). Side effects: the turn, its reads and its audit event; the model calls in the AI activity log. A refusal after the stream began, such as the AI switched off or a conversation not found, is its error event.
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `conversation_id` (path, required): The conversation.
+- **Request body:** [`AITurnIn`](../../contracts/schemas/AITurnIn.schema.json)
+- **Responses:**
+  - `200` OK
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-ROUTER-05` The AI is switched off.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `AI-ASSISTANT-02` The AI service did not answer.
+- **Error codes:** `AI-ASSISTANT-01`, `AI-ASSISTANT-02`, `AI-ROUTER-05`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ## Import
 
 The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right.

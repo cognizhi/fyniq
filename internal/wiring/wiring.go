@@ -6,6 +6,7 @@ package wiring
 
 import (
 	"context"
+	"net/http"
 
 	"golang.org/x/oauth2"
 
@@ -66,6 +67,11 @@ type Kit struct {
 	// ModelTokens are the service's own account's tokens, for an AI connection that authenticates with workload identity
 	// (AI-72): the metadata server's in the cloud; nil locally, where such a connection cannot be read.
 	ModelTokens oauth2.TokenSource
+	// Assistant is the AI service, which answers the assistant's turns (p1-ai-assistant design D3): its URL, the API's token
+	// for it (of the class assistant.Class) and the client it is reached through; no URL: every turn fails, saying so.
+	AssistantURL   string
+	AssistantToken func(ctx context.Context) (string, error)
+	AssistantHTTP  *http.Client
 	// Screening screens what the AI sends a model and what it answers (AI-18, AI-P7; p1-ai-assistant design D8): Model
 	// Armor in the cloud, local mode's stub of it; nil: no AI call is sent (fail closed).
 	Screening ports.Screening

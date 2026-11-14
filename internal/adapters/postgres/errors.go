@@ -214,6 +214,7 @@ var fyCodes = map[string]string{
 	"FY332": storage.CodeAIConnection,      // a listed model removed or moved, or a model list's read changed (000347)
 	"FY339": storage.CodeAIQualification,   // a qualification changed or removed, or put out of date twice (000361)
 	"FY340": storage.CodeAIGrant,           // a delegated read grant changed, removed or ended twice (000366)
+	"FY341": storage.CodeAIConversation,    // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
 	"FY336": storage.CodeAIBudget,          // an AI budget or reservation changed as it may not (000359)
 	"FY337": storage.CodeAIConnectionSpent, // a connection's AI budget spent this month (000359)
 	"FY338": storage.CodeAIBudgetSpent,     // the organisation's, agent's or person's AI budget spent, or not applicable (000359)
