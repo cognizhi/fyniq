@@ -148,7 +148,9 @@ export function AIProviders() {
                   <tr key={c.id}>
                     <td data-card="title" className="whitespace-normal">
                       <span className="fy-stack gap-0">
-                        <span>{c.name}</span>
+                        <Link to="/settings/ai/providers/$connection" params={{ connection: c.id }}>
+                          {c.name}
+                        </Link>
                         <span className="fy-small fy-secondary font-normal">
                           {c.connector}
                           {c.preset ? ` · ${c.preset}` : ""} · {c.host}

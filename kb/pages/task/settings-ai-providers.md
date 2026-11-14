@@ -2,9 +2,9 @@
 key: settings.ai-providers
 type: task
 title: Connect the AI to a model provider, and see which data may go where
-summary: Settings › AI › AI providers: the connections, their status, billing and key, which data may go where, and adding one with a second approver
+summary: Settings › AI › AI providers: connections, which data may go where, adding one; a connection's page: on and off, key, models, qualification, data handling
 sources:
-  - docs/user-guide/ai-providers.md sha256:d84f13e914c62d97d5fbfacdb47d20061a1e3f7875af5b633cab8406cd549b22
+  - docs/user-guide/ai-providers.md sha256:b0cb860cbcec7e9c54431159a626939d20cf7e5a68ebcf168814c46494e6c607
 data_class: general
 taint: trusted
 status: published
@@ -20,6 +20,11 @@ aliases:
   - API key for the AI
   - which data goes to the AI
   - AI subscription quota
+  - allow a model
+  - qualify a model
+  - replace the AI key
+  - turn off an AI provider
+  - where prompts are processed
 ---
 
 # Connect the AI to a model provider, and see which data may go where
@@ -59,3 +64,45 @@ aliases:
 - A person's own plan is not offered yet; a consumer chat plan meant for the provider's own apps, or a reused chat session or browser cookie, is not supported.
 
 (src: docs/user-guide/ai-providers.md#how-a-connection-is-paid-for)
+
+## A connection's own page
+
+- Select a connection's name to open it. **Overview** shows how it signs in, when its key was set, the address its calls go to, its billing and settings, and the agents whose routes name it.
+- **Change** asks, with a second approver, to change its name, settings or **Qualify new models automatically**; until approved the connection stays as it is.
+
+(src: docs/user-guide/ai-providers.md#a-connections-own-page)
+
+## Turn it on or off
+
+- **Ask to turn it on** needs a second approver, and is refused until the connection has its API key (or a hosted server's private endpoint), a model list read whole, and data handling declared with evidence and its data inventory row.
+- **Turn it off** takes effect at once with no second approver; each agent moves to its route's next step.
+
+(src: docs/user-guide/ai-providers.md#turn-it-on-or-off)
+
+## Replace the key
+
+- **Replace the key** takes the new API key once, straight to the secret store, never shown again. The old key works until a second approver approves, then for the provider's overlap; a rejected or expired request destroys the new key.
+
+(src: docs/user-guide/ai-providers.md#replace-the-key)
+
+## Its models
+
+- **Models** shows the provider's own list, when it was last read, and **Read it again**; a model the provider stops listing leaves the connection and every route by itself. A list not read for 3 days makes the AI routes check warn ([[checks.overview]]).
+- **Probe** sends one small test call. **Ask to allow it** needs a passing probe and a second approver; names come only from the provider's list. **Remove** takes a model off at once.
+- Each allowed model shows its price and its source; the Owner can **Confirm it** or **Decline it** when a new price waits for review, **Enter a price** per million input and output tokens (with a second approver) when no source prices it, and **Withdraw your price** at once.
+
+(src: docs/user-guide/ai-providers.md#its-models)
+
+## Qualify a model
+
+- **Qualify** runs an agent's evals against the model and shows how many cases passed; it serves that agent only while its latest run passed.
+- **To qualify again** follows a different reported version, or a week after a moving alias was qualified; until then it carries no personal data or payroll.
+
+(src: docs/user-guide/ai-providers.md#qualify-a-model)
+
+## Where its prompts go
+
+- **Data handling** says, per model, endpoint and feature, where the provider processes and keeps what it is sent, whether it trains on it, and the official page or contract showing it; unclear evidence never counts as Singapore.
+- **Change** asks, with a second approver, to change the declaration, its data inventory row and its transfer assessment.
+
+(src: docs/user-guide/ai-providers.md#where-its-prompts-go)
