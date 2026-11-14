@@ -49,6 +49,31 @@ func (r aiCalls) OfRun(ctx context.Context, run uuid.UUID) ([]storage.AICall, er
 	if err != nil {
 		return nil, mapError(err)
 	}
+	return toAICalls(rows), nil
+}
+
+func (r aiCalls) Page(ctx context.Context, q storage.AICallQuery) ([]storage.AICall, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	var before *uuid.UUID
+	if q.BeforeAt != nil {
+		before = &q.BeforeID
+	}
+	rows, err := r.u.q.AICallsPage(ctx, sqlcdb.AICallsPageParams{Actor: optional(q.Actor), Agent: optional(q.Agent), Run: q.Run, FromAt: q.From,
+		ToAt: q.To, BeforeAt: q.BeforeAt, BeforeID: before, PageSize: int32(min(max(q.Limit, 1), 1000))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, mapError(err)
+	}
+	all := make([]sqlcdb.AICallsOfRunRow, 0, len(rows))
+	for _, row := range rows {
+		all = append(all, sqlcdb.AICallsOfRunRow(row))
+	}
+	return toAICalls(all), nil
+}
+
+// toAICalls are the attempts as rows of ai_call give them.
+func toAICalls(rows []sqlcdb.AICallsOfRunRow) []storage.AICall {
 	out := make([]storage.AICall, 0, len(rows))
 	for _, row := range rows {
 		c := storage.AICall{ID: row.ID, Run: row.RunID, Agent: row.Agent, RouteVersion: int(row.RouteVersion), Step: int(row.Step),
@@ -74,7 +99,7 @@ func (r aiCalls) OfRun(ctx context.Context, run uuid.UUID) ([]storage.AICall, er
 		}
 		out = append(out, c)
 	}
-	return out, nil
+	return out
 }
 
 func (r aiCalls) Usage(ctx context.Context, from, to time.Time) ([]storage.AIUsageRow, error) {

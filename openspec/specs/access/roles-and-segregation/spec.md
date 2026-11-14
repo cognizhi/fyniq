@@ -1606,6 +1606,29 @@ Source: PRD-001 §D
 - **WHEN** a role acts on AI providers and model routes
 - **THEN** the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: AI activity log
+In Standard mode, each member SHALL read their own entries of the AI activity log, the Owner and the Compliance officer / DPO SHALL read every member's, and the AI assistant SHALL read none (rev 0.276, AI-12).
+
+Source: PRD-001 §D
+
+#### Scenario: Own entries
+- **WHEN** a member reads the AI activity log
+- **THEN** the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent and the Board viewer see their own entries only (V (own))
+
+#### Scenario: Every member's entries
+- **WHEN** the Owner or the Compliance officer / DPO reads the AI activity log
+- **THEN** they see every member's entries (V)
+
+#### Scenario: Payroll entries masked and audited
+- **GIVEN** an entry of someone else's that carried payroll
+- **WHEN** a reader who may not see payroll unmasked reads it
+- **THEN** it shows masked (FR-PAY-13)
+- **AND** showing it unmasked to another reader is audited (AUD-05)
+
+#### Scenario: Not the AI
+- **WHEN** the AI assistant acts
+- **THEN** it reads no entry of the AI activity log (—)
+
 ### Requirement: Permission matrix: Connected apps: enable MCP, allowlist clients, grant integration scopes
 In Standard mode, each role SHALL hold only the rights over connected apps (enabling MCP, allowlisting clients, granting integration scopes) that the permission matrix gives it.
 
