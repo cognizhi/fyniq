@@ -2,7 +2,7 @@
 
 Each slice is its own pull request, stacked in order; each passes `make check` and `make test` on its own.
 
-- [ ] 1.1 The delegated read token (design D2): minted by the API per turn (Ed25519, its key in the secret store,
+- [x] 1.1 The delegated read token (design D2): minted by the API per turn (Ed25519, its key in the secret store,
   person, organisation, turn, the AI tools' scope, at most 5 minutes, single turn) and verified as an `agent`-class
   principal with the person's roles; every write refused to it; audited as the AI on behalf of the person. Tests
   `// req: AI-01`, `// req: ai/proposals The orchestrator holds no write credential`, an attack test that the token

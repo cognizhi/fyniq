@@ -173,6 +173,14 @@ ai_data_policy | policy | jsonb | not null |
 ai_data_policy | approval_id | uuid | not null | 
 ai_data_policy | made_by | text | not null | 
 ai_data_policy | made_at | timestamp with time zone | not null | 
+ai_grant | organisation_id | uuid | not null | current_org()
+ai_grant | id | uuid | not null | uuidv7()
+ai_grant | token_hash | bytea | not null | 
+ai_grant | user_id | uuid | not null | 
+ai_grant | turn_id | uuid | not null | 
+ai_grant | issued_at | timestamp with time zone | not null | 
+ai_grant | expires_at | timestamp with time zone | not null | 
+ai_grant | ended_at | timestamp with time zone | null | 
 ai_model | organisation_id | uuid | not null | current_org()
 ai_model | id | uuid | not null | uuidv7()
 ai_model | connection_id | uuid | not null | 
@@ -2502,6 +2510,20 @@ ai_data_policy | ai_data_policy_version | UNIQUE (organisation_id, version)
 ai_data_policy | ai_data_policy_version_not_null | NOT NULL version
 ai_data_policy | ai_data_policy_version_positive | CHECK ((version >= 1))
 ai_data_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_grant | ai_grant_ended | CHECK (((ended_at IS NULL) OR (ended_at >= issued_at)))
+ai_grant | ai_grant_expires_at_not_null | NOT NULL expires_at
+ai_grant | ai_grant_id_not_null | NOT NULL id
+ai_grant | ai_grant_issued_at_not_null | NOT NULL issued_at
+ai_grant | ai_grant_lifetime | CHECK (((expires_at > issued_at) AND (expires_at <= (issued_at + '00:05:00'::interval))))
+ai_grant | ai_grant_organisation_id_not_null | NOT NULL organisation_id
+ai_grant | ai_grant_pkey | PRIMARY KEY (organisation_id, id)
+ai_grant | ai_grant_token | UNIQUE (organisation_id, token_hash)
+ai_grant | ai_grant_token_hash_not_null | NOT NULL token_hash
+ai_grant | ai_grant_token_sha256 | CHECK ((length(token_hash) = 32))
+ai_grant | ai_grant_turn | UNIQUE (organisation_id, turn_id)
+ai_grant | ai_grant_turn_id_not_null | NOT NULL turn_id
+ai_grant | ai_grant_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+ai_grant | ai_grant_user_id_not_null | NOT NULL user_id
 ai_model | ai_model_alias_format | CHECK ((alias_of ~ '^[!-~]{1,200}$'::text))
 ai_model | ai_model_allowed_not_null | NOT NULL allowed
 ai_model | ai_model_allowed_probed | CHECK (((NOT allowed) OR (COALESCE(probe_ok, false) AND listed AND (not_callable_at IS NULL))))
@@ -5980,6 +6002,9 @@ CREATE UNIQUE INDEX ai_connection_version_id ON fyniq.ai_connection_version USIN
 CREATE UNIQUE INDEX ai_connection_version_pkey ON fyniq.ai_connection_version USING btree (organisation_id, connection_id, version)
 CREATE UNIQUE INDEX ai_data_policy_pkey ON fyniq.ai_data_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_data_policy_version ON fyniq.ai_data_policy USING btree (organisation_id, version)
+CREATE UNIQUE INDEX ai_grant_pkey ON fyniq.ai_grant USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_grant_token ON fyniq.ai_grant USING btree (organisation_id, token_hash)
+CREATE UNIQUE INDEX ai_grant_turn ON fyniq.ai_grant USING btree (organisation_id, turn_id)
 CREATE UNIQUE INDEX ai_model_list_read_pkey ON fyniq.ai_model_list_read USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_model_one ON fyniq.ai_model USING btree (organisation_id, connection_id, model)
 CREATE UNIQUE INDEX ai_model_pkey ON fyniq.ai_model USING btree (organisation_id, id)
@@ -6509,6 +6534,8 @@ CREATE TRIGGER ai_connection_version_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER ai_connection_version_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_data_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_data_policy FOR EACH ROW EXECUTE FUNCTION ai_data_policy_guard()
 CREATE TRIGGER ai_data_policy_no_truncate BEFORE TRUNCATE ON fyniq.ai_data_policy FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_grant_guard BEFORE DELETE OR UPDATE ON fyniq.ai_grant FOR EACH ROW EXECUTE FUNCTION ai_grant_guard()
+CREATE TRIGGER ai_grant_no_truncate BEFORE TRUNCATE ON fyniq.ai_grant FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_model_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_model FOR EACH ROW EXECUTE FUNCTION ai_model_guard()
 CREATE TRIGGER ai_model_list_read_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_model_list_read FOR EACH ROW EXECUTE FUNCTION ai_model_guard()
 CREATE TRIGGER ai_model_list_read_no_truncate BEFORE TRUNCATE ON fyniq.ai_model_list_read FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
@@ -6861,6 +6888,7 @@ ai_call | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_data_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_grant | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_model | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7039,6 +7067,7 @@ ai_call | enabled | forced
 ai_connection | enabled | forced
 ai_connection_version | enabled | forced
 ai_data_policy | enabled | forced
+ai_grant | enabled | forced
 ai_model | enabled | forced
 ai_model_list_read | enabled | forced
 ai_price | enabled | forced
@@ -7251,6 +7280,8 @@ ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyn
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
+ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_id uuid, OUT turn_id uuid, OUT roles text[], OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 849d7114d3f03ce72b04acfd7752af7b
+ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 65bcc4ed8e750766aea0d9ad1fb47825
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233

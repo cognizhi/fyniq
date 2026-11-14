@@ -50,6 +50,13 @@
 - Alternatives: Hydra's JWT-bearer grant, as the MCP spike does (`internal/mcpdelegation`): a network hop and a client
   registration per turn for a token the API both issues and verifies; forwarding the session: token passthrough,
   refused by AI-36.
+- As built (task 1.1): the token is opaque, not signed: `fyai_` and the organisation's ID in the clear followed by 32
+  random bytes, of which `ai_grant` (000366) keeps only the SHA-256, with the person, the turn, its issue and its expiry
+  (at most 5 minutes) and its end. The API must look the grant up anyway, to end it with its turn, so a signature would
+  add a key to keep and rotate and nothing else. `ai_grant_for` resolves it, in the organisation it names, to the person
+  and their live roles there (as `session_for` does); `authn.AIGrants` makes it an `agent`-class principal with the
+  scope `ai.read` and the turn; the API refuses it anything but a read (`aiReadable`), on top of the AI column; the
+  release and local builds route only `fyai_` tokens to it, never at consent. Grants are left out of the tenant export.
 
 **D3. The orchestrator in `cmd/ai`, stateless and keyless (AI-P2, "The orchestrator holds no write credential",
 AI-28).**

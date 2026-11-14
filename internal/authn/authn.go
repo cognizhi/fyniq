@@ -62,6 +62,9 @@ type Principal struct {
 	// CoolingOffUntil is when the cooling-off after the user's account recovery ends; zero when there is none (SEC-35).
 	// Until then the API holds the operations whose policy says so.
 	CoolingOffUntil time.Time
+	// Turn is the assistant's turn a delegated AI read token was issued for (AIGrants); Nil for every other caller.
+	// Such a caller only reads (PRD-001 §9.3 rev 0.277).
+	Turn uuid.UUID
 }
 
 // StepUpWindow is how recent a step-up must be for an operation that needs one.
