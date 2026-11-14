@@ -708,6 +708,38 @@
       "label": "Which data may go where",
       "tooltip": "The classes of data each connection may receive: know-how and business figures widely, personal data and payroll only where Singapore processing is evidenced."
     },
+    "settings.ai-connection": {
+      "label": "AI provider connection",
+      "tooltip": "One connection to a model provider: its key and settings, the models its provider lists, and where its prompts are processed."
+    },
+    "ai.connection-enable": {
+      "label": "Ask to turn it on",
+      "tooltip": "Turning a connection on needs a second approver, a complete model list from the provider and its data handling with evidence."
+    },
+    "ai.connection-disable": {
+      "label": "Turn it off",
+      "tooltip": "Takes effect at once: calls stop going to it and each agent moves to the next step of its route."
+    },
+    "ai.connection-key": {
+      "label": "Replace the key",
+      "tooltip": "The new key goes straight to the secret store and is never shown again; it replaces the old one once a second approver approves."
+    },
+    "ai.model-allow": {
+      "label": "Ask to allow it",
+      "tooltip": "Allowing a model the provider lists needs a passing probe and a second approver; it serves an agent only once it passes that agent's evals."
+    },
+    "ai.model-qualify": {
+      "label": "Qualify it for an agent",
+      "tooltip": "Runs the agent's evals against the model on this connection; the model serves that agent only when they pass."
+    },
+    "ai.model-price": {
+      "label": "Enter a price",
+      "tooltip": "The Owner's own price, per million tokens in the provider's currency, for a model no source prices; it applies once a second approver approves it."
+    },
+    "ai.data-handling": {
+      "label": "Where its prompts go",
+      "tooltip": "Where the provider processes and keeps what it is sent, whether it trains on it, and the evidence; changing it needs a second approver."
+    },
     "ai.switch-off": {
       "label": "Turn all AI off now",
       "tooltip": "New requests stop at once, and a reply being written within seconds. Turning it back on needs a second approver."

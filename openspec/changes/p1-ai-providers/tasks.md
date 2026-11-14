@@ -111,13 +111,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   `docs/user-guide/ai-settings.md` compiled into `kb/`. Tests `// req: AI-13`, `// req: AI-77`.
   As built: Settings › AI and AI usage and budgets (design D13); the parts of the `ai-settings` fragment other changes
   build (proposals, task types, payroll access, exclusions, scheduled agents, connected apps) join with them.
-- [ ] 8.2 `ai-providers` and `ai-provider-connection` (add from an adapter or preset, credential, models from the list,
+- [x] 8.2 `ai-providers` and `ai-provider-connection` (add from an adapter or preset, credential, models from the list,
   probe, billing, data handling, enable with a second approver); help keys; guide `docs/user-guide/ai-providers.md`.
   Tests `// req: AI-72`, `// req: AI-80`.
-  Built so far (slice 28): AI providers (`/settings/ai/providers`): the connections, which data may go where, and
+  Built (slices 28 and 29): AI providers (`/settings/ai/providers`): the connections, which data may go where, and
   adding one from a provider or preset (the catalogue gains each model provider's sign-ins, features and presets).
-  Left: the connection's own page (configuration, key, models from the list, probe, qualify, prices, data handling,
-  enable).
+  The connection's own page (`/settings/ai/providers/$connection`): Overview (sign-in and key, settings, the agents
+  whose routes name it; change, replace the key, turn on with a second approver, turn off at once), Models (the
+  provider's list and its age, probe, allow, remove, qualify for an agent, prices with their source, the Owner's
+  review of a pending price and own price) and Data handling (the declaration with evidence, changed with a second
+  approver). The timeout and retries show among the provider's settings; the request rate limit and circuit breaker are
+  fixed in the connector's manifest, which the catalogue does not expose, so the page does not show them.
 - [ ] 8.3 `ai-model-routes` and `ai-route-editor`; help keys; the guide's routes section. Tests `// req: AI-74`.
 - [ ] 8.4 `ai-activity-log`, and `my-ai-plan` showing P2's own-plan option as not offered; help keys; guides compiled.
   Tests `// req: AI-12`.
