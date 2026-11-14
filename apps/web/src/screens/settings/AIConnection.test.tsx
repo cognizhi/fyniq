@@ -71,6 +71,7 @@ describe("Settings › AI › AI providers › a connection", () => {
     expect(await screen.findByText("Assistant")).toBeTruthy();
     expect(screen.getByText("primary: claude-sonnet")).toBeTruthy();
     expect(await screen.findByText("sg")).toBeTruthy();
+    expect(screen.queryByText("Models that draw at another rate")).toBeNull();
     await noViolations();
     fireEvent.click(screen.getByRole("button", { name: "Turn it off" }));
     await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/ai/connections/c-1/disable")).toBe(true));
@@ -165,5 +166,18 @@ describe("Settings › AI › AI providers › a connection", () => {
       configuration: { region: "sg" },
       data_handling: { handling: [{ model: "*", processed_in: ["SG"], retention_days: 30, training: "no", evidence }], inventory_id: "inv-1", transfer_id: "tr-1" },
     });
+  });
+
+  // req: AI-73
+  it("shows a plan's per-model rates with the terms they come from", async () => {
+    page({
+      "GET /v1/ai/connections/c-1": { status: 200, body: { ...connection, billing: { mode: "subscription", quota: { amount: 300, unit: "requests", window: "month",
+        fee: "19.00", currency: "USD", rates: [{ model: "kimi-big", rate: "10" }], terms: { url: "https://example.com/plan-terms", title: "Plan terms",
+        checked_on: "2026-11-01" } } } } },
+    });
+    open();
+    expect(await screen.findByText("Models that draw at another rate")).toBeTruthy();
+    expect(screen.getByText(/kimi-big 10; others 1/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Plan terms" })).toBeTruthy();
   });
 });

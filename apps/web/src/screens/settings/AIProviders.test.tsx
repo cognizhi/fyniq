@@ -86,4 +86,33 @@ describe("Settings › AI › AI providers", () => {
     });
     expect(await screen.findByText(/The connection is added once another member who approves it does/)).toBeTruthy();
   });
+
+  // req: AI-73
+  it("asks for a plan whose models draw at other rates, only with the plan's published terms", async () => {
+    const seen = page({ "POST /v1/ai/connections": { status: 202, body: { id: "a-9", status: "pending", summary: "Add the AI connection Kimi" } } });
+    renderPage(AIProviders, { path: "/settings/ai/providers", session: admin });
+    fireEvent.click(await screen.findByRole("button", { name: "Set up Moonshot Kimi" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/API key/), { target: { value: "not-a-real-key-for-tests" } });
+    fireEvent.click(within(dialog).getByLabelText(/Subscription: a fixed fee with a quota/));
+    fireEvent.change(within(dialog).getByLabelText("Quota"), { target: { value: "300" } });
+    fireEvent.change(within(dialog).getByLabelText("Counted in"), { target: { value: "requests" } });
+    fireEvent.change(within(dialog).getByLabelText("Fee each time"), { target: { value: "19.00" } });
+    fireEvent.change(within(dialog).getByLabelText(/Models that draw at another rate/), { target: { value: "kimi-big = 10\nkimi-small=0.33" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to add it" }));
+    expect(await within(dialog).findByText(/Give the plan's published terms/)).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("The plan's published terms"), { target: { value: "https://example.com/plan-terms" } });
+    fireEvent.change(within(dialog).getByLabelText("Their title"), { target: { value: "Plan terms" } });
+    fireEvent.change(within(dialog).getByLabelText("Read on"), { target: { value: "2026-11-01" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to add it" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST")).toBe(true));
+    expect((seen.find((x) => x.method === "POST")?.body as { billing: unknown }).billing).toEqual({
+      mode: "subscription",
+      quota: {
+        amount: 300, unit: "requests", window: "month", fee: "19.00", currency: "USD",
+        rates: [{ model: "kimi-big", rate: "10" }, { model: "kimi-small", rate: "0.33" }],
+        terms: { url: "https://example.com/plan-terms", title: "Plan terms", checked_on: "2026-11-01" },
+      },
+    });
+  });
 });

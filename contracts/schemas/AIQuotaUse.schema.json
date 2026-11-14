@@ -28,6 +28,7 @@
       "type": "string"
     },
     "used": {
+      "description": "What the window drew from the quota: each model's use at its rate from the plan's terms (1 where they name none), rounded down.",
       "examples": [
         908000
       ],

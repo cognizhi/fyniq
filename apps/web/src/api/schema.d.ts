@@ -14929,6 +14929,10 @@ export interface components {
              * @example 30.00
              */
             fee: string;
+            /** @description The models the plan draws its quota from at another rate, as its published terms say; a model not named draws at 1 (AI-73). */
+            rates?: components["schemas"]["AIConnectionQuotaRate"][] | null;
+            /** @description The plan's published terms the rates come from; required with rates. */
+            terms?: components["schemas"]["AIConnectionQuotaTerms"];
             /**
              * @description What the quota counts.
              * @example tokens
@@ -14941,6 +14945,36 @@ export interface components {
              * @enum {string}
              */
             window: "day" | "month";
+        };
+        AIConnectionQuotaRate: {
+            /**
+             * @description The model, as the provider lists it.
+             * @example kimi-k2-thinking
+             */
+            model: string;
+            /**
+             * @description Units of the quota each token or request draws, a decimal string.
+             * @example 3
+             */
+            rate: string;
+        };
+        AIConnectionQuotaTerms: {
+            /**
+             * Format: date
+             * @description The day they were read.
+             * @example 2026-11-14
+             */
+            checked_on: string;
+            /**
+             * @description The page's title.
+             * @example Pricing
+             */
+            title: string;
+            /**
+             * @description The plan's published terms.
+             * @example https://platform.moonshot.ai/docs/pricing
+             */
+            url: string;
         };
         AIDataEvidence: {
             /**
@@ -15790,6 +15824,7 @@ export interface components {
             unit: "tokens" | "requests";
             /**
              * Format: int64
+             * @description What the window drew from the quota: each model's use at its rate from the plan's terms (1 where they name none), rounded down.
              * @example 908000
              */
             used: number;

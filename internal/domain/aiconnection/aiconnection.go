@@ -7,6 +7,7 @@ package aiconnection
 
 import (
 	"fmt"
+	"math/big"
 	"net/netip"
 	"net/url"
 	"regexp"
@@ -51,6 +52,51 @@ type Quota struct {
 	Window   string `json:"window"` // day or month
 	Fee      string `json:"fee"`    // a decimal string, never a binary number (ENG-10)
 	Currency string `json:"currency"`
+	// Rates are the models the plan draws its quota from at another rate than one unit a unit, as its published terms
+	// say (AI-73); a model they do not name draws at 1.
+	Rates []QuotaRate `json:"rates,omitempty"`
+	// Terms are the plan's published terms the rates come from; required with rates.
+	Terms *QuotaTerms `json:"terms,omitempty"`
+}
+
+// QuotaRate is how much of the quota one token or request of a model draws: a decimal string, never a binary number.
+type QuotaRate struct {
+	Model string `json:"model"`
+	Rate  string `json:"rate"`
+}
+
+// QuotaTerms are a plan's published terms: the official page, its title and the day it was read.
+type QuotaTerms struct {
+	URL       string `json:"url"`
+	Title     string `json:"title"`
+	CheckedOn string `json:"checked_on"`
+}
+
+// Units are what one attempt counts against the quota before its model's rate: its requests, or its tokens, input,
+// output and the cache's reads and writes.
+func (q Quota) Units(requests, tokens int64) int64 {
+	if q.Unit == "requests" {
+		return requests
+	}
+	return tokens
+}
+
+// Drawn is the quota a window's use took (AI-73): each model's units at its rate, exactly, rounded down to whole
+// units; units maps a model to the units it used.
+func (q Quota) Drawn(units map[string]int64) int64 {
+	total := new(big.Rat)
+	for model, n := range units {
+		rate := big.NewRat(1, 1)
+		for _, r := range q.Rates {
+			if r.Model == model {
+				if x, ok := new(big.Rat).SetString(r.Rate); ok {
+					rate = x
+				}
+			}
+		}
+		total.Add(total, new(big.Rat).Mul(rate, new(big.Rat).SetInt64(n)))
+	}
+	return new(big.Int).Quo(total.Num(), total.Denom()).Int64()
 }
 
 // Period is the window of the quota that now falls in, in loc: its calendar day or month (AI-73), and when it resets.
@@ -243,6 +289,53 @@ func checkBilling(mode string, q *Quota) error {
 	fee, err := money.ParseField(q.Fee, cur, "billing.quota.fee")
 	if err != nil || fee.Sign() < 0 {
 		return refuse(CodeBilling, "billing.quota.fee", "is not an amount of 0 or more in its currency", "Give the fee as a decimal, such as 30.00")
+	}
+	return checkRates(q)
+}
+
+var (
+	quotaRate = regexp.MustCompile(`^[0-9]{1,6}(\.[0-9]{1,4})?$`)
+	day       = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
+)
+
+// checkRates checks a quota's per-model rates and their terms (AI-73): at most 100 models, each named once, each rate a
+// decimal above 0 with at most four places, and the plan's published terms with them.
+func checkRates(q *Quota) error {
+	if len(q.Rates) > 100 {
+		return refuse(CodeBilling, "billing.quota.rates", "names more than 100 models", "Give the rates of at most 100 models")
+	}
+	seen := map[string]bool{}
+	for i, r := range q.Rates {
+		field := fmt.Sprintf("billing.quota.rates[%d]", i)
+		x, ok := new(big.Rat).SetString(r.Rate)
+		switch {
+		case strings.TrimSpace(r.Model) == "" || len(r.Model) > 200:
+			return refuse(CodeBilling, field+".model", "is empty or longer than 200 characters", "Give the model's ID as the provider lists it")
+		case seen[r.Model]:
+			return refuse(CodeBilling, field+".model", "is named twice", "Give each model's rate once")
+		case !quotaRate.MatchString(r.Rate) || !ok || x.Sign() <= 0:
+			return refuse(CodeBilling, field+".rate", "is not a decimal above 0 with at most four places", "Give the rate as the terms do, such as 0.33 or 10")
+		}
+		seen[r.Model] = true
+	}
+	if q.Terms == nil {
+		if len(q.Rates) > 0 {
+			return refuse(CodeBilling, "billing.quota.terms", "is missing: rates come from the plan's published terms", "Give the terms' page, its title and the day you read it")
+		}
+		return nil
+	}
+	t := q.Terms
+	u, err := url.Parse(t.URL)
+	switch {
+	case err != nil || u.Scheme != "https" || u.Host == "":
+		return refuse(CodeBilling, "billing.quota.terms.url", "is not an https address", "Give the address of the plan's published terms")
+	case strings.TrimSpace(t.Title) == "" || len(t.Title) > 300:
+		return refuse(CodeBilling, "billing.quota.terms.title", "is empty or longer than 300 characters", "Give the page's title")
+	case !day.MatchString(t.CheckedOn):
+		return refuse(CodeBilling, "billing.quota.terms.checked_on", "is not a day as YYYY-MM-DD", "Give the day you read the terms")
+	}
+	if _, err := time.Parse(time.DateOnly, t.CheckedOn); err != nil {
+		return refuse(CodeBilling, "billing.quota.terms.checked_on", "is not a day as YYYY-MM-DD", "Give the day you read the terms")
 	}
 	return nil
 }
