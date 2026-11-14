@@ -137,6 +137,11 @@ Source: PRD-001 §8.19 · Priority M · Phase P1
 - **THEN** each row becomes its record through the command that enters it by hand, in any organisation
 - **AND** a file with a row refused imports nothing and names each problem's row and column as the file numbers them
 
+#### Scenario: Documents import as drafts (rev 0.271)
+- **WHEN** a file of journals, invoices or bills is imported
+- **THEN** each becomes a draft keeping the file's number, posted later through its own approvals
+- **AND** a row naming a contact, item, account or project the organisation does not have refuses the file, saying to import it first
+
 ### Requirement: FR-MIG-04 Full tenant export
 The Owner SHALL be able to export all of the organisation's data and documents in open formats (CSV/JSON plus files), with a manifest and hashes, under dual control.
 
