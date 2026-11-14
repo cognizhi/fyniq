@@ -140,9 +140,11 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 9. The finish
 
-- [ ] 9.1 `docs/security/threat-models/ai-providers.md` (credentials, SSRF through a base URL, classes leaking on
+- [x] 9.1 `docs/security/threat-models/ai-providers.md` (credentials, SSRF through a base URL, classes leaking on
   fallback, budget exhaustion, alias drift, a poisoned catalogue, consumer tokens) for security review #4; the build
   plan's paragraph on what was built; `make check`, `make test`, `make test-e2e` and `make evals` pass.
+  Built (slice 32): the threat model's fifteen threats with their controls and tests, and a new test that a model
+  connection reaches only its own host (`TestAModelConnectionReachesOnlyItsOwnHost`); the build plan's paragraph.
 
 ## Workflow follow-up
 
