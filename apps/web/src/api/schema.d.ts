@@ -8509,6 +8509,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/migrations/{migration_id}/mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the mapping
+         * @description M2 (§17.1, design D4): the workbook's set-up mapped onto Fyniq's, as its latest version. Accounts map by code onto the organisation's chart (or the standard chart a new organisation loads), the workbook's 7040 onto Fyniq's 7050, and an account Fyniq lacks is created from the Accounts sheet; GST codes onto the sg-gst pack's; departments and projects as dimension values (rev 0.254); budget lines onto their report group's first account; bank rules in their order. Each problem against the organisation's set-up now is an error that stops the Accountant's sign-off. A valid workbook proposes a version, keeping the choices of the one before. Read-only; no side effects.
+         */
+        get: operations["getMigrationMapping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the mapping
+         * @description Changes entries of the mapping as its next version (§17.1 M2): each entry sent replaces the one with its key, the workbook's code or name, the budget line or the bank rule's order. An entry the mapping does not hold is MIGRATION-11. The new version is kept even with errors against the set-up, which it lists, and needs the Accountant's sign-off of its own. Needs If-Match with the mapping's ETag. Side effects: the version, the audit event migration.mapped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        patch: operations["changeMigrationMapping"];
+        trace?: never;
+    };
+    "/v1/migrations/{migration_id}/mapping/sign-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign the mapping
+         * @description The Accountant signs the mapping's latest version off (§17.1 M2, rev 0.256), over its SHA-256, stepped up in the last 5 minutes: the commit (M3) needs it. A version with an error against the organisation's set-up is MIGRATION-11, and one of a workbook that is not the latest valid upload is MIGRATION-12. A version is signed once; a later version needs its own sign-off. Needs If-Match with the mapping's ETag. Side effects: the sign-off, the audit event migration.mapping_signed. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["signMigrationMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/migrations/{migration_id}/report": {
         parameters: {
             query?: never;
@@ -31782,6 +31826,88 @@ export interface components {
              */
             role: string;
         };
+        MigrationAccountMap: {
+            /**
+             * @description existing: Fyniq's chart has it; create: the set-up creates it.
+             * @example existing
+             * @enum {string}
+             */
+            action: "existing" | "create";
+            /**
+             * @description An account to create: its cash-flow line.
+             * @example Operating
+             */
+            cash_flow_line?: string;
+            /**
+             * @description An account to create: its default GST code.
+             * @example SR
+             */
+            default_gst_code?: string;
+            /**
+             * @description An account to create: its function (COGS, R&D, S&M, G&A or Other).
+             * @example Other
+             */
+            function?: string;
+            /**
+             * @description The Fyniq account it maps onto, or is created as, by code.
+             * @example 4030
+             */
+            fyniq: string;
+            /**
+             * @description An account to create: whether money moves through it.
+             * @example false
+             */
+            money_account?: boolean;
+            /**
+             * @description The workbook's name for it; ignored in a change.
+             * @example AI project & solution revenue
+             */
+            name?: string;
+            /**
+             * @description An account to create: its report group.
+             * @example Services & project revenue
+             */
+            report_group?: string;
+            /**
+             * Format: int64
+             * @description Its row on the Accounts sheet; ignored in a change.
+             * @example 36
+             */
+            row?: number;
+            /**
+             * @description Fyniq's type: asset, liability, equity, revenue or expense; the workbook's Cost of Sales, Other Expense and Tax are expense and Other Income revenue.
+             * @example revenue
+             */
+            type?: string;
+            /**
+             * @description The workbook's account code: the entry's key.
+             * @example 4030
+             */
+            workbook: string;
+            /**
+             * @description The workbook's type, such as Cost of Sales; ignored in a change.
+             * @example Revenue
+             */
+            workbook_type?: string;
+        };
+        MigrationCodeMap: {
+            /**
+             * @description The sg-gst pack's code.
+             * @example SR
+             */
+            fyniq: string;
+            /**
+             * Format: int64
+             * @description Its row on the Lists sheet; ignored in a change.
+             * @example 6
+             */
+            row?: number;
+            /**
+             * @description The workbook's GST code: the entry's key.
+             * @example SR
+             */
+            workbook: string;
+        };
         MigrationFileView: {
             /**
              * Format: date-time
@@ -31838,6 +31964,98 @@ export interface components {
              * @example 6684378
              */
             size_bytes: number;
+        };
+        MigrationLineMap: {
+            /**
+             * @description The revenue or expense account its amounts go to, by code.
+             * @example 4010
+             */
+            account: string;
+            /**
+             * @description The Budget sheet's P&L line: the entry's key.
+             * @example Subscription revenue
+             */
+            line: string;
+        };
+        MigrationMappingChange: {
+            /** @description Accounts to map again, by the workbook's code. */
+            accounts?: components["schemas"]["MigrationAccountMap"][] | null;
+            /** @description Bank rules to map again, by their order. */
+            bank_rules?: components["schemas"]["MigrationRuleMap"][] | null;
+            /** @description Budget lines to map again, by the line. */
+            budget_lines?: components["schemas"]["MigrationLineMap"][] | null;
+            /** @description Departments to map again, by the workbook's name. */
+            departments?: components["schemas"]["MigrationValueMap"][] | null;
+            /** @description GST codes to map again, by the workbook's code. */
+            gst_codes?: components["schemas"]["MigrationCodeMap"][] | null;
+            /** @description Projects to map again, by the workbook's name. */
+            projects?: components["schemas"]["MigrationValueMap"][] | null;
+        };
+        MigrationMappingView: {
+            /** @description Each workbook account, in the sheet's order. */
+            accounts: components["schemas"]["MigrationAccountMap"][];
+            /** @description The bank rules, in order. */
+            bank_rules: components["schemas"]["MigrationRuleMap"][];
+            /** @description Each P&L line of the Budget sheet. */
+            budget_lines: components["schemas"]["MigrationLineMap"][];
+            /** @description Each department of the Employees sheet, as a value of the Department dimension (rev 0.254). */
+            departments: components["schemas"]["MigrationValueMap"][];
+            /**
+             * Format: int64
+             * @description The errors.
+             * @example 0
+             */
+            errors: number;
+            /** @description Each workbook GST code. */
+            gst_codes: components["schemas"]["MigrationCodeMap"][];
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T09:05:20Z
+             */
+            made_at: string;
+            /**
+             * @description Who made the version: the validation, or a person.
+             * @example system:migration.validate
+             */
+            made_by: string;
+            /** @description What the version gets wrong against the organisation's set-up now: each an error that stops the sign-off. */
+            problems: components["schemas"]["MigrationProblem"][];
+            /** @description Each project the records name, as a value of the Project dimension (rev 0.254). */
+            projects: components["schemas"]["MigrationValueMap"][];
+            /**
+             * @description The SHA-256 of the version as kept: what the sign-off names.
+             * @example 5d1e…
+             */
+            sha256: string;
+            /**
+             * @description Whether the Accountant signed this version; a later version needs its own sign-off.
+             * @example false
+             */
+            signed: boolean;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-13T10:00:00Z
+             */
+            signed_at?: string;
+            /**
+             * @description Who signed it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            signed_by?: string;
+            /**
+             * Format: uuid
+             * @description The M1 step whose workbook it maps.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20
+             */
+            step_id: string;
+            /**
+             * Format: int64
+             * @description The version: the validation proposes one from each valid workbook, and each change makes the next.
+             * @example 2
+             */
+            version: number;
         };
         MigrationProblem: {
             /**
@@ -31968,6 +32186,29 @@ export interface components {
              */
             year_start?: string;
         };
+        MigrationRuleMap: {
+            /**
+             * @description The account it categorises to, by code.
+             * @example 1050
+             */
+            account: string;
+            /**
+             * @description The text a bank description contains; ignored in a change.
+             * @example STRIPE
+             */
+            contains?: string;
+            /**
+             * @description The GST code it gives, if any.
+             * @example SR
+             */
+            gst?: string;
+            /**
+             * Format: int64
+             * @description Its place among the rules, first match first: the entry's key.
+             * @example 1
+             */
+            order: number;
+        };
         MigrationSheetCount: {
             /**
              * Format: int64
@@ -32070,6 +32311,24 @@ export interface components {
             operation_id?: string;
             /** @description The step, validating. */
             step: components["schemas"]["MigrationStepView"];
+        };
+        MigrationValueMap: {
+            /**
+             * @description existing: Fyniq has the value; create: the set-up creates it.
+             * @example create
+             * @enum {string}
+             */
+            action: "existing" | "create";
+            /**
+             * @description The dimension value's code.
+             * @example PRODUCT-ENGINEERING
+             */
+            code: string;
+            /**
+             * @description The workbook's name for it: the entry's key.
+             * @example Product & Engineering
+             */
+            workbook: string;
         };
         MigrationView: {
             /** @description The files the migration keeps, oldest first: each workbook as uploaded and each Checks export made from one. */
@@ -111129,6 +111388,411 @@ export interface operations {
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMigrationMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationMappingView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeMigrationMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MigrationMappingChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationMappingView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MIGRATION-11` The mapping does not fit the organisation's set-up. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    signMigrationMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The migration. */
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MigrationMappingView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MIGRATION-12` The mapping cannot be signed yet; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MIGRATION-01` The migration keeps its record, in an organisation without posted entries. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MIGRATION-11` The mapping does not fit the organisation's set-up. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };

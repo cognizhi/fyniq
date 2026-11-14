@@ -1551,6 +1551,23 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the workbook import
 - **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Workbook import sign-offs
+In Standard mode, each role SHALL hold only the rights over the workbook import's sign-offs (the mapping, the parity report and the migration difference register, and the parallel month) that the permission matrix gives it (rev 0.256).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Accountant can sign them off (A), stepped up, each over the SHA-256 of what it signs
+
+#### Scenario: View
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Owner, the Finance controller and the Auditor can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
+
 ### Requirement: Permission matrix: People and HR link
 In Standard mode, each role SHALL hold only the rights over the People and HR settings (the Nemura link and external HR or payroll systems; FR-PPL-01) that the permission matrix gives it; imported payroll journals are approved under Journals.
 

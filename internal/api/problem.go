@@ -236,6 +236,8 @@ var codeFacts = map[string]struct {
 	storage.CodeRestoreDrill:      {409, "A restore drill, once recorded, never changes"},
 	storage.CodeMigration:         {409, "The migration keeps its record, in an organisation without posted entries"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
+	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
+	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},
 	storage.CodeHeartbeatDrill:    {409, "A heartbeat drill, once recorded, never changes"},
 	storage.CodeTransfer:          {409, "A transfer's versions follow each other and keep the flow they cover"},
 	storage.CodeShredding:         {409, "Personal data is shredded only in its approved run, after its retention"},

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The account it categorises to, by code.",
+      "examples": [
+        "1050"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    },
+    "contains": {
+      "description": "The text a bank description contains; ignored in a change.",
+      "examples": [
+        "STRIPE"
+      ],
+      "type": "string"
+    },
+    "gst": {
+      "description": "The GST code it gives, if any.",
+      "examples": [
+        "SR"
+      ],
+      "maxLength": 10,
+      "type": "string"
+    },
+    "order": {
+      "description": "Its place among the rules, first match first: the entry's key.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "order",
+    "account"
+  ],
+  "title": "MigrationRuleMap",
+  "type": "object"
+}

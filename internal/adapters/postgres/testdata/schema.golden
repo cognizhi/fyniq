@@ -1151,11 +1151,28 @@ migration_file | storage_key | text | not null |
 migration_file | data_class | text | not null | 
 migration_file | added_by | text | not null | 
 migration_file | added_at | timestamp with time zone | not null | 
+migration_mapping | organisation_id | uuid | not null | current_org()
+migration_mapping | id | uuid | not null | uuidv7()
+migration_mapping | run_id | uuid | not null | 
+migration_mapping | version | integer | not null | 
+migration_mapping | step_id | uuid | not null | 
+migration_mapping | mapping | jsonb | not null | 
+migration_mapping | mapping_sha256 | text | not null | 
+migration_mapping | made_by | text | not null | 
+migration_mapping | made_at | timestamp with time zone | not null | 
 migration_run | organisation_id | uuid | not null | current_org()
 migration_run | id | uuid | not null | uuidv7()
 migration_run | status | text | not null | 'open'::text
 migration_run | started_by | text | not null | 
 migration_run | started_at | timestamp with time zone | not null | 
+migration_signoff | organisation_id | uuid | not null | current_org()
+migration_signoff | id | uuid | not null | uuidv7()
+migration_signoff | run_id | uuid | not null | 
+migration_signoff | subject | text | not null | 
+migration_signoff | mapping_id | uuid | null | 
+migration_signoff | subject_sha256 | text | not null | 
+migration_signoff | signed_by | text | not null | 
+migration_signoff | signed_at | timestamp with time zone | not null | 
 migration_step | organisation_id | uuid | not null | current_org()
 migration_step | id | uuid | not null | uuidv7()
 migration_step | run_id | uuid | not null | 
@@ -3813,6 +3830,24 @@ migration_file | migration_file_size_bytes_not_null | NOT NULL size_bytes
 migration_file | migration_file_storage_key | UNIQUE (organisation_id, storage_key)
 migration_file | migration_file_storage_key_not_null | NOT NULL storage_key
 migration_file | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+migration_mapping | migration_mapping_hash | CHECK ((mapping_sha256 ~ '^[0-9a-f]{64}$'::text))
+migration_mapping | migration_mapping_id_not_null | NOT NULL id
+migration_mapping | migration_mapping_made_at_not_null | NOT NULL made_at
+migration_mapping | migration_mapping_made_by_format | CHECK ((made_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+migration_mapping | migration_mapping_made_by_not_null | NOT NULL made_by
+migration_mapping | migration_mapping_mapping_not_null | NOT NULL mapping
+migration_mapping | migration_mapping_mapping_sha256_not_null | NOT NULL mapping_sha256
+migration_mapping | migration_mapping_organisation_id_not_null | NOT NULL organisation_id
+migration_mapping | migration_mapping_pkey | PRIMARY KEY (organisation_id, id)
+migration_mapping | migration_mapping_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES migration_run(organisation_id, id)
+migration_mapping | migration_mapping_run_id_not_null | NOT NULL run_id
+migration_mapping | migration_mapping_size | CHECK ((pg_column_size(mapping) <= 4194304))
+migration_mapping | migration_mapping_step_fkey | FOREIGN KEY (organisation_id, step_id) REFERENCES migration_step(organisation_id, id)
+migration_mapping | migration_mapping_step_id_not_null | NOT NULL step_id
+migration_mapping | migration_mapping_version_key | UNIQUE (organisation_id, run_id, version)
+migration_mapping | migration_mapping_version_not_null | NOT NULL version
+migration_mapping | migration_mapping_version_positive | CHECK ((version >= 1))
+migration_mapping | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 migration_run | migration_run_id_not_null | NOT NULL id
 migration_run | migration_run_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 migration_run | migration_run_organisation_id_not_null | NOT NULL organisation_id
@@ -3823,6 +3858,21 @@ migration_run | migration_run_started_by_not_null | NOT NULL started_by
 migration_run | migration_run_status_known | CHECK ((status = ANY (ARRAY['open'::text, 'closed'::text])))
 migration_run | migration_run_status_not_null | NOT NULL status
 migration_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+migration_signoff | migration_signoff_hash | CHECK ((subject_sha256 ~ '^[0-9a-f]{64}$'::text))
+migration_signoff | migration_signoff_id_not_null | NOT NULL id
+migration_signoff | migration_signoff_mapping_fkey | FOREIGN KEY (organisation_id, mapping_id) REFERENCES migration_mapping(organisation_id, id)
+migration_signoff | migration_signoff_organisation_id_not_null | NOT NULL organisation_id
+migration_signoff | migration_signoff_pkey | PRIMARY KEY (organisation_id, id)
+migration_signoff | migration_signoff_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES migration_run(organisation_id, id)
+migration_signoff | migration_signoff_run_id_not_null | NOT NULL run_id
+migration_signoff | migration_signoff_signed_at_not_null | NOT NULL signed_at
+migration_signoff | migration_signoff_signed_by_format | CHECK ((signed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+migration_signoff | migration_signoff_signed_by_not_null | NOT NULL signed_by
+migration_signoff | migration_signoff_subject_known | CHECK ((subject = 'mapping'::text))
+migration_signoff | migration_signoff_subject_names | CHECK (((subject = 'mapping'::text) = (mapping_id IS NOT NULL)))
+migration_signoff | migration_signoff_subject_not_null | NOT NULL subject
+migration_signoff | migration_signoff_subject_sha256_not_null | NOT NULL subject_sha256
+migration_signoff | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 migration_step | migration_step_checks_fkey | FOREIGN KEY (organisation_id, checks_file_id) REFERENCES migration_file(organisation_id, id)
 migration_step | migration_step_id_not_null | NOT NULL id
 migration_step | migration_step_known | CHECK ((step = ANY (ARRAY['M1'::text, 'M2'::text, 'M3'::text, 'M4'::text, 'M5'::text, 'M6'::text])))
@@ -5164,6 +5214,8 @@ CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (orga
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
 CREATE INDEX migration_file_run ON fyniq.migration_file USING btree (organisation_id, run_id, added_at)
+CREATE INDEX migration_mapping_step ON fyniq.migration_mapping USING btree (organisation_id, step_id)
+CREATE INDEX migration_signoff_run ON fyniq.migration_signoff USING btree (organisation_id, run_id, signed_at)
 CREATE INDEX migration_step_checks ON fyniq.migration_step USING btree (organisation_id, checks_file_id) WHERE (checks_file_id IS NOT NULL)
 CREATE INDEX migration_step_run ON fyniq.migration_step USING btree (organisation_id, run_id, started_at)
 CREATE INDEX migration_step_workbook ON fyniq.migration_step USING btree (organisation_id, workbook_file_id)
@@ -5393,8 +5445,12 @@ CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING 
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_file_pkey ON fyniq.migration_file USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_file_storage_key ON fyniq.migration_file USING btree (organisation_id, storage_key)
+CREATE UNIQUE INDEX migration_mapping_pkey ON fyniq.migration_mapping USING btree (organisation_id, id)
+CREATE UNIQUE INDEX migration_mapping_version_key ON fyniq.migration_mapping USING btree (organisation_id, run_id, version)
 CREATE UNIQUE INDEX migration_run_one ON fyniq.migration_run USING btree (organisation_id)
 CREATE UNIQUE INDEX migration_run_pkey ON fyniq.migration_run USING btree (organisation_id, id)
+CREATE UNIQUE INDEX migration_signoff_mapping ON fyniq.migration_signoff USING btree (organisation_id, mapping_id) WHERE (mapping_id IS NOT NULL)
+CREATE UNIQUE INDEX migration_signoff_pkey ON fyniq.migration_signoff USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_step_one_validating ON fyniq.migration_step USING btree (organisation_id, run_id, step) WHERE (state = 'validating'::text)
 CREATE UNIQUE INDEX migration_step_pkey ON fyniq.migration_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX money_account_account_key ON fyniq.money_account USING btree (organisation_id, account_id)
@@ -5574,6 +5630,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_signoff DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_preference', 'id')
@@ -5872,8 +5930,12 @@ CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation 
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER migration_file_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_file FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_file_no_truncate BEFORE TRUNCATE ON fyniq.migration_file FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_mapping FOR EACH ROW EXECUTE FUNCTION migration_mapping_guard()
+CREATE TRIGGER migration_mapping_no_truncate BEFORE TRUNCATE ON fyniq.migration_mapping FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER migration_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_run FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_run_no_truncate BEFORE TRUNCATE ON fyniq.migration_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER migration_signoff_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_signoff FOR EACH ROW EXECUTE FUNCTION migration_mapping_guard()
+CREATE TRIGGER migration_signoff_no_truncate BEFORE TRUNCATE ON fyniq.migration_signoff FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER migration_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_step FOR EACH ROW EXECUTE FUNCTION migration_guard()
 CREATE TRIGGER migration_step_no_truncate BEFORE TRUNCATE ON fyniq.migration_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER money_account_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.money_account FOR EACH ROW EXECUTE FUNCTION money_account_guard()
@@ -6100,7 +6162,9 @@ ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) |
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+migration_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+migration_signoff | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 money_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 money_account_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6274,7 +6338,9 @@ ledger_purged_entry | enabled | forced
 ledger_revision | enabled | forced
 member_invitation | enabled | forced
 migration_file | enabled | forced
+migration_mapping | enabled | forced
 migration_run | enabled | forced
+migration_signoff | enabled | forced
 migration_step | enabled | forced
 money_account | enabled | forced
 money_account_source | enabled | forced
@@ -6555,6 +6621,7 @@ member_sign_ins() → TABLE(user_id uuid, last_sign_in timestamp with time zone,
 members_second_factor(since timestamp with time zone) → TABLE(user_id uuid, passkeys integer, sessions_with integer, sessions_without integer, last_without timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 069e54faf0ce32b2f36de53f37ad6500
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
 migration_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | def4b1a574f1c8e5715b1a5f94e3dd5b
+migration_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9ea57520443e370b72de498593324b3e
 money_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e476d7ba9a85e485d5ab2f1665b4c59c
 money_account_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8171a26dc6379c626b612b8db542d1b9
 notification_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f2b969415ae5bd9d1ebfa65933ad19e

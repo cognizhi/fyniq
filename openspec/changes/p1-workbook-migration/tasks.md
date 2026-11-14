@@ -33,11 +33,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 2. Mapping (M2)
 
-- [ ] 2.1 The mapping (design D4): accounts by code, creating those Fyniq lacks from the Accounts sheet; GST codes to
-  `sg-gst`'s; departments and projects as dimension values (rev 0.254); budget lines to accounts; bank rules in order.
-  `GET`/`PATCH /v1/migrations/{id}/mapping` and `POST .../mapping/sign-off` (the Accountant, step-up, over the mapping's
-  hash). Tests `// req: data/migration Set-up import and mapping review (M2)` on the fixture's mapping, and a changed
-  mapping after sign-off needing a new sign-off.
+- [x] 2.1 The mapping (design D4): accounts by code onto the organisation's chart, or the standard chart a new
+  organisation loads (the workbook's 7040 onto Fyniq's 7050), creating those Fyniq lacks from the Accounts sheet; GST
+  codes onto `sg-gst`'s; departments and projects as dimension values (rev 0.254); budget lines onto their report group's
+  first account; bank rules in order. Each valid workbook proposes the mapping's next version, keeping the choices of the
+  one before; what it gets wrong is a warning in the report and an error on the mapping. `GET`/`PATCH
+  /v1/migrations/{id}/mapping` (each change the next version) and `POST .../mapping/sign-off`: the Accountant alone,
+  stepped up, over the version's hash, under Appendix D's new row "Workbook import sign-offs" (rev 0.256); a version is
+  signed once, and one of a workbook that is not the latest valid upload is MIGRATION-12 (000327, FY326). Tests
+  `TestTheSampleMapsOntoANewOrganisation`, `TestTheMappingIsSignedByTheAccountantAlone` (a changed mapping after sign-off
+  needs a new sign-off), `TestAttackTheMigrationMappingKeepsItsRules` (`// req: data/migration Set-up import and mapping
+  review (M2)`), the matrix's rows.
 
 ## 3. Opening open items (FR-GL-06) [accountant to confirm]
 

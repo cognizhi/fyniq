@@ -1501,12 +1501,35 @@ type FyniqMigrationFile struct {
 	AddedAt        time.Time
 }
 
+type FyniqMigrationMapping struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Version        int32
+	StepID         uuid.UUID
+	Mapping        []byte
+	MappingSha256  string
+	MadeBy         string
+	MadeAt         time.Time
+}
+
 type FyniqMigrationRun struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
 	Status         string
 	StartedBy      string
 	StartedAt      time.Time
+}
+
+type FyniqMigrationSignoff struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Subject        string
+	MappingID      *uuid.UUID
+	SubjectSha256  string
+	SignedBy       string
+	SignedAt       time.Time
 }
 
 type FyniqMigrationStep struct {

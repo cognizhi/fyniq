@@ -13,10 +13,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/migration"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/sheet"
+	oauthrevoke "github.com/cognizhi/fyniq/internal/tokens"
 )
 
 // sampleWorkbook is the workbook's pinned sample (p1-workbook-migration design D12).
@@ -29,10 +34,13 @@ func sampleWorkbook(t *testing.T) []byte {
 	return b
 }
 
-// validate runs the worker's validations of uploaded workbooks.
+// validate runs the worker's validations of uploaded workbooks. The jobs a test's new member queues, a revocation of
+// their tokens and the notices about them, are done with nothing to do here.
 func (e *env) validate() {
 	e.t.Helper()
-	e.work(map[string]outbox.Work{migration.ValidateKind: migration.Validator{Store: workerStore(e.t), Files: e.blobs, Clock: e.clock}.Work()})
+	none := func(context.Context, uuid.UUID, storage.OutboxRow) error { return nil }
+	e.work(map[string]outbox.Work{migration.ValidateKind: migration.Validator{Store: workerStore(e.t), Files: e.blobs, Clock: e.clock}.Work(),
+		oauthrevoke.Kind: none, notify.FanoutKind: none, notify.RelayKind: none})
 }
 
 // migrationTag is a migration's ETag as the Auditor reads it.
@@ -233,6 +241,91 @@ func TestTheValidationReportCommitsNothing(t *testing.T) {
 	}
 }
 
+// migrationMapping is the migration's mapping and its ETag, as the Auditor reads it.
+func (e *env) migrationMapping(id string) (response, string) {
+	e.t.Helper()
+	r := e.call(http.MethodGet, "/v1/migrations/"+id+"/mapping", e.as(authz.Auditor), nil)
+	return r, r.Header.Get("ETag")
+}
+
+// The mapping (§17.1 M2, design D4) is proposed by the valid workbook, changed by the Controller or Accountant as its
+// next version, and signed by the Accountant alone, stepped up, over its hash: the Controller and the Owner cannot sign
+// it; a version with an error, or of a workbook that is not the latest valid upload, cannot be signed; a version is
+// signed once, and a change after the sign-off needs a sign-off of its own.
+// req: data/migration Set-up import and mapping review (M2)
+// req: FR-MIG-01
+// req: access/roles-and-segregation Permission matrix: Workbook import sign-offs
+// asvs: V8.2.1, V6.4.2
+func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
+	e := newEnv(t)
+	ctrl, acct := e.as(authz.Controller), e.as(authz.Accountant)
+	id := e.startedMigration()
+	mapping := "/v1/migrations/" + id + "/mapping"
+	e.problemIs(e.call(http.MethodGet, mapping, ctrl, nil), "getMigrationMapping", 404, CodeNotFound) // no workbook yet
+	if r := e.upload("/v1/migrations/"+id+"/workbook", ctrl, nil, "Hub.xlsx", sampleWorkbook(t), "If-Match", e.migrationTag(id)); r.Status != 202 {
+		t.Fatalf("uploading: %d %s", r.Status, r.Raw)
+	}
+	e.validate()
+	m, tag := e.migrationMapping(id)
+	accounts, _ := m.Body["accounts"].([]any)
+	if m.Status != 200 || m.Body["version"] != float64(1) || m.Body["signed"] != false || m.Body["errors"] != float64(0) || len(accounts) != 83 ||
+		m.str("made_by") != "system:migration.validate" || tag != `"1-open"` {
+		t.Fatalf("the proposed mapping: %d %s %s", m.Status, tag, m.Raw)
+	}
+
+	change := map[string]any{"accounts": []map[string]any{{"workbook": "4030", "fyniq": "4031", "action": "create", "type": "revenue",
+		"report_group": "Services & project revenue"}}}
+	e.problemIs(e.call(http.MethodPatch, mapping, ctrl, change, "Idempotency-Key", "c-0"), "changeMigrationMapping", 428, CodeIfMatchRequired)
+	e.problemIs(e.call(http.MethodPatch, mapping, ctrl, map[string]any{"projects": []map[string]any{{"workbook": "Nope", "code": "N", "action": "create"}}},
+		"Idempotency-Key", "c-1", "If-Match", tag), "changeMigrationMapping", 422, CodeInvalid)
+	c := e.call(http.MethodPatch, mapping, ctrl, change, "Idempotency-Key", "c-2", "If-Match", tag)
+	if c.Status != 200 || c.Body["version"] != float64(2) || c.Header.Get("ETag") != `"2-open"` || !strings.HasPrefix(c.str("made_by"), "user:") {
+		t.Fatalf("changing: %d %v %s", c.Status, c.Header, c.Raw)
+	}
+	_, tag = e.migrationMapping(id)
+	sign := mapping + "/sign-off"
+	for _, role := range []authz.Role{authz.Controller, authz.Owner} {
+		e.problemIs(e.call(http.MethodPost, sign, steppedUp(e, e.as(role)), nil, "Idempotency-Key", "s-"+string(role), "If-Match", tag),
+			"signMigrationMapping", 403, CodeForbidden)
+	}
+	e.problemIs(e.call(http.MethodPost, sign, acct, nil, "Idempotency-Key", "s-0", "If-Match", tag), "signMigrationMapping", 403, CodeStepUpRequired)
+	me := steppedUp(e, acct)
+	e.problemIs(e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-1", "If-Match", `"1-open"`), "signMigrationMapping", 412, CodeStale)
+	s := e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-2", "If-Match", tag)
+	if s.Status != 200 || s.Body["signed"] != true || s.Header.Get("ETag") != `"2-signed"` || !strings.HasPrefix(s.str("signed_by"), "user:") {
+		t.Fatalf("signing: %d %v %s", s.Status, s.Header, s.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-3", "If-Match", `"2-signed"`), "signMigrationMapping", 409, "STORAGE-DUPLICATE-01")
+	if !strings.Contains(auditTrail(t, e), `"action":"migration.mapping_signed"`) || !strings.Contains(auditTrail(t, e), `"action":"migration.mapped"`) {
+		t.Error("no audit events migration.mapped and migration.mapping_signed")
+	}
+
+	// A change after the sign-off is a version of its own, unsigned; one the chart cannot take cannot be signed.
+	bad := map[string]any{"budget_lines": []map[string]any{{"line": "Subscription revenue", "account": "1010"}}}
+	b := e.call(http.MethodPatch, mapping, acct, bad, "Idempotency-Key", "c-3", "If-Match", `"2-signed"`)
+	problems, _ := b.Body["problems"].([]any)
+	if b.Status != 200 || b.Body["version"] != float64(3) || b.Body["signed"] != false || b.Body["errors"] != float64(1) || len(problems) != 1 ||
+		problems[0].(map[string]any)["code"] != migration.CodeMapping {
+		t.Fatalf("a change the chart cannot take: %d %s", b.Status, b.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-4", "If-Match", `"3-open"`), "signMigrationMapping", 422, migration.CodeMapping)
+
+	// A newer workbook that is not valid leaves the mapping of the last valid one, which can no longer be signed.
+	other, err := sheet.XLSX([]sheet.Sheet{{Name: "Notes", Header: []string{"Note"}}}, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := e.upload("/v1/migrations/"+id+"/workbook", ctrl, nil, "Notes.xlsx", other, "If-Match", e.migrationTag(id)); r.Status != 202 {
+		t.Fatalf("uploading: %d %s", r.Status, r.Raw)
+	}
+	e.validate()
+	fix := map[string]any{"budget_lines": []map[string]any{{"line": "Subscription revenue", "account": "4010"}}}
+	if f := e.call(http.MethodPatch, mapping, acct, fix, "Idempotency-Key", "c-4", "If-Match", `"3-open"`); f.Status != 200 || f.Body["errors"] != float64(0) {
+		t.Fatalf("fixing the mapping: %d %s", f.Status, f.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, sign, me, nil, "Idempotency-Key", "s-5", "If-Match", `"4-open"`), "signMigrationMapping", 409, migration.CodeNotSignable)
+}
+
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample
 // validated, before the matrix runs (seedMigration); starting it again answers that one.
@@ -255,6 +348,54 @@ var matrixMigrations = map[string]func(e *env, tok string) (response, func() boo
 	"getMigrationReport": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/report", tok, nil), nil
 	},
+	"getMigrationMapping": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/migrations/"+matrixMigration(e)+"/mapping", tok, nil), nil
+	},
+	"changeMigrationMapping": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		was, tag := e.migrationMapping(id)
+		r := e.call(http.MethodPatch, "/v1/migrations/"+id+"/mapping", tok, map[string]any{"budget_lines": []map[string]any{{"line": "Subscription revenue",
+			"account": "4010"}}}, "Prefer", "return=preview", "If-Match", tag)
+		return r, func() bool { now, _ := e.migrationMapping(id); return now.Raw == was.Raw }
+	},
+	"signMigrationMapping": func(e *env, tok string) (response, func() bool) {
+		id := matrixMigration(e)
+		signable(e, id)
+		was, tag := e.migrationMapping(id)
+		r := e.call(http.MethodPost, "/v1/migrations/"+id+"/mapping/sign-off", steppedUp(e, tok), nil, "Prefer", "return=preview", "If-Match", tag)
+		return r, func() bool { now, _ := e.migrationMapping(id); return now.Raw == was.Raw }
+	},
+}
+
+// signable makes the matrix's mapping signable when it lists errors: the matrix's other rows create accounts under the
+// workbook's codes, of other types, so every account is created under a code of its own, W and the workbook's, and the
+// budget lines and bank rules follow it.
+func signable(e *env, id string) {
+	e.t.Helper()
+	m, tag := e.migrationMapping(id)
+	if m.Body["errors"] == float64(0) {
+		return
+	}
+	change := map[string][]map[string]any{}
+	for _, x := range m.Body["accounts"].([]any) {
+		a := x.(map[string]any)
+		a["fyniq"], a["action"] = "W"+a["workbook"].(string), "create"
+		if a["type"] == "" || a["type"] == nil {
+			a["type"] = "expense"
+		}
+		change["accounts"] = append(change["accounts"], a)
+	}
+	for _, x := range m.Body["budget_lines"].([]any) {
+		l := x.(map[string]any)
+		change["budget_lines"] = append(change["budget_lines"], map[string]any{"line": l["line"], "account": "W" + l["account"].(string)})
+	}
+	for _, x := range m.Body["bank_rules"].([]any) {
+		r := x.(map[string]any)
+		change["bank_rules"] = append(change["bank_rules"], map[string]any{"order": r["order"], "account": "W" + r["account"].(string), "gst": r["gst"]})
+	}
+	if r := e.call(http.MethodPatch, "/v1/migrations/"+id+"/mapping", e.as(authz.Accountant), change, "If-Match", tag); r.Status != 200 || r.Body["errors"] != float64(0) {
+		e.t.Fatalf("making the matrix's mapping signable: %d %s", r.Status, r.Raw)
+	}
 }
 
 // seedMigration starts e's migration and validates the sample in it, before anything is posted.

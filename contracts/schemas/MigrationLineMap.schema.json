@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The revenue or expense account its amounts go to, by code.",
+      "examples": [
+        "4010"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    },
+    "line": {
+      "description": "The Budget sheet's P\u0026L line: the entry's key.",
+      "examples": [
+        "Subscription revenue"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "line",
+    "account"
+  ],
+  "title": "MigrationLineMap",
+  "type": "object"
+}
