@@ -133,6 +133,22 @@ func (a *API) aiBudgetSubjectExists(ctx context.Context, u storage.UnitOfWork, s
 	return nil
 }
 
+// aiBudgetList are the organisation's AI budgets and what this month used of each.
+func (a *API) aiBudgetList(ctx context.Context, u storage.UnitOfWork) (AIBudgetList, error) {
+	month := aibudget.Month(a.deps.Clock.Now())
+	out := AIBudgetList{Month: month, Budgets: []AIBudget{}}
+	base, err := baseOf(ctx, u)
+	if err != nil {
+		return out, err
+	}
+	out.Currency = base.Code
+	all, err := u.AIBudgets().List(ctx, month)
+	for _, b := range all {
+		out.Budgets = append(out.Budgets, aiBudgetOut(b, month))
+	}
+	return out, err
+}
+
 func registerAIBudgets(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	register(a, authz.GetAIBudgets, huma.Operation{
@@ -143,18 +159,9 @@ func registerAIBudgets(a *API) {
 			"it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.",
 	}, locks, func(ctx context.Context, _ *struct{}) (*aiBudgetListOutput, error) {
 		p, _ := authn.From(ctx)
-		month := aibudget.Month(a.deps.Clock.Now())
-		out := AIBudgetList{Month: month, Budgets: []AIBudget{}}
-		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			base, err := baseOf(ctx, u)
-			if err != nil {
-				return err
-			}
-			out.Currency = base.Code
-			all, err := u.AIBudgets().List(ctx, month)
-			for _, b := range all {
-				out.Budgets = append(out.Budgets, aiBudgetOut(b, month))
-			}
+		var out AIBudgetList
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = a.aiBudgetList(ctx, u)
 			return err
 		})
 		return &aiBudgetListOutput{Body: out}, err

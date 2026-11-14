@@ -52,6 +52,7 @@ type Definition struct {
 	Guide        string   // the guide page and section that explains it, such as /help/organisation-settings#features
 	Requirement  string   // the PRD requirement it implements
 	DualControl  bool     // FM-1: a change needs a second approver
+	OffAtOnce    bool     // a kill switch (AI-13): turning it off needs no second approver and takes effect as recorded
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
@@ -157,8 +158,8 @@ var Catalogue = []Definition{
 		Reason:  "A filing or payment to IRAS, CPF Board or ACRA rests on its acknowledgement (FR-DOC-06)",
 		Guide:   guide + "evidence-rules", Requirement: "FR-DOC-06", DualControl: true},
 	{Key: "features.ai_assistant", Group: "Features", Label: "AI assistant", Kind: Switch, Recommended: "false",
-		Reason: "AI is off until an Owner turns it on with a second approver (closed by default)",
-		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true},
+		Reason: "AI is off until an Owner turns it on with a second approver (closed by default); turning it off takes effect at once",
+		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true, OffAtOnce: true},
 	{Key: "features.multi_currency", Group: "Features", Label: "Multi-currency", Kind: Switch, Recommended: "true",
 		Reason: "Start-ups usually pay some bills in other currencies, such as cloud and software subscriptions in US dollars",
 		Guide:  guide + "features", Requirement: "FR-ORG-06"},

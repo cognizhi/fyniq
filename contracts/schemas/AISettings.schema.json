@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budgets": {
+      "$ref": "AIBudgetList.schema.json",
+      "description": "The monthly AI budgets and what this month used of each (AI-77, AI-86)."
+    },
+    "switch": {
+      "$ref": "Setting.schema.json",
+      "description": "The AI switch, the setting features.ai_assistant: switched on only with a second approver; switched off at once (AI-13)."
+    }
+  },
+  "required": [
+    "switch",
+    "budgets"
+  ],
+  "title": "AISettings",
+  "type": "object"
+}

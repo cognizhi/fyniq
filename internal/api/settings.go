@@ -41,6 +41,7 @@ type Setting struct {
 	Guide               string          `json:"guide" doc:"The guide section that explains it." example:"/help/organisation-settings#payment-terms"`
 	Requirement         string          `json:"requirement" doc:"The PRD requirement it implements." example:"FR-ORG-04"`
 	NeedsSecondApprover bool            `json:"needs_second_approver" doc:"Under dual control (FM-1): a change waits for another member who holds the approval right to approve it (rev 0.36)." example:"false"`
+	OffAtOnce           bool            `json:"off_at_once" doc:"A kill switch (AI-13): turning it off needs no second approver and takes effect at once; turning it on still needs one." example:"false"`
 	SetByPlatform       bool            `json:"set_by_platform" doc:"Set by the platform: shown, never changed (FR-ORG-07)." example:"false"`
 	LengthenOnly        bool            `json:"lengthen_only" doc:"A change may only lengthen it." example:"false"`
 	Min                 string          `json:"min,omitempty" doc:"The smallest value a number may take." example:"0"`
@@ -196,7 +197,7 @@ func latest(d settings.Definition, changes []storage.SettingChange) int {
 func settingOf(d settings.Definition, changes []storage.SettingChange, day time.Time, all bool) Setting {
 	v := settings.On(d, changes, day)
 	out := Setting{Key: d.Key, Group: d.Group, Label: d.Label, Kind: string(d.Kind), Value: v.Value, RecommendedValue: d.Recommended,
-		Status: "recommended", Reason: d.Reason, Guide: d.Guide, Requirement: d.Requirement, NeedsSecondApprover: d.DualControl,
+		Status: "recommended", Reason: d.Reason, Guide: d.Guide, Requirement: d.Requirement, NeedsSecondApprover: d.DualControl, OffAtOnce: d.OffAtOnce,
 		SetByPlatform: d.Fixed, LengthenOnly: d.LengthenOnly, Min: d.Min, Max: d.Max, Choices: choicesOf(d.Choices), Scheduled: []SettingChange{}, Version: latest(d, changes)}
 	if v.Value != d.Recommended {
 		out.Status = "changed"
@@ -291,7 +292,8 @@ func registerSettings(a *API) {
 		Summary: "Change an organisation setting",
 		Description: "Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time " +
 			"zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never " +
-			"changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once: the answer is 202 with an " +
+			"changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once, except a kill switch turned " +
+			"off, which is (AI-13: the AI assistant): the answer is 202 with an " +
 			"approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if " +
 			"nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side " +
 			"effects: the setting's next version and its audit event, with the value before and after; or the approval request and its " +
@@ -348,7 +350,8 @@ func registerSettings(a *API) {
 				if len(bad) > 0 {
 					return nil, invalid(bad)
 				}
-				if !d.DualControl {
+				// A kill switch turns off at once, with no second approver (AI-13); turning it on still needs one.
+				if !d.DualControl || (d.OffAtOnce && value == "false") {
 					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
 				}
 				was := settings.On(d, changes, from).Value

@@ -51,6 +51,7 @@ func pricedInBase(e *env, connection uuid.UUID, model string) {
 // req: AI-13
 func TestBudgetsAdmitOnlyWhatTheyCover(t *testing.T) {
 	e := newEnv(t)
+	aiSwitchedOn(e)
 	f := foundersIn(e)
 	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
 	adminOnly := f.as(f.ahkow, authz.Administrator)

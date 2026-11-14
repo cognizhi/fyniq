@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a2c376cf1ec1fbe3dc56a21b80ec9e1783c3ae0200d328328c6c3b41459fe990
+  - docs/user-guide/organisation-settings.md sha256:8c270def303ad44c9097c42240f472b538c2c45db773507aa7ec529308922003
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-12
+compiled_at: 2026-11-14
 aliases:
   - data protection officer
   - DPO contact
@@ -32,6 +32,8 @@ aliases:
   - next number
   - gap-free numbering
   - feature switches
+  - switch off the AI
+  - AI kill switch
   - default settings
   - tolerance
   - retention period
@@ -137,7 +139,7 @@ The calendar itself: [[compliance.calendar]].
 
 - Switching a feature off hides it from menus and pages.
 - Recommended: **Multi-currency** on; **Payroll**, **Projects and time** and **Portals for customers and investors** off.
-- The **AI assistant** is off until an Owner turns it on with a second approver.
+- The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once.
 
 (src: docs/user-guide/organisation-settings.md#features)
 
