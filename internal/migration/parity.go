@@ -20,6 +20,10 @@ const (
 	FigureClosing  = "closing"
 )
 
+// CodeRegister is a decision or a sign-off the register refuses: a line the report does not have, a workbook defect
+// without a note, or a sign-off with a line undecided, Fyniq's checks never run, or the report signed already.
+const CodeRegister = "MIGRATION-15"
+
 // The classes of a difference (FR-MIG-02, design D8): a, a cent allocation; b, a deliberate rule change; c, a defect of
 // the workbook.
 const (

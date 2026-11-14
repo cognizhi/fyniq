@@ -81,6 +81,34 @@ func (q *Queries) GetMigrationCommit(ctx context.Context, runID uuid.UUID) (Fyni
 	return i, err
 }
 
+const getMigrationDifference = `-- name: GetMigrationDifference :one
+SELECT organisation_id, id, run_id, line_key, class, note, fyniq_figure, workbook_figure, version, decided_by, decided_at FROM fyniq.migration_difference WHERE run_id = $1 AND line_key = $2
+`
+
+type GetMigrationDifferenceParams struct {
+	RunID   uuid.UUID
+	LineKey string
+}
+
+func (q *Queries) GetMigrationDifference(ctx context.Context, arg GetMigrationDifferenceParams) (FyniqMigrationDifference, error) {
+	row := q.db.QueryRow(ctx, getMigrationDifference, arg.RunID, arg.LineKey)
+	var i FyniqMigrationDifference
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.LineKey,
+		&i.Class,
+		&i.Note,
+		&i.FyniqFigure,
+		&i.WorkbookFigure,
+		&i.Version,
+		&i.DecidedBy,
+		&i.DecidedAt,
+	)
+	return i, err
+}
+
 const getMigrationMapping = `-- name: GetMigrationMapping :one
 SELECT organisation_id, id, run_id, version, step_id, mapping, mapping_sha256, made_by, made_at FROM fyniq.migration_mapping WHERE id = $1
 `
@@ -217,6 +245,53 @@ func (q *Queries) InsertMigrationCommit(ctx context.Context, arg InsertMigration
 		&i.ApprovedBy,
 		&i.ApprovedAt,
 		&i.CommittedAt,
+	)
+	return i, err
+}
+
+const insertMigrationDifference = `-- name: InsertMigrationDifference :one
+INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7, $8)
+ON CONFLICT (organisation_id, run_id, line_key) DO NOTHING
+RETURNING organisation_id, id, run_id, line_key, class, note, fyniq_figure, workbook_figure, version, decided_by, decided_at
+`
+
+type InsertMigrationDifferenceParams struct {
+	RunID          uuid.UUID
+	LineKey        string
+	Class          string
+	Note           string
+	FyniqFigure    string
+	WorkbookFigure string
+	DecidedBy      string
+	DecidedAt      time.Time
+}
+
+func (q *Queries) InsertMigrationDifference(ctx context.Context, arg InsertMigrationDifferenceParams) (FyniqMigrationDifference, error) {
+	row := q.db.QueryRow(ctx, insertMigrationDifference,
+		arg.RunID,
+		arg.LineKey,
+		arg.Class,
+		arg.Note,
+		arg.FyniqFigure,
+		arg.WorkbookFigure,
+		arg.DecidedBy,
+		arg.DecidedAt,
+	)
+	var i FyniqMigrationDifference
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.LineKey,
+		&i.Class,
+		&i.Note,
+		&i.FyniqFigure,
+		&i.WorkbookFigure,
+		&i.Version,
+		&i.DecidedBy,
+		&i.DecidedAt,
 	)
 	return i, err
 }
@@ -492,6 +567,42 @@ func (q *Queries) LatestMigrationMapping(ctx context.Context, runID uuid.UUID) (
 	return i, err
 }
 
+const listMigrationDifferences = `-- name: ListMigrationDifferences :many
+SELECT organisation_id, id, run_id, line_key, class, note, fyniq_figure, workbook_figure, version, decided_by, decided_at FROM fyniq.migration_difference WHERE run_id = $1 ORDER BY line_key
+`
+
+func (q *Queries) ListMigrationDifferences(ctx context.Context, runID uuid.UUID) ([]FyniqMigrationDifference, error) {
+	rows, err := q.db.Query(ctx, listMigrationDifferences, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqMigrationDifference
+	for rows.Next() {
+		var i FyniqMigrationDifference
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.RunID,
+			&i.LineKey,
+			&i.Class,
+			&i.Note,
+			&i.FyniqFigure,
+			&i.WorkbookFigure,
+			&i.Version,
+			&i.DecidedBy,
+			&i.DecidedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMigrationFiles = `-- name: ListMigrationFiles :many
 SELECT organisation_id, id, run_id, kind, file_name, media_type, size_bytes, sha256, original_sha256, storage_key, data_class, added_by, added_at FROM fyniq.migration_file WHERE run_id = $1 ORDER BY added_at, id
 `
@@ -721,6 +832,55 @@ func (q *Queries) MigrationRecordOf(ctx context.Context, arg MigrationRecordOfPa
 		&i.RecordID,
 		&i.ImportedBy,
 		&i.ImportedAt,
+	)
+	return i, err
+}
+
+const updateMigrationDifference = `-- name: UpdateMigrationDifference :one
+UPDATE fyniq.migration_difference
+SET class = $1, note = $2, fyniq_figure = $3, workbook_figure = $4,
+  version = version + 1, decided_by = $5, decided_at = $6
+WHERE run_id = $7 AND line_key = $8 AND version = $9
+RETURNING organisation_id, id, run_id, line_key, class, note, fyniq_figure, workbook_figure, version, decided_by, decided_at
+`
+
+type UpdateMigrationDifferenceParams struct {
+	Class          string
+	Note           string
+	FyniqFigure    string
+	WorkbookFigure string
+	DecidedBy      string
+	DecidedAt      time.Time
+	RunID          uuid.UUID
+	LineKey        string
+	Version        int32
+}
+
+func (q *Queries) UpdateMigrationDifference(ctx context.Context, arg UpdateMigrationDifferenceParams) (FyniqMigrationDifference, error) {
+	row := q.db.QueryRow(ctx, updateMigrationDifference,
+		arg.Class,
+		arg.Note,
+		arg.FyniqFigure,
+		arg.WorkbookFigure,
+		arg.DecidedBy,
+		arg.DecidedAt,
+		arg.RunID,
+		arg.LineKey,
+		arg.Version,
+	)
+	var i FyniqMigrationDifference
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.RunID,
+		&i.LineKey,
+		&i.Class,
+		&i.Note,
+		&i.FyniqFigure,
+		&i.WorkbookFigure,
+		&i.Version,
+		&i.DecidedBy,
+		&i.DecidedAt,
 	)
 	return i, err
 }

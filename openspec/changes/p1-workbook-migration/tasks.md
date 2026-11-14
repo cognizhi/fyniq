@@ -102,7 +102,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 5. Reconciliation (M4)
 
-- [ ] 5.1 Parity (design D8): each account's opening, monthly movement and month-end closing against the workbook's
+- [x] 5.1 Parity (design D8): each account's opening, monthly movement and month-end closing against the workbook's
   Trial Balance sheet, to the cent after `RND-IMPORT`; the register with proposed classes the Accountant decides; the
   workbook's Checks rows against Fyniq's C.1 checks; the parity report and register signed together (the Accountant,
   step-up, over their hash). `GET /v1/migrations/{id}/reconciliation`, `PATCH .../register/{line}`,
@@ -110,7 +110,17 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   receivables' revaluation as class b), `// req: data/migration Parity check (M4)`. (Slice 13 built the report, rev
   0.265: `GET .../reconciliation` with each figure that differs as a register line and its proposed class, and the
   checks by C.1 number; the sample's history differs only in two depreciation months by a cent; a clean start's openings
-  equal Carry Forward. Left: the register's decisions and the sign-off.)
+  equal Carry Forward. Slice 14 built the register and the sign-off, rev 0.266: `PATCH .../register/{line}` and
+  `POST .../reconciliation/sign-off`, decisions kept with their figures and stale once they move, the sign-off over the
+  report's hash once every line counts and the checks ran; TestTheAccountantDecidesTheRegisterAndSignsIt, and the
+  database's rules in TestAttackTheMigrationCommitKeepsItsRules. G4-016's revaluation is class b by its account's role:
+  the sample's import posts no revaluation, so its fixture case waits for the period close of the parallel month.)
+- [ ] 5.2 The rest of M4's parity (`data/migration` Parity check (M4): the AR and AP open items, the GST F5 for the last
+  return, and payroll totals), found missing from these tasks while building 5.1: each invoice and bill open at the
+  as-of against the workbook's AR & AP sheet (by number, the amount due in its currency); the last return's F5 boxes
+  against the workbook's GST Return sheet; each month's payroll totals (gross, CPF, SDL, SHG, net) against the Payroll
+  sheet. Each difference a register line of its own key, in the report and its sign-off. Tests on the fixture,
+  `// req: data/migration Parity check (M4)`.
 
 ## 6. The parallel month and the archive (M5, M6)
 

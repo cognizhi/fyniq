@@ -76,17 +76,22 @@
       "type": "string"
     },
     "sha256": {
-      "description": "The SHA-256 of the report as given, without this field: what the Accountant's sign-off names (design D8).",
+      "description": "The SHA-256 of the report's figures, checks and decisions (not its status, revision, run time or sign-off): what the Accountant's sign-off names, and the ETag (design D8).",
       "examples": [
         "5d1e…"
       ],
       "type": "string"
     },
+    "sign_off": {
+      "$ref": "MigrationReconciliationSignOff.schema.json",
+      "description": "The latest sign-off of the report and its register; absent before the first."
+    },
     "status": {
-      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand.",
+      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4).",
       "enum": [
         "not_committed",
-        "ready"
+        "ready",
+        "signed"
       ],
       "examples": [
         "ready"
@@ -100,6 +105,14 @@
       ],
       "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
       "type": "string"
+    },
+    "undecided": {
+      "description": "The register's lines without a decision that counts: the differences, and the checks whose status differs. The sign-off needs none.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
     }
   },
   "required": [
@@ -113,6 +126,7 @@
     "differences",
     "checks",
     "checks_differ",
+    "undecided",
     "sha256"
   ],
   "title": "MigrationReconciliation",

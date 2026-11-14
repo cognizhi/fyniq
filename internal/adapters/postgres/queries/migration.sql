@@ -97,3 +97,23 @@ SELECT * FROM fyniq.migration_commit WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: GetMigrationRecordByKey :one
 SELECT * FROM fyniq.migration_record WHERE commit_id = sqlc.arg(commit_id) AND key = sqlc.arg(key);
+
+-- name: ListMigrationDifferences :many
+SELECT * FROM fyniq.migration_difference WHERE run_id = sqlc.arg(run_id) ORDER BY line_key;
+
+-- name: InsertMigrationDifference :one
+INSERT INTO fyniq.migration_difference (run_id, line_key, class, note, fyniq_figure, workbook_figure, decided_by, decided_at)
+VALUES (sqlc.arg(run_id), sqlc.arg(line_key), sqlc.arg(class), sqlc.arg(note), sqlc.arg(fyniq_figure), sqlc.arg(workbook_figure),
+  sqlc.arg(decided_by), sqlc.arg(decided_at))
+ON CONFLICT (organisation_id, run_id, line_key) DO NOTHING
+RETURNING *;
+
+-- name: UpdateMigrationDifference :one
+UPDATE fyniq.migration_difference
+SET class = sqlc.arg(class), note = sqlc.arg(note), fyniq_figure = sqlc.arg(fyniq_figure), workbook_figure = sqlc.arg(workbook_figure),
+  version = version + 1, decided_by = sqlc.arg(decided_by), decided_at = sqlc.arg(decided_at)
+WHERE run_id = sqlc.arg(run_id) AND line_key = sqlc.arg(line_key) AND version = sqlc.arg(version)
+RETURNING *;
+
+-- name: GetMigrationDifference :one
+SELECT * FROM fyniq.migration_difference WHERE run_id = sqlc.arg(run_id) AND line_key = sqlc.arg(line_key);
