@@ -69,6 +69,14 @@ func TestTheSampleCompanyLoadsAndBalances(t *testing.T) {
 		if a, err := u.Accounts().ByCode(ctx, "1010"); err != nil || !a.MoneyAccount || !a.Revalue || a.Guidance != "" || a.Name == "Petty cash" {
 			t.Errorf("1010: want the sample company's money account with the standard attributes, got %+v %v", a, err)
 		}
+		// The standard chart's type too: 7010 to 7040 are other income, as the oracle reads them (internal/differential),
+		// not expenses by their first digit (a regression: EBITDA and costs took other income in, which the golden
+		// questions of p1-ai-assistant found).
+		for _, code := range []string{"7010", "7030", "7040"} {
+			if a, err := u.Accounts().ByCode(ctx, code); err != nil || a.Type != storage.Revenue || a.ReportGroup == "" {
+				t.Errorf("%s: want other income with its report group, got %+v %v", code, a, err)
+			}
+		}
 		return nil
 	}); err != nil {
 		t.Fatal(err)

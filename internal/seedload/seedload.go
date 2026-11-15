@@ -34,7 +34,9 @@ type Result struct {
 // Actor is who the sample company's changes are recorded as.
 var Actor = storage.Actor{Type: "service", ID: "seed"}
 
-// AccountType is a sample account's type from its code's first digit, the workbook's ranges.
+// AccountType is a sample account's type from its code's first digit, the workbook's ranges: for a code the standard
+// chart does not have. A code it has takes the standard account's type, as internal/differential hands the sample
+// company to the oracle, so 7010 to 7040 are other income, not expenses.
 func AccountType(code string) storage.AccountType {
 	switch code[0] {
 	case '1':
@@ -53,11 +55,11 @@ func AccountType(code string) storage.AccountType {
 // periods of 2026, and its journals, posted, with the first reversed the day after, as the golden
 // scenarios do. An organisation that has a chart already is refused, so a load never mixes with
 // real or earlier data.
-// standardAccounts are the standard chart's accounts by code: an account of the sample company takes the system role of
-// the standard account with its code (FR-COA-03), unless it has a role of its own, and its attributes when it is of the
-// same type, so the rules find what they look for as they do in a chart loaded from the standard one: a bill its 2010
-// and 2200, a payment its money account (FR-COA-02). The guidance is the standard account's own words, so it is not
-// taken.
+// standardAccounts are the standard chart's accounts by code: an account of the sample company takes the type, the system
+// role and the attributes of the standard account with its code (FR-COA-03), unless it has a role of its own, so the
+// rules find what they look for as they do in a chart loaded from the standard one: a bill its 2010 and 2200, a payment
+// its money account (FR-COA-02), other income its group in the profit and loss. The guidance is the standard account's
+// own words, so it is not taken.
 func standardAccounts() (map[string]chart.Account, error) {
 	std, err := chart.Standard()
 	if err != nil {
@@ -109,9 +111,7 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 				if n.Role == "" {
 					n.Role = std.Role
 				}
-				if std.Type == n.Type { // the attributes of an account of the same kind only, such as a money account's
-					n.AccountAttributes = std.AccountAttributes
-				}
+				n.Type, n.AccountAttributes = std.Type, std.AccountAttributes
 			} else if x, ok := seed.ExtraPlacements[a.Code]; ok {
 				n.ReportGroup, n.CashFlowLine = x.ReportGroup, x.CashFlowLine
 			}
