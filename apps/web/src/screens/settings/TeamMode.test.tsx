@@ -95,6 +95,41 @@ describe("Approval policies", () => {
     expect(await screen.findByText(/Change who approves organisation settings/)).toBeTruthy();
     const patch = seen.find((s) => s.method === "PATCH");
     expect(patch?.headers.get("If-Match")).toBe('"0"');
-    expect(patch?.body).toEqual({ steps: [{ quorum: 1 }, { quorum: 2, roles: ["owner"] }] });
+    expect(patch?.body).toEqual({ steps: [{ quorum: 1 }, { quorum: 2, roles: ["owner"] }], rules: [] });
+  });
+
+  // req: access/approvals Conditions decide the steps
+  it("asks for a rule: an amount and an account, with its own step", async () => {
+    const seen = answer({
+      "GET /v1/approval-policies": { status: 200, body: { items: [{ ...policy, object_type: "journal", row: "Journals" }] } },
+      "GET /v1/approvals": { status: 200, body: { items: [] } },
+      "GET /v1/approval-policies/journal": { status: 200, body: { ...policy, object_type: "journal", row: "Journals", history: [] }, headers: { ETag: '"0"' } },
+      "GET /v1/members": { status: 200, body: { items: [] } },
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d-dept", kind: "department", name: "Department", code: "DEPT", place: 0, active: true, version: 1 }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v-sales", dimension_id: "d-dept", code: "SAL", name: "Sales", active: true, version: 1 }] } },
+      "GET /v1/accounts": { status: 200, body: { items: [{ id: "acc-rent", code: "6010", name: "Rent", type: "expense", active: true, group: false, version: 1 }] } },
+      "GET /v1/contacts": { status: 200, body: { items: [] } },
+      "PATCH /v1/approval-policies/journal": { status: 202, body: { id: "a-31", summary: "Change who approves journal", status: "pending" } },
+    });
+    renderPage(ApprovalPolicies, { path: "/settings/approval-policies" });
+    const list = await screen.findByRole("list", { name: "Kinds of change" });
+    fireEvent.click(within(list).getByRole("button", { name: "Change policy: Journal" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Add a rule" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask for this policy" }));
+    expect(await within(dialog).findByText(/Rule 1: set an amount, departments, accounts or vendors/)).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Amount at or above"), { target: { value: "5000.00" } });
+    const accounts = (await within(dialog).findByLabelText("Accounts")) as HTMLSelectElement;
+    await within(accounts).findByRole("option", { name: "6010 Rent" });
+    (within(accounts).getByRole("option", { name: "6010 Rent" }) as HTMLOptionElement).selected = true;
+    fireEvent.change(accounts);
+    fireEvent.change(within(dialog).getAllByLabelText("Approvals needed")[1] as HTMLElement, { target: { value: "2" } });
+    await noViolations(document.body);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask for this policy" }));
+    expect(await screen.findByText(/Change who approves journal/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({
+      steps: [{ quorum: 1 }],
+      rules: [{ conditions: { amount_at_least: "5000.00", accounts: ["acc-rent"] }, steps: [{ quorum: 2 }] }],
+    });
   });
 });
