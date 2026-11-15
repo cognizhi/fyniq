@@ -28687,11 +28687,11 @@ export interface components {
              */
             provider?: string;
             /**
-             * @description Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, or a statement of account (FR-AR-08).
+             * @description Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, a statement of account (FR-AR-08), a supplier's remittance advice (FR-BNK-12), or a reminder the company secretary assistant drafted and a person approved (sec.draft_reminder).
              * @example test
              * @enum {string}
              */
-            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement";
+            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder";
             /**
              * @description Who it goes to.
              * @example accounts@example.com
@@ -137979,7 +137979,7 @@ export interface operations {
                 /** @description Only messages with this outcome. */
                 status?: "queued" | "accepted" | "failed" | "unknown";
                 /** @description Only messages of this purpose. */
-                purpose?: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement";
+                purpose?: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder";
             };
             header?: never;
             path?: never;

@@ -26,7 +26,8 @@ func main() {
 		s.AddReadiness("database", kit.Store.Ping)
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassExecutor, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("executor"), Kinds: map[string]outbox.Work{
-				proposal.ExecutorKind: proposal.Executor{Store: kit.Store, Catalogue: proposal.Default(), Commands: proposal.Release, Clock: deps.Clock}.Work,
+				proposal.ExecutorKind: proposal.Executor{Store: kit.Store, Catalogue: proposal.Default(), Commands: proposal.Release, Clock: deps.Clock,
+					Outbox: outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}}.Work,
 			}})
 		return nil
 	}))

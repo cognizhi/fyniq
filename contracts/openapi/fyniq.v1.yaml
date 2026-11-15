@@ -20554,7 +20554,7 @@ components:
             - smtp
           type: string
         purpose:
-          description: "Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, or a statement of account (FR-AR-08)."
+          description: "Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, a statement of account (FR-AR-08), a supplier's remittance advice (FR-BNK-12), or a reminder the company secretary assistant drafted and a person approved (sec.draft_reminder)."
           enum:
             - test
             - sign_in_alert
@@ -20564,6 +20564,8 @@ components:
             - quote
             - reminder
             - statement
+            - remittance
+            - secretary_reminder
           examples:
             - test
           type: string
@@ -168600,6 +168602,8 @@ paths:
               - quote
               - reminder
               - statement
+              - remittance
+              - secretary_reminder
             examples:
               - notification
             type: string

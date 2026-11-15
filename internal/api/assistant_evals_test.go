@@ -229,6 +229,10 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 	e.books = porttest.Books{Org: org.ID} // the env now asks of the sample company
 	f := foundersIn(e)
 	aiSwitchedOn(e)
+	if slices.Contains(s.TaskTypes, "sec.draft_reminder") { // a Company secretary a reminder can reach, by their verified email
+		_, secretary := companySecretary(e, f)
+		verifiedEmail(t, e, secretary, "secretary@example.test")
+	}
 	if s.Kind == evalsuite.Proposal {
 		if strings.HasPrefix(s.TaskTypes[0], evalsuite.TestOnly) { // a fixture: the tests' own catalogue and command
 			e.api.deps.Catalogue = fixtureCatalogue(t, s.TaskTypes...)

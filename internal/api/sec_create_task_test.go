@@ -17,6 +17,24 @@ import (
 	"github.com/cognizhi/fyniq/internal/proposal"
 )
 
+// companySecretary is a member of e's organisation holding the Company secretary role, as the founders invite them
+// (FM-1): their stepped-up token and their user.
+func companySecretary(e *env, f founders) (string, string) {
+	e.t.Helper()
+	invited := e.call(http.MethodPost, "/v1/members/invitations", f.as(f.ahkow), map[string]any{"display_name": "Secretary", "roles": []string{"company_secretary"}})
+	if a := f.decide(f.as(f.weiling), invited.str("id"), "approve", hashOf(invited)); a.Status != http.StatusOK {
+		e.t.Fatalf("approving the invitation: %d %s", a.Status, a.Raw)
+	}
+	joined := e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "secretary-" + uuid.NewString(), Client: "web"}),
+		map[string]any{"invitation_code": invited.str("invitation_code"), "display_name": "Secretary"})
+	user := joined.str("user_id")
+	if user == "" {
+		e.t.Fatalf("the Company secretary joining: %s, then %d %s", invited.Raw, joined.Status, joined.Raw)
+	}
+	return e.principal(authn.Principal{Subject: "secretary", UserID: uuid.MustParse(user), Client: "web", Class: authn.ClassUser,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.CompanySecretary}, StepUpAt: e.clock.Now()}), user
+}
+
 // sec.create_task, the release's own (Appendix E; p1-scheduled-agents task 6.1, design D7): the AI proposes a compliance
 // task of its own finding with an owner and a due date, tier 1; the Company secretary approves it under Appendix D's rule
 // for every sec.* proposal; the executor runs CreateComplianceTask as them, raising the task from the proposal. A
@@ -31,19 +49,7 @@ func TestTheAIProposesATaskTheSecretaryApproves(t *testing.T) {
 	f := foundersIn(e)
 	aiSwitchedOn(e)
 	enableTaskTypes(e, "sec.create_task", 1)
-	// Inviting the Company secretary waits for a second founder (FM-1).
-	invited := e.call(http.MethodPost, "/v1/members/invitations", f.as(f.ahkow), map[string]any{"display_name": "Secretary", "roles": []string{"company_secretary"}})
-	if a := f.decide(f.as(f.weiling), invited.str("id"), "approve", hashOf(invited)); a.Status != http.StatusOK {
-		t.Fatalf("approving the invitation: %d %s", a.Status, a.Raw)
-	}
-	joined := e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "secretary-" + uuid.NewString(), Client: "web"}),
-		map[string]any{"invitation_code": invited.str("invitation_code"), "display_name": "Secretary"})
-	secretaryID := joined.str("user_id")
-	if secretaryID == "" {
-		t.Fatalf("the Company secretary joining: %s, then %d %s", invited.Raw, joined.Status, joined.Raw)
-	}
-	secretary := e.principal(authn.Principal{Subject: "secretary", UserID: uuid.MustParse(secretaryID), Client: "web", Class: authn.ClassUser,
-		Organisation: e.books.Org, Roles: []authz.Role{authz.CompanySecretary}, StepUpAt: e.clock.Now()})
+	secretary, _ := companySecretary(e, f)
 	service, err := e.services.Token(ServiceAI)
 	if err != nil {
 		t.Fatal(err)

@@ -2,9 +2,9 @@
 key: ai.proposals
 type: task
 title: Review, approve or reject a change the AI proposed
-summary: Review, approve or reject an AI proposal; the AI tasks page, its catalogue and never-list; the compliance task the AI may propose; task types on or off
+summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:e9d744ae03d58d6e5e094a491c682d032171b25e6a9bc60a29d27f36914650fb
+  - docs/user-guide/ai-proposals.md sha256:b8c02158e365254202fda6bcf5cafc06ead3744a4e7fd59d47458e21add5224c
 data_class: general
 taint: trusted
 status: draft
@@ -24,6 +24,8 @@ aliases:
   - what the AI can never do
   - AI suggested task
   - sec.create_task
+  - AI drafted reminder
+  - sec.draft_reminder
 ---
 
 # Review, approve or reject a change the AI proposed
@@ -76,6 +78,14 @@ aliases:
 - The Owner or the Company secretary approves it; the task is a reminder for a person and never files, approves or marks an obligation as met.
 
 (src: docs/user-guide/ai-proposals.md#create-a-compliance-task)
+
+## Send a reminder the AI drafted
+
+- **Draft a reminder about an obligation** (`sec.draft_reminder`, tier 1) is an email the AI drafts to the members holding a role, such as the company secretary or the accountant, about a filing, a deadline or a step the company must take.
+- The review shows the email as it would be sent and how many people it reaches; nothing is sent until the Owner or the Company secretary approves it, then it goes once to each member of that role with a sign-in email, ending by saying the AI drafted it and a person approved it.
+- A role in which no one has a sign-in email cannot be reminded: the proposal says so and is not kept.
+
+(src: docs/user-guide/ai-proposals.md#send-a-reminder-the-ai-drafted)
 
 ## Turn a task type on or off
 

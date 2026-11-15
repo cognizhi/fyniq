@@ -155,9 +155,21 @@
     alone; the matrix expects it from the note.
   - Its proposal suite is `evals/sec-create-task` (QA-AI-02). Its guide section is in `ai-proposals.md`, compiled into
     `ai.proposals`.
-- [ ] 6.2 `sec.draft_reminder`: its catalogue file and its command `DraftReminder`, which renders the email in the dry
+- [x] 6.2 `sec.draft_reminder`: its catalogue file and its command `DraftReminder`, which renders the email in the dry
   run and sends it once as the approving person (design D8). Tests
   `// req: ai/task-catalogue sec.draft_reminder Draft a reminder about an obligation`.
+  As built:
+  - The payload names a recipients' role (`to_role`) in place of a member: the model reads no member's ID. The
+    reminder goes to each member holding that role with a sign-in email.
+  - The dry run renders the email and counts its recipients; a role no one can be emailed in is refused. Executed, the
+    reminder is queued once per recipient through the email outbox (purpose `secretary_reminder`), ending by saying the
+    AI drafted it and a person approved it.
+  - Migration 000388 (validated in 000389): the executor queues that purpose and no other, and no other role queues it.
+    It reads `member_emails()` and the messages it queues. The executor passes its outbox dispatcher to commands
+    (`Actor.Outbox`).
+  - The delivery log's purposes gain `remittance` (missing since FR-BNK-12) and `secretary_reminder`.
+  - Its proposal suite is `evals/sec-draft-reminder`, for which the eval harness adds a Company secretary with a
+    verified email. Its guide section is in `ai-proposals.md`.
 
 ## 7. The screens
 

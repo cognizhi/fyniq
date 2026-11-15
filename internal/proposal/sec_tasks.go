@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -157,4 +160,122 @@ func (CreateComplianceTask) Execute(ctx context.Context, u storage.UnitOfWork, p
 		return Execution{}, err
 	}
 	return Execution{Records: []string{"compliance_task:" + made.ID.String()}, Entries: []string{}}, nil
+}
+
+// reminder is sec.draft_reminder's payload: the role its members hold, its subject and message, and the obligation it
+// concerns, by its finding's or calendar item's key.
+type reminder struct {
+	ToRole     string `json:"to_role"`
+	Subject    string `json:"subject"`
+	Message    string `json:"message"`
+	Obligation string `json:"obligation"`
+}
+
+// reminderNote ends every reminder, so its readers know who wrote it and that a person approved it.
+const reminderNote = "This reminder was drafted by Fyniq's AI assistant and approved by a person in Fyniq before it was sent."
+
+// text is the email as it is sent.
+func (r reminder) text() string {
+	return strings.TrimSpace(r.Message) + "\n\nAbout: " + r.Obligation + "\n\n" + reminderNote + "\n"
+}
+
+// recipients are the sign-in emails of the members holding the reminder's role now.
+func (r reminder) recipients(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]string, error) {
+	emails, err := u.InboundMessages().MemberEmails(ctx)
+	if err != nil {
+		return nil, err
+	}
+	users := make([]uuid.UUID, 0, len(emails))
+	for user := range emails {
+		users = append(users, user)
+	}
+	slices.SortFunc(users, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	var out []string
+	for _, user := range users {
+		roles, err := u.Members().Roles(ctx, user, now)
+		if err != nil && !errors.Is(err, ports.ErrNotFound) {
+			return nil, err
+		}
+		if slices.ContainsFunc(roles, func(a storage.RoleAssignment) bool { return a.Role == r.ToRole }) {
+			out = append(out, emails[user])
+		}
+	}
+	return out, nil
+}
+
+// DraftReminder is sec.draft_reminder's command (Appendix E; design D8): a reminder the model drafted about an
+// obligation, to the members holding a role, sent only once a person approves it. The dry run renders the email and
+// sends nothing; executed, it is queued through the email outbox as the approving person, once.
+type DraftReminder struct{}
+
+// Policy implements Command: the right to raise the obligation's task, as a reminder is one to a person (C on the AI
+// company secretary's row; the Company secretary approves under Approves).
+func (DraftReminder) Policy() authz.Policy { return CreateComplianceTaskPolicy }
+
+// Measure implements Command: one reminder, no amount.
+func (DraftReminder) Measure(payload json.RawMessage) (Measure, error) {
+	var r reminder
+	if err := json.Unmarshal(payload, &r); err != nil {
+		return Measure{}, err
+	}
+	return Measure{Items: 1}, nil
+}
+
+// DryRun implements Command: the email as it would be sent, and to how many members; refused for a role no member with
+// a sign-in email holds.
+func (DraftReminder) DryRun(ctx context.Context, u storage.UnitOfWork, payload json.RawMessage, as Actor) (Impact, error) {
+	var r reminder
+	if err := json.Unmarshal(payload, &r); err != nil {
+		return Impact{}, err
+	}
+	if !slices.Contains(taskRoles, r.ToRole) {
+		return Impact{}, &storage.Error{Code: storage.CodeInvalid, Message: "payload.to_role is not a role the assistant tells", Hint: "Name one of the recipients' roles"}
+	}
+	to, err := r.recipients(ctx, u, as.Today)
+	if err != nil {
+		return Impact{}, err
+	}
+	if len(to) == 0 {
+		return Impact{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("no member holding the role %s has a sign-in email", r.ToRole),
+			Hint: "Remind a role whose members can be emailed"}
+	}
+	changes, err := json.Marshal(map[string]any{"emails": []map[string]any{{"change": "send", "to_role": r.ToRole, "recipients": len(to),
+		"subject": r.Subject, "text": r.text()}}})
+	if err != nil {
+		return Impact{}, err
+	}
+	role := strings.ReplaceAll(r.ToRole, "_", " ")
+	people := "1 person"
+	if len(to) != 1 {
+		people = fmt.Sprintf("%d people", len(to))
+	}
+	return Impact{Summary: fmt.Sprintf("Emails the reminder %q to the %s (%s)", r.Subject, role, people), Changes: changes, Base: map[string]int64{}}, nil
+}
+
+// Execute implements Command: the reminder, queued to each member holding the role now, through the executor's outbox.
+func (DraftReminder) Execute(ctx context.Context, u storage.UnitOfWork, payload json.RawMessage, _ map[string]int64, as Actor) (Execution, error) {
+	var r reminder
+	if err := json.Unmarshal(payload, &r); err != nil {
+		return Execution{}, err
+	}
+	to, err := r.recipients(ctx, u, as.Today)
+	if err != nil {
+		return Execution{}, err
+	}
+	if len(to) == 0 {
+		return Execution{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("no member holding the role %s has a sign-in email now", r.ToRole)}
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return Execution{}, err
+	}
+	out := Execution{Records: []string{}, Entries: []string{}}
+	for _, addr := range to {
+		m, err := email.Queue(ctx, as.Outbox, u, o.ID, email.PurposeSecretaryReminder, addr, r.Subject, r.text())
+		if err != nil {
+			return Execution{}, err
+		}
+		out.Records = append(out.Records, "email_message:"+m.ID.String())
+	}
+	return out, nil
 }

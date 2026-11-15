@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -29,6 +30,8 @@ type Executor struct {
 	Catalogue *Catalogue
 	Commands  Commands
 	Clock     ports.Clock
+	// Outbox is where a command's side work goes, such as a reminder's email (sec.draft_reminder).
+	Outbox outbox.Dispatcher
 }
 
 var (
@@ -140,7 +143,7 @@ func (x Executor) check(ctx context.Context, u storage.UnitOfWork, pr storage.AI
 	if !Approves(tt.ID, cmd.Policy(), roles) {
 		return nil, Actor{}, "the person who approved it may no longer do it themselves", nil
 	}
-	return cmd, Actor{User: *pr.DecidedBy, Roles: roles, Today: now, Proposal: pr.ID}, "", nil
+	return cmd, Actor{User: *pr.DecidedBy, Roles: roles, Today: now, Proposal: pr.ID, Outbox: x.Outbox}, "", nil
 }
 
 // refuse records why pr did not run, Stale or Failed, in a unit of work of its own: nothing else changed.
