@@ -65,6 +65,20 @@ type Principal struct {
 	// Turn is the assistant's turn a delegated AI read token was issued for (AIGrants); Nil for every other caller.
 	// Such a caller only reads (PRD-001 §9.3 rev 0.277).
 	Turn uuid.UUID
+	// Run is a scheduled agent's run a delegated AI token was issued for, in place of a turn (AIGrants; AI-63), with its
+	// agent, the only tools it may call and the only task types it may propose. Such a caller only reads, and proposes.
+	Run         uuid.UUID
+	Agent       string
+	AITools     []string
+	AITaskTypes []string
+}
+
+// Delegated is the turn or the run a delegated AI token was issued for; Nil for every other caller.
+func (p Principal) Delegated() uuid.UUID {
+	if p.Turn != uuid.Nil {
+		return p.Turn
+	}
+	return p.Run
 }
 
 // StepUpWindow is how recent a step-up must be for an operation that needs one.

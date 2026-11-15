@@ -104,6 +104,9 @@ func registerProposals(a *API) {
 			if !ok {
 				return nil, problem(CodeProposalType, in.Body.TaskType+" is not a task type of this release.", "Propose one of the task types the turn was offered")
 			}
+			if p.Run != uuid.Nil && !slices.Contains(p.AITaskTypes, tt.ID) { // a run proposes its skill's outputs alone (AI-63)
+				return nil, problem(CodeProposeNotAllowed, tt.ID+" is not one of the agent's outputs.", "Propose one of the task types the run was offered")
+			}
 			if why := proposal.Refuse(tt.ID, tt.Command); why != "" { // the catalogue refused it as it loaded; refuse it again by name
 				return nil, problem(CodeProposalType, tt.ID+" can never be proposed: it is "+why+" (§9.6).", "Leave it to a person to do")
 			}
@@ -168,11 +171,17 @@ func (a *API) draftProposal(ctx context.Context, p authn.Principal, tt proposal.
 		for _, e := range in.Evidence {
 			evidence = append(evidence, storage.AIEvidence{Kind: e.Kind, ID: e.ID, Title: e.Title})
 		}
-		turn, now := p.Turn, a.deps.Clock.Now()
-		made, err = u.AIProposals().Create(ctx, storage.AIProposal{TaskType: tt.ID, TaskVersion: tt.Version, TaskSHA256: tt.SHA256, Payload: payload,
+		now := a.deps.Clock.Now()
+		draft := storage.AIProposal{TaskType: tt.ID, TaskVersion: tt.Version, TaskSHA256: tt.SHA256, Payload: payload,
 			PayloadSHA256: sum, ItemCount: batchItems(payload), Rationale: in.Rationale, Evidence: evidence, RiskTier: tt.Tier, RequiredApprovals: 1,
-			Agent: "chat", RequestedBy: p.UserID, Turn: &turn, Model: in.Model, Prompt: in.Prompt, ToolsSHA256: toolsSHA256(),
-			ProposedAt: now, ExpiresAt: now.Add(tt.Expiry())})
+			Agent: "chat", RequestedBy: p.UserID, Model: in.Model, Prompt: in.Prompt, ToolsSHA256: toolsSHA256(),
+			ProposedAt: now, ExpiresAt: now.Add(tt.Expiry())}
+		if turn, run := p.Turn, p.Run; run != uuid.Nil { // a scheduled agent's, from its run, for the Owner it acts for (AI-63)
+			draft.Agent, draft.Run = p.Agent, &run
+		} else {
+			draft.Turn = &turn
+		}
+		made, err = u.AIProposals().Create(ctx, draft)
 		return err
 	})
 	return made, err

@@ -285,12 +285,15 @@ type FyniqAiGrant struct {
 	ID             uuid.UUID
 	TokenHash      []byte
 	UserID         uuid.UUID
-	TurnID         uuid.UUID
+	TurnID         *uuid.UUID
 	IssuedAt       time.Time
 	ExpiresAt      time.Time
 	EndedAt        *time.Time
 	Classes        []string
 	Propose        bool
+	RunID          *uuid.UUID
+	Tools          []string
+	TaskTypes      []string
 }
 
 type FyniqAiModel struct {

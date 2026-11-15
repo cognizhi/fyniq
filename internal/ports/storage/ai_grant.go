@@ -23,18 +23,24 @@ type AIGrant struct {
 	EndedAt   *time.Time
 	// Propose is whether the turn may make proposals (AI-P3, design D3): set as it is issued, while a task type is on.
 	Propose bool
+	// Run is a scheduled agent's run the grant is for, in place of a turn (AI-63; p1-scheduled-agents design D6), with the
+	// only tools it may call and the only task types it may propose.
+	Run       uuid.UUID
+	Tools     []string
+	TaskTypes []string
 }
 
 // AIGrants keeps an organisation's delegated read grants.
 type AIGrants interface {
 	// Issue keeps a turn's grant: one per turn.
 	Issue(ctx context.Context, g AIGrant) (AIGrant, error)
-	// End ends a turn's grant at now, once; ports.ErrNotFound when the turn has none live.
-	End(ctx context.Context, turn uuid.UUID, now time.Time) error
-	// Classes are the data classes a turn's live grant has read (AI-83); ports.ErrNotFound when the turn has none live.
-	Classes(ctx context.Context, turn uuid.UUID, now time.Time) ([]string, error)
-	// Widen adds classes to what a turn's live grant has read; ports.ErrNotFound when the turn has none live.
-	Widen(ctx context.Context, turn uuid.UUID, classes []string, now time.Time) error
+	// End ends the grant of origin, a turn or a run, at now, once; ports.ErrNotFound when it has none live.
+	End(ctx context.Context, origin uuid.UUID, now time.Time) error
+	// Classes are the data classes the live grant of origin, a turn or a run, has read (AI-83); ports.ErrNotFound when it
+	// has none live.
+	Classes(ctx context.Context, origin uuid.UUID, now time.Time) ([]string, error)
+	// Widen adds classes to what the live grant of origin, a turn or a run, has read; ports.ErrNotFound when it has none.
+	Widen(ctx context.Context, origin uuid.UUID, classes []string, now time.Time) error
 }
 
 // AIGrantHolder is who a live grant reads as: the person, the turn, their roles in the grant's organisation now, and
@@ -45,6 +51,10 @@ type AIGrantHolder struct {
 	Roles     []string
 	ExpiresAt time.Time
 	Propose   bool
+	Run       uuid.UUID // a scheduled agent's run, in place of a turn
+	Tools     []string  // a run's tools: the only ones it may call
+	TaskTypes []string  // a run's task types: the only ones it may propose
+	Agent     string    // a run's agent as ai_agent names it, such as company_secretary
 }
 
 // AIGrantLookup resolves a grant's token outside any unit of work, for authentication: ports.ErrNotFound when it is
