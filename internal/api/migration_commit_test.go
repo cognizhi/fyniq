@@ -1316,3 +1316,85 @@ func TestTheWorkbookIsArchivedAndTheMigrationClosed(t *testing.T) {
 		t.Errorf("the archive read: %s", g.Raw)
 	}
 }
+
+// The rehearsal (p1-workbook-migration task 10.1, QA-MIG-01): the steps M1 to M6 run on the sample workbook in the local
+// flavour, one after the other, as the founders' own migration will. It is validated, mapped and signed by the
+// Accountant, committed by an Owner who did not ask, reconciled and signed, its parallel month reconciled and signed, and
+// archived. It ends with every account and month at parity but the fixture's expected lines, the workbook's float cent on
+// the depreciation, each class a and decided; each of the workbook's checks compared as the worst of Fyniq's says; the
+// parallel month's October agreeing; and the migration closed.
+// req: QA-MIG-01
+// req: data/migration Parity check (M4)
+func TestTheRehearsalRunsM1ToM6(t *testing.T) {
+	f, id := parallelMonthSigned(t) // M1 to M5
+	e := f.e
+	accountant, ctrl := f.as(f.ahkow, authz.Accountant), f.as(f.weiling, authz.Controller)
+	base := "/v1/migrations/" + id
+	read := func(path string) MigrationReconciliation {
+		t.Helper()
+		r := e.call(http.MethodGet, path, accountant, nil)
+		var rec MigrationReconciliation
+		if err := json.Unmarshal([]byte(r.Raw), &rec); r.Status != http.StatusOK || err != nil {
+			t.Fatalf("%s: %d %v %s", path, r.Status, err, r.Raw)
+		}
+		return rec
+	}
+
+	// M4: every figure at parity but the fixture's four cents, each class a and decided; the F5 waits for the F5 return.
+	m4 := read(base + "/reconciliation")
+	var lines []string
+	for _, d := range m4.Differences {
+		lines = append(lines, d.Key+" "+d.Difference+" "+d.Proposed)
+		if d.Decision == nil || d.Decision.Stale || d.Decision.Class != "a" {
+			t.Errorf("M4's line %s: %+v", d.Key, d.Decision)
+		}
+	}
+	if m4.Status != "signed" || m4.Path != "history" || m4.Accounts != 85 || m4.Undecided != 0 || m4.SignOff == nil ||
+		strings.Join(lines, ", ") != "1590.2026-06.movement 0.01 a, 1590.2026-09.movement 0.01 a, 6610.2026-06.movement -0.01 a, 6610.2026-09.movement -0.01 a" ||
+		len(m4.NotCompared) != 1 || m4.NotCompared[0] != "gst_f5" {
+		t.Fatalf("M4 at the end: %s, %d undecided, %v", m4.Status, m4.Undecided, lines)
+	}
+	// Each of the workbook's checks is the same exactly when the worst of Fyniq's matching checks is its status.
+	rank := map[string]int{"ok": 0, "warning": 1, "due": 1, "error": 2}
+	status := map[int]string{0: "fine", 1: "review", 2: "blocked"}
+	differ := 0
+	for _, c := range m4.Checks {
+		worst, assessed := 0, true
+		for _, x := range c.Fyniq {
+			r, ok := rank[x.Status]
+			assessed = assessed && ok
+			worst = max(worst, r)
+		}
+		if want := len(c.Fyniq) == 0 || assessed && status[worst] == c.Workbook; c.Same != want {
+			t.Errorf("check %d: %+v", c.Number, c)
+		}
+		if !c.Same {
+			differ++
+		}
+	}
+	if m4.ChecksRunAt == nil || m4.ChecksDiffer != differ || len(m4.Checks) == 0 {
+		t.Errorf("M4's checks: %d differ of %d, run at %v", m4.ChecksDiffer, len(m4.Checks), m4.ChecksRunAt)
+	}
+
+	// M5: the parallel month signed, its October agreeing.
+	m5 := read(base + "/parallel")
+	for _, d := range m5.Differences {
+		if d.Month == "2026-10" {
+			t.Errorf("October differs: %+v", d)
+		}
+	}
+	if m5.Status != "signed" || m5.Through != "2026-10" || m5.Undecided != 0 {
+		t.Errorf("M5 at the end: %s through %s, %d undecided", m5.Status, m5.Through, m5.Undecided)
+	}
+
+	// M6: the workbook's reports as a PDF, then go-live: archived and closed.
+	if r := e.upload(base+"/archive/pdfs", ctrl, nil, "Statements.pdf", []byte("%PDF-1.7 the workbook's statements"), "If-Match", e.migrationTag(id)); r.Status != http.StatusCreated {
+		t.Fatalf("the PDF: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, base+"/archive", ctrl, nil, "If-Match", e.migrationTag(id)); r.Status != http.StatusOK || r.str("status") != "closed" {
+		t.Fatalf("go-live: %d %s", r.Status, r.Raw)
+	}
+	if m := e.call(http.MethodGet, base, accountant, nil); m.str("status") != "closed" {
+		t.Errorf("the migration after go-live: %s", m.Raw)
+	}
+}

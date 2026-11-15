@@ -192,9 +192,11 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 10. The rehearsal and the finish
 
-- [ ] 10.1 The rehearsal: one test runs M1 to M6 on the sample workbook in the local flavour and ends with every account
+- [x] 10.1 The rehearsal: one test runs M1 to M6 on the sample workbook in the local flavour and ends with every account
   and month at parity, the register only the fixture's expected class a and b lines, and the Checks comparison as
   expected. `// req: QA-MIG-01`, `// req: data/migration Parity check (M4)`.
+  (Slice 24: TestTheRehearsalRunsM1ToM6, about 23 seconds: the sample's register holds only its four class a cents
+  on the depreciation, each decided; no class b line arises from the sample.)
 - [ ] 10.2 `docs/security/threat-models/migration-and-export.md` (design D13); the build plan's paragraph on what was
   built; `make check`, `make test`, `make test-e2e` and `make differential` pass.
   (Slice 23 wrote the threat model, recorded D13's audit events as built, added `import.run` and
