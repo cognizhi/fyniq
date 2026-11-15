@@ -190,6 +190,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   M2's mapping of the accounts with its versions and the Accountant's sign-off, and the generic import's templates, dry
   run and import; the guide compiled as `settings.import`. Left: M3's commit and its progress, M4's parity report and
   register, M5, M6.)
+  (Slice 27 added M3: asking to commit by its path over the signed mapping, the approval's link, and the batches run
+  until committed with the progress by kind; and M4: the parity report's tiles, each figure and check that differs
+  decided a, b or c over the report's ETag, a stale decision flagged, and the Accountant's sign-off. Left: M5, M6.)
 - [x] 9.2 `data-export` (Settings › Data): the data region and retention (read only where fixed) and the tenant export,
   from asking to downloading. Built from `docs/design/screens/src/DataExport.html`; help keys; guide
   `docs/user-guide/data-export.md` compiled into `kb/`. Tests `data-export.test.tsx` `// req: FR-MIG-04`.

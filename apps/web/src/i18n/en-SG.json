@@ -712,6 +712,18 @@
       "label": "Sign the mapping",
       "tooltip": "The Accountant signs the mapping's latest version, after confirming it's them. The commit needs it."
     },
+    "workbook-import.commit": {
+      "label": "Ask to commit",
+      "tooltip": "Ask to import the workbook by the signed mapping. An Owner who did not ask approves it first."
+    },
+    "workbook-import.run": {
+      "label": "Run the import",
+      "tooltip": "Enters the approved import's records batch by batch. It can stop and continue where it stopped."
+    },
+    "workbook-import.sign-reconciliation": {
+      "label": "Sign the register",
+      "tooltip": "The Accountant signs the parity report once every difference is decided, after confirming it's them."
+    },
     "workbook-import.template": {
       "label": "Download the template",
       "tooltip": "The columns of the workbook's sheet for these records, as CSV or Excel, ready to fill in."

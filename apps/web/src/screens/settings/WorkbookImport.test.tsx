@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
@@ -44,12 +44,38 @@ const mapping = {
   natures: [],
 };
 
+const noCommit = { status: "none", done: 0, total: 0, kinds: [] };
+const committed = { status: "committed", path: "history", done: 120, total: 120, committed_at: "2026-11-13T02:00:00Z", kinds: [{ kind: "journal", done: 120 }] };
+// depreciationLine is a register line's key: an account, a month and a kind.
+const depreciationLine = ["1590", "2026-06", "movement"].join(".");
+const reconciliation = {
+  status: "ready",
+  path: "history",
+  books_start: "2026-01-01",
+  through: "2026-09",
+  ledger_revision: 40,
+  accounts: 85,
+  figures: 1649,
+  undecided: 1,
+  checks_differ: 1,
+  checks_run_at: "2026-11-13T03:00:00Z",
+  not_compared: ["gst_f5"],
+  differences: [
+    { key: depreciationLine, account: "1590", name: "Accumulated depreciation", kind: "movement", month: "2026-06", workbook: "616.67", fyniq: "616.66", difference: "0.01", proposed_class: "a" },
+  ],
+  checks: [
+    { key: "check.1", number: 1, row: 6, name: "Trial balance balances", workbook: "fine", fyniq: [{ key: "TB", status: "ok" }], same: true, missing: false },
+    { key: "check.7", number: 7, row: 12, name: "Bank reconciled", workbook: "fine", fyniq: [{ key: "BANK", status: "warning" }], same: false, missing: false },
+  ],
+};
+
 function started(extra = {}) {
   return answer({
     "GET /v1/migrations": { status: 200, body: { items: [migration] } },
     "GET /v1/migrations/m-1": { status: 200, body: migration, headers: { ETag: '"m1"' } },
     "GET /v1/migrations/m-1/report": { status: 200, body: report },
     "GET /v1/migrations/m-1/mapping": { status: 200, body: mapping, headers: { ETag: '"map2"' } },
+    "GET /v1/migrations/m-1/commit": { status: 200, body: noCommit },
     ...extra,
   });
 }
@@ -127,5 +153,63 @@ describe("Import from the workbook", () => {
     const imported = seen.filter((s) => s.method === "POST" && s.path === "/v1/imports/items")[1];
     expect(imported?.headers.get("Prefer")).toBeNull();
     expect(imported?.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  it("asks to commit by the chosen path over the signed mapping, then runs the import batch by batch", async () => {
+    const signed = { ...mapping, signed: true, signed_at: "2026-11-13T01:10:00Z" };
+    let batches = 0;
+    const seen = started({
+      "GET /v1/migrations/m-1/mapping": { status: 200, body: signed, headers: { ETag: '"map2"' } },
+      "POST /v1/migrations/m-1/commit": { status: 202, body: { id: "a-1", status: "pending", object_type: "migration_commit" } },
+    });
+    renderPage(WorkbookImport, { path: "/settings/import" });
+    fireEvent.change(await screen.findByLabelText("What to import"), { target: { value: "clean_start" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask to commit" }));
+    await vi.waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path === "/v1/migrations/m-1/commit")).toBe(true));
+    const ask = seen.find((s) => s.method === "POST" && s.path === "/v1/migrations/m-1/commit");
+    expect(ask?.headers.get("If-Match")).toBe('"map2"');
+    expect(ask?.body).toEqual({ path: "clean_start" });
+
+    // Approved: the batches run until the last is committed.
+    started({
+      "GET /v1/migrations/m-1/mapping": { status: 200, body: signed, headers: { ETag: '"map2"' } },
+      "GET /v1/migrations/m-1/commit": { status: 200, body: { ...committed, status: "running", done: 0, kinds: [] } },
+      "POST /v1/migrations/m-1/commit:run": () => {
+        batches++;
+        return { status: 200, body: { ...committed, status: batches < 2 ? "running" : "committed", done: batches < 2 ? 50 : 120, imported: 50 } };
+      },
+    });
+    renderPage(WorkbookImport, { path: "/settings/import" });
+    fireEvent.click(await screen.findByRole("button", { name: "Run the import" }));
+    expect(await screen.findByText("120 of 120 records imported")).toBeTruthy();
+    expect(batches).toBe(2);
+  });
+
+  it("decides a line of the register on the report as read, and lets the Accountant sign once all are decided", async () => {
+    const signed = { ...mapping, signed: true };
+    const seen = started({
+      "GET /v1/migrations/m-1/mapping": { status: 200, body: signed, headers: { ETag: '"map2"' } },
+      "GET /v1/migrations/m-1/commit": { status: 200, body: committed },
+      "GET /v1/migrations/m-1/reconciliation": { status: 200, body: reconciliation, headers: { ETag: '"rec1"' } },
+      "PATCH /v1/migrations/m-1/reconciliation/register/check.7": { status: 200, body: reconciliation, headers: { ETag: '"rec2"' } },
+    });
+    renderPage(WorkbookImport, { path: "/settings/import", session: accountant });
+    const figures = await screen.findByRole("table", { name: "Figures that differ" });
+    expect(within(figures).getByText("Accumulated depreciation")).toBeTruthy();
+    expect((within(figures).getByLabelText("Class of 1590.2026-06.movement") as HTMLSelectElement).value).toBe("a"); // as proposed
+    const checks = screen.getByRole("list", { name: "Checks that differ" });
+    expect(within(checks).getByText("Check 7: Bank reconciled")).toBeTruthy();
+    fireEvent.change(within(checks).getByLabelText("Class of check.7"), { target: { value: "c" } });
+    const decide = within(checks).getByRole("button", { name: "Decide" }) as HTMLButtonElement;
+    expect(decide.disabled).toBe(true); // a defect needs its note
+    fireEvent.change(within(checks).getByLabelText("Note on check.7"), { target: { value: "The workbook did not flag an unreconciled month" } });
+    fireEvent.click(decide);
+    await vi.waitFor(() => expect(seen.some((s) => s.method === "PATCH")).toBe(true));
+    const patch = seen.find((s) => s.method === "PATCH");
+    expect(patch?.headers.get("If-Match")).toBe('"rec1"');
+    expect(patch?.body).toEqual({ class: "c", note: "The workbook did not flag an unreconciled month" });
+    expect((screen.getByRole("button", { name: "Sign the register" }) as HTMLButtonElement).disabled).toBe(true); // one still to decide
+    expect(screen.getByText("The GST F5 is compared once Fyniq makes the F5 return.")).toBeTruthy();
+    await noViolations(document.body);
   });
 });
