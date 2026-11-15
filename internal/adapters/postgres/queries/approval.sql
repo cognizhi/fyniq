@@ -7,6 +7,13 @@ VALUES (sqlc.arg(object_type), sqlc.arg(object_key), sqlc.arg(operation), sqlc.a
 RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
   requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version;
 
+-- name: LastApprovedRequest :one
+-- The latest approved request to change a record: who asked for a scheduled agent to be turned on (AI-63).
+SELECT id FROM fyniq.approval_request
+WHERE object_type = sqlc.arg(object_type) AND object_key = sqlc.arg(object_key) AND status = 'approved'
+ORDER BY decided_at DESC, id DESC
+LIMIT 1;
+
 -- name: GetApprovalRequest :one
 SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
   requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version

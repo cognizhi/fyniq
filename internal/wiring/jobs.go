@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/evals"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
@@ -75,6 +76,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
 			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
+			return err
+		},
+		agents.ScheduleJob: func(ctx context.Context) error { // AI-62: each enabled agent's slots due before the next tick
+			_, err := agents.Scheduler{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}.ScheduleAll(ctx)
 			return err
 		},
 		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided

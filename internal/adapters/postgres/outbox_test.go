@@ -138,7 +138,7 @@ func newHarness(t *testing.T, kinds map[string]outbox.Work) *harness {
 		t.Cleanup(srv.Close)
 		h.urls[class] = srv.URL
 	}
-	h.push = local.NewPush(h.urls, h.tokens, 4, time.Millisecond)
+	h.push = local.NewPush(h.urls, h.tokens, h.clock, 4, time.Millisecond)
 	h.store = store(t, "fyniq_api")
 	h.disp = outbox.Dispatcher{Store: h.store, Queue: h.push, Clock: h.clock}
 	return h
