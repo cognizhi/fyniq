@@ -69,8 +69,12 @@
     and the rest need C, which the Owner may use.
   - A finished run's own next slot is queued by the run job (task 5.1, `Scheduler.Queue`); the tick queues every due
     slot anyway.
-- [ ] 4.2 The watchdog: a slot late by more than 30 minutes, or a run failed or skipped, raises C.2 #36 (⚠) on
+- [x] 4.2 The watchdog: a slot late by more than 30 minutes, or a run failed or skipped, raises C.2 #36 (⚠) on
   Checks (design D4). Tests `// req: AI-67`, `// req: C.2 #36`.
+  As built: the check `agents.runs` (C.2 #36, ⚠) compares the last 25 hours, from when the agent was turned on, with
+  its runs. It lists each run that failed or was skipped, with why; each still queued more than 30 minutes after its
+  slot; and each slot of a schedule entry no run came for, unless the agent is paused. Its items open on the AI company
+  secretary's row. The checks engine raises it, so it shows on Checks.
 - [ ] 4.3 Event triggers: a period closed, a share issue or transfer, and a calendar filing recorded queue an event
   run (design D4). Tests `// req: AI-62`.
 
