@@ -67,6 +67,7 @@ type AIConnection struct {
 	Credential    AIConnectionCredentialState `json:"credential"`
 	Billing       AIConnectionBilling         `json:"billing"`
 	DataHandling  AIDataHandling              `json:"data_handling" doc:"Where its prompts are processed and kept, per model, endpoint and feature, with evidence (AI-75, AI-88)."`
+	AutoQualify   bool                        `json:"auto_qualify" doc:"Whether newly listed models are queued for the evals of every agent whose route uses this connection (AI-81); off by default." example:"false"`
 	State         string                      `json:"state" enum:"disabled,enabled" doc:"disabled until an approved request switches it on." example:"disabled"`
 	Version       int                         `json:"version" example:"1"`
 	CreatedBy     string                      `json:"created_by" example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
@@ -88,6 +89,7 @@ type AIConnectionDefinition struct {
 	Auth          string              `json:"auth" enum:"api-key,workload-identity,none" doc:"How it authenticates, one the provider and its preset offer." example:"workload-identity"`
 	Configuration map[string]any      `json:"configuration,omitempty" doc:"Its configuration, as the provider's manifest describes it." example:"{\"endpoint\":\"agent-platform\",\"project\":\"fyniq-prod\"}"`
 	Billing       AIConnectionBilling `json:"billing"`
+	AutoQualify   bool                `json:"auto_qualify,omitempty" doc:"Queue newly listed models for the agents' evals (AI-81); off by default. Adding a model to the allow-list stays a person's decision." example:"false"`
 	DataHandling  *AIDataHandling     `json:"data_handling,omitempty" doc:"Its data-handling declaration (AI-75, AI-88); switching it on needs one, with its data inventory row and, when it processes outside Singapore, its transfer assessment."`
 }
 
@@ -173,7 +175,7 @@ func aiConnectionOut(c storage.AIConnection) AIConnection {
 		out.Credential.SetAt = &at
 	}
 	_ = json.Unmarshal(c.Configuration, &out.Configuration)
-	out.DataHandling = dataHandlingOut(c.DataHandling)
+	out.DataHandling, out.AutoQualify = dataHandlingOut(c.DataHandling), c.AutoQualify
 	if len(c.Quota) > 0 {
 		var q AIConnectionQuota
 		if json.Unmarshal(c.Quota, &q) == nil {
@@ -204,7 +206,7 @@ func (d AIConnectionDefinition) domain(connector string) aiconnection.Definition
 }
 
 // definitionChange is a definition as an approval request carries it: strings, booleans and integers (FR-APR-10).
-func definitionChange(d aiconnection.Definition, t aiconnection.Target, handling *AIDataHandling) (map[string]any, error) {
+func definitionChange(d aiconnection.Definition, t aiconnection.Target, handling *AIDataHandling, autoQualify bool) (map[string]any, error) {
 	config, err := json.Marshal(d.Configuration)
 	if err != nil {
 		return nil, err
@@ -224,7 +226,8 @@ func definitionChange(d aiconnection.Definition, t aiconnection.Target, handling
 		quota = string(b)
 	}
 	return map[string]any{"name": d.Name, "connector": d.Connector, "preset": d.Preset, "auth": d.Auth, "configuration": string(config),
-		"host": t.Host, "self_hosted": t.SelfHosted, "billing_mode": d.Billing, "quota": quota, "data_handling": string(declaration)}, nil
+		"host": t.Host, "self_hosted": t.SelfHosted, "billing_mode": d.Billing, "quota": quota, "data_handling": string(declaration),
+		"auto_qualify": autoQualify}, nil
 }
 
 // definitionDiff is what an approver reads of a definition.
@@ -409,7 +412,7 @@ func registerAIConnections(a *API) {
 			Credential string
 		}{in.Body.AIConnectionDefinition, in.Body.Connector, credentialDigest(in.Body.Credential)}
 		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, request, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
-			change, err := definitionChange(d, target, in.Body.DataHandling)
+			change, err := definitionChange(d, target, in.Body.DataHandling, in.Body.AutoQualify)
 			if err != nil {
 				return Approval{}, err
 			}
@@ -461,7 +464,7 @@ func registerAIConnections(a *API) {
 				kept := dataHandlingOut(c.DataHandling) // a change that leaves it out keeps the declaration
 				in.Body.DataHandling = &kept
 			}
-			change, err := definitionChange(d, target, in.Body.DataHandling)
+			change, err := definitionChange(d, target, in.Body.DataHandling, in.Body.AutoQualify)
 			if err != nil {
 				return Approval{}, err
 			}
@@ -618,6 +621,7 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 		}
 		c.Name, c.Preset, c.Auth, c.Configuration, c.Host, c.SelfHosted, c.Billing = d.Name, d.Preset, d.Auth, config, t.Host, t.SelfHosted, d.Billing
 		c.DataHandling = []byte(str("data_handling"))
+		c.AutoQualify, _ = s.Execute["auto_qualify"].(bool)
 		if len(c.DataHandling) == 0 {
 			c.DataHandling = []byte(`{}`)
 		}
@@ -675,6 +679,13 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 			return err
 		}
 		c.State, step = aiconnection.StateEnabled, storage.AIConnectionEnabled
+	case approval.OpAIConnectionAllowModel:
+		model := str("model")
+		if err := allowable(ctx, u, c.ID, model, now); err != nil {
+			return err
+		}
+		_, err := u.AIModels().Allow(ctx, c.ID, model, true, &r.ID)
+		return err
 	default:
 		return fmt.Errorf("ai connection: no operation %q", r.Operation)
 	}

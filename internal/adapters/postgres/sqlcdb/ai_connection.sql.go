@@ -47,7 +47,7 @@ func (q *Queries) AIConnectionVersions(ctx context.Context, connectionID uuid.UU
 }
 
 const aIConnections = `-- name: AIConnections :many
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection ORDER BY name, id
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling, auto_qualify FROM fyniq.ai_connection ORDER BY name, id
 `
 
 func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error) {
@@ -80,6 +80,7 @@ func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error
 			&i.ChangedBy,
 			&i.ChangedAt,
 			&i.DataHandling,
+			&i.AutoQualify,
 		); err != nil {
 			return nil, err
 		}
@@ -133,7 +134,7 @@ func (q *Queries) AIModelListReads(ctx context.Context, arg AIModelListReadsPara
 }
 
 const aIModelsOf = `-- name: AIModelsOf :many
-SELECT organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at FROM fyniq.ai_model WHERE connection_id = $1 ORDER BY model
+SELECT organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail FROM fyniq.ai_model WHERE connection_id = $1 ORDER BY model
 `
 
 func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]FyniqAiModel, error) {
@@ -161,6 +162,10 @@ func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]Fyn
 			&i.LastListedAt,
 			&i.Listed,
 			&i.NotCallableAt,
+			&i.Allowed,
+			&i.ProbedAt,
+			&i.ProbeOk,
+			&i.ProbeDetail,
 		); err != nil {
 			return nil, err
 		}
@@ -172,8 +177,46 @@ func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]Fyn
 	return items, nil
 }
 
+const allowAIModel = `-- name: AllowAIModel :one
+UPDATE fyniq.ai_model SET allowed = $1 WHERE connection_id = $2 AND model = $3
+RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail
+`
+
+type AllowAIModelParams struct {
+	Allowed      bool
+	ConnectionID uuid.UUID
+	Model        string
+}
+
+func (q *Queries) AllowAIModel(ctx context.Context, arg AllowAIModelParams) (FyniqAiModel, error) {
+	row := q.db.QueryRow(ctx, allowAIModel, arg.Allowed, arg.ConnectionID, arg.Model)
+	var i FyniqAiModel
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.ConnectionID,
+		&i.Model,
+		&i.Name,
+		&i.AliasOf,
+		&i.ProviderCreated,
+		&i.ShutdownAt,
+		&i.ContextWindow,
+		&i.MaxOutput,
+		&i.Reports,
+		&i.FirstListedAt,
+		&i.LastListedAt,
+		&i.Listed,
+		&i.NotCallableAt,
+		&i.Allowed,
+		&i.ProbedAt,
+		&i.ProbeOk,
+		&i.ProbeDetail,
+	)
+	return i, err
+}
+
 const getAIConnection = `-- name: GetAIConnection :one
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection WHERE id = $1
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling, auto_qualify FROM fyniq.ai_connection WHERE id = $1
 `
 
 func (q *Queries) GetAIConnection(ctx context.Context, id uuid.UUID) (FyniqAiConnection, error) {
@@ -200,12 +243,13 @@ func (q *Queries) GetAIConnection(ctx context.Context, id uuid.UUID) (FyniqAiCon
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.DataHandling,
+		&i.AutoQualify,
 	)
 	return i, err
 }
 
 const getAIConnectionForUpdate = `-- name: GetAIConnectionForUpdate :one
-SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection WHERE id = $1 FOR UPDATE
+SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling, auto_qualify FROM fyniq.ai_connection WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetAIConnectionForUpdate(ctx context.Context, id uuid.UUID) (FyniqAiConnection, error) {
@@ -232,17 +276,18 @@ func (q *Queries) GetAIConnectionForUpdate(ctx context.Context, id uuid.UUID) (F
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.DataHandling,
+		&i.AutoQualify,
 	)
 	return i, err
 }
 
 const insertAIConnection = `-- name: InsertAIConnection :one
 INSERT INTO fyniq.ai_connection (id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at,
-  billing_mode, quota, data_handling, created_by, created_at, changed_by, changed_at)
+  billing_mode, quota, data_handling, auto_qualify, created_by, created_at, changed_by, changed_at)
 VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7,
   $8, $9, $10, $11, $12::jsonb,
-  $13::jsonb, $14, $15, $14, $15)
-RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling
+  $13::jsonb, $14, $15, $16, $15, $16)
+RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling, auto_qualify
 `
 
 type InsertAIConnectionParams struct {
@@ -259,6 +304,7 @@ type InsertAIConnectionParams struct {
 	BillingMode     string
 	Quota           []byte
 	DataHandling    []byte
+	AutoQualify     bool
 	CreatedBy       string
 	CreatedAt       time.Time
 }
@@ -278,6 +324,7 @@ func (q *Queries) InsertAIConnection(ctx context.Context, arg InsertAIConnection
 		arg.BillingMode,
 		arg.Quota,
 		arg.DataHandling,
+		arg.AutoQualify,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -303,6 +350,7 @@ func (q *Queries) InsertAIConnection(ctx context.Context, arg InsertAIConnection
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.DataHandling,
+		&i.AutoQualify,
 	)
 	return i, err
 }
@@ -461,14 +509,64 @@ func (q *Queries) LatestAIDataPolicy(ctx context.Context) (FyniqAiDataPolicy, er
 	return i, err
 }
 
+const probeAIModel = `-- name: ProbeAIModel :one
+UPDATE fyniq.ai_model SET probed_at = $1, probe_ok = $2, probe_detail = $3,
+  not_callable_at = $4, allowed = allowed AND $2
+WHERE connection_id = $5 AND model = $6
+RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail
+`
+
+type ProbeAIModelParams struct {
+	ProbedAt      *time.Time
+	ProbeOk       *bool
+	ProbeDetail   *string
+	NotCallableAt *time.Time
+	ConnectionID  uuid.UUID
+	Model         string
+}
+
+func (q *Queries) ProbeAIModel(ctx context.Context, arg ProbeAIModelParams) (FyniqAiModel, error) {
+	row := q.db.QueryRow(ctx, probeAIModel,
+		arg.ProbedAt,
+		arg.ProbeOk,
+		arg.ProbeDetail,
+		arg.NotCallableAt,
+		arg.ConnectionID,
+		arg.Model,
+	)
+	var i FyniqAiModel
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.ConnectionID,
+		&i.Model,
+		&i.Name,
+		&i.AliasOf,
+		&i.ProviderCreated,
+		&i.ShutdownAt,
+		&i.ContextWindow,
+		&i.MaxOutput,
+		&i.Reports,
+		&i.FirstListedAt,
+		&i.LastListedAt,
+		&i.Listed,
+		&i.NotCallableAt,
+		&i.Allowed,
+		&i.ProbedAt,
+		&i.ProbeOk,
+		&i.ProbeDetail,
+	)
+	return i, err
+}
+
 const updateAIConnection = `-- name: UpdateAIConnection :one
 UPDATE fyniq.ai_connection SET name = $1, preset = $2, auth = $3,
   configuration = $4::jsonb, host = $5, self_hosted = $6,
   credential_ref = $7, credential_set_at = $8, billing_mode = $9,
-  quota = $10::jsonb, data_handling = $11::jsonb, state = $12, version = version + 1, changed_by = $13,
-  changed_at = $14
-WHERE id = $15 AND version = $16
-RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling
+  quota = $10::jsonb, data_handling = $11::jsonb, auto_qualify = $12, state = $13, version = version + 1, changed_by = $14,
+  changed_at = $15
+WHERE id = $16 AND version = $17
+RETURNING organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling, auto_qualify
 `
 
 type UpdateAIConnectionParams struct {
@@ -483,6 +581,7 @@ type UpdateAIConnectionParams struct {
 	BillingMode     string
 	Quota           []byte
 	DataHandling    []byte
+	AutoQualify     bool
 	State           string
 	ChangedBy       string
 	ChangedAt       time.Time
@@ -503,6 +602,7 @@ func (q *Queries) UpdateAIConnection(ctx context.Context, arg UpdateAIConnection
 		arg.BillingMode,
 		arg.Quota,
 		arg.DataHandling,
+		arg.AutoQualify,
 		arg.State,
 		arg.ChangedBy,
 		arg.ChangedAt,
@@ -531,20 +631,21 @@ func (q *Queries) UpdateAIConnection(ctx context.Context, arg UpdateAIConnection
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.DataHandling,
+		&i.AutoQualify,
 	)
 	return i, err
 }
 
 const upsertAIModel = `-- name: UpsertAIModel :exec
 INSERT INTO fyniq.ai_model (connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports,
-  first_listed_at, last_listed_at, listed, not_callable_at)
+  first_listed_at, last_listed_at, listed, not_callable_at, allowed)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9::text[], $10, $11, $12,
-  $13)
+  $13, $14)
 ON CONFLICT (organisation_id, connection_id, model) DO UPDATE SET name = EXCLUDED.name, alias_of = EXCLUDED.alias_of,
   provider_created = EXCLUDED.provider_created, shutdown_at = EXCLUDED.shutdown_at, context_window = EXCLUDED.context_window,
   max_output = EXCLUDED.max_output, reports = EXCLUDED.reports, last_listed_at = EXCLUDED.last_listed_at, listed = EXCLUDED.listed,
-  not_callable_at = EXCLUDED.not_callable_at
+  not_callable_at = EXCLUDED.not_callable_at, allowed = fyniq.ai_model.allowed AND EXCLUDED.allowed
 `
 
 type UpsertAIModelParams struct {
@@ -561,6 +662,7 @@ type UpsertAIModelParams struct {
 	LastListedAt    time.Time
 	Listed          bool
 	NotCallableAt   *time.Time
+	Allowed         bool
 }
 
 func (q *Queries) UpsertAIModel(ctx context.Context, arg UpsertAIModelParams) error {
@@ -578,6 +680,7 @@ func (q *Queries) UpsertAIModel(ctx context.Context, arg UpsertAIModelParams) er
 		arg.LastListedAt,
 		arg.Listed,
 		arg.NotCallableAt,
+		arg.Allowed,
 	)
 	return err
 }

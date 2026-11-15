@@ -75,6 +75,7 @@ const operations: Record<Approval["operation"], string> = {
   "ai_connection.credential": "Replace an AI provider's API key",
   "ai_connection.enable": "Switch on an AI provider's connection",
   "ai_data_policy.change": "Change where the AI may send each kind of data",
+  "ai_connection.allow_model": "Allow a model on an AI provider's connection",
 };
 
 export function operationLabel(op: string): string {

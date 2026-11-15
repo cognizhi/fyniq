@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -30,6 +31,7 @@ func toAIConnection(r sqlcdb.FyniqAiConnection) storage.AIConnection {
 		c.Quota = json.RawMessage(r.Quota)
 	}
 	c.DataHandling = json.RawMessage(r.DataHandling)
+	c.AutoQualify = r.AutoQualify
 	return c
 }
 
@@ -44,7 +46,8 @@ func optional(s string) *string {
 func snapshot(c storage.AIConnection) ([]byte, error) {
 	return json.Marshal(map[string]any{"name": c.Name, "connector": c.Connector, "preset": c.Preset, "auth": c.Auth,
 		"configuration": c.Configuration, "host": c.Host, "self_hosted": c.SelfHosted, "credential_ref": c.CredentialRef,
-		"billing_mode": c.Billing, "quota": c.Quota, "data_handling": handling(c.DataHandling), "state": c.State})
+		"billing_mode": c.Billing, "quota": c.Quota, "data_handling": handling(c.DataHandling), "auto_qualify": c.AutoQualify,
+		"state": c.State})
 }
 
 // changes are an audit event's before and after of a connection; the audit trail masks the credential's reference
@@ -56,7 +59,7 @@ func changes(before *storage.AIConnection, after storage.AIConnection) map[strin
 		}
 		return map[string]any{"name": c.Name, "connector": c.Connector, "preset": c.Preset, "auth": c.Auth, "configuration": string(c.Configuration),
 			"host": c.Host, "self_hosted": c.SelfHosted, "credential_ref": c.CredentialRef, "billing_mode": c.Billing, "quota": string(c.Quota),
-			"data_handling": string(handling(c.DataHandling)), "state": c.State}
+			"data_handling": string(handling(c.DataHandling)), "auto_qualify": c.AutoQualify, "state": c.State}
 	}
 	return map[string][2]any{"connection": {view(before), view(&after)}}
 }
@@ -109,7 +112,8 @@ func (r aiConnections) Create(ctx context.Context, c storage.AIConnection, appro
 	}
 	row, err := r.u.q.InsertAIConnection(ctx, sqlcdb.InsertAIConnectionParams{ID: c.ID, Name: c.Name, Connector: c.Connector, Preset: optional(c.Preset),
 		Auth: c.Auth, Configuration: c.Configuration, Host: c.Host, SelfHosted: c.SelfHosted, CredentialRef: optional(c.CredentialRef),
-		CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota, DataHandling: handling(c.DataHandling), CreatedBy: c.CreatedBy,
+		CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota, DataHandling: handling(c.DataHandling), AutoQualify: c.AutoQualify,
+		CreatedBy: c.CreatedBy,
 		CreatedAt: c.CreatedAt})
 	if err != nil {
 		return storage.AIConnection{}, mapError(err)
@@ -146,7 +150,7 @@ func (r aiConnections) Step(ctx context.Context, c storage.AIConnection, step st
 	row, err := r.u.q.UpdateAIConnection(ctx, sqlcdb.UpdateAIConnectionParams{ID: c.ID, Version: int32(c.Version), Name: c.Name, // #nosec G115 -- a version counts up from 1
 		Preset: optional(c.Preset), Auth: c.Auth, Configuration: c.Configuration, Host: c.Host, SelfHosted: c.SelfHosted,
 		CredentialRef: optional(c.CredentialRef), CredentialSetAt: c.CredentialSetAt, BillingMode: c.Billing, Quota: c.Quota,
-		DataHandling: handling(c.DataHandling), State: c.State,
+		DataHandling: handling(c.DataHandling), AutoQualify: c.AutoQualify, State: c.State,
 		ChangedBy: c.ChangedBy, ChangedAt: c.ChangedAt})
 	if err != nil {
 		return storage.AIConnection{}, mapError(err)
@@ -233,7 +237,14 @@ type aiModels struct{ u *unitOfWork }
 
 func toAIModel(r sqlcdb.FyniqAiModel) storage.AIModel {
 	m := storage.AIModel{ConnectionID: r.ConnectionID, Model: r.Model, Created: r.ProviderCreated, Shutdown: r.ShutdownAt, Reports: r.Reports,
-		FirstListed: r.FirstListedAt, LastListed: r.LastListedAt, Listed: r.Listed, NotCallableAt: r.NotCallableAt}
+		FirstListed: r.FirstListedAt, LastListed: r.LastListedAt, Listed: r.Listed, NotCallableAt: r.NotCallableAt, Allowed: r.Allowed,
+		ProbedAt: r.ProbedAt}
+	if r.ProbeOk != nil {
+		m.ProbeOK = *r.ProbeOk
+	}
+	if r.ProbeDetail != nil {
+		m.ProbeDetail = *r.ProbeDetail
+	}
 	if r.Name != nil {
 		m.Name = *r.Name
 	}
@@ -293,7 +304,7 @@ func (r aiModels) Record(ctx context.Context, read storage.AIModelListRead, mode
 		if err := r.u.q.UpsertAIModel(ctx, sqlcdb.UpsertAIModelParams{ConnectionID: read.ConnectionID, Model: m.Model, Name: optional(m.Name),
 			AliasOf: optional(m.AliasOf), ProviderCreated: m.Created, ShutdownAt: m.Shutdown, ContextWindow: positive(m.ContextWindow),
 			MaxOutput: positive(m.MaxOutput), Reports: reports, FirstListedAt: m.FirstListed, LastListedAt: m.LastListed, Listed: m.Listed,
-			NotCallableAt: m.NotCallableAt}); err != nil {
+			NotCallableAt: m.NotCallableAt, Allowed: m.Allowed}); err != nil {
 			return storage.AIModelListRead{}, mapError(err)
 		}
 	}
@@ -332,4 +343,42 @@ func (r aiModels) LastComplete(ctx context.Context, connection uuid.UUID) (stora
 		return storage.AIModelListRead{}, mapError(err)
 	}
 	return toAIModelListRead(row), nil
+}
+
+func (r aiModels) Probe(ctx context.Context, connection uuid.UUID, model string, ok, refused bool, detail string, at time.Time) (storage.AIModel, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIModel{}, err
+	}
+	var notCallable *time.Time
+	if refused {
+		notCallable = &at
+	}
+	if len(detail) > 500 {
+		detail = detail[:497] + "…"
+	}
+	row, err := r.u.q.ProbeAIModel(ctx, sqlcdb.ProbeAIModelParams{ConnectionID: connection, Model: model, ProbedAt: &at, ProbeOk: &ok,
+		ProbeDetail: optional(detail), NotCallableAt: notCallable})
+	if err != nil {
+		return storage.AIModel{}, mapError(err)
+	}
+	return toAIModel(row), r.u.event(ctx, "ai_model.probed", "ai_connection", connection, nil, map[string][2]any{"probe": {nil, map[string]any{
+		"model": model, "ok": ok, "not_callable": refused, "detail": detail}}})
+}
+
+func (r aiModels) Allow(ctx context.Context, connection uuid.UUID, model string, allowed bool, approval *uuid.UUID) (storage.AIModel, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIModel{}, err
+	}
+	row, err := r.u.q.AllowAIModel(ctx, sqlcdb.AllowAIModelParams{ConnectionID: connection, Model: model, Allowed: allowed})
+	if err != nil {
+		return storage.AIModel{}, mapError(err)
+	}
+	action, change := "ai_model.removed", map[string]any{"model": model}
+	if allowed {
+		action = "ai_model.allowed"
+		if approval != nil {
+			change["approval"] = approval.String()
+		}
+	}
+	return toAIModel(row), r.u.event(ctx, action, "ai_connection", connection, nil, map[string][2]any{"allow_list": {nil, change}})
 }

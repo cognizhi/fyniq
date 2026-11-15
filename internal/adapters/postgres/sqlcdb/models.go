@@ -144,6 +144,7 @@ type FyniqAiConnection struct {
 	ChangedBy       string
 	ChangedAt       time.Time
 	DataHandling    []byte
+	AutoQualify     bool
 }
 
 type FyniqAiConnectionVersion struct {
@@ -184,6 +185,10 @@ type FyniqAiModel struct {
 	LastListedAt    time.Time
 	Listed          bool
 	NotCallableAt   *time.Time
+	Allowed         bool
+	ProbedAt        *time.Time
+	ProbeOk         *bool
+	ProbeDetail     *string
 }
 
 type FyniqAiModelListRead struct {

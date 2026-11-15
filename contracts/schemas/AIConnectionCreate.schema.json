@@ -14,6 +14,13 @@
       ],
       "type": "string"
     },
+    "auto_qualify": {
+      "description": "Queue newly listed models for the agents' evals (AI-81); off by default. Adding a model to the allow-list stays a person's decision.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "billing": {
       "$ref": "AIConnectionBilling.schema.json"
     },
