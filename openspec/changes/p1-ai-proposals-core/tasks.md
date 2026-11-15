@@ -1,10 +1,13 @@
 ## 1. The catalogue
 
-- [ ] 1.1 `contracts/ai/tasks/` and `contracts/ai/tasks.lock.json`; `internal/proposal`'s loader with the strict schema
+- [x] 1.1 `contracts/ai/tasks/` and `contracts/ai/tasks.lock.json`; `internal/proposal`'s loader with the strict schema
   rules, the limits, the tiers and approver roles, and the never-list refused by command and operation, whatever a file
   says (design D1). Tests `// req: ai/task-catalogue Catalogue as versioned, dual-controlled data`,
   `// req: ai/task-catalogue Catalogue entry attributes`, `// req: ai/task-catalogue Risk tiers and approver roles`,
   `// req: ai/task-catalogue Never in the catalogue`, `// req: CTL-AI-04`.
+  As built: the catalogue ships empty; the never-list matches the words of a type's ID and of its command, and the
+  proposal service checks it again by name as each proposal is made (task 3.1); an ID is at most 56 characters, so its
+  tool `propose_<id>` fits the 64 characters providers allow.
 - [ ] 1.2 The setting `ai.task_types` (dual controlled, off at once when emptied) and the AI catalogue's versioning in
   the release record. Tests `// req: AI-32`, `// req: platform/release-and-versioning AI catalogue`.
 
