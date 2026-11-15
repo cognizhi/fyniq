@@ -619,6 +619,7 @@ type FyniqApprovalSignature struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	SelectionSha256    *string
 }
 
 type FyniqAuditBoundary struct {

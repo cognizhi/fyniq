@@ -113,3 +113,42 @@ func Canonical(raw json.RawMessage) (payload, sha string, err error) {
 	sum := sha256.Sum256(b)
 	return string(b), hex.EncodeToString(sum[:]), nil
 }
+
+// Subset is a batch payload cut to the items an approver chose (AI-32), from 1, in the payload's order: what executes,
+// as Canonical keeps it, and its SHA-256. Choosing every item is the payload itself.
+func Subset(payload string, items []int) (subset, sha string, err error) {
+	var v map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(payload), &v); err != nil {
+		return "", "", err
+	}
+	var all []json.RawMessage
+	if err := json.Unmarshal(v["items"], &all); err != nil || len(all) == 0 {
+		return "", "", fmt.Errorf("the proposal is not a batch of items")
+	}
+	chosen := make([]bool, len(all))
+	for _, n := range items {
+		if n < 1 || n > len(all) || chosen[n-1] {
+			return "", "", fmt.Errorf("item %d is not one of the proposal's %d, or is chosen twice", n, len(all))
+		}
+		chosen[n-1] = true
+	}
+	if len(items) == 0 {
+		return "", "", fmt.Errorf("no item is chosen")
+	}
+	kept := make([]json.RawMessage, 0, len(items))
+	for i, it := range all {
+		if chosen[i] {
+			kept = append(kept, it)
+		}
+	}
+	b, err := json.Marshal(kept)
+	if err != nil {
+		return "", "", err
+	}
+	v["items"] = b
+	whole, err := json.Marshal(v)
+	if err != nil {
+		return "", "", err
+	}
+	return Canonical(whole)
+}

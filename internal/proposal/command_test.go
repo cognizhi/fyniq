@@ -64,3 +64,26 @@ func TestAPayloadKeepsToItsLimits(t *testing.T) {
 		}
 	}
 }
+
+// An approver of a batch approves some of its items: the payload cut to them, in its order, re-hashed; every item is
+// the payload itself; an item it does not have, or one chosen twice, is refused.
+// req: ai/proposals Proposal content and payload hash
+// req: AI-32
+func TestASubsetOfABatchIsRehashed(t *testing.T) {
+	payload, sum, _ := proposal.Canonical(json.RawMessage(`{"items":[{"note":"a"},{"note":"b"},{"note":"c"}],"why":"x"}`))
+	sub, subSum, err := proposal.Subset(payload, []int{3, 1})
+	if err != nil || sub != `{"items":[{"note":"a"},{"note":"c"}],"why":"x"}` || subSum == sum || len(subSum) != 64 {
+		t.Errorf("items 1 and 3: %s %s %v", sub, subSum, err)
+	}
+	if all, allSum, _ := proposal.Subset(payload, []int{1, 2, 3}); all != payload || allSum != sum {
+		t.Errorf("every item: %s", all)
+	}
+	for _, bad := range [][]int{{0}, {4}, {1, 1}, {}} {
+		if _, _, err := proposal.Subset(payload, bad); err == nil {
+			t.Errorf("%v was a selection", bad)
+		}
+	}
+	if _, _, err := proposal.Subset(`{"note":"one"}`, []int{1}); err == nil {
+		t.Error("a payload that is no batch was cut")
+	}
+}

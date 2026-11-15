@@ -18453,6 +18453,8 @@ export interface components {
              * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
              */
             envelope_hash: string;
+            /** @description For an AI proposal of several items, the items you approve, from 1: what executes is those alone, re-hashed and signed with the envelope (AI-32). Without it you approve them all, which only a tier-1 proposal allows. */
+            items?: number[] | null;
             /** @description Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44). */
             passkey?: components["schemas"]["ApprovalPasskey"];
             /**

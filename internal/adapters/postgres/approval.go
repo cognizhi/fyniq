@@ -164,7 +164,7 @@ func (r approvals) Sign(ctx context.Context, s storage.NewApprovalSignature) (st
 	}
 	params := sqlcdb.InsertApprovalSignatureParams{RequestID: s.RequestID, Step: int32(s.Step), // 1 to 20, checked above
 		Signer: s.Signer, Decision: s.Decision, EnvelopeHash: s.EnvelopeHash, MfaMethod: s.MFAMethod, MfaAt: s.MFAAt, SignedAt: s.SignedAt,
-		Reason: opt(s.Reason)}
+		Reason: opt(s.Reason), SelectionSha256: opt(s.SelectionSHA256)}
 	if k := s.Passkey; k != nil {
 		params.PasskeyChallengeID, params.PasskeyID = &k.ChallengeID, &k.PasskeyID
 		params.AuthenticatorData, params.ClientData, params.AssertionSignature = k.AuthenticatorData, k.ClientData, k.Signature
@@ -181,7 +181,8 @@ func (r approvals) Sign(ctx context.Context, s storage.NewApprovalSignature) (st
 	if err := r.u.event(ctx, action, "approval_request", sig.RequestID, nil, map[string][2]any{
 		"signature_id": {nil, sig.ID}, "step": {nil, sig.Step}, "signer": {nil, sig.Signer}, "decision": {nil, sig.Decision},
 		"envelope_hash": {nil, hex.EncodeToString(sig.EnvelopeHash)}, "mfa_method": {nil, sig.MFAMethod},
-		"mfa_at": {nil, sig.MFAAt}, "signed_at": {nil, sig.SignedAt}, "reason": {nil, nilIfEmpty(sig.Reason)}, "passkey_id": {nil, passkeyOfSignature(sig)}}); err != nil {
+		"mfa_at": {nil, sig.MFAAt}, "signed_at": {nil, sig.SignedAt}, "reason": {nil, nilIfEmpty(sig.Reason)}, "passkey_id": {nil, passkeyOfSignature(sig)},
+		"selection_sha256": {nil, nilIfEmpty(s.SelectionSHA256)}}); err != nil {
 		return storage.ApprovalSignature{}, err
 	}
 	return sig, nil

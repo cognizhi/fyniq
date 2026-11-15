@@ -75,6 +75,41 @@ func (b proposalBooks) run(t *testing.T, role string, fn func(storage.AIProposal
 	return out, err
 }
 
+// pendingFor makes a Draft Pending with its dry run and an ai_proposal approval request of b's member, as the API does
+// (migration 000377), and returns both.
+func (b proposalBooks) pendingFor(t *testing.T, pr storage.AIProposal, impact json.RawMessage, base map[string]int64) (storage.AIProposal, storage.ApprovalRequest) {
+	t.Helper()
+	envelope := `{"object":{"id":"` + pr.ID.String() + `","type":"ai_proposal"}}`
+	sum := sha256.Sum256([]byte(envelope))
+	var req storage.ApprovalRequest
+	var out storage.AIProposal
+	if err := store(t, "fyniq_api").Do(signedIn(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		req, err = u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: "ai_proposal", ObjectKey: pr.ID.String(),
+			Operation: "ai_proposal.execute", Summary: "A proposal", Change: []byte(`{"execute":{}}`), Envelope: envelope, EnvelopeHash: sum[:],
+			PolicyVersion: "founder/ai_proposal@2026-11-15.1", PolicySteps: []storage.ApprovalStep{{Quorum: 1}}, RequestedBy: b.user,
+			RequestedAt: b.now, RequesterMFAMethod: "ai_turn", RequesterMFAAt: b.now, ExpiresAt: pr.ExpiresAt})
+		if err != nil {
+			return err
+		}
+		out, err = u.AIProposals().Pending(ctx, pr.ID, pr.Version, impact, base, &req.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return out, req
+}
+
+// signFor signs req as b's member at, approving the selection its hash names, or the whole when "".
+func (b proposalBooks) signFor(t *testing.T, req storage.ApprovalRequest, selection string, at time.Time) error {
+	t.Helper()
+	return store(t, "fyniq_api").Do(signedIn(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req.ID, Step: 1, Signer: b.user, Decision: "approve",
+			EnvelopeHash: req.EnvelopeHash, MFAMethod: "session_step_up", MFAAt: at, SignedAt: at, SelectionSHA256: selection})
+		return err
+	})
+}
+
 func (b proposalBooks) must(t *testing.T, role string, fn func(storage.AIProposals) (storage.AIProposal, error)) storage.AIProposal {
 	t.Helper()
 	p, err := b.run(t, role, fn)
@@ -108,13 +143,19 @@ func TestAIProposalsMoveThroughTheirLifecycle(t *testing.T) {
 	}
 
 	// Pending with its dry run, then approved for one of its two items: the subset is what executes, re-hashed.
-	p := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
-		return r.Pending(ctx, d.ID, 1, impact, base, nil)
-	})
+	p, req := b.pendingFor(t, d, impact, base)
 	if p.Status != storage.ProposalPending || p.Version != 2 || p.BaseVersions["task:agm-2027"] != 3 || !strings.Contains(string(p.Impact), "documents") {
 		t.Fatalf("pending: %+v", p)
 	}
 	subset := `{"items":[{"note":"Send the notice"}]}`
+	if _, err := b.run(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
+		return r.Approve(ctx, d.ID, 2, b.user, []int{2}, subset, b.now.Add(time.Minute))
+	}); storage.CodeOf(err) != storage.CodeAIProposal {
+		t.Errorf("an approval nobody signed: %v", err)
+	}
+	if err := b.signFor(t, req, hexSHA(subset), b.now.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
 	a := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
 		return r.Approve(ctx, d.ID, 2, b.user, []int{2}, subset, b.now.Add(time.Minute))
 	})
@@ -160,13 +201,15 @@ func TestAIProposalsMoveThroughTheirLifecycle(t *testing.T) {
 	}); got.Status != storage.ProposalInvalid || got.Reason == "" {
 		t.Errorf("invalid: %+v", got)
 	}
+	requests := map[uuid.UUID]storage.ApprovalRequest{}
 	pending := func(body string) storage.AIProposal {
 		t.Helper()
 		c := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) { return r.Create(ctx, b.draft(body, 0)) })
-		return b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
-			return r.Pending(ctx, c.ID, 1, impact, base, nil)
-		})
+		p, req := b.pendingFor(t, c, impact, base)
+		requests[p.ID] = req
+		return p
 	}
+
 	rej := pending(`{"note":"Reject me"}`)
 	if got := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
 		return r.Reject(ctx, rej.ID, rej.Version, b.user, "Not this year", b.now.Add(time.Minute))
@@ -181,6 +224,9 @@ func TestAIProposalsMoveThroughTheirLifecycle(t *testing.T) {
 	}
 	for _, end := range []string{storage.ProposalStale, storage.ProposalFailed} {
 		q := pending(`{"note":"` + end + `"}`)
+		if err := b.signFor(t, requests[q.ID], "", b.now.Add(time.Minute)); err != nil {
+			t.Fatal(err)
+		}
 		q = b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
 			return r.Approve(ctx, q.ID, q.Version, b.user, nil, q.Payload, b.now.Add(time.Minute))
 		})
@@ -327,9 +373,16 @@ func TestAttackAIProposalsKeepTheirCourse(t *testing.T) {
 	}
 
 	// Once approved, the decision is kept, and only the executor moves it on.
-	p := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
-		return r.Pending(ctx, d.ID, 1, json.RawMessage(`{}`), nil, nil)
-	})
+	p, req := b.pendingFor(t, d, json.RawMessage(`{}`), nil)
+	if err := b.signFor(t, req, "", b.now.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	// What is approved is what was signed: another payload is refused.
+	if _, err := b.run(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
+		return r.Approve(ctx, p.ID, p.Version, b.user, nil, `{"note":"Pay me"}`, b.now.Add(time.Minute))
+	}); storage.CodeOf(err) != storage.CodeAIProposal {
+		t.Errorf("approving another payload than the one signed: %v", err)
+	}
 	p = b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
 		return r.Approve(ctx, p.ID, p.Version, b.user, nil, payload, b.now.Add(time.Minute))
 	})
@@ -356,9 +409,11 @@ func TestAttackAIProposalsKeepTheirCourse(t *testing.T) {
 
 // The two exceptions an AI proposal's request holds are its own (migration 000377; AI-89, AI-10): a request
 // authenticated by the requester's live turn is an ai_proposal's alone, and the person who asked signs their own
-// request only for a tier-1 proposal of theirs; every other request keeps FM-1's rules, whatever SQL is sent.
+// request only for a tier-1 proposal of theirs; every other request keeps FM-1's rules, whatever SQL is sent. A
+// selection of items is an approval's of an AI proposal alone (migration 000379, AI-32).
 // req: AI-89
 // req: AI-10
+// req: AI-32
 // req: FM-1
 // asvs: V8.2.2, V8.3.1
 func TestAttackTheProposalsExceptionsAreTheirsAlone(t *testing.T) {
@@ -406,6 +461,19 @@ func TestAttackTheProposalsExceptionsAreTheirsAlone(t *testing.T) {
 	two = b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) { return r.Create(ctx, two) })
 	if err := sign(request(two)); sqlstate(err) != "FY101" && !strings.Contains(fmt.Sprint(err), "requester never signs") {
 		t.Errorf("the person who asked signing their tier-2 proposal: %v", err)
+	}
+
+	// A selection of items is an ai_proposal's approval's alone: a rejection never selects (migration 000379).
+	three := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
+		return r.Create(ctx, b.draft(`{"note":"Three"}`, 0))
+	})
+	_, req3 := b.pendingFor(t, three, json.RawMessage(`{}`), nil)
+	if err := api.Do(signedIn(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req3.ID, Step: 1, Signer: b.user, Decision: "reject",
+			EnvelopeHash: req3.EnvelopeHash, MFAMethod: "session_step_up", MFAAt: b.now, SignedAt: b.now, Reason: "no", SelectionSHA256: hexSHA("x")})
+		return err
+	}); storage.CodeOf(err) != storage.CodeAIProposal {
+		t.Errorf("a rejection selecting items: %v", err)
 	}
 
 	// Any other request: never authenticated by a turn, never signed by its requester.
