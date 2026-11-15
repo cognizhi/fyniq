@@ -71,6 +71,26 @@ func TestImportRuleCatchesAPlantedViolation(t *testing.T) {
 	}
 }
 
+// Only the local adapters, the renderer and the ClamAV wrapper start programs, so a developer's command-line agent
+// (DEV-09) runs only in the local build; a planted subprocess elsewhere is caught.
+// req: DEV-09
+func TestSubprocessesStayInTheirPackages(t *testing.T) {
+	for _, tags := range []string{"", "local"} {
+		if v := SubprocessViolations(goList(t, tags)); len(v) > 0 {
+			t.Errorf("tags %q:\n%s", tags, strings.Join(v, "\n"))
+		}
+	}
+	planted := []Pkg{
+		{ImportPath: Module + "/internal/ai", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/cmd/api", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/internal/adapters/local", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/internal/render/typst", Imports: []string{"os/exec"}},
+	}
+	if v := SubprocessViolations(planted); len(v) != 2 {
+		t.Fatalf("want 2 violations (internal/ai and cmd/api), got %d:\n%s", len(v), strings.Join(v, "\n"))
+	}
+}
+
 // req: DEV-05
 func TestNoWallClockOutsideTheClockPackage(t *testing.T) {
 	root := repoRoot(t)

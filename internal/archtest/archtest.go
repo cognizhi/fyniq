@@ -113,6 +113,32 @@ func ImportViolations(pkgs []Pkg) []string {
 	return out
 }
 
+// Subprocesses are the packages that may start a program (os/exec): the local adapters, which alone run a developer's
+// own command-line agent (DEV-09) and the local backup's tools, the Typst renderer and the ClamAV daemon's wrapper.
+// Anywhere else a subprocess could carry a model call or a shell out of the release build's reach.
+var Subprocesses = []string{"internal/adapters/local", "internal/render/typst", "cmd/clamd"}
+
+// SubprocessViolations lists the module's packages outside Subprocesses that import os/exec.
+func SubprocessViolations(pkgs []Pkg) []string {
+	var out []string
+	for _, p := range pkgs {
+		if !strings.HasPrefix(p.ImportPath, Module) {
+			continue
+		}
+		allowed := false
+		for _, dir := range Subprocesses {
+			allowed = allowed || under(p.ImportPath, dir)
+		}
+		for _, imp := range p.Imports {
+			if imp == "os/exec" && !allowed {
+				out = append(out, fmt.Sprintf("%s imports os/exec: only %s may start a program (DEV-09)", p.ImportPath, strings.Join(Subprocesses, ", ")))
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // forbiddenTime are the time functions that read the wall clock.
 var forbiddenTime = map[string]bool{"Now": true, "Since": true, "Until": true}
 

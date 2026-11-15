@@ -16,6 +16,7 @@ func init() {
 		{Port: "authn", Name: "dev-tokens", Local: true},
 		{Port: "models", Name: "replay", Local: true},
 		{Port: "screening", Name: "stub", Local: true},
+		{Port: "models", Name: "cli-agent", Local: true},
 	} {
 		runtime.RegisterAdapter(a)
 	}
