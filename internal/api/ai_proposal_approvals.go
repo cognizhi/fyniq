@@ -21,7 +21,8 @@ import (
 // A proposal is an approval request (PRD-001 AI-89, AI-P4, AI-P5, AI-10; p1-ai-proposals-core design D4; rev 0.280): made
 // as it becomes Pending, its requester the person who asked, authenticated by their live turn; its envelope signs the
 // payload's hash; its one step names the task type's approver roles, and a signer must also hold the right its command
-// needs, as if they did it themselves; the person who asked may sign their own tier-1 proposal. No organisation changes
+// needs, as if they did it themselves, or be the Company secretary for a sec.* proposal (Appendix D rev 0.280); the
+// person who asked may sign their own tier-1 proposal. No organisation changes
 // its policy (approval.Policies, Fixed). The final approval marks it Approved and queues it for the executor, in the same
 // transaction; the API never executes it.
 
@@ -33,9 +34,10 @@ const (
 	runMFA  = "ai_run"
 )
 
-// proposalRule is who signs an AI proposal's request, as its change holds it, signed in its envelope: the operation whose
-// right a signer holds as a person (AI-10), and whether the person who asked may sign (tier 1).
+// proposalRule is who signs an AI proposal's request, as its change holds it, signed in its envelope: its task type, the
+// operation whose right a signer holds as a person (AI-10), and whether the person who asked may sign (tier 1).
 type proposalRule struct {
+	TaskType string
 	Command  authz.Policy
 	SelfSign bool
 }
@@ -50,15 +52,16 @@ func proposalRuleOf(r storage.ApprovalRequest) (proposalRule, bool) {
 		return proposalRule{}, true // a rule that cannot be read lets no one sign
 	}
 	op, _ := st.Execute["command"].(string)
+	taskType, _ := st.Execute["task_type"].(string)
 	tier, _ := st.Execute["tier"].(float64)
-	return proposalRule{Command: authz.Policies[op], SelfSign: tier == proposal.Tier1}, true
+	return proposalRule{TaskType: taskType, Command: proposal.CommandPolicy(op), SelfSign: tier == proposal.Tier1}, true
 }
 
 // approverOf reports whether p holds the right to sign r: A on its object's row, or for an AI proposal the right its
-// command needs, as a person and never as the AI.
+// command needs, as a person and never as the AI; a sec.* proposal, the Company secretary too (proposal.Approves).
 func approverOf(p authn.Principal, r storage.ApprovalRequest) bool {
 	if rule, ok := proposalRuleOf(r); ok {
-		return !p.AI() && rule.Command.Operation != "" && authz.Decide(rule.Command, p.Roles, false).Allowed
+		return !p.AI() && proposal.Approves(rule.TaskType, rule.Command, p.Roles)
 	}
 	return mayApprove(p, r.ObjectType)
 }
@@ -70,7 +73,7 @@ func approvesRequest(roles []string, r storage.ApprovalRequest) bool {
 		for i, x := range roles {
 			rs[i] = authz.Role(x)
 		}
-		return rule.Command.Operation != "" && authz.Decide(rule.Command, rs, false).Allowed
+		return proposal.Approves(rule.TaskType, rule.Command, rs)
 	}
 	return approves(roles, r.ObjectType)
 }

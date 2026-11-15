@@ -569,3 +569,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the AI tasks page: its proposal history, catalogue and never-list; turning a task type on or off)
 
 ## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the company secretary assistant's settings)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the compliance task the AI may propose, sec.create_task)

@@ -2,9 +2,9 @@
 key: ai.proposals
 type: task
 title: Review, approve or reject a change the AI proposed
-summary: Review, approve or reject an AI proposal; the AI tasks page with its proposal history, catalogue and never-list; turning a task type on or off
+summary: Review, approve or reject an AI proposal; the AI tasks page, its catalogue and never-list; the compliance task the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:4791b5644971a50464292dfa10a0cb3b0b779732a4fb32215368e5f6888e4fea
+  - docs/user-guide/ai-proposals.md sha256:e9d744ae03d58d6e5e094a491c682d032171b25e6a9bc60a29d27f36914650fb
 data_class: general
 taint: trusted
 status: draft
@@ -22,6 +22,8 @@ aliases:
   - AI tasks
   - turn on a task type
   - what the AI can never do
+  - AI suggested task
+  - sec.create_task
 ---
 
 # Review, approve or reject a change the AI proposed
@@ -66,6 +68,14 @@ aliases:
 - With the AI switched off the page says so, and nothing is proposed until an Owner switches it on again ([[settings.ai]]).
 
 (src: docs/user-guide/ai-proposals.md#the-ai-tasks-page)
+
+## Create a compliance task
+
+- **Create a compliance task** (`sec.create_task`, tier 1) puts a task in the Inbox, with an owner and a due date, for something the AI's own cross-check found; the company secretary assistant's checks raise their own tasks themselves.
+- One task per finding: the AI cannot propose a second while one is open or waiting for approval.
+- The Owner or the Company secretary approves it; the task is a reminder for a person and never files, approves or marks an obligation as met.
+
+(src: docs/user-guide/ai-proposals.md#create-a-compliance-task)
 
 ## Turn a task type on or off
 

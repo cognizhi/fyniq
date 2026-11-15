@@ -137,10 +137,10 @@ func (x Executor) check(ctx context.Context, u storage.UnitOfWork, pr storage.AI
 	for _, a := range assignments {
 		roles = append(roles, authz.Role(a.Role))
 	}
-	if !authz.Decide(cmd.Policy(), roles, false).Allowed {
+	if !Approves(tt.ID, cmd.Policy(), roles) {
 		return nil, Actor{}, "the person who approved it may no longer do it themselves", nil
 	}
-	return cmd, Actor{User: *pr.DecidedBy, Roles: roles, Today: now}, "", nil
+	return cmd, Actor{User: *pr.DecidedBy, Roles: roles, Today: now, Proposal: pr.ID}, "", nil
 }
 
 // refuse records why pr did not run, Stale or Failed, in a unit of work of its own: nothing else changed.

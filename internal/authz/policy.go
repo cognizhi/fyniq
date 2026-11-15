@@ -2009,6 +2009,12 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 				return Decision{Allowed: true, Right: r}
 			}
 		}
+		// (rev 0.280) The Company secretary holds A on every sec.* proposal, its tasks included (Appendix D): they reach the
+		// operations that sign a request, and the request's own rule decides, so they sign only a sec.* proposal whose step
+		// names them (proposal.Approves). The review log stays the rows' own.
+		if slices.Contains(SignsRequests, p.Operation) && slices.Contains(roles, CompanySecretary) {
+			return Decision{Allowed: true, Right: Approve}
+		}
 		return Decision{Reason: fmt.Sprintf("these roles hold no %q right on the rows approvals cover", string(p.Need))}
 	}
 	best, ok := holds(p, roles)
@@ -2047,6 +2053,10 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	}
 	return d
 }
+
+// SignsRequests are the operations that sign an approval request: approving, rejecting, and the passkey challenge for
+// either.
+var SignsRequests = []string{ApproveApproval.Operation, RejectApproval.Operation, ChallengeApproval.Operation}
 
 // rank orders the ways of satisfying View: a full view is better than a masked one.
 func rank(r Right) int {

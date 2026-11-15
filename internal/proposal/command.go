@@ -47,8 +47,8 @@ type Execution struct {
 // Commands are the release's commands, by the name the catalogue gives them.
 type Commands map[string]Command
 
-// Release are the release's commands. Each task type's change adds its own with what it acts on; the core has none.
-var Release = Commands{}
+// Release are the release's commands. Each task type's change adds its own with what it acts on.
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {
@@ -62,6 +62,8 @@ type Actor struct {
 	User  uuid.UUID
 	Roles []authz.Role
 	Today time.Time
+	// Proposal is the proposal it executes: Nil in the dry run.
+	Proposal uuid.UUID
 }
 
 // Impact is a dry run's: its summary, from platform code and never the model (AI-07, design D5); what the review shows,

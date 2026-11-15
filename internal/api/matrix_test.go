@@ -2546,7 +2546,9 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 				return true, false
 			}
 		}
-		return false, false
+		// Appendix D's note (rev 0.280): the Company secretary holds A on every sec.* proposal, its tasks included; the
+		// request's own rule decides which they sign.
+		return role == authz.CompanySecretary && slices.Contains(authz.SignsRequests, p.Operation), false
 	}
 	col := authz.Column(role)
 	if col == "" {
