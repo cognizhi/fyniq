@@ -87,6 +87,8 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Origin: cmp.Or(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "http://localhost:8080"),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
+		// The model price catalogue from files in LiteLLM's format, when a developer puts them there (AI-85).
+		Prices: local.PriceFiles{Dir: filepath.Join(data, "ai-prices")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
 		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},

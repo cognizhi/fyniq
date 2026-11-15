@@ -134,7 +134,7 @@ func (q *Queries) AIModelListReads(ctx context.Context, arg AIModelListReadsPara
 }
 
 const aIModelsOf = `-- name: AIModelsOf :many
-SELECT organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail FROM fyniq.ai_model WHERE connection_id = $1 ORDER BY model
+SELECT organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail, price_checked_at, unpriced FROM fyniq.ai_model WHERE connection_id = $1 ORDER BY model
 `
 
 func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]FyniqAiModel, error) {
@@ -166,6 +166,8 @@ func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]Fyn
 			&i.ProbedAt,
 			&i.ProbeOk,
 			&i.ProbeDetail,
+			&i.PriceCheckedAt,
+			&i.Unpriced,
 		); err != nil {
 			return nil, err
 		}
@@ -179,7 +181,7 @@ func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]Fyn
 
 const allowAIModel = `-- name: AllowAIModel :one
 UPDATE fyniq.ai_model SET allowed = $1 WHERE connection_id = $2 AND model = $3
-RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail
+RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail, price_checked_at, unpriced
 `
 
 type AllowAIModelParams struct {
@@ -211,6 +213,8 @@ func (q *Queries) AllowAIModel(ctx context.Context, arg AllowAIModelParams) (Fyn
 		&i.ProbedAt,
 		&i.ProbeOk,
 		&i.ProbeDetail,
+		&i.PriceCheckedAt,
+		&i.Unpriced,
 	)
 	return i, err
 }
@@ -513,7 +517,7 @@ const probeAIModel = `-- name: ProbeAIModel :one
 UPDATE fyniq.ai_model SET probed_at = $1, probe_ok = $2, probe_detail = $3,
   not_callable_at = $4, allowed = allowed AND $2
 WHERE connection_id = $5 AND model = $6
-RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail
+RETURNING organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at, allowed, probed_at, probe_ok, probe_detail, price_checked_at, unpriced
 `
 
 type ProbeAIModelParams struct {
@@ -555,6 +559,8 @@ func (q *Queries) ProbeAIModel(ctx context.Context, arg ProbeAIModelParams) (Fyn
 		&i.ProbedAt,
 		&i.ProbeOk,
 		&i.ProbeDetail,
+		&i.PriceCheckedAt,
+		&i.Unpriced,
 	)
 	return i, err
 }

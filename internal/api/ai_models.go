@@ -49,6 +49,12 @@ type AIModel struct {
 	LastListed    time.Time     `json:"last_listed" example:"2026-11-14T06:00:00Z"`
 	Allowed       bool          `json:"allowed" doc:"On the connection's allow-list: the models a route may name (AI-72)." example:"true"`
 	Probe         *AIModelProbe `json:"probe,omitempty" doc:"The last probe on this connection: a few tokens of synthetic text (AI-80)."`
+	Price         *AIPrice      `json:"price,omitempty" doc:"Its price in force, with its source (AI-82)."`
+	PendingPrice  *AIPrice      `json:"pending_price,omitempty" doc:"A price waiting for the Owner's review: a normalised match, or a rate that fell by more than half (AI-85)."`
+	Priced        bool          `json:"priced" doc:"It has a price in force." example:"true"`
+	Serves        bool          `json:"serves" doc:"It may serve a route as far as its price goes: a usage-based connection's model needs a price in force, as its cost could not otherwise be budgeted; a subscription or a self-hosted server needs none (AI-82)." example:"true"`
+	Unpriced      string        `json:"unpriced,omitempty" doc:"Why the last look found no new price for it: never priced by a guess (AI-82)." example:"no entry of anthropic names claude-test-9"`
+	PriceChecked  *time.Time    `json:"price_checked,omitempty" doc:"When its price was last looked for." example:"2026-11-14T06:15:00Z"`
 }
 
 // AIModelProbe is a model's last probe on its connection.
@@ -96,7 +102,7 @@ func (a *API) lister() ai.Lister {
 			return nil, errors.New("no model provider is configured here")
 		}
 	}
-	return ai.Lister{Store: a.deps.Store, Provider: provider, Clock: a.deps.Clock}
+	return ai.Lister{Store: a.deps.Store, Provider: provider, Clock: a.deps.Clock, Outbox: a.deps.Outbox}
 }
 
 func (a *API) modelList(ctx context.Context, u storage.UnitOfWork, raw string) (AIModelList, error) {
@@ -105,7 +111,8 @@ func (a *API) modelList(ctx context.Context, u storage.UnitOfWork, raw string) (
 	if err != nil {
 		return out, err
 	}
-	if _, err := u.AIConnections().Get(ctx, id); err != nil {
+	c, err := u.AIConnections().Get(ctx, id)
+	if err != nil {
 		return out, err
 	}
 	models, err := u.AIModels().Of(ctx, id)
@@ -120,6 +127,9 @@ func (a *API) modelList(ctx context.Context, u storage.UnitOfWork, raw string) (
 			reports = append(reports, ModelReport(r))
 		}
 		out.Models = append(out.Models, modelOut(m, state, reports))
+	}
+	if out.Models, err = withPrices(ctx, u, c, out.Models, models); err != nil {
+		return out, err
 	}
 	reads, err := u.AIModels().Reads(ctx, id, 10)
 	if err != nil {

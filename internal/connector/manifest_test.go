@@ -244,7 +244,9 @@ const validModel = `{
   "provider_scopes": [], "fyniq_scopes": [], "data_classes": ["know-how", "business-figures"], "regions": ["configured"],
   "destinations": [{"configured": "base_url", "port": 443}], "webhooks": [],
   "model": {"features": ["tools", "streaming"], "auth": ["api-key", "none"], "list_models": "GET /models on the base URL",
-    "presets": [{"id": "hosted", "name": "Hosted", "base_url": "https://api.example.com/v1", "auth": ["api-key"]},
+    "price_catalogue": {"api-key": {"provider": "example"}},
+    "presets": [{"id": "hosted", "name": "Hosted", "base_url": "https://api.example.com/v1", "auth": ["api-key"],
+      "price_catalogue": {"provider": "example_hosted", "prefix": "hosted/"}},
       {"id": "own", "name": "Our own server", "auth": ["none"], "self_hosted": true}]},
   "health_check": "Counts failures.", "test_action": "Probes a model.", "local_substitute": "Recorded answers.",
   "limits": {"requests_per_minute": 600, "breaker_failures": 5, "breaker_cooldown_seconds": 60}
@@ -274,8 +276,10 @@ func preset(m map[string]any, i int) map[string]any {
 // how its models are listed, and implements nothing else; its connections are each organisation's own. Its
 // authentication is an API key, a cloud service account, an OAuth grant or, for a self-hosted endpoint alone, none:
 // a consumer plan's token, a session, a cookie or a command-line seat cannot even be declared (AI-73). A provider with
-// no model list cannot be declared (AI-80). The schema refuses what it can say too.
+// no model list cannot be declared (AI-80). It names how the price catalogue names it, by preset or authentication,
+// and a self-hosted server is never priced (AI-82). The schema refuses what it can say too.
 // req: AI-71
+// req: AI-82
 func TestModelProviderManifests(t *testing.T) {
 	s := schema(t)
 	m, err := connector.Parse([]byte(validModel))
@@ -288,6 +292,16 @@ func TestModelProviderManifests(t *testing.T) {
 	}
 	if m.Model == nil || len(m.Model.Presets) != 2 || m.Model.ListModels == "" {
 		t.Fatalf("the declaration: %+v", m.Model)
+	}
+	// How the price catalogue names the provider (AI-82): a preset's own naming first, then by authentication; none for a
+	// self-hosted server.
+	for _, c := range []struct {
+		preset, auth, provider string
+		ok                     bool
+	}{{"hosted", "api-key", "example_hosted", true}, {"", "api-key", "example", true}, {"own", "none", "", false}, {"", "none", "", false}} {
+		if n, ok := m.Model.Naming(c.preset, c.auth); ok != c.ok || n.Provider != c.provider {
+			t.Errorf("the naming of %s/%s: %+v %v", c.preset, c.auth, n, ok)
+		}
 	}
 	cases := []struct {
 		name, want string
@@ -324,6 +338,15 @@ func TestModelProviderManifests(t *testing.T) {
 		}},
 		{"no authentication without a self-hosted preset", "no preset is self-hosted", false, func(m map[string]any) {
 			model(m)["presets"] = []any{preset(m, 0)}
+		}},
+		{"a price naming for an auth it lacks", "names auth \"workload-identity\"", false, func(m map[string]any) {
+			model(m)["price_catalogue"] = map[string]any{"workload-identity": map[string]any{"provider": "example"}}
+		}},
+		{"a price naming that is not a name", "is not a provider name", true, func(m map[string]any) {
+			preset(m, 0)["price_catalogue"] = map[string]any{"provider": "Example Inc", "prefix": "hosted"}
+		}},
+		{"a priced self-hosted preset", "needs no per-token price", false, func(m map[string]any) {
+			preset(m, 1)["price_catalogue"] = map[string]any{"provider": "example"}
 		}},
 		{"a secret for an unknown service", "used_by \"browser\"", true, func(m map[string]any) {
 			m["secrets"].([]any)[0].(map[string]any)["used_by"] = []any{"browser"}

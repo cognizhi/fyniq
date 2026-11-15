@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "catalogue": {
+      "description": "The catalogue download it came from, which every estimate made with it is reproduced with (AI-85).",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "catalogue_key": {
+      "description": "The source's entry it matched.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "examples": [
+        "USD"
+      ],
+      "maxLength": 3,
+      "minLength": 3,
+      "type": "string"
+    },
+    "decided_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "description": "The Owner who confirmed or declined it.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ignored": {
+      "description": "The source's rates Fyniq does not price with.",
+      "items": {
+        "description": "A rate the source gives that Fyniq does not price with, as the source names it: batch, flex, priority, audio, search or per character. Shown, never used, as Fyniq makes no such request (AI-85).",
+        "examples": [
+          "input_cost_per_token_batches"
+        ],
+        "maxLength": 200,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "match": {
+      "description": "exact: the source names this provider and model; normalised: only after removing a provider prefix or a version date, so an Owner confirms it; entered: an Owner's price.",
+      "enum": [
+        "exact",
+        "normalised",
+        "entered"
+      ],
+      "examples": [
+        "exact"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "The version of this model's price, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "rates": {
+      "items": {
+        "$ref": "AIPriceRate.schema.json"
+      },
+      "type": "array"
+    },
+    "recorded_at": {
+      "examples": [
+        "2026-11-14T06:15:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "The system user for a read; the Owner for an entered price.",
+      "examples": [
+        "system:ai.prices.read"
+      ],
+      "type": "string"
+    },
+    "review": {
+      "description": "Why it waits, or waited, for an Owner's review.",
+      "enum": [
+        "normalised",
+        "drop"
+      ],
+      "examples": [
+        "drop"
+      ],
+      "type": "string"
+    },
+    "review_detail": {
+      "examples": [
+        "input fell from 3 to 1.2"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "Where the price came from (AI-82).",
+      "enum": [
+        "provider_list",
+        "google_billing",
+        "litellm",
+        "owner"
+      ],
+      "examples": [
+        "litellm"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "active: in force; pending: waiting for an Owner's review, the version before it staying in force.",
+      "enum": [
+        "active",
+        "pending",
+        "superseded",
+        "declined"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "number",
+    "source",
+    "match",
+    "currency",
+    "rates",
+    "ignored",
+    "status",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "title": "AIPrice",
+  "type": "object"
+}

@@ -94,7 +94,12 @@
     "auth": [
       "api-key"
     ],
-    "list_models": "GET /v1/models"
+    "list_models": "GET /v1/models",
+    "price_catalogue": {
+      "api-key": {
+        "provider": "openai"
+      }
+    }
   },
   "health_check": "Counts the provider's refusals, rate limits and failed connections in recent calls, and the model list's last read.",
   "test_action": "Lists the connection's models, then asks the picked model a few tokens of synthetic text and reports what it answered with: its model, its usage and the capabilities it proved.",

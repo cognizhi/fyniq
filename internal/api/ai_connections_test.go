@@ -224,6 +224,33 @@ func matrixAIConnection(e *env, name string, on bool) string {
 	return id
 }
 
+// matrixAIPrice is a new price of gpt-5 on the matrix's connection, waiting for the Owner's review, as a read records
+// one that fell by more than half (AI-85).
+func matrixAIPrice(e *env) string {
+	e.t.Helper()
+	connection := uuid.MustParse(matrixAIConnection(e, "Matrix off", false))
+	now := e.clock.Now()
+	worker := workerStore(e.t)
+	digest := strings.Repeat("cd", 32)
+	cat, err := worker.RecordAIPriceCatalogue(context.Background(), storage.AIPriceCatalogue{Source: "litellm", URL: "https://example.com/prices.json",
+		FetchedAt: now, SHA256: digest, Licence: "MIT, outside enterprise/", LicenceURL: "https://example.com/LICENSE", LicenceSHA256: digest,
+		Outcome: "valid", Entries: 100, Document: "ai/price-catalogues/litellm/" + digest + ".json"})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	var p storage.AIPrice
+	if err := worker.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		p, err = u.AIPrices().Record(ctx, storage.AIPrice{ConnectionID: connection, Model: "gpt-5", Source: "litellm", CatalogueID: &cat.ID,
+			CatalogueKey: "gpt-5", Match: "exact", Currency: "USD", Status: "pending", Review: "drop", ReviewDetail: "input fell from 2 to 0.5",
+			RecordedBy: "system:ai.prices.read", RecordedAt: now, Rates: []storage.AIPriceRate{{Kind: "input", Unit: "per_million_tokens", Amount: "0.5"},
+				{Kind: "output", Unit: "per_million_tokens", Amount: "8"}}})
+		return err
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	return p.ID.String()
+}
+
 // matrixAIConnections are the authorisation matrix's rows of AI connections (AI-72): reading under any right on "AI
 // providers and model routes"; asking to create, change, re-key and switch one on under its C, stepped up, as previews;
 // switching one off under its C, as a preview. The AI holds no right on the row, so none of it reaches the AI or MCP
@@ -272,6 +299,12 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	"removeAIConnectionModel": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/remove", tok,
 			map[string]any{"model": "gpt-4"}), nil
+	},
+	"listAIPriceCatalogues": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/price-catalogues", tok, nil), nil
+	},
+	"reviewAIPrice": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/prices/"+matrixAIPrice(e)+"/review", tok, map[string]any{"decision": "decline"}), nil
 	},
 	"getAIDataPolicy": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/data-policy", tok, nil), nil

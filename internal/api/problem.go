@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
+	"github.com/cognizhi/fyniq/internal/domain/aiprice"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -252,6 +253,9 @@ var codeFacts = map[string]struct {
 	aipolicy.CodeNotAllowed:       {409, "The connection may not receive that class of data"},
 	aimodel.CodeListUnavailable:   {409, "The connection's model list has not been read whole"},
 	aimodel.CodeNotProbed:         {409, "The model has not been probed on this connection, or is no longer listed or callable"},
+	aiprice.CodeUnpriced:          {409, "The model has no price in force on a usage-based connection"},
+	aiprice.CodeReview:            {409, "The price is not waiting for that review"},
+	storage.CodeAIPrice:           {409, "A price is kept as recorded, and an Owner's price is never overwritten by a read"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},
 	migration.CodeNotSignable:     {409, "The mapping cannot be signed yet"},

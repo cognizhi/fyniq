@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "above": {
+      "description": "The prompt length in tokens above which it applies; 0 for the base rate. A call above a tier the price gives is priced at that tier, or unpriced for a kind the tier lacks.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "amount": {
+      "description": "An exact decimal, in the price's currency, read from the source's text, never as a binary float.",
+      "examples": [
+        "3"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,10})?$",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it prices; reasoning, when absent, is priced as output.",
+      "enum": [
+        "input",
+        "output",
+        "cache_read",
+        "cache_write",
+        "cache_write_1h",
+        "reasoning",
+        "input_image",
+        "request"
+      ],
+      "examples": [
+        "input"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "enum": [
+        "per_million_tokens",
+        "per_image",
+        "per_request"
+      ],
+      "examples": [
+        "per_million_tokens"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "above",
+    "unit",
+    "amount"
+  ],
+  "title": "AIPriceRate",
+  "type": "object"
+}

@@ -238,7 +238,10 @@ type aiModels struct{ u *unitOfWork }
 func toAIModel(r sqlcdb.FyniqAiModel) storage.AIModel {
 	m := storage.AIModel{ConnectionID: r.ConnectionID, Model: r.Model, Created: r.ProviderCreated, Shutdown: r.ShutdownAt, Reports: r.Reports,
 		FirstListed: r.FirstListedAt, LastListed: r.LastListedAt, Listed: r.Listed, NotCallableAt: r.NotCallableAt, Allowed: r.Allowed,
-		ProbedAt: r.ProbedAt}
+		ProbedAt: r.ProbedAt, PriceCheckedAt: r.PriceCheckedAt}
+	if r.Unpriced != nil {
+		m.Unpriced = *r.Unpriced
+	}
 	if r.ProbeOk != nil {
 		m.ProbeOK = *r.ProbeOk
 	}

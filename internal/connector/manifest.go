@@ -257,6 +257,32 @@ type ModelSpec struct {
 	Auth       []string      `json:"auth"`
 	ListModels string        `json:"list_models"`
 	Presets    []ModelPreset `json:"presets,omitempty"`
+	// PriceCatalogue is how LiteLLM's public price catalogue names the provider (AI-82), by how a connection
+	// authenticates: the Anthropic API and Claude on Agent Platform are priced apart. A preset's own naming comes first.
+	PriceCatalogue map[string]PriceNaming `json:"price_catalogue,omitempty"`
+}
+
+// PriceNaming is how a price catalogue names a provider and its models (AI-82): the provider's name, and the prefix
+// its keys carry, such as "vertex_ai/". A model is priced exactly only from an entry under this name [verify: each
+// provider's name in LiteLLM's catalogue]; a provider with none stays unpriced, never priced by a guess.
+type PriceNaming struct {
+	Provider string `json:"provider"`
+	Prefix   string `json:"prefix,omitempty"`
+}
+
+// Naming is how the price catalogue names a connection's provider for its preset and authentication: false when it
+// names none, such as for a self-hosted server.
+func (s ModelSpec) Naming(preset, auth string) (PriceNaming, bool) {
+	for _, p := range s.Presets {
+		if p.ID == preset {
+			if p.PriceCatalogue == nil {
+				return PriceNaming{}, false
+			}
+			return *p.PriceCatalogue, true
+		}
+	}
+	n, ok := s.PriceCatalogue[auth]
+	return n, ok
 }
 
 // ModelPreset is a starting point for a connection: a provider behind an OpenAI-compatible endpoint, or a self-hosted
@@ -267,7 +293,16 @@ type ModelPreset struct {
 	BaseURL    string   `json:"base_url,omitempty"`
 	Auth       []string `json:"auth"`
 	SelfHosted bool     `json:"self_hosted,omitempty"`
+	// PriceCatalogue is how LiteLLM's catalogue names this preset's provider; none for a self-hosted server, which needs
+	// no per-token price (AI-82).
+	PriceCatalogue *PriceNaming `json:"price_catalogue,omitempty"`
 }
+
+// namingPattern and prefixPattern are a price catalogue's provider name and key prefix.
+var (
+	namingPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,59}$`)
+	prefixPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}/$`)
+)
 
 func checkModel(m *Manifest, bad func(string, ...any)) {
 	_, isModel := m.Capability(ModelProvider)
@@ -324,6 +359,25 @@ func checkModel(m *Manifest, bad func(string, ...any)) {
 			bad("model preset %s: base_url %q is not https://", p.ID, p.BaseURL)
 		case !p.SelfHosted && slices.Contains(p.Auth, "none"):
 			bad("model preset %s: only a self-hosted endpoint may need no authentication (AI-72)", p.ID)
+		}
+	}
+	checkNaming := func(where string, n PriceNaming) {
+		if !namingPattern.MatchString(n.Provider) || (n.Prefix != "" && !prefixPattern.MatchString(n.Prefix)) {
+			bad("model %s price_catalogue %+v is not a provider name and a prefix ending in /", where, n)
+		}
+	}
+	for auth, n := range m.Model.PriceCatalogue {
+		if !slices.Contains(m.Model.Auth, auth) {
+			bad("model price_catalogue names auth %q, which the provider does not offer", auth)
+		}
+		checkNaming(auth, n)
+	}
+	for _, p := range m.Model.Presets {
+		if p.PriceCatalogue != nil {
+			if p.SelfHosted {
+				bad("model preset %s is self-hosted: it needs no per-token price, so no price_catalogue (AI-82)", p.ID)
+			}
+			checkNaming("preset "+p.ID, *p.PriceCatalogue)
 		}
 	}
 	if slices.Contains(m.Model.Auth, "none") && !slices.ContainsFunc(m.Model.Presets, func(p ModelPreset) bool { return p.SelfHosted }) {

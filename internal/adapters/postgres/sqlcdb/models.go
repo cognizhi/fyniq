@@ -189,6 +189,8 @@ type FyniqAiModel struct {
 	ProbedAt        *time.Time
 	ProbeOk         *bool
 	ProbeDetail     *string
+	PriceCheckedAt  *time.Time
+	Unpriced        *string
 }
 
 type FyniqAiModelListRead struct {
@@ -203,6 +205,73 @@ type FyniqAiModelListRead struct {
 	Failure        *string
 	ReadBy         string
 	ReadAt         time.Time
+}
+
+type FyniqAiPrice struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Model          string
+	Number         int32
+	Source         string
+	CatalogueID    *uuid.UUID
+	CatalogueKey   *string
+	Match          string
+	Currency       string
+	Ignored        []string
+	Status         string
+	Review         *string
+	ReviewDetail   *string
+	RecordedBy     string
+	RecordedAt     time.Time
+	CreatedXact    int64
+	ApprovalID     *uuid.UUID
+	DecidedBy      *string
+	DecidedAt      *time.Time
+}
+
+type FyniqAiPriceCatalogue struct {
+	ID            uuid.UUID
+	Source        string
+	Url           string
+	FetchedAt     time.Time
+	Sha256        string
+	Size          int64
+	Licence       *string
+	LicenceUrl    string
+	LicenceSha256 string
+	Outcome       string
+	Failure       *string
+	Entries       int32
+	Document      string
+	RecordedAt    time.Time
+}
+
+type FyniqAiPriceCatalogues struct {
+	ID            uuid.UUID
+	Source        string
+	Url           string
+	FetchedAt     time.Time
+	Sha256        string
+	Size          int64
+	Licence       *string
+	LicenceUrl    string
+	LicenceSha256 string
+	Outcome       string
+	Failure       *string
+	Entries       int32
+	Document      string
+	RecordedAt    time.Time
+}
+
+type FyniqAiPriceRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PriceID        uuid.UUID
+	Kind           string
+	Above          int64
+	Unit           string
+	Amount         string
 }
 
 type FyniqAllocation struct {
