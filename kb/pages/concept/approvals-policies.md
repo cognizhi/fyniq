@@ -2,22 +2,26 @@
 key: approvals.policies
 type: concept
 title: Approval policies: who approves each kind of change
-summary: What an approval policy is, what its steps can say, how a policy is changed and approved, and what happens to waiting requests when it changes
+summary: Who approves each kind of change: a policy's steps, its rules (the first matching rule decides the steps), changing a policy, and waiting requests
 sources:
-  - docs/user-guide/approval-policies.md sha256:7de035d79ac26073652fe74d029e93b99111d59aacff936f50d945800d8a0b96
+  - docs/user-guide/approval-policies.md sha256:4d64ca37ce6894dd1c11dfb31737d83bb6e9a1f15d50f1514a5ff16451095240
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-11-06
 aliases:
   - approval policy
   - who approves
   - approval steps
   - quorum
   - two approvals
+  - approval rule
+  - approval conditions
+  - approve by amount
+  - self-approval threshold and rules
 ---
 
 # Approval policies: who approves each kind of change
@@ -39,9 +43,23 @@ aliases:
 
 (src: docs/user-guide/approval-policies.md#what-a-step-can-say)
 
+## Rules: different steps for different changes
+
+- A policy can have rules; each says which changes it covers and the steps they take. The steps set first are the **default steps**, used when no rule matches.
+- A rule covers a change that meets all its conditions, and sets at least one: **Amount at or above** (in the base currency), **Departments** (a line carries one), **Accounts** (a line posts to one), **Vendors** (the bill, order or payment is for one).
+- Rules are checked top to bottom; **the first rule that matches decides the steps**, so put the strictest first.
+- A condition on something a change does not have never matches: a setting has no amount, so an amount rule never covers it.
+- Journals, bills, invoices, purchase orders and payment batches can match rules; a policy has at most 10 rules.
+- Rules decide who approves, not whether: a journal, bill or invoice at or below the **Self-approval threshold** posts without asking, whatever the rules say; lower the threshold to make smaller documents wait.
+- The approval page says which rule chose a request's steps; a request keeps its steps, and waiting requests are cancelled when the policy changes ([[approvals.decide]]).
+
+(src: docs/user-guide/approval-policies.md#rules-different-steps-for-different-changes)
+
 ## Change a policy
 
-- **Settings → Approval policies** (Expert mode), find the kind of change and select **Change policy**; set each step's approvals and who may approve (**Add a step** adds one), then **Ask for this policy** and confirm it's you if asked.
+- **Settings → Approval policies** (Expert mode), find the kind of change and select **Change policy**; set the default steps' approvals and who may approve (**Add a step** adds one).
+- **Add a rule** adds a rule: set its conditions and steps; **Move rule 1 up** or **down** reorders, **Remove rule 1** removes it.
+- Then **Ask for this policy** and confirm it's you if asked.
 - Fyniq shows **Waiting for approval**; the policy has not changed yet.
 - An Administrator asks; an Owner or a Controller who did not ask approves it, like any other change.
 - Nobody can change who approves policy changes themselves, so a change can never lock the company out.
@@ -58,6 +76,7 @@ aliases:
 ## Common problems
 
 - **The steps cannot be signed**: a step names a role that never approves that kind of change, a member without such a role, or more approvals than there are people who may give them; change the step or give the right people the role first.
+- **A rule has no condition**: set an amount, departments, accounts or vendors, or remove the rule.
 - **A change to this policy is waiting already**: approve or reject that request first.
 
 (src: docs/user-guide/approval-policies.md#common-problems)
