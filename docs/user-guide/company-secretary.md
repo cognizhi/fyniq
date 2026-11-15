@@ -27,6 +27,15 @@ status: draft
 - In Expert mode each finding also shows its rule, the statutory pack and the source.
 - The summary never says all is well while anything is open or not assessed.
 
+## Tasks in the Inbox
+
+- Each finding that needs a person has one open task, raised by the assistant's checks or by a task it proposed that a
+  person approved. The **Inbox** lists the tasks owned by you or your role under **Tasks**, the earliest due first.
+- The Owner and the Administrator mark a task **Done** when it is dealt with, or **Dismiss** it with the reason it needs
+  nothing done. Marking it done records nothing as filed: record a filing in the
+  [statutory calendar](statutory-calendar.md).
+- A finding that clears on a later run clears its task; one that comes back raises a new task.
+
 ## Coming up and drafts
 
 - **Coming up** shows the next items of the [statutory calendar](statutory-calendar.md).

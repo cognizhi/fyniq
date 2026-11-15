@@ -10,6 +10,7 @@ import { Icon, problemOf } from "../../ui";
 import { ControlsFailing } from "../compliance/Controls";
 import { ReviewsDue } from "../compliance/Attestations";
 import { PoliciesToAcknowledge } from "../compliance/Policies";
+import { TasksToDo } from "../compliance/ComplianceTasks";
 import { DeadlinesSoon } from "../compliance/DeadlinesSoon";
 import { recorders } from "../compliance/StatutoryCalendar";
 import { BillsToPay } from "../purchases/BillsBoard";
@@ -187,6 +188,7 @@ export function Inbox() {
       )}
       {(session.roles ?? []).some((r) => payers.includes(r)) && <BillsToPay />}
       {(session.roles ?? []).some((r) => recorders.includes(r)) && <DeadlinesSoon />}
+      <TasksToDo />
       <ControlsFailing />
       <ReviewsDue />
       <PoliciesToAcknowledge />
