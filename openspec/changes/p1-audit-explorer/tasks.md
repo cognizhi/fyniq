@@ -390,6 +390,9 @@ Before each slice, load `fyniq-feature-change` and `fyniq-security-compliance`. 
   differ (Recipe C). This waits for the canvas hold to end, on 10 Nov 2026 06:00 SGT, and for access to the canvas from
   the new account. `python3 docs/design/screens/build.py check` passes.
 
+  **Progress (10 Nov 2026):** `AuditTrail.html`'s sensitive value now shows as built: Unchanged, its last four
+  characters and the proof note. The publish waits for the design account (the owner's decision of 10 Nov 2026).
+
 ## 12. Threat model and as built (slice 12)
 
 - [x] 12.1 The threat model `docs/security/threat-models/audit-trail.md` covers:
