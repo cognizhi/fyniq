@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
@@ -61,6 +62,7 @@ func main() {
 		kinds[remitmail.Kind] = kit.Remittances(deps.Clock).Work()        // FR-BNK-12: a batch's supplier payment matched, its remittance advice sent
 		kinds[reportexport.Kind] = kit.Exports(deps.Clock).Work()         // FR-RPT-09: an accountant export prepared in the background
 		kinds[migration.ValidateKind] = kit.Migrations(deps.Clock).Work() // FR-MIG-01: an uploaded workbook validated in the background
+		kinds[ai.ReadKind] = kit.AIModels(deps.Clock).Work()              // AI-80: a connection's model list, read after its key is approved
 		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
 		if kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
 			fetcher := kit.Fetcher(deps.Clock)

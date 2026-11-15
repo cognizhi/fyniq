@@ -92,3 +92,46 @@ type AIConnections interface {
 	// Versions are a connection's versions, oldest first.
 	Versions(ctx context.Context, id uuid.UUID) ([]AIConnectionVersion, error)
 }
+
+// AIModel is a model a connection's provider lists, as the organisation keeps it (AI-80, AI-81).
+type AIModel struct {
+	ConnectionID  uuid.UUID
+	Model         string // the provider's ID
+	Name          string
+	AliasOf       string
+	Created       *time.Time
+	Shutdown      *time.Time
+	ContextWindow int
+	MaxOutput     int
+	Reports       []string
+	FirstListed   time.Time
+	LastListed    time.Time
+	Listed        bool
+	NotCallableAt *time.Time
+}
+
+// AIModelListRead is one read of a connection's model list (AI-84).
+type AIModelListRead struct {
+	ID           uuid.UUID
+	ConnectionID uuid.UUID
+	Trigger      string
+	Outcome      string // complete, partial or failed
+	Pages        int
+	Added        int
+	Removed      int
+	Failure      string // why it was not complete, in Fyniq's words; never a credential
+	ReadBy       string
+	ReadAt       time.Time
+}
+
+// AIModels keeps each connection's listed models and its reads of the list.
+type AIModels interface {
+	// Of are the models a connection's provider listed, by ID.
+	Of(ctx context.Context, connection uuid.UUID) ([]AIModel, error)
+	// Record keeps a read and the models it leaves: audited on the connection as ai_model.listed, a system event.
+	Record(ctx context.Context, read AIModelListRead, models []AIModel) (AIModelListRead, error)
+	// Reads are a connection's latest reads, newest first, at most limit.
+	Reads(ctx context.Context, connection uuid.UUID, limit int) ([]AIModelListRead, error)
+	// LastComplete is a connection's latest complete read, or ports.ErrNotFound when it has none.
+	LastComplete(ctx context.Context, connection uuid.UUID) (AIModelListRead, error)
+}

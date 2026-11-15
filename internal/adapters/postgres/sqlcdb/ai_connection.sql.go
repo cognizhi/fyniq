@@ -91,6 +91,87 @@ func (q *Queries) AIConnections(ctx context.Context) ([]FyniqAiConnection, error
 	return items, nil
 }
 
+const aIModelListReads = `-- name: AIModelListReads :many
+SELECT organisation_id, id, connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at FROM fyniq.ai_model_list_read WHERE connection_id = $1 ORDER BY read_at DESC, id DESC LIMIT $2
+`
+
+type AIModelListReadsParams struct {
+	ConnectionID uuid.UUID
+	PageSize     int32
+}
+
+func (q *Queries) AIModelListReads(ctx context.Context, arg AIModelListReadsParams) ([]FyniqAiModelListRead, error) {
+	rows, err := q.db.Query(ctx, aIModelListReads, arg.ConnectionID, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqAiModelListRead
+	for rows.Next() {
+		var i FyniqAiModelListRead
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.ConnectionID,
+			&i.Trigger,
+			&i.Outcome,
+			&i.Pages,
+			&i.Added,
+			&i.Removed,
+			&i.Failure,
+			&i.ReadBy,
+			&i.ReadAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const aIModelsOf = `-- name: AIModelsOf :many
+SELECT organisation_id, id, connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports, first_listed_at, last_listed_at, listed, not_callable_at FROM fyniq.ai_model WHERE connection_id = $1 ORDER BY model
+`
+
+func (q *Queries) AIModelsOf(ctx context.Context, connectionID uuid.UUID) ([]FyniqAiModel, error) {
+	rows, err := q.db.Query(ctx, aIModelsOf, connectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqAiModel
+	for rows.Next() {
+		var i FyniqAiModel
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.ConnectionID,
+			&i.Model,
+			&i.Name,
+			&i.AliasOf,
+			&i.ProviderCreated,
+			&i.ShutdownAt,
+			&i.ContextWindow,
+			&i.MaxOutput,
+			&i.Reports,
+			&i.FirstListedAt,
+			&i.LastListedAt,
+			&i.Listed,
+			&i.NotCallableAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAIConnection = `-- name: GetAIConnection :one
 SELECT organisation_id, id, name, connector, preset, auth, configuration, host, self_hosted, credential_ref, credential_set_at, billing_mode, quota, state, version, created_by, created_at, changed_by, changed_at, data_handling FROM fyniq.ai_connection WHERE id = $1
 `
@@ -290,6 +371,77 @@ func (q *Queries) InsertAIDataPolicy(ctx context.Context, arg InsertAIDataPolicy
 	return i, err
 }
 
+const insertAIModelListRead = `-- name: InsertAIModelListRead :one
+INSERT INTO fyniq.ai_model_list_read (connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+  $8, $9)
+RETURNING organisation_id, id, connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at
+`
+
+type InsertAIModelListReadParams struct {
+	ConnectionID uuid.UUID
+	Trigger      string
+	Outcome      string
+	Pages        int32
+	Added        int32
+	Removed      int32
+	Failure      *string
+	ReadBy       string
+	ReadAt       time.Time
+}
+
+func (q *Queries) InsertAIModelListRead(ctx context.Context, arg InsertAIModelListReadParams) (FyniqAiModelListRead, error) {
+	row := q.db.QueryRow(ctx, insertAIModelListRead,
+		arg.ConnectionID,
+		arg.Trigger,
+		arg.Outcome,
+		arg.Pages,
+		arg.Added,
+		arg.Removed,
+		arg.Failure,
+		arg.ReadBy,
+		arg.ReadAt,
+	)
+	var i FyniqAiModelListRead
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.ConnectionID,
+		&i.Trigger,
+		&i.Outcome,
+		&i.Pages,
+		&i.Added,
+		&i.Removed,
+		&i.Failure,
+		&i.ReadBy,
+		&i.ReadAt,
+	)
+	return i, err
+}
+
+const lastCompleteAIModelListRead = `-- name: LastCompleteAIModelListRead :one
+SELECT organisation_id, id, connection_id, trigger, outcome, pages, added, removed, failure, read_by, read_at FROM fyniq.ai_model_list_read WHERE connection_id = $1 AND outcome = 'complete' ORDER BY read_at DESC, id DESC LIMIT 1
+`
+
+func (q *Queries) LastCompleteAIModelListRead(ctx context.Context, connectionID uuid.UUID) (FyniqAiModelListRead, error) {
+	row := q.db.QueryRow(ctx, lastCompleteAIModelListRead, connectionID)
+	var i FyniqAiModelListRead
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.ConnectionID,
+		&i.Trigger,
+		&i.Outcome,
+		&i.Pages,
+		&i.Added,
+		&i.Removed,
+		&i.Failure,
+		&i.ReadBy,
+		&i.ReadAt,
+	)
+	return i, err
+}
+
 const latestAIDataPolicy = `-- name: LatestAIDataPolicy :one
 SELECT organisation_id, id, version, policy, approval_id, made_by, made_at FROM fyniq.ai_data_policy ORDER BY version DESC LIMIT 1
 `
@@ -381,4 +533,51 @@ func (q *Queries) UpdateAIConnection(ctx context.Context, arg UpdateAIConnection
 		&i.DataHandling,
 	)
 	return i, err
+}
+
+const upsertAIModel = `-- name: UpsertAIModel :exec
+INSERT INTO fyniq.ai_model (connection_id, model, name, alias_of, provider_created, shutdown_at, context_window, max_output, reports,
+  first_listed_at, last_listed_at, listed, not_callable_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7, $8, $9::text[], $10, $11, $12,
+  $13)
+ON CONFLICT (organisation_id, connection_id, model) DO UPDATE SET name = EXCLUDED.name, alias_of = EXCLUDED.alias_of,
+  provider_created = EXCLUDED.provider_created, shutdown_at = EXCLUDED.shutdown_at, context_window = EXCLUDED.context_window,
+  max_output = EXCLUDED.max_output, reports = EXCLUDED.reports, last_listed_at = EXCLUDED.last_listed_at, listed = EXCLUDED.listed,
+  not_callable_at = EXCLUDED.not_callable_at
+`
+
+type UpsertAIModelParams struct {
+	ConnectionID    uuid.UUID
+	Model           string
+	Name            *string
+	AliasOf         *string
+	ProviderCreated *time.Time
+	ShutdownAt      *time.Time
+	ContextWindow   *int32
+	MaxOutput       *int32
+	Reports         []string
+	FirstListedAt   time.Time
+	LastListedAt    time.Time
+	Listed          bool
+	NotCallableAt   *time.Time
+}
+
+func (q *Queries) UpsertAIModel(ctx context.Context, arg UpsertAIModelParams) error {
+	_, err := q.db.Exec(ctx, upsertAIModel,
+		arg.ConnectionID,
+		arg.Model,
+		arg.Name,
+		arg.AliasOf,
+		arg.ProviderCreated,
+		arg.ShutdownAt,
+		arg.ContextWindow,
+		arg.MaxOutput,
+		arg.Reports,
+		arg.FirstListedAt,
+		arg.LastListedAt,
+		arg.Listed,
+		arg.NotCallableAt,
+	)
+	return err
 }

@@ -4,17 +4,25 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -107,7 +115,14 @@ func TestAIConnectionsAreDualControlled(t *testing.T) {
 		"If-Match", `"2-disabled"`), "setAIConnectionCredential", 422, aiconnection.CodeCredential)
 	approve(e.call(http.MethodPut, "/v1/ai/connections/"+id+"/credential", admin, map[string]any{"value": next}, "If-Match", `"2-disabled"`))
 
-	// Switched on, then off at once.
+	// Switched on once its model list is read whole, then off at once.
+	e.problemIs(e.call(http.MethodPost, "/v1/ai/connections/"+id+"/enable", admin, nil, "If-Match", `"3-disabled"`), "enableAIConnection", 409,
+		aimodel.CodeListUnavailable)
+	models := &fakeModels{ids: []string{"gpt-6", "gpt-5"}}
+	e.api.deps.AIProviders = models.provider
+	if r := e.call(http.MethodPost, "/v1/ai/connections/"+id+"/models/refresh", admin, nil); r.Status != http.StatusOK || r.Body["last_complete"] == nil {
+		t.Fatalf("refreshing: %d %s", r.Status, r.Raw)
+	}
 	approve(e.call(http.MethodPost, "/v1/ai/connections/"+id+"/enable", admin, nil, "If-Match", `"3-disabled"`))
 	get = e.call(http.MethodGet, "/v1/ai/connections/"+id, admin, nil)
 	if get.str("state") != "enabled" || get.str("name") != "OpenAI plan" || get.Body["billing"].(map[string]any)["quota"].(map[string]any)["fee"] != "30.00" {
@@ -187,6 +202,10 @@ func matrixAIConnection(e *env, name string, on bool) string {
 		if err != nil {
 			return err
 		}
+		if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: c.ID, Trigger: "refresh", Outcome: "complete", Pages: 1, Added: 1,
+			ReadBy: "user:matrix", ReadAt: now}, []storage.AIModel{{ConnectionID: c.ID, Model: "gpt-6", FirstListed: now, LastListed: now, Listed: true}}); err != nil {
+			return err
+		}
 		if on {
 			c.State, c.ChangedBy, c.ChangedAt = "enabled", "user:matrix", now
 			if c, err = u.AIConnections().Step(ctx, c, storage.AIConnectionEnabled, &approval); err != nil {
@@ -229,6 +248,12 @@ var matrixAIConnections = map[string]func(e *env, tok string) (response, func() 
 	"disableAIConnection": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix on", true)+"/disable", tok, nil,
 			"Prefer", "return=preview", "If-Match", "*"), nil
+	},
+	"getAIConnectionModels": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models", tok, nil), nil
+	},
+	"refreshAIConnectionModels": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/ai/connections/"+matrixAIConnection(e, "Matrix off", false)+"/models/refresh", tok, nil), nil
 	},
 	"getAIDataPolicy": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/ai/data-policy", tok, nil), nil
@@ -297,6 +322,7 @@ func TestWhereTheAIMaySendData(t *testing.T) {
 		approve(e.call(http.MethodPost, "/v1/ai/connections", admin, body))
 		for _, x := range e.call(http.MethodGet, "/v1/ai/connections", admin, nil).Body["items"].([]any) {
 			if c := x.(map[string]any); c["name"] == name {
+				e.call(http.MethodPost, "/v1/ai/connections/"+c["id"].(string)+"/models/refresh", admin, nil)
 				return c["id"].(string)
 			}
 		}
@@ -304,6 +330,7 @@ func TestWhereTheAIMaySendData(t *testing.T) {
 		return ""
 	}
 	inventory, transfer := recordedFlow(e, "OpenAI")
+	e.api.deps.AIProviders = (&fakeModels{ids: []string{"gpt-6"}}).provider
 
 	// A declaration that is not evidenced is refused before anything is asked.
 	bad := us(inventory, transfer)
@@ -344,4 +371,131 @@ func TestWhereTheAIMaySendData(t *testing.T) {
 		t.Fatalf("the policy's next version: %s", policy.Raw)
 	}
 	e.problemIs(e.call(http.MethodPut, "/v1/ai/data-policy", admin, map[string]any{}, "If-Match", `"0"`), "changeAIDataPolicy", 412, CodeStale)
+}
+
+// fakeModels is a provider whose list is the models it holds, two to a page; refuse fails its first page, and broken its
+// second.
+type fakeModels struct {
+	mu     sync.Mutex
+	ids    []string
+	refuse error
+	broken bool
+}
+
+func (f *fakeModels) provider(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+	return f, nil
+}
+func (f *fakeModels) Capabilities() ports.ModelCapabilities { return ports.ModelCapabilities{} }
+func (f *fakeModels) Call(_ context.Context, r ports.ModelRequest) (ports.ModelResponse, error) {
+	return ports.ModelResponse{Model: r.Model, StopReason: ports.StopEnd, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "ok"}},
+		Usage: ports.ModelUsage{Input: 3, Output: 1}}, nil
+}
+func (f *fakeModels) Stream(ctx context.Context, r ports.ModelRequest, _ func(ports.ModelEvent) error) (ports.ModelResponse, error) {
+	return f.Call(ctx, r)
+}
+func (f *fakeModels) ListModels(_ context.Context, after string) (ports.ModelPage, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	start := 0
+	if after != "" {
+		start, _ = strconv.Atoi(after)
+		if f.broken {
+			return ports.ModelPage{}, errors.New("the provider did not answer the second page")
+		}
+	} else if f.refuse != nil {
+		return ports.ModelPage{}, f.refuse
+	}
+	page := ports.ModelPage{}
+	for i := start; i < len(f.ids) && i < start+2; i++ {
+		page.Models = append(page.Models, ports.ListedModel{ID: f.ids[i], Name: strings.ToUpper(f.ids[i])})
+	}
+	if start+2 < len(f.ids) {
+		page.Next = strconv.Itoa(start + 2)
+	}
+	return page, nil
+}
+
+// Model lists come from the provider (AI-80, AI-81, AI-84): approving a key queues a read for the worker, which reads
+// the list page by page; Refresh reads it now. Only a complete read marks a model no longer listed; a failed or
+// partial read keeps the last complete list and says why; a connection is switched on only after a complete read. The
+// daily job reads every connection's list.
+// req: AI-80
+// req: AI-81
+// req: AI-84
+func TestModelListsComeFromTheProvider(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
+	models := &fakeModels{ids: []string{"m1", "m2", "m3"}}
+	e.api.deps.AIProviders = models.provider
+	asked := e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Listed", "connector": "openai", "auth": "api-key",
+		"billing": map[string]any{"mode": "usage"}, "credential": "sk-proj-" + "fixture0123456789abcdef"})
+	if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	id := e.call(http.MethodGet, "/v1/ai/connections", admin, nil).Body["items"].([]any)[0].(map[string]any)["id"].(string)
+	list := func() AIModelList {
+		t.Helper()
+		var out AIModelList
+		r := e.call(http.MethodGet, "/v1/ai/connections/"+id+"/models", admin, nil)
+		if r.Status != http.StatusOK || json.Unmarshal([]byte(r.Raw), &out) != nil {
+			t.Fatalf("getAIConnectionModels: %d %s", r.Status, r.Raw)
+		}
+		return out
+	}
+	if l := list(); len(l.Models) != 0 || l.LastComplete != nil {
+		t.Fatalf("before any read: %+v", l)
+	}
+
+	// The key's approval queued a read; the worker's work reads it.
+	lister := ai.Lister{Store: workerStore(t), Provider: models.provider, Clock: e.clock}
+	read := 0
+	work := lister.Work()
+	e.work(map[string]outbox.Work{ai.ReadKind: func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+		read++
+		return work(ctx, org, row)
+	}, notify.FanoutKind: func(context.Context, uuid.UUID, storage.OutboxRow) error { return nil }})
+	l := list()
+	if read != 1 || len(l.Models) != 3 || l.Reads[0].Outcome != "complete" || l.Reads[0].Trigger != "credential" || l.Reads[0].Pages != 2 ||
+		l.Models[0].State != "new" || l.Models[0].Name != "M1" || l.LastComplete == nil {
+		t.Fatalf("the first read (%d queued): %+v", read, l)
+	}
+
+	// A failed read keeps the list and says why; a partial one removes nothing; a complete one without m3 removes it.
+	models.refuse = errors.New("the provider refused the credential")
+	r := e.call(http.MethodPost, "/v1/ai/connections/"+id+"/models/refresh", admin, nil)
+	var refreshed AIModelList
+	_ = json.Unmarshal([]byte(r.Raw), &refreshed)
+	if r.Status != http.StatusOK || refreshed.Reads[0].Outcome != "failed" || !strings.Contains(refreshed.Reads[0].Failure, "refused") ||
+		len(refreshed.Models) != 3 || refreshed.Models[2].State != "new" {
+		t.Fatalf("a failed read: %d %s", r.Status, r.Raw)
+	}
+	models.refuse, models.broken, models.ids = nil, true, []string{"m1", "m2", "m4"}
+	e.call(http.MethodPost, "/v1/ai/connections/"+id+"/models/refresh", admin, nil)
+	if l := list(); l.Reads[0].Outcome != "partial" || l.Reads[0].Pages != 1 || len(l.Models) != 3 || l.Models[2].State != "new" {
+		t.Fatalf("a partial read: %+v", l)
+	}
+	models.broken, models.ids = false, []string{"m1", "m2"}
+	e.call(http.MethodPost, "/v1/ai/connections/"+id+"/models/refresh", admin, nil)
+	if l := list(); l.Reads[0].Outcome != "complete" || l.Reads[0].Removed != 1 || l.Models[2].State != "no_longer_listed" {
+		t.Fatalf("a complete read without m3: %+v", l)
+	}
+
+	// The daily job reads it too, and the trail records each read as a system event.
+	if err := lister.Daily(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if l := list(); l.Reads[0].Trigger != "daily" || l.Reads[0].ReadBy != "system:"+ai.DailyJob {
+		t.Fatalf("the daily read: %+v", l.Reads[0])
+	}
+	var listed int
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		object := uuid.MustParse(id)
+		all, err := u.Audit().Find(ctx, storage.AuditQuery{ObjectType: "ai_connection", ObjectID: &object, Action: "ai_model.listed", Limit: 100})
+		listed = len(all)
+		return err
+	})
+	if listed != 5 {
+		t.Errorf("the trail records %d reads, not 5", listed)
+	}
 }
