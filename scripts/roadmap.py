@@ -77,9 +77,12 @@ ch("p1-pdpa-retention", F1, 5, "The DPO, data inventory, notices and consent, ac
 ch("p1-ai-providers", F1, 6, "One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources", ["p1-connector-framework"], "Replay mode offline; live local tests through DEV-09's adapters or an API key", "A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09)", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
 ch("p1-ai-assistant", F1, 6, "On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, numeric grounding and the calculator, guardrails against the OWASP LLM risks, the eval harness with the golden questions and the red team, Ask, explain and simulate", ["p1-ai-providers", "p1-reports"], "Evals in replay; live runs with the local AI provider", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
 ch("p1-knowledge-base", F1, 6, "The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing", ["p1-ai-assistant"], "—", "—", "Security (#4)", "After go-live")
-ch("p1-ai-proposals", F1, 6, "The proposal principles, the task catalogue of Appendix E, approval of AI work, numeric grounding, idempotent execution through the executor, undo, kill switches and budgets, the red-team cases", ["p1-ai-assistant", "p1-approval-engine"], "—", "—", "Security (#4)", "After go-live")
+# The owner's decision of 15 Nov 2026 (PRD-001 rev 0.279): the proposals the company secretary's agent needs at launch
+# (AI-65) come ahead of the rest, as p1-ai-proposals-core; the other task types and their extras follow after go-live.
+ch("p1-ai-proposals-core", F1, 6, "The proposal principles and store, the catalogue as dual-controlled data with its tiers and never-list, approval of AI work in the Inbox with rejection reasons fed back, idempotent execution through the executor as the approving human, the proposal evals' harness and the controls", ["p1-ai-assistant", "p1-approval-engine"], "—", "—", "Security (#4)", "Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs)")
+ch("p1-ai-proposals", F1, 6, "The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics", ["p1-ai-proposals-core"], "—", "—", "Security (#4)", "After go-live")
 ch("p1-mcp-first-party", F1, 6, "The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01", ["p1-ai-proposals"], "Option (b) with a local key; Cloud KMS at the cloud gate", "Security review #4", "Security (#4)", "After go-live")
-ch("p1-scheduled-agents", F1, 6, "Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs, the never-list, budgets and failure", ["p1-ai-assistant"], "—", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
+ch("p1-scheduled-agents", F1, 6, "Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs with their Inbox tasks and the sec.create_task and sec.draft_reminder proposals, the never-list, budgets and failure", ["p1-ai-assistant", "p1-ai-proposals-core"], "—", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
 ch("p1-company-secretary", F1, 6, "The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks", ["p1-scheduled-agents", "p1-equity-register"], "—", "A corporate secretarial firm appointed (Q19)", "Accountant", "Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks)")
 ch("p1-document-capture", F1, 6, "Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms", ["p1-ai-providers", "p1-purchases", "p1-templates-email"], "Inbound email through Mailpit", "—", "Security (#4)", "After go-live")
 # Wave 7: platform, migration and readiness
@@ -211,16 +214,23 @@ BY_ID.update({
     # The owner's decision of 9 Nov 2026 (PRD-001 rev 0.240): the AI inventory and gated AI changes come with the AI;
     # the control rows whose checks need a later module move to it (each row is built with the module it guards).
     "CMP-AI-02": "p1-ai-providers", "CMP-AI-03": "p1-ai-providers", "CTL-AI-05": "p1-ai-providers",
-    "CTL-AI-02": "p1-ai-proposals", "CTL-AI-03": "p1-ai-proposals", "CTL-AI-04": "p1-ai-proposals", "CTL-AI-07": "p1-ai-proposals",
+    "CTL-AI-07": "p1-ai-proposals",
     "CTL-AI-06": "p1-ai-assistant", "CTL-AI-08": "p1-knowledge-base", "CTL-AI-09": "p1-scheduled-agents",
     # The owner's decision of 13 Nov 2026 (PRD-001 rev 0.275): with the AI at launch, its activity log and kill switch
     # come with the model calls they record and stop, ahead of the proposals.
     "AI-12": "p1-ai-providers", "AI-13": "p1-ai-providers",
     # The owner's decisions of 14 Nov 2026 (PRD-001 rev 0.277): each eval suite is built with what it evaluates, and the
     # rules the assistant rests on are built with it, their proposal parts filling in with p1-ai-proposals.
-    "QA-AI-02": "p1-ai-proposals", "QA-AI-06": "p1-knowledge-base", "QA-AI-07": "p1-scheduled-agents",
+    "QA-AI-06": "p1-knowledge-base", "QA-AI-07": "p1-scheduled-agents",
     "AI-P1": "p1-ai-assistant", "AI-P2": "p1-ai-assistant", "AI-P6": "p1-ai-assistant", "AI-P7": "p1-ai-assistant",
     "AI-P8": "p1-ai-assistant", "AI-08": "p1-ai-assistant",
+    # The owner's decision of 15 Nov 2026 (PRD-001 rev 0.279): the proposals AI-65 needs at launch, with their evals and
+    # controls, come with p1-ai-proposals-core.
+    "AI-P3": "p1-ai-proposals-core", "AI-P4": "p1-ai-proposals-core", "AI-P5": "p1-ai-proposals-core",
+    "AI-06": "p1-ai-proposals-core", "AI-07": "p1-ai-proposals-core", "AI-10": "p1-ai-proposals-core",
+    "AI-11": "p1-ai-proposals-core", "AI-14": "p1-ai-proposals-core", "AI-30": "p1-ai-proposals-core", "AI-32": "p1-ai-proposals-core",
+    "QA-AI-02": "p1-ai-proposals-core", "CTL-AI-02": "p1-ai-proposals-core", "CTL-AI-03": "p1-ai-proposals-core",
+    "CTL-AI-04": "p1-ai-proposals-core",
     "CTL-MCP-01": "p1-mcp-first-party", "CTL-MCP-02": "p1-mcp-first-party", "CTL-MCP-03": "p1-mcp-first-party",
     "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
     "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
@@ -242,7 +252,7 @@ CHECKS_WITH_MODULES = {
     "p1-founders-money": "C.2 #21|C.2 #22|C.2 #23|C.2 #25",
     "p1-equity-register": "C.2 #26|C.2 #27|C.2 #28|C.2 #29",
     "p1-company-secretary": "C.2 #32|C.2 #33|C.2 #34|C.2 #35|C.2 #54",
-    "p1-ai-proposals": "C.2 #19",
+    "p1-ai-proposals-core": "C.2 #19",
     "p1-scheduled-agents": "C.2 #36",
     "p1-ai-providers": "C.2 #55",
     "p1-payment-providers": "C.2 #42|C.2 #50",
@@ -270,6 +280,12 @@ TITLE = [
     ("ledger/posting-rules", r"GST codes", "p1-gst"),
     ("data/backup-and-recovery", r"^Retention of AI conversations", "p1-ai-assistant"),  # rev 0.245: built with the conversations
     ("ai/proposals", r"^The orchestrator holds no write credential", "p1-ai-assistant"),  # rev 0.277: built with the assistant
+    # rev 0.279: the proposal store, the executor and the catalogue the company secretary's agent needs at launch
+    ("ai/proposals", r"^Proposal (lifecycle|content|rationale|tier)|^The executor runs approved proposals", "p1-ai-proposals-core"),
+    ("ai/task-catalogue", r"^(Catalogue as versioned|Catalogue entry attributes|Risk tiers and approver roles|Never in the catalogue|AI tasks page)", "p1-ai-proposals-core"),
+    # rev 0.279: each sec.* task type is built with what it acts on: the agent's tasks and reminders, the secretary's documents
+    ("ai/task-catalogue", r"^sec\.(create_task|draft_reminder)", "p1-scheduled-agents"),
+    ("ai/task-catalogue", r"^sec\.draft_document", "p1-company-secretary"),
     ("ai/guardrails", r"^External agents and MCP clients", "p1-mcp-first-party"),  # rev 0.277: built with the MCP server
     ("data/backup-and-recovery", r"^Retention|Personal data in immutable|Shredded keys", "p1-pdpa-retention"),
     ("data/migration", r"Parallel run|Go-live and workbook", "p1-go-live"),
@@ -278,7 +294,7 @@ TITLE = [
     ("platform/local-mode", r"Local AI", "p1-ai-providers"),
     ("platform/local-mode", r"partner substitutes", "p1-connector-framework"),
     ("platform/release-and-versioning", r"Statutory parameter pack", "p1-statutory-packs"),
-    ("platform/release-and-versioning", r"AI catalogue", "p1-ai-proposals"),
+    ("platform/release-and-versioning", r"AI catalogue", "p1-ai-proposals-core"),
     ("platform/release-and-versioning", r"Knowledge base versions", "p1-knowledge-base"),
     ("platform/release-and-versioning", r"Event schema", "p1-public-api"),
     ("platform/portability-and-cost", r"Claude in Singapore", "p1-ai-providers"),
