@@ -202,15 +202,17 @@ func (q *Queries) GetApprovalRequest(ctx context.Context, id uuid.UUID) (GetAppr
 }
 
 const insertApprovalPolicy = `-- name: InsertApprovalPolicy :one
-INSERT INTO fyniq.approval_policy (object_type, version, steps, request_id, created_by, created_at)
-VALUES ($1, $2, $3::jsonb, $4, $5, $6)
-RETURNING id, object_type, version, steps, request_id, created_by, created_at
+INSERT INTO fyniq.approval_policy (object_type, version, steps, rules, request_id, created_by, created_at)
+VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, $6,
+        $7)
+RETURNING id, object_type, version, steps, rules, request_id, created_by, created_at
 `
 
 type InsertApprovalPolicyParams struct {
 	ObjectType string
 	Version    int32
 	Steps      []byte
+	Rules      []byte
 	RequestID  uuid.UUID
 	CreatedBy  uuid.UUID
 	CreatedAt  time.Time
@@ -221,6 +223,7 @@ type InsertApprovalPolicyRow struct {
 	ObjectType string
 	Version    int32
 	Steps      []byte
+	Rules      []byte
 	RequestID  uuid.UUID
 	CreatedBy  uuid.UUID
 	CreatedAt  time.Time
@@ -231,6 +234,7 @@ func (q *Queries) InsertApprovalPolicy(ctx context.Context, arg InsertApprovalPo
 		arg.ObjectType,
 		arg.Version,
 		arg.Steps,
+		arg.Rules,
 		arg.RequestID,
 		arg.CreatedBy,
 		arg.CreatedAt,
@@ -241,6 +245,7 @@ func (q *Queries) InsertApprovalPolicy(ctx context.Context, arg InsertApprovalPo
 		&i.ObjectType,
 		&i.Version,
 		&i.Steps,
+		&i.Rules,
 		&i.RequestID,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -425,7 +430,7 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 }
 
 const listApprovalPolicies = `-- name: ListApprovalPolicies :many
-SELECT id, object_type, version, steps, request_id, created_by, created_at
+SELECT id, object_type, version, steps, rules, request_id, created_by, created_at
   FROM fyniq.approval_policy
  ORDER BY object_type, version
 `
@@ -435,6 +440,7 @@ type ListApprovalPoliciesRow struct {
 	ObjectType string
 	Version    int32
 	Steps      []byte
+	Rules      []byte
 	RequestID  uuid.UUID
 	CreatedBy  uuid.UUID
 	CreatedAt  time.Time
@@ -454,6 +460,7 @@ func (q *Queries) ListApprovalPolicies(ctx context.Context) ([]ListApprovalPolic
 			&i.ObjectType,
 			&i.Version,
 			&i.Steps,
+			&i.Rules,
 			&i.RequestID,
 			&i.CreatedBy,
 			&i.CreatedAt,
