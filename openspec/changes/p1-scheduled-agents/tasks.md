@@ -1,10 +1,19 @@
 ## 1. Skills
 
-- [ ] 1.1 `internal/agents` loads `agents/<name>/SKILL.md` (`agent-skill@1` front matter) for the release's agents (the
+- [x] 1.1 `internal/agents` loads `agents/<name>/SKILL.md` (`agent-skill@1` front matter) for the release's agents (the
   company secretary). It refuses an unknown output, a tool that is not a read tool's name, or a never-listed task type.
   `agents/agents.lock.json` pins each skill's version and hash. Also: the `company_secretary` row of `ai_agent`, and the
   `.dockerignore` and Dockerfile lines for the embedded `agents/` (design D1). Tests `// req: AI-61`,
   `// req: CTL-AI-09`.
+  As built: the top-level package `agents` embeds `*/SKILL.md`; `internal/agents` parses the front matter strictly
+  (unknown fields refused) and checks each skill:
+  - its name and schema;
+  - its tools are reads (`aitool.ReadName`, now exported) within its profile (`compliance-read`);
+  - its outputs include `run_report`, and the rest are task types off the never-list.
+  A run offers the skill's tools that the registry has (`Offered`) and the task types the catalogue has (`Proposes`):
+  not `kb.*` or `sec.draft_document` yet. The skill's text now says Fyniq runs the deterministic checks and makes
+  their tasks, and adds the Not assessed rule; it is pinned at version 1. Migration 000383 adds the
+  `company_secretary` agent.
 
 ## 2. Configuration
 

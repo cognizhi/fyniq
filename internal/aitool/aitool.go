@@ -205,6 +205,19 @@ var (
 		"send", "set", "submit", "unlock", "update", "upsert", "void", "write"}
 )
 
+// ReadName reports why name could not be a read tool's: its shape, or a verb a read tool never does. A scheduled agent's
+// skill names its tools by it, so one the release's registry lacks is still a read (p1-scheduled-agents design D1).
+func ReadName(name string) error {
+	verb := name[strings.LastIndex(name, ".")+1:]
+	switch {
+	case !toolName.MatchString(name):
+		return fmt.Errorf("%q is not a tool's name", name)
+	case slices.Contains(writeVerbs, verb):
+		return fmt.Errorf("%q names a write (%s), which a read tool never does", name, verb)
+	}
+	return nil
+}
+
 // check refuses a definition that is not a bounded read: the rules of design D5 and D6.
 func check(t Tool) error {
 	verb := t.Name[strings.LastIndex(t.Name, ".")+1:]
