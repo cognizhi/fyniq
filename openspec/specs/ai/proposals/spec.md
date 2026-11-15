@@ -542,6 +542,29 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** the approver tries to approve all items in one action
 - **THEN** the bulk approval is not allowed
 
+### Requirement: AI-89 A proposal is an approval request
+A Pending proposal SHALL be at once an `ai_proposal` request of the approval engine, signing its payload hash, requested by the person who asked and authenticated by their live turn instead of a fresh step-up; that person MAY sign their own tier-1 proposal; both exceptions SHALL hold for `ai_proposal` alone, in the database too.
+
+Source: PRD-001 §9.5 · Priority M · Phase P1
+
+#### Scenario: Pending is an approval request
+- **WHEN** a proposal's dry run succeeds
+- **THEN** it is Pending with an `ai_proposal` approval request whose envelope holds its payload hash
+- **AND** its requester is the person who asked, authenticated by their live turn
+
+#### Scenario: The person who asked signs their own tier-1 proposal
+- **GIVEN** a tier-1 proposal
+- **WHEN** the person who asked approves it, passing step-up
+- **THEN** the approval is allowed
+
+#### Scenario: The exceptions are the proposals' alone
+- **WHEN** any other request is made without a fresh step-up, or signed by its requester
+- **THEN** the database refuses it
+
+#### Scenario: Every signer passes step-up
+- **WHEN** anyone signs an `ai_proposal` request
+- **THEN** they have passed step-up
+
 ### Requirement: AI-33 Approval-quality metrics
 The system SHALL measure approval quality per task type and approver, to guard against rubber-stamping (per IMDA's agentic-AI framework).
 

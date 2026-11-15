@@ -80,6 +80,16 @@ with what they act on.
 - On the final approval the operation marks the proposal Approved and enqueues its execution in the executor's own
   queue, in the same transaction. The API never executes it.
 - A rejection's reason is kept on the proposal and returned to its source (D8).
+- (rev 0.280, the owner's decision of 15 Nov 2026; AI-89) The request is made as the proposal becomes Pending. Its
+  requester is the person who asked, authenticated by their live turn (`ai_turn`, within the delegated token's 5
+  minutes) instead of a fresh step-up; the person who asked may sign their own tier-1 proposal (AI-10). Both are
+  exceptions to the approval rules (FM-1) for `ai_proposal` alone, in the database's checks too, each with an attack
+  test. Every signer still passes step-up.
+- Who signs: holders of one of the task type's approver roles (the request's step names them) who could do the command
+  themselves (its policy, Appendix D), checked per request rather than on one Appendix D row. For `sec.*` that is the
+  Owner and the Company secretary (rev 0.280).
+- Not chosen: the person sending each proposal for approval with step-up first (an extra step every time; a scheduled
+  agent's proposals would wait).
 - Alternative: a separate proposal approval mechanism. Rejected: two approval engines would drift; signed envelopes,
   team modes, step-up and the review log are already the engine's.
 

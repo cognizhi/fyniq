@@ -63,7 +63,7 @@ None.
 ## Impact
 
 - **Requirements built** (PRD-001 §9.1, §9.3, §9.5, §9.6, §9.10, Appendix F.7, Appendix C.2; rev 0.279):
-  - AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-11, AI-14, AI-30, AI-32, and the unnumbered proposal lifecycle,
+  - AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-11, AI-14, AI-30, AI-32, AI-89 (rev 0.280), and the unnumbered proposal lifecycle,
     content, rationale, record and executor rows (`ai/proposals`);
   - the catalogue's data, attributes, tiers, never-list and AI tasks page (`ai/task-catalogue`);
   - QA-AI-02 (`ai/evaluation`);
