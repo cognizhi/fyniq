@@ -289,6 +289,12 @@ func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
 	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
 }
 
+// AgentRuns runs the scheduled agents' queued runs (AI-64, AI-65; p1-scheduled-agents design D5): deterministic until the
+// model step is wired.
+func (k *Kit) AgentRuns(clock ports.Clock) agents.Runner {
+	return agents.Runner{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}
+}
+
 // Relays emits the installation's notices, such as a connector paused or a change waiting, in the organisations of the
 // Super admins they name (FR-ADM-07, FR-INT-26).
 func (k *Kit) Relays(clock ports.Clock) notify.Relays {
