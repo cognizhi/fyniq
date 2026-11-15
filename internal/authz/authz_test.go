@@ -185,7 +185,10 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 		// document of one organisation (FR-AR-06, FR-AR-16; docs/security/threat-models/document-links.md).
 		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink" ||
 			// An evidence file's download link: its signed, 5-minute token is the credential, to one file (SEC-24).
-			op == "getEvidenceDownload"
+			op == "getEvidenceDownload" ||
+			// A full tenant export's download link, the same: its signed, 5-minute token, given only to the person who asked
+			// for the export, is the credential to that one file (SEC-24, FR-MIG-04; rev 0.273).
+			op == "getTenantExportDownload"
 		public := op == "getSetupStatus" || op == "listSignInProviders" || op == "getPlatformVersion" || link
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {

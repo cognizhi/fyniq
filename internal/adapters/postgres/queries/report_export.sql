@@ -9,6 +9,9 @@ SELECT * FROM fyniq.report_export WHERE id = sqlc.arg(id);
 -- name: ReportExportsOf :many
 SELECT * FROM fyniq.report_export WHERE requested_by = sqlc.arg(requested_by) ORDER BY requested_at DESC, id DESC LIMIT sqlc.arg(page_size);
 
+-- name: ReportExportsOfReport :many
+SELECT * FROM fyniq.report_export WHERE report = sqlc.arg(report) ORDER BY requested_at DESC, id DESC LIMIT sqlc.arg(page_size);
+
 -- name: ReadyReportExport :one
 UPDATE fyniq.report_export SET status = 'ready', ledger_revision = sqlc.arg(ledger_revision), file_name = sqlc.arg(file_name),
   media_type = sqlc.arg(media_type), size_bytes = sqlc.arg(size_bytes), file_sha256 = sqlc.arg(file_sha256), rows_count = sqlc.arg(rows_count),

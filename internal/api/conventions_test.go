@@ -71,6 +71,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "runMigrationCommit Idempotency-Key", "runMigrationCommit If-Match")                                    // rev 0.258: each record once, by its key
 	want = append(want, "listHeartbeatDrills cursor")                                                                           // NFR-OBS-02
 	want = append(want, "createEvidenceDownload Idempotency-Key", "createEvidenceDownload Prefer")                              // SEC-24: a link, no record
+	want = append(want, "createTenantExportDownload Idempotency-Key", "createTenantExportDownload Prefer")                      // FR-MIG-04: a link, no record
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {
