@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"net/http"
@@ -19,14 +20,14 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// assistantAgents are the agents the AI service may ask the API to call a model for: the assistant's chat and tool loop.
-// The scheduled agents run in the worker (p1-scheduled-agents).
-var assistantAgents = []string{"chat"}
+// assistantAgents are the agents the AI service may ask the API to call a model for: the assistant's chat and tool loop,
+// for a turn, and the scheduled agents, each for its own run alone (p1-scheduled-agents design D5).
+var assistantAgents = []string{"chat", "company_secretary"}
 
 // AIModelCall is a model call the AI service asks for (p1-ai-assistant design D4): the agent, the classes of data the
 // AI service says it carries, and the request, whose model the agent's route chooses.
 type AIModelCall struct {
-	Agent   string         `json:"agent" enum:"chat" doc:"The agent the call is for: its route decides the connection and model (AI-74)." example:"chat"`
+	Agent   string         `json:"agent" enum:"chat,company_secretary" doc:"The agent the call is for: its route decides the connection and model (AI-74). A turn's is chat; a scheduled agent's run's is the run's agent." example:"chat"`
 	Classes []RouteClass   `json:"classes" nullable:"false" doc:"The classes of data the AI service says the call carries. The API routes it for these and every class the turn has read, whichever the AI service names (AI-83)."`
 	Request AIModelRequest `json:"request"`
 }
@@ -114,8 +115,8 @@ func modelCallProblem(err error) *Problem {
 // named ones as read by the turn, so a later call carries them too (AI-83).
 func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, error) {
 	p, _ := authn.From(ctx)
-	if !slices.Contains(assistantAgents, in.Agent) {
-		return ai.Call{}, problem(CodeInvalid, in.Agent+" is not an agent the AI service runs.", "Ask for the chat agent's call")
+	if want := cmp.Or(p.Agent, "chat"); !slices.Contains(assistantAgents, in.Agent) || in.Agent != want { // a turn's chat, a run's own agent
+		return ai.Call{}, problem(CodeInvalid, in.Agent+" is not the agent this token's calls are for.", "Ask for "+want+"'s call")
 	}
 	request, err := in.Request.port()
 	if err != nil {

@@ -189,10 +189,11 @@ type ToolCall struct {
 	OutputSHA256 string `json:"output_sha256,omitempty"`
 }
 
-// How a turn ends.
+// How a turn or a run ends.
 const (
 	StopAnswered  = "answered"
 	StopToolLimit = "tool_limit"
+	StopBudget    = "budget" // a run's tokens are spent (AI-67)
 )
 
 // Grounding is how the answer's figures were checked (AI-08): whether it was asked for again, what failed the first
@@ -219,6 +220,7 @@ type Answer struct {
 	Proposals []Proposed       `json:"proposals,omitempty"`
 	Usage     ports.ModelUsage `json:"usage"`
 	Stop      string           `json:"stop"`
+	Model     string           `json:"model,omitempty"` // the model the last call ran on, as its provider reported it
 }
 
 // Assistant answers turns.
@@ -238,15 +240,47 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	if tools == nil {
 		tools = aitool.Default()
 	}
-	limit, maxTokens := cmpOr(q.MaxReads, cmpOr(a.MaxToolCalls, DefaultToolCalls)), cmpOr(a.MaxTokens, DefaultMaxTokens)
 	var names []string
 	for _, t := range tools.Tools() {
 		names = append(names, t.Name)
 	}
-	out := Answer{Prompt: a.Prompt.Name(), PromptSHA256: a.Prompt.SHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{},
+	question := q.Text
+	if q.Context != "" {
+		question = "About " + q.Context + ":\n\n" + q.Text
+	}
+	messages := filtered(q.History)
+	if note := rejectedNote(q.Rejected); note != "" {
+		messages = append(messages, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: note}}},
+			ports.ModelMessage{Role: ports.RoleAssistant, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Noted."}}})
+	}
+	messages = append(messages, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText,
+		Text: aiexclusion.Filter(question)}}})
+	return a.converse(ctx, conversation{token: q.Token, agent: Agent, system: a.Prompt.Text, prompt: a.Prompt.Name(), promptSHA256: a.Prompt.SHA256,
+		messages: messages, tools: tools, offered: names, propose: q.Propose, earlier: q.Earlier,
+		limit: cmpOr(q.MaxReads, cmpOr(a.MaxToolCalls, DefaultToolCalls)), maxTokens: cmpOr(a.MaxTokens, DefaultMaxTokens)}, emit)
+}
+
+// conversation is one tool loop's inputs: a turn's or a run's.
+type conversation struct {
+	token, agent, system string
+	prompt, promptSHA256 string // the prompt's name and hash, as the answer and its proposals record them
+	messages             []ports.ModelMessage
+	tools                *aitool.Registry
+	offered              []string // the tools the model is offered, by name; it may call no other
+	propose              []string
+	earlier              []aitool.Fact
+	limit, maxTokens     int
+	budget               int // the most tokens the loop may use in all; 0: no cap of its own
+}
+
+// converse runs the tool loop: the model asked, its tool calls run as the token's person, its proposals relayed, until
+// it answers in the answer's shape, grounded (AI-08), or its reads or its budget run out.
+func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Event) error) (Answer, error) {
+	tools, limit, maxTokens, messages := c.tools, c.limit, c.maxTokens, c.messages
+	out := Answer{Prompt: c.prompt, PromptSHA256: c.promptSHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{},
 		Segments: []Segment{}, Cited: []string{}}
 	facts, earlier := map[string]aitool.Fact{}, map[string]aitool.Fact{}
-	for _, f := range q.Earlier {
+	for _, f := range c.earlier {
 		earlier[f.ID] = f
 	}
 	known := func(id string) (aitool.Fact, bool) {
@@ -264,31 +298,24 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 			}
 		}
 	}
-	question := q.Text
-	if q.Context != "" {
-		question = "About " + q.Context + ":\n\n" + q.Text
-	}
-	messages := filtered(q.History)
-	if note := rejectedNote(q.Rejected); note != "" {
-		messages = append(messages, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: note}}},
-			ports.ModelMessage{Role: ports.RoleAssistant, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Noted."}}})
-	}
-	messages = append(messages, ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText,
-		Text: aiexclusion.Filter(question)}}})
 	if err := emit(Event{Kind: EventStatus, Text: "Reading the books"}); err != nil {
 		return out, err
 	}
 	model := ""
 	for calls := 0; ; {
-		res, err := a.Backend.CallModel(ctx, q.Token, ModelCall{Agent: Agent, Classes: []string{aipolicy.Business},
-			Request: ModelRequest{System: a.Prompt.Text, Messages: messages, Tools: names, Proposals: q.Propose, Output: answerOutput,
+		res, err := a.Backend.CallModel(ctx, c.token, ModelCall{Agent: c.agent, Classes: []string{aipolicy.Business},
+			Request: ModelRequest{System: c.system, Messages: messages, Tools: c.offered, Proposals: c.propose, Output: answerOutput,
 				MaxTokens: maxTokens}})
 		if err != nil {
 			return out, err
 		}
 		model = res.Response.Model
-		out.Runs = append(out.Runs, res.Run)
+		out.Runs, out.Model = append(out.Runs, res.Run), model
 		out.Usage = addUsage(out.Usage, res.Response.Usage)
+		if used := out.Usage.Input + out.Usage.Output; c.budget > 0 && used > int64(c.budget) {
+			out.Text, out.Stop = fmt.Sprintf("I stopped: the run used more than its %d tokens.", c.budget), StopBudget
+			break
+		}
 		messages = append(messages, ports.ModelMessage{Role: ports.RoleAssistant, Parts: res.Response.Parts})
 		var asked []ports.ModelPart
 		for _, p := range res.Response.Parts {
@@ -328,8 +355,8 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 		results := make([]ports.ModelPart, 0, len(asked))
 		for _, call := range asked {
 			calls++
-			if taskType, ok := proposing(q.Propose, call.Tool); ok {
-				part, record, made := a.propose(ctx, q.Token, taskType, model, call)
+			if taskType, ok := proposing(c.propose, call.Tool); ok {
+				part, record, made := a.propose(ctx, c.token, taskType, model, c.prompt, call)
 				out.ToolCalls = append(out.ToolCalls, record)
 				if made != nil {
 					out.Proposals = append(out.Proposals, *made)
@@ -340,7 +367,7 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 				}
 				continue
 			}
-			part, record, read := a.runTool(ctx, q.Token, tools, call, known)
+			part, record, read := a.runTool(ctx, c.token, tools, c.offered, call, known)
 			keep(read)
 			out.ToolCalls = append(out.ToolCalls, record)
 			results = append(results, part)
@@ -358,7 +385,7 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 
 // runTool runs one tool call the model made: calc here, every other tool through the API. A refusal goes back to the
 // model as an error in the API's words, for it to say why or to try another way.
-func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Registry, call ports.ModelPart,
+func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Registry, offered []string, call ports.ModelPart,
 	known func(string) (aitool.Fact, bool)) (ports.ModelPart, ToolCall, []aitool.Fact) {
 	start := a.now()
 	record := ToolCall{Tool: call.Tool, Input: call.Input, Outcome: OutcomeRead}
@@ -367,7 +394,7 @@ func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Reg
 		return ports.ModelPart{Kind: ports.PartToolResult, CallID: call.CallID, Tool: call.Tool, IsError: true, Text: aiexclusion.Filter(words)}, record, nil
 	}
 	tool, ok := tools.ByModelName(call.Tool)
-	if !ok {
+	if !ok || !slices.Contains(offered, tool.Name) {
 		return failed("AI-TOOL-01", call.Tool+" is not a tool you have. Use one of the tools you were given.")
 	}
 	record.Tool, record.Version = tool.Name, tool.Version
@@ -444,7 +471,7 @@ func proposing(types []string, tool string) (string, bool) {
 // propose relays a propose_ call to the API (design D7): what became of the proposal goes back to the model, Pending
 // with the platform's summary or Invalid with why, and a refusal in the API's words. Nothing changes until a person
 // approves it, which the model is told.
-func (a *Assistant) propose(ctx context.Context, token, taskType, model string, call ports.ModelPart) (ports.ModelPart, ToolCall, *Proposed) {
+func (a *Assistant) propose(ctx context.Context, token, taskType, model, prompt string, call ports.ModelPart) (ports.ModelPart, ToolCall, *Proposed) {
 	start := a.now()
 	record := ToolCall{Tool: call.Tool, Input: call.Input, Outcome: OutcomeRead}
 	failed := func(code, words string) (ports.ModelPart, ToolCall, *Proposed) {
@@ -461,7 +488,7 @@ func (a *Assistant) propose(ctx context.Context, token, taskType, model string, 
 		return failed("AI-PROPOSAL-03", call.Tool+" takes a payload, your reasons and the records you relied on.")
 	}
 	made, err := a.Backend.Propose(ctx, token, Proposal{TaskType: taskType, Payload: in.Payload, Rationale: in.Rationale, Evidence: in.Evidence,
-		Model: cmpOrString(model, "unknown"), Prompt: a.Prompt.Name(), Revises: in.Revises})
+		Model: cmpOrString(model, "unknown"), Prompt: prompt, Revises: in.Revises})
 	var p *Problem
 	if errors.As(err, &p) {
 		return failed(p.Code, strings.TrimSpace(p.Detail+" "+p.Fix))

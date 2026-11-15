@@ -72,6 +72,13 @@ type Kit struct {
 	AssistantURL   string
 	AssistantToken func(ctx context.Context) (string, error)
 	AssistantHTTP  *http.Client
+	// AgentModel is the API's internal operations as the worker calls them for a scheduled agent's model step
+	// (PRD-001 rev 0.281; p1-scheduled-agents design D5): their URL, the worker's token for them (of the class
+	// agents.ModelClass) and the client it is reached through; no URL: the runs stay deterministic, saying the model was
+	// not used.
+	AgentModelURL   string
+	AgentModelToken func(ctx context.Context) (string, error)
+	AgentModelHTTP  *http.Client
 	// Screening screens what the AI sends a model and what it answers (AI-18, AI-P7; p1-ai-assistant design D8): Model
 	// Armor in the cloud, local mode's stub of it; nil: no AI call is sent (fail closed).
 	Screening ports.Screening

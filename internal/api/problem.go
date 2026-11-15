@@ -283,6 +283,7 @@ var codeFacts = map[string]struct {
 	CodeAIFeedbackMasked:          {409, "Masked feedback cannot join the golden set"},
 	CodeAIFeedbackDone:            {409, "The feedback was reviewed already"},
 	CodeAIService:                 {503, "The AI service did not answer"},
+	CodeAgentRunStep:              {409, "The run may not ask the model"},
 	CodeScreenIncomplete:          {503, "Screening did not finish"},
 	CodeToolElse:                  {422, "Not a tool the API runs"},
 	CodeToolRefused:               {422, "The tool's read was refused"},

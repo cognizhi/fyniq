@@ -33,9 +33,10 @@ components:
       additionalProperties: false
       properties:
         agent:
-          description: "The agent the call is for: its route decides the connection and model (AI-74)."
+          description: "The agent the call is for: its route decides the connection and model (AI-74). A turn's is chat; a scheduled agent's run's is the run's agent."
           enum:
             - chat
+            - company_secretary
           examples:
             - chat
           type: string
@@ -342,6 +343,150 @@ components:
         - facts
         - omitted
         - ledger_revision
+      type: object
+    AgentRunFinding:
+      additionalProperties: false
+      properties:
+        detail:
+          description: What, why and what to do next.
+          maxLength: 2000
+          type: string
+        due_on:
+          description: When it is due.
+          examples:
+            - "2027-01-31"
+          format: date
+          type: string
+        evidence:
+          description: The records and documents behind it.
+          items:
+            type: string
+          maxItems: 50
+          type:
+            - array
+            - "null"
+        key:
+          description: The finding's stable key.
+          examples:
+            - calendar:gst_f5:2027-01-31
+          maxLength: 200
+          type: string
+        next:
+          description: The next step.
+          maxLength: 500
+          type: string
+        pack:
+          description: The statutory pack read.
+          examples:
+            - sg-gst@2026.1
+          maxLength: 100
+          type: string
+        rule:
+          description: The rule it applies.
+          examples:
+            - gst.return-due
+          maxLength: 200
+          type: string
+        source:
+          description: The rule's source.
+          maxLength: 500
+          type: string
+        status:
+          description: "Its status: ✔, ⚠, ✖, ⏰ or Not assessed."
+          enum:
+            - ok
+            - review
+            - blocked
+            - due
+            - not_assessed
+          examples:
+            - due
+          type: string
+        task:
+          description: Its compliance task.
+          maxLength: 64
+          type: string
+        title:
+          description: In plain words.
+          examples:
+            - File the GST return
+          maxLength: 300
+          type: string
+        window:
+          description: "The deadline window it is in: 30, 14, 7 or 1 days ahead, or overdue."
+          examples:
+            - "14"
+          maxLength: 20
+          type: string
+      required:
+        - key
+        - status
+        - title
+      type: object
+    AgentRunModelOutcome:
+      additionalProperties: false
+      properties:
+        model:
+          description: The model the step ran on, as its provider reported it.
+          examples:
+            - claude-opus-5-5
+          type: string
+        proposals:
+          description: The proposals it made, each waiting for a person or invalid.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        stop:
+          description: How it ended.
+          enum:
+            - answered
+            - tool_limit
+            - budget
+          examples:
+            - answered
+          type: string
+        text:
+          description: "The model's words for the run report, as written: labelled AI wherever they are shown."
+          type: string
+        tokens:
+          description: The tokens the step used.
+          examples:
+            - 12000
+          format: int64
+          type: integer
+        tool_calls:
+          description: The reads it made.
+          examples:
+            - 4
+          format: int64
+          type: integer
+      required:
+        - model
+        - text
+        - tokens
+        - tool_calls
+        - proposals
+        - stop
+      type: object
+    AgentRunModelStep:
+      additionalProperties: false
+      properties:
+        findings:
+          description: The run's deterministic findings.
+          items:
+            $ref: "#/components/schemas/AgentRunFinding"
+          maxItems: 500
+          type: array
+        organisation_id:
+          description: The run's organisation.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+      required:
+        - organisation_id
+        - findings
       type: object
     Fact:
       additionalProperties: false
@@ -675,7 +820,7 @@ components:
         - code
       type: object
 info:
-  description: "The operations only the AI service calls (PRD-001 §9.3 rev 0.277): the model calls of the assistant's turns, run by the API's model router so the provider keys, the budgets and the metering stay in the API. Never routed by the edge. Each call carries the AI service's service token (X-Fyniq-Service-Token) and the turn's delegated read token (Authorization: Bearer fyai_…), which names the person the turn is for."
+  description: "The operations only the AI service calls (PRD-001 §9.3 rev 0.277): the model calls, reads and proposals of the assistant's turns and the scheduled agents' runs, run by the API so the provider keys, the budgets and the metering stay in the API. Never routed by the edge. Each call carries the AI service's service token (X-Fyniq-Service-Token) and the turn's or the run's delegated token (Authorization: Bearer fyai_…), which names the person it is for. The one exception is runAgentModel, which the worker calls with its own service token alone (rev 0.281)."
   license:
     identifier: MIT
     name: MIT
@@ -683,6 +828,81 @@ info:
   version: 0.0.0 # x-release-please-version
 openapi: 3.1.0
 paths:
+  /internal/v1/agent-runs/{run_id}/model:
+    post:
+      description: "The worker's one call to the API (PRD-001 rev 0.281), with its own service token and no other: a scheduled agent's run's model step (AI-64). The API checks the run is running, its skill unchanged and the agent still on, unpaused, with the AI on and the person it acts for still an Owner. It then issues the run's delegated token, reading as that Owner with the skill's tools alone and proposing only its outputs that are on (AI-63), and asks the AI service with the skill, the findings and the reasons people rejected the agent's earlier proposals (AI-14), within the run's caps (AI-67). The model's words come back grounded and screened; the token ends as the step does. Side effects: the run's grant, and whatever the AI service's model calls and proposals record through the API."
+      operationId: runAgentModel
+      parameters:
+        - description: The run.
+          in: path
+          name: run_id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRunModelStep"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunModelOutcome"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask the model for a scheduled agent's run
+      tags:
+        - Assistant
+      x-fyniq-error-codes:
+        - AI-AGENT-01
+        - AI-ASSISTANT-02
+        - AI-SCREEN-02
+        - API-AUTH-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
   /internal/v1/model-calls:
     post:
       description: "Runs the agent's route for the turn's person (AI-74, AI-76): the AI switch, the budgets (AI-86), the data-class policy for the classes the AI service names and every class the turn has read (AI-83), failover only to an eligible step, and the record of every attempt in the AI activity log (AI-12). The provider keys stay in the API (PRD-001 §9.3 rev 0.277)."

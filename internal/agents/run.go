@@ -123,7 +123,7 @@ func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) 
 			why = "the agent's skill changed since the run was queued; its next slot runs the new one"
 		} else if st, err = Enabled(ctx, u, skill, now); err != nil {
 			return err
-		} else if why, err = skipped(ctx, u, st, run, now); err != nil {
+		} else if why, err = Skipped(ctx, u, st, run, now); err != nil {
 			return err
 		}
 		if why != "" {
@@ -153,8 +153,8 @@ func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) 
 	return nil
 }
 
-// skipped is why a run may not run now, or "".
-func skipped(ctx context.Context, u storage.UnitOfWork, st State, run storage.AgentRun, now time.Time) (string, error) {
+// Skipped is why a run may not run now, or "": as it starts, and again as it asks the model (the API's model step).
+func Skipped(ctx context.Context, u storage.UnitOfWork, st State, run storage.AgentRun, now time.Time) (string, error) {
 	switch {
 	case !st.On:
 		return "the agent is off", nil

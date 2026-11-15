@@ -191,6 +191,7 @@ services:
       FYNIQ_DATABASE_URL: postgres://fyniq_worker:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
       FYNIQ_DATA_DIR: /home/nonroot/fyniq          # the shared volume (x-shared-data)
       FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # revokes a user's tokens after a change (AI-38)
+      FYNIQ_API_INTERNAL_URL: http://api:8080/internal/v1   # a scheduled agent's model step, asked of the API (rev 0.281)
     healthcheck: *health
 
   executor:                                   # own identity and database role (§12.3)

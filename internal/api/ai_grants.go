@@ -48,17 +48,17 @@ func (a *API) issueAIGrant(ctx context.Context, u storage.UnitOfWork, org, user,
 // the skill's tools that the release's registry has, all within the skill's permission profile, and may propose only the
 // skill's outputs that are task types on for the organisation, and only while one is. The AI exclusions and the masking
 // apply to its reads as to a turn's. It ends with the run (endAIGrant).
-func (a *API) issueRunGrant(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, run storage.AgentRun, skill agents.Skill) (string, error) {
+func (a *API) issueRunGrant(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, run storage.AgentRun, skill agents.Skill) (string, storage.AIGrant, error) {
 	if run.Status != storage.AgentRunRunning || run.Agent != skill.Name {
-		return "", fmt.Errorf("the run %s of %s is %s: only a running run of the skill's agent reads", run.ID, run.Agent, run.Status)
+		return "", storage.AIGrant{}, fmt.Errorf("the run %s of %s is %s: only a running run of the skill's agent reads", run.ID, run.Agent, run.Status)
 	}
 	token, hash, err := authn.NewAIToken(org)
 	if err != nil {
-		return "", err
+		return "", storage.AIGrant{}, err
 	}
 	on, err := a.proposable(ctx, u)
 	if err != nil {
-		return "", err
+		return "", storage.AIGrant{}, err
 	}
 	var types []string
 	for _, t := range skill.Proposes(a.catalogue()) {
@@ -67,11 +67,12 @@ func (a *API) issueRunGrant(ctx context.Context, u storage.UnitOfWork, org uuid.
 		}
 	}
 	now := a.deps.Clock.Now()
-	if _, err := u.AIGrants().Issue(ctx, storage.AIGrant{TokenHash: hash, UserID: run.ActsFor, Run: run.ID, Tools: skill.Offered(aitool.Default()),
-		TaskTypes: types, IssuedAt: now, ExpiresAt: now.Add(authn.MaxRunDelegated), Propose: len(types) > 0}); err != nil {
-		return "", err
+	g, err := u.AIGrants().Issue(ctx, storage.AIGrant{TokenHash: hash, UserID: run.ActsFor, Run: run.ID, Tools: skill.Offered(aitool.Default()),
+		TaskTypes: types, IssuedAt: now, ExpiresAt: now.Add(authn.MaxRunDelegated), Propose: len(types) > 0})
+	if err != nil {
+		return "", storage.AIGrant{}, err
 	}
-	return token, nil
+	return token, g, nil
 }
 
 // endAIGrant ends a turn's or a run's delegated token, so nothing reads with it after the turn or the run.
