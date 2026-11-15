@@ -72,7 +72,7 @@ export function PolicyLibrary({ kind = "policy", title = "Policy library" }: { k
       {list.data && (
         <ul className="fy-list" aria-labelledby={`${id}-policies`}>
           {list.data.map((p) => (
-            <li key={p.key} className="fy-list__item">
+            <li key={p.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title">{p.title}</span>
                 <span className="fy-list__meta whitespace-normal">
@@ -258,7 +258,7 @@ export function PoliciesToAcknowledge() {
       </div>
       <ul className="fy-list" aria-labelledby={`${id}-ack`}>
         {waiting.map((p) => (
-          <li key={p.key} className="fy-list__item">
+          <li key={p.key} className="fy-list__item fy-list__item--wrap">
             <span className="fy-list__main">
               <span className="fy-list__title">{p.title}</span>
               <span className="fy-list__meta">Version {p.mine!.version}</span>

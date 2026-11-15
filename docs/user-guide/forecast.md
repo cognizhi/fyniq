@@ -47,6 +47,9 @@ needs no approval and posts nothing.
 
 ## Read the results
 
+The results come first on the page. Once a forecast is recorded its plan folds below them: **Show the plan it was
+worked out from** opens it, read-only. A draft's plan stays open below its results, for editing.
+
 Choose a scenario above its results. None of the funding planned is received yet, so the page shows each figure
 **without the funding planned** first, and with it beside:
 
