@@ -160,6 +160,8 @@ type UnitOfWork interface {
 	AIProposals() AIProposals
 	// AgentRuns are the scheduled agents' runs and their reports (§9.12, AI-65).
 	AgentRuns() AgentRuns
+	// ComplianceTasks are the tasks the agents' findings and proposals raise, one open per finding (AI-65).
+	ComplianceTasks() ComplianceTasks
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).

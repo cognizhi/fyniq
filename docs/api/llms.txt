@@ -272,6 +272,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/risks/{risk_id}/reviews` (reviewRisk): Review a risk
 - `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
 - `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
+- `GET /v1/compliance/tasks` (listComplianceTasks): List the compliance tasks
+- `GET /v1/compliance/tasks/{task_id}` (getComplianceTask): Read a compliance task
+- `POST /v1/compliance/tasks/{task_id}/dismiss` (dismissComplianceTask): Dismiss a compliance task
+- `POST /v1/compliance/tasks/{task_id}/done` (completeComplianceTask): Mark a compliance task done
 - `GET /v1/compliance/transfers` (getTransfers): Get the overseas transfers of personal data
 - `POST /v1/compliance/transfers` (createTransfer): Record an overseas transfer's assessment
 - `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "ComplianceTask.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTMifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ComplianceTaskPage",
+  "type": "object"
+}

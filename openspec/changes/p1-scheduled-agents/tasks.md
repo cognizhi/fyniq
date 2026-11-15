@@ -41,9 +41,17 @@
   fingerprint, ledger revision, pack versions, knowledge-base snapshot, findings, summary and the model's words) is
   written once, as it ends. The API may queue Run now and read. The table is in the tenant export and the data
   inventory (`agent-runs`).
-- [ ] 3.2 `compliance_task`: migration, guard (one open task per finding), grants, port and adapter. Also the API's
+- [x] 3.2 `compliance_task`: migration, guard (one open task per finding), grants, port and adapter. Also the API's
   list, get, done and dismiss operations, the permission matrix's row and attack tests (design D7). Tests
   `// req: AI-65`.
+  As built:
+  - Migration 000385 under guard FY351, with one open task per finding (a unique partial index, `STORAGE-DUPLICATE-01`).
+  - The worker raises a run's tasks, updates them while open and clears them; the executor raises an approved
+    proposal's.
+  - The API's `/v1/compliance/tasks` lists and reads them under V on the AI company secretary's row. Done and dismiss
+    need C there, which the Owner may use, and a person with a Fyniq user; they work over If-Match, and a dismissal
+    needs a reason (`TASK-01`).
+  - A closed task stays closed. The tenant export and the data inventory (`compliance-tasks`) hold the table.
 
 ## 4. Schedules
 

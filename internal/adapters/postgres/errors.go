@@ -216,6 +216,7 @@ var fyCodes = map[string]string{
 	"FY340": storage.CodeAIGrant,           // a delegated read grant changed, removed or ended twice (000366)
 	"FY341": storage.CodeAIConversation,    // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
 	"FY342": storage.CodeAIProposal,        // an AI proposal's step out of its lifecycle or by another role, a change to what it proposed, or a delete (000375)
+	"FY351": storage.CodeComplianceTask,    // a compliance task changed by another role, about something else, once closed, or removed (000385)
 	"FY350": storage.CodeAgentRun,          // an agent's run out of its course, by another role than the worker, changed, reported early, or removed (000384)
 	"FY336": storage.CodeAIBudget,          // an AI budget or reservation changed as it may not (000359)
 	"FY337": storage.CodeAIConnectionSpent, // a connection's AI budget spent this month (000359)
@@ -265,6 +266,7 @@ var fyCodes = map[string]string{
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
 	"ai_feedback_once":                          {storage.CodeDuplicate, "the person rated this answer already"},
+	"compliance_task_open":                      {storage.CodeDuplicate, "the finding has an open task already: update it, or close it first"},
 	"ai_proposal_payload":                       {storage.CodeInvalid, "the proposal's payload is not a JSON object of at most 64 KiB, or its SHA-256 is not the payload's"},
 	"ai_proposal_approved_payload":              {storage.CodeInvalid, "what was approved is not a JSON object of at most 64 KiB, or its SHA-256 is not its own"},
 	"ai_proposal_expiry":                        {storage.CodeInvalid, "a proposal expires after it is made and within 72 hours"},

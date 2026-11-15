@@ -1101,6 +1101,27 @@ type FyniqCloseChecklistTemplate struct {
 	WrittenAt      time.Time
 }
 
+type FyniqComplianceTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FindingKey     string
+	Title          string
+	Detail         string
+	OwnerRole      *string
+	OwnerUser      *uuid.UUID
+	DueOn          pgtype.Date
+	Escalated      bool
+	Source         string
+	RunID          *uuid.UUID
+	ProposalID     *uuid.UUID
+	Status         string
+	Reason         string
+	CreatedAt      time.Time
+	ClosedAt       *time.Time
+	ClosedBy       *uuid.UUID
+	Version        int32
+}
+
 type FyniqConnectorRoute struct {
 	ConnectorID uuid.UUID
 	Owner       uuid.UUID
