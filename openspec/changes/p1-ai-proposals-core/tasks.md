@@ -34,9 +34,16 @@
 
 ## 3. Proposing
 
-- [ ] 3.1 `POST /internal/v1/proposals` with the turn's token and its `propose` capability: the switch, the catalogue,
+- [x] 3.1 `POST /internal/v1/proposals` with the turn's token and its `propose` capability: the switch, the catalogue,
   the enabled flag, the schema and limits, the requester's right, then the dry run in a rolled-back transaction, its
   impact and base versions; Invalid with a reason (design D3). Tests `// req: AI-P3`, `// req: AI-01`.
+  As built (`proposeAITask`): the capability is the grant's `propose`, set as it is issued while a task type is on
+  (migration 000376), and the scope `ai.propose`, which no public operation reads. A refusal of the turn, the task type
+  or the switch keeps nothing; a payload its schema or limits refuse, a person without the right, screening's finding in
+  what the model wrote (screened as an answer) or a dry run that refuses keeps an Invalid proposal with why. The dry run
+  is the store's preview, rolled back after its deferred checks. Each task type's command (`proposal.Command`: its
+  policy, measure and dry run) arrives with it; a test-only command exercises the path. The approval request attaches in
+  task 4.1.
 - [ ] 3.2 The AI service's `propose_<type>` tools for the enabled types, relaying the proposal or its refusal (design
   D7). Tests `// req: AI-P3`, `// req: ai/proposals The orchestrator holds no write credential`.
 

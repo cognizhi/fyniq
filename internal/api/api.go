@@ -100,6 +100,9 @@ type Deps struct {
 	// Catalogue is the AI's task catalogue (§9.6, AI-32; p1-ai-proposals-core design D1); nil: the release's,
 	// proposal.Default().
 	Catalogue *proposal.Catalogue
+	// Commands are the domain commands of the catalogue's task types (p1-ai-proposals-core design D3); nil: none, as each
+	// task type arrives with its own.
+	Commands proposal.Commands
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string

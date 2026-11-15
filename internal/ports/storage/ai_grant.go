@@ -21,6 +21,8 @@ type AIGrant struct {
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 	EndedAt   *time.Time
+	// Propose is whether the turn may make proposals (AI-P3, design D3): set as it is issued, while a task type is on.
+	Propose bool
 }
 
 // AIGrants keeps an organisation's delegated read grants.
@@ -42,6 +44,7 @@ type AIGrantHolder struct {
 	Turn      uuid.UUID
 	Roles     []string
 	ExpiresAt time.Time
+	Propose   bool
 }
 
 // AIGrantLookup resolves a grant's token outside any unit of work, for authentication: ports.ErrNotFound when it is

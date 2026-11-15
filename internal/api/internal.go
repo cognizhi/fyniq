@@ -47,6 +47,7 @@ func (a *API) registerInternal(mux humago.Mux) {
 	a.internal.UseMiddleware(a.requestContext, a.internalAuthenticate)
 	registerModelCalls(a)
 	registerToolCalls(a)
+	registerProposals(a)
 }
 
 // internalAuthenticate accepts a call only from the AI service, for a live turn: its service token, then the turn's

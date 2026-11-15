@@ -188,23 +188,9 @@ func findingsOf(p *Problem) string {
 
 // checkToolInput refuses an input the tool's schema does not take, naming the field.
 func checkToolInput(tool aitool.Tool, input map[string]any) error {
-	var s huma.Schema
-	if err := json.Unmarshal(tool.InputSchema, &s); err != nil {
+	words, err := schemaErrors(tool.InputSchema, input, "input")
+	if err != nil || len(words) == 0 {
 		return err
-	}
-	s.PrecomputeMessages()
-	res := &huma.ValidateResult{}
-	if input == nil {
-		input = map[string]any{}
-	}
-	huma.Validate(huma.NewMapRegistry("#/components/schemas/", huma.DefaultSchemaNamer), &s, huma.NewPathBuffer([]byte("input"), 0),
-		huma.ModeWriteToServer, input, res)
-	if len(res.Errors) == 0 {
-		return nil
-	}
-	var words []string
-	for _, e := range res.Errors {
-		words = append(words, e.Error())
 	}
 	return problem(CodeToolInput, tool.Name+" does not take this input: "+strings.Join(words, "; ")+".",
 		"Call it with the input its definition describes")

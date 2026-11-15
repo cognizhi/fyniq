@@ -33,7 +33,8 @@ const aIGrantFor = `-- name: AIGrantFor :one
 SELECT coalesce(g.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user_id,
        coalesce(g.turn_id, '00000000-0000-0000-0000-000000000000')::uuid AS turn_id,
        coalesce(g.roles, '{}')::text[] AS roles,
-       coalesce(g.expires_at, 'epoch')::timestamptz AS expires_at
+       coalesce(g.expires_at, 'epoch')::timestamptz AS expires_at,
+       coalesce(g.propose, false)::boolean AS propose
   FROM fyniq.ai_grant_for($1::uuid, $2::bytea, $3::timestamptz) AS g
 `
 
@@ -48,6 +49,7 @@ type AIGrantForRow struct {
 	TurnID    uuid.UUID
 	Roles     []string
 	ExpiresAt time.Time
+	Propose   bool
 }
 
 // A nil user means no live grant.
@@ -59,6 +61,7 @@ func (q *Queries) AIGrantFor(ctx context.Context, arg AIGrantForParams) (AIGrant
 		&i.TurnID,
 		&i.Roles,
 		&i.ExpiresAt,
+		&i.Propose,
 	)
 	return i, err
 }
@@ -81,9 +84,9 @@ func (q *Queries) EndAIGrant(ctx context.Context, arg EndAIGrantParams) (int64, 
 }
 
 const insertAIGrant = `-- name: InsertAIGrant :one
-INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, issued_at, expires_at)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at, classes
+INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, issued_at, expires_at, propose)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at, classes, propose
 `
 
 type InsertAIGrantParams struct {
@@ -92,6 +95,7 @@ type InsertAIGrantParams struct {
 	TurnID    uuid.UUID
 	IssuedAt  time.Time
 	ExpiresAt time.Time
+	Propose   bool
 }
 
 func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (FyniqAiGrant, error) {
@@ -101,6 +105,7 @@ func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (F
 		arg.TurnID,
 		arg.IssuedAt,
 		arg.ExpiresAt,
+		arg.Propose,
 	)
 	var i FyniqAiGrant
 	err := row.Scan(
@@ -113,6 +118,7 @@ func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (F
 		&i.ExpiresAt,
 		&i.EndedAt,
 		&i.Classes,
+		&i.Propose,
 	)
 	return i, err
 }

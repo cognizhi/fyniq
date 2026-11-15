@@ -198,6 +198,7 @@ ai_grant | issued_at | timestamp with time zone | not null |
 ai_grant | expires_at | timestamp with time zone | not null | 
 ai_grant | ended_at | timestamp with time zone | null | 
 ai_grant | classes | text[] | not null | '{}'::text[]
+ai_grant | propose | boolean | not null | false
 ai_model | organisation_id | uuid | not null | current_org()
 ai_model | id | uuid | not null | uuidv7()
 ai_model | connection_id | uuid | not null | 
@@ -2633,6 +2634,7 @@ ai_grant | ai_grant_issued_at_not_null | NOT NULL issued_at
 ai_grant | ai_grant_lifetime | CHECK (((expires_at > issued_at) AND (expires_at <= (issued_at + '00:05:00'::interval))))
 ai_grant | ai_grant_organisation_id_not_null | NOT NULL organisation_id
 ai_grant | ai_grant_pkey | PRIMARY KEY (organisation_id, id)
+ai_grant | ai_grant_propose_not_null | NOT NULL propose
 ai_grant | ai_grant_token | UNIQUE (organisation_id, token_hash)
 ai_grant | ai_grant_token_hash_not_null | NOT NULL token_hash
 ai_grant | ai_grant_token_sha256 | CHECK ((length(token_hash) = 32))
@@ -7534,8 +7536,8 @@ ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalo
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
 ai_conversation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2c9e52c788d9236261bb715b2542186f
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
-ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_id uuid, OUT turn_id uuid, OUT roles text[], OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 849d7114d3f03ce72b04acfd7752af7b
-ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9192d71bbd7b7a3c49a44519d076a1e
+ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_id uuid, OUT turn_id uuid, OUT roles text[], OUT expires_at timestamp with time zone, OUT propose boolean) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 414a79de5b09130d21aa6fa49d4ceca4
+ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 40c869a0553155efacc78344366824c1
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
 ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 07f6ab3b5f0667038bcdcc48a7307b64
