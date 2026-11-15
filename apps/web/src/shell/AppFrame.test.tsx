@@ -46,6 +46,18 @@ describe("the app frame", () => {
     await noViolations(document.body);
   });
 
+  // In compact, the top bar keeps the title, search and the assistant; More holds the appearance, help and signing out,
+  // for every person, so the top bar fits the folded foldable's 344 px (MASTER.md §5.1).
+  // req: FR-UX-37
+  it("puts appearance, help and signing out in More, for every person", async () => {
+    renderFrame({ roles: [], features: undefined });
+    await screen.findByRole("banner");
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const more = await screen.findByRole("dialog", { name: "More" });
+    for (const name of ["Appearance", "Help", "Sign out"]) expect(within(more).getByRole("button", { name })).toBeTruthy();
+    await noViolations(more);
+  });
+
   // req: FR-UX-40
   it("shows a person with no role only what every signed-in person may see", async () => {
     renderFrame({ roles: [], features: undefined });

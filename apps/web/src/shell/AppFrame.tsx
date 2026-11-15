@@ -113,6 +113,18 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
   const bottom = bottomBar(visible);
   const search = helpText("shell.command-palette");
   const signOut = helpText("auth.sign-out");
+  // personal are the appearance and help menus and signing out: in the top bar, and in compact in More.
+  const personal = (
+    <>
+      <AppearanceMenu />
+      <HelpMenu />
+      <form method="post" action="/api/auth/signout">
+        <button className={buttonVariants({ variant: "ghost", size: "icon" })} type="submit" aria-label={signOut.label} title={signOut.tooltip}>
+          <Icon of={LogOut} size={20} />
+        </button>
+      </form>
+    </>
+  );
   const openPalette = () => {
     setWanted(true);
     setOpen(true);
@@ -193,13 +205,8 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
           </Button>
           {operations}
           {bell}
-          <AppearanceMenu />
-          <HelpMenu />
-          <form method="post" action="/api/auth/signout">
-            <button className={buttonVariants({ variant: "ghost", size: "icon" })} type="submit" aria-label={signOut.label} title={signOut.tooltip}>
-              <Icon of={LogOut} size={20} />
-            </button>
-          </form>
+          {/* In compact, the top bar keeps the page's title, search and the assistant (MASTER.md §5.1): these move to More. */}
+          <span className="fy-from-medium flex items-center gap-[2px]">{personal}</span>
         </div>
       </header>
       <main className="fy-main" id="main" tabIndex={-1}>
@@ -210,29 +217,26 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         {bottom.items.map((n) => (
           <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" />
         ))}
-        {bottom.more && (
-          <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)}>
-            <Icon of={LayoutGrid} />
-            <span>More</span>
-          </button>
-        )}
+        <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)}>
+          <Icon of={LayoutGrid} />
+          <span>More</span>
+        </button>
       </nav>
-      {bottom.more && (
-        <Dialog.Root open={more} onOpenChange={setMore}>
-          <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />
-            <Dialog.Popup data-slot="dialog-popup" className="fixed inset-x-0 bottom-0 z-(--z-modal) max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface-1 p-3 shadow-3">
-              <div className="flex items-center justify-between pb-2">
-                <Dialog.Title className="text-lg font-semibold">More</Dialog.Title>
-                <Dialog.Close className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label="Close">
-                  <Icon of={X} size={20} />
-                </Dialog.Close>
-              </div>
-              <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />
-            </Dialog.Popup>
-          </Dialog.Portal>
-        </Dialog.Root>
-      )}
+      <Dialog.Root open={more} onOpenChange={setMore}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />
+          <Dialog.Popup data-slot="dialog-popup" className="fixed inset-x-0 bottom-0 z-(--z-modal) max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface-1 p-3 shadow-3">
+            <div className="flex items-center justify-between pb-2">
+              <Dialog.Title className="text-lg font-semibold">More</Dialog.Title>
+              <Dialog.Close className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label="Close">
+                <Icon of={X} size={20} />
+              </Dialog.Close>
+            </div>
+            {bottom.more && <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />}
+            <div className="flex items-center gap-1 border-t border-border pt-2">{personal}</div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
       {assistant && (
         <Suspense fallback={null}>
           <AssistantPanel enabled={session.features?.ai_assistant ?? false} mode={mode} context={context} onClearContext={() => setContext(undefined)}
