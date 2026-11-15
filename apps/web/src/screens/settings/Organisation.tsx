@@ -45,6 +45,7 @@ export function valueText(kind: Setting["kind"], v: string): string {
     case "choice":
       return choiceText(v);
     case "fields":
+    case "task_types":
       return v ? v.split(",").join(", ") : "None";
     default:
       return v;
@@ -102,7 +103,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
         ))}
       </select>
     );
-  const numeric = s.kind !== "text";
+  const numeric = s.kind !== "text" && s.kind !== "fields" && s.kind !== "task_types";
   return (
     <input
       className="fy-input max-w-72"
@@ -127,6 +128,8 @@ function check(s: Setting, v: string): string {
   if (s.kind === "choice") return (s.choices ?? []).includes(t) ? "" : "Choose one of the values offered.";
   if (s.kind === "account_code") return /^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$/.test(t) ? "" : "Enter the code of an account in your chart, such as 6460.";
   if (s.kind === "fields") return /^$|^[a-z][a-z0-9_]{0,40}(\s*,\s*[a-z][a-z0-9_]{0,40})*$/.test(t) ? "" : "Enter field names separated by commas, in lower case with underscores, such as notes, memo.";
+  if (s.kind === "task_types")
+    return /^$|^[a-z]+\.[a-z]+(_[a-z]+)*(\s*,\s*[a-z]+\.[a-z]+(_[a-z]+)*)*$/.test(t) ? "" : "Enter task types separated by commas, as the AI tasks page names them, such as sec.create_task.";
   return "";
 }
 

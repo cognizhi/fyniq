@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10]
+requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32]
 status: draft
 ---
 
@@ -136,15 +136,16 @@ takes, such as INV-0042.
 ## Settings that need a second approver
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
-  incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads and its limits,
-  details in notification email and the sign-out after inactivity need a second approver before they change: they show
+  incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and
+  the changes it may propose, details in notification email and the sign-out after inactivity need a second approver before they change: they show
   **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
 - The AI assistant is the exception when you switch it **off**: that takes effect at once, with no second
   approver, and the AI stops: new requests are refused, and a reply being written stops within seconds.
-  Switching it back on still needs a second approver. AI payroll access turns off at once the same way.
+  Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does
+  taking a change off the changes the AI may propose.
 
 ## Features
 
@@ -188,6 +189,18 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
   part, saying so; ask about one thing at a time.
 - **Questions in one conversation**: 40 unless changed, from 2 to 200. Past 20, the oldest questions are summarised,
   keeping the figures they cited; at the limit, start a new conversation.
+
+## AI task types
+
+- The AI never changes the books itself. It may only propose a change of a kind this release lists, a **task type**.
+  A member who may approve that kind of change decides, and only then does Fyniq make it, in that member's name.
+- **Changes the AI may propose**: none unless changed. Enter the task types to allow, separated by commas, as the
+  release names them, such as `sec.create_task`. A task type the release does not have is refused.
+- Adding a task type needs a second approver. Taking one off, or all of them, takes effect at once, with no second
+  approver: the AI stops offering it.
+- Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank
+  details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a
+  period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
 
 ## Payment terms
 

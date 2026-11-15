@@ -48,6 +48,8 @@ describe("Organisation settings", () => {
     expect(valueText("amount_sgd", "1000.00")).toBe("S$1,000.00");
     expect(valueText("fields", "memo,notes")).toBe("memo, notes");
     expect(valueText("fields", "")).toBe("None");
+    expect(valueText("task_types", "sec.create_task,sec.draft_reminder")).toBe("sec.create_task, sec.draft_reminder");
+    expect(valueText("task_types", "")).toBe("None");
     expect(valueText("percent", "3")).toBe("3%");
   });
 

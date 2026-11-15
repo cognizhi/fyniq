@@ -44233,11 +44233,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description What it holds: switch is "true" or "false"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo.
+             * @description What it holds: switch is "true" or "false"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none.
              * @example days
              * @enum {string}
              */
-            kind: "switch" | "minutes" | "hours" | "days" | "months" | "years" | "count" | "amount_sgd" | "percent" | "text" | "account_code" | "choice" | "fields";
+            kind: "switch" | "minutes" | "hours" | "days" | "months" | "years" | "count" | "amount_sgd" | "percent" | "text" | "account_code" | "choice" | "fields" | "task_types";
             /**
              * @description Its name.
              * @example Payment terms for invoices
@@ -44361,7 +44361,7 @@ export interface components {
              */
             reset?: boolean;
             /**
-             * @description The new value, as its kind writes it; or send reset.
+             * @description The new value, as its kind writes it: at most 200 characters, or 4,000 for a list (fields or task_types); or send reset.
              * @example 45
              */
             value?: string;

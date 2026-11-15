@@ -42847,7 +42847,7 @@ components:
             - sales.payment_terms_days
           type: string
         kind:
-          description: "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo."
+          description: "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none."
           enum:
             - switch
             - minutes
@@ -42862,6 +42862,7 @@ components:
             - account_code
             - choice
             - fields
+            - task_types
           examples:
             - days
           type: string
@@ -43031,10 +43032,10 @@ components:
             - false
           type: boolean
         value:
-          description: The new value, as its kind writes it; or send reset.
+          description: "The new value, as its kind writes it: at most 200 characters, or 4,000 for a list (fields or task_types); or send reset."
           examples:
             - "45"
-          maxLength: 200
+          maxLength: 4000
           type: string
       type: object
     SettlementConversion:

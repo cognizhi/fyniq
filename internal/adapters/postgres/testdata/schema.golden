@@ -4915,7 +4915,11 @@ organisation_setting | organisation_setting_organisation_id_not_null | NOT NULL 
 organisation_setting | organisation_setting_pkey | PRIMARY KEY (organisation_id, id)
 organisation_setting | organisation_setting_recorded_at_not_null | NOT NULL recorded_at
 organisation_setting | organisation_setting_region_fixed | CHECK ((key <> 'data.region'::text))
-organisation_setting | organisation_setting_value_length | CHECK (((length(value) >= 1) AND (length(value) <= 200)))
+organisation_setting | organisation_setting_value_length | CHECK (
+CASE
+    WHEN (key = ANY (ARRAY['ai.exclusions'::text, 'ai.task_types'::text])) THEN (length(value) <= 4000)
+    ELSE ((length(value) >= 1) AND (length(value) <= 200))
+END)
 organisation_setting | organisation_setting_value_not_null | NOT NULL value
 organisation_setting | organisation_setting_version_key | UNIQUE (organisation_id, key, version)
 organisation_setting | organisation_setting_version_not_null | NOT NULL version

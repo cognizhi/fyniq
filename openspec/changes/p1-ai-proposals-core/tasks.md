@@ -8,8 +8,14 @@
   As built: the catalogue ships empty; the never-list matches the words of a type's ID and of its command, and the
   proposal service checks it again by name as each proposal is made (task 3.1); an ID is at most 56 characters, so its
   tool `propose_<id>` fits the 64 characters providers allow.
-- [ ] 1.2 The setting `ai.task_types` (dual controlled, off at once when emptied) and the AI catalogue's versioning in
+- [x] 1.2 The setting `ai.task_types` (dual controlled, off at once when emptied) and the AI catalogue's versioning in
   the release record. Tests `// req: AI-32`, `// req: platform/release-and-versioning AI catalogue`.
+  As built: a new kind `task_types`; each ID must be in the release's catalogue; taking types off, or all of them,
+  applies at once (`settings.Narrows`), and any change that adds one waits for the second approver. The settings table
+  refused an empty value, so emptying or resetting a list (`ai.exclusions` too, a latent bug) failed, and 200 characters
+  held few task types: migrations 000373/000374 let the two lists be empty and run to 4,000, every other setting
+  unchanged. The release record is the evals' report: it names each read tool, task type and system prompt in use at
+  its version and hash.
 
 ## 2. The proposal store
 

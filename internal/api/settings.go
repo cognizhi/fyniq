@@ -32,7 +32,7 @@ type Setting struct {
 	Key                 string          `json:"key" doc:"The setting's key." example:"sales.payment_terms_days"`
 	Group               string          `json:"group" doc:"Where settings show it." example:"Defaults"`
 	Label               string          `json:"label" doc:"Its name." example:"Payment terms for invoices"`
-	Kind                string          `json:"kind" enum:"switch,minutes,hours,days,months,years,count,amount_sgd,percent,text,account_code,choice,fields" doc:"What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo." example:"days"`
+	Kind                string          `json:"kind" enum:"switch,minutes,hours,days,months,years,count,amount_sgd,percent,text,account_code,choice,fields,task_types" doc:"What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none." example:"days"`
 	Value               string          `json:"value" doc:"Its value on the day asked for, as a string." example:"30"`
 	EffectiveFrom       string          `json:"effective_from,omitempty" format:"date" doc:"The day that value took effect; absent while it has the value it shipped with." example:"2026-11-01"`
 	RecommendedValue    string          `json:"recommended_value" doc:"The value it ships with (FR-ORG-08)." example:"30"`
@@ -62,7 +62,7 @@ func (SettingChoice) Schema(huma.Registry) *huma.Schema {
 
 // SettingUpdate changes a setting: a value or a reset, from a day.
 type SettingUpdate struct {
-	Value         *string `json:"value,omitempty" maxLength:"200" doc:"The new value, as its kind writes it; or send reset." example:"45"`
+	Value         *string `json:"value,omitempty" maxLength:"4000" doc:"The new value, as its kind writes it: at most 200 characters, or 4,000 for a list (fields or task_types); or send reset." example:"45"`
 	Reset         bool    `json:"reset,omitempty" doc:"true records the recommended value as a new change, instead of a value." example:"false"`
 	EffectiveFrom string  `json:"effective_from,omitempty" format:"date" doc:"The day it takes effect: today, in the organisation's time zone, or later; today when left out." example:"2026-11-01"`
 }
@@ -350,11 +350,21 @@ func registerSettings(a *API) {
 				if len(bad) > 0 {
 					return nil, invalid(bad)
 				}
-				// A kill switch turns off at once, with no second approver (AI-13); turning it on still needs one.
-				if !d.DualControl || (d.OffAtOnce && value == "false") {
-					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
+				// A task type the AI may propose is one of the release's catalogue (AI-32).
+				if d.Kind == settings.TaskTypes && value != "" {
+					for _, id := range strings.Split(value, ",") {
+						if _, ok := a.catalogue().Get(id); !ok {
+							return nil, invalid([]FieldProblem{{Code: settings.CodeValue, Field: "body.value", Message: id + " is not a task type of this release",
+								Fix: "Choose task types the AI tasks page lists"}})
+						}
+					}
 				}
 				was := settings.On(d, changes, from).Value
+				// A kill switch turns off, or narrows, at once, with no second approver (AI-13, AI-32); turning it on still
+				// needs one.
+				if !d.DualControl || (d.OffAtOnce && settings.Narrows(d, was, value)) {
+					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
+				}
 				c := pendingChange{ObjectType: approval.ObjectSetting, ObjectKey: d.Key, Operation: approval.OpSettingChange,
 					Summary: fmt.Sprintf("Change %s from %s to %s from %s", d.Label, was, value, dateOf(from)),
 					Execute: map[string]any{"value": value, "effective_from": dateOf(from)},

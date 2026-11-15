@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
+summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:5bfabbfaeff8105ffd95e916e7cddaae898646b5cc7081e1e8a16a5920467153
+  - docs/user-guide/organisation-settings.md sha256:23eb212441a3c1d913407f8cc57eef9aa81e41508abf2631e446fb14ae8bf2ed
 data_class: general
 taint: trusted
 status: draft
@@ -14,6 +14,9 @@ schema: kb-schema@1
 compiled_at: 2026-11-15
 aliases:
   - AI payroll access
+  - AI task types
+  - changes the AI may propose
+  - let the AI propose changes
   - assistant limits
   - too many questions
   - fields the AI never reads
@@ -174,6 +177,15 @@ The calendar itself: [[compliance.calendar]].
 - **Questions in one conversation**: 40 unless changed, from 2 to 200. Past 20, the oldest questions are summarised, keeping the figures they cited; at the limit, start a new conversation.
 
 (src: docs/user-guide/organisation-settings.md#ai-limits)
+
+## AI task types
+
+- The AI never changes the books itself: it may only propose a change of a kind the release lists, a **task type**. A member who may approve that kind of change decides, and only then does Fyniq make it, in that member's name.
+- **Changes the AI may propose**: none unless changed. Enter the task types to allow, separated by commas, as the release names them, such as `sec.create_task`; a task type the release does not have is refused.
+- Adding a task type needs a second approver. Taking one off, or all of them, takes effect at once, with no second approver: the AI stops offering it.
+- Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
+
+(src: docs/user-guide/organisation-settings.md#ai-task-types)
 
 ## Payment terms
 
