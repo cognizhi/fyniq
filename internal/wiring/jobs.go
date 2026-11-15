@@ -43,6 +43,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/reportexport"
@@ -74,6 +75,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
 			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
+			return err
+		},
+		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided
+			_, err := proposal.ExpireAll(ctx, k.Store, clock)
 			return err
 		},
 		"pdpa.shred": func(ctx context.Context) error { // §11.8: years past their retention listed, approved runs shredded

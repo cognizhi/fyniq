@@ -101,8 +101,12 @@
   command and Executed are one unit of work, audited as the approver on behalf of the requester with the proposal as
   originator; a refusal rolls it back and records Stale or Failed with why in another. A transient error is retried by
   the outbox. Each task type's command and the executor's grants arrive with it (`proposal.Release`).
-- [ ] 5.2 The worker's job `ai.proposals.expire` and the check C.2 #19 (design D9). Tests
+- [x] 5.2 The worker's job `ai.proposals.expire` and the check C.2 #19 (design D9). Tests
   `// req: ai/proposals Proposal lifecycle`, `// req: C.2 #19`.
+  As built: `proposal.ExpireAll`, every 15 minutes as the worker, moves each Pending proposal past its expiry to Expired,
+  audited. Its approval request expires with it by time (the request's `expires_at` is the proposal's), so nothing has to
+  void it and the worker never touches the approval engine's tables. C.2 #19 (`ai.proposals-waiting`, ⚠) lists each
+  proposal pending more than 48 hours with how long it has waited and when it expires.
 
 ## 6. The screens
 
