@@ -119,9 +119,17 @@
   batch whole by default; the approval names the items kept), what changes, the evidence, and the AI's reasons in an AI
   card. The confirmation says which items the signature covers. The fragment `ProposalReview.html` already shows this
   review, so it was not changed; the guide compiles to `kb/pages/task/ai-proposals-approve.md`.
-- [ ] 6.2 Settings → AI → AI tasks (`ai-tasks`): the catalogue with tiers, limits and status, enabling under dual
+- [x] 6.2 Settings → AI → AI tasks (`ai-tasks`): the catalogue with tiers, limits and status, enabling under dual
   control, and the proposal history; help keys, its guide section, the fragment updated locally. Tests
   `// req: ai/task-catalogue AI tasks page`, `// req: AI-32`, Vitest with axe.
+  As built: `AITasks` at `/inbox/ai-tasks`, the inventory's route, linked from the Inbox's header. **Proposals** is
+  every proposal you may see, filtered by state, each linked to its review. **Catalogue** groups the task types by tier
+  (what each does, its limits, approvers and expiry; **Not in this release** when its command is not built). Each
+  task type is turned on or off through the setting `ai.task_types` over the version shown: on waits for a second
+  approver and links to the request, off is at once. It also shows the never-list and says when the AI is switched
+  off. Building it showed `proposal.Refuse` missing three of §9.6's items: shares and investor rights, a director's
+  balance (rev 0.3), and officers, registers or an obligation marked met (rev 0.6). They are added, with their attack
+  cases. Approval quality waits for p1-ai-proposals after go-live. The fragment's footnote now says off is at once.
 
 ## 7. Evals and controls
 

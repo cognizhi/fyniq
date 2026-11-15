@@ -102,8 +102,9 @@ func TestTheCatalogueLoadsStrictly(t *testing.T) {
 }
 
 // The never-list (§9.6): approving or rejecting anything, payments, payee bank details, users, roles, team mode,
-// policies, the AI catalogue and settings, statutory parameters, reopening, voiding or deleting, filing, exporting and
-// the audit trail can never be proposed. A catalogue file that adds one is refused as it loads, and the proposal service
+// policies, the AI catalogue and settings, statutory parameters, reopening, voiding or deleting, filing, exporting, the
+// audit trail, shares and investor rights, a director's balance, officers and registers, and an obligation marked met
+// can never be proposed. A catalogue file that adds one is refused as it loads, and the proposal service
 // refuses it again by name. Every task type of Appendix E passes.
 // req: ai/task-catalogue Never in the catalogue
 // req: CTL-AI-04
@@ -130,6 +131,16 @@ func TestNothingOnTheNeverListCanBeProposed(t *testing.T) {
 		"org.export_data":           "ExportData",
 		"aud.purge_events":          "PurgeAudit",
 		"sec.draft_document_signed": "SignDocument",
+		"eq.issue_shares":           "IssueShares",
+		"eq.transfer_holding":       "ChangeHolder",
+		"eq.update_instrument":      "UpdateInstrument",
+		"eq.grant_investor_rights":  "GrantInvestorRights",
+		"dir.settle_balance":        "RepayDirectorBalance",
+		"dir.convert_loan":          "ConvertToEquity",
+		"dir.waive_loan":            "WaiveLoan",
+		"sec.appoint_officer":       "AppointOfficer",
+		"sec.update_register":       "UpdateRegister",
+		"sec.mark_obligation_met":   "MarkObligationMet",
 	} {
 		if proposal.Refuse(id, command) == "" {
 			t.Errorf("%s (%s) is not refused", id, command)

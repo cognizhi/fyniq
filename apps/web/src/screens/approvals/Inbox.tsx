@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, Stamp } from "lucide-react";
+import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, ListChecks, Stamp } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { api } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -149,6 +149,10 @@ export function Inbox() {
           <h1 className="fy-h1">Inbox</h1>
           <p className="fy-secondary">What waits for you: requests to approve, your own requests, and the weekly review.</p>
         </div>
+        <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/inbox/ai-tasks">
+          <Icon of={ListChecks} />
+          AI tasks
+        </Link>
       </div>
       <p className="fy-sr" role="status" aria-live="polite">
         {said || (approvals.data ? `${toYou.length} ${toYou.length === 1 ? "approval waits" : "approvals wait"} for you` : "")}

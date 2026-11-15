@@ -40,6 +40,27 @@ status: draft
   the proposal shows **Stale**, with why. Ask the assistant again.
 - **Checks** flags a proposal that has waited more than 48 hours, so it is decided before it expires.
 
+## The AI tasks page
+
+- Open **AI tasks** from the **Inbox**. **Proposals** lists every proposal you may see, newest first; choose a state,
+  such as **Waiting** or **Executed**, to show only those, and open one to see its review.
+- **Catalogue** lists each task type by tier: what it does, the most items one proposal may hold, who approves it, how
+  long a proposal waits before it expires, and whether it is on. A task type this release cannot run yet shows **Not
+  in this release**.
+- **Never proposed** lists what no task type can ever propose, whatever is turned on: approving anything, payments,
+  a payee's bank details, users and roles, approval policies, the AI's own settings, statutory parameters, reopening a
+  period, voiding a posted record, filing with IRAS, CPF or ACRA, exporting the company's data, the audit trail, shares
+  and investor rights, a director's balance, officers and registers, and marking an obligation as met. A person does
+  these.
+- If the AI is switched off, the page says so: it proposes nothing until an Owner switches it on again.
+
+## Turn a task type on or off
+
+- Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in
+  [Organisation settings](organisation-settings.md) does; the page links to the request.
+- **Turn off** takes effect at once: the AI stops proposing it from the next question.
+- Only the people who may change the organisation's settings can turn a task type on or off.
+
 ## Related
 
 - [Approve a change](approvals.md), [The AI assistant](ai-assistant.md) and [Organisation settings](organisation-settings.md).

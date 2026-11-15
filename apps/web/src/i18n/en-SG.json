@@ -60,6 +60,14 @@
       "label": "The AI's reasons",
       "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
     },
+    "ai-tasks.page": {
+      "label": "AI tasks",
+      "tooltip": "What the AI may propose for the organisation, with each task type's limits and approvers, and every proposal it has made."
+    },
+    "ai-tasks.turn": {
+      "label": "Turn a task type on or off",
+      "tooltip": "Turning one on waits for a second approver; turning it off takes effect at once. Each starts off."
+    },
     "assistant.simulate": {
       "label": "Simulate",
       "tooltip": "See the lowest cash balance if this invoice or bill is paid on another day, or not at all. Nothing is saved."
