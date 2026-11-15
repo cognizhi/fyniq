@@ -1167,6 +1167,32 @@ components:
             - {}
           type: object
       type: object
+    AIEvidenceRef:
+      additionalProperties: false
+      properties:
+        id:
+          description: Its ID, or the key it is known by.
+          examples:
+            - agm-2027
+          maxLength: 100
+          minLength: 1
+          type: string
+        kind:
+          description: The kind of record, such as task, invoice or document.
+          examples:
+            - task
+          pattern: ^[a-z][a-z_]{1,40}$
+          type: string
+        title:
+          description: What it is, in a few words.
+          examples:
+            - Hold the AGM
+          maxLength: 200
+          type: string
+      required:
+        - kind
+        - id
+      type: object
     AIFact:
       additionalProperties: false
       properties:
@@ -2359,6 +2385,313 @@ components:
       required:
         - decision
       type: object
+    AIProposalDetail:
+      additionalProperties: false
+      properties:
+        agent:
+          description: The AI that proposed it.
+          examples:
+            - chat
+          type: string
+        approval_id:
+          description: Its approval request, where a person decides it.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f
+          format: uuid
+          type: string
+        approved_items:
+          description: The items approved, when an approval chose some.
+          items:
+            description: An item of the proposal's batch, from 1.
+            examples:
+              - 1
+            maximum: 100
+            minimum: 1
+            type: integer
+          type:
+            - array
+            - "null"
+        decided_at:
+          examples:
+            - "2026-11-15T10:00:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: Who approved or rejected it.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+        description:
+          description: The task type's description, as the model and the approver read it.
+          examples:
+            - Create a compliance task with an owner and a due date from a finding.
+          type: string
+        evidence:
+          description: The records and documents the AI relied on.
+          items:
+            $ref: "#/components/schemas/AIEvidenceRef"
+          type: array
+        execution:
+          description: "What the executor did: its run, the records and entries it made, or the error."
+          examples:
+            - records:
+                - task:0193a3c2
+        expires_at:
+          examples:
+            - "2026-11-18T09:00:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        impact:
+          description: "The dry run's impact: what it would change, as its task type reports it (ledger lines, balances, checks, documents)."
+          examples:
+            - tasks:
+                - change: create
+                  title: Hold the AGM
+        item_list:
+          description: A batch's items, each selectable by its number (AI-32).
+          items:
+            $ref: "#/components/schemas/AIProposalItem"
+          type: array
+        items:
+          description: A batch's items; 0 when it is not a batch.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        model:
+          examples:
+            - claude-opus-5-5
+          type: string
+        payload:
+          description: Exactly what executes once approved.
+          examples:
+            - due_on: "2027-06-30"
+              title: Hold the AGM
+        payload_sha256:
+          description: Its SHA-256, which the approval signs (AI-P5).
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        prompt:
+          examples:
+            - chat@3
+          type: string
+        proposed_at:
+          examples:
+            - "2026-11-15T09:00:00Z"
+          format: date-time
+          type: string
+        rationale:
+          $ref: "#/components/schemas/AIText"
+          description: Why the AI proposes it, in its words, apart from the platform's summary (AI-07).
+        reason:
+          description: Why it is invalid, rejected, stale or failed.
+          examples:
+            - Not this year
+          type: string
+        requested_by:
+          description: The person it was made for.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+        status:
+          enum:
+            - draft
+            - invalid
+            - pending
+            - approved
+            - rejected
+            - expired
+            - superseded
+            - executing
+            - executed
+            - stale
+            - failed
+          examples:
+            - pending
+          type: string
+        summary:
+          description: What it does, in the platform's words (AI-07).
+          examples:
+            - Creates the task Hold the AGM, due 30 June 2027
+          type: string
+        task_name:
+          description: The task type's name in the catalogue.
+          examples:
+            - Create a compliance task
+          type: string
+        task_type:
+          examples:
+            - sec.create_task
+          type: string
+        task_version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+        tier:
+          description: Its risk tier (§9.6).
+          examples:
+            - 1
+          format: int64
+          maximum: 3
+          minimum: 1
+          type: integer
+        you_may_approve:
+          description: Whether you may sign its approval request now.
+          examples:
+            - true
+          type: boolean
+      required:
+        - task_version
+        - description
+        - payload
+        - payload_sha256
+        - item_list
+        - evidence
+        - agent
+        - model
+        - prompt
+        - you_may_approve
+        - id
+        - task_type
+        - task_name
+        - tier
+        - status
+        - requested_by
+        - items
+        - proposed_at
+        - expires_at
+      type: object
+    AIProposalItem:
+      additionalProperties: false
+      properties:
+        item:
+          description: The item, as the task type's schema describes it.
+          examples:
+            - note: Book the room
+        "n":
+          description: Its number, from 1, as an approval names it.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - "n"
+        - item
+      type: object
+    AIProposalPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AIProposalSummary"
+          type: array
+        next_cursor:
+          description: The cursor of the next page; absent on the last.
+          examples:
+            - MDE5M2EzYzItNmQwZS03YTFiLTljNGQtNWU2ZjdhOGI5YzBk
+          type: string
+      required:
+        - items
+      type: object
+    AIProposalSummary:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: Its approval request, where a person decides it.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f
+          format: uuid
+          type: string
+        expires_at:
+          examples:
+            - "2026-11-18T09:00:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        items:
+          description: A batch's items; 0 when it is not a batch.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        proposed_at:
+          examples:
+            - "2026-11-15T09:00:00Z"
+          format: date-time
+          type: string
+        reason:
+          description: Why it is invalid, rejected, stale or failed.
+          examples:
+            - Not this year
+          type: string
+        requested_by:
+          description: The person it was made for.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+        status:
+          enum:
+            - draft
+            - invalid
+            - pending
+            - approved
+            - rejected
+            - expired
+            - superseded
+            - executing
+            - executed
+            - stale
+            - failed
+          examples:
+            - pending
+          type: string
+        summary:
+          description: What it does, in the platform's words (AI-07).
+          examples:
+            - Creates the task Hold the AGM, due 30 June 2027
+          type: string
+        task_name:
+          description: The task type's name in the catalogue.
+          examples:
+            - Create a compliance task
+          type: string
+        task_type:
+          examples:
+            - sec.create_task
+          type: string
+        tier:
+          description: Its risk tier (§9.6).
+          examples:
+            - 1
+          format: int64
+          maximum: 3
+          minimum: 1
+          type: integer
+      required:
+        - id
+        - task_type
+        - task_name
+        - tier
+        - status
+        - requested_by
+        - items
+        - proposed_at
+        - expires_at
+      type: object
     AIQualification:
       additionalProperties: false
       properties:
@@ -2853,6 +3186,118 @@ components:
       required:
         - switch
         - budgets
+      type: object
+    AITaskTypeList:
+      additionalProperties: false
+      properties:
+        task_types:
+          description: "Every task type of the release, a small fixed set: not a paged list."
+          items:
+            $ref: "#/components/schemas/AITaskTypeView"
+          type: array
+      required:
+        - task_types
+      type: object
+    AITaskTypeView:
+      additionalProperties: false
+      properties:
+        approvers:
+          description: The roles that approve it.
+          items:
+            description: A role, as Appendix D names it.
+            examples:
+              - owner
+            type: string
+          type: array
+        built:
+          description: "Whether this release can run it: its command is built."
+          examples:
+            - true
+          type: boolean
+        currency:
+          examples:
+            - SGD
+          type: string
+        description:
+          examples:
+            - Create a compliance task with an owner and a due date from a finding.
+          type: string
+        expiry_hours:
+          examples:
+            - 72
+          format: int64
+          type: integer
+        id:
+          examples:
+            - sec.create_task
+          type: string
+        max_amount_per_item:
+          description: The most one item may move, in currency.
+          examples:
+            - "5000.00"
+          type: string
+        max_amount_total:
+          description: The most one proposal may move, in currency.
+          examples:
+            - "20000.00"
+          type: string
+        max_items:
+          description: The most items one proposal holds.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        name:
+          examples:
+            - Create a compliance task
+          type: string
+        "on":
+          description: Whether the organisation has turned it on (ai.task_types).
+          examples:
+            - false
+          type: boolean
+        tier:
+          examples:
+            - 1
+          format: int64
+          maximum: 3
+          minimum: 1
+          type: integer
+        version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - version
+        - name
+        - description
+        - tier
+        - max_items
+        - approvers
+        - expiry_hours
+        - "on"
+        - built
+      type: object
+    AIText:
+      additionalProperties: false
+      properties:
+        origin:
+          description: "Who wrote it: always the AI, to show with the AI label."
+          enum:
+            - ai
+          examples:
+            - ai
+          type: string
+        text:
+          description: "What the AI wrote: its own words, never the platform's."
+          examples:
+            - The AGM is due by 30 June 2027 and has no task yet.
+          type: string
+      required:
+        - text
+        - origin
       type: object
     AITurn:
       additionalProperties: false
@@ -55898,6 +56343,276 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: A
+  /v1/ai/proposals:
+    get:
+      description: "The AI's proposals you may see (design D5), newest first, a page at a time: those made for you, those you may approve now, and, for the Owner and the DPO, every one; filtered by state. The summary is the platform's, never the model's (AI-07). No side effects. On the never-list for the AI and MCP (§9.6)."
+      operationId: listAIProposals
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only proposals in this state; leave it out for all.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only proposals in this state; leave it out for all.
+            enum:
+              - draft
+              - invalid
+              - pending
+              - approved
+              - rejected
+              - expired
+              - superseded
+              - executing
+              - executed
+              - stale
+              - failed
+            examples:
+              - pending
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIProposalPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the AI's proposals
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        right: V
+  /v1/ai/proposals/{proposal_id}:
+    get:
+      description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On the never-list for the AI and MCP (§9.6)."
+      operationId: getAIProposal
+      parameters:
+        - description: The proposal's ID.
+          in: path
+          name: proposal_id
+          required: true
+          schema:
+            description: The proposal's ID.
+            examples:
+              - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIProposalDetail"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read an AI proposal
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        right: V
   /v1/ai/routes:
     get:
       description: "Every agent of this release and its route in force (AI-74): the data classes it handles and its steps, the primary first, each with whether it can serve now and why not. An agent without a route does not run. Read-only; no side effects."
@@ -56559,6 +57274,111 @@ paths:
       x-fyniq-permission:
         capability: Organisation profile, financial year, defaults (rev 0.29)
         right: A
+  /v1/ai/task-types:
+    get:
+      description: "The release's catalogue of the changes the AI may propose (§9.6), as the AI tasks page lists it: each task type's tier, limits, approver roles and expiry, whether this release can run it, and whether the organisation has turned it on (ai.task_types, AI-32). No side effects. On the never-list for the AI and MCP (§9.6)."
+      operationId: listAITaskTypes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AITaskTypeList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the AI's task types
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: the release's catalogue is a small fixed set of task types, never paged
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        right: V
   /v1/ai/usage:
     get:
       description: "Requests, tokens by kind, cost in the base currency, fallbacks and errors per connection, model, agent, person and the organisation, for a calendar month in Singapore (AI-77), from the AI activity log; and each subscription's quota used in its current window and when it resets. The provider's invoice stays the record: it is entered as a bill, and this view helps check it. Read-only; no side effects."

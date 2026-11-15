@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "task_types": {
+      "description": "Every task type of the release, a small fixed set: not a paged list.",
+      "items": {
+        "$ref": "AITaskTypeView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "task_types"
+  ],
+  "title": "AITaskTypeList",
+  "type": "object"
+}

@@ -860,6 +860,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the AI's proposals
+         * @description The AI's proposals you may see (design D5), newest first, a page at a time: those made for you, those you may approve now, and, for the Owner and the DPO, every one; filtered by state. The summary is the platform's, never the model's (AI-07). No side effects. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["listAIProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/proposals/{proposal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read an AI proposal
+         * @description A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["getAIProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/routes": {
         parameters: {
             query?: never;
@@ -938,6 +978,26 @@ export interface paths {
          * @description The Owner's kill switch (AI-13): turns features.ai_assistant off from today, with no second approver, and cancels any change already approved to turn it on later. New calls are refused at once, and a stream running now stops at its next check, within 10 seconds; accounting, checks and deadlines keep working. Switching it on again needs updateSetting and a second approver. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. Side effects: the setting's next versions and their audit events. On the never-list for the AI and MCP (§9.6).
          */
         post: operations["switchOffAI"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/task-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the AI's task types
+         * @description The release's catalogue of the changes the AI may propose (§9.6), as the AI tasks page lists it: each task type's tier, limits, approver roles and expiry, whether this release can run it, and whether the organisation has turned it on (ai.task_types, AI-32). No side effects. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["listAITaskTypes"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -15399,6 +15459,23 @@ export interface components {
                 [key: string]: string[] | null;
             };
         };
+        AIEvidenceRef: {
+            /**
+             * @description Its ID, or the key it is known by.
+             * @example agm-2027
+             */
+            id: string;
+            /**
+             * @description The kind of record, such as task, invoice or document.
+             * @example task
+             */
+            kind: string;
+            /**
+             * @description What it is, in a few words.
+             * @example Hold the AGM
+             */
+            title?: string;
+        };
         AIFact: {
             /** @example SGD */
             currency?: string;
@@ -16094,6 +16171,232 @@ export interface components {
              */
             decision: "confirm" | "decline";
         };
+        AIProposalDetail: {
+            /**
+             * @description The AI that proposed it.
+             * @example chat
+             */
+            agent: string;
+            /**
+             * Format: uuid
+             * @description Its approval request, where a person decides it.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f
+             */
+            approval_id?: string;
+            /** @description The items approved, when an approval chose some. */
+            approved_items?: number[] | null;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T10:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * Format: uuid
+             * @description Who approved or rejected it.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            decided_by?: string;
+            /**
+             * @description The task type's description, as the model and the approver read it.
+             * @example Create a compliance task with an owner and a due date from a finding.
+             */
+            description: string;
+            /** @description The records and documents the AI relied on. */
+            evidence: components["schemas"]["AIEvidenceRef"][];
+            /**
+             * @description What the executor did: its run, the records and entries it made, or the error.
+             * @example {
+             *       "records": [
+             *         "task:0193a3c2"
+             *       ]
+             *     }
+             */
+            execution?: unknown;
+            /**
+             * Format: date-time
+             * @example 2026-11-18T09:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+             */
+            id: string;
+            /**
+             * @description The dry run's impact: what it would change, as its task type reports it (ledger lines, balances, checks, documents).
+             * @example {
+             *       "tasks": [
+             *         {
+             *           "change": "create",
+             *           "title": "Hold the AGM"
+             *         }
+             *       ]
+             *     }
+             */
+            impact?: unknown;
+            /** @description A batch's items, each selectable by its number (AI-32). */
+            item_list: components["schemas"]["AIProposalItem"][];
+            /**
+             * Format: int64
+             * @description A batch's items; 0 when it is not a batch.
+             * @example 0
+             */
+            items: number;
+            /** @example claude-opus-5-5 */
+            model: string;
+            /**
+             * @description Exactly what executes once approved.
+             * @example {
+             *       "due_on": "2027-06-30",
+             *       "title": "Hold the AGM"
+             *     }
+             */
+            payload: unknown;
+            /**
+             * @description Its SHA-256, which the approval signs (AI-P5).
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            payload_sha256: string;
+            /** @example chat@3 */
+            prompt: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T09:00:00Z
+             */
+            proposed_at: string;
+            /** @description Why the AI proposes it, in its words, apart from the platform's summary (AI-07). */
+            rationale?: components["schemas"]["AIText"];
+            /**
+             * @description Why it is invalid, rejected, stale or failed.
+             * @example Not this year
+             */
+            reason?: string;
+            /**
+             * Format: uuid
+             * @description The person it was made for.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            requested_by: string;
+            /**
+             * @example pending
+             * @enum {string}
+             */
+            status: "draft" | "invalid" | "pending" | "approved" | "rejected" | "expired" | "superseded" | "executing" | "executed" | "stale" | "failed";
+            /**
+             * @description What it does, in the platform's words (AI-07).
+             * @example Creates the task Hold the AGM, due 30 June 2027
+             */
+            summary?: string;
+            /**
+             * @description The task type's name in the catalogue.
+             * @example Create a compliance task
+             */
+            task_name: string;
+            /** @example sec.create_task */
+            task_type: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            task_version: number;
+            /**
+             * Format: int64
+             * @description Its risk tier (§9.6).
+             * @example 1
+             */
+            tier: number;
+            /**
+             * @description Whether you may sign its approval request now.
+             * @example true
+             */
+            you_may_approve: boolean;
+        };
+        AIProposalItem: {
+            /**
+             * @description The item, as the task type's schema describes it.
+             * @example {
+             *       "note": "Book the room"
+             *     }
+             */
+            item: unknown;
+            /**
+             * Format: int64
+             * @description Its number, from 1, as an approval names it.
+             * @example 1
+             */
+            n: number;
+        };
+        AIProposalPage: {
+            items: components["schemas"]["AIProposalSummary"][];
+            /**
+             * @description The cursor of the next page; absent on the last.
+             * @example MDE5M2EzYzItNmQwZS03YTFiLTljNGQtNWU2ZjdhOGI5YzBk
+             */
+            next_cursor?: string;
+        };
+        AIProposalSummary: {
+            /**
+             * Format: uuid
+             * @description Its approval request, where a person decides it.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f
+             */
+            approval_id?: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-18T09:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description A batch's items; 0 when it is not a batch.
+             * @example 0
+             */
+            items: number;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T09:00:00Z
+             */
+            proposed_at: string;
+            /**
+             * @description Why it is invalid, rejected, stale or failed.
+             * @example Not this year
+             */
+            reason?: string;
+            /**
+             * Format: uuid
+             * @description The person it was made for.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            requested_by: string;
+            /**
+             * @example pending
+             * @enum {string}
+             */
+            status: "draft" | "invalid" | "pending" | "approved" | "rejected" | "expired" | "superseded" | "executing" | "executed" | "stale" | "failed";
+            /**
+             * @description What it does, in the platform's words (AI-07).
+             * @example Creates the task Hold the AGM, due 30 June 2027
+             */
+            summary?: string;
+            /**
+             * @description The task type's name in the catalogue.
+             * @example Create a compliance task
+             */
+            task_name: string;
+            /** @example sec.create_task */
+            task_type: string;
+            /**
+             * Format: int64
+             * @description Its risk tier (§9.6).
+             * @example 1
+             */
+            tier: number;
+        };
         AIQualification: {
             /**
              * @description The agent whose evals it ran.
@@ -16416,6 +16719,76 @@ export interface components {
             budgets: components["schemas"]["AIBudgetList"];
             /** @description The AI switch, the setting features.ai_assistant: switched on only with a second approver; switched off at once (AI-13). */
             switch: components["schemas"]["Setting"];
+        };
+        AITaskTypeList: {
+            /** @description Every task type of the release, a small fixed set: not a paged list. */
+            task_types: components["schemas"]["AITaskTypeView"][];
+        };
+        AITaskTypeView: {
+            /** @description The roles that approve it. */
+            approvers: string[];
+            /**
+             * @description Whether this release can run it: its command is built.
+             * @example true
+             */
+            built: boolean;
+            /** @example SGD */
+            currency?: string;
+            /** @example Create a compliance task with an owner and a due date from a finding. */
+            description: string;
+            /**
+             * Format: int64
+             * @example 72
+             */
+            expiry_hours: number;
+            /** @example sec.create_task */
+            id: string;
+            /**
+             * @description The most one item may move, in currency.
+             * @example 5000.00
+             */
+            max_amount_per_item?: string;
+            /**
+             * @description The most one proposal may move, in currency.
+             * @example 20000.00
+             */
+            max_amount_total?: string;
+            /**
+             * Format: int64
+             * @description The most items one proposal holds.
+             * @example 5
+             */
+            max_items: number;
+            /** @example Create a compliance task */
+            name: string;
+            /**
+             * @description Whether the organisation has turned it on (ai.task_types).
+             * @example false
+             */
+            on: boolean;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            tier: number;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+        };
+        AIText: {
+            /**
+             * @description Who wrote it: always the AI, to show with the AI label.
+             * @example ai
+             * @enum {string}
+             */
+            origin: "ai";
+            /**
+             * @description What the AI wrote: its own words, never the platform's.
+             * @example The AGM is due by 30 June 2027 and has no task yet.
+             */
+            text: string;
         };
         AITurn: {
             /**
@@ -53751,6 +54124,211 @@ export interface operations {
             };
         };
     };
+    listAIProposals: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only proposals in this state; leave it out for all. */
+                status?: "draft" | "invalid" | "pending" | "approved" | "rejected" | "expired" | "superseded" | "executing" | "executed" | "stale" | "failed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIProposalPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAIProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The proposal's ID. */
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIProposalDetail"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAIRoutes: {
         parameters: {
             query?: never;
@@ -54247,6 +54825,99 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAITaskTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AITaskTypeList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

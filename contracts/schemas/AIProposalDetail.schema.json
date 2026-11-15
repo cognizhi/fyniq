@@ -1,0 +1,258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "description": "The AI that proposed it.",
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "Its approval request, where a person decides it.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "approved_items": {
+      "description": "The items approved, when an approval chose some.",
+      "items": {
+        "description": "An item of the proposal's batch, from 1.",
+        "examples": [
+          1
+        ],
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "decided_at": {
+      "examples": [
+        "2026-11-15T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "description": "Who approved or rejected it.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "description": {
+      "description": "The task type's description, as the model and the approver read it.",
+      "examples": [
+        "Create a compliance task with an owner and a due date from a finding."
+      ],
+      "type": "string"
+    },
+    "evidence": {
+      "description": "The records and documents the AI relied on.",
+      "items": {
+        "$ref": "AIEvidenceRef.schema.json"
+      },
+      "type": "array"
+    },
+    "execution": {
+      "description": "What the executor did: its run, the records and entries it made, or the error.",
+      "examples": [
+        {
+          "records": [
+            "task:0193a3c2"
+          ]
+        }
+      ]
+    },
+    "expires_at": {
+      "examples": [
+        "2026-11-18T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "impact": {
+      "description": "The dry run's impact: what it would change, as its task type reports it (ledger lines, balances, checks, documents).",
+      "examples": [
+        {
+          "tasks": [
+            {
+              "change": "create",
+              "title": "Hold the AGM"
+            }
+          ]
+        }
+      ]
+    },
+    "item_list": {
+      "description": "A batch's items, each selectable by its number (AI-32).",
+      "items": {
+        "$ref": "AIProposalItem.schema.json"
+      },
+      "type": "array"
+    },
+    "items": {
+      "description": "A batch's items; 0 when it is not a batch.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "model": {
+      "examples": [
+        "claude-opus-5-5"
+      ],
+      "type": "string"
+    },
+    "payload": {
+      "description": "Exactly what executes once approved.",
+      "examples": [
+        {
+          "due_on": "2027-06-30",
+          "title": "Hold the AGM"
+        }
+      ]
+    },
+    "payload_sha256": {
+      "description": "Its SHA-256, which the approval signs (AI-P5).",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "prompt": {
+      "examples": [
+        "chat@3"
+      ],
+      "type": "string"
+    },
+    "proposed_at": {
+      "examples": [
+        "2026-11-15T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "rationale": {
+      "$ref": "AIText.schema.json",
+      "description": "Why the AI proposes it, in its words, apart from the platform's summary (AI-07)."
+    },
+    "reason": {
+      "description": "Why it is invalid, rejected, stale or failed.",
+      "examples": [
+        "Not this year"
+      ],
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "The person it was made for.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "invalid",
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "superseded",
+        "executing",
+        "executed",
+        "stale",
+        "failed"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it does, in the platform's words (AI-07).",
+      "examples": [
+        "Creates the task Hold the AGM, due 30 June 2027"
+      ],
+      "type": "string"
+    },
+    "task_name": {
+      "description": "The task type's name in the catalogue.",
+      "examples": [
+        "Create a compliance task"
+      ],
+      "type": "string"
+    },
+    "task_type": {
+      "examples": [
+        "sec.create_task"
+      ],
+      "type": "string"
+    },
+    "task_version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "tier": {
+      "description": "Its risk tier (§9.6).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 3,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "you_may_approve": {
+      "description": "Whether you may sign its approval request now.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "task_version",
+    "description",
+    "payload",
+    "payload_sha256",
+    "item_list",
+    "evidence",
+    "agent",
+    "model",
+    "prompt",
+    "you_may_approve",
+    "id",
+    "task_type",
+    "task_name",
+    "tier",
+    "status",
+    "requested_by",
+    "items",
+    "proposed_at",
+    "expires_at"
+  ],
+  "title": "AIProposalDetail",
+  "type": "object"
+}
