@@ -186,9 +186,14 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   the generic import's templates and dry run. Built from `docs/design/screens/src/WorkbookImport.html`; help keys in the
   registry; guide `docs/user-guide/workbook-import.md` compiled into `kb/`. Tests `workbook-import.test.tsx` (each step's
   states, axe) `// req: FR-MIG-01`, `// req: FR-MIG-02`, `// req: FR-MIG-03`.
-- [ ] 9.2 `data-export` (Settings › Data): the data region and retention (read only where fixed) and the tenant export,
+- [x] 9.2 `data-export` (Settings › Data): the data region and retention (read only where fixed) and the tenant export,
   from asking to downloading. Built from `docs/design/screens/src/DataExport.html`; help keys; guide
   `docs/user-guide/data-export.md` compiled into `kb/`. Tests `data-export.test.tsx` `// req: FR-MIG-04`.
+  (Slice 25: `DataExport.tsx` at `/settings/data`, Expert, for the Owner, the Administrator and the DPO: the "Data region
+  and retention" settings read only, with the link to change them in Settings › Organisation; asking (Administrator,
+  stepped up), each export's state, the approval's link, and Save for the requester only; help keys `settings.data`,
+  `tenant-export.request`, `tenant-export.save`; the guide compiled as `settings.data`; `DataExport.test.tsx`. The
+  fragment's copy follows what was built; its canvas waits for the design account.)
 
 ## 10. The rehearsal and the finish
 

@@ -409,6 +409,9 @@ The founders and the accountant still choose each settlement, which another pers
 - **AI conversations kept for**: 365 days, then they are deleted. A proposal the AI made is kept
   with the audit trail.
 
+**Settings → Data and export** shows these read only, beside the full export of everything the organisation keeps
+([See where your data lives, and take a full export](data-export.md)).
+
 ## Email-in
 
 Bills and receipts sent to your email-in addresses are captured for someone to confirm. Mail from your
