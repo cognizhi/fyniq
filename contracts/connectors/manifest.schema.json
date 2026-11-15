@@ -35,7 +35,7 @@
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,39}$"},
           "title": {"type": "string", "minLength": 1, "maxLength": 80},
           "description": {"type": "string", "minLength": 1, "maxLength": 300},
-          "used_by": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["api", "worker", "jobs"]}, "description": "The services that read it, and only they may."},
+          "used_by": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["api", "worker", "jobs", "ai"]}, "description": "The services that read it, and only they may; ai is the AI service, for a model provider's credential."},
           "rotation_overlap_hours": {"type": "integer", "minimum": 0, "maximum": 168, "description": "How long the replaced version stays valid after a rotation, so work in flight and webhooks signed with it still pass (FR-INT-26: rotation without downtime)."}
         }
       }
@@ -78,6 +78,30 @@
         }
       }
     },
+    "model": {
+      "type": "object", "additionalProperties": false,
+      "required": ["features", "auth", "list_models"],
+      "description": "A model-provider connector's declaration (AI-71, AI-72), and only its: what its adapter carries, how its connections authenticate, the provider's model list, and the presets a connection may start from. Its connections are AI connections of their own, never an installed connector.",
+      "properties": {
+        "features": {"type": "array", "uniqueItems": true, "items": {"enum": ["tools", "strict-output", "streaming", "images", "pdf", "caching", "reasoning", "batch"]}, "description": "What the adapter carries; each connection's conformance suite proves it, and one it cannot prove counts as absent."},
+        "auth": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["api-key", "workload-identity", "oauth-grant", "none"]}, "description": "How its connections authenticate; none only for a private self-hosted endpoint. Consumer-plan tokens, sessions, cookies and command-line seats are not among them (AI-73)."},
+        "list_models": {"type": "string", "minLength": 1, "maxLength": 300, "description": "The provider's model list (AI-80): a provider whose models cannot be listed cannot be connected."},
+        "presets": {
+          "type": "array", "uniqueItems": true,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "name", "auth"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$"},
+              "name": {"type": "string", "minLength": 1, "maxLength": 80},
+              "base_url": {"type": "string", "pattern": "^https://", "description": "The provider's endpoint; absent for a self-hosted server, whose address the connection names."},
+              "auth": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["api-key", "workload-identity", "oauth-grant", "none"]}},
+              "self_hosted": {"type": "boolean", "description": "A server the organisation runs, reached only as a registered private endpoint (SEC-37)."}
+            }
+          }
+        }
+      }
+    },
     "health_check": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What the health check does, in plain words."},
     "test_action": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What the connection test does; it answers pass or fail with a reason, never the provider's body."},
     "local_substitute": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What stands in for the provider in local mode and in tests (ADR-T4)."},
@@ -97,7 +121,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["kind", "trigger", "trigger_rule", "on_pause", "on_disable", "in_flight"],
       "properties": {
-        "kind": {"enum": ["sign-in", "outbound-email", "inbound-email", "messaging", "ticketing", "payment-provider", "bank-data", "e-invoicing", "document-ai"]},
+        "kind": {"enum": ["sign-in", "outbound-email", "inbound-email", "messaging", "ticketing", "payment-provider", "bank-data", "e-invoicing", "document-ai", "model-provider"]},
         "trigger": {"enum": ["human-authority", "system-rule", "none"], "description": "Who may make it act (FR-INT-27): a completed human authority, a system rule, or nobody."},
         "trigger_rule": {"type": "string", "minLength": 1, "maxLength": 300, "description": "The authority or rule, in plain words."},
         "on_pause": {"const": "hold", "description": "Pause holds queued work (FR-INT-26)."},
