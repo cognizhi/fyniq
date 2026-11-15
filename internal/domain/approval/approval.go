@@ -175,6 +175,10 @@ const (
 	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
 	// row's A; its key is the agent's ID.
 	ObjectAIRoute = "ai_route"
+	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
+	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
+	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
+	ObjectAIProposal = "ai_proposal"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -303,6 +307,9 @@ const (
 	OpAIRouteChange = "ai_route.change"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
+	// OpAIProposalExecute marks the proposal Approved and queues it for the executor, which runs it as the approver
+	// (AI-11, AI-P5).
+	OpAIProposalExecute = "ai_proposal.execute"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -353,6 +360,7 @@ var Operations = map[string]string{
 	OpAIConnectionAllowModel:   ObjectAIConnection,
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
+	OpAIProposalExecute:        ObjectAIProposal,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -469,6 +477,8 @@ var Dependencies = map[string][]string{
 	ObjectAIDataPolicy: {"version"},
 	// the route's version: what it replaces
 	ObjectAIRoute: {"version"},
+	// the proposal's status and its payload's hash: what executes
+	ObjectAIProposal: {"status", "payload_sha256"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -530,6 +540,9 @@ var Rows = map[string]string{
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
+	// AI activity log's: each member their own, the Owner and the DPO every one.
+	ObjectAIProposal: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
 }
 
 // The limits of a policy.
@@ -620,6 +633,9 @@ var Policies = map[string]Policy{
 	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
+	// narrows its step to the task type's approver roles.
+	ObjectAIProposal: {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -732,6 +748,8 @@ type Request struct {
 	Status      Status
 	RequestedBy uuid.UUID
 	ExpiresAt   time.Time
+	// SelfSign is whether the person who asked may sign it: a tier-1 AI proposal's alone (AI-10, AI-89).
+	SelfSign bool
 }
 
 // StatusAt is the request's status at now: a pending request past its expiry is expired.
@@ -756,7 +774,7 @@ func CheckSigner(r Request, signer uuid.UUID, now time.Time) *Problem {
 	default:
 		return &Problem{CodeNotPending, fmt.Sprintf("the request is %s already", r.Status), "Nothing to do; ask for the change again if it is still needed"}
 	}
-	if signer == r.RequestedBy {
+	if signer == r.RequestedBy && !r.SelfSign {
 		return &Problem{CodeOwnRequest, "you asked for this change, so another founder approves it (FM-1)",
 			"Ask another member who holds the approval right to approve it"}
 	}

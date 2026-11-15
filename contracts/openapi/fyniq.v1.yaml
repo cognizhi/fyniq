@@ -5712,6 +5712,7 @@ components:
             - ai_connection
             - ai_data_policy
             - ai_route
+            - ai_proposal
           examples:
             - organisation_setting
           type: string
@@ -5788,6 +5789,7 @@ components:
             - ai_connection.allow_model
             - ai_connection.price
             - ai_route.change
+            - ai_proposal.execute
           examples:
             - organisation_setting.change
           type: string
@@ -6042,6 +6044,7 @@ components:
             - ai_connection
             - ai_data_policy
             - ai_route
+            - ai_proposal
           examples:
             - organisation_setting
           type: string
@@ -6170,6 +6173,7 @@ components:
             - ai_connection
             - ai_data_policy
             - ai_route
+            - ai_proposal
           examples:
             - organisation_setting
           type: string

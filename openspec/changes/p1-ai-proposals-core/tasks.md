@@ -55,12 +55,22 @@
 
 ## 4. Approval
 
-- [ ] 4.1 The approval engine's object type `ai_proposal` and operation `ai_proposal.execute`: the envelope signing the
+- [x] 4.1 The approval engine's object type `ai_proposal` and operation `ai_proposal.execute`: the envelope signing the
   payload hash, the built-in policy, the requester as preparer, step-up for tiers 2 and 3, no policy without a step or
   with an automatic rule in any team mode, and the final approval enqueuing the executor (design D4). (rev 0.280) The
   request made as the proposal becomes Pending, its requester authenticated by the turn, the requester signing their
   own tier-1 proposal, the signers per task type. Tests `// req: AI-P4`, `// req: AI-P5`, `// req: AI-06`,
   `// req: AI-10`, `// req: AI-89`, `// req: CTL-AI-03`, an attack test on both exceptions.
+  As built (migrations 000377/000378): the request is made with the proposal's Pending step, in its unit of work; its
+  envelope holds the proposal, the task type and version, the payload's hash, the tier, the items and the command, and
+  depends on the proposal's status and payload hash. Its one step names the task type's approver roles, and a signer
+  must also hold the command's right as a person (checked as they sign and again before it executes); the requester's
+  authentication is `ai_turn` at the call's time. The policy is fixed in every team mode (APR-09). Its row is the AI
+  activity log's, so the Owner and the DPO see every one; it is not one of the rows that open the approvals pages, so a
+  requester with none of them reaches their proposals on the AI tasks page (task 6.2). The final approval marks the
+  proposal Approved with the payload approved and queues `ai_proposal.execute` for the executor; a rejection marks it
+  Rejected with the reason. Every signer passes step-up, whatever the tier. Left: telling approvers a proposal waits
+  (the Inbox, task 6.1) and voiding a request whose proposal expires or is superseded (task 5.2).
 - [ ] 4.2 Partial and bulk approval of a tier-1 proposal's items (the subset re-hashed and signed); a rejection's reason
   returned to the conversation or the run (design D8). Tests `// req: AI-32`, `// req: AI-14`.
 - [ ] 4.3 The public operations: list and read proposals (each member their own and those they may approve; the Owner

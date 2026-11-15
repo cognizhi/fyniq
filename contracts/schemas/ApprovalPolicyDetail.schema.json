@@ -91,7 +91,8 @@
         "tenant_export",
         "ai_connection",
         "ai_data_policy",
-        "ai_route"
+        "ai_route",
+        "ai_proposal"
       ],
       "examples": [
         "organisation_setting"

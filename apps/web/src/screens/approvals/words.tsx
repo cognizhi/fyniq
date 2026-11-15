@@ -78,6 +78,7 @@ const operations: Record<Approval["operation"], string> = {
   "ai_connection.allow_model": "Allow a model on an AI provider's connection",
   "ai_connection.price": "Price a model on an AI provider's connection",
   "ai_route.change": "Change an AI agent's route",
+  "ai_proposal.execute": "Approve a change the AI proposed",
 };
 
 export function operationLabel(op: string): string {
@@ -141,6 +142,7 @@ const objects: Record<string, string> = {
   ai_connection: "AI provider connection",
   ai_data_policy: "AI data-class policy",
   ai_route: "AI agent's route",
+  ai_proposal: "AI proposal",
 };
 
 export function objectLabel(t: string): string {

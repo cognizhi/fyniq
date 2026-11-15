@@ -129,7 +129,8 @@
         "tenant_export",
         "ai_connection",
         "ai_data_policy",
-        "ai_route"
+        "ai_route",
+        "ai_proposal"
       ],
       "examples": [
         "organisation_setting"
@@ -208,7 +209,8 @@
         "ai_data_policy.change",
         "ai_connection.allow_model",
         "ai_connection.price",
-        "ai_route.change"
+        "ai_route.change",
+        "ai_proposal.execute"
       ],
       "examples": [
         "organisation_setting.change"
