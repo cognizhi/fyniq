@@ -141,8 +141,18 @@
   fixture: it is checked to judge soundly (the right model's proposal passes, a model that proposes nothing fails),
   and no model is asked it. A suite may not mix the tests' types with the release's. Each task type adds its own suite
   with its command.
-- [ ] 7.2 `verify ai.proposals-approved` nightly; `compliance/controls/CTL-AI-02.yaml`, `CTL-AI-03.yaml` and
+- [x] 7.2 `verify ai.proposals-approved` nightly; `compliance/controls/CTL-AI-02.yaml`, `CTL-AI-03.yaml` and
   `CTL-AI-04.yaml` running (design D12). Tests `// req: CTL-AI-02`, `// req: CTL-AI-03`, `// req: CTL-AI-04`.
+  As built: `compliance.run` reads each proposal executed in the last day (`Compliance().ExecutedProposals`) and
+  lists as an exception any proposal where one of these fails:
+  - it has its own approval request, approved;
+  - the request's envelope signs the proposal's payload hash;
+  - what was approved hashes as approved;
+  - a person's live approval signed the envelope, and the proposal ran as one of those people;
+  - no approval of it is audited for an actor other than a person (target 0).
+  The breach test seeds an executed proposal with no request. The executor's test reconciles a real run and finds
+  nothing. CTL-AI-03 runs as `TestAProposalWaitsForAPersonsApproval`: the ai_proposal policy is fixed in every team
+  mode. CTL-AI-04 runs as the never-list, catalogue-version and dual-controlled enabling tests.
 
 ## 8. The finish
 

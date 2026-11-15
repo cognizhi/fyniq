@@ -167,6 +167,7 @@ func TestNothingOnTheNeverListCanBeProposed(t *testing.T) {
 // (CMP-AI-03): a change made without one, or a version going back, fails.
 // req: ai/task-catalogue Catalogue as versioned, dual-controlled data
 // req: platform/release-and-versioning AI catalogue, prompt and tool versions
+// req: CTL-AI-04
 func TestEveryChangeToATaskTypeIsANewVersion(t *testing.T) {
 	type pin struct {
 		Version int    `json:"version"`

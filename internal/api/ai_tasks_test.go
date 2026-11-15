@@ -39,6 +39,7 @@ func fixtureCatalogue(t *testing.T, ids ...string) *proposal.Catalogue {
 // req: AI-32
 // req: AI-13
 // req: ai/task-catalogue Enabled per organisation, off by default
+// req: CTL-AI-04
 // asvs: V8.1.4
 func TestTaskTypesAreOffUntilEnabledUnderDualControl(t *testing.T) {
 	e := newEnv(t)

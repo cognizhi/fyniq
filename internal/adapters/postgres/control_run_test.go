@@ -74,11 +74,12 @@ func TestAttackControlRunsAreTheWorkersRecord(t *testing.T) {
 
 // Each verification finds a breach seeded past the database's own guards, with its triggers off as the superuser can,
 // and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05,
-// CTL-AI-06; p1-compliance-center D4).
+// CTL-AI-06, CTL-AI-02; p1-compliance-center D4, p1-ai-proposals-core D12).
 // req: CTL-FIN-08
 // req: CTL-IAM-01
 // req: CTL-AUD-05
 // req: CTL-AI-06
+// req: CTL-AI-02
 // req: CMP-01
 // asvs: V2.3.5, V6.3.3, V16.3.3
 func TestEachVerificationFindsItsBreach(t *testing.T) {
@@ -102,8 +103,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 4 {
-			t.Fatalf("want the 4 verifications' runs, got %v", out)
+		if len(out) != 5 {
+			t.Fatalf("want the 5 verifications' runs, got %v", out)
 		}
 		return out
 	}
@@ -139,11 +140,12 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 	}
 
 	// The breaches, seeded with the triggers off: a bank change approved by whoever asked for it, a batch released under
-	// that approval, a session without a second factor, an export with no audit event, and an opening with no request.
+	// that approval, a session without a second factor, an export with no audit event, an opening with no request, and
+	// a proposal of the AI executed with no approval request.
 	asked := uuid.New()
 	envelope := `{"object":{"type":"payee_bank_change"}}`
 	sum := sha256.Sum256([]byte(envelope))
-	var approval, export uuid.UUID
+	var approval, export, stray uuid.UUID
 	err = asOrg(ctx, superuser, b.Org, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
 			return err
@@ -163,6 +165,14 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 			writer, file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
 			VALUES ($1, 1, $2, $3, $4, 'payment-list@1', 'batch.csv', 'text/csv', $5, $6, 1, 'SGD', 2, 10)`,
 			uuid.New(), approval, requester, now, make([]byte, 40), sum[:]); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.ai_proposal (task_type, task_version, task_sha256, payload, payload_sha256, risk_tier,
+			agent, requested_by, turn_id, model, prompt, tools_sha256, status, impact, decided_by, decided_at, approved_payload, approved_sha256,
+			execution, started_at, finished_at, proposed_at, expires_at)
+			VALUES ('test.annotate_note', 1, $1, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), 1, 'chat', $2, $3,
+			'm', 'chat@3', $1, 'executed', '{}', $4, $5, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), '{}', $5, $5,
+			$5, $6) RETURNING id`, fmt.Sprintf("%x", sum), requester, uuid.New(), approver, now, now.Add(time.Hour)).Scan(&stray); err != nil {
 			return err
 		}
 		return tx.QueryRow(ctx, `INSERT INTO fyniq.report_export (report, format, parameters, requested_by, requested_at, status)
@@ -212,6 +222,9 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 			{Kind: "report_export", ID: export.String(), Detail: "Asked for, with no audit event"},
 			{Kind: "evidence.opened", Detail: "Recorded without the request it came from"},
 		},
+		"CTL-AI-02 verify ai.proposals-approved": {
+			{Kind: "ai_proposal", ID: stray.String(), Detail: "Executed with no approval request"},
+		},
 		"CTL-AI-06 verify ai.traces": {
 			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn keeps an NRIC or FIN number in its answer"},
 			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn read payroll on a day AI payroll access was off"},
@@ -237,7 +250,7 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(latest) != 4 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
+		if len(latest) != 5 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil
