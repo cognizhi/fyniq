@@ -14595,6 +14595,184 @@ A link that works for 5 minutes and serves the export's ZIP as an attachment (FR
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `REPORT-05`, `REPORT-06`, `REPORT-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## AI
+
+The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6).
+
+### `GET /v1/ai/connections`
+
+**List the organisation's AI connections** (`listAIConnections`)
+
+The organisation's connections to AI model providers (AI-72), by name, a page at a time (FR-INT-10): each one's provider, preset, authentication, configuration, the host its calls go to, whether it has a credential (never the credential), its billing and its state. Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`AIConnectionList`](../../contracts/schemas/AIConnectionList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/connections`
+
+**Ask to connect an AI model provider** (`createAIConnection`)
+
+Asks to connect one of the release's model providers (AI-71, AI-72): from one of its presets or its own endpoint, with an authentication it offers, its configuration, and how it is billed (AI-73). Its calls go to one https host; a self-hosted server only as a registered private endpoint (SEC-37). A credential given now is stored at once, never shown again, and refused when it is a consumer plan's token, a session or a cookie (AI-73, AI-79). The connection is created switched off; enabling it is a request of its own. It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner, who holds A on "AI providers and model routes", approves; nothing changes until then. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AIConnectionCreate`](../../contracts/schemas/AIConnectionCreate.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/ai/connections/{connection_id}`
+
+**Get an AI connection** (`getAIConnection`)
+
+One connection to an AI model provider (AI-72) with its ETag for the commands that change it; never its credential (AI-79). Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+- **Responses:**
+  - `200` OK [`AIConnection`](../../contracts/schemas/AIConnection.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/ai/connections/{connection_id}`
+
+**Ask to change an AI connection** (`changeAIConnection`)
+
+Asks to replace a connection's name, preset, authentication, configuration and billing (AI-72, AI-73); its provider stays. Checked as a new connection is. Needs If-Match with its ETag. It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner, who holds A on "AI providers and model routes", approves; nothing changes until then. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Request body:** [`AIConnectionDefinition`](../../contracts/schemas/AIConnectionDefinition.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `PUT /v1/ai/connections/{connection_id}/credential`
+
+**Ask to replace an AI connection's API key** (`setAIConnectionCredential`)
+
+Stores the new API key in the secret store at once, as a new version never shown again, and asks to make it the connection's (AI-79): approved, the key it replaces stops after the provider's overlap; refused or expired, the new key is destroyed. A consumer plan's token, a session or a cookie is refused (AI-73). Needs If-Match with its ETag. It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner, who holds A on "AI providers and model routes", approves; nothing changes until then. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Request body:** [`AIConnectionCredential`](../../contracts/schemas/AIConnectionCredential.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/ai/connections/{connection_id}/disable`
+
+**Switch an AI connection off** (`disableAIConnection`)
+
+Switches a connection off at once (AI-72): never held back for a second person. No new call goes to it; routes fall back to their next step or stop with a plain message (AI-76). Side effects: its new version and the audit event ai_connection.disabled. Needs If-Match with its ETag; idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AIConnection`](../../contracts/schemas/AIConnection.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-CONN-07`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-AI-CONNECTION-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/ai/connections/{connection_id}/enable`
+
+**Ask to switch an AI connection on** (`enableAIConnection`)
+
+Asks to switch a connection on (AI-72): an API-key connection needs its credential, a self-hosted one a private endpoint registered for it (SEC-37). A model serves no agent until its qualification passes (AI-78). Needs If-Match with its ETag. It is dual controlled (golden rule 6, FM-1): the answer is the approval request, which the Owner, who holds A on "AI providers and model routes", approves; nothing changes until then. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Parameters:**
+  - `connection_id` (path, required): The connection's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-CONN-07` The connection cannot take that step now; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-AI-CONNECTION-01` An AI connection keeps each version, and is switched off, never removed; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `AI-CONN-01` Not a model provider of this release; `AI-CONN-02` Not an authentication the provider offers; `AI-CONN-03` The configuration does not match the provider's; `AI-CONN-04` Not an API key the provider issues; `AI-CONN-05` The endpoint cannot be reached as a connection may; `AI-CONN-06` The billing is not valid; `AI-CONN-08` The connection's name is not valid; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-CONN-01`, `AI-CONN-02`, `AI-CONN-03`, `AI-CONN-04`, `AI-CONN-05`, `AI-CONN-06`, `AI-CONN-07`, `AI-CONN-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-AI-CONNECTION-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ## Import
 
 The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right.

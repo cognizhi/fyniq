@@ -144,6 +144,7 @@ type UnitOfWork interface {
 	EquitySteps() EquitySteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
+	AIConnections() AIConnections
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).

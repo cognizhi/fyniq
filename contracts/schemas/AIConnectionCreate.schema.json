@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "description": "How it authenticates, one the provider and its preset offer.",
+      "enum": [
+        "api-key",
+        "workload-identity",
+        "none"
+      ],
+      "examples": [
+        "workload-identity"
+      ],
+      "type": "string"
+    },
+    "billing": {
+      "$ref": "AIConnectionBilling.schema.json"
+    },
+    "configuration": {
+      "additionalProperties": {},
+      "description": "Its configuration, as the provider's manifest describes it.",
+      "examples": [
+        {
+          "endpoint": "agent-platform",
+          "project": "fyniq-prod"
+        }
+      ],
+      "type": "object"
+    },
+    "connector": {
+      "description": "The model provider's connector, from listConnectorCatalogue.",
+      "examples": [
+        "anthropic"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "credential": {
+      "description": "The provider's API key, for an api-key connection: stored at once, never shown again, and the connection's when the request is approved (AI-79). A consumer plan's token, a session or a cookie is refused (AI-73).",
+      "examples": [
+        "sk-proj-0123456789abcdef"
+      ],
+      "maxLength": 4096,
+      "type": "string",
+      "writeOnly": true
+    },
+    "name": {
+      "description": "Its name in the organisation.",
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "preset": {
+      "description": "One of the provider's presets, from listConnectorCatalogue.",
+      "examples": [
+        "kimi"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    }
+  },
+  "required": [
+    "connector",
+    "name",
+    "auth",
+    "billing"
+  ],
+  "title": "AIConnectionCreate",
+  "type": "object"
+}

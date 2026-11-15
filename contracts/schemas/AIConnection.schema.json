@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "description": "How it authenticates: an API key, the service's own cloud account, or none for a self-hosted server on a registered private endpoint.",
+      "enum": [
+        "api-key",
+        "workload-identity",
+        "none"
+      ],
+      "examples": [
+        "workload-identity"
+      ],
+      "type": "string"
+    },
+    "billing": {
+      "$ref": "AIConnectionBilling.schema.json"
+    },
+    "changed_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "changed_by": {
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "configuration": {
+      "additionalProperties": {},
+      "description": "Its configuration, as the provider's manifest describes it.",
+      "examples": [
+        {
+          "endpoint": "agent-platform",
+          "location": "asia-southeast1",
+          "project": "fyniq-prod"
+        }
+      ],
+      "type": "object"
+    },
+    "connector": {
+      "description": "The model provider's connector, from listConnectorCatalogue.",
+      "examples": [
+        "anthropic"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "created_by": {
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "credential": {
+      "$ref": "AIConnectionCredentialState.schema.json"
+    },
+    "host": {
+      "description": "The one host its calls go to (SEC-36).",
+      "examples": [
+        "asia-southeast1-aiplatform.googleapis.com"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name in the organisation.",
+      "examples": [
+        "Claude in Singapore"
+      ],
+      "type": "string"
+    },
+    "preset": {
+      "description": "The preset it started from.",
+      "examples": [
+        "kimi"
+      ],
+      "type": "string"
+    },
+    "self_hosted": {
+      "description": "A server the organisation runs, reached only as a registered private endpoint (SEC-37).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "state": {
+      "description": "disabled until an approved request switches it on.",
+      "enum": [
+        "disabled",
+        "enabled"
+      ],
+      "examples": [
+        "disabled"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "connector",
+    "auth",
+    "configuration",
+    "host",
+    "self_hosted",
+    "credential",
+    "billing",
+    "state",
+    "version",
+    "created_by",
+    "created_at",
+    "changed_by",
+    "changed_at"
+  ],
+  "title": "AIConnection",
+  "type": "object"
+}
