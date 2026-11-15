@@ -292,8 +292,12 @@ See proposal.md for why. What exists today and shapes the approach:
     `migration.parallel_signed`, `migration.archived` (as built, rev 0.266 and 0.268: a register line's decision is
     `difference_decided`, M4's sign-off `reconciliation_signed`; the report is worked out on each read, so there is no
     `reconciled` event);
-  - `import.run`;
-  - `tenant_export.requested`, `tenant_export.completed`, `tenant_export.downloaded`.
+  - `import.run` (as built, rev 0.272: one per file imported, beside each record's own event, whose reason names the
+    file);
+  - `tenant_export.requested`, `tenant_export.completed`, `tenant_export.downloaded` (as built, rev 0.273: the request
+    and its approval are the `tenant_export` approval's own `approval.requested` and `approval.given`; the worker's
+    file is the report export's `report_export.ready`; each link that saves it is `tenant_export.download_linked`, a
+    security event, AUD-05).
 - `docs/security/threat-models/migration-and-export.md` covers:
   - an untrusted workbook: bombs, formulas, oversized text, injected codes;
   - a commit by the wrong person;

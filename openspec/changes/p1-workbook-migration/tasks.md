@@ -197,6 +197,8 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   expected. `// req: QA-MIG-01`, `// req: data/migration Parity check (M4)`.
 - [ ] 10.2 `docs/security/threat-models/migration-and-export.md` (design D13); the build plan's paragraph on what was
   built; `make check`, `make test`, `make test-e2e` and `make differential` pass.
+  (Slice 23 wrote the threat model, recorded D13's audit events as built, added `import.run` and
+  TestAnInfectedUploadIsRefused. Left: the build plan's paragraph and the full runs at the finish.)
 
 ## Workflow follow-up
 

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/migration"
 )
 
@@ -86,6 +88,36 @@ func TestTheGenericImportEntersEachRowAsByHand(t *testing.T) {
 	}
 	e.problemIs(e.upload("/v1/imports/accounts", acct, nil, "accounts.csv", []byte(accounts+"6995,Again,Expense,Other expenses,,G&A,No,,Yes,\r\n")), "importAccounts", 422,
 		migration.CodeGeneric)
+	// Each run is audited once, naming its file and what it made (design D13); a dry run and a refused file leave none.
+	if runs := e.call(http.MethodGet, "/v1/audit/events?action=import.run", e.as(authz.Owner), nil); strings.Count(runs.Raw, `"action":"import.run"`) != 3 ||
+		!strings.Contains(runs.Raw, `contacts.csv`) {
+		t.Errorf("the runs' audit events: %d %s", runs.Status, runs.Raw)
+	}
+}
+
+// An infected upload is refused before it is read or kept (FR-DOC-08, design D13): the workbook, the parallel month's
+// workbook and a generic import's file each answer DOC-03 for the EICAR test file, and the migration keeps no file.
+// req: FR-MIG-01
+// req: FR-MIG-03
+// req: FR-DOC-08
+// asvs: V5.2.1, V5.2.2
+func TestAnInfectedUploadIsRefused(t *testing.T) {
+	e := newEnv(t)
+	ctrl := e.as(authz.Controller)
+	id := e.startedMigration()
+	for _, path := range []string{"/v1/migrations/" + id + "/workbook", "/v1/migrations/" + id + "/parallel/workbook"} {
+		r := e.upload(path, ctrl, nil, "Hub.xlsx", []byte(local.EICAR), "If-Match", e.migrationTag(id))
+		if r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, evidence.CodeMalware) {
+			t.Errorf("%s: %d %s", path, r.Status, r.Raw)
+		}
+	}
+	if files := e.call(http.MethodGet, "/v1/migrations/"+id, ctrl, nil).Body["files"].([]any); len(files) != 0 {
+		t.Errorf("the migration kept an infected file: %v", files)
+	}
+	r := e.upload("/v1/imports/contacts", ctrl, nil, "contacts.csv", []byte(local.EICAR))
+	if r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, evidence.CodeMalware) {
+		t.Errorf("the generic import: %d %s", r.Status, r.Raw)
+	}
 }
 
 // matrixImports are the authorisation matrix's rows for the generic import (FR-MIG-03): each template under its entity's

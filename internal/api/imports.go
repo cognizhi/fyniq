@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -111,7 +112,7 @@ func registerImports(a *API) {
 				"(rev 0.272). A file is " +
 				"imported whole or not at all, so a row refused refuses the file (MIGRATION-17, every problem with " +
 				"its row and column). Prefer: return=preview is the dry run: the same report, every problem listed, nothing saved. Side " +
-				"effects: the records and their audit events, which name the file. Idempotent with Idempotency-Key.",
+				"effects: the records and their audit events, which name the file, and the run's own, import.run. Idempotent with Idempotency-Key.",
 		}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid,
 			CodeUnavailable, migration.CodeGeneric, storage.CodeVersion}, append(locks, EvidenceCodes...)...),
 			func(ctx context.Context, in *genericImportInput) (*genericImportOutput, error) {
@@ -209,7 +210,10 @@ func (a *API) importFile(ctx context.Context, entity string, in *genericImportIn
 			return r, problem(migration.CodeGeneric, fmt.Sprintf("%d problems stop the import; the first, on row %d: %s.", r.Errors, first.Row, first.Message),
 				"Fix the rows in the file and import it again: nothing was imported.", fields...)
 		}
-		return r, nil
+		// The run itself, beside each record's own event (design D13): the file, its hash and what it made.
+		return r, u.Audit().Record(ctx, storage.AuditRecord{Action: "import.run", ObjectType: "import", ObjectID: uuid.Must(uuid.NewV7()),
+			Changes: map[string][2]any{"file": {nil, map[string]any{"entity": entity, "name": file.Name, "sha256": file.SHA256, "rows": r.Rows,
+				"made": r.Made}}}})
 	})
 	if err != nil {
 		return nil, err
