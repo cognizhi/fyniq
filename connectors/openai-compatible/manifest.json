@@ -1,0 +1,208 @@
+{
+  "id": "openai-compatible",
+  "name": "OpenAI-compatible",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Any provider or server that speaks OpenAI's Chat Completions API: Moonshot Kimi, xAI Grok, OpenRouter, a LiteLLM gateway, or a self-hosted vLLM, Ollama or LM Studio server.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "model-provider",
+      "trigger": "system-rule",
+      "trigger_rule": "A model call an agent makes through its route: a person's question to the assistant, or a run of a scheduled agent the Owner enabled. AI proposes; it never writes the books.",
+      "on_pause": "hold",
+      "on_disable": "cancel",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "preset": {
+        "enum": [
+          "kimi",
+          "grok",
+          "openrouter",
+          "litellm",
+          "vllm",
+          "ollama",
+          "lm-studio"
+        ],
+        "title": "Preset",
+        "description": "The provider or server the connection starts from; its base URL, unless the connection names one."
+      },
+      "base_url": {
+        "type": "string",
+        "title": "Base URL",
+        "description": "The endpoint's base, ending before /chat/completions; a self-hosted server is a registered private endpoint.",
+        "pattern": "^https://"
+      },
+      "auth": {
+        "enum": [
+          "api-key",
+          "none"
+        ],
+        "title": "Authentication",
+        "description": "An API key, or none for a self-hosted server on a registered private endpoint.",
+        "default": "api-key"
+      },
+      "proven": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "enum": [
+            "tools",
+            "strict-output",
+            "streaming",
+            "images",
+            "reasoning"
+          ]
+        },
+        "title": "Proved capabilities",
+        "description": "What the connection's probe proved its endpoint serves; set by the probe, never typed (AI-71)."
+      },
+      "timeout_seconds": {
+        "type": "integer",
+        "title": "Timeout",
+        "description": "Seconds a call may take before it fails over or stops.",
+        "minimum": 5,
+        "maximum": 600,
+        "default": 120
+      },
+      "retries": {
+        "type": "integer",
+        "title": "Retries",
+        "description": "Retries of a call the provider refused as overloaded or rate limited, with backoff.",
+        "minimum": 0,
+        "maximum": 5,
+        "default": 2
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_key",
+      "title": "API key",
+      "description": "The provider's or gateway's API key; a self-hosted server on a private endpoint may need none.",
+      "used_by": [
+        "ai",
+        "worker"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [
+    "know-how",
+    "business-figures",
+    "personal-data",
+    "payroll",
+    "restricted"
+  ],
+  "regions": [
+    "configured"
+  ],
+  "destinations": [
+    {
+      "configured": "base_url",
+      "port": 443
+    },
+    {
+      "host": "api.moonshot.ai",
+      "port": 443
+    },
+    {
+      "host": "api.x.ai",
+      "port": 443
+    },
+    {
+      "host": "openrouter.ai",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "model": {
+    "features": [
+      "tools",
+      "strict-output",
+      "streaming",
+      "images",
+      "reasoning"
+    ],
+    "auth": [
+      "api-key",
+      "none"
+    ],
+    "list_models": "GET /models on the base URL",
+    "presets": [
+      {
+        "id": "kimi",
+        "name": "Moonshot Kimi",
+        "base_url": "https://api.moonshot.ai/v1",
+        "auth": [
+          "api-key"
+        ]
+      },
+      {
+        "id": "grok",
+        "name": "xAI Grok",
+        "base_url": "https://api.x.ai/v1",
+        "auth": [
+          "api-key"
+        ]
+      },
+      {
+        "id": "openrouter",
+        "name": "OpenRouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "auth": [
+          "api-key"
+        ]
+      },
+      {
+        "id": "litellm",
+        "name": "LiteLLM gateway",
+        "auth": [
+          "api-key"
+        ],
+        "self_hosted": true
+      },
+      {
+        "id": "vllm",
+        "name": "vLLM",
+        "auth": [
+          "api-key",
+          "none"
+        ],
+        "self_hosted": true
+      },
+      {
+        "id": "ollama",
+        "name": "Ollama",
+        "auth": [
+          "none"
+        ],
+        "self_hosted": true
+      },
+      {
+        "id": "lm-studio",
+        "name": "LM Studio",
+        "auth": [
+          "none"
+        ],
+        "self_hosted": true
+      }
+    ]
+  },
+  "health_check": "Counts the provider's refusals, rate limits and failed connections in recent calls, and the model list's last read.",
+  "test_action": "Lists the connection's models, then asks the picked model a few tokens of synthetic text and reports what it answered with: its model, its usage and the capabilities it proved.",
+  "local_substitute": "Recorded answers by default; a fake Chat Completions server in tests; a developer may point a local connection at their own Ollama or LM Studio.",
+  "limits": {
+    "requests_per_minute": 600,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 60
+  }
+}

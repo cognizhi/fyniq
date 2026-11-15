@@ -292,3 +292,30 @@ func TestTheGeminiConnectorBuildsItsAdapter(t *testing.T) {
 		t.Errorf("Gemini: %v", err)
 	}
 }
+
+// The OpenAI-compatible connector builds its adapter per connection (AI-71, AI-72): from a preset's base URL or the
+// connection's own, with a key unless a self-hosted endpoint needs none, claiming only what the connection's probe
+// proved and the adapter can carry.
+// req: AI-71
+// req: AI-72
+func TestTheCompatibleConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "openai-compatible")
+	p, err := b.Model(connector.Config{Values: map[string]any{"preset": "kimi", "proven": []any{"tools", "pdf", "streaming"}},
+		Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().Tools || !p.Capabilities().Streaming || p.Capabilities().PDF || p.Capabilities().StrictOutput {
+		t.Errorf("Kimi from its preset: %v %+v", err, p)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"preset": "grok"}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("a hosted provider without a key: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"preset": "ollama", "auth": "none"}}); err == nil || !strings.Contains(err.Error(), "base URL") {
+		t.Errorf("a self-hosted server without its address: %v", err)
+	}
+	p, err = b.Model(connector.Config{Values: map[string]any{"preset": "ollama", "auth": "none", "base_url": "https://ollama.internal.example/v1"}})
+	if err != nil || p.Capabilities().Tools {
+		t.Errorf("a self-hosted server with nothing proved: %v %+v", err, p)
+	}
+	if err := b.Manifest.Validate(map[string]any{"preset": "kimi", "proven": []any{"tools"}, "base_url": "http://plain.example"}); err == nil {
+		t.Error("a base URL over plain HTTP was accepted")
+	}
+}
