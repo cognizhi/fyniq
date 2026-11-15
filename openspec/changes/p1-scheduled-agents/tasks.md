@@ -197,9 +197,18 @@
 
 ## 8. Evals and controls
 
-- [ ] 8.1 The `agent` suite kind and its harness: golden companies with planted problems, findings by key and status,
+- [x] 8.1 The `agent` suite kind and its harness: golden companies with planted problems, findings by key and status,
   no "all clear", drafts matching their task type, red-team cases with no action. The launch's cases are G4-076, an
   overdue filing, no FY end and an injected memo (design D10). Tests `// req: QA-AI-07`.
+  As built:
+  - `evalsuite.AgentSuite` (`evals/<suite>/agent.json`) and `JudgeAgent`. A case runs the daily monitor on its date,
+    once or on days in a row, and is judged by its findings (with windows), no "all clear", the open tasks per finding,
+    exactly the expected proposals and absent injected words.
+  - `TestTheAgentSuites` runs each case through the worker, the API's model step and the AI service. It checks itself
+    (a missing finding, "all clear" or a repeated injection fails) and replays recorded models from
+    `evals/cassettes/agent`. `make evals` runs it and folds its report in as `agents`.
+  - `secretary-launch`: G4-076, an overdue filing with a drafted reminder, no financial year, and an injected memo.
+    None is recorded yet: `FYNIQ_EVALS_RELEASE=1` fails until a model's runs are recorded [live-verify].
 - [ ] 8.2 `verify ai.agent-runs` nightly; `compliance/controls/CTL-AI-09.yaml` running (design D11). Tests
   `// req: CTL-AI-09`.
 

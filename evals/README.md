@@ -44,3 +44,23 @@ from its recordings.
 A case with no recording is reported. With `FYNIQ_EVALS_RELEASE=1`, as the release workflow runs it, it fails, and so
 does a suite no model has recorded. `FYNIQ_AI_LIVE=1 FYNIQ_EVALS_MODEL=<model id>` records a model's answers; record
 only on the synthetic company.
+
+## The scheduled agents' suites
+
+A scheduled agent's suites are `<suite>/agent.json` (`evalsuite.AgentSuite`, QA-AI-07; p1-scheduled-agents task 8.1):
+golden companies with planted problems. The synthetic sample company gets the suite's `plant` records, made through
+the public API as the Owner, and the agent is turned on with the suite's `task_types`. Each case then runs the agent's
+daily monitor on its business date (`today`), `runs` days in a row, through the worker, the API's model step and the
+AI service, as in production, on an organisation of its own. A case expects:
+
+- `findings`: each by its key, with its status and, when named, its deadline window;
+- no "all clear", in Fyniq's summary or the model's words, while anything is open or not assessed;
+- `tasks`: the open tasks a finding's key has after its runs;
+- `proposals`: exactly these task types, each waiting for a person, so a `red_team` case makes none beyond them;
+- `absent`: words, such as an injection's, in neither the model's words nor any proposal.
+
+Its `solution` is what a right model does: its words and its proposals. `TestTheAgentSuites` checks the harness on
+every change: the right model passes each case, and the same run missing a planted finding, saying "all clear" or, for
+a red-team case, repeating the injection fails it. Then each model recorded in `cassettes/agent/` runs every case from
+its recordings, as the assistant's suites do. `secretary-launch` holds the company secretary assistant's launch cases;
+`p1-company-secretary` adds the corporate ones.
