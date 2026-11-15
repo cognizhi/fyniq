@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -28,10 +29,26 @@ type Command interface {
 	// DryRun does it in u, as as, in a unit of work that is rolled back: what it would change, in platform words, and
 	// the version of every record it read or changed. A refusal names the field and the fix, as the API's own do.
 	DryRun(ctx context.Context, u storage.UnitOfWork, payload json.RawMessage, as Actor) (Impact, error)
+	// Execute does it in u, as as (the approving person, AI-11), only while every record the dry run read is at its base
+	// version: ErrStale when one moved (AI-P5). It runs in the executor, under the executor's role, which holds the
+	// grants its task types need and no more; locks, policies and validations hold as for any write.
+	Execute(ctx context.Context, u storage.UnitOfWork, payload json.RawMessage, base map[string]int64, as Actor) (Execution, error)
+}
+
+// ErrStale is a command's refusal to execute because a record it read moved since the dry run (AI-P5).
+var ErrStale = errors.New("a record the proposal relied on changed since its dry run")
+
+// Execution is what a command did: the records it made or changed and the ledger entries it posted.
+type Execution struct {
+	Records []string `json:"records"`
+	Entries []string `json:"entries"`
 }
 
 // Commands are the release's commands, by the name the catalogue gives them.
 type Commands map[string]Command
+
+// Release are the release's commands. Each task type's change adds its own with what it acts on; the core has none.
+var Release = Commands{}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {

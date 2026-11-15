@@ -609,6 +609,7 @@ fyniq_executor  SELECT    recurring_journal
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
+fyniq_executor  SELECT    role_assignment
 fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
@@ -616,6 +617,7 @@ fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
+fyniq_executor  SELECT    user_membership
 fyniq_executor  SELECT    withholding_decision
 fyniq_readonly  SELECT    access_review_attestation
 fyniq_readonly  SELECT    account

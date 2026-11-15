@@ -25,9 +25,6 @@ import (
 // its policy (approval.Policies, Fixed). The final approval marks it Approved and queues it for the executor, in the same
 // transaction; the API never executes it.
 
-// ExecutorKind is the executor's work of an approved proposal (design D6).
-const ExecutorKind = "ai_proposal.execute"
-
 // turnMFA is how an AI proposal's requester is authenticated: by their live turn (AI-89), which approval_request_mfa_known
 // lets ai_proposal requests alone hold.
 const turnMFA = "ai_turn"
@@ -164,7 +161,7 @@ func (a *API) executeAIProposal(ctx context.Context, u storage.UnitOfWork, r sto
 	if err != nil {
 		return err
 	}
-	if _, err := u.Outbox().Enqueue(ctx, storage.NewOutboxItem{Class: storage.ClassExecutor, Kind: ExecutorKind, Payload: body,
+	if _, err := u.Outbox().Enqueue(ctx, storage.NewOutboxItem{Class: storage.ClassExecutor, Kind: proposal.ExecutorKind, Payload: body,
 		BusinessKey: approved.ID.String()}); err != nil {
 		return fmt.Errorf("queueing the approved proposal for the executor: %w", err)
 	}

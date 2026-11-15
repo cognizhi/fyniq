@@ -42,6 +42,10 @@ func (notesCommand) DryRun(ctx context.Context, u storage.UnitOfWork, payload js
 	return proposal.Impact{Summary: "Creates the customers of each note", Base: map[string]int64{}}, nil
 }
 
+func (notesCommand) Execute(_ context.Context, _ storage.UnitOfWork, _ json.RawMessage, _ map[string]int64, _ proposal.Actor) (proposal.Execution, error) {
+	return proposal.Execution{}, nil
+}
+
 // batchCatalogue is a catalogue of two test-only batch task types: tier 1 and tier 2, the Owner approving.
 func batchCatalogue(t *testing.T) *proposal.Catalogue {
 	t.Helper()
