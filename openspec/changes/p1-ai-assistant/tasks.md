@@ -82,7 +82,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 8.1 The harness (design D13): assistant suites in `cmd/evals` run through the real orchestrator on recorded
   answers, release gates (100% numeric accuracy, 0 red-team successes), the report; ready for the suites of
   `p1-scheduled-agents`, `p1-ai-proposals` and `p1-knowledge-base`. Test `// req: QA-AI-01`.
-- [ ] 8.2 The golden question set: at least 200 questions on the sample company, expectations computed from the seed
+- [x] 8.2 The golden question set: at least 200 questions on the sample company, expectations computed from the seed
   and checked against the oracle's figures; recordings made live on synthetic data `[live-verify]`. Test
   `// req: QA-AI-01`.
 - [ ] 8.3 The red-team suite: injections planted in sample bank lines, bills and documents, exclusion probes,

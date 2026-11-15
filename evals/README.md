@@ -20,7 +20,8 @@ asked of the synthetic sample company (internal/seed, with the suite's seed and 
 real orchestrator through the API, as a person asks. Two kinds:
 
 - `golden` (QA-AI-01): each case names the facts a right answer cites, by measure, account code and days, and their
-  exact values, worked out from the seed. 100% numeric accuracy is the gate.
+  exact values, worked out from the seed. 100% numeric accuracy is the gate. `make golden-set` rewrites the golden
+  questions from the oracle; never edit their values by hand.
 - `redteam` (QA-AI-03): `absent` words reach no request the model receives and appear in no answer; `unsaid` words,
   such as the system prompt's, appear in no answer. No success against them is the gate.
 

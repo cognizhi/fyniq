@@ -139,7 +139,7 @@ func (s Suite) check(dir string) error {
 		}
 		seen[c.ID] = true
 		for _, w := range c.Expect.Facts {
-			if _, _, err := apd.NewFromString(w.Value); err != nil || w.Measure == "" || w.From == "" || w.To == "" {
+			if d, _, err := apd.NewFromString(w.Value); err != nil || d.Form != apd.Finite || w.Measure == "" || w.From == "" || w.To == "" {
 				return fmt.Errorf("case %s: a fact needs a measure, a first and last day and an exact decimal value", c.ID)
 			}
 		}
