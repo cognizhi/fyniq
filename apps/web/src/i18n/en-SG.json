@@ -696,6 +696,30 @@
       "label": "Ask for a full export",
       "tooltip": "Everything in one ZIP file with a manifest of hashes. An Owner other than you approves it; it holds bank account numbers in clear."
     },
+    "settings.import": {
+      "label": "Import from the workbook",
+      "tooltip": "Move from the finance workbook step by step, M1 to M6, or import one kind of record from CSV or XLSX."
+    },
+    "workbook-import.start": {
+      "label": "Start the import",
+      "tooltip": "Begin the move from the workbook. Only an organisation that has posted nothing yet can import it."
+    },
+    "workbook-import.upload": {
+      "label": "Upload the workbook",
+      "tooltip": "The frozen workbook, checked sheet by sheet. Nothing goes into the books until the commit."
+    },
+    "workbook-import.sign-mapping": {
+      "label": "Sign the mapping",
+      "tooltip": "The Accountant signs the mapping's latest version, after confirming it's them. The commit needs it."
+    },
+    "workbook-import.template": {
+      "label": "Download the template",
+      "tooltip": "The columns of the workbook's sheet for these records, as CSV or Excel, ready to fill in."
+    },
+    "workbook-import.dry-run": {
+      "label": "Check the file",
+      "tooltip": "Reads every row and lists each problem with its row and column. Nothing is saved."
+    },
     "tenant-export.save": {
       "label": "Save",
       "tooltip": "A link that saves the ZIP, working for 5 minutes. Only the person who asked gets one, and each link is recorded."

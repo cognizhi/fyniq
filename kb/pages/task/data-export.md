@@ -4,7 +4,7 @@ type: task
 title: See where your data lives, and ask for, approve and save a full export
 summary: Settings › Data and export, the region and retention read only, the full export, asked by an Administrator, approved by another Owner, saved within 24 hours
 sources:
-  - docs/user-guide/data-export.md sha256:26c1c87c42335e10c5790e34c5928188455a344e405468541286c32e49846b49
+  - docs/user-guide/data-export.md sha256:1a277f0c377e22b0eea33ea5c9eb1120663e5b3371e312afb7cc57999b66178a
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,7 @@ aliases:
 
 - **Settings → Data and export** shows where the organisation's data lives and how long it is kept, and gives a full copy of everything it keeps in Fyniq.
 - It is in Expert mode, for the Owner, the Administrator and the data protection officer.
+- To bring data in, use **Settings → Import** ([[settings.import]]).
 
 (src: docs/user-guide/data-export.md#what-it-is)
 

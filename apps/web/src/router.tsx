@@ -119,6 +119,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-members": lazyRouteComponent(() => import("./screens/settings/Members"), "Members"),
   "settings-access-review": lazyRouteComponent(() => import("./screens/settings/AccessReview"), "AccessReview"),
   "settings-data": lazyRouteComponent(() => import("./screens/settings/DataExport"), "DataExport"),
+  "settings-import": lazyRouteComponent(() => import("./screens/settings/WorkbookImport"), "WorkbookImport"),
   "director-accounts": lazyRouteComponent(() => import("./screens/founders/DirectorAccounts"), "DirectorAccounts"),
   "director-settlement": lazyRouteComponent(() => import("./screens/founders/DirectorSettlement"), "DirectorSettlement"),
   "cap-table": lazyRouteComponent(() => import("./screens/equity/CapTable"), "CapTable"),

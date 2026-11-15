@@ -186,6 +186,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   the generic import's templates and dry run. Built from `docs/design/screens/src/WorkbookImport.html`; help keys in the
   registry; guide `docs/user-guide/workbook-import.md` compiled into `kb/`. Tests `workbook-import.test.tsx` (each step's
   states, axe) `// req: FR-MIG-01`, `// req: FR-MIG-02`, `// req: FR-MIG-03`.
+  (Slice 26 built the page at `/settings/import` with the steps, starting the import, M1's upload and report by sheet,
+  M2's mapping of the accounts with its versions and the Accountant's sign-off, and the generic import's templates, dry
+  run and import; the guide compiled as `settings.import`. Left: M3's commit and its progress, M4's parity report and
+  register, M5, M6.)
 - [x] 9.2 `data-export` (Settings › Data): the data region and retention (read only where fixed) and the tenant export,
   from asking to downloading. Built from `docs/design/screens/src/DataExport.html`; help keys; guide
   `docs/user-guide/data-export.md` compiled into `kb/`. Tests `data-export.test.tsx` `// req: FR-MIG-04`.

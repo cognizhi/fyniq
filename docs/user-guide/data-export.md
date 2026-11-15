@@ -12,7 +12,7 @@ requirements: [FR-MIG-04, AUD-05]
 
 **Settings → Data and export** shows where the organisation's data lives and how long it is kept, and gives a full
 copy of everything it keeps in Fyniq. It is in Expert mode, for the Owner, the Administrator and the data protection
-officer.
+officer. To bring data in, use **Settings → Import** ([Import from the finance workbook](workbook-import.md)).
 
 ## Where your data lives
 
