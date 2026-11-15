@@ -1,0 +1,28 @@
+{
+  "id": "golden",
+  "agent": "chat",
+  "version": 1,
+  "kind": "golden",
+  "description": "The golden questions (QA-AI-01): questions on the synthetic sample company, each with the facts a right answer cites and their exact values, worked out from the seed in cents without the engine. 100% numeric accuracy is the release gate. No organisation data.",
+  "company": {"seed": 1, "journals": 240},
+  "cases": [
+    {"id": "revenue-2026-03", "question": "What was revenue in March 2026?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "revenue", "from": "2026-03", "to": "2026-03"}}],
+      "expect": {"facts": [{"measure": "revenue", "from": "2026-03-01", "to": "2026-03-31", "value": "-1108254.63"}]}},
+    {"id": "revenue-2026-06", "question": "How much revenue did we recognise in June 2026?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "revenue", "from": "2026-06", "to": "2026-06"}}],
+      "expect": {"facts": [{"measure": "revenue", "from": "2026-06-01", "to": "2026-06-30", "value": "1133585.41"}]}},
+    {"id": "revenue-2026-q3", "question": "What was revenue for July to September 2026 in total?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "revenue", "from": "2026-07", "to": "2026-09", "grain": "total"}}],
+      "expect": {"facts": [{"measure": "revenue", "from": "2026-07-01", "to": "2026-09-30", "value": "-1025900.62"}]}},
+    {"id": "software-2026-05", "question": "How did the software subscriptions account move in May 2026?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "account_movement", "by": "account", "member": "6120", "from": "2026-05", "to": "2026-05"}}],
+      "expect": {"facts": [{"measure": "account_movement", "account": "6120", "from": "2026-05-01", "to": "2026-05-31", "value": "-175685.05"}]}},
+    {"id": "hosting-2026-08", "question": "What did cloud hosting come to in August 2026?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "account_movement", "by": "account", "member": "5010", "from": "2026-08", "to": "2026-08"}}],
+      "expect": {"facts": [{"measure": "account_movement", "account": "5010", "from": "2026-08-01", "to": "2026-08-31", "value": "427697.60"}]}},
+    {"id": "consultancy-2026-01-reversed", "question": "What was the net movement on consultancy in January 2026?",
+      "solution": [{"tool": "metrics.query", "input": {"measure": "account_movement", "by": "account", "member": "6530", "from": "2026-01", "to": "2026-01"}}],
+      "expect": {"facts": [{"measure": "account_movement", "account": "6530", "from": "2026-01-01", "to": "2026-01-31", "value": "0.00"}]}}
+  ]
+}
