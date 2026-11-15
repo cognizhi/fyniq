@@ -19,11 +19,18 @@
 
 ## 2. The proposal store
 
-- [ ] 2.1 Migration: `ai_proposal` with its lifecycle guard, FORCE RLS, the API's, the approval engine's and the
+- [x] 2.1 Migration: `ai_proposal` with its lifecycle guard, FORCE RLS, the API's, the approval engine's and the
   executor's column grants, nothing for the AI's role, the export catalogue and goldens (design D2). Tests
   `// req: ai/proposals Proposal lifecycle`, `// req: ai/proposals Proposal content and payload hash`,
   `// req: ai/proposals Proposal rationale, evidence and dry-run impact`,
   `// req: ai/proposals Proposal tier, originator, approvals and execution record`, an attack test on the guard.
+  As built (migration 000375, port `AIProposals`): the payload is kept as its exact JSON text, and the database checks
+  its SHA-256 and that of what was approved (a batch's subset). The guard names the role of each step: the API's
+  (fyniq_api, the approval engine included), the worker's (expiry) and the executor's; it refuses a step out of the
+  lifecycle, a change to what was proposed or decided, and a delete (FY342). `approvals[]` are the approval engine's
+  signatures, reached by `approval_request_id` (task 4.1), not copied. The turn is kept by ID without a foreign key, so
+  the conversation's purge after retention runs and the proposal keeps its record; the data inventory gains the class
+  `ai-proposals`.
 
 ## 3. Proposing
 

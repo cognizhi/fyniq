@@ -286,6 +286,42 @@ ai_price_rate | kind | text | not null |
 ai_price_rate | above | bigint | not null | 0
 ai_price_rate | unit | text | not null | 
 ai_price_rate | amount | numeric(24,10) | not null | 
+ai_proposal | organisation_id | uuid | not null | current_org()
+ai_proposal | id | uuid | not null | uuidv7()
+ai_proposal | task_type | text | not null | 
+ai_proposal | task_version | integer | not null | 
+ai_proposal | task_sha256 | text | not null | 
+ai_proposal | payload | text | not null | 
+ai_proposal | payload_sha256 | text | not null | 
+ai_proposal | item_count | integer | not null | 0
+ai_proposal | rationale | text | not null | ''::text
+ai_proposal | evidence | jsonb | not null | '[]'::jsonb
+ai_proposal | impact | jsonb | null | 
+ai_proposal | base_versions | jsonb | not null | '{}'::jsonb
+ai_proposal | risk_tier | smallint | not null | 
+ai_proposal | required_approvals | smallint | not null | 1
+ai_proposal | agent | text | not null | 
+ai_proposal | requested_by | uuid | not null | 
+ai_proposal | turn_id | uuid | null | 
+ai_proposal | run_id | uuid | null | 
+ai_proposal | model | text | not null | 
+ai_proposal | prompt | text | not null | 
+ai_proposal | tools_sha256 | text | not null | 
+ai_proposal | status | text | not null | 'draft'::text
+ai_proposal | reason | text | not null | ''::text
+ai_proposal | approval_request_id | uuid | null | 
+ai_proposal | decided_by | uuid | null | 
+ai_proposal | decided_at | timestamp with time zone | null | 
+ai_proposal | approved_items | integer[] | null | 
+ai_proposal | approved_payload | text | null | 
+ai_proposal | approved_sha256 | text | null | 
+ai_proposal | superseded_by | uuid | null | 
+ai_proposal | execution | jsonb | null | 
+ai_proposal | started_at | timestamp with time zone | null | 
+ai_proposal | finished_at | timestamp with time zone | null | 
+ai_proposal | proposed_at | timestamp with time zone | not null | 
+ai_proposal | expires_at | timestamp with time zone | not null | 
+ai_proposal | version | integer | not null | 1
 ai_qualification | organisation_id | uuid | not null | current_org()
 ai_qualification | id | uuid | not null | uuidv7()
 ai_qualification | agent | text | not null | 
@@ -2722,6 +2758,46 @@ CASE kind
     ELSE 'per_million_tokens'::text
 END))
 ai_price_rate | ai_price_rate_unit_not_null | NOT NULL unit
+ai_proposal | ai_proposal_agent_not_null | NOT NULL agent
+ai_proposal | ai_proposal_approval_fkey | FOREIGN KEY (organisation_id, approval_request_id) REFERENCES approval_request(organisation_id, id)
+ai_proposal | ai_proposal_approved_payload | CHECK ((((approved_payload IS NULL) = (approved_sha256 IS NULL)) AND ((approved_payload IS NULL) OR (((length(approved_payload) >= 2) AND (length(approved_payload) <= 65536)) AND (jsonb_typeof((approved_payload)::jsonb) = 'object'::text) AND (approved_sha256 = encode(sha256(convert_to(approved_payload, 'UTF8'::name)), 'hex'::text))))))
+ai_proposal | ai_proposal_base_versions_not_null | NOT NULL base_versions
+ai_proposal | ai_proposal_decided_by_fkey | FOREIGN KEY (decided_by) REFERENCES app_user(user_id)
+ai_proposal | ai_proposal_evidence_not_null | NOT NULL evidence
+ai_proposal | ai_proposal_expires_at_not_null | NOT NULL expires_at
+ai_proposal | ai_proposal_expiry | CHECK (((expires_at > proposed_at) AND (expires_at <= (proposed_at + '72:00:00'::interval))))
+ai_proposal | ai_proposal_id_not_null | NOT NULL id
+ai_proposal | ai_proposal_item_count_not_null | NOT NULL item_count
+ai_proposal | ai_proposal_items | CHECK ((((item_count >= 0) AND (item_count <= 100)) AND ((approved_items IS NULL) OR ((item_count > 0) AND ((cardinality(approved_items) >= 1) AND (cardinality(approved_items) <= item_count)) AND (1 <= ALL (approved_items)) AND (item_count >= ALL (approved_items))))))
+ai_proposal | ai_proposal_model_not_null | NOT NULL model
+ai_proposal | ai_proposal_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal | ai_proposal_originator | CHECK (((agent ~ '^[a-z][a-z_]{1,40}$'::text) AND (num_nonnulls(turn_id, run_id) = 1) AND ((length(model) >= 1) AND (length(model) <= 200)) AND (prompt ~ '^[a-z][a-z_]{1,30}@[1-9][0-9]{0,3}$'::text) AND (tools_sha256 ~ '^[0-9a-f]{64}$'::text)))
+ai_proposal | ai_proposal_payload | CHECK ((((length(payload) >= 2) AND (length(payload) <= 65536)) AND (jsonb_typeof((payload)::jsonb) = 'object'::text) AND (payload_sha256 = encode(sha256(convert_to(payload, 'UTF8'::name)), 'hex'::text))))
+ai_proposal | ai_proposal_payload_not_null | NOT NULL payload
+ai_proposal | ai_proposal_payload_sha256_not_null | NOT NULL payload_sha256
+ai_proposal | ai_proposal_pkey | PRIMARY KEY (organisation_id, id)
+ai_proposal | ai_proposal_prompt_not_null | NOT NULL prompt
+ai_proposal | ai_proposal_proposed_at_not_null | NOT NULL proposed_at
+ai_proposal | ai_proposal_rationale_not_null | NOT NULL rationale
+ai_proposal | ai_proposal_reason_not_null | NOT NULL reason
+ai_proposal | ai_proposal_requested_by_fkey | FOREIGN KEY (requested_by) REFERENCES app_user(user_id)
+ai_proposal | ai_proposal_requested_by_not_null | NOT NULL requested_by
+ai_proposal | ai_proposal_required_approvals_not_null | NOT NULL required_approvals
+ai_proposal | ai_proposal_risk_tier_not_null | NOT NULL risk_tier
+ai_proposal | ai_proposal_state | CHECK ((((impact IS NOT NULL) = (status <> ALL (ARRAY['draft'::text, 'invalid'::text]))) AND ((decided_at IS NOT NULL) = (status <> ALL (ARRAY['draft'::text, 'invalid'::text, 'pending'::text]))) AND ((decided_by IS NOT NULL) = (status = ANY (ARRAY['approved'::text, 'rejected'::text, 'executing'::text, 'executed'::text, 'stale'::text, 'failed'::text]))) AND ((approved_payload IS NOT NULL) = (status = ANY (ARRAY['approved'::text, 'executing'::text, 'executed'::text, 'stale'::text, 'failed'::text]))) AND ((reason <> ''::text) = (status = ANY (ARRAY['invalid'::text, 'rejected'::text, 'stale'::text, 'failed'::text]))) AND ((superseded_by IS NOT NULL) = (status = 'superseded'::text)) AND ((started_at IS NOT NULL) = (status = ANY (ARRAY['executing'::text, 'executed'::text, 'stale'::text, 'failed'::text]))) AND ((finished_at IS NOT NULL) = (status = ANY (ARRAY['executed'::text, 'stale'::text, 'failed'::text]))) AND ((execution IS NOT NULL) = (status = ANY (ARRAY['executed'::text, 'stale'::text, 'failed'::text]))) AND ((status <> 'expired'::text) OR (decided_at >= expires_at)) AND ((status <> ALL (ARRAY['approved'::text, 'rejected'::text])) OR (decided_at < expires_at)) AND ((decided_at IS NULL) OR (decided_at >= proposed_at)) AND ((started_at IS NULL) OR (started_at >= decided_at)) AND ((finished_at IS NULL) OR (finished_at >= started_at))))
+ai_proposal | ai_proposal_status | CHECK ((status = ANY (ARRAY['draft'::text, 'invalid'::text, 'pending'::text, 'approved'::text, 'rejected'::text, 'expired'::text, 'superseded'::text, 'executing'::text, 'executed'::text, 'stale'::text, 'failed'::text])))
+ai_proposal | ai_proposal_status_not_null | NOT NULL status
+ai_proposal | ai_proposal_superseded_fkey | FOREIGN KEY (organisation_id, superseded_by) REFERENCES ai_proposal(organisation_id, id)
+ai_proposal | ai_proposal_task | CHECK (((task_type ~ '^[a-z]+\.[a-z]+(_[a-z]+)*$'::text) AND (length(task_type) <= 56) AND (task_version >= 1) AND (task_sha256 ~ '^[0-9a-f]{64}$'::text)))
+ai_proposal | ai_proposal_task_sha256_not_null | NOT NULL task_sha256
+ai_proposal | ai_proposal_task_type_not_null | NOT NULL task_type
+ai_proposal | ai_proposal_task_version_not_null | NOT NULL task_version
+ai_proposal | ai_proposal_tier | CHECK ((((risk_tier >= 1) AND (risk_tier <= 3)) AND ((required_approvals >= 1) AND (required_approvals <= 2))))
+ai_proposal | ai_proposal_tools_sha256_not_null | NOT NULL tools_sha256
+ai_proposal | ai_proposal_version | CHECK ((version >= 1))
+ai_proposal | ai_proposal_version_not_null | NOT NULL version
+ai_proposal | ai_proposal_words | CHECK (((length(rationale) <= 4000) AND (length(reason) <= 1000) AND (jsonb_typeof(evidence) = 'array'::text) AND (jsonb_array_length(evidence) <= 50) AND (jsonb_typeof(base_versions) = 'object'::text) AND (pg_column_size(impact) <= 262144)))
+ai_proposal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_qualification | ai_qualification_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_qualification | ai_qualification_agent_not_null | NOT NULL agent
 ai_qualification | ai_qualification_cases_not_null | NOT NULL cases
@@ -5992,6 +6068,10 @@ CREATE INDEX ai_model_list_read_connection ON fyniq.ai_model_list_read USING btr
 CREATE INDEX ai_price_by_approval ON fyniq.ai_price USING btree (organisation_id, approval_id)
 CREATE INDEX ai_price_by_catalogue ON fyniq.ai_price USING btree (organisation_id, catalogue_id)
 CREATE INDEX ai_price_catalogue_latest ON fyniq.ai_price_catalogue USING btree (source, fetched_at DESC)
+CREATE INDEX ai_proposal_by_status ON fyniq.ai_proposal USING btree (organisation_id, status, proposed_at)
+CREATE INDEX ai_proposal_of_approval ON fyniq.ai_proposal USING btree (organisation_id, approval_request_id) WHERE (approval_request_id IS NOT NULL)
+CREATE INDEX ai_proposal_of_requester ON fyniq.ai_proposal USING btree (organisation_id, requested_by, proposed_at DESC)
+CREATE INDEX ai_proposal_of_turn ON fyniq.ai_proposal USING btree (organisation_id, turn_id) WHERE (turn_id IS NOT NULL)
 CREATE INDEX ai_qualification_latest ON fyniq.ai_qualification USING btree (organisation_id, connection_id, model, agent, ran_at DESC)
 CREATE INDEX ai_reservation_by_month ON fyniq.ai_reservation USING btree (organisation_id, month)
 CREATE INDEX ai_reservation_by_run ON fyniq.ai_reservation USING btree (organisation_id, run_id)
@@ -6160,6 +6240,7 @@ CREATE UNIQUE INDEX ai_price_pkey ON fyniq.ai_price USING btree (organisation_id
 CREATE UNIQUE INDEX ai_price_rate_one ON fyniq.ai_price_rate USING btree (organisation_id, price_id, kind, above)
 CREATE UNIQUE INDEX ai_price_rate_pkey ON fyniq.ai_price_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_price_waiting ON fyniq.ai_price USING btree (organisation_id, connection_id, model) WHERE (status = 'pending'::text)
+CREATE UNIQUE INDEX ai_proposal_pkey ON fyniq.ai_proposal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_qualification_pkey ON fyniq.ai_qualification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_reservation_pkey ON fyniq.ai_reservation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_pkey ON fyniq.ai_route USING btree (organisation_id, id)
@@ -6600,6 +6681,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_connection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_conversation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_conversation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_feedback DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_feedback', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_proposal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_proposal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
@@ -6699,6 +6781,8 @@ CREATE TRIGGER ai_price_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_pric
 CREATE TRIGGER ai_price_no_truncate BEFORE TRUNCATE ON fyniq.ai_price FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_price_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_price_rate FOR EACH ROW EXECUTE FUNCTION ai_price_guard()
 CREATE TRIGGER ai_price_rate_no_truncate BEFORE TRUNCATE ON fyniq.ai_price_rate FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_proposal FOR EACH ROW EXECUTE FUNCTION ai_proposal_guard()
+CREATE TRIGGER ai_proposal_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_qualification_guard BEFORE DELETE OR UPDATE ON fyniq.ai_qualification FOR EACH ROW EXECUTE FUNCTION ai_qualification_guard()
 CREATE TRIGGER ai_qualification_no_truncate BEFORE TRUNCATE ON fyniq.ai_qualification FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_reservation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_reservation FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
@@ -7054,6 +7138,7 @@ ai_model | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_proposal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_qualification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_reservation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7238,6 +7323,7 @@ ai_model_list_read | enabled | forced
 ai_price | enabled | forced
 ai_price_catalogue | disabled | not forced
 ai_price_rate | enabled | forced
+ai_proposal | enabled | forced
 ai_qualification | enabled | forced
 ai_reservation | enabled | forced
 ai_route | enabled | forced
@@ -7452,6 +7538,7 @@ ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_
 ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9192d71bbd7b7a3c49a44519d076a1e
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
+ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 07f6ab3b5f0667038bcdcc48a7307b64
 ai_purge_conversations(p_before timestamp with time zone, OUT conversations integer, OUT turns integer) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7fe0af9f8f3135d573b9063e73a9ab00
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
 ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric, p_tokens bigint) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d7de60573770113c34cae08e8f814277

@@ -369,6 +369,45 @@ type FyniqAiPriceRate struct {
 	Amount         string
 }
 
+type FyniqAiProposal struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	TaskType          string
+	TaskVersion       int32
+	TaskSha256        string
+	Payload           string
+	PayloadSha256     string
+	ItemCount         int32
+	Rationale         string
+	Evidence          []byte
+	Impact            []byte
+	BaseVersions      []byte
+	RiskTier          int16
+	RequiredApprovals int16
+	Agent             string
+	RequestedBy       uuid.UUID
+	TurnID            *uuid.UUID
+	RunID             *uuid.UUID
+	Model             string
+	Prompt            string
+	ToolsSha256       string
+	Status            string
+	Reason            string
+	ApprovalRequestID *uuid.UUID
+	DecidedBy         *uuid.UUID
+	DecidedAt         *time.Time
+	ApprovedItems     []int32
+	ApprovedPayload   *string
+	ApprovedSha256    *string
+	SupersededBy      *uuid.UUID
+	Execution         []byte
+	StartedAt         *time.Time
+	FinishedAt        *time.Time
+	ProposedAt        time.Time
+	ExpiresAt         time.Time
+	Version           int32
+}
+
 type FyniqAiQualification struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

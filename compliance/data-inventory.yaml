@@ -125,6 +125,15 @@ classes:
     protection: "NRIC and FIN numbers, bank account numbers, secrets and home addresses never reach a model, nor payroll unless the organisation allows it (AI-02, AI-20); a turn that read payroll is masked to a reader who may not see payroll"
     transfers: "Model calls only: the flow ai-models"
     columns: [ai_turn.question, ai_turn.answer, ai_feedback.reason]
+  - key: ai-proposals
+    what: "The changes the AI proposed: each task type's payload, the AI's rationale and evidence, the dry run, who it acted for, who decided and how it ran"
+    why: "So a person approves exactly what executes, and each AI-proposed change keeps the record of its decision (AI-P3 to AI-P5, AI-12)"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "Each member the proposals made for them and those they may approve; the Owner and the DPO every one"
+    retention: "Kept with the organisation's records: nothing removes a proposal, as a decision's record (§9.5) [counsel to confirm]"
+    protection: "Only catalogue task types, from what the AI read without NRIC and FIN numbers, bank account numbers, secrets and home addresses (AI-02, AI-20); the audit trail keeps the payload's hash, not the payload"
+    transfers: "None"
+    columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason]
 flows:
   - key: ai-models
     what: "The assistant's model calls to the organisation's AI connections: under preset A, the default at go-live, Claude on Google Cloud's Agent Platform in Singapore (asia-southeast1), under Google Cloud's terms (AI-05, ADR-T2)"

@@ -215,6 +215,7 @@ var fyCodes = map[string]string{
 	"FY339": storage.CodeAIQualification,   // a qualification changed or removed, or put out of date twice (000361)
 	"FY340": storage.CodeAIGrant,           // a delegated read grant changed, removed or ended twice (000366)
 	"FY341": storage.CodeAIConversation,    // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
+	"FY342": storage.CodeAIProposal,        // an AI proposal's step out of its lifecycle or by another role, a change to what it proposed, or a delete (000375)
 	"FY336": storage.CodeAIBudget,          // an AI budget or reservation changed as it may not (000359)
 	"FY337": storage.CodeAIConnectionSpent, // a connection's AI budget spent this month (000359)
 	"FY338": storage.CodeAIBudgetSpent,     // the organisation's, agent's or person's AI budget spent, or not applicable (000359)
@@ -263,6 +264,9 @@ var fyCodes = map[string]string{
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
 	"ai_feedback_once":                          {storage.CodeDuplicate, "the person rated this answer already"},
+	"ai_proposal_payload":                       {storage.CodeInvalid, "the proposal's payload is not a JSON object of at most 64 KiB, or its SHA-256 is not the payload's"},
+	"ai_proposal_approved_payload":              {storage.CodeInvalid, "what was approved is not a JSON object of at most 64 KiB, or its SHA-256 is not its own"},
+	"ai_proposal_expiry":                        {storage.CodeInvalid, "a proposal expires after it is made and within 72 hours"},
 	"statutory_pack_activation_two_people":      {storage.CodePack, "the person who proposed activating the pack version cannot approve it (SOD-10)"},
 	"statutory_pack_activation_version_key":     {storage.CodeDuplicate, "the organisation has activated that pack version already"},
 	"statutory_pack_activation_approval_fkey":   {storage.CodePack, "an activation names an approval request of this organisation"},
