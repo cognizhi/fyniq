@@ -92,7 +92,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 9. The finish
 
-- [ ] 9.1 AI-05: the `chat` agent's route on preset A at go-live, its data inventory row, and the pre-go-live check
+- [x] 9.1 AI-05: the `chat` agent's route on preset A at go-live, its data inventory row, and the pre-go-live check
   (G4-087) as a runbook step `[live-verify]`. Test `// req: AI-05`.
 - [ ] 9.2 `docs/security/threat-models/ai-assistant.md` (prompt injection, exclusion bypass, the delegated token,
   accumulated disclosure, denial of wallet, output manipulation, the relayed stream) for security review #4; the build

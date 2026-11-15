@@ -396,6 +396,16 @@ AI-28).**
     each turn adds a `fyniq.ai.turn` event with those counts to its request span (`telemetry.Counts`), counts and
     codes only. Counting them in Cloud Monitoring is [live-verify].
   - Approval and edit-before-approve rates arrive with p1-ai-proposals.
+- As built (task 9.1): `TestTheAssistantGoesLiveOnPresetA` checks the chat agent (know-how, business figures, personal
+  data, payroll):
+  - preset A routes it to the Singapore connection only, on the newest model of its line that passed its evals there,
+    even when the global endpoint has a newer one;
+  - B leaves its personal data and payroll with A;
+  - C picks A for it.
+- The data inventory gains the class `ai-conversations` and the flow `ai-models` (model calls only, in Singapore, not
+  crossing a border).
+- `docs/runbooks/ai-go-live.md` is G4-087's check, all [live-verify]. Whether the location policy refuses inference on
+  the global endpoint is [verify].
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with
