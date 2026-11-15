@@ -59,7 +59,7 @@ func (r aiProposals) List(ctx context.Context, q storage.AIProposalQuery) ([]sto
 		return nil, err
 	}
 	rows, err := r.u.q.AIProposalsPage(ctx, sqlcdb.AIProposalsPageParams{Statuses: statusesOf(q.Statuses), RequestedBy: q.RequestedBy, TurnID: q.Turn,
-		After: q.After, MaxRows: int32(min(max(q.Limit, 1), 500))}) // #nosec G115 -- capped
+		RunID: q.Run, Agent: q.Agent, After: q.After, MaxRows: int32(min(max(q.Limit, 1), 500))}) // #nosec G115 -- capped
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "examples": [
+        "2026-11-16T23:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "entry": {
+      "description": "The schedule's entry.",
+      "enum": [
+        "monitor",
+        "cross_check"
+      ],
+      "examples": [
+        "monitor"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry",
+    "at"
+  ],
+  "title": "AgentNextRun",
+  "type": "object"
+}

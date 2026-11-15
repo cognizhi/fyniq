@@ -45,6 +45,7 @@ type AIProposalSummary struct {
 	Summary     string `json:"summary,omitempty" doc:"What it does, in the platform's words (AI-07)." example:"Creates the task Hold the AGM, due 30 June 2027"`
 	Reason      string `json:"reason,omitempty" doc:"Why it is invalid, rejected, stale or failed." example:"Not this year"`
 	RequestedBy string `json:"requested_by" format:"uuid" doc:"The person it was made for." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"`
+	Agent       string `json:"agent" doc:"The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary." example:"chat"`
 	Items       int    `json:"items" doc:"A batch's items; 0 when it is not a batch." example:"0"`
 	ApprovalID  string `json:"approval_id,omitempty" format:"uuid" doc:"Its approval request, where a person decides it." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f"`
 	ProposedAt  string `json:"proposed_at" format:"date-time" example:"2026-11-15T09:00:00Z"`
@@ -69,7 +70,6 @@ type AIProposalDetail struct {
 	Impact        any              `json:"impact,omitempty" doc:"The dry run's impact: what it would change, as its task type reports it (ledger lines, balances, checks, documents)." example:"{\"tasks\":[{\"title\":\"Hold the AGM\",\"change\":\"create\"}]}"`
 	Evidence      []AIEvidenceRef  `json:"evidence" nullable:"false" doc:"The records and documents the AI relied on."`
 	Rationale     *AIText          `json:"rationale,omitempty" doc:"Why the AI proposes it, in its words, apart from the platform's summary (AI-07)."`
-	Agent         string           `json:"agent" doc:"The AI that proposed it." example:"chat"`
 	Model         string           `json:"model" example:"claude-opus-5-5"`
 	Prompt        string           `json:"prompt" example:"chat@3"`
 	DecidedBy     string           `json:"decided_by,omitempty" format:"uuid" doc:"Who approved or rejected it." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"`
@@ -100,6 +100,7 @@ type (
 	aiProposalListInput struct {
 		PageQuery
 		Status string `query:"status" enum:"draft,invalid,pending,approved,rejected,expired,superseded,executing,executed,stale,failed" doc:"Only proposals in this state; leave it out for all." example:"pending"`
+		Agent  string `query:"agent" enum:"chat,company_secretary" doc:"Only the proposals of this AI: the assistant's turns, or a scheduled agent's runs." example:"company_secretary"`
 	}
 	aiProposalListOutput struct{ Body AIProposalPage }
 	// AIProposalPath names a proposal.
@@ -156,7 +157,7 @@ func registerAIProposalReads(a *API) {
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			var shown []storage.AIProposal
 			for round := 0; round < 10 && len(shown) <= in.PageSize; round++ {
-				batch, err := u.AIProposals().List(ctx, storage.AIProposalQuery{Statuses: statuses, After: after, Limit: 100})
+				batch, err := u.AIProposals().List(ctx, storage.AIProposalQuery{Statuses: statuses, Agent: in.Agent, After: after, Limit: 100})
 				if err != nil {
 					return err
 				}
@@ -309,7 +310,7 @@ func (a *API) proposalSummary(pr storage.AIProposal) AIProposalSummary {
 		name = tt.Name
 	}
 	s := AIProposalSummary{ID: pr.ID.String(), TaskType: pr.TaskType, TaskName: name, Tier: pr.RiskTier, Status: pr.Status, Summary: impact.Summary,
-		Reason: pr.Reason, RequestedBy: pr.RequestedBy.String(), Items: pr.ItemCount, ProposedAt: pr.ProposedAt.UTC().Format(time.RFC3339),
+		Reason: pr.Reason, RequestedBy: pr.RequestedBy.String(), Agent: pr.Agent, Items: pr.ItemCount, ProposedAt: pr.ProposedAt.UTC().Format(time.RFC3339),
 		ExpiresAt: pr.ExpiresAt.UTC().Format(time.RFC3339)}
 	if pr.ApprovalRequest != nil {
 		s.ApprovalID = pr.ApprovalRequest.String()
@@ -319,7 +320,7 @@ func (a *API) proposalSummary(pr storage.AIProposal) AIProposalSummary {
 
 func (a *API) proposalDetail(ctx context.Context, u storage.UnitOfWork, p authn.Principal, pr storage.AIProposal) (AIProposalDetail, error) {
 	d := AIProposalDetail{AIProposalSummary: a.proposalSummary(pr), TaskVersion: pr.TaskVersion, PayloadSHA256: pr.PayloadSHA256,
-		ItemList: []AIProposalItem{}, Evidence: []AIEvidenceRef{}, Agent: pr.Agent, Model: pr.Model, Prompt: pr.Prompt}
+		ItemList: []AIProposalItem{}, Evidence: []AIEvidenceRef{}, Model: pr.Model, Prompt: pr.Prompt}
 	for _, n := range pr.ApprovedItems {
 		d.ApprovedItems = append(d.ApprovedItems, ProposalItem(n))
 	}

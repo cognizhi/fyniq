@@ -349,6 +349,8 @@ components:
       properties:
         detail:
           description: What, why and what to do next.
+          examples:
+            - The GST return for Oct to Dec 2026 is due on 31 Jan 2027 and is not filed.
           maxLength: 2000
           type: string
         due_on:
@@ -358,8 +360,10 @@ components:
           format: date
           type: string
         evidence:
-          description: The records and documents behind it.
+          description: The records and documents behind it, as links in the web app.
           items:
+            examples:
+              - /compliance/calendar
             type: string
           maxItems: 50
           type:
@@ -373,6 +377,8 @@ components:
           type: string
         next:
           description: The next step.
+          examples:
+            - Record it in Compliance › Statutory calendar once it is filed
           maxLength: 500
           type: string
         pack:
@@ -389,6 +395,8 @@ components:
           type: string
         source:
           description: The rule's source.
+          examples:
+            - https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns
           maxLength: 500
           type: string
         status:
@@ -404,6 +412,8 @@ components:
           type: string
         task:
           description: Its compliance task.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
           maxLength: 64
           type: string
         title:

@@ -2389,7 +2389,7 @@ components:
       additionalProperties: false
       properties:
         agent:
-          description: The AI that proposed it.
+          description: "The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary."
           examples:
             - chat
           type: string
@@ -2556,7 +2556,6 @@ components:
         - payload_sha256
         - item_list
         - evidence
-        - agent
         - model
         - prompt
         - you_may_approve
@@ -2566,6 +2565,7 @@ components:
         - tier
         - status
         - requested_by
+        - agent
         - items
         - proposed_at
         - expires_at
@@ -2605,6 +2605,11 @@ components:
     AIProposalSummary:
       additionalProperties: false
       properties:
+        agent:
+          description: "The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary."
+          examples:
+            - chat
+          type: string
         approval_id:
           description: Its approval request, where a person decides it.
           examples:
@@ -2688,6 +2693,7 @@ components:
         - tier
         - status
         - requested_by
+        - agent
         - items
         - proposed_at
         - expires_at
@@ -5712,6 +5718,485 @@ components:
           description: "The extract in force: the recorded one of the latest business profile; absent before one is recorded."
       required:
         - differences
+      type: object
+    AgentFindingCounts:
+      additionalProperties: false
+      properties:
+        blocked:
+          description: "✖: cannot go on until fixed."
+          examples:
+            - 0
+          format: int64
+          type: integer
+        due:
+          description: "⏰: due or overdue."
+          examples:
+            - 2
+          format: int64
+          type: integer
+        not_assessed:
+          description: "⚠ Not assessed: an input it needs is missing or out of date."
+          examples:
+            - 3
+          format: int64
+          type: integer
+        ok:
+          examples:
+            - 12
+          format: int64
+          type: integer
+        review:
+          description: "⚠: please review."
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - ok
+        - review
+        - blocked
+        - due
+        - not_assessed
+      type: object
+    AgentNextRun:
+      additionalProperties: false
+      properties:
+        at:
+          examples:
+            - "2026-11-16T23:00:00Z"
+          format: date-time
+          type: string
+        entry:
+          description: The schedule's entry.
+          enum:
+            - monitor
+            - cross_check
+          examples:
+            - monitor
+          type: string
+      required:
+        - entry
+        - at
+      type: object
+    AgentPackVersion:
+      additionalProperties: false
+      properties:
+        pack:
+          examples:
+            - sg-gst
+          type: string
+        version:
+          examples:
+            - sg-gst@2026.1
+          type: string
+      required:
+        - pack
+        - version
+      type: object
+    AgentRunFinding:
+      additionalProperties: false
+      properties:
+        detail:
+          description: What, why and what to do next.
+          examples:
+            - The GST return for Oct to Dec 2026 is due on 31 Jan 2027 and is not filed.
+          maxLength: 2000
+          type: string
+        due_on:
+          description: When it is due.
+          examples:
+            - "2027-01-31"
+          format: date
+          type: string
+        evidence:
+          description: The records and documents behind it, as links in the web app.
+          items:
+            examples:
+              - /compliance/calendar
+            type: string
+          maxItems: 50
+          type:
+            - array
+            - "null"
+        key:
+          description: The finding's stable key.
+          examples:
+            - calendar:gst_f5:2027-01-31
+          maxLength: 200
+          type: string
+        next:
+          description: The next step.
+          examples:
+            - Record it in Compliance › Statutory calendar once it is filed
+          maxLength: 500
+          type: string
+        pack:
+          description: The statutory pack read.
+          examples:
+            - sg-gst@2026.1
+          maxLength: 100
+          type: string
+        rule:
+          description: The rule it applies.
+          examples:
+            - gst.return-due
+          maxLength: 200
+          type: string
+        source:
+          description: The rule's source.
+          examples:
+            - https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns
+          maxLength: 500
+          type: string
+        status:
+          description: "Its status: ✔, ⚠, ✖, ⏰ or Not assessed."
+          enum:
+            - ok
+            - review
+            - blocked
+            - due
+            - not_assessed
+          examples:
+            - due
+          type: string
+        task:
+          description: Its compliance task.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          maxLength: 64
+          type: string
+        title:
+          description: In plain words.
+          examples:
+            - File the GST return
+          maxLength: 300
+          type: string
+        window:
+          description: "The deadline window it is in: 30, 14, 7 or 1 days ahead, or overdue."
+          examples:
+            - "14"
+          maxLength: 20
+          type: string
+      required:
+        - key
+        - status
+        - title
+      type: object
+    AgentRunModel:
+      additionalProperties: false
+      properties:
+        model:
+          examples:
+            - claude-opus-5-5
+          type: string
+        text:
+          $ref: "#/components/schemas/AIText"
+        tokens:
+          examples:
+            - 12000
+          format: int64
+          type: integer
+        tool_calls:
+          examples:
+            - 4
+          format: int64
+          type: integer
+      required:
+        - model
+        - text
+        - tokens
+        - tool_calls
+      type: object
+    AgentRunPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AgentRunSummary"
+          type: array
+        next_cursor:
+          description: The cursor of the next page; absent on the last.
+          examples:
+            - MDE5M2EzYzItNmQwZS03YTFiLTljNGQtNWU2ZjdhOGI5YzEy
+          type: string
+      required:
+        - items
+      type: object
+    AgentRunReport:
+      additionalProperties: false
+      properties:
+        counts:
+          $ref: "#/components/schemas/AgentFindingCounts"
+          description: Its findings by status, once done.
+        findings:
+          description: Every finding, Not assessed first.
+          items:
+            $ref: "#/components/schemas/AgentRunFinding"
+          type: array
+        finished_at:
+          examples:
+            - "2026-11-15T23:01:10Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12
+          format: uuid
+          type: string
+        kb_snapshot:
+          description: The knowledge base it read.
+          examples:
+            - none
+          type: string
+        ledger_revision:
+          description: The books' revision it read (ENG-46).
+          examples:
+            - 42
+          format: int64
+          type: integer
+        model:
+          $ref: "#/components/schemas/AgentRunModel"
+          description: The model step, when it asked the model.
+        model_used:
+          description: "Whether it asked the model: only when an input changed, for the monitor and events."
+          examples:
+            - true
+          type: boolean
+        new:
+          description: "Whether what it found differs from the run done before it: new since the last run."
+          examples:
+            - true
+          type: boolean
+        packs:
+          description: The statutory packs it read.
+          items:
+            $ref: "#/components/schemas/AgentPackVersion"
+          type: array
+        proposals:
+          description: The proposals it made that you may see.
+          items:
+            $ref: "#/components/schemas/AIProposalSummary"
+          type: array
+        reason:
+          description: Why it failed or was skipped.
+          examples:
+            - the agent is paused
+          type: string
+        skill_version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+        slot_at:
+          description: When it was due.
+          examples:
+            - "2026-11-15T23:00:00Z"
+          format: date-time
+          type: string
+        started_at:
+          examples:
+            - "2026-11-15T23:00:05Z"
+          format: date-time
+          type: string
+        status:
+          enum:
+            - queued
+            - running
+            - done
+            - failed
+            - skipped
+          examples:
+            - done
+          type: string
+        summary:
+          description: Fyniq's summary, never "all clear" while anything is open (AI-65).
+          examples:
+            - 2 things need you this week.
+          type: string
+        tasks:
+          description: The tasks its findings have.
+          items:
+            $ref: "#/components/schemas/ComplianceTask"
+          type: array
+        trigger:
+          description: "What started it: schedule:<entry>, event:<kind>:<key> or run_now."
+          examples:
+            - schedule:monitor
+          type: string
+      required:
+        - skill_version
+        - ledger_revision
+        - packs
+        - findings
+        - tasks
+        - proposals
+        - id
+        - trigger
+        - slot_at
+        - status
+        - counts
+        - model_used
+        - new
+      type: object
+    AgentRunSummary:
+      additionalProperties: false
+      properties:
+        counts:
+          $ref: "#/components/schemas/AgentFindingCounts"
+          description: Its findings by status, once done.
+        finished_at:
+          examples:
+            - "2026-11-15T23:01:10Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12
+          format: uuid
+          type: string
+        model_used:
+          description: "Whether it asked the model: only when an input changed, for the monitor and events."
+          examples:
+            - true
+          type: boolean
+        new:
+          description: "Whether what it found differs from the run done before it: new since the last run."
+          examples:
+            - true
+          type: boolean
+        reason:
+          description: Why it failed or was skipped.
+          examples:
+            - the agent is paused
+          type: string
+        slot_at:
+          description: When it was due.
+          examples:
+            - "2026-11-15T23:00:00Z"
+          format: date-time
+          type: string
+        started_at:
+          examples:
+            - "2026-11-15T23:00:05Z"
+          format: date-time
+          type: string
+        status:
+          enum:
+            - queued
+            - running
+            - done
+            - failed
+            - skipped
+          examples:
+            - done
+          type: string
+        summary:
+          description: Fyniq's summary, never "all clear" while anything is open (AI-65).
+          examples:
+            - 2 things need you this week.
+          type: string
+        trigger:
+          description: "What started it: schedule:<entry>, event:<kind>:<key> or run_now."
+          examples:
+            - schedule:monitor
+          type: string
+      required:
+        - id
+        - trigger
+        - slot_at
+        - status
+        - counts
+        - model_used
+        - new
+      type: object
+    AgentSchedule:
+      additionalProperties: false
+      properties:
+        after_close:
+          description: Whether it runs after each month's close.
+          examples:
+            - true
+          type: boolean
+        channels:
+          description: How it tells them.
+          examples:
+            - - inbox
+              - email
+          items:
+            examples:
+              - inbox
+            type: string
+          type: array
+        cross_check:
+          description: The weekly full cross-check, cron-style in Singapore time.
+          examples:
+            - 0 8 * * 1
+          type: string
+        escalate_days:
+          description: How many days before a deadline the Owner is told too.
+          examples:
+            - 7
+          format: int64
+          type: integer
+        events:
+          description: The events that start a run.
+          examples:
+            - - period_closed
+              - filing_recorded
+          items:
+            examples:
+              - period_closed
+            type: string
+          type: array
+        fy_end_pack:
+          description: Whether it runs one month after the financial year ends.
+          examples:
+            - true
+          type: boolean
+        monitor:
+          description: The daily deadline and lodgement monitor, cron-style in Singapore time.
+          examples:
+            - 0 7 * * *
+          type: string
+        quiet_hours:
+          description: When its emails wait, in Singapore time.
+          examples:
+            - 22:00-07:00
+          type: string
+        recipients:
+          description: The roles it tells; its tasks belong to the first.
+          examples:
+            - - owner
+              - company_secretary
+          items:
+            examples:
+              - owner
+            type: string
+          type: array
+        run_tokens:
+          description: The most model tokens one run may use.
+          examples:
+            - 200000
+          format: int64
+          type: integer
+        tool_calls:
+          description: The most reads one run may make.
+          examples:
+            - 20
+          format: int64
+          type: integer
+      required:
+        - monitor
+        - cross_check
+        - after_close
+        - fy_end_pack
+        - events
+        - quiet_hours
+        - recipients
+        - channels
+        - escalate_days
+        - tool_calls
+        - run_tokens
       type: object
     Announcement:
       additionalProperties: false
@@ -14680,6 +15165,65 @@ components:
       required:
         - checks_id
         - statement
+      type: object
+    CompanySecretary:
+      additionalProperties: false
+      properties:
+        acts_for:
+          description: "The Owner who turned it on: its runs read and propose as them (AI-63)."
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+        acts_for_name:
+          description: Their name.
+          examples:
+            - Tan Ah Kow
+          type: string
+        findings:
+          description: "The open findings of its latest finished run: Not assessed first, then ✖, ⏰ and ⚠ (AI-65)."
+          items:
+            $ref: "#/components/schemas/AgentRunFinding"
+          type: array
+        last_done:
+          $ref: "#/components/schemas/AgentRunSummary"
+          description: Its latest run that finished.
+        latest:
+          $ref: "#/components/schemas/AgentRunSummary"
+          description: Its latest run, whatever became of it.
+        next_runs:
+          description: When each schedule entry runs next, while it is on and not paused.
+          items:
+            $ref: "#/components/schemas/AgentNextRun"
+          type: array
+        schedule:
+          $ref: "#/components/schemas/AgentSchedule"
+        since:
+          description: When turning it on was approved.
+          examples:
+            - "2026-11-15T02:00:00Z"
+          format: date-time
+          type: string
+        skill:
+          description: Its skill and version.
+          examples:
+            - company-secretary@1
+          type: string
+        state:
+          description: off until an Owner turns it on with a second approver; paused by an Owner at once.
+          enum:
+            - "off"
+            - "on"
+            - paused
+          examples:
+            - "on"
+          type: string
+      required:
+        - state
+        - skill
+        - schedule
+        - next_runs
+        - findings
       type: object
     CompleteTransferInputBody:
       additionalProperties: false
@@ -56535,6 +57079,18 @@ paths:
             examples:
               - pending
             type: string
+        - description: "Only the proposals of this AI: the assistant's turns, or a scheduled agent's runs."
+          explode: false
+          in: query
+          name: agent
+          schema:
+            description: "Only the proposals of this AI: the assistant's turns, or a scheduled agent's runs."
+            enum:
+              - chat
+              - company_secretary
+            examples:
+              - company_secretary
+            type: string
       responses:
         "200":
           content:
@@ -91749,6 +92305,558 @@ paths:
       x-fyniq-permission:
         capability: Compliance Center
         right: A
+  /v1/compliance/secretary:
+    get:
+      description: "The company secretary assistant's workspace (FR-CS-04, AI-62, AI-63): whether it is on or paused, the Owner it acts for, its schedule and caps, when it runs next, its latest run and the open findings of its latest finished run, Not assessed first. It never files, signs, approves or marks an obligation met. Read-only; no side effects."
+      operationId: getCompanySecretary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanySecretary"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get the AI company secretary assistant
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI company secretary: enable, schedule, runs and drafts (rev 0.6)"
+        right: V
+  /v1/compliance/secretary/runs:
+    get:
+      description: "The company secretary assistant's runs, newest first, a page at a time, filtered by state (AI-65, AI-67): each with what started it, what became of it, Fyniq's summary, its findings by status, and whether what it found is new since the run done before it. Read-only; no side effects."
+      operationId: listAgentRuns
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only runs in this state; leave it out for all.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only runs in this state; leave it out for all.
+            enum:
+              - queued
+              - running
+              - done
+              - failed
+              - skipped
+            examples:
+              - done
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the assistant's runs
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI company secretary: enable, schedule, runs and drafts (rev 0.6)"
+        right: V
+    post:
+      description: "Run now (AI-62): queues a run of the company secretary assistant at once, requested by you and acting for the Owner who turned it on (AI-63). The worker runs it as any other: its deterministic checks first, the model only if an input changed. Refused while the assistant is off or paused. Side effects: the queued run and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing."
+      operationId: runCompanySecretary
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunSummary"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunSummary"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The run's report.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-AGENT-02` The assistant is off or paused; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Run the assistant now
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - AI-AGENT-02
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI company secretary: enable, schedule, runs and drafts (rev 0.6)"
+        note: "Run now is the schedule's: C on the AI company secretary's row, which the Administrator holds; the Owner, whose cell is A, too."
+        right: C
+  /v1/compliance/secretary/runs/{run_id}:
+    get:
+      description: "One run of the company secretary assistant as its report shows it (AI-64, AI-65, FR-CS-03): the ledger revision, the packs and the knowledge base it read; every finding with its status, rule, source, evidence and next step, Not assessed first; the tasks they have; the proposals it made that you may see; and the model's words, as written and labelled AI. Read-only; no side effects."
+      operationId: getAgentRun
+      parameters:
+        - description: The run.
+          in: path
+          name: run_id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a run's report
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI company secretary: enable, schedule, runs and drafts (rev 0.6)"
+        right: V
   /v1/compliance/shredding-runs:
     get:
       description: "The shredding of personal data at the end of retention (§11.8): each financial year whose records' retention has ended, with how many people's keys it shreds, and whether it waits for the DPO, is approved, or is done, with its signed register entry. Read-only; no side effects."
