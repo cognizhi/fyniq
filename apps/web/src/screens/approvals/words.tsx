@@ -74,6 +74,7 @@ const operations: Record<Approval["operation"], string> = {
   "ai_connection.change": "Change an AI provider's connection",
   "ai_connection.credential": "Replace an AI provider's API key",
   "ai_connection.enable": "Switch on an AI provider's connection",
+  "ai_data_policy.change": "Change where the AI may send each kind of data",
 };
 
 export function operationLabel(op: string): string {
@@ -135,6 +136,7 @@ const objects: Record<string, string> = {
   migration_commit: "Workbook import",
   tenant_export: "Full export",
   ai_connection: "AI provider connection",
+  ai_data_policy: "AI data-class policy",
 };
 
 export function objectLabel(t: string): string {

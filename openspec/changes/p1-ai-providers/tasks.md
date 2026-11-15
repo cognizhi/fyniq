@@ -40,7 +40,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   private endpoint; consumer-app tokens, sessions, cookies and command-line seats refused; billing modes and quotas.
   The API's `/v1/ai/connections` operations, the matrix rows. Tests `// req: AI-72`, `// req: AI-73`,
   `// req: AI-79`.
-- [ ] 3.2 The data-handling declaration with dated evidence per model, endpoint and feature; the transfer assessment
+- [x] 3.2 The data-handling declaration with dated evidence per model, endpoint and feature; the transfer assessment
   for a connection outside Singapore (CMP-PD-06) and its data inventory row; `ai_data_policy` with the default that
   personal and payroll data go only to evidenced Singapore processing or self-hosted Singapore models; the presets'
   Singapore endpoints chosen against each cloud's availability. Tests `// req: AI-75`, `// req: AI-88`,

@@ -37,6 +37,7 @@ type AIConnection struct {
 	CredentialSetAt *time.Time
 	Billing         string
 	Quota           json.RawMessage // a subscription's; nil for usage-based billing
+	DataHandling    json.RawMessage // its data-handling declaration (AI-75, AI-88); {} until declared
 	State           string
 	Version         int
 	CreatedBy       string
@@ -53,6 +54,26 @@ type AIConnectionVersion struct {
 	Approval *uuid.UUID
 	MadeBy   string
 	MadeAt   time.Time
+}
+
+// AIDataPolicy is a version of the organisation's data-class policy (AI-75): which connections each class may go to
+// beyond the defaults, as approved.
+type AIDataPolicy struct {
+	ID       uuid.UUID
+	Version  int // 0: none approved yet, the defaults apply
+	Policy   json.RawMessage
+	Approval uuid.UUID
+	MadeBy   string
+	MadeAt   time.Time
+}
+
+// AIDataPolicies keeps the organisation's data-class policy, one approved version after another (FY331).
+type AIDataPolicies interface {
+	// Latest is the policy in force: version 0, with an empty policy, before any is approved.
+	Latest(ctx context.Context) (AIDataPolicy, error)
+	// Save adds p as the next version, as approved by p.Approval: audited as ai_data_policy.changed. CodeVersion when
+	// another version was saved since p.Version-1 was read.
+	Save(ctx context.Context, p AIDataPolicy) (AIDataPolicy, error)
 }
 
 // AIConnections keeps the organisation's connections to AI model providers and every version of each.

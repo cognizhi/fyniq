@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -63,6 +64,7 @@ type AIConnection struct {
 	SelfHosted    bool                        `json:"self_hosted" doc:"A server the organisation runs, reached only as a registered private endpoint (SEC-37)." example:"false"`
 	Credential    AIConnectionCredentialState `json:"credential"`
 	Billing       AIConnectionBilling         `json:"billing"`
+	DataHandling  AIDataHandling              `json:"data_handling" doc:"Where its prompts are processed and kept, per model, endpoint and feature, with evidence (AI-75, AI-88)."`
 	State         string                      `json:"state" enum:"disabled,enabled" doc:"disabled until an approved request switches it on." example:"disabled"`
 	Version       int                         `json:"version" example:"1"`
 	CreatedBy     string                      `json:"created_by" example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
@@ -84,6 +86,7 @@ type AIConnectionDefinition struct {
 	Auth          string              `json:"auth" enum:"api-key,workload-identity,none" doc:"How it authenticates, one the provider and its preset offer." example:"workload-identity"`
 	Configuration map[string]any      `json:"configuration,omitempty" doc:"Its configuration, as the provider's manifest describes it." example:"{\"endpoint\":\"agent-platform\",\"project\":\"fyniq-prod\"}"`
 	Billing       AIConnectionBilling `json:"billing"`
+	DataHandling  *AIDataHandling     `json:"data_handling,omitempty" doc:"Its data-handling declaration (AI-75, AI-88); switching it on needs one, with its data inventory row and, when it processes outside Singapore, its transfer assessment."`
 }
 
 // AIConnectionCreate asks for a new connection.
@@ -155,7 +158,8 @@ type (
 
 // AIConnectionCodes are the refusals of an AI connection's definition and steps.
 var AIConnectionCodes = []string{aiconnection.CodeProvider, aiconnection.CodeAuth, aiconnection.CodeConfig, aiconnection.CodeCredential,
-	aiconnection.CodeEgress, aiconnection.CodeBilling, aiconnection.CodeState, aiconnection.CodeName, storage.CodeAIConnection, storage.CodeDuplicate}
+	aiconnection.CodeEgress, aiconnection.CodeBilling, aiconnection.CodeState, aiconnection.CodeName, aipolicy.CodeDeclaration, storage.CodeAIConnection,
+	storage.CodeDuplicate}
 
 func aiConnectionOut(c storage.AIConnection) AIConnection {
 	out := AIConnection{ID: c.ID.String(), Name: c.Name, Connector: c.Connector, Preset: c.Preset, Auth: c.Auth, Configuration: map[string]any{},
@@ -167,6 +171,7 @@ func aiConnectionOut(c storage.AIConnection) AIConnection {
 		out.Credential.SetAt = &at
 	}
 	_ = json.Unmarshal(c.Configuration, &out.Configuration)
+	out.DataHandling = dataHandlingOut(c.DataHandling)
 	if len(c.Quota) > 0 {
 		var q AIConnectionQuota
 		if json.Unmarshal(c.Quota, &q) == nil {
@@ -197,10 +202,16 @@ func (d AIConnectionDefinition) domain(connector string) aiconnection.Definition
 }
 
 // definitionChange is a definition as an approval request carries it: strings, booleans and integers (FR-APR-10).
-func definitionChange(d aiconnection.Definition, t aiconnection.Target) (map[string]any, error) {
+func definitionChange(d aiconnection.Definition, t aiconnection.Target, handling *AIDataHandling) (map[string]any, error) {
 	config, err := json.Marshal(d.Configuration)
 	if err != nil {
 		return nil, err
+	}
+	declaration := []byte(`{}`)
+	if handling != nil {
+		if declaration, err = json.Marshal(handling.domain()); err != nil {
+			return nil, err
+		}
 	}
 	quota := ""
 	if d.Quota != nil {
@@ -211,7 +222,7 @@ func definitionChange(d aiconnection.Definition, t aiconnection.Target) (map[str
 		quota = string(b)
 	}
 	return map[string]any{"name": d.Name, "connector": d.Connector, "preset": d.Preset, "auth": d.Auth, "configuration": string(config),
-		"host": t.Host, "self_hosted": t.SelfHosted, "billing_mode": d.Billing, "quota": quota}, nil
+		"host": t.Host, "self_hosted": t.SelfHosted, "billing_mode": d.Billing, "quota": quota, "data_handling": string(declaration)}, nil
 }
 
 // definitionDiff is what an approver reads of a definition.
@@ -241,6 +252,11 @@ func definitionDiff(before *storage.AIConnection, d aiconnection.Definition, t a
 	add("host", bHost, t.Host)
 	add("billing_mode", bBilling, d.Billing)
 	add("quota", bQuota, change["quota"])
+	var bHandling any
+	if before != nil {
+		bHandling = string(before.DataHandling)
+	}
+	add("data_handling", bHandling, change["data_handling"])
 	return diff
 }
 
@@ -374,6 +390,11 @@ func registerAIConnections(a *API) {
 		if err != nil {
 			return nil, aiProblem(err)
 		}
+		if h := in.Body.DataHandling; h != nil {
+			if err := aipolicy.Check(h.domain(), a.deps.Clock.Now()); err != nil {
+				return nil, policyProblem(err)
+			}
+		}
 		if in.Body.Credential != "" && d.Auth != "api-key" {
 			return nil, problem(aiconnection.CodeCredential, "credential is given for a connection that takes no API key.", "Leave the credential out",
 				FieldProblem{Code: aiconnection.CodeCredential, Field: "body.credential", Message: "is given for auth " + d.Auth, Fix: "Leave it out"})
@@ -386,7 +407,7 @@ func registerAIConnections(a *API) {
 			Credential string
 		}{in.Body.AIConnectionDefinition, in.Body.Connector, credentialDigest(in.Body.Credential)}
 		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, request, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
-			change, err := definitionChange(d, target)
+			change, err := definitionChange(d, target, in.Body.DataHandling)
 			if err != nil {
 				return Approval{}, err
 			}
@@ -430,7 +451,15 @@ func registerAIConnections(a *API) {
 					"Make a new connection for the other authentication",
 					FieldProblem{Code: aiconnection.CodeAuth, Field: "body.auth", Message: "changes the kind of credential", Fix: "Keep " + c.Auth})
 			}
-			change, err := definitionChange(d, target)
+			if h := in.Body.DataHandling; h != nil {
+				if err := aipolicy.Check(h.domain(), a.deps.Clock.Now()); err != nil {
+					return Approval{}, policyProblem(err)
+				}
+			} else if len(c.DataHandling) > 2 {
+				kept := dataHandlingOut(c.DataHandling) // a change that leaves it out keeps the declaration
+				in.Body.DataHandling = &kept
+			}
+			change, err := definitionChange(d, target, in.Body.DataHandling)
 			if err != nil {
 				return Approval{}, err
 			}
@@ -550,7 +579,7 @@ func (a *API) canEnable(ctx context.Context, u storage.UnitOfWork, c storage.AIC
 				"Ask a Super admin to register the server's private endpoint for it (SEC-37), then ask again")
 		}
 	}
-	return nil
+	return recorded(ctx, u, declared(c))
 }
 
 // executeAIConnection runs an approved request on an AI connection (AI-72, AI-79), as its requester asked, after
@@ -582,6 +611,10 @@ func (a *API) executeAIConnection(ctx context.Context, u storage.UnitOfWork, r s
 			return err
 		}
 		c.Name, c.Preset, c.Auth, c.Configuration, c.Host, c.SelfHosted, c.Billing = d.Name, d.Preset, d.Auth, config, t.Host, t.SelfHosted, d.Billing
+		c.DataHandling = []byte(str("data_handling"))
+		if len(c.DataHandling) == 0 {
+			c.DataHandling = []byte(`{}`)
+		}
 		c.Quota = nil
 		if d.Quota != nil {
 			if c.Quota, err = json.Marshal(d.Quota); err != nil {
