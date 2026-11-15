@@ -72,7 +72,8 @@ type ModelPart struct {
 	Tool      string          `json:"tool,omitempty"`
 	Input     json.RawMessage `json:"input,omitempty"`
 	IsError   bool            `json:"is_error,omitempty"`
-	// Raw is a reasoning part's block as its provider gave it, passed back to it unchanged.
+	// Raw is the part as its provider gave it, passed back to it unchanged: a reasoning block, or a part the provider
+	// signed, such as Gemini's thought signature on a tool call.
 	Raw json.RawMessage `json:"raw,omitempty"`
 }
 
