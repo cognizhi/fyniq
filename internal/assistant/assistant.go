@@ -49,6 +49,7 @@ type ModelRequest struct {
 	System    string               `json:"system,omitempty"`
 	Messages  []ports.ModelMessage `json:"messages"`
 	Tools     []string             `json:"tools,omitempty"`
+	Proposals []string             `json:"proposals,omitempty"` // the task types the model may propose (design D7)
 	Output    *ports.ModelSchema   `json:"output,omitempty"`
 	MaxTokens int                  `json:"max_tokens"`
 }
@@ -90,6 +91,39 @@ func (p *Problem) Error() string { return p.Code + ": " + p.Detail }
 type Backend interface {
 	CallModel(ctx context.Context, token string, call ModelCall) (ModelResult, error)
 	CallTool(ctx context.Context, token string, tool string, input json.RawMessage) (ToolResult, error)
+	// Propose makes a proposal for the turn's person to approve (AI-P3; p1-ai-proposals-core design D7): the AI's one
+	// write, which changes nothing until a person approves it.
+	Propose(ctx context.Context, token string, p Proposal) (Proposed, error)
+}
+
+// Proposal is a proposal the model made with a propose_ tool: the task type, the payload, its reasons and the records
+// it relied on, with the model and prompt the turn ran on.
+type Proposal struct {
+	TaskType  string          `json:"task_type"`
+	Payload   json.RawMessage `json:"payload"`
+	Rationale string          `json:"rationale"`
+	Evidence  []Evidence      `json:"evidence,omitempty"`
+	Model     string          `json:"model"`
+	Prompt    string          `json:"prompt"`
+}
+
+// Evidence is a record or document a proposal relied on.
+type Evidence struct {
+	Kind  string `json:"kind"`
+	ID    string `json:"id"`
+	Title string `json:"title,omitempty"`
+}
+
+// Proposed is what became of a proposal: Pending, waiting for a person, or Invalid, with why.
+type Proposed struct {
+	ID            string `json:"id"`
+	TaskType      string `json:"task_type"`
+	TaskVersion   int    `json:"task_version"`
+	Status        string `json:"status"`
+	Reason        string `json:"reason,omitempty"`
+	Summary       string `json:"summary,omitempty"`
+	PayloadSHA256 string `json:"payload_sha256"`
+	ExpiresAt     string `json:"expires_at"`
 }
 
 // Question is a turn to answer: the turn's delegated token, the person's words, what they asked about (FR-UX-17), the
@@ -102,6 +136,8 @@ type Question struct {
 	History  []ports.ModelMessage `json:"history,omitempty"`
 	Earlier  []aitool.Fact        `json:"earlier_facts,omitempty"`
 	MaxReads int                  `json:"max_reads,omitempty"`
+	// Propose are the task types the turn may propose, on for the organisation; none when its token may not propose.
+	Propose []string `json:"propose,omitempty"`
 }
 
 // The kinds of an event the assistant streams while it answers.
@@ -159,17 +195,19 @@ type Grounding struct {
 // Answer is a turn's answer: its text, every fact it read, the prompt it was told (AI-24), the model calls' runs in the
 // activity log, its tool calls and how it ended.
 type Answer struct {
-	Text         string           `json:"text"`
-	Segments     []Segment        `json:"segments"`
-	Cited        []string         `json:"cited"`
-	Grounding    Grounding        `json:"grounding"`
-	Facts        []aitool.Fact    `json:"facts"`
-	Prompt       string           `json:"prompt"`
-	PromptSHA256 string           `json:"prompt_sha256"`
-	Runs         []string         `json:"runs"`
-	ToolCalls    []ToolCall       `json:"tool_calls"`
-	Usage        ports.ModelUsage `json:"usage"`
-	Stop         string           `json:"stop"`
+	Text         string        `json:"text"`
+	Segments     []Segment     `json:"segments"`
+	Cited        []string      `json:"cited"`
+	Grounding    Grounding     `json:"grounding"`
+	Facts        []aitool.Fact `json:"facts"`
+	Prompt       string        `json:"prompt"`
+	PromptSHA256 string        `json:"prompt_sha256"`
+	Runs         []string      `json:"runs"`
+	ToolCalls    []ToolCall    `json:"tool_calls"`
+	// Proposals are the proposals the turn made, each waiting for a person or invalid.
+	Proposals []Proposed       `json:"proposals,omitempty"`
+	Usage     ports.ModelUsage `json:"usage"`
+	Stop      string           `json:"stop"`
 }
 
 // Assistant answers turns.
@@ -224,12 +262,15 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	if err := emit(Event{Kind: EventStatus, Text: "Reading the books"}); err != nil {
 		return out, err
 	}
+	model := ""
 	for calls := 0; ; {
 		res, err := a.Backend.CallModel(ctx, q.Token, ModelCall{Agent: Agent, Classes: []string{aipolicy.Business},
-			Request: ModelRequest{System: a.Prompt.Text, Messages: messages, Tools: names, Output: answerOutput, MaxTokens: maxTokens}})
+			Request: ModelRequest{System: a.Prompt.Text, Messages: messages, Tools: names, Proposals: q.Propose, Output: answerOutput,
+				MaxTokens: maxTokens}})
 		if err != nil {
 			return out, err
 		}
+		model = res.Response.Model
 		out.Runs = append(out.Runs, res.Run)
 		out.Usage = addUsage(out.Usage, res.Response.Usage)
 		messages = append(messages, ports.ModelMessage{Role: ports.RoleAssistant, Parts: res.Response.Parts})
@@ -271,6 +312,18 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 		results := make([]ports.ModelPart, 0, len(asked))
 		for _, call := range asked {
 			calls++
+			if taskType, ok := proposing(q.Propose, call.Tool); ok {
+				part, record, made := a.propose(ctx, q.Token, taskType, model, call)
+				out.ToolCalls = append(out.ToolCalls, record)
+				if made != nil {
+					out.Proposals = append(out.Proposals, *made)
+				}
+				results = append(results, part)
+				if err := emit(Event{Kind: EventTool, Tool: record.Tool}); err != nil {
+					return out, err
+				}
+				continue
+			}
 			part, record, read := a.runTool(ctx, q.Token, tools, call, known)
 			keep(read)
 			out.ToolCalls = append(out.ToolCalls, record)
@@ -337,6 +390,65 @@ func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Reg
 	sum := sha256.Sum256([]byte(text))
 	record.OutputSHA256 = hex.EncodeToString(sum[:])
 	return ports.ModelPart{Kind: ports.PartToolResult, CallID: call.CallID, Tool: call.Tool, Text: text}, record, result.Facts
+}
+
+// proposing is the task type a propose_ tool proposes, when the turn may propose it.
+func proposing(types []string, tool string) (string, bool) {
+	for _, t := range types {
+		if tool == "propose_"+strings.ReplaceAll(t, ".", "_") {
+			return t, true
+		}
+	}
+	return "", false
+}
+
+// propose relays a propose_ call to the API (design D7): what became of the proposal goes back to the model, Pending
+// with the platform's summary or Invalid with why, and a refusal in the API's words. Nothing changes until a person
+// approves it, which the model is told.
+func (a *Assistant) propose(ctx context.Context, token, taskType, model string, call ports.ModelPart) (ports.ModelPart, ToolCall, *Proposed) {
+	start := a.now()
+	record := ToolCall{Tool: call.Tool, Input: call.Input, Outcome: OutcomeRead}
+	failed := func(code, words string) (ports.ModelPart, ToolCall, *Proposed) {
+		record.Outcome, record.Code, record.Duration = OutcomeRefused, code, a.now().Sub(start)
+		return ports.ModelPart{Kind: ports.PartToolResult, CallID: call.CallID, Tool: call.Tool, IsError: true, Text: aiexclusion.Filter(words)}, record, nil
+	}
+	var in struct {
+		Payload   json.RawMessage `json:"payload"`
+		Rationale string          `json:"rationale"`
+		Evidence  []Evidence      `json:"evidence"`
+	}
+	if err := json.Unmarshal(call.Input, &in); err != nil || len(in.Payload) == 0 {
+		return failed("AI-PROPOSAL-03", call.Tool+" takes a payload, your reasons and the records you relied on.")
+	}
+	made, err := a.Backend.Propose(ctx, token, Proposal{TaskType: taskType, Payload: in.Payload, Rationale: in.Rationale, Evidence: in.Evidence,
+		Model: cmpOrString(model, "unknown"), Prompt: a.Prompt.Name()})
+	var p *Problem
+	if errors.As(err, &p) {
+		return failed(p.Code, strings.TrimSpace(p.Detail+" "+p.Fix))
+	}
+	if err != nil {
+		return failed("AI-PROPOSAL", "The proposal could not be made just now. Say so, and that nothing changed.")
+	}
+	record.Version, record.Duration = made.TaskVersion, a.now().Sub(start)
+	note := "It waits for a person's approval in Fyniq: nothing has changed. Tell the person what you proposed, never that it is done."
+	if made.Status != "pending" {
+		note = "It is invalid and was not kept for approval: nothing has changed. Tell the person why."
+	}
+	b, err := json.Marshal(map[string]any{"proposal": made, "note": note})
+	if err != nil {
+		return failed("AI-PROPOSAL", "The proposal's result could not be read.")
+	}
+	text := aiexclusion.Filter(string(b))
+	sum := sha256.Sum256([]byte(text))
+	record.OutputSHA256 = hex.EncodeToString(sum[:])
+	return ports.ModelPart{Kind: ports.PartToolResult, CallID: call.CallID, Tool: call.Tool, Text: text}, record, &made
+}
+
+func cmpOrString(v, d string) string {
+	if v != "" {
+		return v
+	}
+	return d
 }
 
 // resultText is a tool's result as the model reads it: its facts, its content and what was left out or withheld, each

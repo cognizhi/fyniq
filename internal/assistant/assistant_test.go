@@ -19,12 +19,14 @@ import (
 
 // api is a fake of the API's internal operations: the model answers in order, and each tool's result by name.
 type api struct {
-	answers []ports.ModelResponse
-	results map[string]assistant.ToolResult
-	refuse  map[string]*assistant.Problem
-	calls   []assistant.ModelCall
-	tools   []string
-	tokens  []string
+	answers   []ports.ModelResponse
+	results   map[string]assistant.ToolResult
+	refuse    map[string]*assistant.Problem
+	calls     []assistant.ModelCall
+	tools     []string
+	tokens    []string
+	proposals []assistant.Proposal
+	proposed  assistant.Proposed
 }
 
 func (a *api) CallModel(_ context.Context, token string, call assistant.ModelCall) (assistant.ModelResult, error) {
@@ -48,6 +50,15 @@ func (a *api) CallTool(_ context.Context, token, tool string, _ json.RawMessage)
 		return assistant.ToolResult{}, p
 	}
 	return a.results[tool], nil
+}
+
+func (a *api) Propose(_ context.Context, token string, p assistant.Proposal) (assistant.Proposed, error) {
+	a.tokens = append(a.tokens, token)
+	a.proposals = append(a.proposals, p)
+	if r := a.refuse["propose"]; r != nil {
+		return assistant.Proposed{}, r
+	}
+	return a.proposed, nil
 }
 
 func toolCall(id, tool, input string) ports.ModelPart {
@@ -142,7 +153,7 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 	if len(out.Facts) != 3 || calc == nil || calc.Value != "25000.00" || !slices.Equal(calc.Inputs, []string{revenue.ID, costs.ID}) {
 		t.Errorf("the facts: %+v", out.Facts)
 	}
-	if out.Prompt != "chat@2" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
+	if out.Prompt != "chat@3" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
 		t.Errorf("the record: %+v", out)
 	}
 
@@ -233,16 +244,80 @@ func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 	}
 }
 
+// The model proposes only what the turn may (AI-P3; p1-ai-proposals-core design D7): offered the propose_ tools of the
+// turn's task types, by name, it proposes through the API with the turn's token, the model and the prompt it ran on,
+// and reads back what became of it, told nothing changed until a person approves; the answer keeps the proposal. A
+// propose_ tool of a task type the turn may not propose is a tool it does not have, and a refusal goes back in the API's
+// words.
+// req: AI-P3
+// req: ai/proposals The orchestrator holds no write credential
+func TestTheModelProposesOnlyWhatTheTurnMay(t *testing.T) {
+	b := &api{
+		answers: []ports.ModelResponse{
+			{Model: "claude-opus-5-5", Parts: []ports.ModelPart{
+				toolCall("c1", "propose_sec_create_task", `{"payload":{"title":"Hold the AGM","due_on":"2027-06-30"},"rationale":"It is due.",`+
+					`"evidence":[{"kind":"task","id":"agm-2026","title":"Last year's AGM"}]}`),
+				toolCall("c2", "propose_sec_draft_reminder", `{"payload":{},"rationale":"x"}`),
+				toolCall("c3", "propose_sec_create_task", `{"rationale":"no payload"}`)}},
+			answer(words("I proposed the task. It waits for your approval.")),
+		},
+		proposed: assistant.Proposed{ID: "0193", TaskType: "sec.create_task", TaskVersion: 1, Status: "pending",
+			Summary: "Creates the task Hold the AGM, due 30 June 2027", PayloadSHA256: strings.Repeat("a", 64)},
+	}
+	p := prompt(t)
+	out, err := (&assistant.Assistant{Backend: b, Prompt: p}).Answer(context.Background(), assistant.Question{Token: "fyai_turn",
+		Text: "Make a task for the AGM", Propose: []string{"sec.create_task"}}, func(assistant.Event) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first := b.calls[0].Request; !slices.Equal(first.Proposals, []string{"sec.create_task"}) {
+		t.Errorf("the task types offered: %v", first.Proposals)
+	}
+	if len(b.proposals) != 1 || b.proposals[0].TaskType != "sec.create_task" || b.proposals[0].Model != "claude-opus-5-5" || b.proposals[0].Prompt != p.Name() ||
+		!strings.Contains(string(b.proposals[0].Payload), "Hold the AGM") || len(b.proposals[0].Evidence) != 1 {
+		t.Fatalf("what was proposed: %+v", b.proposals)
+	}
+	parts := b.calls[1].Request.Messages[2].Parts
+	if len(parts) != 3 || parts[0].IsError || !strings.Contains(parts[0].Text, "waits for a person's approval") || !strings.Contains(parts[0].Text, "nothing has changed") ||
+		!parts[1].IsError || !strings.Contains(parts[1].Text, "not a tool you have") || !parts[2].IsError {
+		t.Errorf("what the model read: %+v", parts)
+	}
+	if len(out.Proposals) != 1 || out.Proposals[0].ID != "0193" || out.ToolCalls[0].Tool != "propose_sec_create_task" || out.ToolCalls[0].Version != 1 ||
+		out.ToolCalls[1].Code != "AI-TOOL-01" || out.ToolCalls[2].Code != "AI-PROPOSAL-03" {
+		t.Errorf("the answer: %+v %+v", out.Proposals, out.ToolCalls)
+	}
+	if slices.ContainsFunc(b.tokens, func(s string) bool { return s != "fyai_turn" }) {
+		t.Errorf("a token not the turn's: %v", b.tokens)
+	}
+
+	// Without task types the model is offered none, and a refusal reaches it in the API's words.
+	b = &api{answers: []ports.ModelResponse{{Parts: []ports.ModelPart{toolCall("c1", "propose_sec_create_task", `{"payload":{},"rationale":"x"}`)}},
+		answer(words("I cannot."))}}
+	if _, err := (&assistant.Assistant{Backend: b, Prompt: p}).Answer(context.Background(), assistant.Question{Token: "fyai_t", Text: "Task"},
+		func(assistant.Event) error { return nil }); err != nil || len(b.calls[0].Request.Proposals) != 0 || len(b.proposals) != 0 {
+		t.Errorf("no task types: %v %+v %v", err, b.calls[0].Request, b.proposals)
+	}
+	b = &api{answers: []ports.ModelResponse{{Parts: []ports.ModelPart{toolCall("c1", "propose_sec_create_task", `{"payload":{"title":"x"},"rationale":"x"}`)}},
+		answer(words("It was refused."))},
+		refuse: map[string]*assistant.Problem{"propose": {Status: 403, Code: "AI-PROPOSAL-01", Detail: "sec.create_task is not turned on.", Fix: "Ask an Owner."}}}
+	out, err = (&assistant.Assistant{Backend: b, Prompt: p}).Answer(context.Background(), assistant.Question{Token: "fyai_t", Text: "Task",
+		Propose: []string{"sec.create_task"}}, func(assistant.Event) error { return nil })
+	if err != nil || out.ToolCalls[0].Code != "AI-PROPOSAL-01" || len(out.Proposals) != 0 ||
+		!strings.Contains(b.calls[1].Request.Messages[2].Parts[0].Text, "not turned on") {
+		t.Errorf("a refused proposal: %v %+v", err, out.ToolCalls)
+	}
+}
+
 // The prompts are versioned files (AI-24, design D10): the latest version of an agent's prompt is the one a turn is
 // told, named and hashed as its file is; a file not named <agent>@<version>.md is refused.
 // req: AI-24
 func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
-	b, err := os.ReadFile("../../contracts/ai/prompts/chat@2.md")
+	b, err := os.ReadFile("../../contracts/ai/prompts/chat@3.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(b)
-	if p := prompt(t); p.Version != 2 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@2" {
+	if p := prompt(t); p.Version != 3 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@3" {
 		t.Errorf("chat's prompt: %s %d", p.Name(), len(p.Text))
 	}
 	fsys := fstest.MapFS{"prompts/chat@1.md": {Data: []byte("one")}, "prompts/chat@12.md": {Data: []byte("twelve")}, "prompts/other@3.md": {Data: []byte("x")}}

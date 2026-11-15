@@ -120,6 +120,19 @@ components:
         output:
           $ref: "#/components/schemas/ModelSchema"
           description: A strict structured output the answer must match (AI-27).
+        proposals:
+          description: "The task types the model may propose, by catalogue ID: each offered as its propose_ tool with the catalogue's own definition, only to a turn that may propose and only while it is on for the organisation (AI-P3, AI-32; p1-ai-proposals-core design D7)."
+          items:
+            description: A task type of the catalogue (§9.6).
+            examples:
+              - sec.create_task
+            maxLength: 56
+            pattern: ^[a-z]+\.[a-z]+(_[a-z]+)*$
+            type: string
+          maxItems: 50
+          type:
+            - array
+            - "null"
         system:
           description: The system prompt, versioned in contracts/ai/prompts/ (AI-24).
           type: string
@@ -687,6 +700,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
         "409":
           content:
             application/problem+json:
@@ -722,6 +741,7 @@ paths:
         - Assistant
       x-fyniq-error-codes:
         - AI-BUDGET-02
+        - AI-PROPOSAL-01
         - AI-ROUTER-01
         - AI-ROUTER-02
         - AI-ROUTER-03
@@ -815,6 +835,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
         "409":
           content:
             application/problem+json:
@@ -850,6 +876,7 @@ paths:
         - Assistant
       x-fyniq-error-codes:
         - AI-BUDGET-02
+        - AI-PROPOSAL-01
         - AI-ROUTER-01
         - AI-ROUTER-02
         - AI-ROUTER-03

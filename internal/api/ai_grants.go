@@ -19,24 +19,21 @@ func aiReadable(op *huma.Operation) bool {
 
 // issueAIGrant issues the delegated read token a turn's tools read with (AI-01, AI-36; p1-ai-assistant design D2): as
 // the person user, in the unit of work's organisation, for at most authn.MaxDelegated, never the person's session. Only
-// its SHA-256 is kept; it ends with the turn (endAIGrant). While the organisation has a task type on (ai.task_types,
-// AI-32), it may also make proposals (authn.AIProposeScope; p1-ai-proposals-core design D3), and nothing more.
+// its SHA-256 is kept; it ends with the turn (endAIGrant). While the organisation has a task type on that the release
+// can propose (ai.task_types, AI-32), it may also make proposals (authn.AIProposeScope; p1-ai-proposals-core design D3),
+// and nothing more.
 func (a *API) issueAIGrant(ctx context.Context, u storage.UnitOfWork, org, user, turn uuid.UUID) (string, error) {
 	token, hash, err := authn.NewAIToken(org)
 	if err != nil {
 		return "", err
 	}
-	today, err := orgToday(ctx, a, u)
-	if err != nil {
-		return "", err
-	}
-	types, err := settingOn(ctx, u, settingTaskTypes, today)
+	types, err := a.proposable(ctx, u)
 	if err != nil {
 		return "", err
 	}
 	now := a.deps.Clock.Now()
 	if _, err := u.AIGrants().Issue(ctx, storage.AIGrant{TokenHash: hash, UserID: user, Turn: turn, IssuedAt: now,
-		ExpiresAt: now.Add(authn.MaxDelegated), Propose: types != ""}); err != nil {
+		ExpiresAt: now.Add(authn.MaxDelegated), Propose: len(types) > 0}); err != nil {
 		return "", err
 	}
 	return token, nil

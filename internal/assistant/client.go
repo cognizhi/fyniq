@@ -45,6 +45,13 @@ func (c *Client) CallTool(ctx context.Context, token string, tool string, input 
 	return out, err
 }
 
+// Propose implements Backend.
+func (c *Client) Propose(ctx context.Context, token string, p Proposal) (Proposed, error) {
+	var out Proposed
+	err := c.post(ctx, "/proposals", token, p, &out)
+	return out, err
+}
+
 // post sends body to the internal operation at path and reads its answer into out; a refusal is the API's *Problem.
 func (c *Client) post(ctx context.Context, path, token string, body, out any) error {
 	b, err := json.Marshal(body)
