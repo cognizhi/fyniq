@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,12 +75,12 @@ func TestAgentRunsRunForwardOnce(t *testing.T) {
 	})
 	report := storage.AgentReport{Fingerprint: hexSHA("inputs"), LedgerRevision: 42, PackVersions: map[string]string{"sg-gst": "sg-gst@2026.1"},
 		KBSnapshot: "none", Findings: json.RawMessage(`[{"key":"calendar:gst-f5-2026-q3","status":"due"}]`), Summary: "1 thing needs you this week.",
-		ModelUsed: true, Model: "claude-opus-5-5", ModelText: "The GST return is due in 7 days.", Tokens: 1200, ToolCalls: 3}
+		ModelUsed: true, Model: "claude-opus-5-5", ModelText: "The GST return is due in 7 days.", Tokens: 1200, ToolCalls: 3, Tools: []string{"checks.list", "packs.get"}}
 	done := b.runs(t, "fyniq_worker", func(ctx context.Context, r storage.AgentRuns) (storage.AgentRun, error) {
 		return r.Finish(ctx, started.ID, started.Version, report, b.now.Add(2*time.Minute))
 	})
 	if done.Status != storage.AgentRunDone || done.Report == nil || done.Report.LedgerRevision != 42 || done.Report.PackVersions["sg-gst"] != "sg-gst@2026.1" ||
-		done.Report.ModelText != report.ModelText || done.FinishedAt == nil {
+		done.Report.ModelText != report.ModelText || done.FinishedAt == nil || strings.Join(done.Report.Tools, ",") != "checks.list,packs.get" {
 		t.Fatalf("the finished run: %+v %+v", done, done.Report)
 	}
 	last := b.runs(t, "fyniq_api", func(ctx context.Context, r storage.AgentRuns) (storage.AgentRun, error) {
@@ -163,6 +164,9 @@ func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 			[]any{run.ID}, []string{"42501"}},
 		{"a report written as it starts", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'running', started_at = now(), summary = 'All clear',
 			version = version + 1 WHERE id = $1`, []any{run.ID}, []string{"FY350"}},
+		{"its tools written as it starts", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'running', started_at = now(), tools = '{checks.list}',
+			version = version + 1 WHERE id = $1`, []any{run.ID}, []string{"FY350", "23514"}},
+		{"the API writing its tools", "fyniq_api", `UPDATE fyniq.agent_run SET tools = '{records.get}' WHERE id = $1`, []any{run.ID}, []string{"42501"}},
 		{"a queued run made done", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'done', finished_at = now(), version = version + 1 WHERE id = $1`,
 			[]any{run.ID}, []string{"FY350", "23514"}},
 		{"its trigger changed", "fyniq_migrator", `UPDATE fyniq.agent_run SET trigger = 'run_now', requested_by = acts_for, version = version + 1
@@ -187,6 +191,7 @@ func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 	for _, c := range []struct{ what, stmt string }{
 		{"a skipped run started", `UPDATE fyniq.agent_run SET status = 'running', reason = '', finished_at = NULL, started_at = now(), version = version + 1 WHERE id = $1`},
 		{"its reason rewritten", `UPDATE fyniq.agent_run SET reason = 'nothing to see', version = version + 1 WHERE id = $1`},
+		{"its tools rewritten", `UPDATE fyniq.agent_run SET tools = '{checks.list}', version = version + 1 WHERE id = $1`},
 	} {
 		err := asOrg(ctx, conn(t, "fyniq_worker"), b.org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt, ended.ID); return err })
 		wantState(t, c.what, err, "FY350")

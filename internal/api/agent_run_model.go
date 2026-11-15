@@ -80,12 +80,13 @@ type AgentRunModelStep struct {
 // AgentRunModelOutcome is what the model step gave: the model's words, grounded and screened, the model, what it used,
 // how many proposals it made and how it ended.
 type AgentRunModelOutcome struct {
-	Model     string `json:"model" doc:"The model the step ran on, as its provider reported it." example:"claude-opus-5-5"`
-	Text      string `json:"text" doc:"The model's words for the run report, as written: labelled AI wherever they are shown."`
-	Tokens    int    `json:"tokens" doc:"The tokens the step used." example:"12000"`
-	ToolCalls int    `json:"tool_calls" doc:"The reads it made." example:"4"`
-	Proposals int    `json:"proposals" doc:"The proposals it made, each waiting for a person or invalid." example:"1"`
-	Stop      string `json:"stop" enum:"answered,tool_limit,budget" doc:"How it ended." example:"answered"`
+	Model     string   `json:"model" doc:"The model the step ran on, as its provider reported it." example:"claude-opus-5-5"`
+	Text      string   `json:"text" doc:"The model's words for the run report, as written: labelled AI wherever they are shown."`
+	Tokens    int      `json:"tokens" doc:"The tokens the step used." example:"12000"`
+	ToolCalls int      `json:"tool_calls" doc:"The reads it made." example:"4"`
+	Tools     []string `json:"tools" nullable:"false" maxItems:"200" doc:"The read tools it called, by name, each read it made once (CTL-AI-09)." example:"[\"checks.list\",\"packs.get\"]"`
+	Proposals int      `json:"proposals" doc:"The proposals it made, each waiting for a person or invalid." example:"1"`
+	Stop      string   `json:"stop" enum:"answered,tool_limit,budget" doc:"How it ended." example:"answered"`
 }
 
 type (
@@ -206,8 +207,14 @@ func (a *API) runAgentModel(ctx context.Context, org, id uuid.UUID, findings []A
 		}
 		text = "Withheld: screening flagged the model's words. The findings above stand as Fyniq's checks made them."
 	}
+	tools := []string{}
+	for _, c := range ans.ToolCalls {
+		if c.Outcome == assistant.OutcomeRead && !strings.HasPrefix(c.Tool, "propose_") {
+			tools = append(tools, c.Tool)
+		}
+	}
 	return &agentRunModelOutput{Body: AgentRunModelOutcome{Model: ans.Model, Text: text, Tokens: int(ans.Usage.Input + ans.Usage.Output),
-		ToolCalls: len(ans.ToolCalls), Proposals: len(ans.Proposals), Stop: ans.Stop}}, nil
+		ToolCalls: len(ans.ToolCalls), Tools: tools, Proposals: len(ans.Proposals), Stop: ans.Stop}}, nil
 }
 
 // rejectedForAgent are the agent's latest proposals for user that people rejected, with their reasons (AI-14): the

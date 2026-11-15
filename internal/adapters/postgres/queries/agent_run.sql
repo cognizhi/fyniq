@@ -16,6 +16,7 @@ SELECT * FROM fyniq.agent_run WHERE id = sqlc.arg(id);
 SELECT * FROM fyniq.agent_run
 WHERE (sqlc.arg(agent)::text = '' OR agent = sqlc.arg(agent)::text)
   AND (cardinality(sqlc.arg(statuses)::text[]) = 0 OR status = ANY (sqlc.arg(statuses)::text[]))
+  AND (sqlc.narg(finished_since)::timestamptz IS NULL OR finished_at >= sqlc.narg(finished_since)::timestamptz)
   AND (sqlc.arg(after)::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < sqlc.arg(after)::uuid)
 ORDER BY id DESC
 LIMIT sqlc.arg(max_rows);
@@ -42,6 +43,6 @@ RETURNING *;
 UPDATE fyniq.agent_run SET status = 'done', finished_at = sqlc.arg(finished_at), fingerprint = sqlc.arg(fingerprint),
   ledger_revision = sqlc.arg(ledger_revision), pack_versions = sqlc.arg(pack_versions), kb_snapshot = sqlc.arg(kb_snapshot),
   findings = sqlc.arg(findings), summary = sqlc.arg(summary), model_used = sqlc.arg(model_used), model = sqlc.narg(model),
-  model_text = sqlc.narg(model_text), tokens = sqlc.arg(tokens), tool_calls = sqlc.arg(tool_calls), version = version + 1
+  model_text = sqlc.narg(model_text), tokens = sqlc.arg(tokens), tool_calls = sqlc.arg(tool_calls), tools = sqlc.narg(tools), version = version + 1
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;

@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	registry "github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -74,12 +75,13 @@ func TestAttackControlRunsAreTheWorkersRecord(t *testing.T) {
 
 // Each verification finds a breach seeded past the database's own guards, with its triggers off as the superuser can,
 // and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05,
-// CTL-AI-06, CTL-AI-02; p1-compliance-center D4, p1-ai-proposals-core D12).
+// CTL-AI-06, CTL-AI-02, CTL-AI-09; p1-compliance-center D4, p1-ai-proposals-core D12, p1-scheduled-agents D11).
 // req: CTL-FIN-08
 // req: CTL-IAM-01
 // req: CTL-AUD-05
 // req: CTL-AI-06
 // req: CTL-AI-02
+// req: CTL-AI-09
 // req: CMP-01
 // asvs: V2.3.5, V6.3.3, V16.3.3
 func TestEachVerificationFindsItsBreach(t *testing.T) {
@@ -103,8 +105,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 5 {
-			t.Fatalf("want the 5 verifications' runs, got %v", out)
+		if len(out) != 6 {
+			t.Fatalf("want the 6 verifications' runs, got %v", out)
 		}
 		return out
 	}
@@ -141,11 +143,16 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 
 	// The breaches, seeded with the triggers off: a bank change approved by whoever asked for it, a batch released under
 	// that approval, a session without a second factor, an export with no audit event, an opening with no request, and
-	// a proposal of the AI executed with no approval request.
+	// a proposal of the AI executed with no approval request, and an agent's run whose model step called a tool its skill
+	// does not name.
 	asked := uuid.New()
+	skill, ok := agents.Default().Get("company-secretary")
+	if !ok {
+		t.Fatal("the release has no company secretary skill")
+	}
 	envelope := `{"object":{"type":"payee_bank_change"}}`
 	sum := sha256.Sum256([]byte(envelope))
-	var approval, export, stray uuid.UUID
+	var approval, export, stray, run uuid.UUID
 	err = asOrg(ctx, superuser, b.Org, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
 			return err
@@ -173,6 +180,13 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 			VALUES ('test.annotate_note', 1, $1, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), 1, 'chat', $2, $3,
 			'm', 'chat@3', $1, 'executed', '{}', $4, $5, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), '{}', $5, $5,
 			$5, $6) RETURNING id`, fmt.Sprintf("%x", sum), requester, uuid.New(), approver, now, now.Add(time.Hour)).Scan(&stray); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.agent_run (agent, skill_version, skill_sha256, trigger, slot_at, acts_for, status,
+			queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model,
+			tools) VALUES ($1, $2, $3, 'schedule:monitor', $4, $5, 'done', $4, $4, $4, $6, 0, '{}', '', '[]', 'Nothing is due', true, 'm',
+			'{checks.list,records.delete}') RETURNING id`, skill.Name, skill.Version, skill.SHA256, now, requester,
+			fmt.Sprintf("%x", sum)).Scan(&run); err != nil {
 			return err
 		}
 		return tx.QueryRow(ctx, `INSERT INTO fyniq.report_export (report, format, parameters, requested_by, requested_at, status)
@@ -225,6 +239,9 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		"CTL-AI-02 verify ai.proposals-approved": {
 			{Kind: "ai_proposal", ID: stray.String(), Detail: "Executed with no approval request"},
 		},
+		"CTL-AI-09 verify ai.agent-runs": {
+			{Kind: "agent_run", ID: run.String(), Detail: "Its model step called records.delete, which its skill does not name"},
+		},
 		"CTL-AI-06 verify ai.traces": {
 			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn keeps an NRIC or FIN number in its answer"},
 			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn read payroll on a day AI payroll access was off"},
@@ -250,7 +267,7 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(latest) != 5 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
+		if len(latest) != 6 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil

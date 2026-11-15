@@ -55,6 +55,7 @@ type AgentReport struct {
 	ModelText      string
 	Tokens         int
 	ToolCalls      int
+	Tools          []string // the read tools its model step called, by name (CTL-AI-09)
 }
 
 // NewAgentRun is a run to queue for its slot.
@@ -71,10 +72,11 @@ type NewAgentRun struct {
 
 // AgentRunQuery pages an organisation's runs, newest first.
 type AgentRunQuery struct {
-	Agent    string
-	Statuses []string
-	After    uuid.UUID
-	Limit    int
+	Agent         string
+	Statuses      []string
+	FinishedSince *time.Time // only runs that ended since
+	After         uuid.UUID
+	Limit         int
 }
 
 // AgentRuns keeps an organisation's agents' runs. Each step is audited in its transaction, and takes the version it
