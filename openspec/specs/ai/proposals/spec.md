@@ -565,6 +565,12 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** anyone signs an `ai_proposal` request
 - **THEN** they have passed step-up
 
+#### Scenario: A scheduled agent's proposal is requested the same way
+- **GIVEN** a scheduled agent's run that acts for the Owner who enabled it (AI-63)
+- **WHEN** its proposal becomes Pending
+- **THEN** its requester is that Owner, authenticated by the run's own grant (`ai_run`) in place of a live turn, for `ai_proposal` requests from a run alone
+- **AND** that Owner may sign its tier-1 proposal, as for a turn (rev 0.281)
+
 ### Requirement: AI-33 Approval-quality metrics
 The system SHALL measure approval quality per task type and approver, to guard against rubber-stamping (per IMDA's agentic-AI framework).
 
