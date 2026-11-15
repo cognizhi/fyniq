@@ -156,6 +156,11 @@
 
 ## 8. The finish
 
-- [ ] 8.1 `docs/security/threat-models/ai-proposals.md` for security review #4 (the AI write path, the payload hash, the
+- [x] 8.1 `docs/security/threat-models/ai-proposals.md` for security review #4 (the AI write path, the payload hash, the
   executor's identity, approval fatigue, injected proposals, the never-list); red-team cases for proposals; the build
   plan's paragraph; `make check`, `make test` and `make evals` pass.
+  As built: the threat model's eleven threats each name the tests that prove their controls. `TestAttackInjectedProposals`
+  is the red team: a turned model driven through a person's real turn. It cannot propose a task type that is off. A
+  flood past the turn's reads makes none. An instruction to act without review is screened as the model's answer
+  arrives, and the turn stops. The AI's tokens approve nothing. That screening comes before the API's own screening of
+  a proposal, which `TestTheAIProposesAndNothingChanges` covers.
