@@ -109,7 +109,8 @@ type ModelResponse struct {
 	Version string `json:"version,omitempty"`
 }
 
-// ModelUsage is an answer's tokens by kind, as the provider's usage fields give them (AI-73, AI-77).
+// ModelUsage is an answer's tokens by kind, as the provider's usage fields give them (AI-73, AI-77): Input is the fresh
+// input, without what was read from or written to the cache; Output includes Reasoning, which is priced as output.
 type ModelUsage struct {
 	Input      int64 `json:"input"`
 	Output     int64 `json:"output"`

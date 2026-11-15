@@ -261,3 +261,17 @@ func TestTheAnthropicConnectorBuildsEachEndpoint(t *testing.T) {
 		t.Errorf("Agent Platform: %v", err)
 	}
 }
+
+// The OpenAI connector builds its adapter per connection with the connection's key, at the API's base or the one the
+// connection names (AI-71, AI-72).
+// req: AI-71
+func TestTheOpenAIConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "openai")
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("without a key: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{}, Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().StrictOutput || len(p.Capabilities().Regions) != 0 {
+		t.Errorf("the OpenAI API: %v", err)
+	}
+}

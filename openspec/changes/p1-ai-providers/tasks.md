@@ -23,7 +23,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   tools and output, caching usage, PDF and image input, reasoning controls, the reported model; Agent Platform through
   the `gcp` adapter's credentials `[live-verify]`. Its conformance suite against a fake. Tests `// req: AI-71`,
   `// req: AI-27`, `// req: AI-28`.
-- [ ] 2.3 The OpenAI adapter (the Responses API) and `connectors/openai`, with its conformance suite. Test
+- [x] 2.3 The OpenAI adapter (the Responses API) and `connectors/openai`, with its conformance suite. Test
   `// req: AI-71`.
 - [ ] 2.4 The Gemini on Agent Platform adapter and `connectors/gemini`, with its conformance suite `[live-verify]` for
   the live endpoint. Test `// req: AI-71`.
