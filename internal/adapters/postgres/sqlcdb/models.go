@@ -123,6 +123,35 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAgentRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	SkillVersion   int32
+	SkillSha256    string
+	Trigger        string
+	SlotAt         time.Time
+	ActsFor        uuid.UUID
+	RequestedBy    *uuid.UUID
+	Status         string
+	Reason         string
+	QueuedAt       time.Time
+	StartedAt      *time.Time
+	FinishedAt     *time.Time
+	Fingerprint    *string
+	LedgerRevision *int64
+	PackVersions   []byte
+	KbSnapshot     *string
+	Findings       []byte
+	Summary        *string
+	ModelUsed      *bool
+	Model          *string
+	ModelText      *string
+	Tokens         *int32
+	ToolCalls      *int32
+	Version        int32
+}
+
 type FyniqAiAgent struct {
 	ID          string
 	Name        string

@@ -158,6 +158,8 @@ type UnitOfWork interface {
 	AIConversations() AIConversations
 	// AIProposals are the AI's proposals, the one way an AI changes anything (§9.5, AI-P3 to AI-P5).
 	AIProposals() AIProposals
+	// AgentRuns are the scheduled agents' runs and their reports (§9.12, AI-65).
+	AgentRuns() AgentRuns
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
