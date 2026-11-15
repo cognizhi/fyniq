@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "after": {
+      "$ref": "Money.schema.json",
+      "description": "After the entries."
+    },
+    "base_after": {
+      "$ref": "Money.schema.json",
+      "description": "After the entries."
+    },
+    "base_before": {
+      "$ref": "Money.schema.json",
+      "description": "Its value in the base currency before."
+    },
+    "before": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance in the currency before, debit positive."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "6010"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Rent"
+      ],
+      "type": "string"
+    },
+    "through": {
+      "description": "The day the balances are through: the entries' latest date.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "through",
+    "before",
+    "after",
+    "base_before",
+    "base_after"
+  ],
+  "title": "ImpactBalance",
+  "type": "object"
+}
