@@ -52,11 +52,12 @@ SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at
  ORDER BY signed_at, id;
 
 -- name: ListApprovalPolicies :many
-SELECT id, object_type, version, steps, request_id, created_by, created_at
+SELECT id, object_type, version, steps, rules, request_id, created_by, created_at
   FROM fyniq.approval_policy
  ORDER BY object_type, version;
 
 -- name: InsertApprovalPolicy :one
-INSERT INTO fyniq.approval_policy (object_type, version, steps, request_id, created_by, created_at)
-VALUES (sqlc.arg(object_type), sqlc.arg(version), sqlc.arg(steps)::jsonb, sqlc.arg(request_id), sqlc.arg(created_by), sqlc.arg(created_at))
-RETURNING id, object_type, version, steps, request_id, created_by, created_at;
+INSERT INTO fyniq.approval_policy (object_type, version, steps, rules, request_id, created_by, created_at)
+VALUES (sqlc.arg(object_type), sqlc.arg(version), sqlc.arg(steps)::jsonb, sqlc.arg(rules)::jsonb, sqlc.arg(request_id), sqlc.arg(created_by),
+        sqlc.arg(created_at))
+RETURNING id, object_type, version, steps, rules, request_id, created_by, created_at;
