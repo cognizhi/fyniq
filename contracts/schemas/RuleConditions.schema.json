@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "Holds when a line posts to one of these accounts; empty for none.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "amount_at_least": {
+      "$ref": "Money.schema.json",
+      "description": "Holds when the change's amount is at or above it, in the base currency; absent for none."
+    },
+    "departments": {
+      "description": "Holds when a line carries one of these dimension values (Department's); empty for none.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "vendors": {
+      "description": "Holds when the change's vendor is one of these contacts; empty for none.",
+      "items": {
+        "description": "A record's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "departments",
+    "accounts",
+    "vendors"
+  ],
+  "title": "RuleConditions",
+  "type": "object"
+}

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -50,10 +52,10 @@ type ControlCheck struct {
 type Control struct {
 	ID           string         `json:"id" doc:"The control's ID." example:"CTL-FIN-08"`
 	Section      string         `json:"section" doc:"Its section of Appendix F." example:"F.1"`
-	Text         string         `json:"control" doc:"What the control holds, as Appendix F words it." example:"Payments and payee bank changes are dual-controlled"`
+	Text         string         `json:"control" doc:"What the control holds, as Appendix F words it, without the PRD's revision tags." example:"Payments and payee bank changes are dual-controlled"`
 	Owner        string         `json:"owner" enum:"owner,administrator,controller,accountant,dpo,auditor" doc:"The role that answers for it, and that a notice of its failure goes to." example:"controller"`
 	Frameworks   []FrameworkKey `json:"frameworks" nullable:"false" doc:"The frameworks it maps to, as frameworks names them."`
-	Mapping      string         `json:"mapping" doc:"Its mapping to the frameworks, as Appendix F words it." example:"COSO P8; SOC2 CC6.1"`
+	Mapping      string         `json:"mapping" doc:"Its mapping to the frameworks, as Appendix F words it, without the PRD's revision tags." example:"COSO P8; SOC2 CC6.1"`
 	Frequency    string         `json:"frequency" doc:"How often it is checked, as Appendix F says." example:"CI, N"`
 	Status       string         `json:"status" enum:"pass,fail,overdue,not_applicable,not_assessed" doc:"The worst of its checks': fail, overdue, not assessed, pass; not applicable when none applies." example:"fail"`
 	Detail       string         `json:"detail" doc:"In plain words, why: the worst check's words, or that each passed." example:"1 found in 2 approval(s) and 1 release(s) of the last day: Approved with the signature of whoever prepared it or asked for it"`
@@ -170,11 +172,18 @@ func (a *API) controls(ctx context.Context) (Controls, error) {
 	return out, nil
 }
 
+// revTag is a PRD revision tag in Appendix F's words, such as "(rev 0.8)" or "(rev 0.246, the owner's decision of …)":
+// the PRD's history, which the dashboard leaves out.
+var revTag = regexp.MustCompile(`\s*\(rev \d+\.\d+(?:[,:][^)]*)?\)\s*`)
+
+// untagged is Appendix F's words without their revision tags.
+func untagged(s string) string { return strings.TrimSpace(revTag.ReplaceAllString(s, " ")) }
+
 // controlOf is a control of the registry with its state; before its first run, each check is not assessed.
 func controlOf(c compliance.Control, s storage.ControlState) (Control, error) {
 	owner := map[string]string{"Owner": "owner", "Administrator": "administrator", "Controller": "controller", "Accountant": "accountant",
 		"DPO": "dpo", "Auditor": "auditor"}[c.Owner]
-	out := Control{ID: c.ID, Section: c.Section, Text: c.Control, Owner: owner, Frameworks: []FrameworkKey{}, Mapping: c.Mapping,
+	out := Control{ID: c.ID, Section: c.Section, Text: untagged(c.Control), Owner: owner, Frameworks: []FrameworkKey{}, Mapping: untagged(c.Mapping),
 		Frequency: c.Frequency, Status: "not_assessed", Detail: "Not worked out yet: compliance.run works out each control's status every night.",
 		Checks: []ControlCheck{}}
 	for _, f := range c.Frameworks {
