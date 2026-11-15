@@ -180,7 +180,7 @@ The calendar itself: [[compliance.calendar]].
 
 ## AI task types
 
-- The AI never changes the books itself: it may only propose a change of a kind the release lists, a **task type**. A member who may approve that kind of change decides, and only then does Fyniq make it, in that member's name.
+- The AI never changes the books itself: it may only propose a change of a kind the release lists, a **task type**. A member who may approve that kind of change decides, and only then does Fyniq make it, in that member's name ([[ai.proposals]]).
 - **Changes the AI may propose**: none unless changed. Enter the task types to allow, separated by commas, as the release names them, such as `sec.create_task`; a task type the release does not have is refused.
 - Adding a task type needs a second approver. Taking one off, or all of them, takes effect at once, with no second approver: the AI stops offering it.
 - Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.

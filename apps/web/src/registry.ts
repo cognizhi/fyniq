@@ -67,6 +67,7 @@ export const routes = [
   { kind: "route", id: "claim-trips", path: "/me/claims/$claimId/mileage", mode: "basic", signedIn: true, help: "claims.trips", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
+  { kind: "route", id: "ai-proposal", path: "/inbox/proposals/$proposalId", mode: "basic", signedIn: true, help: "ai-proposal.review", guide: "ai.proposals#review-a-proposal" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
@@ -228,6 +229,8 @@ export const actions = [
   { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },
   { kind: "action", id: "assistant.simulate", mode: "basic", help: "assistant.simulate", guide: "ai.assistant#explain-and-simulate" },
+  { kind: "action", id: "ai-proposal.items", mode: "basic", help: "ai-proposal.items", guide: "ai.proposals#approve-or-reject" },
+  { kind: "action", id: "ai-proposal.rationale", mode: "basic", help: "ai-proposal.rationale", guide: "ai.proposals#review-a-proposal" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },

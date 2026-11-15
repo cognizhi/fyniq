@@ -48,6 +48,18 @@
       "label": "Rate this answer",
       "tooltip": "Thumbs up or down with a reason. An Owner or Administrator reviews it, with your question and the answer, before it helps test the assistant."
     },
+    "ai-proposal.review": {
+      "label": "AI proposal",
+      "tooltip": "A change the AI proposed, waiting for a person: Fyniq's summary of what it does, then the AI's reasons apart."
+    },
+    "ai-proposal.items": {
+      "label": "Items to keep",
+      "tooltip": "Clear any item you disagree with: the approval covers only the items you keep, and nothing else changes."
+    },
+    "ai-proposal.rationale": {
+      "label": "The AI's reasons",
+      "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
+    },
     "assistant.simulate": {
       "label": "Simulate",
       "tooltip": "See the lowest cash balance if this invoice or bill is paid on another day, or not at all. Nothing is saved."

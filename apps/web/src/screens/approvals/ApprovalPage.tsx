@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { Changes, ConfirmDecision, HashLine } from "./Decide";
+import { ProposalReview } from "./ProposalReview";
 import { objectLabel, operationLabel, StatusChip, stepWho, type Approval } from "./words";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { CompareNumbers } from "../contacts/BankDetails";
@@ -138,6 +139,8 @@ export function ApprovalPage() {
   }, [q.data, decide]);
   const [withdrawing, setWithdrawing] = useState(false);
   const [done, setDone] = useState("");
+  // An AI proposal's items the approval covers (AI-32): null for all of a tier-1 proposal.
+  const [items, setItems] = useState<number[] | null>(null);
   const approve = helpText("approval.approve");
   const reject = helpText("approval.reject");
   const withdraw = helpText("approval.withdraw");
@@ -220,7 +223,7 @@ export function ApprovalPage() {
         <div className="fy-row fy-row--wrap">
           {a.you_may_approve && (
             <>
-              <Button variant="primary" onClick={() => setDecision("approve")} title={approve.tooltip}>
+              <Button variant="primary" onClick={() => setDecision("approve")} title={approve.tooltip} disabled={items?.length === 0}>
                 <Icon of={Check} />
                 {approve.label}…
               </Button>
@@ -239,6 +242,8 @@ export function ApprovalPage() {
         </div>
       )}
       {pending && !a.you_may_approve && !mine && <p className="fy-small fy-secondary">This request waits for someone its current step names. You can follow it here.</p>}
+
+      {a.object_type === "ai_proposal" && <ProposalReview proposalId={a.object_key} onSelect={pending && a.you_may_approve ? setItems : undefined} />}
 
       <section className="fy-card" aria-labelledby="changes-title">
         <div className="fy-card__head">
@@ -298,6 +303,7 @@ export function ApprovalPage() {
         approval={a}
         etag={etag}
         decision={decision}
+        items={a.object_type === "ai_proposal" ? items : undefined}
         onClose={() => setDecision(null)}
         onDecided={(after) => {
           setDecision(null);
