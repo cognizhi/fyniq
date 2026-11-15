@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, ownerSession } from "../../test/api";
@@ -171,6 +171,7 @@ describe("Import from the workbook", () => {
     expect(ask?.body).toEqual({ path: "clean_start" });
 
     // Approved: the batches run until the last is committed.
+    cleanup();
     started({
       "GET /v1/migrations/m-1/mapping": { status: 200, body: signed, headers: { ETag: '"map2"' } },
       "GET /v1/migrations/m-1/commit": { status: 200, body: { ...committed, status: "running", done: 0, kinds: [] } },
@@ -210,6 +211,50 @@ describe("Import from the workbook", () => {
     expect(patch?.body).toEqual({ class: "c", note: "The workbook did not flag an unreconciled month" });
     expect((screen.getByRole("button", { name: "Sign the register" }) as HTMLButtonElement).disabled).toBe(true); // one still to decide
     expect(screen.getByText("The GST F5 is compared once Fyniq makes the F5 return.")).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("runs the parallel month on its own register, signs it, then archives and closes the import", async () => {
+    const signedRec = { ...reconciliation, status: "signed", undecided: 0, sign_off: { current: true, signed_at: "2026-11-13T04:00:00Z", signed_by: "user:u-1" } };
+    const parallel = { ...reconciliation, through: "2026-10", undecided: 0, differences: [], checks: [], checks_differ: 0 };
+    const seen = started({
+      "GET /v1/migrations/m-1/mapping": { status: 200, body: { ...mapping, signed: true }, headers: { ETag: '"map2"' } },
+      "GET /v1/migrations/m-1/commit": { status: 200, body: committed },
+      "GET /v1/migrations/m-1/reconciliation": { status: 200, body: signedRec, headers: { ETag: '"rec9"' } },
+      "GET /v1/migrations/m-1/parallel/report": { status: 200, body: { ...report, as_of: "2026-10-31" } },
+      "GET /v1/migrations/m-1/parallel": { status: 200, body: parallel, headers: { ETag: '"par1"' } },
+      "POST /v1/migrations/m-1/parallel/sign-off": { status: 200, body: { ...parallel, status: "signed" }, headers: { ETag: '"par2"' } },
+    });
+    renderPage(WorkbookImport, { path: "/settings/import", session: accountant });
+    expect(await screen.findByText("5 · The parallel month, through 2026-10")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Sign the parallel month" }));
+    await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/migrations/m-1/parallel/sign-off")).toBe(true));
+    expect(seen.find((s) => s.path === "/v1/migrations/m-1/parallel/sign-off")?.headers.get("If-Match")).toBe('"par1"');
+
+    // M6: the import's files, a PDF added, then archived and closed.
+    cleanup();
+    const signedPar = { ...parallel, status: "signed", sign_off: { current: true, signed_at: "2026-11-13T05:00:00Z", signed_by: "user:u-1" } };
+    const files = [{ id: "f-1", kind: "workbook", file_name: "Hub.xlsx", media_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size_bytes: 1, added_at: "2026-11-13T01:00:00Z", added_by: "user:u-1", data_class: "general" }];
+    const archived = started({
+      "GET /v1/migrations/m-1": { status: 200, body: { ...migration, files }, headers: { ETag: '"m1"' } },
+      "GET /v1/migrations/m-1/mapping": { status: 200, body: { ...mapping, signed: true }, headers: { ETag: '"map2"' } },
+      "GET /v1/migrations/m-1/commit": { status: 200, body: committed },
+      "GET /v1/migrations/m-1/reconciliation": { status: 200, body: signedRec, headers: { ETag: '"rec9"' } },
+      "GET /v1/migrations/m-1/parallel/report": { status: 200, body: { ...report, as_of: "2026-10-31" } },
+      "GET /v1/migrations/m-1/parallel": { status: 200, body: signedPar, headers: { ETag: '"par2"' } },
+      "GET /v1/migrations/m-1/archive": { status: 200, body: { status: "open", copies: [] } },
+      "POST /v1/migrations/m-1/archive/pdfs": { status: 201, body: files[0] },
+      "POST /v1/migrations/m-1/archive": { status: 200, body: { status: "closed", copies: [] } },
+    });
+    renderPage(WorkbookImport, { path: "/settings/import", session: { ...ownerSession, roles: ["controller"] } as Session });
+    const list = await screen.findByRole("list", { name: "The import's files" });
+    expect(within(list).getByText("Hub.xlsx")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("The workbook's reports (PDF)"), { target: { files: [new File(["%PDF-1.7"], "Statements.pdf", { type: "application/pdf" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the PDF" }));
+    await vi.waitFor(() => expect(archived.some((s) => s.path === "/v1/migrations/m-1/archive/pdfs")).toBe(true));
+    fireEvent.click(screen.getByRole("button", { name: "Archive and go live" }));
+    await vi.waitFor(() => expect(archived.some((s) => s.method === "POST" && s.path === "/v1/migrations/m-1/archive")).toBe(true));
+    expect(archived.find((s) => s.method === "POST" && s.path === "/v1/migrations/m-1/archive")?.headers.get("If-Match")).toBe('"m1"');
     await noViolations(document.body);
   });
 });

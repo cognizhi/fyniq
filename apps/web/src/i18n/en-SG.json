@@ -724,6 +724,18 @@
       "label": "Sign the register",
       "tooltip": "The Accountant signs the parity report once every difference is decided, after confirming it's them."
     },
+    "workbook-import.upload-parallel": {
+      "label": "Upload the month's workbook",
+      "tooltip": "The workbook at the parallel month's end, checked as the first was, then compared with Fyniq's books."
+    },
+    "workbook-import.sign-parallel": {
+      "label": "Sign the parallel month",
+      "tooltip": "The Accountant signs the parallel month once every difference is decided, after confirming it's them."
+    },
+    "workbook-import.archive": {
+      "label": "Archive and go live",
+      "tooltip": "Copies each of the import's files, write-once, to the retention-locked store, and closes the import."
+    },
     "workbook-import.template": {
       "label": "Download the template",
       "tooltip": "The columns of the workbook's sheet for these records, as CSV or Excel, ready to fill in."

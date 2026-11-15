@@ -4,7 +4,7 @@ type: task
 title: Import from the finance workbook step by step, and import records from CSV or Excel
 summary: Settings › Import, the migration steps M1 to M6, uploading, mapping, committing and reconciling the workbook, and the generic import
 sources:
-  - docs/user-guide/workbook-import.md sha256:67d6c9802ddadb9748ad9a7dc99ca3e3df2b754700b2e6907e9591793540db65
+  - docs/user-guide/workbook-import.md sha256:62e33b3728270fd7be5acf7b915c60aca58470a200beea65c934db7d7fea08c3
 data_class: general
 taint: trusted
 status: published
@@ -73,6 +73,22 @@ aliases:
 - Once every line is decided, the Accountant selects **Sign the register** and confirms it's them; the GST F5 is compared once Fyniq makes the F5 return.
 
 (src: docs/user-guide/workbook-import.md#reconcile-and-sign)
+
+## Run a parallel month
+
+- Once the register is signed, keep one month in both the workbook and Fyniq; at its end, **Upload the month's workbook** as it stands then.
+- It is checked as the first was, then the month is compared with Fyniq's books the same way, each difference decided in its own register.
+- The Accountant then selects **Sign the parallel month** and confirms it's them.
+
+(src: docs/user-guide/workbook-import.md#run-a-parallel-month)
+
+## Archive and go live
+
+- Once the parallel month is signed, add the PDFs of the workbook's reports, then select **Archive and go live** and confirm it's you.
+- Each of the import's files (the workbooks, their Checks exports and the PDFs) is copied, write-once, to the retention-locked store with its hash, and kept as long as the records are.
+- The import then closes, read only: nothing of it changes again.
+
+(src: docs/user-guide/workbook-import.md#archive-and-go-live)
 
 ## Other imports
 

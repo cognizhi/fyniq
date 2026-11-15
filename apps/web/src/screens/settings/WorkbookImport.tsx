@@ -25,6 +25,7 @@ type Reconciliation = components["schemas"]["MigrationReconciliation"];
 type Difference = components["schemas"]["MigrationDifference"];
 type CheckParity = components["schemas"]["MigrationCheckParity"];
 type Decision = components["schemas"]["MigrationRegisterDecision"];
+type Archive = components["schemas"]["MigrationArchiveView"];
 
 // absent is an answer the record is not there yet: none started, no workbook uploaded, no mapping proposed.
 const absent = (r: Response) => r.status === 404;
@@ -61,6 +62,30 @@ async function reconciliationOf(id: string): Promise<{ rec: Reconciliation; etag
     rec: { ...r.data, differences: r.data.differences ?? [], checks: (r.data.checks ?? []).map((c) => ({ ...c, fyniq: c.fyniq ?? [] })), not_compared: r.data.not_compared ?? [] },
     etag: etagOf(r.response),
   };
+}
+
+async function parallelReportOf(id: string): Promise<Report | null> {
+  const r = await api.GET("/v1/migrations/{migration_id}/parallel/report", { params: { path: { migration_id: id } } });
+  if (r.error) {
+    if (absent(r.response)) return null;
+    throw r.error;
+  }
+  return { ...r.data, sheets: r.data.sheets ?? [], problems: r.data.problems ?? [] };
+}
+
+async function parallelOf(id: string): Promise<{ rec: Reconciliation; etag: string }> {
+  const r = await api.GET("/v1/migrations/{migration_id}/parallel", { params: { path: { migration_id: id } } });
+  if (r.error) throw r.error;
+  return {
+    rec: { ...r.data, differences: r.data.differences ?? [], checks: (r.data.checks ?? []).map((c) => ({ ...c, fyniq: c.fyniq ?? [] })), not_compared: r.data.not_compared ?? [] },
+    etag: etagOf(r.response),
+  };
+}
+
+async function archiveOf(id: string): Promise<Archive> {
+  const r = await api.GET("/v1/migrations/{migration_id}/archive", { params: { path: { migration_id: id } } });
+  if (r.error) throw r.error;
+  return { ...r.data, copies: r.data.copies ?? [] };
 }
 
 async function mappingOf(id: string): Promise<{ map: Mapping; etag: string } | null> {
@@ -126,14 +151,16 @@ function Problems({ problems, label }: { problems: Problem[]; label: string }) {
   );
 }
 
-// Upload is M1: the frozen workbook, checked in the background, its report by sheet.
-function Upload1({ m, etag, report }: { m: Migration; etag: string; report: Report | null }) {
+// UploadWorkbook is M1's frozen workbook, or M5's workbook at the parallel month's end: checked in the background, its
+// report by sheet.
+function UploadWorkbook({ m, etag, report, parallel }: { m: Migration; etag: string; report: Report | null; parallel?: boolean }) {
   const queries = useQueryClient();
   const fileId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
-  const h = helpText("workbook-import.upload");
+  const h = helpText(parallel ? "workbook-import.upload-parallel" : "workbook-import.upload");
+  const what = parallel ? "parallel workbook" : "workbook";
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) return;
@@ -144,11 +171,8 @@ function Upload1({ m, etag, report }: { m: Migration; etag: string; report: Repo
       form.append("file", file, file.name);
       return form;
     };
-    const r = await api.POST("/v1/migrations/{migration_id}/workbook", {
-      params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
-      body: { file: file.name },
-      bodySerializer,
-    });
+    const opts = { params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } }, body: { file: file.name }, bodySerializer };
+    const r = parallel ? await api.POST("/v1/migrations/{migration_id}/parallel/workbook", opts) : await api.POST("/v1/migrations/{migration_id}/workbook", opts);
     setBusy(false);
     if (r.error) return setProblem(problemOf(r.error));
     setFile(null);
@@ -156,10 +180,10 @@ function Upload1({ m, etag, report }: { m: Migration; etag: string; report: Repo
   };
   const sheets = report?.sheets ?? [];
   return (
-    <section className="fy-card" aria-labelledby="m1-title">
+    <section className="fy-card" aria-labelledby={parallel ? "m5-upload-title" : "m1-title"}>
       <div className="fy-card__head">
-        <h2 className="fy-h3" id="m1-title">
-          1 · Upload and check the workbook
+        <h2 className="fy-h3" id={parallel ? "m5-upload-title" : "m1-title"}>
+          {parallel ? "5 · Upload the workbook at the parallel month's end" : "1 · Upload and check the workbook"}
         </h2>
         {report && (
           <span className={`fy-chip ${report.state === "valid" ? "fy-chip--good" : report.state === "invalid" ? "fy-chip--critical" : "fy-chip--neutral"}`}>
@@ -170,27 +194,28 @@ function Upload1({ m, etag, report }: { m: Migration; etag: string; report: Repo
       </div>
       <form className="fy-card__body fy-stack fy-stack--3" onSubmit={submit} noValidate>
         <p className="fy-small fy-secondary">
-          Upload the frozen workbook, the published .xlsx saved after its checks pass. Nothing goes into the books here: each sheet is read and checked, and
-          every problem is named with its row and column.
+          {parallel
+            ? "Keep one month in both the workbook and Fyniq, then upload the workbook as it stands at that month's end. It is checked as the first was, then compared with Fyniq's books."
+            : "Upload the frozen workbook, the published .xlsx saved after its checks pass. Nothing goes into the books here: each sheet is read and checked, and every problem is named with its row and column."}
         </p>
-        {problem && <Refusal problem={problem} title="The workbook was not uploaded" />}
+        {problem && <Refusal problem={problem} title={`The ${what} was not uploaded`} />}
         <div className="fy-field">
           <label className="fy-label" htmlFor={fileId}>
-            Workbook (.xlsx)
+            {parallel ? "Workbook at the month's end (.xlsx)" : "Workbook (.xlsx)"}
           </label>
           <input className="fy-input" id={fileId} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </div>
         <div className="fy-row fy-row--wrap justify-end">
           <Button variant={report ? "secondary" : "primary"} type="submit" disabled={busy || !file} title={h.tooltip}>
             <Icon of={Upload} />
-            {busy ? "Uploading…" : report ? "Upload a corrected workbook" : h.label}
+            {busy ? "Uploading…" : report ? `Upload a corrected ${what}` : h.label}
           </Button>
         </div>
       </form>
       {report && report.state !== "validating" && (
         <>
           <div className="fy-tablewrap">
-            <table className="fy-table fy-table--compact" aria-label="The workbook's sheets">
+            <table className="fy-table fy-table--compact" aria-label={`The ${what}'s sheets`}>
               <thead>
                 <tr>
                   <th scope="col">Sheet</th>
@@ -228,7 +253,7 @@ function Upload1({ m, etag, report }: { m: Migration; etag: string; report: Repo
               </tbody>
             </table>
           </div>
-          <Problems problems={report.problems ?? []} label="The workbook's problems" />
+          <Problems problems={report.problems ?? []} label={`The ${what}'s problems`} />
           <p className="fy-card__body fy-small fy-secondary">
             {report.company} · books start {report.books_start} · base currency {report.base_currency}
             {report.validated_at && ` · checked ${dateTime(report.validated_at)}`}
@@ -520,7 +545,7 @@ const classes: Record<Decision["class"], string> = {
 };
 
 // Decide is one line of the register: the Accountant's class, with a note for a defect, made on the report as read.
-function Decide({ m, line, decision, proposed, etag }: { m: Migration; line: string; decision?: Decision; proposed?: string; etag: string }) {
+function Decide({ m, line, decision, proposed, etag, parallel }: { m: Migration; line: string; decision?: Decision; proposed?: string; etag: string; parallel?: boolean }) {
   const queries = useQueryClient();
   const id = useId();
   const [cls, setCls] = useState<Decision["class"] | "">(decision?.class ?? (proposed as Decision["class"]) ?? "");
@@ -531,10 +556,13 @@ function Decide({ m, line, decision, proposed, etag }: { m: Migration; line: str
     if (!cls) return;
     setBusy(true);
     setProblem(null);
-    const r = await api.PATCH("/v1/migrations/{migration_id}/reconciliation/register/{line}", {
+    const opts = {
       params: { path: { migration_id: m.id, line }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
       body: { class: cls, ...(note.trim() ? { note: note.trim() } : {}) },
-    });
+    };
+    const r = parallel
+      ? await api.PATCH("/v1/migrations/{migration_id}/parallel/register/{line}", opts)
+      : await api.PATCH("/v1/migrations/{migration_id}/reconciliation/register/{line}", opts);
     setBusy(false);
     if (r.error) return setProblem(problemOf(r.error));
     await queries.invalidateQueries({ queryKey: ["migration"] });
@@ -580,23 +608,24 @@ function Decide({ m, line, decision, proposed, etag }: { m: Migration; line: str
 
 const checkWords: Record<CheckParity["workbook"], string> = { fine: "Fine", review: "Review", blocked: "Blocked" };
 
-// Reconcile4 is M4: every account and month compared with the workbook to the cent, each figure that differs and each
-// check whose status differs decided as class a, b or c, and the Accountant's sign-off.
-function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag: string }) {
+// Parity is M4, or M5 for the parallel month: every account and month compared with the workbook to the cent, each
+// figure that differs and each check whose status differs decided as class a, b or c, and the Accountant's sign-off.
+function Parity({ m, rec, etag, parallel }: { m: Migration; rec: Reconciliation; etag: string; parallel?: boolean }) {
   const queries = useQueryClient();
   const confirm = useConfirm();
   const { session } = useSignedIn();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
-  const sign = helpText("workbook-import.sign-reconciliation");
+  const sign = helpText(parallel ? "workbook-import.sign-parallel" : "workbook-import.sign-reconciliation");
   const accountant = (session.roles ?? []).includes("accountant");
   const differing = rec.checks.filter((c) => !c.same);
   const signOff = async () => {
     setBusy(true);
     setProblem(null);
     const key = newKey();
+    const opts = { params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": key } } };
     const r = await guarded(confirm, () =>
-      api.POST("/v1/migrations/{migration_id}/reconciliation/sign-off", { params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": key } } }),
+      parallel ? api.POST("/v1/migrations/{migration_id}/parallel/sign-off", opts) : api.POST("/v1/migrations/{migration_id}/reconciliation/sign-off", opts),
     );
     setBusy(false);
     if (r.error) return setProblem(problemOf(r.error));
@@ -619,15 +648,15 @@ function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag:
         {d.difference}
       </td>
       <td data-card="status">
-        <Decide m={m} line={d.key} decision={d.decision} proposed={d.proposed_class} etag={etag} />
+        <Decide m={m} line={d.key} decision={d.decision} proposed={d.proposed_class} etag={etag} parallel={parallel} />
       </td>
     </tr>
   );
   return (
-    <section className="fy-card" aria-labelledby="m4-title">
+    <section className="fy-card" aria-labelledby={parallel ? "m5-title" : "m4-title"}>
       <div className="fy-card__head">
-        <h2 className="fy-h3" id="m4-title">
-          4 · Reconcile and sign
+        <h2 className="fy-h3" id={parallel ? "m5-title" : "m4-title"}>
+          {parallel ? `5 · The parallel month, through ${rec.through}` : "4 · Reconcile and sign"}
         </h2>
         {rec.sign_off?.current ? (
           <span className="fy-chip fy-chip--good">
@@ -665,10 +694,10 @@ function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag:
         </div>
       </div>
       {rec.not_compared.includes("gst_f5") && <p className="fy-card__body fy-small fy-secondary">The GST F5 is compared once Fyniq makes the F5 return.</p>}
-      {problem && <Refusal problem={problem} title="The register was not signed" />}
+      {problem && <Refusal problem={problem} title={parallel ? "The parallel month was not signed" : "The register was not signed"} />}
       {rec.differences.length > 0 && (
         <div className="fy-tablewrap">
-          <table className="fy-table fy-table--cards" aria-label="Figures that differ">
+          <table className="fy-table fy-table--cards" aria-label={parallel ? "Figures that differ at the month's end" : "Figures that differ"}>
             <thead>
               <tr>
                 <th scope="col">Account</th>
@@ -689,7 +718,7 @@ function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag:
         </div>
       )}
       {differing.length > 0 && (
-        <ul className="fy-list" aria-label="Checks that differ">
+        <ul className="fy-list" aria-label={parallel ? "Checks that differ at the month's end" : "Checks that differ"}>
           {differing.map((c) => (
             <li key={c.key} className="fy-list__item items-start">
               <span className="fy-list__main">
@@ -699,7 +728,7 @@ function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag:
                 <span className="fy-list__meta whitespace-normal">
                   The workbook says {checkWords[c.workbook]}; Fyniq's: {c.missing ? "none matches it" : c.fyniq.map((x) => x.status).join(", ")}
                 </span>
-                <Decide m={m} line={c.key} decision={c.decision} etag={etag} />
+                <Decide m={m} line={c.key} decision={c.decision} etag={etag} parallel={parallel} />
               </span>
             </li>
           ))}
@@ -712,6 +741,110 @@ function Reconcile4({ m, rec, etag }: { m: Migration; rec: Reconciliation; etag:
           {sign.label}
         </Button>
       </div>
+    </section>
+  );
+}
+
+const fileKinds: Record<string, string> = { workbook: "Workbook", checks: "Checks export", pdf: "Reports (PDF)" };
+
+// Archive6 is M6, go-live: the PDFs of the workbook's reports join the migration's files, then each file is copied to the
+// retention-locked store with its hash, and the migration closes, read only.
+function Archive6({ m, etag, archive }: { m: Migration; etag: string; archive: Archive }) {
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const fileId = useId();
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const live = helpText("workbook-import.archive");
+  const closed = archive.status === "closed";
+  const addPDF = async () => {
+    if (!file) return;
+    setBusy(true);
+    setProblem(null);
+    const bodySerializer = () => {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      return form;
+    };
+    const r = await api.POST("/v1/migrations/{migration_id}/archive/pdfs", {
+      params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
+      body: { file: file.name },
+      bodySerializer,
+    });
+    setBusy(false);
+    if (r.error) return setProblem(problemOf(r.error));
+    setFile(null);
+    await queries.invalidateQueries({ queryKey: ["migration"] });
+  };
+  const goLive = async () => {
+    setBusy(true);
+    setProblem(null);
+    const key = newKey();
+    const r = await guarded(confirm, () => api.POST("/v1/migrations/{migration_id}/archive", { params: { path: { migration_id: m.id }, header: { "If-Match": etag, "Idempotency-Key": key } } }));
+    setBusy(false);
+    if (r.error) return setProblem(problemOf(r.error));
+    await queries.invalidateQueries({ queryKey: ["migration"] });
+  };
+  return (
+    <section className="fy-card" aria-labelledby="m6-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="m6-title">
+          6 · Archive and go live
+        </h2>
+        {closed && (
+          <span className="fy-chip fy-chip--good">
+            <Icon of={ShieldCheck} />
+            Archived and closed
+          </span>
+        )}
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--3">
+        <p className="fy-small fy-secondary">
+          {closed
+            ? "Each of the import's files is kept in the retention-locked store with its hash, until its retention ends. The import is closed: nothing of it changes again."
+            : "Add the PDFs of the workbook's reports, then archive: each of the import's files is copied, write-once, to the retention-locked store with its hash, and the import closes, read only."}
+        </p>
+        {problem && <Refusal problem={problem} title="The import was not archived" />}
+      </div>
+      <ul className="fy-list" aria-label="The import's files">
+        {(closed ? archive.copies.map((c) => ({ id: c.file_id, name: c.file_name, kind: c.kind, until: c.retain_until })) : m.files.map((f) => ({ id: f.id, name: f.file_name, kind: f.kind, until: "" }))).map(
+          (f) => (
+            <li key={f.id} className="fy-list__item">
+              <span className="fy-list__icon">
+                <Icon of={FileSpreadsheet} size={20} />
+              </span>
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">{f.name}</span>
+                <span className="fy-list__meta">
+                  {fileKinds[f.kind] ?? f.kind}
+                  {f.until && ` · kept until ${dateTime(f.until)}`}
+                </span>
+              </span>
+            </li>
+          ),
+        )}
+      </ul>
+      {!closed && (
+        <div className="fy-card__foot fy-stack fy-stack--3">
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={fileId}>
+              The workbook's reports (PDF)
+            </label>
+            <input className="fy-input" id={fileId} type="file" accept=".pdf,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+          <div className="fy-row fy-row--wrap justify-end gap-3">
+            <Button onClick={() => void addPDF()} disabled={busy || !file}>
+              <Icon of={Upload} />
+              Add the PDF
+            </Button>
+            <Button variant="primary" onClick={() => void goLive()} disabled={busy} title={live.tooltip}>
+              <Icon of={ShieldCheck} />
+              {live.label}
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -915,6 +1048,16 @@ export function WorkbookImport() {
     queryFn: () => reconciliationOf(id ?? ""),
     enabled: !!id && commit.data?.status === "committed",
   });
+  const m4signed = !!reconciliation.data?.rec.sign_off?.current;
+  const parallelReport = useQuery({
+    queryKey: ["migration", id, "parallel-report"],
+    queryFn: () => parallelReportOf(id ?? ""),
+    enabled: !!id && m4signed,
+    refetchInterval: (query) => (query.state.data?.state === "validating" ? 2000 : false),
+  });
+  const parallel = useQuery({ queryKey: ["migration", id, "parallel"], queryFn: () => parallelOf(id ?? ""), enabled: !!id && parallelReport.data?.state === "valid" });
+  const m5signed = !!parallel.data?.rec.sign_off?.current;
+  const archive = useQuery({ queryKey: ["migration", id, "archive"], queryFn: () => archiveOf(id ?? ""), enabled: !!id && (m5signed || q.data?.m.status === "closed") });
   const start = helpText("workbook-import.start");
   const begin = async () => {
     setBusy(true);
@@ -929,7 +1072,8 @@ export function WorkbookImport() {
   if (report.data?.state === "valid") done.add("M1");
   if (mapping.data?.map.signed) done.add("M2");
   if (commit.data?.status === "committed") done.add("M3");
-  if (reconciliation.data?.rec.sign_off?.current) done.add("M4");
+  if (m4signed) done.add("M4");
+  if (m5signed) done.add("M5");
   if (m?.status === "closed") stepNames.forEach(([s]) => done.add(s));
   const current = stepNames.find(([s]) => !done.has(s))?.[0] ?? "M6";
 
@@ -962,10 +1106,13 @@ export function WorkbookImport() {
       {m && (
         <>
           <Steps done={done} current={current} />
-          <Upload1 m={m} etag={q.data?.etag ?? ""} report={report.data ?? null} />
+          <UploadWorkbook m={m} etag={q.data?.etag ?? ""} report={report.data ?? null} />
           {mapping.data && <MapAndSign m={m} mapping={mapping.data} />}
           {mapping.data && commit.data && <Commit3 m={m} mapping={mapping.data} commit={commit.data} />}
-          {reconciliation.data && <Reconcile4 m={m} rec={reconciliation.data.rec} etag={reconciliation.data.etag} />}
+          {reconciliation.data && <Parity m={m} rec={reconciliation.data.rec} etag={reconciliation.data.etag} />}
+          {m4signed && <UploadWorkbook m={m} etag={q.data?.etag ?? ""} report={parallelReport.data ?? null} parallel />}
+          {parallel.data && parallel.data.rec.status !== "not_started" && <Parity m={m} rec={parallel.data.rec} etag={parallel.data.etag} parallel />}
+          {archive.data && <Archive6 m={m} etag={q.data?.etag ?? ""} archive={archive.data} />}
         </>
       )}
       <OtherImports />

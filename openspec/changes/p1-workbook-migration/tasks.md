@@ -181,7 +181,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 9. Screens, help and the guide
 
-- [ ] 9.1 `workbook-import` (Settings › Import, Expert): the steps M1 to M6 with their evidence and sign-offs, the
+- [x] 9.1 `workbook-import` (Settings › Import, Expert): the steps M1 to M6 with their evidence and sign-offs, the
   validation report by sheet, the mapping, the commit's progress (the operations tray), the parity report and register,
   the generic import's templates and dry run. Built from `docs/design/screens/src/WorkbookImport.html`; help keys in the
   registry; guide `docs/user-guide/workbook-import.md` compiled into `kb/`. Tests `workbook-import.test.tsx` (each step's
@@ -193,6 +193,9 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   (Slice 27 added M3: asking to commit by its path over the signed mapping, the approval's link, and the batches run
   until committed with the progress by kind; and M4: the parity report's tiles, each figure and check that differs
   decided a, b or c over the report's ETag, a stale decision flagged, and the Accountant's sign-off. Left: M5, M6.)
+  (Slice 28 added M5: the workbook at the parallel month's end uploaded and checked, then its own register decided and
+  signed; and M6: the import's files, the PDFs of the workbook's reports added, then archived and closed, each copy with
+  the date it is kept until. The fragment's steps are the six as built; its canvas waits for the design account.)
 - [x] 9.2 `data-export` (Settings › Data): the data region and retention (read only where fixed) and the tenant export,
   from asking to downloading. Built from `docs/design/screens/src/DataExport.html`; help keys; guide
   `docs/user-guide/data-export.md` compiled into `kb/`. Tests `data-export.test.tsx` `// req: FR-MIG-04`.
