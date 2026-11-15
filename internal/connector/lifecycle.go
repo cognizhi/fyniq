@@ -27,6 +27,7 @@ const (
 	CodeState         = "CONNECTOR-06" // the step cannot be taken from the connector's state
 	CodeNotInstalled  = "CONNECTOR-07" // no such installed connector
 	CodeChange        = "CONNECTOR-08" // the change is not one that can be decided or applied now
+	CodeModelProvider = "CONNECTOR-09" // a model provider, connected as an AI connection and never installed (AI-72)
 )
 
 // Error is a refusal of the lifecycle.
@@ -257,6 +258,9 @@ func (s Installations) manifest(id string) (Binding, error) {
 	b, ok := s.Catalogue.Get(id)
 	if !ok {
 		return Binding{}, refuse(CodeUnknown, "%s is not a connector of this release", id)
+	}
+	if b.Manifest.Model != nil {
+		return Binding{}, refuse(CodeModelProvider, "%s is connected in Settings › AI providers, as an AI connection of its own", b.Manifest.Name)
 	}
 	if b.Manifest.Scope != ScopeInstallation {
 		return Binding{}, refuse(CodeScope, "%s is installed by an organisation, not installation-wide", b.Manifest.Name)
@@ -556,6 +560,9 @@ func (s Organisations) manifest(id string) (Binding, error) {
 	b, ok := s.Catalogue.Get(id)
 	if !ok {
 		return Binding{}, refuse(CodeUnknown, "%s is not a connector of this release", id)
+	}
+	if b.Manifest.Model != nil {
+		return Binding{}, refuse(CodeModelProvider, "%s is connected in Settings › AI providers, as an AI connection of its own", b.Manifest.Name)
 	}
 	if b.Manifest.Scope != ScopeOrganisation {
 		return Binding{}, refuse(CodeScope, "%s is installed installation-wide by the Super admin, not by an organisation", b.Manifest.Name)

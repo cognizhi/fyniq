@@ -19,7 +19,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   tests. The four manifests (`connectors/anthropic`, `openai`, `gemini`, `openai-compatible`) with their capabilities,
   regions and data land with their adapters in 2.2 to 2.5, as the catalogue takes a manifest only with a binding that
   builds what it declares. Test `// req: AI-71`.
-- [ ] 2.2 The Anthropic Messages API adapter and `connectors/anthropic`, on the egress guard: calls, streaming, strict
+- [x] 2.2 The Anthropic Messages API adapter and `connectors/anthropic`, on the egress guard: calls, streaming, strict
   tools and output, caching usage, PDF and image input, reasoning controls, the reported model; Agent Platform through
   the `gcp` adapter's credentials `[live-verify]`. Its conformance suite against a fake. Tests `// req: AI-71`,
   `// req: AI-27`, `// req: AI-28`.

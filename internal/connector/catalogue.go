@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -30,6 +32,9 @@ type Config struct {
 	Consent storage.ConnectorConsent
 	// Clock is the runtime's clock, for an adapter that reads a period up to now (a bank feed's statement).
 	Clock ports.Clock
+	// Tokens are the service's own account's access tokens, for a connection that authenticates with workload identity
+	// (AI-72), such as Claude on Agent Platform; nil where the runtime has none.
+	Tokens oauth2.TokenSource
 }
 
 // String returns the configuration value name as a string, or def when it is unset or empty.

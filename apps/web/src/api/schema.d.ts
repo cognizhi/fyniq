@@ -100987,7 +100987,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -101131,7 +101131,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -101399,7 +101399,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -101676,7 +101676,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -101858,7 +101858,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -102038,7 +102038,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -102171,7 +102171,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -126764,7 +126764,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -127041,7 +127041,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -127223,7 +127223,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -127403,7 +127403,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -127536,7 +127536,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed. */
             422: {
                 headers: {
                     [name: string]: unknown;

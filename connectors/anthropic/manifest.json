@@ -1,0 +1,134 @@
+{
+  "id": "anthropic",
+  "name": "Anthropic",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Claude through the Anthropic Messages API, or through Claude on Google Cloud's Agent Platform with the service's own account.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "model-provider",
+      "trigger": "system-rule",
+      "trigger_rule": "A model call an agent makes through its route: a person's question to the assistant, or a run of a scheduled agent the Owner enabled. AI proposes; it never writes the books.",
+      "on_pause": "hold",
+      "on_disable": "cancel",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "endpoint": {
+        "enum": [
+          "anthropic-api",
+          "agent-platform"
+        ],
+        "title": "Endpoint",
+        "description": "The Anthropic API with an API key, or Claude on Agent Platform with the service's own account.",
+        "default": "agent-platform"
+      },
+      "base_url": {
+        "type": "string",
+        "title": "API base",
+        "description": "The Anthropic API's base.",
+        "default": "https://api.anthropic.com",
+        "pattern": "^https://"
+      },
+      "project": {
+        "type": "string",
+        "title": "Google Cloud project",
+        "description": "The project Claude on Agent Platform is enabled in.",
+        "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
+      },
+      "location": {
+        "type": "string",
+        "title": "Location",
+        "description": "Where Agent Platform processes the call, such as asia-southeast1.",
+        "default": "asia-southeast1",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "timeout_seconds": {
+        "type": "integer",
+        "title": "Timeout",
+        "description": "Seconds a call may take before it fails over or stops.",
+        "minimum": 5,
+        "maximum": 600,
+        "default": 120
+      },
+      "retries": {
+        "type": "integer",
+        "title": "Retries",
+        "description": "Retries of a call the provider refused as overloaded or rate limited, with backoff.",
+        "minimum": 0,
+        "maximum": 5,
+        "default": 2
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_key",
+      "title": "API key",
+      "description": "An Anthropic API key, for the Anthropic API endpoint; Agent Platform needs none.",
+      "used_by": [
+        "ai",
+        "worker"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [
+    "know-how",
+    "business-figures",
+    "personal-data",
+    "payroll",
+    "restricted"
+  ],
+  "regions": [
+    "US",
+    "configured"
+  ],
+  "destinations": [
+    {
+      "host": "api.anthropic.com",
+      "port": 443
+    },
+    {
+      "host": "aiplatform.googleapis.com",
+      "port": 443
+    },
+    {
+      "host": "asia-southeast1-aiplatform.googleapis.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "model": {
+    "features": [
+      "tools",
+      "strict-output",
+      "streaming",
+      "images",
+      "pdf",
+      "caching",
+      "reasoning"
+    ],
+    "auth": [
+      "api-key",
+      "workload-identity"
+    ],
+    "list_models": "GET /v1/models on the Anthropic API; on Agent Platform, the publisher's models in the location [live-verify]"
+  },
+  "health_check": "Counts the provider's refusals, rate limits and failed connections in recent calls, and the model list's last read.",
+  "test_action": "Lists the connection's models, then asks the picked model a few tokens of synthetic text and reports what it answered with: its model, its usage and the capabilities it proved.",
+  "local_substitute": "Recorded answers by default, a developer's own key with FYNIQ_AI_LIVE=1 on the synthetic sample company; a fake Messages API in tests.",
+  "limits": {
+    "requests_per_minute": 600,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 60
+  }
+}

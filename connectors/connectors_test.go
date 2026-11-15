@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -227,5 +229,35 @@ func TestTheSMTPConnectorSpeaksPlainTextOnlyInTheLocalFlavour(t *testing.T) {
 	}
 	if _, err := b.OutboundEmail(connector.Config{}); err == nil || !strings.Contains(err.Error(), "SMTP server") {
 		t.Fatalf("without a server: %v", err)
+	}
+}
+
+// The Anthropic connector builds its adapter per connection (AI-71, AI-72): the Anthropic API with its key, or Claude
+// on Agent Platform with the project and the service's own account, in the configured location; each says what is
+// missing.
+// req: AI-71
+// req: AI-72
+func TestTheAnthropicConnectorBuildsEachEndpoint(t *testing.T) {
+	b := get(t, "anthropic")
+	if _, ok := b.Manifest.Capability(connector.ModelProvider); !ok || b.Model == nil {
+		t.Fatalf("anthropic is not a model provider: %+v", b.Manifest.Capabilities)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"endpoint": "anthropic-api"}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("the Anthropic API without a key: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{"endpoint": "anthropic-api"}, Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().Tools {
+		t.Errorf("the Anthropic API: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "project") {
+		t.Errorf("Agent Platform without a project: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}}); err == nil || !strings.Contains(err.Error(), "own account") {
+		t.Errorf("Agent Platform without the service's account: %v", err)
+	}
+	p, err = b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev", "location": "global"},
+		Tokens: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "t"})})
+	if err != nil || strings.Join(p.Capabilities().Regions, ",") != "global" {
+		t.Errorf("Agent Platform: %v", err)
 	}
 }
