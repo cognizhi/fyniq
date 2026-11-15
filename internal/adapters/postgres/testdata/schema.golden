@@ -6787,6 +6787,7 @@ CREATE TRIGGER ai_price_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai
 CREATE TRIGGER ai_price_rate_no_truncate BEFORE TRUNCATE ON fyniq.ai_price_rate FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_proposal FOR EACH ROW EXECUTE FUNCTION ai_proposal_guard()
 CREATE TRIGGER ai_proposal_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_proposal_voids AFTER UPDATE OF status ON fyniq.ai_proposal FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status = ANY (ARRAY['superseded'::text, 'expired'::text])))) EXECUTE FUNCTION ai_proposal_voids()
 CREATE TRIGGER ai_qualification_guard BEFORE DELETE OR UPDATE ON fyniq.ai_qualification FOR EACH ROW EXECUTE FUNCTION ai_qualification_guard()
 CREATE TRIGGER ai_qualification_no_truncate BEFORE TRUNCATE ON fyniq.ai_qualification FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_reservation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_reservation FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
@@ -7543,6 +7544,7 @@ ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fy
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
 ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2b17fb005c9f0df74b10ee9ae412533
+ai_proposal_voids() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c7d7323484cb27ff32906a3bca55d133
 ai_purge_conversations(p_before timestamp with time zone, OUT conversations integer, OUT turns integer) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7fe0af9f8f3135d573b9063e73a9ab00
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
 ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric, p_tokens bigint) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d7de60573770113c34cae08e8f814277

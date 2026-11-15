@@ -288,6 +288,7 @@ var codeFacts = map[string]struct {
 	CodeToolTimeout:               {504, "The tool took too long"},
 	CodeProposeNotAllowed:         {403, "The AI may not propose this"},
 	CodeProposalType:              {422, "Not a task type the AI may propose"},
+	CodeProposalRevises:           {422, "Not a proposal this one may revise"},
 	semantic.CodeDimension:        {422, "The measure is not split so"},
 	semantic.CodeGrain:            {422, "The measure is not given at that grain"},
 	semantic.CodeMember:           {422, "Not a member of the dimension"},

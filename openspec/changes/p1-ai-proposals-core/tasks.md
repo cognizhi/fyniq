@@ -104,8 +104,8 @@
 - [x] 5.2 The worker's job `ai.proposals.expire` and the check C.2 #19 (design D9). Tests
   `// req: ai/proposals Proposal lifecycle`, `// req: C.2 #19`.
   As built: `proposal.ExpireAll`, every 15 minutes as the worker, moves each Pending proposal past its expiry to Expired,
-  audited. Its approval request expires with it by time (the request's `expires_at` is the proposal's), so nothing has to
-  void it and the worker never touches the approval engine's tables. C.2 #19 (`ai.proposals-waiting`, ⚠) lists each
+  audited. Its approval request expires with it by time (the request's `expires_at` is the proposal's); task 8.2 then has
+  the database void it in the same transaction, as the design asks. C.2 #19 (`ai.proposals-waiting`, ⚠) lists each
   proposal pending more than 48 hours with how long it has waited and when it expires.
 
 ## 6. The screens
@@ -164,3 +164,10 @@
   flood past the turn's reads makes none. An instruction to act without review is screened as the model's answer
   arrives, and the turn stops. The AI's tokens approve nothing. That screening comes before the API's own screening of
   a proposal, which `TestTheAIProposesAndNothingChanges` covers.
+- [x] 8.2 (Found by /opsx:verify) A revision supersedes the proposal it replaces, and a proposal that ends undecided
+  voids its approval request (design D9; the lifecycle's "The proposal is revised" scenario). Tests
+  `// req: ai/proposals Proposal lifecycle`, `// req: AI-89`.
+  As built: a proposal may name `revises`: one made by a turn for the same person, of the same task type, still
+  waiting. Once the revision is Pending, that one is Superseded in the same transaction; a revision that is Invalid
+  leaves it waiting. Migration 000382's trigger voids the request of a proposal that is Superseded or Expires, audited
+  by the unit of work that moved it. The trigger runs as its owner, so no role gains a grant to void requests.
