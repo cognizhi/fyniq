@@ -95,6 +95,7 @@ type CompanySecretary struct {
 	Latest      *AgentRunSummary  `json:"latest,omitempty" doc:"Its latest run, whatever became of it."`
 	LastDone    *AgentRunSummary  `json:"last_done,omitempty" doc:"Its latest run that finished."`
 	Findings    []AgentRunFinding `json:"findings" nullable:"false" doc:"The open findings of its latest finished run: Not assessed first, then ✖, ⏰ and ⚠ (AI-65)."`
+	AISummary   *AIText           `json:"ai_summary,omitempty" doc:"What the model wrote in its latest finished run, as written: the AI's words, shown with the AI label, apart from Fyniq's own summary and findings."`
 }
 
 // AgentPackVersion is a statutory pack a run read, at its version.
@@ -369,6 +370,9 @@ func (a *API) companySecretary(ctx context.Context, u storage.UnitOfWork) (Compa
 	}
 	s := runSummary(done, prev)
 	out.LastDone = &s
+	if rep := done.Report; rep != nil && rep.ModelUsed && rep.ModelText != "" {
+		out.AISummary = &AIText{Text: rep.ModelText, Origin: "ai"}
+	}
 	for _, f := range runFindings(done) {
 		if f.Status != agents.FindingOK {
 			out.Findings = append(out.Findings, f)

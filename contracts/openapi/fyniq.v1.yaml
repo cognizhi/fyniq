@@ -15180,6 +15180,9 @@ components:
           examples:
             - Tan Ah Kow
           type: string
+        ai_summary:
+          $ref: "#/components/schemas/AIText"
+          description: "What the model wrote in its latest finished run, as written: the AI's words, shown with the AI label, apart from Fyniq's own summary and findings."
         findings:
           description: "The open findings of its latest finished run: Not assessed first, then ✖, ⏰ and ⚠ (AI-65)."
           items:

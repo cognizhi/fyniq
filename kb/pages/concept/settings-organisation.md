@@ -193,7 +193,7 @@ The calendar itself: [[compliance.calendar]].
 
 ## Company secretary assistant
 
-- The company secretary assistant checks the company's obligations on a schedule, reports, raises tasks and drafts reminders for people to approve ([[ai.proposals]]); it is not the company secretary and never files, signs or marks an obligation as met.
+- The company secretary assistant checks the company's obligations on a schedule, reports, raises tasks and drafts reminders for people to approve ([[ai.proposals]]); its workspace is under Compliance ([[compliance.secretary]]). It is not the company secretary and never files, signs or marks an obligation as met.
 - **Company secretary assistant**: off unless changed; turning it on needs a second approver, and its runs then act for the Owner who turned it on. Turning it off takes effect at once.
 - **Paused** stops its runs at once and keeps its schedule; the statutory calendar's reminders keep coming.
 - Its schedule, in Singapore time: the **Deadline and lodgement monitor** daily at 07:00, the **Full cross-check** on Mondays at 08:00, and runs after each month's close and one month after the financial year ends. A schedule is five cron fields, or `off`.

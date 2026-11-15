@@ -24975,6 +24975,8 @@ export interface components {
              * @example Tan Ah Kow
              */
             acts_for_name?: string;
+            /** @description What the model wrote in its latest finished run, as written: the AI's words, shown with the AI label, apart from Fyniq's own summary and findings. */
+            ai_summary?: components["schemas"]["AIText"];
             /** @description The open findings of its latest finished run: Not assessed first, then ✖, ⏰ and ⚠ (AI-65). */
             findings: components["schemas"]["AgentRunFinding"][];
             /** @description Its latest run that finished. */
