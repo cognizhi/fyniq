@@ -4,14 +4,14 @@ type: task
 title: The driver forecast and its scenarios
 summary: Model the company forward from its drivers in Base, Best and Worst, record the plan, and read runway with and without funding
 sources:
-  - docs/user-guide/forecast.md sha256:3d9ffe5093a1efa19b0bc522d5e8e7be332ef12a105140ff9ccc8f58afd33827
+  - docs/user-guide/forecast.md sha256:6f4f5d96ae61b63db6858dcbfe83fffd4fa0f7880228e674df24bcd8d25d994d
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-08
+compiled_at: 2026-11-11
 aliases:
   - financial forecast
   - driver-based forecast
@@ -40,6 +40,7 @@ aliases:
 
 ## Read and compare the results
 
+- The results come first on the page. Once a forecast is recorded its plan folds below them: **Show the plan it was worked out from** opens it, read-only; a draft's plan stays open below its results, for editing.
 - Per scenario, each figure first **without the funding planned** (none of it is received yet) and with it beside: **Runway** and **Cash runs out**; **Minimum cash** and its month; **Break-even** (the first month with revenue whose EBITDA is not negative); **Funding gap** (what would keep the buffer of months of burn above the minimum cash); **Revenue, next 12 months**, ARR and customers at the end; **Cash by month** with and without the funding; each forecast year's revenue, gross profit, EBITDA, net profit, net burn, cash, customers and headcount.
 - **Compare the scenarios** sets every scenario's cash-out month, runway, minimum cash, funding gap and break-even side by side, with and without the funding.
 - The workbook's simplifications are kept [accountant to confirm]: forecast years are 12-month blocks from the start, not financial years or years of assessment; everyone with CPF is at the employer rate for 55 and below up to the Ordinary Wage ceiling; each year's tax is paid a fixed number of months after it; what was owed at the start is collected and paid 60% in the first month and 40% in the second. Related: [[planning.cash]], [[planning.budgets]].
