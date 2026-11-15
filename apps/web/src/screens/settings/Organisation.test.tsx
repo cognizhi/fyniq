@@ -51,6 +51,13 @@ describe("Organisation settings", () => {
     expect(valueText("task_types", "sec.create_task,sec.draft_reminder")).toBe("sec.create_task, sec.draft_reminder");
     expect(valueText("task_types", "")).toBe("None");
     expect(valueText("percent", "3")).toBe("3%");
+    expect(valueText("cron", "0 7 * * *")).toBe("Daily at 07:00, Singapore time");
+    expect(valueText("cron", "0 8 * * 1")).toBe("Mondays at 08:00, Singapore time");
+    expect(valueText("cron", "*/15 9-17 * * 1-5")).toBe("*/15 9-17 * * 1-5 (cron, Singapore time)");
+    expect(valueText("cron", "off")).toBe("Off");
+    expect(valueText("time_range", "22:00-07:00")).toBe("22:00 to 07:00, Singapore time");
+    expect(valueText("choices", "period_closed,filing_recorded")).toBe("Period closed, Filing recorded");
+    expect(valueText("tokens", "200000")).toBe("200000 tokens");
   });
 
   it("shows the profile and each setting with its status, and axe finds nothing", async () => {

@@ -76,7 +76,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if v, p := Normalise(d, d.Recommended); p != nil || v != d.Recommended {
 			t.Errorf("%s: the recommended value %q is not valid: %q %v", d.Key, d.Recommended, v, p)
 		}
-		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice {
+		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice && d.Kind != Choices && d.Kind != Cron && d.Kind != TimeRange {
 			if _, p := Normalise(d, d.Min); p != nil {
 				t.Errorf("%s: its minimum is out of range: %v", d.Key, p)
 			}
@@ -109,6 +109,10 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 	charges, _ := Lookup("bank.charges_account")
 	fields, _ := Lookup("ai.exclusions")
 	tasks, _ := Lookup("ai.task_types")
+	monitor, _ := Lookup("agents.company_secretary.monitor")
+	quiet, _ := Lookup("agents.company_secretary.quiet_hours")
+	channels, _ := Lookup("agents.company_secretary.channels")
+	tokens, _ := Lookup("agents.company_secretary.run_tokens")
 	var many []string
 	for _, a := range "abcdefghijklmnopqrstuvwxy" {
 		many = append(many, "t.a_"+string(a), "t.b_"+string(a))
@@ -126,6 +130,10 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{fields, "", ""}, {fields, "notes", "notes"}, {fields, " memo, notes ,memo", "memo,notes"},
 		{tasks, "", ""}, {tasks, "sec.create_task", "sec.create_task"},
 		{tasks, " sec.draft_reminder,sec.create_task, sec.draft_reminder", "sec.create_task,sec.draft_reminder"},
+		{monitor, "0 7 * * *", "0 7 * * *"}, {monitor, " 30  6 * * 1-5 ", "30 6 * * 1-5"}, {monitor, "off", "off"},
+		{quiet, "22:00-07:00", "22:00-07:00"}, {quiet, "off", "off"},
+		{channels, "email, inbox,email", "inbox,email"}, {channels, "inbox", "inbox"},
+		{tokens, "1000", "1000"}, {tokens, "999999", "999999"},
 	} {
 		if v, p := Normalise(c.d, c.in); p != nil || v != c.out {
 			t.Errorf("%s = %q: %q %v; want %q", c.d.Key, c.in, v, p, c.out)
@@ -144,6 +152,10 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{fields, "Notes"}, {fields, "notes,"}, {fields, "notes;memo"}, {fields, "line.notes"},
 		{tasks, "sec"}, {tasks, "sec.create_task,"}, {tasks, "Sec.create_task"}, {tasks, "sec.create-task"},
 		{tasks, fiftyOne}, {charges, strings.Repeat("6", 201)}, {tasks, strings.Repeat("t.a,", 1001)},
+		{monitor, "0 7 * *"}, {monitor, "0 25 * * *"}, {monitor, "daily"}, {monitor, ""},
+		{quiet, "22:00"}, {quiet, "10pm-7am"}, {quiet, "07:00-07:00"},
+		{channels, "slack"}, {channels, "inbox,"}, {channels, ""},
+		{tokens, "999"}, {tokens, "1000000"},
 	} {
 		if v, p := Normalise(c.d, c.in); code(p) != CodeValue || v != "" {
 			t.Errorf("%s = %q: want %s, got %q %v", c.d.Key, c.in, CodeValue, v, p)

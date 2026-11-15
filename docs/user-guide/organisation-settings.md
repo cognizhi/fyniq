@@ -202,6 +202,27 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
   details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a
   period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
 
+## Company secretary assistant
+
+- The **company secretary assistant** checks the company's obligations on a schedule, reports, raises tasks and drafts
+  reminders for people to approve. It is not the company secretary, and it never files, signs or marks an obligation
+  as met.
+- **Company secretary assistant**: off unless changed. Turning it on needs a second approver; its runs then act for
+  the Owner who turned it on. Turning it off takes effect at once.
+- **Paused**: pausing stops its runs at once and keeps its schedule. The statutory calendar's reminders keep coming.
+- Its schedule, in Singapore time:
+  - **Deadline and lodgement monitor**: daily at 07:00 (`0 7 * * *`);
+  - **Full cross-check**: Mondays at 08:00 (`0 8 * * 1`);
+  - **Run after each month's close** and **Run one month after the financial year ends**: on.
+  A schedule is five cron fields, minute hour day month weekday, or `off`.
+- **Events that start a run**: a period closed, shares issued or transferred, a filing recorded, and deadline windows,
+  30, 14, 7 and 1 days ahead.
+- **Quiet hours**: 22:00 to 07:00. A run in them still runs and records; its emails wait until they end.
+- **Who it tells** (the Owner and the Company secretary) and **How it tells them** (the Inbox and email). Its tasks
+  belong to the first of these roles. **Tell the Owner this many days before a deadline**: 7.
+- **Reads one run may make**: 20. **Tokens one run may use**: 200000, beside the agent's monthly budget in AI settings.
+- Every one of these, except pausing, needs a second approver.
+
 ## Payment terms
 
 - **Payment terms for invoices**: an invoice to a customer with no terms of its own falls due

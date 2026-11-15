@@ -44608,11 +44608,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description What it holds: switch is "true" or "false"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none.
+             * @description What it holds: switch is "true" or "false"; minutes, hours, days, months, years, count and tokens whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none; choices several of choices separated by commas, such as inbox,email; cron five cron fields in Singapore time, such as 0 7 * * *, or off; time_range two times of the day, such as 22:00-07:00, or off.
              * @example days
              * @enum {string}
              */
-            kind: "switch" | "minutes" | "hours" | "days" | "months" | "years" | "count" | "amount_sgd" | "percent" | "text" | "account_code" | "choice" | "fields" | "task_types";
+            kind: "switch" | "minutes" | "hours" | "days" | "months" | "years" | "count" | "tokens" | "amount_sgd" | "percent" | "text" | "account_code" | "choice" | "choices" | "fields" | "task_types" | "cron" | "time_range";
             /**
              * @description Its name.
              * @example Payment terms for invoices
