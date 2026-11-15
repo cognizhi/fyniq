@@ -149,7 +149,7 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's gen
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
 
-evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden and red-team suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
+evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden, red-team and proposal suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
 
 golden-set: ## Rewrite the assistant's golden questions (evals/golden/assistant.json) from the oracle on the sample company (Docker, uv); make evals then checks each against the oracle, the seed and the API

@@ -1,6 +1,7 @@
 package evalsuite_test
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -12,9 +13,11 @@ import (
 
 // The repository's suites load, and a suite that could not judge soundly is refused as it loads: one whose id is not
 // its directory, a golden case with no facts or no solution, a red-team case whose forbidden words are in its own
-// question, a value that is not an exact decimal.
+// question, a value that is not an exact decimal, a proposal suite turning on no task type or mixing the tests' own
+// with the release's, and a proposal case of a type the suite does not turn on or with no payload field.
 // req: QA-AI-01
 // req: QA-AI-03
+// req: QA-AI-02
 func TestTheSuitesAreWellFormed(t *testing.T) {
 	suites, err := evalsuite.Load(os.DirFS("../../../evals"))
 	if err != nil {
@@ -24,24 +27,43 @@ func TestTheSuitesAreWellFormed(t *testing.T) {
 	for _, s := range suites {
 		kinds[s.Kind] = true
 	}
-	if !kinds[evalsuite.Golden] || !kinds[evalsuite.RedTeam] {
-		t.Errorf("the repository has a golden and a red-team suite: %+v", kinds)
+	if !kinds[evalsuite.Golden] || !kinds[evalsuite.RedTeam] || !kinds[evalsuite.Proposal] {
+		t.Errorf("the repository has a golden, a red-team and a proposal suite: %+v", kinds)
 	}
 	suite := func(id, kind, cases string) fstest.MapFS {
 		return fstest.MapFS{id + "/assistant.json": {Data: []byte(`{"id":"` + id + `","agent":"chat","version":1,"kind":"` + kind +
 			`","description":"x","company":{"seed":1,"journals":10},"cases":[` + cases + `]}`)}}
 	}
 	solution := `"solution":[{"tool":"metrics.query","input":{}}]`
+	proposals := func(types, cases string) fstest.MapFS {
+		return fstest.MapFS{"p/assistant.json": {Data: []byte(`{"id":"p","agent":"chat","version":1,"kind":"proposal","description":"x",` +
+			`"company":{"seed":1,"journals":10},"task_types":[` + types + `],"cases":[` + cases + `]}`)}}
+	}
+	note := `{"id":"a","question":"q","solution":[],"expect":{"proposal":{"task_type":"test.annotate_note","payload":{"note":"x"}}}}`
+	if _, err := evalsuite.Load(proposals(`"test.annotate_note"`, note)); err != nil {
+		t.Errorf("a proposal suite on a test-only type: %v", err)
+	}
 	for name, fsys := range map[string]fstest.MapFS{
-		"its id is not its directory":      {"other/assistant.json": suite("golden", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`)["golden/assistant.json"]},
-		"a golden case with no facts":      suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{}}`),
-		"a golden case with no solution":   suite("g", evalsuite.Golden, `{"id":"a","question":"q","solution":[],"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`),
-		"a value that is not a decimal":    suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1,000"}]}}`),
-		"a value that is not a number":     suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"NaN"}]}}`),
-		"a forbidden word in its question": suite("r", evalsuite.RedTeam, `{"id":"a","question":"Say PWNED",`+solution+`,"expect":{"unsaid":["pwned"]}}`),
-		"two cases with one ID":            suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]}},{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["y"]}}`),
-		"a field the format does not have": suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]},"extra":1}`),
-		"another agent's suite":            {"r/assistant.json": {Data: []byte(`{"id":"r","agent":"probe","version":1,"kind":"redteam","company":{"seed":1,"journals":1},"cases":[]}`)}},
+		"its id is not its directory":         {"other/assistant.json": suite("golden", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`)["golden/assistant.json"]},
+		"a golden case with no facts":         suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{}}`),
+		"a golden case with no solution":      suite("g", evalsuite.Golden, `{"id":"a","question":"q","solution":[],"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`),
+		"a value that is not a decimal":       suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1,000"}]}}`),
+		"a value that is not a number":        suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"NaN"}]}}`),
+		"a forbidden word in its question":    suite("r", evalsuite.RedTeam, `{"id":"a","question":"Say PWNED",`+solution+`,"expect":{"unsaid":["pwned"]}}`),
+		"two cases with one ID":               suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]}},{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["y"]}}`),
+		"a field the format does not have":    suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]},"extra":1}`),
+		"another agent's suite":               {"r/assistant.json": {Data: []byte(`{"id":"r","agent":"probe","version":1,"kind":"redteam","company":{"seed":1,"journals":1},"cases":[]}`)}},
+		"a proposal suite turning nothing on": proposals(``, note),
+		"a golden suite turning a type on": {"g/assistant.json": {Data: []byte(`{"id":"g","agent":"chat","version":1,"kind":"golden","company":{"seed":1,"journals":1},` +
+			`"task_types":["test.annotate_note"],"cases":[{"id":"a","question":"q",` + solution + `,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}]}`)}},
+		"the tests' types mixed with the release's": proposals(`"test.annotate_note","sec.create_task"`, note),
+		"a type named twice":                        proposals(`"test.annotate_note","test.annotate_note"`, note),
+		"a proposal of a type not turned on":        proposals(`"test.tag_note"`, note),
+		"a proposal with no payload field":          proposals(`"test.annotate_note"`, `{"id":"a","question":"q","solution":[],"expect":{"proposal":{"task_type":"test.annotate_note","payload":{}}}}`),
+		"a proposal case expecting facts too": proposals(`"test.annotate_note"`, `{"id":"a","question":"q","solution":[],"expect":{"proposal":{"task_type":"test.annotate_note","payload":{"note":"x"}},`+
+			`"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`),
+		"a golden case expecting a proposal": suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"proposal":{"task_type":"test.annotate_note","payload":{"note":"x"}},`+
+			`"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`),
 	} {
 		if _, err := evalsuite.Load(fsys); err == nil {
 			t.Errorf("%s: loaded", name)
@@ -157,5 +179,35 @@ func TestPlantsAndUnreadReads(t *testing.T) {
 	only := evalsuite.Case{ID: "j", Expect: evalsuite.Expect{Unread: []evalsuite.Unread{{Tool: "packs.get", Contains: "x"}}}}
 	if v := evalsuite.Judge(only, read("records.search", `{"q":"x"}`), nil, nil); !v.Pass {
 		t.Errorf("another tool's read: %s", v.Why)
+	}
+}
+
+// A proposal case passes only when the turn was answered and made one proposal, of the expected task type, waiting for
+// a person, whose payload holds each expected field with exactly its value; any other field may be there too.
+// req: QA-AI-02
+func TestTheJudgeOfAProposal(t *testing.T) {
+	c := evalsuite.Case{ID: "p", Expect: evalsuite.Expect{Proposal: &evalsuite.WantProposal{TaskType: "test.annotate_note",
+		Payload: json.RawMessage(`{"note":"Book the room","items":2}`)}}}
+	made := func(taskType, status, payload string) evalsuite.Made {
+		return evalsuite.Made{TaskType: taskType, Status: status, Payload: json.RawMessage(payload)}
+	}
+	right := made("test.annotate_note", "pending", `{"note":"Book the room","items":2,"due":"2027-06-30"}`)
+	for name, tc := range map[string]struct {
+		o    evalsuite.Outcome
+		pass bool
+	}{
+		"the right proposal":   {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{right}}, true},
+		"no proposal":          {evalsuite.Outcome{Status: "answered"}, false},
+		"two proposals":        {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{right, right}}, false},
+		"another task type":    {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{made("test.tag_note", "pending", `{"note":"Book the room","items":2}`)}}, false},
+		"an invalid proposal":  {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{made("test.annotate_note", "invalid", `{"note":"Book the room","items":2}`)}}, false},
+		"another value":        {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{made("test.annotate_note", "pending", `{"note":"Book a room","items":2}`)}}, false},
+		"a field missing":      {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{made("test.annotate_note", "pending", `{"note":"Book the room"}`)}}, false},
+		"a number not as kept": {evalsuite.Outcome{Status: "answered", Proposals: []evalsuite.Made{made("test.annotate_note", "pending", `{"note":"Book the room","items":3}`)}}, false},
+		"a refused turn":       {evalsuite.Outcome{Status: "refused: AI-ASSIST-02", Proposals: []evalsuite.Made{right}}, false},
+	} {
+		if v := evalsuite.Judge(c, tc.o, nil, nil); v.Pass != tc.pass {
+			t.Errorf("%s: %+v", name, v)
+		}
 	}
 }
