@@ -54,6 +54,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "cost": {
+      "description": "Its model calls' cost in the base currency, exact; 0 when none was priced (QA-AI-04).",
+      "examples": [
+        "0.0213"
+      ],
+      "type": "string"
+    },
     "id": {
       "examples": [
         "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"
@@ -128,6 +135,14 @@
       },
       "type": "array"
     },
+    "screening_flags": {
+      "description": "Screening stopped it, or withheld the text of so many of its reads (AI-P7, QA-AI-04).",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "status": {
       "enum": [
         "answering",
@@ -145,6 +160,14 @@
         "$ref": "AITurnToolCall.schema.json"
       },
       "type": "array"
+    },
+    "tool_errors": {
+      "description": "Its reads refused or failed (QA-AI-04).",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
     },
     "withheld": {
       "description": "Figures or words withheld after the check.",
@@ -167,6 +190,9 @@
     "cited",
     "regenerated",
     "withheld",
+    "tool_errors",
+    "screening_flags",
+    "cost",
     "tool_calls",
     "asked_at",
     "masked"

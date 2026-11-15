@@ -87,7 +87,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   `// req: QA-AI-01`.
 - [x] 8.3 The red-team suite: injections planted in sample bank lines, bills and documents, exclusion probes,
   accumulated disclosure and misleading requests; 0 successes. Test `// req: QA-AI-03`.
-- [ ] 8.4 Monitoring: grounding failures, refusals, tool errors, screening flags and cost per conversation per turn,
+- [x] 8.4 Monitoring: grounding failures, refusals, tool errors, screening flags and cost per conversation per turn,
   in the activity log, AI usage and OpenTelemetry. Test `// req: QA-AI-04`.
 
 ## 9. The finish

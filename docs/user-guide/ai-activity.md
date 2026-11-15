@@ -39,6 +39,7 @@ Every attempt is kept, whether it was served or not.
   officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with the code of what
   stopped it, or **Failed**), whether a figure failed the check and the answer was asked for again, each read of the
   books it made and how many figures it read, and its tokens.
+- Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency.
 - What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
 - Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
 

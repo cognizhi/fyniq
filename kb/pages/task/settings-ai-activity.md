@@ -4,7 +4,7 @@ type: task
 title: See what the AI did, and use your own AI plan
 summary: Settings › AI activity: model calls, outcomes, tokens and cost, the assistant's questions, reviewing feedback on answers, masked payroll; your own AI plan
 sources:
-  - docs/user-guide/ai-activity.md sha256:5dd816690abc610cdda4dc91d43f3b5039089fcf9842521a0a121f392ea35272
+  - docs/user-guide/ai-activity.md sha256:604c2214e35d2bb68249c2a62eed071441c57958037fde7101aa8dc862729ef2
 data_class: general
 taint: trusted
 status: published
@@ -50,7 +50,7 @@ aliases:
 ## Questions to the assistant
 
 - Each question asked of the assistant ([[ai.assistant]]), above the model calls: when, who asked (for the Owner and the data protection officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with its code, or **Failed**), whether the answer was asked for again after a figure failed the check, each read of the books with how many figures it read, and its tokens.
-- What a read returned is never shown, only how it went; **Its model calls** shows the calls the question made. Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+- Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency. What a read returned is never shown, only how it went; **Its model calls** shows the calls the question made. Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
 
 (src: docs/user-guide/ai-activity.md#questions-to-the-assistant)
 

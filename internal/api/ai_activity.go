@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
@@ -254,6 +255,9 @@ type AITurnActivity struct {
 	Cited        int              `json:"cited" doc:"How many facts its answer cites." example:"2"`
 	Regenerated  bool             `json:"regenerated" doc:"Its answer failed the figures' check once (AI-08)." example:"false"`
 	Withheld     int              `json:"withheld" doc:"Figures or words withheld after the check." example:"0"`
+	ToolErrors   int              `json:"tool_errors" doc:"Its reads refused or failed (QA-AI-04)." example:"0"`
+	Screening    int              `json:"screening_flags" doc:"Screening stopped it, or withheld the text of so many of its reads (AI-P7, QA-AI-04)." example:"0"`
+	Cost         string           `json:"cost" doc:"Its model calls' cost in the base currency, exact; 0 when none was priced (QA-AI-04)." example:"0.0213"`
 	ToolCalls    []AITurnToolCall `json:"tool_calls" nullable:"false"`
 	AskedAt      time.Time        `json:"asked_at" example:"2026-11-15T08:00:00Z"`
 	AnsweredAt   *time.Time       `json:"answered_at,omitempty" example:"2026-11-15T08:00:04Z"`
@@ -362,9 +366,18 @@ func registerAITurnActivity(a *API) {
 				last := turns[len(turns)-1]
 				out.NextCursor = encodeCursor(last.AskedAt.UTC().Format(time.RFC3339Nano) + "|" + last.ID.String())
 			}
+			var runs []uuid.UUID
+			for _, t := range turns {
+				runs = append(runs, t.Runs...)
+			}
+			costs, err := u.AICalls().CostOfRuns(ctx, runs)
+			if err != nil {
+				return err
+			}
 			var read []string
 			for _, t := range turns {
 				e := turnActivityOf(t, calls[t.ID])
+				e.Cost = costOf(t.Runs, costs)
 				if t.UserID != p.UserID && slices.Contains(t.Classes, aipolicy.Payroll) {
 					if payroll {
 						read = append(read, t.ID.String())
@@ -386,6 +399,17 @@ func registerAITurnActivity(a *API) {
 	})
 }
 
+// costOf is the turn's runs' cost, summed exactly.
+func costOf(runs []uuid.UUID, costs map[uuid.UUID]string) string {
+	sum := apd.New(0, 0)
+	for _, r := range runs {
+		if c, _, err := apd.NewFromString(costs[r]); err == nil {
+			_, _ = apd.BaseContext.WithPrecision(34).Add(sum, sum, c)
+		}
+	}
+	return sum.Text('f')
+}
+
 func turnActivityOf(t storage.AITurn, calls []storage.AIToolCall) AITurnActivity {
 	e := AITurnActivity{ID: t.ID.String(), Conversation: t.Conversation.String(), Person: "user:" + t.UserID.String(), Question: t.Question,
 		Status: t.Status, Code: t.Code, Prompt: t.Prompt, PromptSHA256: t.PromptSHA256, Runs: []AIRunID{}, InputTokens: t.InputTokens,
@@ -397,9 +421,19 @@ func turnActivityOf(t storage.AITurn, calls []storage.AIToolCall) AITurnActivity
 	for _, c := range t.Classes {
 		e.Classes = append(e.Classes, RouteClass(c))
 	}
+	if strings.HasPrefix(t.Code, "AI-SCREEN-") {
+		e.Screening++
+	}
 	for _, c := range calls {
 		e.ToolCalls = append(e.ToolCalls, AITurnToolCall{Tool: c.Tool, Version: c.Version, Outcome: c.Outcome, Code: c.Code, Facts: c.Facts,
 			Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: c.DurationMS, OutputSHA256: c.OutputSHA256})
+		if c.Outcome != "read" {
+			e.ToolErrors++
+		}
+		if c.Withheld {
+			e.Screening++
+		}
 	}
+	e.Cost = "0"
 	return e
 }

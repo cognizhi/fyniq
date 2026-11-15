@@ -197,3 +197,27 @@ func TestSpansGoOutAsOTLPJSON(t *testing.T) {
 		t.Errorf("a refused export: %v", err)
 	}
 }
+
+// Counts adds a named event to the request's span with counts and codes only, and nothing on a span that is not
+// recording (QA-AI-04).
+// req: QA-AI-04
+// req: NFR-OBS-01
+func TestCountsGoOnTheRequestsSpan(t *testing.T) {
+	exp := provider(t, 1)
+	ctx, span := otel.Tracer("test").Start(context.Background(), "POST /v1/assistant/conversations/{conversation_id}/turns")
+	Counts(ctx, "fyniq.ai.turn", map[string]int64{"fyniq.ai.reads": 3, "fyniq.ai.reads_refused": 1}, map[string]string{"fyniq.ai.status": "answered"})
+	span.End()
+	Counts(context.Background(), "fyniq.ai.turn", map[string]int64{"fyniq.ai.reads": 9}, nil) // no span: nothing, and no panic
+	spans := exp.GetSpans()
+	if len(spans) != 1 || len(spans[0].Events) != 1 {
+		t.Fatalf("the spans: %+v", spans)
+	}
+	ev := spans[0].Events[0]
+	got := map[string]string{}
+	for _, a := range ev.Attributes {
+		got[string(a.Key)] = a.Value.Emit()
+	}
+	if ev.Name != "fyniq.ai.turn" || got["fyniq.ai.reads"] != "3" || got["fyniq.ai.reads_refused"] != "1" || got["fyniq.ai.status"] != "answered" {
+		t.Errorf("the event: %s %v", ev.Name, got)
+	}
+}

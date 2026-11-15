@@ -71,14 +71,16 @@ describe("Settings › AI activity", () => {
 
   it("lists the assistant's questions with their outcome, reads and model calls, a payroll question masked; axe finds nothing", async () => {
     const turn = (t: Record<string, unknown>) => ({ id: "t-1", conversation_id: "c-1", person: "user:u-1", question: "What was revenue?", status: "answered",
-      runs: ["r-1"], input_tokens: 2400, output_tokens: 310, classes: ["business-figures"], cited: 1, regenerated: false, withheld: 0,
+      runs: ["r-1"], input_tokens: 2400, output_tokens: 310, classes: ["business-figures"], cited: 1, regenerated: false, withheld: 0, tool_errors: 0,
+      screening_flags: 0, cost: "0.0213",
       tool_calls: [{ tool: "metrics.query", version: 1, outcome: "read", facts: 3, omitted: 0, withheld: false, duration_ms: 120 }],
       asked_at: "2026-11-15T01:00:00Z", masked: false, ...t });
     const seen = answer({
       "GET /v1/ai/activity": { status: 200, body: { scope: "all", items: [] } },
       "GET /v1/ai/activity/turns": { status: 200, body: { scope: "all", items: [
         turn({}),
-        turn({ id: "t-2", person: "user:u-2", question: undefined, masked: true, classes: ["payroll"], status: "refused", code: "AI-LIMIT-01", runs: [], tool_calls: [], input_tokens: 0, output_tokens: 0 }),
+        turn({ id: "t-2", person: "user:u-2", question: undefined, masked: true, classes: ["payroll"], status: "refused", code: "AI-SCREEN-01", runs: [], tool_calls: [], input_tokens: 0, output_tokens: 0,
+          tool_errors: 2, screening_flags: 1, cost: "0" }),
       ] } },
       "GET /v1/ai/feedback": { status: 200, body: { items: [] } },
       "GET /v1/ai/routes": { status: 200, body: { agents: [] } },
@@ -89,7 +91,10 @@ describe("Settings › AI activity", () => {
     expect(within(table).getByText("What was revenue?")).toBeTruthy();
     expect(within(table).getByText("read 3 figures")).toBeTruthy();
     expect(within(table).getByText("Masked: it read payroll")).toBeTruthy();
-    expect(within(table).getByText("AI-LIMIT-01")).toBeTruthy();
+    expect(within(table).getByText("AI-SCREEN-01")).toBeTruthy();
+    expect(within(table).getByText("2 reads refused")).toBeTruthy(); // req: QA-AI-04
+    expect(within(table).getByText("Screening stopped or withheld 1")).toBeTruthy();
+    expect(within(table).getByText("0.0213 SGD")).toBeTruthy();
     expect(within(table).getByText("2,400 / 310")).toBeTruthy();
     fireEvent.click(within(table).getByRole("button", { name: /Show the model calls of the question/ }));
     await waitFor(() => expect(seen.some((x) => x.query.includes("run=r-1"))).toBe(true));

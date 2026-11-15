@@ -307,6 +307,91 @@ components:
         - handles
         - line
       type: object
+    AIAssistantUsage:
+      additionalProperties: false
+      properties:
+        answered:
+          examples:
+            - 229
+          format: int64
+          type: integer
+        conversations:
+          description: Conversations with a question in the month.
+          examples:
+            - 58
+          format: int64
+          type: integer
+        cost:
+          description: The chat agent's model calls, in the base currency, exact.
+          examples:
+            - "12.4836"
+          type: string
+        cost_per_conversation:
+          description: Cost over conversations, rounded once to four places by RND-DISPLAY; absent with no conversation.
+          examples:
+            - "0.2152"
+          type: string
+        failed:
+          description: The AI service did not finish.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        reads:
+          description: The read tools' calls.
+          examples:
+            - 610
+          format: int64
+          type: integer
+        reads_refused:
+          description: "Reads refused or failed: tool errors."
+          examples:
+            - 12
+          format: int64
+          type: integer
+        refused:
+          description: "Stopped with a code: a limit, the switch, a budget, screening."
+          examples:
+            - 9
+          format: int64
+          type: integer
+        regenerated:
+          description: "Answers that failed the figures' check once and were asked for again (AI-08): grounding failures."
+          examples:
+            - 6
+          format: int64
+          type: integer
+        screening_flags:
+          description: Turns screening stopped, and reads whose text it withheld (AI-P7).
+          examples:
+            - 3
+          format: int64
+          type: integer
+        turns:
+          description: Questions asked in the month.
+          examples:
+            - 240
+          format: int64
+          type: integer
+        withheld:
+          description: Figures or words withheld because they still failed the check.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - turns
+        - answered
+        - refused
+        - failed
+        - regenerated
+        - withheld
+        - reads
+        - reads_refused
+        - screening_flags
+        - conversations
+        - cost
+      type: object
     AIBudget:
       additionalProperties: false
       properties:
@@ -2887,6 +2972,11 @@ components:
             - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
           format: uuid
           type: string
+        cost:
+          description: Its model calls' cost in the base currency, exact; 0 when none was priced (QA-AI-04).
+          examples:
+            - "0.0213"
+          type: string
         id:
           examples:
             - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
@@ -2940,6 +3030,12 @@ components:
             format: uuid
             type: string
           type: array
+        screening_flags:
+          description: Screening stopped it, or withheld the text of so many of its reads (AI-P7, QA-AI-04).
+          examples:
+            - 0
+          format: int64
+          type: integer
         status:
           enum:
             - answering
@@ -2953,6 +3049,12 @@ components:
           items:
             $ref: "#/components/schemas/AITurnToolCall"
           type: array
+        tool_errors:
+          description: Its reads refused or failed (QA-AI-04).
+          examples:
+            - 0
+          format: int64
+          type: integer
         withheld:
           description: Figures or words withheld after the check.
           examples:
@@ -2971,6 +3073,9 @@ components:
         - cited
         - regenerated
         - withheld
+        - tool_errors
+        - screening_flags
+        - cost
         - tool_calls
         - asked_at
         - masked
@@ -3167,6 +3272,9 @@ components:
     AIUsage:
       additionalProperties: false
       properties:
+        assistant:
+          $ref: "#/components/schemas/AIAssistantUsage"
+          description: The assistant's month, as its monitoring counts it (QA-AI-04).
         by_agent:
           items:
             $ref: "#/components/schemas/AIUsageByAgent"
@@ -3202,6 +3310,7 @@ components:
         - by_model
         - by_agent
         - by_person
+        - assistant
       type: object
     AIUsageByAgent:
       additionalProperties: false
