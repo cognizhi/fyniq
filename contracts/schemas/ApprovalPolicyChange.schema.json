@@ -2,8 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "rules": {
+      "description": "The rules, in order, up to 10: the first whose conditions all hold decides a request's steps; when none does, the default steps apply (rev 0.178). Leave it out for none.",
+      "items": {
+        "$ref": "ApprovalRuleChange.schema.json"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "steps": {
-      "description": "The ordered steps: 1 to 5.",
+      "description": "The ordered default steps: 1 to 5.",
       "items": {
         "$ref": "ApprovalStepChange.schema.json"
       },
