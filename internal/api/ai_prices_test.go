@@ -221,3 +221,128 @@ func TestPricesComeFromTheirSource(t *testing.T) {
 		t.Errorf("the trail: %d changes, %d confirmed, %d declined", changed, confirmed, declined)
 	}
 }
+
+// An Owner's price takes a second approver (AI-82): an Owner asks, with at least an input and an output rate as plain
+// decimals above zero; another Owner approves; it is then in force, labelled with who entered it, and no read overwrites
+// it. Withdrawn at once by the Owner, the model is priced from its source again straight away. Neither an Administrator
+// nor the requester decides it.
+// req: AI-82
+// asvs: V8.2.1
+func TestAnOwnersPriceTakesASecondApprover(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
+	adminOnly := f.as(f.ahkow, authz.Administrator)
+	models := &fakeModels{ids: []string{"gpt-test-6", "gpt-test-9"}}
+	e.api.deps.AIProviders = models.provider
+	asked := e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Owner priced", "connector": "openai", "auth": "api-key",
+		"billing": map[string]any{"mode": "usage"}, "credential": "sk-proj-" + "fixture0123456789abcdef"})
+	if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	id := e.call(http.MethodGet, "/v1/ai/connections", admin, nil).Body["items"].([]any)[0].(map[string]any)["id"].(string)
+	worker := workerStore(t)
+	source := &fakeCatalogue{licence: []byte(mitLicence), body: liteLLM("gpt-test-6=openai:2e-06:8e-06")}
+	pricer := ai.Pricer{Store: worker, Catalogues: worker, Blobs: e.blobs, Catalogue: source, Connectors: e.api.deps.Connectors.Catalogue, Clock: e.clock}
+	lister := ai.Lister{Store: worker, Provider: models.provider, Clock: e.clock, Outbox: e.api.deps.Outbox}
+	works := map[string]outbox.Work{ai.ReadKind: lister.Work(), ai.PriceKind: pricer.Work(),
+		notify.FanoutKind: func(context.Context, uuid.UUID, storage.OutboxRow) error { return nil }}
+	e.work(works)
+	if err := pricer.Daily(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	byModel := func() map[string]AIModel {
+		t.Helper()
+		var out AIModelList
+		r := e.call(http.MethodGet, "/v1/ai/connections/"+id+"/models", admin, nil)
+		if r.Status != http.StatusOK || json.Unmarshal([]byte(r.Raw), &out) != nil {
+			t.Fatalf("getAIConnectionModels: %d %s", r.Status, r.Raw)
+		}
+		m := map[string]AIModel{}
+		for _, x := range out.Models {
+			m[x.Model] = x
+		}
+		return m
+	}
+	if m := byModel(); m["gpt-test-9"].Priced || !m["gpt-test-6"].Priced {
+		t.Fatalf("before the Owner's prices: %+v", m)
+	}
+
+	base := "/v1/ai/connections/" + id + "/models/price"
+	price := func(model string, rates ...any) map[string]any {
+		out := map[string]any{"model": model, "currency": "USD", "rates": []any{}}
+		for i := 0; i+1 < len(rates); i += 2 {
+			out["rates"] = append(out["rates"].([]any), map[string]any{"kind": rates[i], "amount": rates[i+1]})
+		}
+		return out
+	}
+	e.problemIs(e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-9", "input", "1.5")), "priceAIConnectionModel", 422, CodeInvalid)
+	e.problemIs(e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-9", "input", "1.5", "cache_read", "0.15")), "priceAIConnectionModel", 422, "AI-PRICE-03")
+	e.problemIs(e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-9", "input", "1.5", "output", "0")), "priceAIConnectionModel", 422, "AI-PRICE-03")
+	e.problemIs(e.call(http.MethodPost, base, steppedUp(e, admin), price("typed-by-hand", "input", "1", "output", "2")), "priceAIConnectionModel", 404, CodeNotFound)
+	if r := e.call(http.MethodPost, base, steppedUp(e, adminOnly), price("gpt-test-9", "input", "1.5", "output", "6")); r.Status != http.StatusForbidden {
+		t.Errorf("an Administrator pricing: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-9", "input", "1.5", "output", "6"), "Prefer", "return=preview"); r.Status != http.StatusAccepted ||
+		byModel()["gpt-test-9"].Priced {
+		t.Errorf("a preview: %d %s", r.Status, r.Raw)
+	}
+	ask := e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-9", "input", "1.5", "output", "6", "cache_read", "0.15"))
+	if ask.Status != http.StatusAccepted || ask.str("operation") != "ai_connection.price" {
+		t.Fatalf("asking: %d %s", ask.Status, ask.Raw)
+	}
+	if d := f.decide(admin, ask.str("id"), "approve", hashOf(ask)); d.Status == http.StatusOK {
+		t.Errorf("the requester approving their own price: %s", d.Raw)
+	}
+	if byModel()["gpt-test-9"].Priced {
+		t.Fatal("priced before its second approver")
+	}
+	if d := f.decide(owner, ask.str("id"), "approve", hashOf(ask)); d.Status != http.StatusOK {
+		t.Fatalf("the second approver: %d %s", d.Status, d.Raw)
+	}
+	entered := byModel()["gpt-test-9"]
+	if p := entered.Price; p == nil || p.Source != "owner" || p.Match != "entered" || p.Approval != ask.str("id") || p.RecordedBy != "user:"+f.ahkow ||
+		len(p.Rates) != 3 || p.Rates[0].Kind != "cache_read" || p.Rates[0].Amount != "0.15" || !entered.Serves {
+		t.Fatalf("the Owner's price: %+v %+v", entered, entered.Price)
+	}
+
+	// An Owner's price over the catalogue's: kept by every later read until the Owner withdraws it.
+	ask = e.call(http.MethodPost, base, steppedUp(e, admin), price("gpt-test-6", "input", "1", "output", "4"))
+	if d := f.decide(owner, ask.str("id"), "approve", hashOf(ask)); d.Status != http.StatusOK {
+		t.Fatalf("pricing gpt-test-6: %d %s", d.Status, d.Raw)
+	}
+	source.body = liteLLM("gpt-test-6=openai:2.5e-06:9e-06")
+	if err := pricer.Daily(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	kept := byModel()["gpt-test-6"]
+	if kept.Price == nil || kept.Price.Source != "owner" || kept.Price.Rates[0].Amount != "1" || kept.PendingPrice != nil {
+		t.Fatalf("a read over an Owner's price: %+v", kept)
+	}
+	withdraw := func(as, price string) response {
+		return e.call(http.MethodPost, "/v1/ai/prices/"+price+"/withdraw", as, nil)
+	}
+	if r := withdraw(adminOnly, kept.Price.ID); r.Status != http.StatusForbidden {
+		t.Errorf("an Administrator withdrawing: %d %s", r.Status, r.Raw)
+	}
+	if r := withdraw(owner, kept.Price.ID); r.Status != http.StatusOK || r.str("status") != "withdrawn" {
+		t.Fatalf("withdrawing: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(withdraw(owner, kept.Price.ID), "withdrawAIPrice", 409, "AI-PRICE-04")
+	e.work(works)
+	again := byModel()["gpt-test-6"]
+	if again.Price == nil || again.Price.Source != "litellm" || again.Price.Rates[0].Amount != "2.5" {
+		t.Fatalf("priced from its source again: %+v", again.Price)
+	}
+	e.problemIs(withdraw(owner, again.Price.ID), "withdrawAIPrice", 409, "AI-PRICE-04")
+
+	var withdrawn int
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Audit().Find(ctx, storage.AuditQuery{ObjectType: "ai_price", Action: "ai_price.withdrawn", Limit: 10})
+		withdrawn = len(all)
+		return err
+	})
+	if withdrawn != 1 {
+		t.Errorf("the trail records %d withdrawals", withdrawn)
+	}
+}

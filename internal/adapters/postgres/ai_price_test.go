@@ -20,8 +20,9 @@ import (
 // The database keeps the models' prices whoever writes (golden rule 2; AI-82, AI-85): the catalogue's downloads only
 // through the worker's function, never changed; each price a version kept as recorded, with rates written with it as
 // exact decimals above zero; one in force and one waiting per model, a newer one superseding what it replaces; a
-// normalised match in force only by an Owner's decision; an Owner's price never overwritten by a read; the API only
-// reviews, the AI reads nothing, and another organisation sees none of it.
+// normalised match in force only by an Owner's decision; an Owner's price only as its approved request, from the API,
+// never overwritten by a read and withdrawn only itself; the worker records no Owner's price and the API no other; the AI
+// reads nothing, and another organisation sees none of it.
 // req: AI-82
 // req: AI-85
 func TestAttackAIPricesKeepTheirRules(t *testing.T) {
@@ -199,6 +200,17 @@ func TestAttackAIPricesKeepTheirRules(t *testing.T) {
 		{"the worker writing the downloads' table", "fyniq_worker", `UPDATE fyniq.ai_price_catalogue SET entries = 0`, []string{"42501"}},
 		{"the worker removing a download", "fyniq_worker", `DELETE FROM fyniq.ai_price_catalogue`, []string{"42501"}},
 		{"the AI reading the prices", "fyniq_ai", `SELECT count(*) FROM fyniq.ai_price`, []string{"42501"}},
+		{"the worker recording an Owner's price", "fyniq_worker", `INSERT INTO fyniq.ai_price (connection_id, model, number, source, match, currency,
+		  status, recorded_by, recorded_at, approval_id) SELECT id, 'gpt-6', 50, 'owner', 'entered', 'USD', 'active', 'user:x', now(), gen_random_uuid()
+		  FROM fyniq.ai_connection`, []string{"42501"}},
+		{"the API recording an Owner's price without its approved request", "fyniq_api", `INSERT INTO fyniq.ai_price (connection_id, model, number,
+		  source, match, currency, status, recorded_by, recorded_at, approval_id) SELECT id, 'gpt-6', 50, 'owner', 'entered', 'USD', 'active', 'user:x',
+		  now(), gen_random_uuid() FROM fyniq.ai_connection`, []string{"FY333"}},
+		{"the API recording a source's price", "fyniq_api", `INSERT INTO fyniq.ai_price (connection_id, model, number, source, match, currency,
+		  status, recorded_by, recorded_at) SELECT id, 'gpt-6', 50, 'provider_list', 'exact', 'USD', 'active', 'user:x', now() FROM fyniq.ai_connection`,
+			[]string{"FY333"}},
+		{"the API withdrawing a source's price", "fyniq_api", `UPDATE fyniq.ai_price SET status = 'withdrawn', decided_by = 'user:x', decided_at = now()
+		  WHERE status = 'active' AND source = 'litellm'`, []string{"FY333"}},
 		{"the AI reading the downloads", "fyniq_ai", `SELECT count(*) FROM fyniq.ai_price_catalogues`, []string{"42501"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })

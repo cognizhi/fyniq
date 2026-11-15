@@ -293,6 +293,8 @@ const (
 	OpAIConnectionEnable = "ai_connection.enable"
 	// OpAIConnectionAllowModel puts a listed model the connection probed on its allow-list (AI-72, AI-80).
 	OpAIConnectionAllowModel = "ai_connection.allow_model"
+	// OpAIConnectionPrice puts an Owner's price of a listed model in force, which no later read overwrites (AI-82).
+	OpAIConnectionPrice = "ai_connection.price"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
 )
@@ -343,6 +345,7 @@ var Operations = map[string]string{
 	OpAIConnectionEnable:       ObjectAIConnection,
 	OpAIDataPolicyChange:       ObjectAIDataPolicy,
 	OpAIConnectionAllowModel:   ObjectAIConnection,
+	OpAIConnectionPrice:        ObjectAIConnection,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any

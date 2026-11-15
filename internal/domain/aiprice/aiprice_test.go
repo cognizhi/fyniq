@@ -264,6 +264,44 @@ func TestNoPriceNoUsageBasedRoute(t *testing.T) {
 	}
 }
 
+// An Owner's price names a currency Fyniq knows and at least an input and an output rate, each a plain decimal above
+// zero within ten places, once per tier; only an Owner's price in force can be withdrawn (AI-82).
+// req: AI-82
+func TestAnOwnersPriceIsChecked(t *testing.T) {
+	p, err := Entered("USD", []EnteredRate{{Kind: KindInput, Amount: "3"}, {Kind: KindOutput, Amount: "15.5"}, {Kind: KindInput, Above: 200000, Amount: "6"}})
+	if err != nil || p.Currency != "USD" || len(p.Rates) != 3 || rateOf(t, p, KindOutput, 0) != "15.5" {
+		t.Fatalf("a valid price: %v %+v", err, p)
+	}
+	var e *Error
+	for name, tc := range map[string]struct {
+		currency string
+		rates    []EnteredRate
+		field    string
+	}{
+		"an unknown currency": {"ZZZ", []EnteredRate{{Kind: KindInput, Amount: "3"}, {Kind: KindOutput, Amount: "15"}}, "currency"},
+		"no output rate":      {"USD", []EnteredRate{{Kind: KindInput, Amount: "3"}}, "rates"},
+		"a zero rate":         {"USD", []EnteredRate{{Kind: KindInput, Amount: "0"}, {Kind: KindOutput, Amount: "15"}}, "rates"},
+		"an exponent":         {"USD", []EnteredRate{{Kind: KindInput, Amount: "3e-6"}, {Kind: KindOutput, Amount: "15"}}, "rates[0].amount"},
+		"a negative rate":     {"USD", []EnteredRate{{Kind: KindInput, Amount: "-3"}, {Kind: KindOutput, Amount: "15"}}, "rates[0].amount"},
+		"eleven places":       {"USD", []EnteredRate{{Kind: KindInput, Amount: "0.00000000001"}, {Kind: KindOutput, Amount: "15"}}, "rates[0].amount"},
+		"a rate twice":        {"USD", []EnteredRate{{Kind: KindInput, Amount: "3"}, {Kind: KindInput, Amount: "4"}, {Kind: KindOutput, Amount: "15"}}, "rates"},
+		"an image tier":       {"USD", []EnteredRate{{Kind: KindInput, Amount: "3"}, {Kind: KindOutput, Amount: "15"}, {Kind: KindImage, Above: 10, Amount: "1"}}, "rates"},
+		"an unknown kind":     {"USD", []EnteredRate{{Kind: KindInput, Amount: "3"}, {Kind: KindOutput, Amount: "15"}, {Kind: "audio", Amount: "1"}}, "rates"},
+	} {
+		if _, err := Entered(tc.currency, tc.rates); !errors.As(err, &e) || e.Code != CodeEntered || e.Field != tc.field {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if err := Withdrawable(SourceOwner, Active); err != nil {
+		t.Error(err)
+	}
+	for _, bad := range [][2]string{{SourceLiteLLM, Active}, {SourceOwner, Superseded}} {
+		if err := Withdrawable(bad[0], bad[1]); !errors.As(err, &e) || e.Code != CodeWithdraw {
+			t.Errorf("%v: %v", bad, err)
+		}
+	}
+}
+
 // The catalogue is used only while its repository grants the MIT licence and the file lies outside the folder another
 // licence covers (AI-85).
 // req: AI-85

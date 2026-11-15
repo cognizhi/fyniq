@@ -76,6 +76,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "probeAIConnectionModel Idempotency-Key", "probeAIConnectionModel Prefer")                              // AI-80: a probe of the provider
 	want = append(want, "removeAIConnectionModel Idempotency-Key", "removeAIConnectionModel Prefer")                            // AI-72: off at once, idempotent
 	want = append(want, "reviewAIPrice Idempotency-Key", "reviewAIPrice Prefer")                                                // AI-85: one review per version
+	want = append(want, "withdrawAIPrice Idempotency-Key", "withdrawAIPrice Prefer")                                            // AI-82: withdrawn once, at once
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

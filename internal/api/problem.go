@@ -255,6 +255,8 @@ var codeFacts = map[string]struct {
 	aimodel.CodeNotProbed:         {409, "The model has not been probed on this connection, or is no longer listed or callable"},
 	aiprice.CodeUnpriced:          {409, "The model has no price in force on a usage-based connection"},
 	aiprice.CodeReview:            {409, "The price is not waiting for that review"},
+	aiprice.CodeEntered:           {422, "The Owner's price is not valid"},
+	aiprice.CodeWithdraw:          {409, "Only an Owner's price in force can be withdrawn"},
 	storage.CodeAIPrice:           {409, "A price is kept as recorded, and an Owner's price is never overwritten by a read"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},

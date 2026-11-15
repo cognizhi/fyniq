@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "approval": {
+      "description": "An Owner's price: the request its second approver approved (AI-82).",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "catalogue": {
       "description": "The catalogue download it came from, which every estimate made with it is reproduced with (AI-85).",
       "examples": [
@@ -33,7 +41,7 @@
       "type": "string"
     },
     "decided_by": {
-      "description": "The Owner who confirmed or declined it.",
+      "description": "The Owner who confirmed or declined it, or withdrew their own.",
       "examples": [
         "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
       ],
@@ -92,7 +100,7 @@
       "type": "string"
     },
     "recorded_by": {
-      "description": "The system user for a read; the Owner for an entered price.",
+      "description": "The system user for a read; for an Owner's price, the Owner who entered it.",
       "examples": [
         "system:ai.prices.read"
       ],
@@ -129,12 +137,13 @@
       "type": "string"
     },
     "status": {
-      "description": "active: in force; pending: waiting for an Owner's review, the version before it staying in force.",
+      "description": "active: in force; pending: waiting for an Owner's review, the version before it staying in force; withdrawn: an Owner's price its Owner withdrew.",
       "enum": [
         "active",
         "pending",
         "superseded",
-        "declined"
+        "declined",
+        "withdrawn"
       ],
       "examples": [
         "active"
