@@ -406,6 +406,11 @@ AI-28).**
   crossing a border).
 - `docs/runbooks/ai-go-live.md` is G4-087's check, all [live-verify]. Whether the location policy refuses inference on
   the global endpoint is [verify].
+- As built (task 9.2): `docs/security/threat-models/ai-assistant.md` covers twelve threats for security review #4,
+  each control with the tests that prove it: prompt injection, exclusion bypass, the delegated token, accumulated
+  disclosure, denial of wallet, output manipulation, the relayed stream, others' conversations, the AI and MCP
+  clients, tampering with the record, prompt leaks and false claims, and the evals themselves. The build plan has its
+  paragraph on what was built.
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with

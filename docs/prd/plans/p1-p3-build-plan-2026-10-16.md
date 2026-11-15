@@ -450,6 +450,33 @@ cloud with real keys; and ADR-T2's revisit at enablement, which preset the found
 on 14 Nov 2026 that the AI service meters its agents' calls through the API (design D11 (a)), so CMP-AI-01 is
 unchanged; `p1-ai-assistant` builds the internal operation.
 
+`p1-ai-assistant` was proposed on 14 Nov 2026 (PRD-001 rev 0.277) and built on 14 and 15 Nov 2026 in the pull requests
+from #661 onwards, one per slice, stacked on #660; the owner decided on 15 Nov 2026 that an AI cell of "Proposal" includes
+the view (rev 0.278). The parts:
+- the AI service (`cmd/ai`), with no database code, reaching the platform only through the API's internal operations
+  on internal ingress, with its own token and a delegated read token for each turn alone, refused at the edge;
+- the read tools as a registry of bounded, read-only, hash-pinned definitions, run as the person through the public
+  read operations, with the AI exclusions after any masking; typed facts from the semantic layer, within row and token
+  limits; the calculator; untrusted text quoted and screened, failing closed;
+- grounded answers: a strict structure binding each figure to a fact, asked again once and then withheld, rendered by
+  Fyniq, in a fixed Markdown subset;
+- conversations append-only under FORCE RLS, admitted by the AI switch and the limits, relayed as server-sent events,
+  in the activity log with their classes and masks, purged after their retention; feedback, reviewed by an Owner or an
+  Administrator;
+- CTL-AI-06 running in CI and daily; the eval harness, with 243 golden questions checked against the oracle, the seed
+  and the API, and a red team planted in the sample company; the monitoring in AI usage, the activity log and the
+  traces;
+- the panel (`ai-assistant-panel`) with Ask about this, Explain, Simulate and ratings; the go-live check for preset A;
+- the threat model `docs/security/threat-models/ai-assistant.md` for security review #4.
+
+Building it found and fixed three things: earlier questions went back to the model unfiltered; the sample company's other
+income loaded as expenses; and the spend measures cited the profit and loss where they are the KPIs'. Three things
+wait beyond it:
+- each model's recordings and the release gate on them, Model Armor and Agent Platform in Singapore, `[live-verify]`
+  in the dev cloud;
+- whether the location policy refuses the global endpoint `[verify]`;
+- a read tool for pay records, when payroll arrives.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
