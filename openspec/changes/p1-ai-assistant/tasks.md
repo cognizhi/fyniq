@@ -94,9 +94,13 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 - [x] 9.1 AI-05: the `chat` agent's route on preset A at go-live, its data inventory row, and the pre-go-live check
   (G4-087) as a runbook step `[live-verify]`. Test `// req: AI-05`.
-- [ ] 9.2 `docs/security/threat-models/ai-assistant.md` (prompt injection, exclusion bypass, the delegated token,
+- [x] 9.2 `docs/security/threat-models/ai-assistant.md` (prompt injection, exclusion bypass, the delegated token,
   accumulated disclosure, denial of wallet, output manipulation, the relayed stream) for security review #4; the build
   plan's paragraph on what was built; `make check`, `make test`, `make test-e2e` and `make evals` pass.
+  As built: `make check`, `make test`, `make evals` and the whole authorisation matrix pass on the stack's head. The
+  smoke test found the phone's top bar too wide with the assistant's button; Appearance, Help and Sign out moved to
+  More in compact (fixed on 7.1's branch, the smoke test now checks 344 px too). The scan found two Semgrep parse errors
+  from `p1-ai-providers`, fixed on their own branches.
 
 ## Workflow follow-up
 
