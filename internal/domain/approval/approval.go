@@ -179,6 +179,13 @@ const (
 	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
 	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
 	ObjectAIProposal = "ai_proposal"
+	// ObjectCorporateDetail is the company's name, registered office and SSIC code from a day, to record (FR-CS-01,
+	// p1-company-secretary design D2): another person who holds A on the corporate profile approves; its key is the
+	// detail's document ID.
+	ObjectCorporateDetail = "corporate_detail"
+	// ObjectCorporateOfficer is an officer's appointment, or a later version of it, to record (FR-CS-01, FR-CS-06, design
+	// D2): another person who holds A on the corporate profile approves; its key is the version's document ID.
+	ObjectCorporateOfficer = "corporate_officer"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -310,6 +317,10 @@ const (
 	// OpAIProposalExecute marks the proposal Approved and queues it for the executor, which runs it as the approver
 	// (AI-11, AI-P5).
 	OpAIProposalExecute = "ai_proposal.execute"
+	// OpCorporateDetailRecord records a corporate detail as drafted, with its evidence (FR-CS-01).
+	OpCorporateDetailRecord = "corporate_detail.record"
+	// OpCorporateOfficerRecord records an officer's version as drafted, with its evidence (FR-CS-01, FR-CS-06).
+	OpCorporateOfficerRecord = "corporate_officer.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -361,6 +372,8 @@ var Operations = map[string]string{
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
 	OpAIProposalExecute:        ObjectAIProposal,
+	OpCorporateDetailRecord:    ObjectCorporateDetail,
+	OpCorporateOfficerRecord:   ObjectCorporateOfficer,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -479,6 +492,10 @@ var Dependencies = map[string][]string{
 	ObjectAIRoute: {"version"},
 	// the proposal's status and its payload's hash: what executes
 	ObjectAIProposal: {"status", "payload_sha256"},
+	// the detail's version and status, and the day it takes effect: what is recorded
+	ObjectCorporateDetail: {"status", "from"},
+	// the officer's version and status, and the officer it follows: what is recorded
+	ObjectCorporateOfficer: {"status", "officer"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -542,7 +559,9 @@ var Rows = map[string]string{
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
 	// AI activity log's: each member their own, the Owner and the DPO every one.
-	ObjectAIProposal: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
+	ObjectAIProposal:       "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
+	ObjectCorporateDetail:  "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateOfficer: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 }
 
 // The limits of a policy.
@@ -635,7 +654,9 @@ var Policies = map[string]Policy{
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.
-	ObjectAIProposal: {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectAIProposal:       {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectCorporateDetail:  {ObjectType: ObjectCorporateDetail, Version: "founder/corporate_detail@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateOfficer: {ObjectType: ObjectCorporateOfficer, Version: "founder/corporate_officer@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

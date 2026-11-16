@@ -304,6 +304,23 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/controller-entries/{entry_id}/evidence` (addControllerEntryEvidence): Attach the company secretary's confirmation of a controller entry
 - `GET /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (getControllerEntryEvidence): Get a controller entry's file
 - `DELETE /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (removeControllerEntryEvidence): Remove a file from a drafted controller entry
+- `GET /v1/corporate-profile` (getCorporateProfile): Get the corporate profile
+- `POST /v1/corporate-profile/details` (createCorporateDetail): Draft the company's name, registered office and SSIC code
+- `GET /v1/corporate-profile/details/{detail_id}` (getCorporateDetail): Get a corporate detail
+- `PUT /v1/corporate-profile/details/{detail_id}` (replaceCorporateDetail): Change a drafted corporate detail
+- `POST /v1/corporate-profile/details/{detail_id}/approval` (requestCorporateDetailApproval): Ask for approval to record a corporate detail
+- `GET /v1/corporate-profile/details/{detail_id}/evidence` (listCorporateDetailEvidence): List a corporate detail's files
+- `POST /v1/corporate-profile/details/{detail_id}/evidence` (addCorporateDetailEvidence): Attach a corporate detail's evidence
+- `GET /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (getCorporateDetailEvidence): Get a corporate detail's file
+- `DELETE /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (removeCorporateDetailEvidence): Remove a file from a drafted corporate detail
+- `POST /v1/corporate-profile/officers` (createCorporateOfficer): Draft an officer's appointment, or a later version of it
+- `GET /v1/corporate-profile/officers/{version_id}` (getCorporateOfficer): Get an officer's version
+- `PUT /v1/corporate-profile/officers/{version_id}` (replaceCorporateOfficer): Change a drafted officer's version
+- `POST /v1/corporate-profile/officers/{version_id}/approval` (requestCorporateOfficerApproval): Ask for approval to record an officer's version
+- `GET /v1/corporate-profile/officers/{version_id}/evidence` (listCorporateOfficerEvidence): List an officer's version's files
+- `POST /v1/corporate-profile/officers/{version_id}/evidence` (addCorporateOfficerEvidence): Attach an officer's evidence
+- `GET /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (getCorporateOfficerEvidence): Get an officer's version's file
+- `DELETE /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (removeCorporateOfficerEvidence): Remove a file from a drafted officer's version
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill

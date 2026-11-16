@@ -176,6 +176,8 @@ var fyCodes = map[string]string{
 	"FY294": storage.CodeRoundScenario,     // a round scenario's version outside its own inputs (000266)
 	"FY295": storage.CodeInvestorRights,    // investor rights outside their rules, or their holder unmarked (000268)
 	"FY296": storage.CodeControllerEntry,   // a controller entry outside its rules, or its holder unmarked (000268)
+	"FY352": storage.CodeCorporateDetail,   // a corporate detail outside its rules (000392)
+	"FY353": storage.CodeCorporateOfficer,  // an officer outside their rules, or their member not of the organisation (000392)
 	"FY297": storage.CodeAcraExtract,       // an ACRA extract outside its rules (000270)
 	"FY298": storage.CodeGSTForecast,       // a GST forecast outside its rules (000272)
 	"FY299": storage.CodeStatutoryFiling,   // a filing record outside its rules, or a second live one of its item (000274)

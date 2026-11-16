@@ -933,6 +933,32 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the cap table, holders, investors and equity transactions
 - **THEN** the AI assistant can only run scenarios, and only if `fyniq.read.equity` is granted
 
+### Requirement: Permission matrix: Corporate profile and registers
+In Standard mode, each role SHALL hold only the rights over the corporate profile and registers (the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements) that the permission matrix gives it (rev 0.282).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Owner and the Finance controller can approve (A)
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Accountant can create or prepare (C)
+- **AND** the Company secretary can create or prepare (C), by the note on the role
+
+#### Scenario: View
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Auditor, the Tax agent, the Board viewer and the AI assistant can view (V)
+
+#### Scenario: View masked
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Compliance officer / DPO can view masked values only (M)
+
+#### Scenario: No access
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver and the Employee have no right over it (—)
+
 #### Scenario: No access
 - **WHEN** a role acts on the cap table, holders, investors and equity transactions
 - **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser and the Approver have no right over it (—)

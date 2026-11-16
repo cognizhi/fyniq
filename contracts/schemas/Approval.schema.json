@@ -130,7 +130,9 @@
         "ai_connection",
         "ai_data_policy",
         "ai_route",
-        "ai_proposal"
+        "ai_proposal",
+        "corporate_detail",
+        "corporate_officer"
       ],
       "examples": [
         "organisation_setting"
@@ -210,7 +212,9 @@
         "ai_connection.allow_model",
         "ai_connection.price",
         "ai_route.change",
-        "ai_proposal.execute"
+        "ai_proposal.execute",
+        "corporate_detail.record",
+        "corporate_officer.record"
       ],
       "examples": [
         "organisation_setting.change"
