@@ -106,6 +106,8 @@ type CorporateProfile struct {
 	Nominees            []NomineeEntryView       `json:"nominees" nullable:"false" doc:"The registers of nominee directors and nominee shareholders on the day: each entry in force, a nominee since then and not ceased."`
 	NomineeHistory      []NomineeEntryView       `json:"nominee_history" nullable:"false" doc:"Every nominee entry's every version, drafts and superseded ones included, the latest first."`
 	StatementsApprovals []StatementsApprovalView `json:"statements_approvals" nullable:"false" doc:"Every directors' approval of a year's financial statements, drafts and superseded ones included, the latest first."`
+	// (task 4.1)
+	Documents []CorporateDocumentView `json:"documents" nullable:"false" doc:"Every corporate document, drafts and recorded, the latest drafted first, without their text: getCorporateDocument has it."`
 }
 
 type (
@@ -455,7 +457,11 @@ func (a *API) corporateProfileOn(ctx context.Context, u storage.UnitOfWork, on *
 		}
 		out.OfficerHistory = append(out.OfficerHistory, o)
 	}
-	return out, a.registersOn(ctx, u, v, day, &out)
+	if err := a.registersOn(ctx, u, v, day, &out); err != nil {
+		return out, err
+	}
+	out.Documents, err = documentsOf(ctx, u)
+	return out, err
 }
 
 // corporateRecordDependencies are a detail's or an officer's envelope values: its status, and its day or the officer it

@@ -17801,6 +17801,290 @@ components:
       required:
         - kind
       type: object
+    CorporateDocumentChange:
+      additionalProperties: false
+      properties:
+        fields:
+          $ref: "#/components/schemas/CorporateDocumentFields"
+          description: The fields its kind asks for; nothing else.
+        note:
+          description: A note for the record, not on the paper.
+          examples:
+            - For the AGM on 15 June
+          maxLength: 1000
+          type: string
+      required:
+        - fields
+      type: object
+    CorporateDocumentDraft:
+      additionalProperties: false
+      properties:
+        fields:
+          $ref: "#/components/schemas/CorporateDocumentFields"
+          description: The fields its kind asks for; nothing else.
+        kind:
+          description: The kind of document, as getCorporateTemplates lists them.
+          enum:
+            - agm.dispensation
+            - agm.minutes
+            - agm.notice
+            - directors.allot_shares
+            - directors.appoint_officer
+            - directors.approve_statements
+            - directors.change_office
+            - directors.remove_officer
+            - members.written_resolution
+          examples:
+            - directors.approve_statements
+          type: string
+        note:
+          description: A note for the record, not on the paper.
+          examples:
+            - For the AGM on 15 June
+          maxLength: 1000
+          type: string
+      required:
+        - kind
+        - fields
+      type: object
+    CorporateDocumentFields:
+      additionalProperties: false
+      properties:
+        address:
+          description: "A change of office: the new registered office."
+          examples:
+            - "71 Ayer Rajah Crescent, #03-11, Singapore 139951"
+          maxLength: 500
+          type: string
+        allottee:
+          description: "An allotment: whom the shares are allotted to."
+          examples:
+            - Lion Rock Fund I
+          maxLength: 500
+          type: string
+        chair:
+          description: "The AGM's minutes: who chaired it."
+          examples:
+            - Tan Mei Lin
+          maxLength: 500
+          type: string
+        circulated_on:
+          description: "A members' written resolution: the day it is sent to the members."
+          examples:
+            - "2027-04-20"
+          format: date
+          type: string
+        from:
+          description: "An appointment or a change of office: the day it takes effect."
+          examples:
+            - "2027-01-02"
+          format: date
+          type: string
+        fy_end:
+          description: "The financial year's last day: approving its statements, the AGM's notice and minutes, the notice that they were sent."
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        meeting_on:
+          description: "The AGM's notice or minutes: the meeting's day."
+          examples:
+            - "2027-06-15"
+          format: date
+          type: string
+        members_approved_on:
+          description: "An allotment: the day the members approved the issue (s161)."
+          examples:
+            - "2027-01-15"
+          format: date
+          type: string
+        name:
+          description: "An appointment: the officer's name."
+          examples:
+            - Rachel Teo
+          maxLength: 500
+          type: string
+        notice_on:
+          description: "The AGM's notice: the day it is given."
+          examples:
+            - "2027-05-28"
+          format: date
+          type: string
+        officer_id:
+          description: "A cessation: the secretary or CEO in office, by their first version's ID."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7e01
+          maxLength: 500
+          type: string
+        "on":
+          description: "A cessation: the day the appointment ends."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        other_business:
+          description: "The AGM's notice: other business, one a line."
+          examples:
+            - - To approve the directors' fees.
+          items:
+            examples:
+              - To approve the directors' fees.
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
+        place:
+          description: "The AGM's notice or minutes: its place."
+          examples:
+            - "71 Ayer Rajah Crescent, #03-11, Singapore 139951"
+          maxLength: 500
+          type: string
+        present:
+          description: "The AGM's minutes: who was present, one a line."
+          examples:
+            - - Tan Mei Lin
+              - Ah Kow
+          items:
+            examples:
+              - Tan Mei Lin
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
+        price:
+          description: "An allotment: the price of each share in the base currency, a decimal string."
+          examples:
+            - "1.00"
+          pattern: ^[0-9]{1,12}(\.[0-9]{1,4})?$
+          type: string
+        resolution_kind:
+          description: "A members' written resolution: ordinary or special."
+          examples:
+            - ordinary
+          maxLength: 500
+          type: string
+        resolutions:
+          description: "A members' written resolution or the AGM's minutes: the resolutions, one a line."
+          examples:
+            - - That the financial statements be adopted.
+          items:
+            examples:
+              - That the financial statements be adopted.
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
+        role:
+          description: "An appointment: the office, director, secretary, ceo or auditor."
+          examples:
+            - secretary
+          maxLength: 500
+          type: string
+        sent_on:
+          description: "The notice that the statements were sent: the day they were sent to the members (s175A)."
+          examples:
+            - "2027-04-20"
+          format: date
+          type: string
+        share_class:
+          description: "An allotment: the shares' class."
+          examples:
+            - ordinary
+          maxLength: 500
+          type: string
+        shares:
+          description: "An allotment: how many shares, a whole number with no commas."
+          examples:
+            - "10000"
+          pattern: ^[1-9][0-9]{0,14}$
+          type: string
+        time:
+          description: "The AGM's notice or minutes: its time, 24-hour."
+          examples:
+            - "10:30"
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          type: string
+      type: object
+    CorporateDocumentView:
+      additionalProperties: false
+      properties:
+        drafted_on:
+          description: "The day it was drafted: the records it was filled from are that day's."
+          examples:
+            - "2027-01-05"
+          format: date
+          type: string
+        fields:
+          $ref: "#/components/schemas/CorporateDocumentFields"
+          description: The fields it was drafted with.
+        id:
+          description: The document's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c01
+          format: uuid
+          type: string
+        kind:
+          description: Its kind.
+          examples:
+            - directors.approve_statements
+          type: string
+        masked:
+          description: "true: its fields and text are hidden for your role (the DPO)."
+          examples:
+            - false
+          type: boolean
+        note:
+          description: A note for the record.
+          examples:
+            - For the AGM on 15 June
+          type: string
+        paper:
+          $ref: "#/components/schemas/CorporatePaper"
+          description: Its text as filled from the records, as its PDF shows it; hidden when masked.
+        proposal_id:
+          description: The AI's sec.draft_document proposal it came from, a person having approved it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c11
+          format: uuid
+          type: string
+        status:
+          description: "draft: a paper to review and have signed; recorded: in the minute book with its signed copy."
+          enum:
+            - draft
+            - recorded
+          examples:
+            - draft
+          type: string
+        template:
+          description: The template it was drafted from, with its version.
+          examples:
+            - directors.approve_statements@1
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Directors' resolution in writing
+          type: string
+        version:
+          description: The version of its content; with its status it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - kind
+        - template
+        - title
+        - status
+        - version
+        - drafted_on
+        - masked
+        - fields
+      type: object
     CorporateOfficerDraft:
       additionalProperties: false
       properties:
@@ -18089,6 +18373,57 @@ components:
         - evidence
         - checks
       type: object
+    CorporatePaper:
+      additionalProperties: false
+      properties:
+        banner:
+          description: "Boxed above it: that it is Fyniq's draft to review, never signed or filed by Fyniq."
+          examples:
+            - Draft by Fyniq from the company's records on 5 January 2027.
+          type: string
+        company:
+          description: The company's name at its head.
+          examples:
+            - Cognizhi Pte. Ltd.
+          type: string
+        footer:
+          description: "Each page's foot: the template and its version."
+          examples:
+            - directors.approve_statements@1
+          type: string
+        lines:
+          description: "Under the name: the UEN and the registered office."
+          examples:
+            - - UEN 202612345K
+          items:
+            examples:
+              - UEN 202612345K
+            type: string
+          type: array
+        sections:
+          description: Its parts, in order.
+          items:
+            $ref: "#/components/schemas/PaperSection"
+          type: array
+        signatures:
+          description: "A line to sign for each: the directors, the members, the secretary or the chair."
+          items:
+            $ref: "#/components/schemas/PaperSignature"
+          type: array
+        title:
+          description: Its title.
+          examples:
+            - Directors' resolution in writing
+          type: string
+      required:
+        - title
+        - company
+        - lines
+        - banner
+        - sections
+        - signatures
+        - footer
+      type: object
     CorporateProfile:
       additionalProperties: false
       properties:
@@ -18099,6 +18434,11 @@ components:
           description: Every detail, drafts and superseded ones included, the latest first.
           items:
             $ref: "#/components/schemas/CorporateDetailView"
+          type: array
+        documents:
+          description: "Every corporate document, drafts and recorded, the latest drafted first, without their text: getCorporateDocument has it."
+          items:
+            $ref: "#/components/schemas/CorporateDocumentView"
           type: array
         nominee_history:
           description: Every nominee entry's every version, drafts and superseded ones included, the latest first.
@@ -18145,6 +18485,7 @@ components:
         - nominees
         - nominee_history
         - statements_approvals
+        - documents
       type: object
     CorporateReconciliation:
       additionalProperties: false
@@ -18183,6 +18524,128 @@ components:
       required:
         - status
         - differences
+      type: object
+    CorporateTemplate:
+      additionalProperties: false
+      properties:
+        fields:
+          description: The fields it asks for.
+          items:
+            $ref: "#/components/schemas/CorporateTemplateField"
+          type: array
+        kind:
+          description: The kind of document it drafts.
+          examples:
+            - directors.approve_statements
+          type: string
+        signers:
+          description: "Who signs it: each director in office, each member holding shares, the secretary, or the meeting's chair."
+          enum:
+            - directors
+            - members
+            - secretary
+            - chair
+          examples:
+            - directors
+          type: string
+        summary:
+          description: What it is for.
+          examples:
+            - The directors approve a financial year's statements and authorise a director to sign them.
+          type: string
+        title:
+          description: The paper's title.
+          examples:
+            - Directors' resolution in writing
+          type: string
+        version:
+          description: "Its version: a changed template is a new one."
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - kind
+        - version
+        - title
+        - summary
+        - signers
+        - fields
+      type: object
+    CorporateTemplateField:
+      additionalProperties: false
+      properties:
+        choices:
+          additionalProperties:
+            type: string
+          description: A choice's values and the words the paper writes for each.
+          examples:
+            - ordinary: ordinary
+              special: special
+          type: object
+        label:
+          description: What to ask for.
+          examples:
+            - The financial year's last day
+          type: string
+        name:
+          description: The field, as CorporateDocumentFields names it.
+          examples:
+            - fy_end
+          type: string
+        optional:
+          description: "true: it may be left out."
+          examples:
+            - false
+          type: boolean
+        roles:
+          description: "An officer field: the offices it accepts."
+          examples:
+            - - secretary
+              - ceo
+          items:
+            examples:
+              - secretary
+            type: string
+          type:
+            - array
+            - "null"
+        type:
+          description: "What it takes: a date, a time of day, a text, lines, one of its choices, a whole number, an amount, or an officer in office."
+          enum:
+            - date
+            - time
+            - text
+            - lines
+            - choice
+            - count
+            - amount
+            - officer
+          examples:
+            - date
+          type: string
+      required:
+        - name
+        - type
+        - label
+        - optional
+      type: object
+    CorporateTemplates:
+      additionalProperties: false
+      properties:
+        note:
+          description: Their status.
+          examples:
+            - Fyniq's templates, which a lawyer has yet to confirm.
+          type: string
+        templates:
+          description: Every template, by kind.
+          items:
+            $ref: "#/components/schemas/CorporateTemplate"
+          type: array
+      required:
+        - templates
+        - note
       type: object
     CreditApplication:
       additionalProperties: false
@@ -21157,6 +21620,42 @@ components:
           type: string
       required:
         - kind
+      type: object
+    DocumentFile:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: "The PDF, in base64: archival (PDF/A-2a) and accessible (PDF/UA-1); masked for the DPO."
+          examples:
+            - JVBERi0xLjc=
+          type: string
+        file_name:
+          description: The file's name.
+          examples:
+            - directors.approve_statements-2027-01-05.pdf
+          type: string
+        media_type:
+          description: Its type.
+          examples:
+            - application/pdf
+          type: string
+        sha256:
+          description: The SHA-256 of the content, in hexadecimal; masked for the DPO.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        size_bytes:
+          description: Its size, in bytes; 0 for the DPO.
+          examples:
+            - 30877
+          format: int64
+          type: integer
+      required:
+        - file_name
+        - media_type
+        - sha256
+        - size_bytes
+        - content_base64
       type: object
     DocumentLinkOut:
       additionalProperties: false
@@ -36881,6 +37380,53 @@ components:
         - section
         - kind
         - retrieved
+      type: object
+    PaperSection:
+      additionalProperties: false
+      properties:
+        heading:
+          description: Its heading.
+          examples:
+            - Resolved
+          type: string
+        items:
+          description: Its numbered items, such as the resolutions.
+          examples:
+            - - That the financial statements be approved.
+          items:
+            examples:
+              - That the financial statements be approved.
+            type: string
+          type: array
+        paragraphs:
+          description: Its paragraphs.
+          examples:
+            - - We, being all the directors, pass the following resolutions in writing.
+          items:
+            examples:
+              - We, being all the directors, pass the following resolutions in writing.
+            type: string
+          type: array
+      required:
+        - paragraphs
+        - items
+      type: object
+    PaperSignature:
+      additionalProperties: false
+      properties:
+        name:
+          description: Who signs.
+          examples:
+            - Tan Mei Lin
+          type: string
+        role:
+          description: As what.
+          examples:
+            - Director
+          type: string
+      required:
+        - name
+        - role
       type: object
     Passkey:
       additionalProperties: false
@@ -100468,6 +101014,660 @@ paths:
       x-fyniq-permission:
         capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
         right: V
+  /v1/corporate-profile/documents:
+    post:
+      description: "Drafts a corporate document from one of Fyniq's templates (FR-CS-05; DraftCorporateDocument): its kind, with the fields getCorporateTemplates says it asks for, filled from the records on today: the company's name, UEN and registered office, and the directors, the secretary or the members who sign it. The draft is a paper to review, download as PDF with getCorporateDocumentPDF and have signed outside Fyniq: Fyniq never signs or files it. The Owner drafts one too, as they approve the AI's sec.draft_document. Side effects: the draft, audit events. Every problem comes back together, each naming its field. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the paper."
+      operationId: createCorporateDocument
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CorporateDocumentDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateDocumentView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateDocumentView"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Draft a corporate document
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CORP-05
+        - EQUITY-05
+        - STORAGE-CORP-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        note: The Owner drafts one too, as they approve sec.draft_document (Appendix E); a draft is never signed or filed.
+        right: C
+  /v1/corporate-profile/documents/{document_id}:
+    get:
+      description: "Returns a corporate document with its ETag: its kind, template, fields and text as filled from the records on the day it was drafted (FR-CS-05). The DPO sees what it is, not its fields or text. Read-only; no side effects."
+      operationId: getCorporateDocument
+      parameters:
+        - description: The corporate document.
+          in: path
+          name: document_id
+          required: true
+          schema:
+            description: The corporate document.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateDocumentView"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a corporate document
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        right: V
+    put:
+      description: "Saves a new version of a drafted corporate document: its fields filled again from the records on today (FR-CS-05); its kind stays. A recorded one changes no more (EQUITY-05). Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceCorporateDocument
+      parameters:
+        - description: The corporate document.
+          in: path
+          name: document_id
+          required: true
+          schema:
+            description: The corporate document.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CorporateDocumentChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateDocumentView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Draft a corporate document again
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CORP-05
+        - EQUITY-05
+        - STORAGE-CORP-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        right: C
+  /v1/corporate-profile/documents/{document_id}/pdf:
+    get:
+      description: "The document's text as filled on the day it was drafted, as a PDF to print and sign (FR-CS-05): archival (PDF/A-2a) and accessible (PDF/UA-1), with a line to sign for each signer and a banner saying it is Fyniq's draft, never signed or filed by Fyniq. The same version gives the same bytes. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. The DPO, who sees no text, gets its name with the content masked, and nothing is rendered. Side effects: an audit event of the download, with the file's hash (AUD-05). Never cached."
+      operationId: getCorporateDocumentPDF
+      parameters:
+        - description: The corporate document.
+          in: path
+          name: document_id
+          required: true
+          schema:
+            description: The corporate document.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a corporate document as PDF
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - REPORT-08
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        masked_fields:
+          - sha256
+          - content_base64
+        right: V
   /v1/corporate-profile/nominees:
     post:
       description: "Drafts an entry of the register of nominee directors or nominee shareholders (s386AL; FR-CS-01): a director among the officers or a holder of the equity register, whom they act or hold for, since when, and the days they informed the company (30 days), the company's register entered it (7 days) and ACRA's central register was told (2 business days after). With entry_id it is a later version of an entry with a version recorded. Attach the evidence with addNomineeEntryEvidence, then ask another person to approve it with requestNomineeEntryApproval; the last recorded version is in force. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -105059,6 +106259,94 @@ paths:
         - API-FAILURE-01
         - API-INPUT-02
         - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        right: V
+  /v1/corporate-profile/templates:
+    get:
+      description: "Returns Fyniq's corporate templates (FR-CS-05): directors' resolutions approving the financial statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment or changing the registered office; a members' written resolution; the AGM's notice and minutes; and the notice that the statements were sent without an AGM (s175A). Each with its version, who signs it and the fields it asks for. The templates are Fyniq's, which a lawyer has yet to confirm. Read-only; no side effects."
+      operationId: getCorporateTemplates
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateTemplates"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the corporate document templates
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
         - API-RATE-01
       x-fyniq-permission:
         capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"

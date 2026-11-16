@@ -108,9 +108,32 @@
 
 ## 4. Documents
 
-- [ ] 4.1 The corporate templates (directors' resolutions, a members' written resolution, an AGM notice and minutes,
+- [x] 4.1 The corporate templates (directors' resolutions, a members' written resolution, an AGM notice and minutes,
   the AGM dispensation papers), versioned in the repository, rendered to PDF (design D6). Tests
   `// req: governance/company-secretary FR-CS-05 Documents drafted`.
+  As built:
+  - Nine templates in `internal/domain/corporate/templates/`, each pinned by version and hash in
+    `templates.lock.json`, so a changed template is a new version:
+    - directors' resolutions: approve the statements, allot shares, appoint an officer, end the secretary's or CEO's
+      appointment (the members remove a director), change the registered office;
+    - a members' written resolution, ordinary or special;
+    - the AGM's notice and minutes;
+    - the notice that the statements were sent without an AGM (s175A).
+  - Each template names its fields and its signers: the directors in office, the members holding shares, the
+    secretary, or the chair. A paper with no one to sign is refused, naming what to record.
+  - `corporate_document` is a document type (migration 000399, guard FY356 with an attack test; 000400 validates). It
+    holds the kind, the template's version, the fields and the paper as filled from that day's records. Drafted again,
+    it is filled from that day's.
+  - The render service gains a paper layout (`render.Paper`, `paper.typ`), PDF/A-2a and PDF/UA-1 with snapshot
+    hashes. Every paper carries a banner: Fyniq's draft, never signed or filed by Fyniq, and a template a lawyer has yet
+    to confirm (`[counsel to confirm]`, rev 0.283).
+  - The API, on the "Corporate profile and registers" row:
+    - `getCorporateTemplates`;
+    - `createCorporateDocument` (DraftCorporateDocument), with OwnerMay, as the Owner approves `sec.draft_document`;
+    - `getCorporateDocument` and `replaceCorporateDocument`;
+    - `getCorporateDocumentPDF`, whose content is masked for the DPO.
+    The profile lists the documents.
+  - The record operation (the signed copy into the minute book) is task 4.2's.
 - [ ] 4.2 `sec.draft_document` and `DraftCorporateDocument`: the draft kept, never signed or filed; the signed copy
   uploaded as evidence into the minute book; the one-month minute book finding (design D6). Tests
   `// req: ai/task-catalogue sec.draft_document Draft a corporate document`, `// req: FR-CS-05`.

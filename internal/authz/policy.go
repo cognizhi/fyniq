@@ -1595,6 +1595,15 @@ var (
 	GetStatementsApprovalEvidence     = Policy{Operation: "getStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
 	RemoveStatementsApprovalEvidence  = Policy{Operation: "removeStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
 	GetCorporateReconciliation        = Policy{Operation: "getCorporateReconciliation", Capability: CorporateProfile, Need: View, Unqualified: true}
+	// The corporate documents (FR-CS-05; p1-company-secretary task 4.1): drafted as the profile's records are; the Owner
+	// drafts one too, as they approve the AI's sec.draft_document (Appendix E), and a draft is never signed or filed.
+	GetCorporateTemplates   = Policy{Operation: "getCorporateTemplates", Capability: CorporateProfile, Need: View, Unqualified: true}
+	CreateCorporateDocument = Policy{Operation: "createCorporateDocument", Capability: CorporateProfile, Need: Create, OwnerMay: true,
+		Note: "The Owner drafts one too, as they approve sec.draft_document (Appendix E); a draft is never signed or filed."}
+	GetCorporateDocument     = Policy{Operation: "getCorporateDocument", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateDocument = Policy{Operation: "replaceCorporateDocument", Capability: CorporateProfile, Need: Create}
+	GetCorporateDocumentPDF  = Policy{Operation: "getCorporateDocumentPDF", Capability: CorporateProfile, Need: View, Unqualified: true,
+		MaskedFields: []string{"sha256", "content_base64"}}
 )
 
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
@@ -2014,7 +2023,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	RequestNomineeEntryApproval, AddNomineeEntryEvidence, ListNomineeEntryEvidence, GetNomineeEntryEvidence, RemoveNomineeEntryEvidence,
 	CreateStatementsApproval, GetStatementsApproval, ReplaceStatementsApproval, RequestStatementsApprovalApproval,
 	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence,
-	GetCorporateReconciliation)
+	GetCorporateReconciliation, GetCorporateTemplates, CreateCorporateDocument, GetCorporateDocument, ReplaceCorporateDocument,
+	GetCorporateDocumentPDF)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

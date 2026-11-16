@@ -13,6 +13,13 @@
       },
       "type": "array"
     },
+    "documents": {
+      "description": "Every corporate document, drafts and recorded, the latest drafted first, without their text: getCorporateDocument has it.",
+      "items": {
+        "$ref": "CorporateDocumentView.schema.json"
+      },
+      "type": "array"
+    },
     "nominee_history": {
       "description": "Every nominee entry's every version, drafts and superseded ones included, the latest first.",
       "items": {
@@ -72,7 +79,8 @@
     "officer_history",
     "nominees",
     "nominee_history",
-    "statements_approvals"
+    "statements_approvals",
+    "documents"
   ],
   "title": "CorporateProfile",
   "type": "object"

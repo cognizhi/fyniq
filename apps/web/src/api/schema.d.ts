@@ -5012,6 +5012,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/corporate-profile/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft a corporate document
+         * @description Drafts a corporate document from one of Fyniq's templates (FR-CS-05; DraftCorporateDocument): its kind, with the fields getCorporateTemplates says it asks for, filled from the records on today: the company's name, UEN and registered office, and the directors, the secretary or the members who sign it. The draft is a paper to review, download as PDF with getCorporateDocumentPDF and have signed outside Fyniq: Fyniq never signs or files it. The Owner drafts one too, as they approve the AI's sec.draft_document. Side effects: the draft, audit events. Every problem comes back together, each naming its field. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the paper.
+         */
+        post: operations["createCorporateDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/corporate-profile/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a corporate document
+         * @description Returns a corporate document with its ETag: its kind, template, fields and text as filled from the records on the day it was drafted (FR-CS-05). The DPO sees what it is, not its fields or text. Read-only; no side effects.
+         */
+        get: operations["getCorporateDocument"];
+        /**
+         * Draft a corporate document again
+         * @description Saves a new version of a drafted corporate document: its fields filled again from the records on today (FR-CS-05); its kind stays. A recorded one changes no more (EQUITY-05). Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceCorporateDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/corporate-profile/documents/{document_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a corporate document as PDF
+         * @description The document's text as filled on the day it was drafted, as a PDF to print and sign (FR-CS-05): archival (PDF/A-2a) and accessible (PDF/UA-1), with a line to sign for each signer and a banner saying it is Fyniq's draft, never signed or filed by Fyniq. The same version gives the same bytes. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. The DPO, who sees no text, gets its name with the content masked, and nothing is rendered. Side effects: an audit event of the download, with the file's hash (AUD-05). Never cached.
+         */
+        get: operations["getCorporateDocumentPDF"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/corporate-profile/nominees": {
         parameters: {
             query?: never;
@@ -5363,6 +5427,26 @@ export interface paths {
          * @description Takes a file off a statements approval not recorded yet (FR-DOC-07). Once recorded its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail. Side effects: the removal and its audit event. Needs If-Match with the file's ETag; Prefer: return=preview saves nothing.
          */
         delete: operations["removeStatementsApprovalEvidence"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/corporate-profile/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the corporate document templates
+         * @description Returns Fyniq's corporate templates (FR-CS-05): directors' resolutions approving the financial statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment or changing the registered office; a members' written resolution; the AGM's notice and minutes; and the notice that the statements were sent without an AGM (s175A). Each with its version, who signs it and the fields it asks for. The templates are Fyniq's, which a lawyer has yet to confirm. Read-only; no side effects.
+         */
+        get: operations["getCorporateTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -27293,6 +27377,223 @@ export interface components {
              */
             role?: "director" | "secretary" | "ceo" | "auditor";
         };
+        CorporateDocumentChange: {
+            /** @description The fields its kind asks for; nothing else. */
+            fields: components["schemas"]["CorporateDocumentFields"];
+            /**
+             * @description A note for the record, not on the paper.
+             * @example For the AGM on 15 June
+             */
+            note?: string;
+        };
+        CorporateDocumentDraft: {
+            /** @description The fields its kind asks for; nothing else. */
+            fields: components["schemas"]["CorporateDocumentFields"];
+            /**
+             * @description The kind of document, as getCorporateTemplates lists them.
+             * @example directors.approve_statements
+             * @enum {string}
+             */
+            kind: "agm.dispensation" | "agm.minutes" | "agm.notice" | "directors.allot_shares" | "directors.appoint_officer" | "directors.approve_statements" | "directors.change_office" | "directors.remove_officer" | "members.written_resolution";
+            /**
+             * @description A note for the record, not on the paper.
+             * @example For the AGM on 15 June
+             */
+            note?: string;
+        };
+        CorporateDocumentFields: {
+            /**
+             * @description A change of office: the new registered office.
+             * @example 71 Ayer Rajah Crescent, #03-11, Singapore 139951
+             */
+            address?: string;
+            /**
+             * @description An allotment: whom the shares are allotted to.
+             * @example Lion Rock Fund I
+             */
+            allottee?: string;
+            /**
+             * @description The AGM's minutes: who chaired it.
+             * @example Tan Mei Lin
+             */
+            chair?: string;
+            /**
+             * Format: date
+             * @description A members' written resolution: the day it is sent to the members.
+             * @example 2027-04-20
+             */
+            circulated_on?: string;
+            /**
+             * Format: date
+             * @description An appointment or a change of office: the day it takes effect.
+             * @example 2027-01-02
+             */
+            from?: string;
+            /**
+             * Format: date
+             * @description The financial year's last day: approving its statements, the AGM's notice and minutes, the notice that they were sent.
+             * @example 2026-12-31
+             */
+            fy_end?: string;
+            /**
+             * Format: date
+             * @description The AGM's notice or minutes: the meeting's day.
+             * @example 2027-06-15
+             */
+            meeting_on?: string;
+            /**
+             * Format: date
+             * @description An allotment: the day the members approved the issue (s161).
+             * @example 2027-01-15
+             */
+            members_approved_on?: string;
+            /**
+             * @description An appointment: the officer's name.
+             * @example Rachel Teo
+             */
+            name?: string;
+            /**
+             * Format: date
+             * @description The AGM's notice: the day it is given.
+             * @example 2027-05-28
+             */
+            notice_on?: string;
+            /**
+             * @description A cessation: the secretary or CEO in office, by their first version's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7e01
+             */
+            officer_id?: string;
+            /**
+             * Format: date
+             * @description A cessation: the day the appointment ends.
+             * @example 2027-03-31
+             */
+            on?: string;
+            /**
+             * @description The AGM's notice: other business, one a line.
+             * @example [
+             *       "To approve the directors' fees."
+             *     ]
+             */
+            other_business?: string[] | null;
+            /**
+             * @description The AGM's notice or minutes: its place.
+             * @example 71 Ayer Rajah Crescent, #03-11, Singapore 139951
+             */
+            place?: string;
+            /**
+             * @description The AGM's minutes: who was present, one a line.
+             * @example [
+             *       "Tan Mei Lin",
+             *       "Ah Kow"
+             *     ]
+             */
+            present?: string[] | null;
+            /**
+             * @description An allotment: the price of each share in the base currency, a decimal string.
+             * @example 1.00
+             */
+            price?: string;
+            /**
+             * @description A members' written resolution: ordinary or special.
+             * @example ordinary
+             */
+            resolution_kind?: string;
+            /**
+             * @description A members' written resolution or the AGM's minutes: the resolutions, one a line.
+             * @example [
+             *       "That the financial statements be adopted."
+             *     ]
+             */
+            resolutions?: string[] | null;
+            /**
+             * @description An appointment: the office, director, secretary, ceo or auditor.
+             * @example secretary
+             */
+            role?: string;
+            /**
+             * Format: date
+             * @description The notice that the statements were sent: the day they were sent to the members (s175A).
+             * @example 2027-04-20
+             */
+            sent_on?: string;
+            /**
+             * @description An allotment: the shares' class.
+             * @example ordinary
+             */
+            share_class?: string;
+            /**
+             * @description An allotment: how many shares, a whole number with no commas.
+             * @example 10000
+             */
+            shares?: string;
+            /**
+             * @description The AGM's notice or minutes: its time, 24-hour.
+             * @example 10:30
+             */
+            time?: string;
+        };
+        CorporateDocumentView: {
+            /**
+             * Format: date
+             * @description The day it was drafted: the records it was filled from are that day's.
+             * @example 2027-01-05
+             */
+            drafted_on: string;
+            /** @description The fields it was drafted with. */
+            fields: components["schemas"]["CorporateDocumentFields"];
+            /**
+             * Format: uuid
+             * @description The document's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c01
+             */
+            id: string;
+            /**
+             * @description Its kind.
+             * @example directors.approve_statements
+             */
+            kind: string;
+            /**
+             * @description true: its fields and text are hidden for your role (the DPO).
+             * @example false
+             */
+            masked: boolean;
+            /**
+             * @description A note for the record.
+             * @example For the AGM on 15 June
+             */
+            note?: string;
+            /** @description Its text as filled from the records, as its PDF shows it; hidden when masked. */
+            paper?: components["schemas"]["CorporatePaper"];
+            /**
+             * Format: uuid
+             * @description The AI's sec.draft_document proposal it came from, a person having approved it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c11
+             */
+            proposal_id?: string;
+            /**
+             * @description draft: a paper to review and have signed; recorded: in the minute book with its signed copy.
+             * @example draft
+             * @enum {string}
+             */
+            status: "draft" | "recorded";
+            /**
+             * @description The template it was drafted from, with its version.
+             * @example directors.approve_statements@1
+             */
+            template: string;
+            /**
+             * @description Its title.
+             * @example Directors' resolution in writing
+             */
+            title: string;
+            /**
+             * Format: int64
+             * @description The version of its content; with its status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
         CorporateOfficerDraft: {
             /**
              * Format: date
@@ -27514,11 +27815,46 @@ export interface components {
              */
             version: number;
         };
+        CorporatePaper: {
+            /**
+             * @description Boxed above it: that it is Fyniq's draft to review, never signed or filed by Fyniq.
+             * @example Draft by Fyniq from the company's records on 5 January 2027.
+             */
+            banner: string;
+            /**
+             * @description The company's name at its head.
+             * @example Cognizhi Pte. Ltd.
+             */
+            company: string;
+            /**
+             * @description Each page's foot: the template and its version.
+             * @example directors.approve_statements@1
+             */
+            footer: string;
+            /**
+             * @description Under the name: the UEN and the registered office.
+             * @example [
+             *       "UEN 202612345K"
+             *     ]
+             */
+            lines: string[];
+            /** @description Its parts, in order. */
+            sections: components["schemas"]["PaperSection"][];
+            /** @description A line to sign for each: the directors, the members, the secretary or the chair. */
+            signatures: components["schemas"]["PaperSignature"][];
+            /**
+             * @description Its title.
+             * @example Directors' resolution in writing
+             */
+            title: string;
+        };
         CorporateProfile: {
             /** @description The name, office and SSIC code in force on the day; none before the first is recorded. */
             detail?: components["schemas"]["CorporateDetailView"];
             /** @description Every detail, drafts and superseded ones included, the latest first. */
             details: components["schemas"]["CorporateDetailView"][];
+            /** @description Every corporate document, drafts and recorded, the latest drafted first, without their text: getCorporateDocument has it. */
+            documents: components["schemas"]["CorporateDocumentView"][];
             /** @description Every nominee entry's every version, drafts and superseded ones included, the latest first. */
             nominee_history: components["schemas"]["NomineeEntryView"][];
             /** @description The registers of nominee directors and nominee shareholders on the day: each entry in force, a nominee since then and not ceased. */
@@ -27567,6 +27903,87 @@ export interface components {
              * @enum {string}
              */
             status: "reconciled" | "differs" | "not_assessed";
+        };
+        CorporateTemplate: {
+            /** @description The fields it asks for. */
+            fields: components["schemas"]["CorporateTemplateField"][];
+            /**
+             * @description The kind of document it drafts.
+             * @example directors.approve_statements
+             */
+            kind: string;
+            /**
+             * @description Who signs it: each director in office, each member holding shares, the secretary, or the meeting's chair.
+             * @example directors
+             * @enum {string}
+             */
+            signers: "directors" | "members" | "secretary" | "chair";
+            /**
+             * @description What it is for.
+             * @example The directors approve a financial year's statements and authorise a director to sign them.
+             */
+            summary: string;
+            /**
+             * @description The paper's title.
+             * @example Directors' resolution in writing
+             */
+            title: string;
+            /**
+             * Format: int64
+             * @description Its version: a changed template is a new one.
+             * @example 1
+             */
+            version: number;
+        };
+        CorporateTemplateField: {
+            /**
+             * @description A choice's values and the words the paper writes for each.
+             * @example {
+             *       "ordinary": "ordinary",
+             *       "special": "special"
+             *     }
+             */
+            choices?: {
+                [key: string]: string;
+            };
+            /**
+             * @description What to ask for.
+             * @example The financial year's last day
+             */
+            label: string;
+            /**
+             * @description The field, as CorporateDocumentFields names it.
+             * @example fy_end
+             */
+            name: string;
+            /**
+             * @description true: it may be left out.
+             * @example false
+             */
+            optional: boolean;
+            /**
+             * @description An officer field: the offices it accepts.
+             * @example [
+             *       "secretary",
+             *       "ceo"
+             *     ]
+             */
+            roles?: string[] | null;
+            /**
+             * @description What it takes: a date, a time of day, a text, lines, one of its choices, a whole number, an amount, or an officer in office.
+             * @example date
+             * @enum {string}
+             */
+            type: "date" | "time" | "text" | "lines" | "choice" | "count" | "amount" | "officer";
+        };
+        CorporateTemplates: {
+            /**
+             * @description Their status.
+             * @example Fyniq's templates, which a lawyer has yet to confirm.
+             */
+            note: string;
+            /** @description Every template, by kind. */
+            templates: components["schemas"]["CorporateTemplate"][];
         };
         CreditApplication: {
             /** @description What was applied, in their currency. */
@@ -29678,6 +30095,34 @@ export interface components {
              * @example 8
              */
             rate?: string;
+        };
+        DocumentFile: {
+            /**
+             * @description The PDF, in base64: archival (PDF/A-2a) and accessible (PDF/UA-1); masked for the DPO.
+             * @example JVBERi0xLjc=
+             */
+            content_base64: string;
+            /**
+             * @description The file's name.
+             * @example directors.approve_statements-2027-01-05.pdf
+             */
+            file_name: string;
+            /**
+             * @description Its type.
+             * @example application/pdf
+             */
+            media_type: string;
+            /**
+             * @description The SHA-256 of the content, in hexadecimal; masked for the DPO.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size, in bytes; 0 for the DPO.
+             * @example 30877
+             */
+            size_bytes: number;
         };
         DocumentLinkOut: {
             /**
@@ -40769,6 +41214,39 @@ export interface components {
              * @example https://www.iras.gov.sg/taxes/goods-services-tax-(gst)
              */
             url: string;
+        };
+        PaperSection: {
+            /**
+             * @description Its heading.
+             * @example Resolved
+             */
+            heading?: string;
+            /**
+             * @description Its numbered items, such as the resolutions.
+             * @example [
+             *       "That the financial statements be approved."
+             *     ]
+             */
+            items: string[];
+            /**
+             * @description Its paragraphs.
+             * @example [
+             *       "We, being all the directors, pass the following resolutions in writing."
+             *     ]
+             */
+            paragraphs: string[];
+        };
+        PaperSignature: {
+            /**
+             * @description Who signs.
+             * @example Tan Mei Lin
+             */
+            name: string;
+            /**
+             * @description As what.
+             * @example Director
+             */
+            role: string;
         };
         Passkey: {
             /**
@@ -87855,6 +88333,530 @@ export interface operations {
             };
         };
     };
+    createCorporateDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporateDocumentDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateDocumentView"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateDocumentView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCorporateDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The corporate document. */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateDocumentView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceCorporateDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The corporate document. */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporateDocumentChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateDocumentView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCorporateDocumentPDF: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The corporate document. */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createNomineeEntry: {
         parameters: {
             query?: never;
@@ -91332,6 +92334,81 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCorporateTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateTemplates"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

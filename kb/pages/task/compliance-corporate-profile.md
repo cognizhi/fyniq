@@ -2,9 +2,9 @@
 key: compliance.corporate-profile
 type: task
 title: Keep the corporate profile and registers
-summary: The company's details, officers, nominee registers and statements approvals; their lodgements; and the comparison with ACRA
+summary: The company's details, officers, nominee registers and statements approvals, their lodgements and ACRA check, and drafting resolutions and minutes
 sources:
-  - docs/user-guide/corporate-profile.md sha256:f51377927a90ca5a1db38c76723442a028db538222d392bce8a7230f321214b6
+  - docs/user-guide/corporate-profile.md sha256:98965becc74f15a46f6b78652694027096bb565132219bd3dd0a7fe27b14afb7
 data_class: general
 taint: trusted
 status: draft
@@ -22,6 +22,11 @@ aliases:
   - lodge with ACRA
   - ACRA business profile
   - directors' approval of the financial statements
+  - directors' resolution
+  - members' written resolution
+  - AGM notice
+  - minutes of the AGM
+  - draft a resolution
 ---
 
 # Keep the corporate profile and registers
@@ -66,6 +71,16 @@ aliases:
 - With no business profile, none with its officers, or one older than the last change, the comparison is **Not assessed**.
 
 (src: docs/user-guide/corporate-profile.md#checked-against-acra)
+
+## Draft a resolution, notice or minutes
+
+- Fyniq drafts the company's papers from its own templates, filled from the records on the day: directors' resolutions (approving the statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment, changing the registered office), a members' written resolution, the AGM's notice and minutes, and the notice that the statements were sent without an AGM.
+- Choose the kind, fill in what it asks for, read the draft, download it as PDF and have it signed outside Fyniq; keep the signed copy.
+- Fyniq never signs or files a draft, and each says so at its top; the templates are Fyniq's and a lawyer has yet to confirm them.
+- A directors' resolution needs the directors in office, a members' resolution the shares issued ([[equity.register]]), a notice the company secretary.
+- Fyniq does not yet check a notice's period, a written resolution's majority or when minutes go in the minute book.
+
+(src: docs/user-guide/corporate-profile.md#draft-a-resolution-notice-or-minutes)
 
 ## Lodgements and checks
 

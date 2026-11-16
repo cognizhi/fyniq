@@ -313,6 +313,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/details/{detail_id}/evidence` (addCorporateDetailEvidence): Attach a corporate detail's evidence
 - `GET /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (getCorporateDetailEvidence): Get a corporate detail's file
 - `DELETE /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (removeCorporateDetailEvidence): Remove a file from a drafted corporate detail
+- `POST /v1/corporate-profile/documents` (createCorporateDocument): Draft a corporate document
+- `GET /v1/corporate-profile/documents/{document_id}` (getCorporateDocument): Get a corporate document
+- `PUT /v1/corporate-profile/documents/{document_id}` (replaceCorporateDocument): Draft a corporate document again
+- `GET /v1/corporate-profile/documents/{document_id}/pdf` (getCorporateDocumentPDF): Get a corporate document as PDF
 - `POST /v1/corporate-profile/nominees` (createNomineeEntry): Draft a nominee entry, or a later version of one
 - `GET /v1/corporate-profile/nominees/{nominee_id}` (getNomineeEntry): Get a nominee entry's version
 - `PUT /v1/corporate-profile/nominees/{nominee_id}` (replaceNomineeEntry): Change a drafted nominee entry
@@ -338,6 +342,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence` (addStatementsApprovalEvidence): Attach the directors' resolution or statement
 - `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (getStatementsApprovalEvidence): Get a statements approval's file
 - `DELETE /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (removeStatementsApprovalEvidence): Remove a file from a drafted statements approval
+- `GET /v1/corporate-profile/templates` (getCorporateTemplates): Get the corporate document templates
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill

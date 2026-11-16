@@ -583,3 +583,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-16] compile | docs/user-guide/equity-register.md → equity.register (the extract's officers and registered office, p1-company-secretary tasks 2.5 and 6.1)
 
 ## [2026-11-16] compile | docs/user-guide/company-secretary.md → compliance.secretary (a run without its AI step, rev 0.283)
+
+## [2026-11-16] compile | docs/user-guide/corporate-profile.md → compliance.corporate-profile (drafting resolutions, notices and minutes from Fyniq's templates, FR-CS-05)

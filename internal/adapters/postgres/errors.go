@@ -180,6 +180,7 @@ var fyCodes = map[string]string{
 	"FY353": storage.CodeCorporateOfficer,   // an officer outside their rules, or their member not of the organisation (000392)
 	"FY354": storage.CodeNomineeEntry,       // a nominee entry outside its rules, or its director or holder not one (000394)
 	"FY355": storage.CodeStatementsApproval, // a statements approval outside its rules (000394)
+	"FY356": storage.CodeCorporateDocument,  // a corporate document outside its rules (000399)
 	"FY297": storage.CodeAcraExtract,        // an ACRA extract outside its rules (000270)
 	"FY298": storage.CodeGSTForecast,        // a GST forecast outside its rules (000272)
 	"FY299": storage.CodeStatutoryFiling,    // a filing record outside its rules, or a second live one of its item (000274)

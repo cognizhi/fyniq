@@ -8,6 +8,7 @@ package api
 // the authorisation matrix checks that each allowed call wrote its event.
 var auditedReads = map[string]string{
 	"exportAccessReview":         "access_review.exported",
+	"getCorporateDocumentPDF":    "corporate_document.pdf_downloaded",
 	"exportCapTable":             "report.exported",
 	"exportDirectorStatement":    "report.exported",
 	"exportDocumentTemplates":    "document_template_bundle.exported",

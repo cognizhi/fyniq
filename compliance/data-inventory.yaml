@@ -108,12 +108,12 @@ classes:
     transfers: "None"
     columns: [evidence.nric_flagged]
   - key: corporate-officers
-    what: "The company's officers (directors, the secretary, the CEO and auditors): their names, the last 4 characters of an individual's identifier, the days they were appointed and ceased, whether a director is a nominee and for whom, and the member they sign in as; and the registers of nominee directors and shareholders: whom each acts for, since when and the days the company and ACRA were told"
-    why: "To keep the corporate profile ACRA's registers mirror, its lodgement deadlines and the company secretary's checks (FR-CS-01, FR-CS-06)"
-    where: "The database, in Singapore, in the corporate_officer and nominee_entry documents' versions and the officers typed in from ACRA's business profile (acra_extract); their evidence (consents to act, nominees' notices, BizFile+ acknowledgements) in the document store"
+    what: "The company's officers (directors, the secretary, the CEO and auditors): their names, the last 4 characters of an individual's identifier, the days they were appointed and ceased, whether a director is a nominee and for whom, and the member they sign in as; and the registers of nominee directors and shareholders: whom each acts for, since when and the days the company and ACRA were told; and the corporate documents drafted from Fyniq's templates (resolutions, notices, minutes), which name the directors, members and people present"
+    why: "To keep the corporate profile ACRA's registers mirror, its lodgement deadlines, the company secretary's checks and the papers the company signs (FR-CS-01, FR-CS-05, FR-CS-06)"
+    where: "The database, in Singapore, in the corporate_officer, nominee_entry and corporate_document documents' versions and the officers typed in from ACRA's business profile (acra_extract); their evidence (consents to act, nominees' notices, BizFile+ acknowledgements) in the document store"
     who: "Appendix D's Corporate profile and registers (rev 0.282): the Accountant prepares, the Owner and the Finance controller approve, the Auditor, the Tax agent and the Board viewer view, the DPO views masked; the AI within the user's rights"
     retention: "The records' retention (retention.records_years), as the registers ACRA keeps them for"
-    protection: "Never a full NRIC or FIN: only its last 4 characters, refused in full by the database (FY353, SEC-15); the DPO reads the identifiers masked; recorded versions never change"
+    protection: "Never a full NRIC or FIN: only its last 4 characters, refused in full by the database (FY353, FY354, FY356, SEC-15); the DPO reads the identifiers masked, and sees what each corporate document is, not its text; recorded versions never change"
     transfers: "None"
     columns: [document_version.payload]
   - key: workbook-migration

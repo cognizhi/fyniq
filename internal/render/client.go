@@ -18,12 +18,14 @@ import (
 const Class = "render"
 
 // Request is a document to render: a template version's content, the document's data and its issue time; or a report
-// its caller laid out, with no document type, template or data; or the organisation's logo to rasterise, alone.
+// or a paper its caller laid out, with no document type, template or data; or the organisation's logo to rasterise,
+// alone.
 type Request struct {
 	DocumentType string              `json:"document_type"`
 	Content      doctemplate.Content `json:"content"`
 	Data         Data                `json:"data"`
 	Report       *Report             `json:"report,omitempty"` // a report (FR-RPT-05), in place of a document
+	Paper        *Paper              `json:"paper,omitempty"`  // a paper, such as a resolution (FR-CS-05), in place of a document
 	Logo         []byte              `json:"logo,omitempty"`   // a PNG, base64 in JSON
 	Created      time.Time           `json:"created"`          // the PDF's creation date, so a reprint is the same bytes
 	Check        bool                `json:"check,omitempty"`  // also find the IRAS particulars in the document

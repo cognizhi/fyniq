@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fields": {
+      "description": "The fields it asks for.",
+      "items": {
+        "$ref": "CorporateTemplateField.schema.json"
+      },
+      "type": "array"
+    },
+    "kind": {
+      "description": "The kind of document it drafts.",
+      "examples": [
+        "directors.approve_statements"
+      ],
+      "type": "string"
+    },
+    "signers": {
+      "description": "Who signs it: each director in office, each member holding shares, the secretary, or the meeting's chair.",
+      "enum": [
+        "directors",
+        "members",
+        "secretary",
+        "chair"
+      ],
+      "examples": [
+        "directors"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it is for.",
+      "examples": [
+        "The directors approve a financial year's statements and authorise a director to sign them."
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The paper's title.",
+      "examples": [
+        "Directors' resolution in writing"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version: a changed template is a new one.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "version",
+    "title",
+    "summary",
+    "signers",
+    "fields"
+  ],
+  "title": "CorporateTemplate",
+  "type": "object"
+}

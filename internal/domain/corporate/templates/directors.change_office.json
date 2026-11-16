@@ -1,0 +1,18 @@
+{
+  "kind": "directors.change_office",
+  "version": 1,
+  "title": "Directors' resolution in writing",
+  "summary": "The directors change the registered office, and authorise the lodgement with ACRA.",
+  "signers": "directors",
+  "fields": [
+    {"name": "address", "type": "text", "label": "The new registered office"},
+    {"name": "from", "type": "date", "label": "The day it takes effect"}
+  ],
+  "sections": [
+    {"paragraphs": ["We, being all the directors of {{.Company.Name}}, pass the following resolutions in writing, as the company's constitution allows."]},
+    {"heading": "Resolved", "items": [
+      "That the registered office of the company be changed {{if .Company.Office}}from {{.Company.Office}} {{end}}to {{.F.address}} with effect from {{.F.from}}.",
+      "That any one director or the secretary be authorised to lodge the change with ACRA."
+    ]}
+  ]
+}
