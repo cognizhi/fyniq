@@ -21,6 +21,7 @@ var table = Sheet{Name: "Profit and loss: Oct/2026", Header: []string{"Account",
 // FR-RPT-05: amounts are plain decimals with an ASCII minus, unquoted; every text is quoted, inner quotes doubled, and
 // one that starts like a formula gets an apostrophe; something that is not a plain decimal stays text.
 // req: FR-RPT-05
+// req: G4-098
 func TestCSVWritesNumbersAsNumbersAndNoFormula(t *testing.T) {
 	want := "\"Account\",\"Oct 2026\"\r\n" +
 		"\"4010 Subscription revenue\",5000.00\r\n" +
@@ -30,6 +31,12 @@ func TestCSVWritesNumbersAsNumbersAndNoFormula(t *testing.T) {
 		"\"Not a number\",\"1,234\"\r\n"
 	if got := string(CSV(table)); got != want {
 		t.Errorf("got\n%q\nwant\n%q", got, want)
+	}
+	// G4-098's note of +1-2 is made inert as well, and so is one starting with a minus that is not an amount.
+	for in, want := range map[string]string{"+1-2": `"'+1-2"`, "-1-2": `"'-1-2"`} {
+		if got := csvText(in); got != want {
+			t.Errorf("csvText(%q) = %s, want %s", in, got, want)
+		}
 	}
 }
 
@@ -62,6 +69,7 @@ func read(t *testing.T, data []byte, name string) string {
 // inline string, which a spreadsheet never evaluates; totals are bold; a sheet's name is cut to what a workbook allows;
 // the same report gives the same bytes.
 // req: FR-RPT-05
+// req: G4-098
 func TestXLSXWritesNumberCellsAndInlineText(t *testing.T) {
 	created := time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC)
 	data := Sheet{Name: "Data", Header: []string{"Code", "Amount"}, Rows: []Row{{Cells: []Cell{Text("4010"), Number("5000.00", 2)}}}}

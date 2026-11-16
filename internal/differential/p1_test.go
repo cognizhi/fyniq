@@ -328,6 +328,7 @@ func TestP1FoundersMoneyByPerson(t *testing.T) {
 // on an expense account.
 // req: FR-EQ-17
 // req: QA-ENG-02
+// req: G4-043
 func TestP1CashShareIssue(t *testing.T) {
 	r := run(t, load(t, "equity.json"))
 	if want := []string{"EQ-0002", "BT-0004", "BT-0005", "BT-0006", "EQ-0003"}; !reflect.DeepEqual(r.Rejected, want) {

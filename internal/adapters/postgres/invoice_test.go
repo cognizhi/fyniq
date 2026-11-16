@@ -91,6 +91,7 @@ func invoiceLine(t *testing.T, b salesBooks, q, price, discount, code, cur strin
 // req: ENG-42
 // req: ENG-40
 // req: FR-GL-12
+// req: G4-025
 func TestInvoicesPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")

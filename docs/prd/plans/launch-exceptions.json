@@ -204,6 +204,30 @@
    "kind": "after-go-live",
    "why": "Fyniq's and Nemura's shared contract fixtures need Nemura, built after Fyniq's go-live; the contracts' own tests (QA-API-01 to QA-API-03) launch.",
    "decision": "rev 0.25 (Q4, Q16 and Nemura Q1 and Q12: payroll in Nemura, built after Fyniq's go-live)"
+  },
+  {
+   "id": "G4-021",
+   "kind": "after-go-live",
+   "why": "The input-tax claim-date policy decides only which F5 return claims a bill, and its adjustment-queue item is FR-TAX-12's: both come with the F5 return, at GST registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "G4-036",
+   "kind": "after-go-live",
+   "why": "The 2200 roll-forward against Boxes 6, 7 and 8 is the F5 return's reconciliation, built at GST registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "G4-046",
+   "kind": "after-go-live",
+   "why": "Contracted MRR needs FR-AR-15's subscription schedules, which are P2; until then its tile says it has no subscription data (FR-KPI-03's undefined state), and booked MRR is tested.",
+   "decision": "rev 0.8 (FR-KPI-02's two MRR measures; FR-AR-15's subscription schedules in P2)"
+  },
+  {
+   "id": "C.1 #34",
+   "kind": "covered-elsewhere",
+   "why": "The workbook's fast-mode staleness check has no Fyniq equivalent: Appendix C replaced it by C.2 #12.",
+   "by": "C.2 #12, the scheduled jobs on time, in TestThePlatformChecks (internal/api/checks_platform_test.go)"
   }
  ]
 }

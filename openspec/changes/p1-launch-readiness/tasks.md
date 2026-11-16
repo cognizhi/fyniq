@@ -59,9 +59,19 @@ and names the requirement IDs it proves.
   - QA-UI-03 and QA-IMG-01's checks;
   - FR-INT-17's generated client.
   Verified by `make trace` showing them covered, and by the reviewer's sample (D3).
-- [ ] 2.2 The acceptance scenarios of Appendix G in the launch subset: each G4 scenario a test already asserts is
+  So far (16 Nov 2026, with 2.2): C.2 #26 to #28 tagged. Left, in the next slice: the tests that
+  `docs/quality/launch-gaps.md` lists under "Task 2's tests to write" (C.2 #49's SOD-9 item, SEC-26 and the FR-VIZ
+  checks among them), and QA-UI-03, QA-IMG-01 and FR-INT-17's checks named from a test.
+- [x] 2.2 The acceptance scenarios of Appendix G in the launch subset: each G4 scenario a test already asserts is
   tagged on it, and the rest are listed for tasks 3 to 7 or their own change. Verified by `make trace`'s scenario
   count.
+  As built (16 Nov 2026): the 48 candidates of 1.3, each read against its test.
+  - 24 are tagged, 21 of them G4 scenarios. Four tests gained the assertion one clause lacked: G4-024's posting,
+    G4-045's ageing credits, G4-065's download signed in as no one, and G4-098's `+1-2`. G4-054 gained
+    `TestRaceTwoReceiptsForOneInvoice`.
+  - Four are exceptions: G4-021, G4-036 and G4-046 after go-live, and C.1 #34 covered by C.2 #12.
+  - Eleven go to tasks 2.1 and 3.1, and nine to their own change, as `docs/quality/launch-gaps.md` lists.
+  - `make trace`: 623 covered, 97 untested and 38 excepted, from 599, 125 and 34.
 
 ## 3. Calculation correctness (QA-ENG-07, QA-RPT-03, the 13 sets of Appendix G.1 and G.2)
 
