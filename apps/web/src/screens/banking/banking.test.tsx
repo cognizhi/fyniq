@@ -8,6 +8,7 @@ import { AddBankAccount, checkAccount, senders } from "./AddBankAccount";
 import { BankAccountRegister, type BankLine } from "./BankAccountRegister";
 import { BankAccounts, type MoneyAccount } from "./BankAccounts";
 import { formatOf, StatementImport } from "./StatementImport";
+import { invalid } from "../../test/invalid";
 
 const bookkeeper = { ...ownerSession, roles: ["bookkeeper"] } as Session;
 const founder = { ...ownerSession, roles: ["owner", "accountant", "administrator"] } as Session;
@@ -118,7 +119,10 @@ const chart = {
 // req: FR-INT-22
 describe("adding a money account", () => {
   it("says what is missing in the first step, every field at once", () => {
-    expect(Object.keys(checkAccount({ kind: "bank", name: " ", institution: "", account_id: "", identifier: "", opened_on: "" }).errors).sort()).toEqual(["account_id", "name"]);
+    expect(checkAccount({ kind: "bank", name: " ", institution: "", account_id: "", identifier: "", opened_on: "" }).errors).toEqual({
+      account_id: "Choose the account in the chart it posts to.",
+      name: "Name the account, such as DBS current.",
+    });
     expect(checkAccount({ kind: "wallet", name: "Wise USD", institution: "", account_id: "a1", identifier: " 200001 ", opened_on: "" }).draft).toEqual({
       kind: "wallet",
       name: "Wise USD",
@@ -139,12 +143,14 @@ describe("adding a money account", () => {
       "GET /v1/statement-mappings": { status: 200, body: { items: [{ id: "map1", name: "OCBC daily", format: "csv", version: 1 }] } },
       "PUT /v1/organisation/email/capture-addresses/bank": { status: 200, body: { domain: "in.example.com", bank: { name: "bank", address: "bank@in.example.com", created_at: "2026-10-26T01:00:00Z" }, bank_etag: '"1"', mine_etag: '"none"', organisation_etag: '"none"' } },
       "POST /v1/money-accounts/m9/sources": { status: 200, body: money({ id: "m9", version: 2 }) },
+      "GET /v1/organisation/connectors": { status: 200, body: { items: [] } },
     });
     const { container } = renderPage(AddBankAccount, { path: "/banking/accounts/new", session: founder });
     const select = await screen.findByLabelText("Account in the chart");
     await waitFor(() => expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(["Choose an account", "1020 OCBC current (SGD)"]));
     fireEvent.click(screen.getByRole("button", { name: "Add the account" }));
-    expect(await screen.findByText("Name the account, such as DBS current.")).toBeTruthy();
+    await invalid(document.body, "Name", "Name the account, such as DBS current.");
+    await invalid(document.body, "Account in the chart", "Choose the account in the chart it posts to.");
     expect(seen.some((s) => s.method === "POST")).toBe(false);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "OCBC current" } });
     fireEvent.change(select, { target: { value: "a1020" } });
@@ -154,9 +160,16 @@ describe("adding a money account", () => {
     expect(screen.getByRole("radio", { name: /Bank API or host-to-host/ }).getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: /Bank reports by email/ }));
     fireEvent.click(screen.getByRole("button", { name: "Set the data source" }));
-    expect(await screen.findByText("Name the bank-ingest address first, such as bank.")).toBeTruthy();
-    expect(screen.getByText("Enter the address the bank sends its reports from.")).toBeTruthy();
-    expect(screen.getByText("Choose the saved column mapping its reports follow.")).toBeTruthy();
+    await invalid(document.body, "Name the bank-ingest address", "Name the bank-ingest address first, such as bank.");
+    await invalid(document.body, "The bank's sender addresses", "Enter the address the bank sends its reports from.");
+    await invalid(document.body, "Column mapping", "Choose the saved column mapping its reports follow.");
+    fireEvent.change(screen.getByLabelText("The bank's sender addresses"), { target: { value: "a@x.example b@x.example c@x.example d@x.example e@x.example f@x.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set the data source" }));
+    await invalid(document.body, "The bank's sender addresses", "Enter at most five addresses.");
+    fireEvent.click(screen.getByRole("radio", { name: /A connector, such as Wise or Airwallex/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Set the data source" }));
+    await invalid(document.body, "Connector", "Choose the connector that syncs it.");
+    fireEvent.click(screen.getByRole("radio", { name: /Bank reports by email/ }));
     fireEvent.change(screen.getByLabelText("Name the bank-ingest address"), { target: { value: "bank" } });
     fireEvent.change(screen.getByLabelText("The bank's sender addresses"), { target: { value: "Reports@ocbc.example" } });
     fireEvent.change(await screen.findByLabelText("Column mapping"), { target: { value: "map1" } });
@@ -289,7 +302,7 @@ describe("a money account's register", () => {
     const dialog = await screen.findByRole("dialog");
     await within(dialog).findByText("1,100.00 SGD");
     fireEvent.click(within(dialog).getByRole("button", { name: "Exclude it" }));
-    expect(await within(dialog).findByText(/Say why it is excluded/)).toBeTruthy();
+    await invalid(dialog, "Why exclude it", "Say why it is excluded: the reason is kept in the audit trail.");
     fireEvent.change(within(dialog).getByLabelText("Why exclude it"), { target: { value: "The same line in two statements" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Exclude it" }));
     await waitFor(() => expect(sent.find((s) => s.path === "/v1/bank-lines/l2/exclude")?.headers.get("If-Match")).toBe('"3"'));
@@ -301,6 +314,8 @@ describe("a money account's register", () => {
     renderPage(BankAccountRegister, { path: "/banking/accounts/m1", route: "/banking/accounts/$accountId", session: bookkeeper });
     fireEvent.click(await screen.findByRole("button", { name: "Dismiss" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss the alert" }));
+    await invalid(dialog, "Why dismiss it", "Say why it is dismissed: the reason is kept in the audit trail.");
     fireEvent.change(within(dialog).getByLabelText("Why dismiss it"), { target: { value: "It pays INV-0140" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss the alert" }));
     await waitFor(() => expect(sent.find((s) => s.path === "/v1/bank-signals/sig1/dismiss")?.body).toEqual({ reason: "It pays INV-0140" }));
@@ -311,6 +326,8 @@ describe("a money account's register", () => {
     renderPage(BankAccountRegister, { path: "/banking/accounts/m1", route: "/banking/accounts/$accountId", session: bookkeeper });
     fireEvent.click(await screen.findByRole("button", { name: "Resolve" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Resolve" }));
+    await invalid(dialog, "How it was resolved", "Say how it was resolved: it is kept in the audit trail.");
     fireEvent.change(within(dialog).getByLabelText("How it was resolved"), { target: { value: "No transactions on 16 and 17 Oct" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Resolve" }));
     await waitFor(() => expect(sent.find((s) => s.path === "/v1/money-accounts/m1/gaps/g1/resolve")?.body).toEqual({ resolution: "No transactions on 16 and 17 Oct" }));
@@ -390,11 +407,13 @@ describe("importing statements", () => {
     renderPage(StatementImport, { path: "/banking/import", session: bookkeeper });
     fireEvent.click(await screen.findByRole("button", { name: "New column mapping" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the mapping" }));
+    await invalid(dialog, "Amount column", "Enter the column that holds the signed amount.");
     fireEvent.click(within(dialog).getByLabelText("Money in and money out columns"));
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the mapping" }));
-    expect(within(dialog).getByText("Name the mapping, such as the bank's name.")).toBeTruthy();
-    expect(within(dialog).getByText("Enter the column that holds the booking date.")).toBeTruthy();
-    expect(within(dialog).getByText("Enter both the money-in and the money-out columns.")).toBeTruthy();
+    await invalid(dialog, "Name", "Name the mapping, such as the bank's name.");
+    await invalid(dialog, "Booking date column", "Enter the column that holds the booking date.");
+    await invalid(dialog, "Money-in column", "Enter both the money-in and the money-out columns.");
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "OCBC" } });
     fireEvent.change(within(dialog).getByLabelText("Booking date column"), { target: { value: "Transaction Date" } });
     fireEvent.change(within(dialog).getByLabelText("Money-in column"), { target: { value: "Credit" } });
