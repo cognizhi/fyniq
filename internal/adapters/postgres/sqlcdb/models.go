@@ -141,6 +141,35 @@ type FyniqAiAgents struct {
 	Position    int32
 }
 
+type FyniqAiCall struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	RunID            uuid.UUID
+	Agent            string
+	RouteVersion     int32
+	Step             int32
+	FellBackFrom     *int32
+	ConnectionID     uuid.UUID
+	ModelRequested   string
+	ModelReported    *string
+	VersionReported  *string
+	Actor            string
+	Classes          []string
+	Outcome          string
+	Detail           *string
+	InputTokens      int64
+	OutputTokens     int64
+	CacheReadTokens  int64
+	CacheWriteTokens int64
+	ReasoningTokens  int64
+	Cost             *string
+	Currency         *string
+	PriceID          *uuid.UUID
+	LatencyMs        int32
+	StartedAt        time.Time
+	RecordedAt       time.Time
+}
+
 type FyniqAiConnection struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

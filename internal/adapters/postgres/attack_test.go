@@ -518,6 +518,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 		return rawFeedRate(t, v, "1.35")
 	},
 	"ai_price_rate.amount": func(t *testing.T, b porttest.Books, v string) error { return rawAIPriceRate(t, b, v) },
+	"ai_call.cost":         func(t *testing.T, b porttest.Books, v string) error { return rawAICallCost(t, b, v) },
 	"fx_feed_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, "1.35", v)
 	},
@@ -637,6 +638,27 @@ func rawAIPriceRate(t *testing.T, b porttest.Books, amount string) error {
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_price_rate (price_id, kind, unit, amount) VALUES ($1, 'input', 'per_million_tokens', $2::numeric)`,
 			id, amount)
+		return err
+	})
+}
+
+// rawAICallCost records a model call with a cost as the table's owner with the triggers held back (AI-77), so only the
+// cost's own checks can fail. Its connection closes at once, as the test holds many.
+func rawAICallCost(t *testing.T, b porttest.Books, cost string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.ai_call (run_id, agent, route_version, step, connection_id, model_requested, model_reported, actor,
+  classes, outcome, cost, currency, price_id, started_at) VALUES (gen_random_uuid(), 'chat', 1, 1, gen_random_uuid(), 'gpt-attack', 'gpt-attack',
+  'system:attack-test', ARRAY['know-how'], 'ok', $1::numeric, 'USD', gen_random_uuid(), now())`, cost)
 		return err
 	})
 }

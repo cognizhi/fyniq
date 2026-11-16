@@ -234,7 +234,8 @@ func TestCallsArePricedAtTheirTier(t *testing.T) {
 	}
 	reasoned := Price{Currency: "USD", Rates: []Rate{{Kind: KindInput, Amount: dec("1")}, {Kind: KindOutput, Amount: dec("2")},
 		{Kind: KindReasoning, Amount: dec("10")}}}
-	if got, _, err := reasoned.Cost(ports.ModelUsage{Input: 1000000, Output: 1000000, Reasoning: 400000}, 0, 0); err != nil || got.Text('f') != "6.2" {
+	if got, missing, err := reasoned.Cost(ports.ModelUsage{Input: 1000000, Output: 1000000, Reasoning: 400000}, 2, 1); err != nil || got.Text('f') != "6.2" ||
+		missing != "" {
 		t.Errorf("reasoning at its own rate: %s %v", got.Text('f'), err)
 	}
 	if _, _, err := reasoned.Cost(ports.ModelUsage{Output: 1, Reasoning: 2}, 0, 0); err == nil {

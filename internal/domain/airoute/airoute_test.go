@@ -1,12 +1,15 @@
 package airoute
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 var chat = Agent{ID: "chat", Name: "Assistant", Classes: []string{"know-how", "business-figures", "personal-data"}, Line: LineMain}
@@ -144,5 +147,71 @@ func TestPresetsPinTheNewestModelOfTheirLine(t *testing.T) {
 	}
 	if _, ok := PresetOf("D"); ok {
 		t.Error("a preset D")
+	}
+}
+
+// A step is tried only when it meets the call's classes and capabilities (AI-76, AI-83, AI-27, AI-87); an attempt's
+// error decides whether the next eligible step may take the call (AI-76).
+// req: AI-76
+// req: AI-83
+// req: AI-87
+func TestTheRoutersRules(t *testing.T) {
+	req := ports.ModelRequest{Tools: []ports.ModelTool{{Name: "x"}}, Output: &ports.ModelSchema{Name: "a"},
+		Messages: []ports.ModelMessage{{Parts: []ports.ModelPart{{Kind: ports.PartImage}, {Kind: ports.PartDocument}}}}}
+	n := NeedsOf(req, true)
+	if n != (Needs{Tools: true, StrictOutput: true, Streaming: true, Images: true, PDF: true}) {
+		t.Fatalf("the needs: %+v", n)
+	}
+	all := ports.ModelCapabilities{Tools: true, StrictOutput: true, Streaming: true, Images: true, PDF: true}
+	if n.Lacking(all) != "" || n.Lacking(ports.ModelCapabilities{Tools: true}) != "strict structured output" {
+		t.Error("lacking")
+	}
+	ok := StepState{Enabled: true, Allowed: true, Callable: true, Priced: true, Billing: "usage", Caps: all}
+	if why := Why([]string{"personal-data"}, n, ok, "m"); why != "" {
+		t.Errorf("an eligible step: %s", why)
+	}
+	for name, tc := range map[string]struct {
+		s    func(StepState) StepState
+		want string
+	}{
+		"off":          {func(s StepState) StepState { s.Enabled = false; return s }, "switched off"},
+		"not allowed":  {func(s StepState) StepState { s.Allowed = false; return s }, "allow-list"},
+		"not callable": {func(s StepState) StepState { s.Callable = false; return s }, "no longer listed"},
+		"the policy":   {func(s StepState) StepState { s.Policy = errors.New("no"); return s }, "data-class policy"},
+		"an alias":     {func(s StepState) StepState { s.Alias = true; return s }, "moving alias"},
+		"unpriced":     {func(s StepState) StepState { s.Priced = false; return s }, "no price"},
+		"unreachable":  {func(s StepState) StepState { s.Built = errors.New("no key"); return s }, "could not be reached"},
+		"no PDF":       {func(s StepState) StepState { s.Caps.PDF = false; return s }, "PDF input"},
+	} {
+		if why := Why([]string{"personal-data"}, n, tc.s(ok), "m"); !strings.Contains(why, tc.want) {
+			t.Errorf("%s: %q", name, why)
+		}
+	}
+	alias := ok
+	alias.Alias = true
+	if why := Why([]string{"business-figures"}, n, alias, "m"); why != "" {
+		t.Errorf("an alias for business figures: %q", why)
+	}
+	for _, tc := range []struct {
+		err       error
+		delivered bool
+		outcome   string
+		next      bool
+	}{
+		{ports.ErrModelBusy, false, Busy, true}, {ports.ErrModelNotFound, false, NotFound, true}, {context.DeadlineExceeded, false, TimedOut, true},
+		{errors.New("broken"), false, Failed, true}, {ports.ErrModelRequest, false, Refused, false}, {ports.ErrModelBusy, true, Failed, false},
+		{context.Canceled, false, Stopped, false},
+	} {
+		if outcome, next := Failover(tc.err, tc.delivered); outcome != tc.outcome || next != tc.next {
+			t.Errorf("%v (delivered %v): %s %v", tc.err, tc.delivered, outcome, next)
+		}
+	}
+	var e *Error
+	if err := Unhandled([]string{"business-figures", "payroll"}, []string{"business-figures"}); !errors.As(err, &e) || e.Code != CodeUnhandled ||
+		!strings.Contains(e.Message, "payroll") {
+		t.Errorf("an unhandled class: %v", err)
+	}
+	if Unhandled([]string{"know-how"}, []string{"know-how"}) != nil {
+		t.Error("a handled class")
 	}
 }

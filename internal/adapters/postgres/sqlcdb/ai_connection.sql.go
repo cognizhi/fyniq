@@ -650,11 +650,11 @@ INSERT INTO fyniq.ai_model (connection_id, model, name, alias_of, provider_creat
   first_listed_at, last_listed_at, listed, not_callable_at, allowed, listed_price)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9::text[], $10, $11, $12,
-  $13, $14, $15)
+  $13, false, $14)
 ON CONFLICT (organisation_id, connection_id, model) DO UPDATE SET name = EXCLUDED.name, alias_of = EXCLUDED.alias_of,
   provider_created = EXCLUDED.provider_created, shutdown_at = EXCLUDED.shutdown_at, context_window = EXCLUDED.context_window,
   max_output = EXCLUDED.max_output, reports = EXCLUDED.reports, last_listed_at = EXCLUDED.last_listed_at, listed = EXCLUDED.listed,
-  not_callable_at = EXCLUDED.not_callable_at, allowed = fyniq.ai_model.allowed AND EXCLUDED.allowed, listed_price = EXCLUDED.listed_price
+  not_callable_at = EXCLUDED.not_callable_at, allowed = fyniq.ai_model.allowed AND $15, listed_price = EXCLUDED.listed_price
 `
 
 type UpsertAIModelParams struct {
@@ -671,10 +671,12 @@ type UpsertAIModelParams struct {
 	LastListedAt    time.Time
 	Listed          bool
 	NotCallableAt   *time.Time
-	Allowed         bool
 	ListedPrice     []byte
+	Allowed         bool
 }
 
+// A read never allows a model: a new one is inserted off the allow-list, and an existing one keeps its place only while
+// the read keeps it (a model inserted as allowed would fail the probe check even when it conflicts).
 func (q *Queries) UpsertAIModel(ctx context.Context, arg UpsertAIModelParams) error {
 	_, err := q.db.Exec(ctx, upsertAIModel,
 		arg.ConnectionID,
@@ -690,8 +692,8 @@ func (q *Queries) UpsertAIModel(ctx context.Context, arg UpsertAIModelParams) er
 		arg.LastListedAt,
 		arg.Listed,
 		arg.NotCallableAt,
-		arg.Allowed,
 		arg.ListedPrice,
+		arg.Allowed,
 	)
 	return err
 }

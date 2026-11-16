@@ -679,6 +679,13 @@ func TestModelsJoinTheAllowListProbedAndApproved(t *testing.T) {
 	if p := e.call(http.MethodPost, base+"probe", admin, map[string]any{"model": "m2"}); p.str("state") != "not_callable" || p.Body["allowed"] != false {
 		t.Fatalf("m2 refused: %s", p.Raw)
 	}
+	// A read that lists an allowed model again keeps it allowed (a regression test: the read was refused).
+	if r := e.call(http.MethodPost, base+"refresh", admin, nil); r.Status != http.StatusOK || r.Body["reads"].([]any)[0].(map[string]any)["outcome"] != "complete" {
+		t.Fatalf("reading the list with m3 allowed: %d %s", r.Status, r.Raw)
+	}
+	if m := model("m3"); m["allowed"] != true {
+		t.Fatalf("m3 listed again: %v", m)
+	}
 	models.ids = []string{"m1", "m2"}
 	e.call(http.MethodPost, base+"refresh", admin, nil)
 	if m := model("m3"); m["allowed"] != false || m["state"] != "no_longer_listed" {
