@@ -18,7 +18,7 @@ and names the requirement IDs it proves.
   - The exceptions are seeded with the plan's own: `p1-gst`'s F5 part at registration, and SOD-4 with payroll after
     go-live (rev 0.25). Task 1.3 adds the rest.
   - The scripts' tests run with `make script-tests`, part of `make check`.
-- [ ] 1.2 `scripts/trace_requirements.py` (design D2), with `make trace` in `make check`, `make trace-gate PHASE=…` and
+- [x] 1.2 `scripts/trace_requirements.py` (design D2), with `make trace` in `make check`, `make trace-gate PHASE=…` and
   its nightly CI job; the report goes to `.data/trace/report.json`. Tests `scripts/test_trace_requirements.py`, on
   planted PRD rows and test files, prove QA-TRACE-01's scenarios:
   - tags in Go, TypeScript, Python and SQL;
@@ -28,6 +28,16 @@ and names the requirement IDs it proves.
   - INV-* and CTL-* covered elsewhere;
   - both PRDs.
   `# req: QA-TRACE-01`, `# req: G4-001`
+  As built:
+  - The script reads 755 requirement rows of both PRDs through `prdspec.Source`. The PRD-001 payroll rows Nemura runs
+    take their phase from NM-PAY-07's delivery map. A table with no priority column (the task types) counts as M.
+  - Tags count in test files only: Go, TypeScript and e2e tests, stories, the oracle's and the scripts' Python tests,
+    and SQL tests. A tag may name a capability and a title.
+  - The launch gate blocks on a PRD row of priority M, a check of Appendix C or an acceptance scenario. It reports S
+    and C rows, and the requirements the specs draw from the PRD's prose with no ID, as QA-TRACE-01 gates the PRD's
+    rows.
+  - `make trace` is part of `make check`. The daily `controls` workflow uploads the report. The release gate joins in
+    task 7.2.
 - [ ] 1.3 The first report, for this change: the untested launch rows listed by change in `docs/quality/launch-gaps.md`.
   Each is tagged where a test already proves it (task 2), built here (tasks 3 to 7), recorded as an exception, or left
   to its own change. Verified by `make trace` printing the same counts as the file.
