@@ -44,7 +44,8 @@ var EvidenceActivities = []EvidenceActivity{
 		storage.DocumentInstrument, storage.DocumentInstrumentTemplate, storage.DocumentOptionPool, storage.DocumentOptionGrant,
 		storage.DocumentOptionEvent, storage.DocumentInvestorRights, storage.DocumentControllerEntry,
 		storage.DocumentAcraExtract}},
-	{"corporate", "The corporate profile", authz.CorporateProfile, []storage.DocumentType{storage.DocumentCorporateDetail, storage.DocumentCorporateOfficer}},
+	{"corporate", "The corporate profile", authz.CorporateProfile, []storage.DocumentType{storage.DocumentCorporateDetail, storage.DocumentCorporateOfficer,
+		storage.DocumentNomineeEntry, storage.DocumentStatementsApproval}},
 }
 
 // ActivityKey names a kind of record an evidence search covers.

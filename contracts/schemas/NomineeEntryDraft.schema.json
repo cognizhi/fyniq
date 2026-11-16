@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ceased_on": {
+      "description": "The day they ceased to be a nominee.",
+      "examples": [
+        "2027-06-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "central_on": {
+      "description": "The day ACRA's central register was told: within 2 business days after the company's register.",
+      "examples": [
+        "2026-07-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "A nominee shareholder: the holder, a contact marked shareholder or investor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "informed_on": {
+      "description": "The day they informed the company: within 30 days of becoming one after incorporation.",
+      "examples": [
+        "2026-06-25"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "kind": {
+      "description": "The register: nominee directors or nominee shareholders.",
+      "enum": [
+        "director",
+        "shareholder"
+      ],
+      "examples": [
+        "shareholder"
+      ],
+      "type": "string"
+    },
+    "nominator": {
+      "description": "Whom they act or hold shares for.",
+      "examples": [
+        "Lion Rock Ventures Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note for the record.",
+      "examples": [
+        "Holds for the fund under the side letter"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "officer_id": {
+      "description": "A nominee director: the director among the officers, by their first version's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "register_on": {
+      "description": "The day the company's register entered it: within 7 days.",
+      "examples": [
+        "2026-06-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "since": {
+      "description": "The day they became a nominee.",
+      "examples": [
+        "2026-06-18"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "nominator",
+    "since"
+  ],
+  "title": "NomineeEntryDraft",
+  "type": "object"
+}

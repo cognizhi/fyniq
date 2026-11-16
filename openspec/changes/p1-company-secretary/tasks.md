@@ -44,8 +44,18 @@
     records is built here (part of 2.3): `getCorporateProfile` on a day, and create, get, replace, ask and evidence for
     each, with the matrix's rows. An officer never approves their own appointment (FM-1). The officers are a class of
     the data inventory; the tenant export already carries every document.
-- [ ] 2.2 `nominee_shareholding` and `statements_approval` (the directors' approval of a financial year's statements):
+- [x] 2.2 `nominee_shareholding` and `statements_approval` (the directors' approval of a financial year's statements):
   the same (design D2, D4). Tests `// req: FR-CS-01`, `// req: FR-CS-03`.
+  As built:
+  - `nominee_entry` in place of `nominee_shareholding`: one record serves both registers (ROND and RONS), a director
+    among the officers or a holder of the equity register, whom they act for, since when, and the days they informed
+    the company, the register entered it and ACRA's central register was told, and when they ceased. So nominee
+    directors have their register days too, which the officers' nominee flag alone could not hold.
+  - `statements_approval`: the year's end, the day the directors approved the statements (after the year ends) and the
+    day they were sent to the members; the last recorded for a year is in force.
+  - Migration 000394 adds both, their operations and `corporate_register_guard` (FY354, FY355); 000395 validates. The
+    API (part of 2.3): create, get, replace, ask and evidence for each, and the profile lists the entries in force on
+    its day, every version, and every approval. A nominee never approves their own entry (FM-1).
 - [ ] 2.3 The API: the profile, its officers, nominees and approvals, each recorded forward with Idempotency-Key and
   If-Match, with evidence; the permission matrix's rows; the data inventory and the tenant export (design D2). Tests
   `// req: FR-CS-01`, `// req: FR-CS-06`.

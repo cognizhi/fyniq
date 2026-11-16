@@ -160,7 +160,7 @@ func TestTheCorporateProfile(t *testing.T) {
 	}
 }
 
-type corporateFixture struct{ detail, detailFile, officer, officerFile string }
+type corporateFixture struct{ detail, detailFile, officer, officerFile, nominee, nomineeFile, statements, statementsFile string }
 
 var matrixCorporateOf = map[*env]corporateFixture{}
 
@@ -179,10 +179,21 @@ func matrixCorporateFixture(e *env) corporateFixture {
 		"appointed_on": "2026-03-02", "nominee": false})
 	of := e.upload("/v1/corporate-profile/officers/"+o.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Consent to act"}, "consent.pdf",
 		[]byte("%PDF-1.7 matrix consent"), "If-Match", o.Header.Get("ETag"))
-	if d.Status != http.StatusCreated || df.Status != http.StatusCreated || o.Status != http.StatusCreated || of.Status != http.StatusCreated {
-		e.t.Fatalf("the matrix's corporate profile: %d %d %d %d %s %s", d.Status, df.Status, o.Status, of.Status, d.Raw, o.Raw)
+	holder := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Matrix Nominees Pte. Ltd.", "shareholder": true}).str("id")
+	n := e.call(http.MethodPost, "/v1/corporate-profile/nominees", acc, map[string]any{"kind": "shareholder", "holder_id": holder,
+		"nominator": "Matrix Fund", "since": "2026-06-18"})
+	nf := e.upload("/v1/corporate-profile/nominees/"+n.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Notice"}, "notice.pdf",
+		[]byte("%PDF-1.7 matrix notice"), "If-Match", n.Header.Get("ETag"))
+	a := e.call(http.MethodPost, "/v1/corporate-profile/statements-approvals", acc, map[string]any{"fy_end": "2025-12-31", "approved_on": "2026-04-15"})
+	af := e.upload("/v1/corporate-profile/statements-approvals/"+a.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Resolution"},
+		"resolution.pdf", []byte("%PDF-1.7 matrix resolution"), "If-Match", a.Header.Get("ETag"))
+	for _, r := range []response{d, df, o, of, n, nf, a, af} {
+		if r.Status != http.StatusCreated {
+			e.t.Fatalf("the matrix's corporate profile: %d %s", r.Status, r.Raw)
+		}
 	}
-	f := corporateFixture{detail: d.str("id"), detailFile: df.str("id"), officer: o.str("id"), officerFile: of.str("id")}
+	f := corporateFixture{detail: d.str("id"), detailFile: df.str("id"), officer: o.str("id"), officerFile: of.str("id"), nominee: n.str("id"),
+		nomineeFile: nf.str("id"), statements: a.str("id"), statementsFile: af.str("id")}
 	matrixCorporateOf[e] = f
 	return f
 }
@@ -192,7 +203,9 @@ func matrixCorporateState(e *env, f corporateFixture) string {
 	acc := e.as(authz.Accountant)
 	var out []string
 	for _, p := range []string{"/v1/corporate-profile/details/" + f.detail, "/v1/corporate-profile/details/" + f.detail + "/evidence",
-		"/v1/corporate-profile/officers/" + f.officer, "/v1/corporate-profile/officers/" + f.officer + "/evidence"} {
+		"/v1/corporate-profile/officers/" + f.officer, "/v1/corporate-profile/officers/" + f.officer + "/evidence",
+		"/v1/corporate-profile/nominees/" + f.nominee, "/v1/corporate-profile/nominees/" + f.nominee + "/evidence",
+		"/v1/corporate-profile/statements-approvals/" + f.statements, "/v1/corporate-profile/statements-approvals/" + f.statements + "/evidence"} {
 		r := e.call(http.MethodGet, p, acc, nil)
 		out = append(out, r.Header.Get("ETag")+r.Raw)
 	}
@@ -202,6 +215,8 @@ func matrixCorporateState(e *env, f corporateFixture) string {
 var (
 	detailKeys  = []string{"from", "name", "registered_office", "ssic"}
 	officerKeys = []string{"role", "name", "kind", "appointed_on", "nominee"}
+	nomineeKeys = []string{"kind", "holder_id", "nominator", "since"}
+	approveKeys = []string{"fy_end", "approved_on"}
 )
 
 // matrixCorporate are the authorisation matrix's rows for the corporate profile (FR-CS-01, rev 0.282).
@@ -300,4 +315,189 @@ var matrixCorporate = map[string]func(e *env, tok string) (response, func() bool
 		r := e.call(http.MethodDelete, "/v1/corporate-profile/officers/"+f.officer+"/evidence/"+f.officerFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixCorporateState(e, f) == was }
 	},
+	"createNomineeEntry": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		cur := e.call(http.MethodGet, "/v1/corporate-profile/nominees/"+f.nominee, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPost, "/v1/corporate-profile/nominees", tok, bodyOf(response{Body: cur.Body["entry"].(map[string]any)}, nomineeKeys...), "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"getNomineeEntry": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/corporate-profile/nominees/"+matrixCorporateFixture(e).nominee, tok, nil), nil
+	},
+	"replaceNomineeEntry": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		cur := e.call(http.MethodGet, "/v1/corporate-profile/nominees/"+f.nominee, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPut, "/v1/corporate-profile/nominees/"+f.nominee, tok, bodyOf(response{Body: cur.Body["entry"].(map[string]any)}, nomineeKeys...),
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"requestNomineeEntryApproval": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.call(http.MethodPost, "/v1/corporate-profile/nominees/"+f.nominee+"/approval", steppedUp(e, tok), nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"addNomineeEntryEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.upload("/v1/corporate-profile/nominees/"+f.nominee+"/evidence", tok, map[string]string{"evidence_type": "Notice"}, "n.pdf", []byte("%PDF-1.7 notice"),
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"listNomineeEntryEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/corporate-profile/nominees/"+matrixCorporateFixture(e).nominee+"/evidence", tok, nil), nil
+	},
+	"getNomineeEntryEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		return e.call(http.MethodGet, "/v1/corporate-profile/nominees/"+f.nominee+"/evidence/"+f.nomineeFile, tok, nil), nil
+	},
+	"removeNomineeEntryEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.call(http.MethodDelete, "/v1/corporate-profile/nominees/"+f.nominee+"/evidence/"+f.nomineeFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"createStatementsApproval": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		cur := e.call(http.MethodGet, "/v1/corporate-profile/statements-approvals/"+f.statements, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPost, "/v1/corporate-profile/statements-approvals", tok, bodyOf(response{Body: cur.Body["approval"].(map[string]any)}, approveKeys...), "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"getStatementsApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/corporate-profile/statements-approvals/"+matrixCorporateFixture(e).statements, tok, nil), nil
+	},
+	"replaceStatementsApproval": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		cur := e.call(http.MethodGet, "/v1/corporate-profile/statements-approvals/"+f.statements, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPut, "/v1/corporate-profile/statements-approvals/"+f.statements, tok, bodyOf(response{Body: cur.Body["approval"].(map[string]any)}, approveKeys...),
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"requestStatementsApprovalApproval": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.call(http.MethodPost, "/v1/corporate-profile/statements-approvals/"+f.statements+"/approval", steppedUp(e, tok), nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"addStatementsApprovalEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.upload("/v1/corporate-profile/statements-approvals/"+f.statements+"/evidence", tok, map[string]string{"evidence_type": "Notice"}, "n.pdf", []byte("%PDF-1.7 notice"),
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+	"listStatementsApprovalEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/corporate-profile/statements-approvals/"+matrixCorporateFixture(e).statements+"/evidence", tok, nil), nil
+	},
+	"getStatementsApprovalEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		return e.call(http.MethodGet, "/v1/corporate-profile/statements-approvals/"+f.statements+"/evidence/"+f.statementsFile, tok, nil), nil
+	},
+	"removeStatementsApprovalEvidence": func(e *env, tok string) (response, func() bool) {
+		f := matrixCorporateFixture(e)
+		was := matrixCorporateState(e, f)
+		r := e.call(http.MethodDelete, "/v1/corporate-profile/statements-approvals/"+f.statements+"/evidence/"+f.statementsFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixCorporateState(e, f) == was }
+	},
+}
+
+// The registers of nominee directors and shareholders and the directors' approval of the statements (s386AL, FR-CS-01,
+// FR-CS-03; p1-company-secretary task 2.2). Lion Rock's fund holds shares through Seedling Nominees from 18 Jun 2026:
+// told on 25 Jun, entered on 30 Jun and filed centrally on 2 Jul, recorded on Ah Kow's approval. A director among the
+// officers acts for Lion Rock. A customer is no nominee shareholder, ACRA is never told before the company's register,
+// and a nominee entry names whom they act for. The directors approve the statements for 2025 on 15 Apr 2026, recorded
+// with their resolution; an approval on the year's last day is refused. Ah Kow, holding through his own company as a
+// nominee, may not approve his own entry.
+// req: FR-CS-01
+// req: FR-CS-03
+// asvs: V8.2.1
+func TestTheNomineeRegistersAndTheStatementsApproval(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner)
+	owner := c.as(c.weiling, authz.Owner, authz.Controller)
+	approve := func(req response, token string) response {
+		return e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", token, hashOf(req), "If-Match", `"1"`)
+	}
+	record := func(path string, draft response) {
+		t.Helper()
+		if f := e.upload(path+"/evidence", prep, map[string]string{"evidence_type": "Register extract"}, "extract.pdf", []byte("%PDF-1.7 extract"),
+			"If-Match", draft.Header.Get("ETag")); f.Status != http.StatusCreated {
+			t.Fatalf("the evidence of %s: %d %s", path, f.Status, f.Raw)
+		}
+		cur := e.call(http.MethodGet, path, prep, nil)
+		req := e.call(http.MethodPost, path+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
+		if req.Status != http.StatusAccepted {
+			t.Fatalf("asking for %s: %d %s", path, req.Status, req.Raw)
+		}
+		if r := approve(req, kow); r.Status != http.StatusOK || r.Body["status"] != "approved" {
+			t.Fatalf("approving %s: %d %s", path, r.Status, r.Raw)
+		}
+	}
+	seedling := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Seedling Nominees Pte. Ltd.", "shareholder": true}).str("id")
+	customer := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Northwind Analytics", "customer": true}).str("id")
+
+	bad := map[string]any{"kind": "shareholder", "holder_id": customer, "nominator": " ", "since": "2026-06-18", "central_on": "2026-07-02"}
+	if r := e.call(http.MethodPost, "/v1/corporate-profile/nominees", prep, bad); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, corporate.CodeNominee) || !strings.Contains(r.Raw, `"field":"body.holder_id"`) ||
+		!strings.Contains(r.Raw, `"field":"body.nominator"`) || !strings.Contains(r.Raw, `"field":"body.central_on"`) {
+		t.Errorf("a nominee entry that does not fit: %d %s", r.Status, r.Raw)
+	}
+	entry := e.call(http.MethodPost, "/v1/corporate-profile/nominees", prep, map[string]any{"kind": "shareholder", "holder_id": seedling,
+		"nominator": "Lion Rock Ventures Fund I", "since": "2026-06-18", "informed_on": "2026-06-25", "register_on": "2026-06-30", "central_on": "2026-07-02"})
+	if entry.Status != http.StatusCreated || entry.Body["name"] != "Seedling Nominees Pte. Ltd." || entry.Body["entry_id"] != entry.Body["id"] {
+		t.Fatalf("Seedling's entry drafted: %d %s", entry.Status, entry.Raw)
+	}
+	record("/v1/corporate-profile/nominees/"+entry.str("id"), entry)
+
+	officer := e.call(http.MethodPost, "/v1/corporate-profile/officers", prep, map[string]any{"role": "director", "name": "Lee Wei", "kind": "individual",
+		"appointed_on": "2026-06-18", "nominee": true, "nominator": "Lion Rock Ventures Pte. Ltd."})
+	record("/v1/corporate-profile/officers/"+officer.str("id"), officer)
+	director := e.call(http.MethodPost, "/v1/corporate-profile/nominees", prep, map[string]any{"kind": "director", "officer_id": officer.str("id"),
+		"nominator": "Lion Rock Ventures Pte. Ltd.", "since": "2026-06-18", "informed_on": "2026-06-20"})
+	if director.Status != http.StatusCreated || director.Body["name"] != "Lee Wei" {
+		t.Fatalf("Lee Wei's entry drafted: %d %s", director.Status, director.Raw)
+	}
+
+	if r := e.call(http.MethodPost, "/v1/corporate-profile/statements-approvals", prep, map[string]any{"fy_end": "2025-12-31", "approved_on": "2025-12-31"}); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, `"code":"CORP-04","field":"body.approved_on"`) {
+		t.Errorf("statements approved on the year's last day: %d %s", r.Status, r.Raw)
+	}
+	approval := e.call(http.MethodPost, "/v1/corporate-profile/statements-approvals", prep, map[string]any{"fy_end": "2025-12-31", "approved_on": "2026-04-15",
+		"sent_on": "2026-04-20"})
+	if approval.Status != http.StatusCreated {
+		t.Fatalf("the approval drafted: %d %s", approval.Status, approval.Raw)
+	}
+	record("/v1/corporate-profile/statements-approvals/"+approval.str("id"), approval)
+
+	p := e.call(http.MethodGet, "/v1/corporate-profile?on=2026-07-15", prep, nil)
+	nominees := p.Body["nominees"].([]any)
+	if p.Status != http.StatusOK || len(nominees) != 1 || nominees[0].(map[string]any)["name"] != "Seedling Nominees Pte. Ltd." ||
+		len(p.Body["nominee_history"].([]any)) != 2 || len(p.Body["statements_approvals"].([]any)) != 1 ||
+		p.Body["statements_approvals"].([]any)[0].(map[string]any)["status"] != "recorded" {
+		t.Errorf("the profile with its registers: %d %s", p.Status, p.Raw)
+	}
+
+	own := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Ah Kow Holdings", "shareholder": true}).str("id")
+	ct := e.call(http.MethodGet, "/v1/contacts/"+own, owner, nil)
+	link := e.call(http.MethodPut, "/v1/contacts/"+own+"/member", kow, map[string]any{"member_user_id": c.ahkow}, "If-Match", ct.Header.Get("ETag"))
+	if r := approve(link, owner); r.Status != http.StatusOK {
+		t.Fatalf("linking Ah Kow's company: %d %s", r.Status, r.Raw)
+	}
+	mine := e.call(http.MethodPost, "/v1/corporate-profile/nominees", prep, map[string]any{"kind": "shareholder", "holder_id": own, "nominator": "A family trust",
+		"since": "2026-06-18"})
+	mpath := "/v1/corporate-profile/nominees/" + mine.str("id")
+	if f := e.upload(mpath+"/evidence", prep, map[string]string{"evidence_type": "Notice"}, "notice.pdf", []byte("%PDF-1.7 notice"),
+		"If-Match", mine.Header.Get("ETag")); f.Status != http.StatusCreated {
+		t.Fatalf("the notice: %d %s", f.Status, f.Raw)
+	}
+	cur := e.call(http.MethodGet, mpath, prep, nil)
+	req := e.call(http.MethodPost, mpath+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
+	if r := approve(req, kow); r.Status != http.StatusForbidden || !strings.Contains(r.Raw, "your own entry as a nominee") {
+		t.Errorf("Ah Kow approving his own entry: %d %s", r.Status, r.Raw)
+	}
 }

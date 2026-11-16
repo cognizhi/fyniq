@@ -84,7 +84,9 @@
         "ai_route",
         "ai_proposal",
         "corporate_detail",
-        "corporate_officer"
+        "corporate_officer",
+        "nominee_entry",
+        "statements_approval"
       ],
       "examples": [
         "organisation_setting"
