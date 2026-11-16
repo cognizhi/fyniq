@@ -77,6 +77,11 @@ See proposal.md for why. What exists today:
   skill, never by editing the expected value.
 - The workbook's Python is not run: its expected values are its own pinned numbers, so nothing from that repository
   executes here.
+- (16 Nov 2026, the owner's decision, taken interactively) The sample company is ported by the migration's
+  reconciliation: its 1,649 figures on the engine against the workbook's own engine, with the differential suite on each
+  rule it posts by. It is not one oracle scenario, since it holds pay runs, which the scenario format has not and the
+  launch does not need. Sets that post nothing (the non-posting cases, the miscellaneous set's other tests) are
+  ported as a mapping of each case to the Fyniq test that holds the same rule, checked to name real tests.
 
 **D5. Visual snapshots run against the local stack, with hashes kept and images uploaded.**
 - Playwright runs in its pinned Linux container against `make up` with the sample company loaded. Fonts are vendored,

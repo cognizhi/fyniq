@@ -570,6 +570,39 @@ def edge_set(edge: Module) -> dict:
     return data
 
 
+STATUS = ("✖", "⚠", "✔", "⏰", "✎")
+
+
+def statuses(edge: Path, tests: Path) -> list[dict]:
+    """The non-posting set's cases, read from its syntax trees without running them: each status text a top-level
+    block of tests/edge_nonposting.py holds (a text built with {…} by its fixed start), and each of
+    tests/test_edge_nonposting.py's test_bug_ tests, the cases the workbook once got wrong."""
+    out: list[dict] = []
+    tree = ast.parse(edge.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            block = node.targets[0].id
+        elif isinstance(node, ast.FunctionDef):
+            block = node.name
+        else:
+            continue
+        for sub in ast.walk(node):
+            text = None
+            if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                text = sub.value
+            elif isinstance(sub, ast.JoinedStr) and sub.values and isinstance(sub.values[0], ast.Constant):
+                text = str(sub.values[0].value).rstrip()
+            text = (text or "").strip()
+            if text.startswith(STATUS) and any(ch.isalpha() for ch in text):
+                case = {"block": block, "status": text}
+                if case not in out:
+                    out.append(case)
+    for node in ast.parse(tests.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_bug_"):
+            out.append({"block": "tests/test_edge_nonposting.py", "status": node.name})
+    return out
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -602,18 +635,38 @@ def main() -> None:
         "document-numbers": (["tests/test_edge_docnumbers.py"],
                              lambda: ledger("workbook-document-numbers", tests("test_edge_docnumbers.py").function("docno_data"), chart)),
         "regressions": (["tests/test_regressions.py"], lambda: ledger("workbook-regressions", regressions(), chart)),
-        # As of 1 October, a day past the workbook's, so September's revaluation is seen reversed on day 1 (FR-GL-04).
-        "miscellaneous": (["tests/test_edge_misc.py"],
-                          lambda: ledger("workbook-miscellaneous", tests("test_edge_misc.py").function("misc_data"), chart,
-                                         as_of=dt.date(2026, 10, 1), revalue=True)),
     }
+    # The non-posting set posts nothing: its cases are listed (statuses.json), and mapping.json, kept by hand, gives
+    # each the Fyniq test that holds the same rule, or why it waits for after the launch or has no counterpart.
+    def nonposting() -> dict:
+        return {"statuses.json": statuses(a.repo / "tests/edge_nonposting.py", a.repo / "tests/test_edge_nonposting.py")}
+
+    sets["non-posting"] = (["tests/edge_nonposting.py", "tests/test_edge_nonposting.py"], nonposting)
+
+    def misc() -> dict:
+        """The miscellaneous set: its scenario and mapping, and its tests by name (functions.json), each of which
+        cases.json, kept by hand, says is ported as figures or held by a Fyniq test."""
+        scenario, mapping = ledger("workbook-miscellaneous", tests("test_edge_misc.py").function("misc_data"), chart,
+                                   as_of=dt.date(2026, 10, 1), revalue=True)
+        tree = ast.parse((a.repo / "tests/test_edge_misc.py").read_text(encoding="utf-8"))
+        functions = [{"block": "tests/test_edge_misc.py", "status": n.name} for n in tree.body
+                     if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]
+        return {"scenario.json": scenario, "mapping.json": mapping, "functions.json": functions}
+
+    # As of 1 October, a day past the workbook's, so September's revaluation is seen reversed on day 1 (FR-GL-04).
+    sets["miscellaneous"] = (["tests/test_edge_misc.py"], misc)
     record = {"repository": REPOSITORY, "commit": commit, "sets": {}}
     for name, (files, build) in sets.items():
-        scenario, mapping = build()
+        built = build()
         out = a.out / name
         out.mkdir(parents=True, exist_ok=True)
-        (out / "scenario.json").write_text(json.dumps(scenario, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        (out / "mapping.json").write_text(json.dumps(mapping, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        if isinstance(built, dict):
+            files_out = built
+        else:
+            scenario, mapping = built
+            files_out = {"scenario.json": scenario, "mapping.json": mapping}
+        for fname, content in files_out.items():
+            (out / fname).write_text(json.dumps(content, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         fixtures = sorted(p for p in out.iterdir() if p.suffix == ".json")
         record["sets"][name] = {
             "sources": {f: sha256(a.repo / f) for f in files + ["src/cfh/coa.py"]},

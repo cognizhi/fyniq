@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 646 |
+| Covered by a tagged test | 650 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
-| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 160 |
-| Untested, blocking | 80 |
+| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 157 |
+| Untested, blocking | 79 |
 
-Once the stacked chain (#645 to #743) merges, 36 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 35 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -62,7 +62,7 @@ Built behaviour that no test asserted in full:
 - QA-UI-03, FR-VIZ-04, FR-VIZ-07 and QA-IMG-01: `scripts/test_quality_checks.py` runs the contrast, palette and image
   checks on planted failures, and checks the sequential and diverging scales from the tokens.
 
-### Gates built (7)
+### Gates built (8)
 
 - QA-REL-01 (task 3.4): `scripts/release_policy.py` in CI fails a `fix` of calculation code without its test; the
   bug-fix skill has the root-cause record's template.
@@ -76,17 +76,22 @@ Built behaviour that no test asserted in full:
 - QA-PROD-01 (task 6.2): the canary's nightly transactions through the public API, by the owner's decision of 16 Nov
   2026; its cloud run waits for the integration client (`p1-public-api` task 3.1) and is `[live-verify]`
   (`docs/runbooks/canary.md`).
+- QA-ENG-07 (task 3.1): the workbook's golden sets in `test/golden/workbook/`, read from its repository by
+  `scripts/workbook_golden.py`: the posting, document-number, regression and miscellaneous sets post through the engine
+  and the oracle, which agree and reproduce the workbook's pinned figures; the non-posting cases are each mapped to the
+  Fyniq test that holds the same rule; the sample company is the migration's reconciliation (the owner's decision of
+  16 Nov 2026).
 - QA-UI-01 (task 4.2): `src/screens/forms.test.ts` reads each of the 56 forms, the validation messages it writes and
   the tests that reach it; every message is triggered, and every form's tests check a refused field marked invalid
   and described by its message (`src/test/invalid.ts`). Building it found fields whose error a screen reader did not
   read with them: first-run setup's, a credit note's date applied, and an item price's currency.
 
-### Built in this change (9)
+### Built in this change (8)
 
-- Tasks 3 to 7 (7): QA-ENG-07 with the unnumbered sets (7 of 13 left: the posting, document-number and regression sets
-  and three pinned cases are in, `TestTheWorkbookGoldenSets`), QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and
-  QA-E2E-01.
-- Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
+- Tasks 5 to 7 (6): QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and QA-E2E-01. With task 3.2, four unnumbered
+  sets are reported still: the pinned unrealised revaluation (its parity item is G4-016's), the tags on RND-SHARE's and
+  the SAFE's pinned tests, and the hourly cost (after go-live).
+- Task 3, with the workbook's migration (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
 
 ### In their own change (27)

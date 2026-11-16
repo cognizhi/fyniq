@@ -35,11 +35,11 @@ Then review the diff. `expected.json` changes only by hand, from the workbook's 
 | Set (Appendix G.1) | Workbook files | Here |
 |---|---|---|
 | Posting edge cases | `tests/edge_posting.py`, `tests/test_edge_posting.py`, `src/cfh/coa.py` | `posting/`: 71 figures, 8 documents refused |
-| Sample company | `src/cfh/sample.py`, `tests/reference.py`, `tests/ref_*.py` | Reconciled by the migration (QA-MIG-01): `TestTheReconciliationComparesTheBooksWithTheWorkbook` compares 1,649 figures of the imported sample with the workbook's own engine, each account's opening, movement and closing of every month. The oracle's side is to come (task 3.1) |
-| Non-posting edge cases | `tests/edge_nonposting.py`, `tests/test_edge_nonposting.py` | To come (task 3.1) |
+| Sample company | `src/cfh/sample.py`, `tests/reference.py`, `tests/ref_*.py` | Reconciled by the migration (QA-MIG-01): `TestTheReconciliationComparesTheBooksWithTheWorkbook` compares 1,649 figures of the imported sample with the workbook's own engine, each account's opening, movement and closing of every month. The oracle checks each rule the sample posts by through the differential suite; the sample is not one oracle scenario, since it holds pay runs, which the format has not (the owner's decision of 16 Nov 2026) |
+| Non-posting edge cases | `tests/edge_nonposting.py`, `tests/test_edge_nonposting.py` | `non-posting/`: its 125 cases (`statuses.json`), each block mapped to the Fyniq rule and tests that hold it (`mapping.json`, `TestTheNonPostingCasesHaveTheirTests`) |
 | Document numbers | `tests/test_edge_docnumbers.py` | `document-numbers/`: 18 figures, 2 journals refused; and the bank matcher's `TestAWorkbookNumberNamesOnlyItself` |
 | Regressions | `tests/test_regressions.py` | `regressions/` (its two fixtures in one scenario): 9 figures; and `TestAWorkbookNumberNamesOnlyItself` |
-| Miscellaneous | `tests/test_edge_misc.py` | `miscellaneous/`: 7 figures, the unrealised FX among them; its other cases below |
+| Miscellaneous | `tests/test_edge_misc.py` | `miscellaneous/`: 7 figures, the unrealised FX among them; each of its tests held (`functions.json`, `cases.json`) |
 
 ## The posting edge cases: how Fyniq reads them
 
@@ -109,13 +109,25 @@ the workbook's 7040 is its disposal account), the scenario running to 1 October 
 customer's statement balance of 372 (an invoice, a credit note and a payment not matched to an invoice); and the
 transfer from savings, recorded once.
 
-Elsewhere, or later:
+Its other tests, each held (`cases.json`, checked by `TestTheNonPostingCasesHaveTheirTests`):
 
-- The bank import seeing a transfer recorded from the other account: `TestATransfersOtherSideIsRecognised`
-  (`internal/domain/banking`).
-- The hourly cost with employer CPF stopping at the wage ceiling, and timesheets: with projects and pay runs, after the
-  launch (the pinned hourly cost is recorded `after-go-live`, rev 0.146).
-- The reminder in the invoice's currency, the carry-forward of foreign items in their currency, the budget of
-  discounts, the overdraft check by month-end, the print's blank dates, a feasibility study without an IRR and the
-  averages over the months available: still to be matched to Fyniq's tests (task 3.1), so the miscellaneous set is not
-  yet tagged.
+- The bank import seeing a transfer recorded from the other account: `TestATransfersOtherSideIsRecognised`.
+- The reminder in the invoice's currency: a reminder emails the invoice's own PDF, in its currency
+  (`TestRemindersWaitForAPerson`); the carry-forward of foreign items in their currency: a clean start's opening items
+  (`TestACleanStartCarriesTheBalancesForward`, `TestAnOpeningItemPostsItsTotalAgainstTheClearingAccount`).
+- The budget of discounts: Fyniq budgets as the P&L shows it, so the migration negates the workbook's positive discount
+  budget (`TestADiscountBudgetReducesRevenue`); the overdraft by month-end: the close's check C.1 #31
+  (`TestEachCloseBackedCheckReadsItsOwnFindings`).
+- A feasibility study without an IRR: `TestTheWorkbooksStudyWithoutAnInvestment`. The averages of the books' last three
+  months are hints of the workbook's sheets; Fyniq's study takes the figures typed for it.
+- The print sheet's blank dates: Fyniq renders each document's PDF from the document.
+- The hourly cost and timesheets: with projects and pay runs, after the launch (rev 0.146).
+
+## The non-posting edge cases
+
+The workbook checks each row of its tables as it is typed and shows a status beside it; Fyniq checks a record whole
+before it is saved and refuses it in plain words (ENG-23). `statuses.json` lists the workbook's 125 cases; `mapping.json`
+gives each block of them the Fyniq rule and the tests that hold it, and where Fyniq reads a status otherwise: an
+account's code is letters and digits, not four digits; a report group is the account's own text; nothing posts to an
+inactive account; a document's number comes from its sequence; a line belongs to its document. Employees, projects and
+timesheets wait for pay runs and projects, after the launch. The workbook's print sheet has no counterpart.

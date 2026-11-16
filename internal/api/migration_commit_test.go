@@ -931,9 +931,12 @@ func TestTheForecastStartsFromTheWorkbooksBooks(t *testing.T) {
 // movement and closing, with no class proposed. The workbook's checks are compared, by their C.1 number, with Fyniq's
 // at their last run: never run, they differ; run, each is the same exactly when the worst of Fyniq's statuses is the
 // workbook's. A clean start compares each opening with the Carry Forward sheet's balance: none differs.
+// The workbook's sample company is ported this way (QA-ENG-07, p1-launch-readiness task 3.1; the owner's decision of
+// 16 Nov 2026): every account's figures of its year, against the workbook's own engine.
 // req: FR-MIG-02
 // req: QA-MIG-01
 // req: data/migration Parity check (M4)
+// req: quality/calculation-correctness Golden data set, sample company
 func TestTheReconciliationComparesTheBooksWithTheWorkbook(t *testing.T) {
 	{
 		f := freshFounders(t)
