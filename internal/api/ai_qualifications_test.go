@@ -10,10 +10,14 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
+	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -215,4 +219,72 @@ func TestAnUnansweredRunRecordsNothing(t *testing.T) {
 		}
 		return err
 	})
+}
+
+// listingModel is an evalModel whose provider lists models.
+type listingModel struct {
+	*evalModel
+	list []ports.ListedModel
+}
+
+func (m listingModel) ListModels(context.Context, string) (ports.ModelPage, error) {
+	return ports.ModelPage{Models: m.list}, nil
+}
+
+// Where a connection qualifies new models automatically (AI-81, off by default), a model its provider lists for the
+// first time is queued for the evals of every agent whose route uses that connection, and runs as the system within
+// the eval runner's budget; its result appears on the connection, and it joins no allow-list or route by itself. A
+// connection where it is off queues nothing.
+// req: AI-81
+// req: AI-78
+func TestNewModelsQualifyAutomaticallyWhereItIsOn(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin := f.as(f.ahkow, authz.Owner, authz.Administrator)
+	on := routableOn(e, storage.AIConnection{Name: "Auto on", Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`),
+		Host: "api.openai.com", AutoQualify: true}, "SG", []string{"gpt-6"})
+	off := routable(e, "Auto off", "SG", []string{"gpt-6"})
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures"}, MadeBy: "user:auto",
+			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{Position: 1, ConnectionID: on, Model: "gpt-6"}, {Position: 2, ConnectionID: off, Model: "gpt-6"}}})
+		return err
+	})
+	model := listingModel{evalModel: &evalModel{answers: map[string]string{"hello": "Hello.", "2 plus 2": "4"}, version: "gpt-8-20261114"},
+		list: []ports.ListedModel{{ID: "gpt-6"}, {ID: "gpt-8"}}}
+	provider := func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+		return model, nil
+	}
+	worker := workerStore(t)
+	lister := ai.Lister{Store: worker, Provider: provider, Clock: e.clock, Outbox: e.api.deps.Outbox}
+	qualifier := ai.Qualifier{Router: ai.Router{Store: worker, Provider: provider, Clock: e.clock, Outbox: e.api.deps.Outbox}, Suites: chatSuite}
+	for _, c := range []uuid.UUID{on, off} {
+		if _, _, err := lister.Read(context.Background(), e.books.Org, c, "refresh", "user:auto"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	noop := func(context.Context, uuid.UUID, storage.OutboxRow) error { return nil }
+	e.work(map[string]outbox.Work{ai.QualifyKind: qualifier.Work(), ai.PriceKind: noop, notify.FanoutKind: noop})
+
+	gpt8 := func(c uuid.UUID) map[string]any {
+		got := e.call(http.MethodGet, "/v1/ai/connections/"+c.String()+"/models", admin, nil)
+		for _, x := range got.Body["models"].([]any) {
+			if x.(map[string]any)["model"] == "gpt-8" {
+				return x.(map[string]any)
+			}
+		}
+		t.Fatalf("gpt-8 is not listed: %s", got.Raw)
+		return nil
+	}
+	m := gpt8(on)
+	qs, _ := m["qualifications"].([]any)
+	if len(qs) != 1 || qs[0].(map[string]any)["agent"] != "chat" || qs[0].(map[string]any)["result"] != "pass" ||
+		qs[0].(map[string]any)["ran_by"] != "system:"+ai.QualifyJob || m["allowed"] != false {
+		t.Errorf("a new model where it is on: %v", m)
+	}
+	if m := gpt8(off); len(m["qualifications"].([]any)) != 0 {
+		t.Errorf("a new model where it is off: %v", m)
+	}
+	if u := e.call(http.MethodGet, "/v1/ai/usage", admin, nil); !strings.Contains(u.Raw, `"agent":"eval_runner"`) {
+		t.Errorf("the eval runner's calls in the usage: %s", u.Raw)
+	}
 }

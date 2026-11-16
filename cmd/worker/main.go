@@ -64,6 +64,7 @@ func main() {
 		kinds[migration.ValidateKind] = kit.Migrations(deps.Clock).Work() // FR-MIG-01: an uploaded workbook validated in the background
 		kinds[ai.ReadKind] = kit.AIModels(deps.Clock).Work()              // AI-80: a connection's model list, read after its key is approved
 		kinds[ai.PriceKind] = kit.AIPrices(deps.Clock).Work()             // AI-82: a connection's new models priced from the latest catalogue
+		kinds[ai.QualifyKind] = kit.AIQualifier(deps.Clock).Work()        // AI-81: a newly listed model qualified where it is automatic
 		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
 		if kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
 			fetcher := kit.Fetcher(deps.Clock)

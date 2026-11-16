@@ -72,14 +72,15 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   counted; alerts at 80%, a hard stop at 100%; metering by connection, model, agent, person and organisation; costs
   exact, in their currency and SGD. `fyniq_ai`'s grants exactly design D11's. Tests `// req: AI-77`, `// req: AI-86`,
   QA-ENG-05's attack on the AI role.
-- [ ] 5.4 Qualification: `ai_qualification` per agent, connection and model version; the `probe` agent and its
+- [x] 5.4 Qualification: `ai_qualification` per agent, connection and model version; the `probe` agent and its
   synthetic suite; moving aliases re-qualified weekly; a route, model or prompt change applied only with a passing eval
   run on its approval request; CTL-AI-05's control file and CI gate. Tests `// req: AI-78`, `// req: CMP-AI-03`,
   `// req: CTL-AI-05`.
-  Built so far (slice 20): runs per agent, connection, model and reported version; the suite format and the probe
+  As built (design D10): runs per agent, connection, model and reported version; the suite format and the probe
   suite; the qualify operation; the router's skips and the out-of-date marking; the daily `ai.qualify` job; route
-  changes and presets gated on a current pass (design D10, as built); `make evals` (`cmd/evals`) in replay with its
-  report, CTL-AI-05's control file and the CI job's artefact. Left: automatic qualification (AI-81).
+  changes and presets gated on a current pass; `make evals` (`cmd/evals`) in replay with its report, CTL-AI-05's
+  control file and the CI job's artefact; automatic qualification of newly listed models (AI-81). A prompt change is
+  gated the same way once prompts exist (`p1-ai-assistant`).
 
 ## 6. The activity log and the switch
 
