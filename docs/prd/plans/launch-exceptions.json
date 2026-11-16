@@ -1,0 +1,209 @@
+{
+ "doc": "The launch subset's exceptions (p1-launch-readiness design D1), kept by hand: a requirement or acceptance scenario of launch-subset.json that a launch does not prove with a tagged test. after-go-live: moved by the decision it names (a revision of the PRD's history). live-verify: proved in the dev cloud by the evidence it names. covered-elsewhere: proved by the gate it names. make roadmap-check refuses an exception that names nothing of the subset or rests on nothing.",
+ "exceptions": [
+  {
+   "id": "FR-TAX-01",
+   "kind": "after-go-live",
+   "why": "The reverse-charge codes and their F5 boxes are built with the GST F5 return, when the company registers for GST; the registration monitor and the statutory calendar launch.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "FR-TAX-02",
+   "kind": "after-go-live",
+   "why": "The GST F5 return is built when the company registers for GST.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "FR-TAX-03",
+   "kind": "after-go-live",
+   "why": "The F5's roll-forward to the GST control account is built with the return, at registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "FR-TAX-04",
+   "kind": "after-go-live",
+   "why": "The IRAS audit listings are built with the F5 return, at registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "FR-TAX-12",
+   "kind": "after-go-live",
+   "why": "GST adjustments and their queue are built with the F5 return, at registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "C.2 #46",
+   "kind": "after-go-live",
+   "why": "The GST adjustment check is built with the adjustments, at registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "C.2 #47",
+   "kind": "after-go-live",
+   "why": "The GST adjustment check is built with the adjustments, at registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "SOD-4",
+   "kind": "after-go-live",
+   "why": "Pay runs come with the payroll link after go-live, so no one prepares or approves one at launch.",
+   "decision": "rev 0.25 (open question 25, Q4 and Q16: the payroll link after go-live)"
+  },
+  {
+   "id": "G4-011",
+   "kind": "after-go-live",
+   "why": "Reverse charge and its codes come with the F5 return, at GST registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "G4-035",
+   "kind": "after-go-live",
+   "why": "Correcting a filed return through the adjustment queue comes with the F5 return, at GST registration.",
+   "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"
+  },
+  {
+   "id": "CTL-IAM-03",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-IAM-03.yaml"
+  },
+  {
+   "id": "CTL-IAM-04",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-IAM-04.yaml"
+  },
+  {
+   "id": "CTL-DP-01",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-DP-01.yaml"
+  },
+  {
+   "id": "CTL-RES-01",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-RES-01.yaml"
+  },
+  {
+   "id": "CTL-AUD-04",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-AUD-04.yaml"
+  },
+  {
+   "id": "CTL-RES-03",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-RES-03.yaml"
+  },
+  {
+   "id": "CTL-CHG-04",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-CHG-04.yaml"
+  },
+  {
+   "id": "CTL-CHG-05",
+   "kind": "live-verify",
+   "why": "Its checks run in the cloud (status cloud): proved in the dev cloud before go-live.",
+   "evidence": "compliance/controls/CTL-CHG-05.yaml"
+  },
+  {
+   "id": "DR-01",
+   "kind": "live-verify",
+   "why": "The database's standby in a second zone is a Cloud SQL setting, proved in the dev cloud.",
+   "evidence": "infra/README.md"
+  },
+  {
+   "id": "DR-03",
+   "kind": "live-verify",
+   "why": "The backups' location policy is the organisation's, proved in the dev cloud.",
+   "evidence": "infra/README.md"
+  },
+  {
+   "id": "NFR-PERF-06",
+   "kind": "live-verify",
+   "why": "Cold starts are measured on the real images in staging.",
+   "evidence": "infra/README.md"
+  },
+  {
+   "id": "NFR-DR-02",
+   "kind": "live-verify",
+   "why": "The recovery time is measured by the restore drill in the dev cloud.",
+   "evidence": "docs/runbooks/restore-drill.md"
+  },
+  {
+   "id": "G4-072",
+   "kind": "live-verify",
+   "why": "The regional outage is a tabletop exercise, then a timed drill, in the dev cloud.",
+   "evidence": "docs/runbooks/restore-drill.md"
+  },
+  {
+   "id": "G4-074",
+   "kind": "live-verify",
+   "why": "A point-in-time restore before executed outbox rows is a drill in the dev cloud.",
+   "evidence": "docs/runbooks/restore-drill.md"
+  },
+  {
+   "id": "G4-075",
+   "kind": "live-verify",
+   "why": "The Scheduler tick's absence alert through Cloud Monitoring is proved in staging.",
+   "evidence": "docs/runbooks/heartbeat-drill.md"
+  },
+  {
+   "id": "NFR-AVAIL-01",
+   "kind": "live-verify",
+   "why": "Availability is measured monthly by the uptime checks of the deployed service.",
+   "evidence": "docs/runbooks/incident-response.md"
+  },
+  {
+   "id": "SEC-30",
+   "kind": "live-verify",
+   "why": "Cloud Audit Logs and the central retention-locked log store are proved in the dev cloud.",
+   "evidence": "docs/runbooks/incident-response.md"
+  },
+  {
+   "id": "NFR-COST-01",
+   "kind": "live-verify",
+   "why": "The monthly cost is read from the cloud's billing.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "NFR-COST-02",
+   "kind": "live-verify",
+   "why": "Idle services billing nothing is read from the cloud's billing.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "NFR-COST-03",
+   "kind": "live-verify",
+   "why": "The spend caps and their alerts are the cloud's budgets.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "NFR-COST-04",
+   "kind": "live-verify",
+   "why": "Predicted and billed costs are reconciled from the cloud's billing.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "G4-078",
+   "kind": "live-verify",
+   "why": "A hidden tab's stream closing and no compute billed after it is read from staging's billing.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "G4-086",
+   "kind": "live-verify",
+   "why": "The month's predicted and billed costs are reconciled in staging.",
+   "evidence": "docs/runbooks/cost-review.md"
+  },
+  {
+   "id": "QA-API-04",
+   "kind": "after-go-live",
+   "why": "Fyniq's and Nemura's shared contract fixtures need Nemura, built after Fyniq's go-live; the contracts' own tests (QA-API-01 to QA-API-03) launch.",
+   "decision": "rev 0.25 (Q4, Q16 and Nemura Q1 and Q12: payroll in Nemura, built after Fyniq's go-live)"
+  }
+ ]
+}

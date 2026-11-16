@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -191,7 +191,7 @@ ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, 
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
-check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls script-tests trace ## Run every check available today (CI runs this)
 
 controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text; the release's evidence manifest is built from a fixture run
 	@python3 scripts/controls.py check
@@ -239,11 +239,20 @@ review-check: ## The review register names real requirements and screens, and no
 review-status: ## Areas awaiting second review and the pages that show the "Needs additional verification" banner
 	@python3 scripts/review_status.py list
 
-roadmap: ## Regenerate the P1–P3 plan's change tables, coverage and counts from the specs and the screen inventory
+roadmap: ## Regenerate the P1–P3 plan's change tables, coverage and counts, and the launch subset, from the specs and the screen inventory
 	@python3 scripts/roadmap.py write
 
 roadmap-check: ## Every requirement and screen after P0 is placed in exactly one planned change, and the plan's tables are current
 	@python3 scripts/roadmap.py check
+
+script-tests: ## The repository scripts' own tests (scripts/test_*.py, standard library unittest)
+	@python3 -m unittest discover -s scripts -p 'test_*.py' -q
+
+trace: ## The requirements no test references (QA-TRACE-01), for the launch subset and P1, in .data/trace/report.json; fails only on a PRD row it cannot parse
+	@python3 scripts/trace_requirements.py report
+
+trace-gate: ## Fail while a requirement of PHASE (launch, the default, or P1) is untested and not excepted (QA-TRACE-01; the release runs it)
+	@python3 scripts/trace_requirements.py gate --phase $(or $(PHASE),launch)
 
 spec-map: ## Show how each PRD's anchors map to OpenSpec capabilities
 	@python3 scripts/prdspec.py map

@@ -5,14 +5,20 @@ and names the requirement IDs it proves.
 
 ## 1. The launch subset and the trace gate (QA-TRACE-01)
 
-- [ ] 1.1 `scripts/roadmap.py` writes `docs/prd/plans/launch-subset.json`, which `make roadmap-check` keeps current
+- [x] 1.1 `scripts/roadmap.py` writes `docs/prd/plans/launch-subset.json`, which `make roadmap-check` keeps current
   (design D1). It holds the launch changes, with their requirements and acceptance scenarios.
   `docs/prd/plans/launch-exceptions.json` is written by hand, its kinds `after-go-live`, `live-verify` and
   `covered-elsewhere`, each with its revision or evidence path. Tests `scripts/test_roadmap.py`:
   - a change whose Launch column changes moves in or out of the subset;
   - an exception without its reference fails.
   `# req: QA-TRACE-01`
-- [ ] 1.2 `scripts/trace_requirements.py` (design D2), with `make trace` in `make check`, `make trace-gate PHASE=…` and
+  As built:
+  - The subset holds 37 changes and 854 requirements, with the Appendix G scenarios found under each change's
+    requirements.
+  - The exceptions are seeded with the plan's own: `p1-gst`'s F5 part at registration, and SOD-4 with payroll after
+    go-live (rev 0.25). Task 1.3 adds the rest.
+  - The scripts' tests run with `make script-tests`, part of `make check`.
+- [x] 1.2 `scripts/trace_requirements.py` (design D2), with `make trace` in `make check`, `make trace-gate PHASE=…` and
   its nightly CI job; the report goes to `.data/trace/report.json`. Tests `scripts/test_trace_requirements.py`, on
   planted PRD rows and test files, prove QA-TRACE-01's scenarios:
   - tags in Go, TypeScript, Python and SQL;
@@ -22,9 +28,26 @@ and names the requirement IDs it proves.
   - INV-* and CTL-* covered elsewhere;
   - both PRDs.
   `# req: QA-TRACE-01`, `# req: G4-001`
-- [ ] 1.3 The first report, for this change: the untested launch rows listed by change in `docs/quality/launch-gaps.md`.
+  As built:
+  - The script reads 755 requirement rows of both PRDs through `prdspec.Source`. The PRD-001 payroll rows Nemura runs
+    take their phase from NM-PAY-07's delivery map. A table with no priority column (the task types) counts as M.
+  - Tags count in test files only: Go, TypeScript and e2e tests, stories, the oracle's and the scripts' Python tests,
+    and SQL tests. A tag may name a capability and a title.
+  - The launch gate blocks on a PRD row of priority M, a check of Appendix C or an acceptance scenario. It reports S
+    and C rows, and the requirements the specs draw from the PRD's prose with no ID, as QA-TRACE-01 gates the PRD's
+    rows.
+  - `make trace` is part of `make check`. The daily `controls` workflow uploads the report. The release gate joins in
+    task 7.2.
+- [x] 1.3 The first report, for this change: the untested launch rows listed by change in `docs/quality/launch-gaps.md`.
   Each is tagged where a test already proves it (task 2), built here (tasks 3 to 7), recorded as an exception, or left
   to its own change. Verified by `make trace` printing the same counts as the file.
+  As built (16 Nov 2026):
+  - On main, 599 of the subset are covered, 125 untested, 166 reported and 34 excepted. Once the chain (#645 to #739)
+    merges, 81 stay untested.
+  - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
+    They also add 24 cloud-proved items, each naming its runbook or control file.
+  - FM-6 launches, by the owner's decision of 16 Nov 2026: a scheduled agent writes advisory findings into the weekly
+    review. It is built in `p1-approval-engine` on the chain's scheduled agents.
 
 ## 2. Tags where the tests already prove the requirement (design D3)
 
