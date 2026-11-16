@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate release-policy help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -277,6 +277,9 @@ hooks: ## Install the git hooks (Conventional Commit check on every commit)
 
 lint-commits: ## Check commit messages in RANGE (default: origin/main..HEAD)
 	@scripts/check-commits.sh "$${RANGE:-origin/main..HEAD}"
+
+release-policy: ## A fix that changes calculation code carries its regression test (QA-REL-01), for the commits in RANGE (default: origin/main..HEAD)
+	@python3 scripts/release_policy.py "$${RANGE:-origin/main..HEAD}"
 
 deps-up: ## Start local dependencies: PostgreSQL 18, Mailpit, fake GCS
 	@$(COMPOSE) up -d --wait

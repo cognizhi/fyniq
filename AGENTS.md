@@ -42,6 +42,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | `make check` | Every check available today: design-token contrast in four themes and the chart palette (FR-VIZ-07), release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the P1–P3 plan against the specs, the screen inventory and fragments, the review register, the scan waivers and the scan, image and infra rules on planted findings | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
+| `make release-policy` | A `fix` that changes calculation code (`internal/domain/`, `oracle/src/`, `packs/`) adds or changes a test in the same range (QA-REL-01); CI runs it on every pull request with its title | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
 | `make prototype` | Prints the path of the static UI prototype | Today |
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
