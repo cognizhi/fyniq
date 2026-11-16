@@ -1,8 +1,8 @@
 {
   "name": "packs.get",
   "title": "Read a statutory value",
-  "version": 1,
-  "description": "Reads the Singapore statutory values in force on a date from the organisation's active statutory pack: GST rates, codes and limits, CPF, SDL and corporate income tax rates, and filing deadlines. Each value is a fact with the pack's key and version and its official source. Quote statutory values only from this tool, never from memory.",
+  "version": 2,
+  "description": "Reads the Singapore statutory values in force on a date from the organisation's active statutory pack: GST rates, codes and limits, CPF, SDL and corporate income tax rates, filing deadlines, and the corporate rules of ACRA and the Companies Act (lodgement periods, filing categories, audit exemption), each marked as the Act or ACRA's guidance. Each value is a fact with the pack's key and version and its official source. Quote statutory values only from this tool, never from memory.",
   "inputSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -11,7 +11,7 @@
       "pack": {
         "type": "string",
         "description": "The pack.",
-        "enum": ["sg-gst", "sg-cpf", "sg-sdl", "sg-cit", "sg-deadlines"]
+        "enum": ["sg-gst", "sg-cpf", "sg-sdl", "sg-cit", "sg-deadlines", "sg-acra"]
       },
       "on": {
         "type": "string",
