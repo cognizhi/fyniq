@@ -1,15 +1,17 @@
 # Automated update pull requests (NFR-IMG-03, SEC-28, SEC-26): what is pinned by digest or SHA (the base
-# images of deploy/docker/, the images of the local stack and the GitHub Actions), and the Go modules, the
-# web app's npm packages and the oracle's Python packages. A release must be at least two weeks old before
-# it is proposed (the cooldown); a security update is proposed at once, which the cooldown never delays.
-# Minor and patch updates come grouped, one pull request per ecosystem a week; a major version comes on
-# its own. Dependabot's pull requests are not the owner's, so a person approves them. Major versions of
-# images (a new Node or PostgreSQL major) are not proposed: they change with the toolchain in mise.toml,
-# by hand. make scan's govulncheck and pnpm audit find what an update must fix.
+# images of deploy/docker/ and the dev container, the images of the local stack and the GitHub Actions),
+# and the Go modules, the web app's npm packages, the oracle's Python packages and the infrastructure's
+# OpenTofu providers. A release must be at least two weeks old before it is proposed (the cooldown); a
+# security update is proposed at once, which the cooldown never delays. Minor and patch updates come
+# grouped, one pull request per ecosystem a week; a major version comes on its own. Dependabot's pull
+# requests are not the owner's, so a person approves them. Major versions of images (a new Node or
+# PostgreSQL major) are not proposed: they change with the toolchain in mise.toml, by hand. make scan's
+# govulncheck and pnpm audit find what an update must fix. TestEveryDependencyHasItsUpdates
+# (internal/archtest) keeps this list whole.
 version: 2
 updates:
-  - package-ecosystem: docker
-    directory: /deploy/docker
+  - package-ecosystem: docker   # the images' base images, and the dev container's (DEV-03)
+    directories: ["/deploy/docker", "/.devcontainer"]
     schedule: { interval: weekly }
     cooldown: { default-days: 14 }
     commit-message: { prefix: "deps(deploy)" }
@@ -56,3 +58,10 @@ updates:
     commit-message: { prefix: "deps(oracle)" }
     groups:
       python: { patterns: ["*"], update-types: ["minor", "patch"] }
+  - package-ecosystem: opentofu   # the providers each root and module of infra/ locks (.terraform.lock.hcl)
+    directories: ["/infra/gcp/bootstrap", "/infra/gcp/shared", "/infra/gcp/envs/*", "/infra/gcp/modules/*"]
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: "deps(infra)" }
+    groups:
+      providers: { patterns: ["*"], update-types: ["minor", "patch"] }

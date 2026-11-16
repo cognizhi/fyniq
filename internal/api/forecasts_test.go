@@ -57,6 +57,7 @@ func forecastPlan() map[string]any {
 // req: FR-PLN-03
 // req: FR-PLN-08
 // req: QA-RPT-01
+// req: G4-108
 // asvs: V8.2.1
 func TestForecastsThroughTheAPI(t *testing.T) {
 	e := newEnv(t)

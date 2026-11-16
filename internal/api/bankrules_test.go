@@ -51,6 +51,7 @@ func (e *env) rule(id uuid.UUID) storage.BankRule {
 // req: FR-BNK-14
 // req: FR-APR-01
 // req: FM-1
+// req: G4-059
 // asvs: V2.3.5
 func TestABankRuleAppliesByItselfOnlyOnceApproved(t *testing.T) {
 	f := newFounders(t)
