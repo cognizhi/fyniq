@@ -150,6 +150,7 @@ type UnitOfWork interface {
 	AIPrices() AIPrices
 	AIRoutes() AIRoutes
 	AICalls() AICalls
+	AIBudgets() AIBudgets
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).

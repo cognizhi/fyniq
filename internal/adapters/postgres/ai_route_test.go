@@ -92,7 +92,7 @@ func TestAttackRoutesKeepTheirRules(t *testing.T) {
 
 	// The API records an attempt through the function, in its own organisation; the AI may not (CMP-AI-01).
 	record := `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, $1, 'gpt-6', 'gpt-6', 'gpt-6-20261001', 'user:x',
-	  ARRAY['business-figures'], 'ok', NULL, 1000, 500, 0, 0, 100, NULL, NULL, NULL, 12, now())`
+	  ARRAY['business-figures'], 'ok', NULL, 1000, 500, 0, 0, 100, NULL, NULL, NULL, NULL, 12, now())`
 	if err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, record, c.ID); return err }); err != nil {
 		t.Errorf("the API recording a call: %v", err)
 	}
@@ -130,9 +130,9 @@ func TestAttackRoutesKeepTheirRules(t *testing.T) {
 		{"the owner changing a call", "fyniq_migrator", `UPDATE fyniq.ai_call SET outcome = 'ok'`, []string{"FY335"}},
 		{"the owner removing a call", "fyniq_migrator", `DELETE FROM fyniq.ai_call`, []string{"FY335"}},
 		{"a call that served with no model reported", "fyniq_api", `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, '` + c.ID.String() +
-			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['know-how'], 'ok', NULL, 0, 0, 0, 0, 0, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
+			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['know-how'], 'ok', NULL, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
 		{"a call carrying restricted data", "fyniq_api", `SELECT fyniq.record_ai_call(gen_random_uuid(), 'chat', 1, 1, NULL, '` + c.ID.String() +
-			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['restricted'], 'skipped', 'x', 0, 0, 0, 0, 0, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
+			`', 'gpt-6', NULL, NULL, 'user:x', ARRAY['restricted'], 'skipped', 'x', 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, now())`, []string{"23514"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
 		wantState(t, x.what, err, x.states...)

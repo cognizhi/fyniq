@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "Per calendar month in the base currency, above zero with at most four decimal places; null removes the budget.",
+      "examples": [
+        "50.00"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "title": "AIBudgetSet",
+  "type": "object"
+}

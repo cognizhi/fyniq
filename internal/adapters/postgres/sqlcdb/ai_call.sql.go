@@ -12,10 +12,89 @@ import (
 	"github.com/google/uuid"
 )
 
+const aICallUsage = `-- name: AICallUsage :many
+SELECT connection_id, model_requested, agent, actor,
+  count(*) FILTER (WHERE outcome NOT IN ('skipped', 'stopped')) AS requests,
+  count(*) FILTER (WHERE outcome = 'ok') AS served,
+  count(*) FILTER (WHERE outcome = 'ok' AND fell_back_from IS NOT NULL) AS fallbacks,
+  count(*) FILTER (WHERE outcome IN ('busy', 'timeout', 'not_found', 'refused', 'failed')) AS errors,
+  count(*) FILTER (WHERE outcome = 'skipped') AS skipped,
+  coalesce(sum(input_tokens), 0)::bigint AS input_tokens, coalesce(sum(output_tokens), 0)::bigint AS output_tokens,
+  coalesce(sum(cache_read_tokens), 0)::bigint AS cache_read_tokens, coalesce(sum(cache_write_tokens), 0)::bigint AS cache_write_tokens,
+  coalesce(sum(reasoning_tokens), 0)::bigint AS reasoning_tokens,
+  coalesce(sum(cost_base), 0)::text AS cost_base,
+  count(*) FILTER (WHERE outcome = 'ok' AND cost_base IS NULL) AS unpriced
+FROM fyniq.ai_call
+WHERE started_at >= $1 AND started_at < $2
+GROUP BY connection_id, model_requested, agent, actor
+ORDER BY connection_id, model_requested, agent, actor
+`
+
+type AICallUsageParams struct {
+	FromAt time.Time
+	ToAt   time.Time
+}
+
+type AICallUsageRow struct {
+	ConnectionID     uuid.UUID
+	ModelRequested   string
+	Agent            string
+	Actor            string
+	Requests         int64
+	Served           int64
+	Fallbacks        int64
+	Errors           int64
+	Skipped          int64
+	InputTokens      int64
+	OutputTokens     int64
+	CacheReadTokens  int64
+	CacheWriteTokens int64
+	ReasoningTokens  int64
+	CostBase         string
+	Unpriced         int64
+}
+
+func (q *Queries) AICallUsage(ctx context.Context, arg AICallUsageParams) ([]AICallUsageRow, error) {
+	rows, err := q.db.Query(ctx, aICallUsage, arg.FromAt, arg.ToAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AICallUsageRow
+	for rows.Next() {
+		var i AICallUsageRow
+		if err := rows.Scan(
+			&i.ConnectionID,
+			&i.ModelRequested,
+			&i.Agent,
+			&i.Actor,
+			&i.Requests,
+			&i.Served,
+			&i.Fallbacks,
+			&i.Errors,
+			&i.Skipped,
+			&i.InputTokens,
+			&i.OutputTokens,
+			&i.CacheReadTokens,
+			&i.CacheWriteTokens,
+			&i.ReasoningTokens,
+			&i.CostBase,
+			&i.Unpriced,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const aICallsOfRun = `-- name: AICallsOfRun :many
 SELECT id, run_id, agent, route_version, step, fell_back_from, connection_id, model_requested, model_reported, version_reported, actor,
   classes, outcome, detail, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, coalesce(cost::text, '')::text AS cost, currency,
-  price_id, latency_ms, started_at, recorded_at
+  price_id, coalesce(cost_base::text, '')::text AS cost_base, latency_ms, started_at, recorded_at
 FROM fyniq.ai_call WHERE run_id = $1 ORDER BY started_at, step, id
 `
 
@@ -42,6 +121,7 @@ type AICallsOfRunRow struct {
 	Cost             string
 	Currency         *string
 	PriceID          *uuid.UUID
+	CostBase         string
 	LatencyMs        int32
 	StartedAt        time.Time
 	RecordedAt       time.Time
@@ -79,6 +159,7 @@ func (q *Queries) AICallsOfRun(ctx context.Context, run uuid.UUID) ([]AICallsOfR
 			&i.Cost,
 			&i.Currency,
 			&i.PriceID,
+			&i.CostBase,
 			&i.LatencyMs,
 			&i.StartedAt,
 			&i.RecordedAt,
@@ -98,7 +179,7 @@ SELECT fyniq.record_ai_call($1, $2, $3::integer, $4::integer,
   $5::integer, $6, $7, $8, $9,
   $10, $11::text[], $12, $13, $14::bigint, $15::bigint,
   $16::bigint, $17::bigint, $18::bigint, $19::numeric, $20,
-  $21, $22::integer, $23)::uuid AS id
+  $21, $22::numeric, $23::integer, $24)::uuid AS id
 `
 
 type RecordAICallParams struct {
@@ -123,6 +204,7 @@ type RecordAICallParams struct {
 	Cost            *string
 	Currency        *string
 	Price           *uuid.UUID
+	CostBase        *string
 	LatencyMs       int32
 	StartedAt       time.Time
 }
@@ -150,6 +232,7 @@ func (q *Queries) RecordAICall(ctx context.Context, arg RecordAICallParams) (uui
 		arg.Cost,
 		arg.Currency,
 		arg.Price,
+		arg.CostBase,
 		arg.LatencyMs,
 		arg.StartedAt,
 	)

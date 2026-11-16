@@ -141,6 +141,18 @@ type FyniqAiAgents struct {
 	Position    int32
 }
 
+type FyniqAiBudget struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Scope          string
+	Subject        string
+	Amount         *string
+	Version        int32
+	Alerted        *string
+	SetBy          string
+	SetAt          time.Time
+}
+
 type FyniqAiCall struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -168,6 +180,7 @@ type FyniqAiCall struct {
 	LatencyMs        int32
 	StartedAt        time.Time
 	RecordedAt       time.Time
+	CostBase         *string
 }
 
 type FyniqAiConnection struct {
@@ -320,6 +333,22 @@ type FyniqAiPriceRate struct {
 	Above          int64
 	Unit           string
 	Amount         string
+}
+
+type FyniqAiReservation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Step           int32
+	Agent          string
+	ConnectionID   uuid.UUID
+	Person         string
+	Month          string
+	Amount         *string
+	Actual         *string
+	State          string
+	ReservedAt     time.Time
+	SettledAt      *time.Time
 }
 
 type FyniqAiRoute struct {

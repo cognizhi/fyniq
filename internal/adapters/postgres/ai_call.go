@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -31,7 +32,7 @@ func (r aiCalls) Record(ctx context.Context, c storage.AICall) (storage.AICall, 
 		Step: int32(min(max(c.Step, 0), 5)), FellBackFrom: fellBack, Connection: c.ConnectionID, ModelRequested: c.ModelRequested, // #nosec G115 -- capped
 		ModelReported: optional(c.ModelReported), VersionReported: optional(c.VersionReported), Actor: c.Actor, Classes: c.Classes,
 		Outcome: c.Outcome, Detail: optional(detail), Input: c.Input, Output: c.Output, CacheRead: c.CacheRead, CacheWrite: c.CacheWrite,
-		Reasoning: c.Reasoning, Cost: optional(c.Cost), Currency: optional(c.Currency), Price: c.Price,
+		Reasoning: c.Reasoning, Cost: optional(c.Cost), Currency: optional(c.Currency), Price: c.Price, CostBase: optional(c.CostBase),
 		LatencyMs: int32(min(max(c.LatencyMS, 0), 1<<30)), StartedAt: c.StartedAt}) // #nosec G115 -- capped
 	if err != nil {
 		return storage.AICall{}, mapError(err)
@@ -68,7 +69,28 @@ func (r aiCalls) OfRun(ctx context.Context, run uuid.UUID) ([]storage.AICall, er
 		if row.Cost != "" {
 			c.Cost = aiprice.Trim(row.Cost)
 		}
+		if row.CostBase != "" {
+			c.CostBase = aiprice.Trim(row.CostBase)
+		}
 		out = append(out, c)
+	}
+	return out, nil
+}
+
+func (r aiCalls) Usage(ctx context.Context, from, to time.Time) ([]storage.AIUsageRow, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AICallUsage(ctx, sqlcdb.AICallUsageParams{FromAt: from, ToAt: to})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIUsageRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, storage.AIUsageRow{ConnectionID: row.ConnectionID, Model: row.ModelRequested, Agent: row.Agent, Actor: row.Actor,
+			Requests: row.Requests, Served: row.Served, Fallbacks: row.Fallbacks, Errors: row.Errors, Skipped: row.Skipped, Input: row.InputTokens,
+			Output: row.OutputTokens, CacheRead: row.CacheReadTokens, CacheWrite: row.CacheWriteTokens, Reasoning: row.ReasoningTokens,
+			CostBase: aiprice.Trim(row.CostBase), Unpriced: row.Unpriced})
 	}
 	return out, nil
 }

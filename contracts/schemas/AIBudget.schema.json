@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "alerted": {
+      "description": "Its 80% alert was raised this month.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "amount": {
+      "description": "Per calendar month in Singapore, in the base currency, as an exact decimal; absent when removed.",
+      "examples": [
+        "50"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The budget: organisation, agent:\u003cagent\u003e, connection:\u003cid\u003e or person:\u003cuser id\u003e.",
+      "examples": [
+        "agent:chat"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "enum": [
+        "organisation",
+        "agent",
+        "connection",
+        "person"
+      ],
+      "examples": [
+        "agent"
+      ],
+      "type": "string"
+    },
+    "set_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "set_by": {
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "The agent, the connection's ID or user:\u003cid\u003e; absent for the organisation.",
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "used": {
+      "description": "What this month's reservations hold or settled against it, in the base currency: a reservation whose outcome is unknown counts whole until it is reconciled.",
+      "examples": [
+        "12.5"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "key",
+    "scope",
+    "used",
+    "version",
+    "alerted",
+    "set_by"
+  ],
+  "title": "AIBudget",
+  "type": "object"
+}

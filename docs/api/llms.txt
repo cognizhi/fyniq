@@ -37,6 +37,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (getAcraExtractEvidence): Get an ACRA extract's file
 - `DELETE /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (removeAcraExtractEvidence): Remove a file from a drafted ACRA extract
 - `POST /v1/acra-extracts/{extract_id}/record` (recordAcraExtract): Record an ACRA register extract
+- `GET /v1/ai/budgets` (getAIBudgets): Get the AI budgets
+- `PUT /v1/ai/budgets/{budget}` (setAIBudget): Set an AI budget
 - `GET /v1/ai/connections` (listAIConnections): List the organisation's AI connections
 - `POST /v1/ai/connections` (createAIConnection): Ask to connect an AI model provider
 - `GET /v1/ai/connections/{connection_id}` (getAIConnection): Get an AI connection
@@ -59,6 +61,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/ai/routes` (getAIRoutes): Get every agent's route
 - `GET /v1/ai/routes/{agent}` (getAIRoute): Get an agent's route and its versions
 - `PUT /v1/ai/routes/{agent}` (setAIRoute): Set an agent's route
+- `GET /v1/ai/usage` (getAIUsage): Get the AI usage of a month
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
