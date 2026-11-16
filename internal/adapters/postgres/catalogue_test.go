@@ -303,6 +303,7 @@ SELECT p.proname, coalesce(array_to_string(p.proconfig, ','), '')
 // req: QA-ENG-05
 // asvs: V2.2.1
 // req: data/data-model Money columns
+// req: G4-013
 func TestEveryNumericColumnHasPrecisionAndRefusesNaN(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `

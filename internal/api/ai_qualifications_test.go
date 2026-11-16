@@ -68,6 +68,7 @@ var chatSuite = fstest.MapFS{"chat/suite.json": {Data: []byte(`{"id": "chat-fixt
 // req: AI-78
 // req: AI-87
 // req: CMP-AI-03
+// req: G4-088
 func TestModelsServeOnlyOnceQualified(t *testing.T) {
 	e := newEnv(t)
 	aiSwitchedOn(e)
