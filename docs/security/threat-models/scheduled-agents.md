@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The scheduled agents and the company secretary assistant, their first agent: skills pinned per release, schedules and event triggers, the run's identity and grant, deterministic findings first, compliance tasks, the model step through the API, the two `sec.*` task types, the workspace and its runs, the agent evals and the controls: AI-61 to AI-67, the "AI company secretary assistant" and "Recommended default schedule" rows, `sec.create_task`, `sec.draft_reminder`, QA-AI-07, CTL-AI-09, C.2 #36 (PRD-001 rev 0.274, 0.280 and 0.281; `p1-scheduled-agents`) |
+| Feature and requirement IDs | The scheduled agents and the company secretary assistant, their first agent: skills pinned per release, schedules and event triggers, the run's identity and grant, deterministic findings first, compliance tasks, the model step through the API, the two `sec.*` task types, the workspace and its runs, the agent evals and the controls: AI-61 to AI-67, the "AI company secretary assistant" and "Recommended default schedule" rows, `sec.create_task`, `sec.draft_reminder`, QA-AI-07, CTL-AI-09, C.2 #36 (PRD-001 rev 0.274, 0.280 and 0.281; `p1-scheduled-agents`); and, with `p1-company-secretary` (rev 0.282, 0.283), the corporate profile's papers and minute book and the third task type, `sec.draft_document` (FR-CS-05) |
 | Author, reviewer, date | Claude Code for the owner, 16 Nov 2026, for security review #4; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Runs and their reports: findings, Fyniq's summary, the model's words, the ledger revision and packs read (confidential: business records, which may name officers); compliance tasks (confidential); the run's delegated token (secret); the worker's service token for the API (secret); proposals and reminder emails (confidential; an email names a member) |
 | Who acts | The Owner who turned the agent on, whom its runs act for; a second approver, who confirms turning it on; the worker, which queues, starts and ends runs and raises their tasks; the API, which issues the run's token and asks the AI service; the AI service and the model, which read and propose with the run's token; the Owner and the Company secretary, who approve its proposals; the executor, which runs them; the Owner and the Administrator, who close tasks and ask for Run now; MCP and integration clients (none of these operations) |
@@ -44,6 +44,13 @@ a second for one with a task open or proposed. `sec.draft_reminder` emails the m
 approving person, only after approval. The Owner or the Company secretary approves either: Appendix D's note gives the
 Company secretary A on `sec.*` proposals alone.
 
+**A third, `sec.draft_document`** (`p1-company-secretary` design D6). The model names a kind of corporate document and
+the fields its template asks for. The dry run fills Fyniq's template from the records and drafts nothing; executed as
+the approving person, the executor drafts the paper, naming the proposal. Nothing is signed, filed or recorded: a
+person has the paper signed outside Fyniq, attaches the signed copy and asks another person to record it in the
+minute book. Papers name directors, members and people present (the data inventory's officers class). The executor
+reads the register of members to name a members' resolution's signers.
+
 Trust boundaries: model ↔ AI service (the words and calls the model makes); AI service ↔ API (the internal operations,
 two tokens); worker ↔ API (the model step, the worker's token); API and worker ↔ database (guards, grants, RLS);
 executor ↔ email outbox (the reminder); the person's browser ↔ API (the workspace, Run now, the tasks).
@@ -62,6 +69,8 @@ executor ↔ email outbox (the reminder); the person's browser ↔ API (the work
 | T8 | Reminder email | Information disclosure / spoofing: a reminder sent before approval, twice, to someone outside the organisation, or by a role other than the executor | Mail the company never approved | Low |
 | T9 | Approval by the Company secretary | Elevation: the Company secretary's approval reaching beyond `sec.*` proposals | Approvals by a role that holds no A elsewhere | Low |
 | T10 | Cost and availability | Denial of service: a run looping on tool calls, spending tokens, or runs failing unseen | Spend, and deadlines unwatched | Medium |
+| T11 | Papers from a proposal | Tampering / elevation: a drafted paper taken as signed or filed, a text drafted that differs from the one approved, a signed paper's text changed after, or the executor's new read reaching beyond the register | Directors sign, or the minute book keeps, what nobody approved | Medium |
+| T12 | Papers and personal data | Information disclosure: a paper carrying a full NRIC, the DPO reading a paper's names, or a PDF downloaded unseen | Personal data where it should not be | Low |
 
 ## 3. What we do about it
 
@@ -77,6 +86,8 @@ executor ↔ email outbox (the reminder); the person's browser ↔ API (the work
 | T8 | The dry run renders and sends nothing; the executor queues the email once per recipient, only after approval, to members with a sign-in email; only the executor queues the purpose `secretary_reminder`, and it queues no other | `TestTheAIDraftsAReminderSentOnceApproved`, `TestAttackOnlyAnApprovedProposalSendsAReminder` |
 | T9 | The Company secretary reaches only the three operations that sign a request, and `proposal.Approves` lets them sign `sec.*` proposals alone; the matrix expects it from Appendix D's note | `TestTheSecretaryApprovesTheSecProposalsAlone`, `TestTheAIProposesATaskTheSecretaryApproves`, `TestAuthorisationMatrix` |
 | T10 | The run's reads (20) and tokens (200,000) are caps the AI service stops at; the agent's monthly AI budget meters its model calls; a failed, skipped or late run is ⚠ on Checks (C.2 #36); (rev 0.283) a run whose AI step cannot run still ends with its findings and tasks, its report saying why, and is ⚠ too; the deterministic deadline monitor keeps running whatever the agent's state | `TestARunsStepStaysWithinItsSkill`, `TestTheTickWatchesTheAgentsRuns`, `TestARunKeepsItsFindingsWithoutItsAIStep` |
+| T11 | The task type and command hold no sign, file, lodge or record word (§9.6); every paper says it is Fyniq's draft, never signed or filed by Fyniq. The text the person approved is the proposal's base: when the records change it, the proposal is stale and drafts nothing (AI-P5). Once a signed copy is attached, the text stays; recording it in the minute book needs another person's approval, and a recorded paper never changes (EQUITY-05). The executor gains SELECT on `holding_movement` alone, which `grants.golden` pins | `TestTheAIDraftsACorporateDocument`, `TestTheMinuteBook`, `TestEachRoleHoldsExactlyItsGrants`, `TestEveryChangeToATaskTypeIsANewVersion` |
+| T12 | A paper's fields and text refuse a full NRIC or FIN, and so does the database's guard (FY356); the DPO sees what each paper is, not its text, and its PDF masked; each PDF download is a security event in the audit trail (AUD-05) | `TestADocumentThatDoesNotFit`, `TestAttackCorporateDocumentsKeepTheirRules`, `TestTheCorporateDocuments`, `TestEveryFileAndRevealIsAudited`, `TestAuthorisationMatrix` |
 
 SOD: the run proposes for the Owner, who may sign their own tier-1 proposal (AI-89 rev 0.281); every other change of
 the agent's settings needs a second person. RLS: `agent_run` and `compliance_task` have `organisation_id` and
@@ -91,7 +102,9 @@ harness checks itself with a missing finding, an "all clear" and a repeated inje
   fails until they are, on the synthetic company only `[live-verify]`.
 - **The cloud path.** The worker's call to the API (`invokers.agent_runs`, the `api` entry of `FYNIQ_GCP`) and Model
   Armor's screening of the model's words run in the dev cloud `[live-verify]`.
-- **The secretary's own checks.** The corporate profile, the ACRA pack's cross-checks and `sec.draft_document` arrive
-  with `p1-company-secretary`, with their own cases.
+- **The secretary's own checks.** The corporate profile, the ACRA pack's cross-checks and `sec.draft_document` arrived
+  with `p1-company-secretary` (the launch suite's G4-102 and G4-110 cases; `sec-draft-document`'s proposal cases).
+- **The papers' wording.** Fyniq's templates await a lawyer (the review register's `papers` area); the notice period,
+  the minute book's month and the written resolutions' majorities wait for `sg-acra@2026.2` (rev 0.283).
 - **An injection the person's rights allow.** A turned model can still propose a task or a reminder within the skill;
   the Owner or the Company secretary reads Fyniq's summary and decides.
