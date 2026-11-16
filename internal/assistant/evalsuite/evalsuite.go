@@ -51,12 +51,20 @@ type Suite struct {
 	Cases []Case  `json:"cases"`
 }
 
-// Plant is a record made for the suite: an operation's path, POSTed with the body.
+// Plant is a record made for the suite: an operation's path, POSTed with the body. An agent suite's plant may name the
+// role that makes it (owner, accountant or company_secretary; the Owner when left out) and ask for it recorded: its
+// evidence attached and its approval asked by that role, then signed by the Owner. A body's string "$<plant id>" is
+// that earlier plant's ID.
 type Plant struct {
-	ID   string          `json:"id"`
-	Path string          `json:"path"`
-	Body json.RawMessage `json:"body"`
+	ID     string          `json:"id"`
+	Path   string          `json:"path"`
+	Body   json.RawMessage `json:"body"`
+	As     string          `json:"as,omitempty"`
+	Record bool            `json:"record,omitempty"`
 }
+
+// PlantRoles are the roles an agent suite's plant may be made as.
+var PlantRoles = []string{"owner", "accountant", "company_secretary"}
 
 // Company is the sample company the suite asks about: internal/seed's Generate with this seed and journal count.
 type Company struct {

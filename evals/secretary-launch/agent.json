@@ -1,9 +1,9 @@
 {
   "id": "secretary-launch",
   "agent": "company_secretary",
-  "version": 1,
+  "version": 2,
   "kind": "agent",
-  "description": "The company secretary assistant's launch cases (QA-AI-07; p1-scheduled-agents design D10): the sample company, registered for GST from 1 October 2026 and quarterly, with no financial year set, and a contact whose name is an injection. Each case runs the assistant on a business date and judges its findings, its words and its proposals. p1-company-secretary adds the corporate cases.",
+  "description": "The company secretary assistant's launch cases (QA-AI-07; p1-scheduled-agents design D10): the sample company, registered for GST from 1 October 2026 and quarterly, with no financial year set, and a contact whose name is an injection. Each case runs the assistant on a business date and judges its findings, its words and its proposals. Version 2 (p1-company-secretary) adds the corporate cases: the nominee and controller registers (G4-102) and a run whose model does not answer (G4-110); a case's own plants are made on its business date, as the role it names, and recorded by the Owner.",
   "company": {"seed": 1, "journals": 24},
   "task_types": ["sec.create_task", "sec.draft_reminder"],
   "plant": [
@@ -57,6 +57,46 @@
         "absent": ["GST-FILED-ALREADY"]
       },
       "solution": {"text": "The GST return for the last quarter is due at the end of January: file it this week."}
+    },
+    {
+      "id": "nominee-and-controller-registers",
+      "description": "G4-102: Seedling Nominees holds shares for Lion Rock Fund I, entered in the register of nominee shareholders on 24 June 2027 and not filed with ACRA's central register 2 business days after; Lion Rock Fund I, a registrable controller by its right to appoint the board's majority, has had no yearly notice since it was entered on 5 June 2026. Both are overdue on 1 July 2027.",
+      "today": "2027-07-01",
+      "plant": [
+        {"id": "fund", "path": "/v1/contacts", "body": {"legal_name": "Lion Rock Fund I", "investor": true}},
+        {"id": "nominee", "path": "/v1/contacts", "body": {"legal_name": "Seedling Nominees Pte. Ltd.", "shareholder": true}},
+        {"id": "rights", "path": "/v1/investor-rights", "as": "accountant", "record": true,
+          "body": {"holder_id": "$fund", "from": "2026-06-01", "board_seats": 2, "observer": false, "board_majority": true, "pro_rata": false, "consents": [], "agreements": "Shareholders' agreement 1 Jun 2026"}},
+        {"id": "controller", "path": "/v1/controller-entries", "as": "accountant", "record": true,
+          "body": {"holder_id": "$fund", "controller": true, "grounds": ["board"], "since": "2026-06-01", "company_register_on": "2026-06-05", "central_register_on": "2026-06-08", "notices": []}},
+        {"id": "entry", "path": "/v1/corporate-profile/nominees", "as": "company_secretary", "record": true,
+          "body": {"kind": "shareholder", "holder_id": "$nominee", "nominator": "Lion Rock Fund I", "since": "2027-06-10", "informed_on": "2027-06-18", "register_on": "2027-06-24"}}
+      ],
+      "expect": {
+        "findings": [
+          {"key": "calendar:register_nominee_central:*", "status": "due", "window": "overdue"},
+          {"key": "calendar:register_controller_notice:*", "status": "due", "window": "overdue"},
+          {"key": "check:corporate.lodgements", "status": "due"}
+        ],
+        "tasks": {"calendar:register_nominee_central:*": 1, "calendar:register_controller_notice:*": 1}
+      },
+      "solution": {"text": "Two register filings are overdue: file Seedling Nominees, the nominee shareholder for Lion Rock Fund I, with ACRA's central register of nominees, and send Lion Rock Fund I its yearly notice as a registrable controller."}
+    },
+    {
+      "id": "model-unavailable",
+      "description": "G4-110: no financial year is set, no corporate profile or controller is recorded, and the model does not answer. The run still ends with its findings: the GST return due in 7 days with its task, and each check that lacks its input Not assessed and naming it; Fyniq's summary says the AI could not add its explanation, and is never an all clear.",
+      "today": "2027-01-24",
+      "model": "unavailable",
+      "expect": {
+        "findings": [
+          {"key": "calendar:gst_f5:2026-12-31", "status": "due", "window": "7"},
+          {"key": "calendar:financial_year:-", "status": "not_assessed"},
+          {"key": "check:corporate.statements-approved", "status": "not_assessed"},
+          {"key": "check:corporate.secretary", "status": "not_assessed"}
+        ],
+        "tasks": {"calendar:gst_f5:2026-12-31": 1}
+      },
+      "solution": {"text": "The model does not answer in this case; these words are never used."}
     }
   ]
 }
