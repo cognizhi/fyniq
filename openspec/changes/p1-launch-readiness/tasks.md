@@ -125,12 +125,25 @@ and names the requirement IDs it proves.
 
 ## 4. Storybook and component coverage (QA-UI-01, QA-UI-02; rev 0.284)
 
-- [ ] 4.1 Storybook, its a11y add-on and its test runner in `apps/web`, pinned and at least two weeks old (design D7).
+- [x] 4.1 Storybook, its a11y add-on and its test runner in `apps/web`, pinned and at least two weeks old (design D7).
   A theme decorator renders light, dark and high contrast. `make storybook` and the CI job build and run it. Verified
   by the job failing on a planted axe violation.
+  As built (16 Nov 2026):
+  - Storybook 10.6.5 (27 Oct) with `@storybook/addon-a11y`. The test runner is `@storybook/addon-vitest`, with
+    `@vitest/browser` 5.0.3, which matches the Vitest pinned already: each story runs as a test in headless Chrome
+    (the runner's own, as the journeys use) and fails on any axe violation. `@storybook/test-runner` has no 10.x
+    release. Telemetry is off.
+  - The decorator applies `.dark` and `data-contrast` on `<html>` as the app does, from `VITE_STORY_THEME`.
+    `make storybook` runs every story in light, dark, high contrast and high-contrast dark, then expects the planted
+    story (`src/test/planted/`: an image without text, a button without a name) to fail.
+  - Its own CI job, outside `make test`.
 - [ ] 4.2 Stories for every shared component in `src/components/`, and `stories.test.ts` failing on a component without
   a story. `component-coverage.test.ts` fails on a shared component without a component test, or a form's validation
   message no test triggers. Tests `// req: QA-UI-01`, `// req: QA-UI-02`.
+  So far (16 Nov 2026): stories for the six shared components (19 stories). `coverage.test.ts` holds both checks
+  (`coverage.ts`), each failing on a planted component without a story or a test. The button and the dialog gained
+  their component tests. Left: the forms. 51 of the 56 screens with a form have no test that triggers a validation
+  message; until each has one, QA-UI-01 is not tagged.
 
 ## 5. The browser gates against the local stack (QA-E2E-01, QA-UI-06 to QA-UI-08, QA-RPT-04)
 
