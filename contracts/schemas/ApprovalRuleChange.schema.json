@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conditions": {
+      "$ref": "RuleConditionsChange.schema.json",
+      "description": "What the rule matches: set at least one; every one set must hold."
+    },
+    "steps": {
+      "description": "The ordered steps a request that matches it takes: 1 to 5.",
+      "items": {
+        "$ref": "ApprovalStepChange.schema.json"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "conditions",
+    "steps"
+  ],
+  "title": "ApprovalRuleChange",
+  "type": "object"
+}
