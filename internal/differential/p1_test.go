@@ -753,6 +753,7 @@ func TestP1AccountMergesMoveWhatTheAccountHolds(t *testing.T) {
 // req: FR-EQ-18
 // req: RND-SHARE
 // req: QA-ENG-02
+// req: G4-044
 func TestP1SAFEConversion(t *testing.T) {
 	lines := func(r Result, doc string) string {
 		for _, e := range r.Entries {
