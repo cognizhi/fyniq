@@ -2091,7 +2091,7 @@ One setting with its value on a day (today when on is left out), every recorded 
 
 **Change an organisation setting** (`updateSetting`)
 
-Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once: the answer is 202 with an approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the setting's next version and its audit event, with the value before and after; or the approval request and its audit event. Needs If-Match with its ETag ("0" before any change). Prefer: return=preview checks it and saves nothing.
+Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once, except a kill switch turned off, which is (AI-13: the AI assistant): the answer is 202 with an approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the setting's next version and its audit event, with the value before and after; or the approval request and its audit event. Needs If-Match with its ETag ("0" before any change). Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29). A setting under dual control (FM-1) waits for another member who holds A to approve it: the request needs step-up (rev 0.36).
 - **Parameters:**
@@ -14599,6 +14599,32 @@ A link that works for 5 minutes and serves the export's ZIP as an attachment (FR
 
 The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6).
 
+### `GET /v1/ai/activity`
+
+**List the AI activity log** (`listAIActivity`)
+
+The AI activity log (AI-12), newest first, a page at a time: every attempt of a model call, with the agent, the route's step and what it fell back from, the connection, the model requested and the model and version that answered, who it ran for, the classes it carried, the outcome, the tokens and the cost; filtered by agent, person, run and days. Each member reads their own entries; the Owner and the DPO read everyone's (Appendix D, rev 0.276). Someone else's entry that carried payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such an entry unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `agent` (query): Only this agent's entries.
+  - `person` (query): Only this member's entries, by user ID: for the Owner and the DPO; anyone else reads only their own.
+  - `run` (query): Only one run's attempts.
+  - `from` (query): Only entries on or after this day, in Singapore time.
+  - `to` (query): Only entries on or before this day.
+- **Responses:**
+  - `200` OK [`AIActivityPage`](../../contracts/schemas/AIActivityPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/ai/budgets`
 
 **Get the AI budgets** (`getAIBudgets`)
@@ -15166,6 +15192,46 @@ Sets an agent's route (AI-74, AI-26): the data classes it handles and one to fiv
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `AI-PRICE-01`, `AI-QUAL-03`, `AI-ROUTE-01`, `AI-ROUTE-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `STORAGE-AI-ROUTE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/ai/settings`
+
+**Get the AI's switch and budgets** (`getAISettings`)
+
+The AI switch (features.ai_assistant, AI-13) as it stands today, with its pending changes, and the monthly AI budgets with what this month used of each (AI-77). Switch it on with updateSetting, which a second approver approves; switch it off at once with switchOffAI. Read-only; no side effects.
+
+- **Permission:** View on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)
+- **Responses:**
+  - `200` OK [`AISettings`](../../contracts/schemas/AISettings.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/settings/switch-off`
+
+**Switch the AI off at once** (`switchOffAI`)
+
+The Owner's kill switch (AI-13): turns features.ai_assistant off from today, with no second approver, and cancels any change already approved to turn it on later. New calls are refused at once, and a stream running now stops at its next check, within 10 seconds; accounting, checks and deadlines keep working. Switching it on again needs updateSetting and a second approver. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. Side effects: the setting's next versions and their audit events. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Approve on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AISettings`](../../contracts/schemas/AISettings.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `GET /v1/ai/usage`
 
