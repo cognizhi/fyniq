@@ -151,6 +151,9 @@ export const routes = [
   // The AI company secretary assistant (FR-CS-04 in part, AI-62, AI-65; p1-scheduled-agents design D9): its workspace is
   // Basic and a run's report Expert; a finding's status shows in both.
   { kind: "route", id: "company-secretary", path: "/compliance/secretary", mode: "basic", signedIn: true, help: "compliance.secretary", guide: "compliance.secretary" },
+  // The corporate profile and registers (FR-CS-01, FR-CS-06; p1-company-secretary design D8): Expert, its checks' statuses
+  // shown in both modes on Checks.
+  { kind: "route", id: "corporate-profile", path: "/compliance/corporate-profile", mode: "expert", signedIn: true, help: "compliance.corporate-profile", guide: "compliance.corporate-profile" },
   { kind: "route", id: "agent-run-report", path: "/compliance/secretary/runs/$runId", mode: "expert", signedIn: true, help: "compliance.secretary-run", guide: "compliance.secretary#a-runs-report" },
   // Planning (FR-PLN-09; p1-planning design D12): the short-term cash flow is Basic, its what-ifs Expert.
   { kind: "route", id: "planning-cash", path: "/planning/cash", mode: "basic", signedIn: true, help: "planning.cash", guide: "planning.cash" },
@@ -238,6 +241,7 @@ export const actions = [
   { kind: "action", id: "ai-proposal.rationale", mode: "basic", help: "ai-proposal.rationale", guide: "ai.proposals#review-a-proposal" },
   { kind: "action", id: "ai-tasks.turn", mode: "basic", help: "ai-tasks.turn", guide: "ai.proposals#turn-a-task-type-on-or-off" },
   { kind: "action", id: "company-secretary.run-now", mode: "basic", help: "compliance.secretary-run-now", guide: "compliance.secretary#run-now-and-pause" },
+  { kind: "action", id: "corporate-profile.ask", mode: "expert", help: "corporate-profile.ask", guide: "compliance.corporate-profile#record-a-change" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
