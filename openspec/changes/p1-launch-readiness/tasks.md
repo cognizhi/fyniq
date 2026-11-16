@@ -144,11 +144,24 @@ and names the requirement IDs it proves.
 
 ## 6. Security and production gates (QA-SEC-05, QA-PROD-01, QA-MCP-01)
 
-- [ ] 6.1 QA-SEC-05: one fixture suite of hostile inputs, each neutralised, refused or bounded:
+- [x] 6.1 QA-SEC-05: one fixture suite of hostile inputs, each neutralised, refused or bounded:
   - files: macros, ZIP and XML bombs, polyglots, oversize and EXIF (FR-DOC-08);
   - logos: an SVG with script or a foreign reference (FR-ORG-09);
   - exports: formula injection (FR-RPT-05).
   Test `// req: QA-SEC-05`.
+  As built (16 Nov 2026): `internal/hostile`, test-only. The fixtures are made in code, so no hostile file is kept in
+  the repository, and each goes through the check the product applies to it.
+  - Files, through `evidence.Check`: refused are a macro-enabled workbook, a ZIP bomb named as an XLSX, renamed Windows
+    and Linux executables, HTML named as a PDF, an oversized file and a flagged one. A PDF that is also HTML is a PDF.
+    A photo loses its location. A DOCX declaring an external entity or a billion laughs is kept as received and never
+    parsed as XML: a local server proves the entity's address is never fetched.
+  - Hostile file names keep no path or control character, and their download header reads back as one parameter.
+  - Logos, through `brand.Check`: a script, event handlers, a foreign object, a stylesheet import and references by URL
+    are taken out, and an SVG declaring an entity is refused.
+  - Exports, through the sheet writer: a formula-like name and note are inert text in CSV and XLSX, and a negative
+    amount is a number with an ASCII minus.
+  - Reading the evidence tests for this also found that G4-069's staging sweep is built, so 2.2's route to
+    `p1-documents-evidence` was wrong. G4-069 is tagged here instead.
 - [ ] 6.2 QA-PROD-01: the canary organisation and its nightly synthetic transactions (design D8), beside the ledger and
   audit-chain verifications. Its failure raises the verification alert. Test `TestTheCanaryPostsAndVerifiesNightly`
   `// req: QA-PROD-01`; the cloud run recorded `live-verify` with its runbook.
