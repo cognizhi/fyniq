@@ -188,9 +188,19 @@ and names the requirement IDs it proves.
     amount is a number with an ASCII minus.
   - Reading the evidence tests for this also found that G4-069's staging sweep is built, so 2.2's route to
     `p1-documents-evidence` was wrong. G4-069 is tagged here instead.
-- [ ] 6.2 QA-PROD-01: the canary organisation and its nightly synthetic transactions (design D8), beside the ledger and
+- [x] 6.2 QA-PROD-01: the canary organisation and its nightly synthetic transactions (design D8), beside the ledger and
   audit-chain verifications. Its failure raises the verification alert. Test `TestTheCanaryPostsAndVerifiesNightly`
   `// req: QA-PROD-01`; the cloud run recorded `live-verify` with its runbook.
+  As built (16 Nov 2026), on the owner's decision of the same day (D8: a client of the public API):
+  - `internal/canary` makes its contacts on the first night, loading the standard chart if the organisation has none.
+    It posts an invoice and its receipt, a bill and its payment, and a journal, then reads each back as posted, for
+    its total and paid, and the month's trial balance in balance.
+  - The platform job `canary.run` runs at 01:55 Singapore time, before the audit-chain and ledger verifications. A
+    failed night fails the slot, which the heartbeat check alerts on. Its HTTP client comes from `internal/egress`.
+  - The test runs two nights through the API, and a planted fault (an invoice read back for another total) and a
+    missing account each fail the night.
+  - Until the integration client (`p1-public-api` task 3.1), the job logs that no canary is configured.
+    `docs/runbooks/canary.md` sets it up and proves it in the dev cloud `[live-verify]`.
 - [x] 6.3 QA-MCP-01 at launch: the MCP shell exposes no tool and refuses every call, with each refusal audited. Test
   `// req: QA-MCP-01` (the shell's part). The full suite is recorded `after-go-live` with `p1-mcp-first-party`.
   As built (16 Nov 2026): `internal/mcpshell`, which `cmd/mcp` serves.

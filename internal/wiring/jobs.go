@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
+	"github.com/cognizhi/fyniq/internal/canary"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -258,6 +259,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"reports.expire": func(ctx context.Context) error {
 			_, err := k.Exports(clock).Expire(ctx, clock.Now())
+			return err
+		},
+		canary.Job: func(ctx context.Context) error { // QA-PROD-01: the canary's night, before the ledger and audit verifications
+			if k.Canary == nil {
+				fmt.Fprintln(os.Stderr, "canary.run: no canary client is configured (QA-PROD-01; it waits for p1-public-api task 3.1)")
+				return nil
+			}
+			r, err := k.Canary.Run(ctx, clock.Now().In(appclock.Singapore))
+			fmt.Fprintf(os.Stderr, "canary.run: %s: invoice %s, receipt %s, bill %s, payment %s, journal %s\n", r.Day, r.Invoice, r.Receipt,
+				r.Bill, r.Payment, r.Journal)
 			return err
 		},
 		"evidence.sweep": func(ctx context.Context) error {
