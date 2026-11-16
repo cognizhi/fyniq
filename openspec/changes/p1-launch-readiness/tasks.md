@@ -99,9 +99,16 @@ and names the requirement IDs it proves.
   - PDF text extracted and compared;
   - CSV totals reconciled.
   Test `// req: QA-RPT-03`.
-- [ ] 3.4 QA-REL-01: `scripts/release_policy.py` in CI (design D9), and the bug-fix skill's root-cause record. Tests
+- [x] 3.4 QA-REL-01: `scripts/release_policy.py` in CI (design D9), and the bug-fix skill's root-cause record. Tests
   `scripts/test_release_policy.py` (a `fix` touching the engine without a test fails; with one it passes).
   `# req: QA-REL-01`
+  As built (16 Nov 2026):
+  - Calculation code is `internal/domain/`, `oracle/src/` and `packs/`. A test is a Go, TypeScript or SQL test, the
+    oracle's tests, a scenario under `test/` or a pack's pinned cases.
+  - A `fix` commit or a `fix` pull request title counts, since the squash merge takes the title. Merge commits are
+    left out, so a restack's changes from main never count.
+  - CI's commit job runs it on every pull request and push; `make release-policy` runs it locally.
+  - The template is `.claude/skills/fyniq-bug-fix/templates/root-cause.md`, which the skill's §7 names.
 
 ## 4. Storybook and component coverage (QA-UI-01, QA-UI-02; rev 0.284)
 
