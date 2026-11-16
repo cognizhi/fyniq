@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -85,7 +86,7 @@ func TestPricesComeFromTheirSource(t *testing.T) {
 	lister := ai.Lister{Store: worker, Provider: models.provider, Clock: e.clock, Outbox: e.api.deps.Outbox}
 	works := map[string]outbox.Work{ai.ReadKind: lister.Work(), ai.PriceKind: pricer.Work(),
 		notify.FanoutKind: func(context.Context, uuid.UUID, storage.OutboxRow) error { return nil }}
-	// The key's approval queued a read; with no download yet, the models it lists wait for the daily read.
+	// The key's approval queued a read, which queued pricing; with no download yet, the models say so.
 	e.work(works)
 	byModel := func() map[string]AIModel {
 		t.Helper()
@@ -100,7 +101,7 @@ func TestPricesComeFromTheirSource(t *testing.T) {
 		}
 		return m
 	}
-	if m := byModel(); len(m) != 3 || m["gpt-test-6"].Priced || m["gpt-test-6"].Serves || m["gpt-test-6"].PriceChecked != nil {
+	if m := byModel(); len(m) != 3 || m["gpt-test-6"].Priced || m["gpt-test-6"].Serves || !strings.Contains(m["gpt-test-6"].Unpriced, "no valid download") {
 		t.Fatalf("before any download: %+v", m)
 	}
 
@@ -344,5 +345,118 @@ func TestAnOwnersPriceTakesASecondApprover(t *testing.T) {
 	})
 	if withdrawn != 1 {
 		t.Errorf("the trail records %d withdrawals", withdrawn)
+	}
+}
+
+// fakeBilling is Google's billing catalogue as it answers now.
+type fakeBilling struct {
+	skus []ports.BillingSKU
+	err  error
+}
+
+func (f *fakeBilling) SKUs(context.Context) ([]ports.BillingSKU, error) { return f.skus, f.err }
+
+// Sources are taken in AI-82's order: a provider's own list first (OpenRouter's), then Google's billing catalogue for
+// Agent Platform, then LiteLLM's catalogue. A list's conditional price, or a model Google does not offer in the
+// connection's region, falls to the next source; Google's match always waits for the Owner, as a SKU names its model in
+// words; a price from Google stays in force while its catalogue cannot be read.
+// req: AI-82
+func TestPricesComeFirstFromTheProviderAndGoogle(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	owner := f.as(f.weiling, authz.Owner)
+	ctx := context.Background()
+	now := e.clock.Now()
+	var routed, gemini storage.AIConnection
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if routed, err = u.AIConnections().Create(ctx, storage.AIConnection{Name: "OpenRouter", Connector: "openai-compatible", Preset: "openrouter",
+			Auth: "api-key", Configuration: []byte(`{}`), Host: "openrouter.ai", Billing: "usage", CreatedBy: "user:x", CreatedAt: now},
+			uuid.Must(uuid.NewV7())); err != nil {
+			return err
+		}
+		gemini, err = u.AIConnections().Create(ctx, storage.AIConnection{Name: "Gemini", Connector: "gemini", Auth: "workload-identity",
+			Configuration: []byte(`{"project":"fyniq-test","location":"asia-southeast1"}`), Host: "asia-southeast1-aiplatform.googleapis.com",
+			Billing: "usage", CreatedBy: "user:x", CreatedAt: now}, uuid.Must(uuid.NewV7()))
+		return err
+	})
+	listed := func(p ports.ListedPrice) json.RawMessage {
+		b, _ := json.Marshal(p)
+		return b
+	}
+	worker := workerStore(t)
+	if err := worker.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		model := func(c storage.AIConnection, id, name string, price json.RawMessage) storage.AIModel {
+			return storage.AIModel{ConnectionID: c.ID, Model: id, Name: name, FirstListed: now, LastListed: now, Listed: true, ListedPrice: price}
+		}
+		if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: routed.ID, Trigger: "daily", Outcome: "complete", Pages: 1, Added: 3,
+			ReadBy: "system:ai.models.read", ReadAt: now}, []storage.AIModel{
+			model(routed, "vendor/listed-1", "Vendor: Listed 1", listed(ports.ListedPrice{Currency: "USD", PerToken: map[string]string{"input": "0.0000006", "output": "0.0000025"}})),
+			model(routed, "vendor/discounted-1", "", listed(ports.ListedPrice{Currency: "USD", PerToken: map[string]string{"input": "0.000001", "output": "0.000002"}, Conditional: true})),
+			model(routed, "vendor/unpriced-1", "", nil)}); err != nil {
+			return err
+		}
+		_, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: gemini.ID, Trigger: "daily", Outcome: "complete", Pages: 1, Added: 2,
+			ReadBy: "system:ai.models.read", ReadAt: now}, []storage.AIModel{model(gemini, "gemini-test-3-pro", "Gemini Test 3 Pro", nil),
+			model(gemini, "gemini-test-3-flash", "Gemini Test 3 Flash", nil)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	sku := func(id, desc, price string, regions ...string) ports.BillingSKU {
+		return ports.BillingSKU{ID: id, Description: desc, Regions: regions, UsageUnit: "count", Tiers: []ports.BillingTier{{StartUsage: "0", Currency: "USD", Price: price}}}
+	}
+	billing := &fakeBilling{skus: []ports.BillingSKU{sku("A1", "Gemini Test 3 Pro Input Text Tokens", "0.00000125", "asia-southeast1"),
+		sku("A2", "Gemini Test 3 Pro Output Text Tokens", "0.00001", "global"), sku("B1", "Gemini Test 3 Flash Input Text Tokens", "0.0000003", "us-central1"),
+		sku("B2", "Gemini Test 3 Flash Output Text Tokens", "0.0000025", "us-central1")}}
+	source := &fakeCatalogue{licence: []byte(mitLicence), body: liteLLM("openrouter/vendor/discounted-1=openrouter:1e-06:2e-06",
+		"gemini-test-3-flash=vertex_ai-language-models:3e-07:2.5e-06", "gemini-test-3-pro=vertex_ai-language-models:9e-06:3e-05")}
+	pricer := ai.Pricer{Store: worker, Catalogues: worker, Blobs: e.blobs, Catalogue: source, Billing: billing, Connectors: e.api.deps.Connectors.Catalogue,
+		Clock: e.clock}
+	if err := pricer.Daily(ctx); err != nil {
+		t.Fatal(err)
+	}
+	byModel := func(c storage.AIConnection) map[string]AIModel {
+		t.Helper()
+		var out AIModelList
+		r := e.call(http.MethodGet, "/v1/ai/connections/"+c.ID.String()+"/models", owner, nil)
+		if r.Status != http.StatusOK || json.Unmarshal([]byte(r.Raw), &out) != nil {
+			t.Fatalf("getAIConnectionModels: %d %s", r.Status, r.Raw)
+		}
+		m := map[string]AIModel{}
+		for _, x := range out.Models {
+			m[x.Model] = x
+		}
+		return m
+	}
+	r := byModel(routed)
+	if p := r["vendor/listed-1"].Price; p == nil || p.Source != "provider_list" || p.Match != "exact" || p.Catalogue != "" || p.Rates[0].Amount != "0.6" ||
+		p.Rates[1].Amount != "2.5" {
+		t.Errorf("the list's price: %+v", p)
+	}
+	if p := r["vendor/discounted-1"].Price; p == nil || p.Source != "litellm" || p.CatalogueKey != "openrouter/vendor/discounted-1" {
+		t.Errorf("a conditional list price falls to the catalogue: %+v", p)
+	}
+	if m := r["vendor/unpriced-1"]; m.Priced || !strings.Contains(m.Unpriced, "no entry of openrouter names vendor/unpriced-1") {
+		t.Errorf("an unpriced model: %+v", m)
+	}
+	g := byModel(gemini)
+	pro, flash := g["gemini-test-3-pro"], g["gemini-test-3-flash"]
+	if pro.Price != nil || pro.PendingPrice == nil || pro.PendingPrice.Source != "google_billing" || pro.PendingPrice.Match != "normalised" ||
+		pro.PendingPrice.CatalogueKey != "sku:A1+A2" || pro.PendingPrice.Rates[0].Amount != "1.25" {
+		t.Fatalf("Google's match waits for the Owner: %+v", pro)
+	}
+	if flash.Price == nil || flash.Price.Source != "litellm" || flash.Price.Rates[0].Amount != "0.3" {
+		t.Errorf("a model Google does not offer here: %+v", flash)
+	}
+	if r := e.call(http.MethodPost, "/v1/ai/prices/"+pro.PendingPrice.ID+"/review", owner, map[string]any{"decision": "confirm"}); r.Status != http.StatusOK {
+		t.Fatalf("confirming Google's match: %d %s", r.Status, r.Raw)
+	}
+	billing.err = errors.New("the billing catalogue answered 503")
+	if err := pricer.Daily(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if kept := byModel(gemini)["gemini-test-3-pro"]; kept.Price == nil || kept.Price.Source != "google_billing" || kept.PendingPrice != nil ||
+		!strings.Contains(kept.Unpriced, "could not be read") {
+		t.Errorf("Google's price while its catalogue cannot be read: %+v", kept)
 	}
 }

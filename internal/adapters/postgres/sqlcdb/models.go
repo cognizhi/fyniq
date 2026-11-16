@@ -191,6 +191,7 @@ type FyniqAiModel struct {
 	ProbeDetail     *string
 	PriceCheckedAt  *time.Time
 	Unpriced        *string
+	ListedPrice     []byte
 }
 
 type FyniqAiModelListRead struct {

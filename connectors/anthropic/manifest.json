@@ -128,7 +128,8 @@
       },
       "workload-identity": {
         "provider": "vertex_ai-anthropic_models",
-        "prefix": "vertex_ai/"
+        "prefix": "vertex_ai/",
+        "google_billing": true
       }
     }
   },

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -316,5 +317,73 @@ func TestTheCataloguesLicenceIsChecked(t *testing.T) {
 	}
 	if _, err := CheckLicence(mit, "enterprise/model_prices.json"); err == nil {
 		t.Error("a file under enterprise/ passed")
+	}
+}
+
+// A provider's list prices its models first (AI-82 (a)): exact from its text, per million tokens; a conditional price or
+// a rate of zero is not used.
+// req: AI-82
+func TestAProvidersListPricesFirst(t *testing.T) {
+	p, err := FromList(ports.ListedPrice{Currency: "USD", PerToken: map[string]string{"input": "0.0000006", "output": "0.0000025", "cache_read": "0.00000015"},
+		PerImage: "0.0012"})
+	if err != nil || rateOf(t, p, KindInput, 0) != "0.6" || rateOf(t, p, KindOutput, 0) != "2.5" || rateOf(t, p, KindCacheRead, 0) != "0.15" ||
+		rateOf(t, p, KindImage, 0) != "0.0012" {
+		t.Fatalf("a listed price: %v %+v", err, p)
+	}
+	for name, lp := range map[string]ports.ListedPrice{
+		"a discounted price": {Currency: "USD", PerToken: map[string]string{"input": "0.000001", "output": "0.000002"}, Conditional: true},
+		"a free model":       {Currency: "USD", PerToken: map[string]string{"input": "0", "output": "0"}},
+		"no output rate":     {Currency: "USD", PerToken: map[string]string{"input": "0.000001"}},
+		"not a number":       {Currency: "USD", PerToken: map[string]string{"input": "free", "output": "0.000002"}},
+	} {
+		if _, err := FromList(lp); err == nil {
+			t.Errorf("%s: priced", name)
+		}
+	}
+}
+
+// Google's billing catalogue prices an Agent Platform model by its listed name (AI-82 (b)), always as a normalised
+// match an Owner confirms: its input and output token SKUs in the region, per token, at one price. A long-context SKU,
+// SKUs that disagree, volume tiers or another unit leave it to the next source.
+// req: AI-82
+func TestGooglesBillingCataloguePricesByName(t *testing.T) {
+	sku := func(id, desc, price string, regions ...string) ports.BillingSKU {
+		return ports.BillingSKU{ID: id, Description: desc, Regions: regions, UsageUnit: "count",
+			Tiers: []ports.BillingTier{{StartUsage: "0", Currency: "USD", Price: price}}}
+	}
+	base := []ports.BillingSKU{
+		sku("A1", "Gemini Test 3 Pro Input Text Tokens", "0.00000125", "asia-southeast1", "us-central1"),
+		sku("A2", "Gemini Test 3 Pro Output Text Tokens", "0.00001", "global"),
+		sku("A3", "Gemini Test 3 Pro Batch Input Text Tokens", "0.000000625", "asia-southeast1"),
+		sku("A4", "Gemini Test 3 Pro Cached Input Tokens", "0.000000125", "asia-southeast1"),
+		sku("B1", "Gemini Test 3 Flash Input Text Tokens", "0.0000003", "us-central1"),
+		sku("B2", "Gemini Test 3 Flash Output Text Tokens", "0.0000025", "us-central1"),
+	}
+	f := FromBilling(base, "asia-southeast1", "Gemini Test 3 Pro")
+	if f.Problem != "" || f.Match != MatchNormalised || f.Entry.Key != "sku:A1+A2" || f.Entry.Provider != SourceGoogleBilling ||
+		rateOf(t, f.Entry.Price, KindInput, 0) != "1.25" || rateOf(t, f.Entry.Price, KindOutput, 0) != "10" || len(f.Entry.Price.Rates) != 2 {
+		t.Fatalf("a model in its region: %+v", f)
+	}
+	long := append(slices.Clone(base), sku("A5", "Gemini Test 3 Pro Input Text Tokens > 200K context", "0.0000025", "asia-southeast1"))
+	tiered := slices.Clone(base)
+	tiered[0].Tiers = append(tiered[0].Tiers, ports.BillingTier{StartUsage: "1000000000", Currency: "USD", Price: "0.000001"})
+	unit := slices.Clone(base)
+	unit[1].UsageUnit = "k{char}"
+	twice := append(slices.Clone(base), sku("A6", "Gemini Test 3 Pro Input Tokens", "0.0000013", "global"))
+	for name, tc := range map[string]struct {
+		skus      []ports.BillingSKU
+		model, re string
+		why       string
+	}{
+		"not offered in the region": {base, "Gemini Test 3 Flash", "asia-southeast1", "no input and output"},
+		"no name":                   {base, "", "asia-southeast1", "no name"},
+		"a long-context tier":       {long, "Gemini Test 3 Pro", "asia-southeast1", "tier Fyniq cannot place"},
+		"volume tiers":              {tiered, "Gemini Test 3 Pro", "asia-southeast1", "volume tiers"},
+		"another unit":              {unit, "Gemini Test 3 Pro", "asia-southeast1", "unit Fyniq does not read"},
+		"two input prices":          {twice, "Gemini Test 3 Pro", "asia-southeast1", "several input prices"},
+	} {
+		if f := FromBilling(tc.skus, tc.re, tc.model); f.Entry != nil || !strings.Contains(f.Problem, tc.why) {
+			t.Errorf("%s: %+v, want %q", name, f, tc.why)
+		}
 	}
 }

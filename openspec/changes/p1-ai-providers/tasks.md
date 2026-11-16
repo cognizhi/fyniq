@@ -53,7 +53,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   model probed before the allow-list; a retired or unlisted model leaving after a complete read; the last good list
   kept on failure; no list, no connection (`AI_MODEL_LIST_UNAVAILABLE`); automatic qualification off by default.
   Tests `// req: AI-80`, `// req: AI-81`, `// req: AI-84`.
-- [ ] 4.2 Prices: `ai_price_catalogue` and `ai_price`; the provider's list, Google's catalogue `[live-verify]`,
+- [x] 4.2 Prices: `ai_price_catalogue` and `ai_price`; the provider's list, Google's catalogue `[live-verify]`,
   LiteLLM's catalogue read daily (digest, licence, decimal text, units, tiers), an Owner's price with a second
   approver; normalised matches confirmed, suspicious drops held, Owner prices kept; no price, no usage-based route.
   Tests `// req: AI-82`, `// req: AI-85`.

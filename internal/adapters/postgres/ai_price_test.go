@@ -195,6 +195,7 @@ func TestAttackAIPricesKeepTheirRules(t *testing.T) {
 		{"the owner emptying them", "fyniq_migrator", `TRUNCATE fyniq.ai_price_rate, fyniq.ai_price`, []string{"FY060", "0A000"}},
 		{"the worker confirming a price", "fyniq_worker", `UPDATE fyniq.ai_price SET status = 'active', decided_by = 'system:x', decided_at = now()`, []string{"42501"}},
 		{"the API noting a look", "fyniq_api", `UPDATE fyniq.ai_model SET price_checked_at = now(), unpriced = 'x'`, []string{"42501"}},
+		{"a listed price that is not an object", "fyniq_worker", `UPDATE fyniq.ai_model SET listed_price = '["0.000001"]'`, []string{"23514"}},
 		{"the API writing a download", "fyniq_api", `SELECT fyniq.record_ai_price_catalogue('litellm', 'https://x.example/a.json', now(), repeat('a', 64), 1, 'MIT',
 		  'https://x.example/LICENSE', repeat('a', 64), 'valid', NULL, 1, 'ai/price-catalogues/litellm/' || repeat('a', 64) || '.json')`, []string{"42501"}},
 		{"the worker writing the downloads' table", "fyniq_worker", `UPDATE fyniq.ai_price_catalogue SET entries = 0`, []string{"42501"}},

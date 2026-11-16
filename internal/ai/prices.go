@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -32,19 +33,39 @@ const PriceKind = "ai.prices.read"
 // priceBy is who records the prices a read finds: the system user (AI-82).
 const priceBy = "system:" + PriceJob
 
-// Pricer reads LiteLLM's public price catalogue and prices the AI connections' models from it (AI-82, AI-85): each
-// download is kept with its digest, licence check and outcome, the document in the file store under its digest, and
-// only a valid one prices anything. A model is priced only from an entry under its provider's name, exactly or, with an
-// Owner's confirmation, after normalising; a rate that falls by more than half waits for an Owner's review; a model
-// nothing prices stays unpriced, saying why; an Owner's price is never overwritten.
+// Pricer prices the AI connections' models from their sources, in order (AI-82, AI-85): the provider's own list,
+// Google's billing catalogue for Agent Platform, then LiteLLM's public price catalogue. Each LiteLLM download is kept
+// with its digest, licence check and outcome, the document in the file store under its digest, and only a valid one
+// prices anything. A model is priced only from its provider's own entry, exactly or, with an Owner's confirmation, after
+// normalising; a rate that falls by more than half waits for an Owner's review; a model nothing prices stays unpriced,
+// saying why; an Owner's price is never overwritten.
 type Pricer struct {
 	Store      storage.Store
 	Catalogues storage.AIPriceCatalogues
 	Blobs      ports.BlobStore
 	Catalogue  ports.PriceCatalogue
-	// Connectors are this release's connectors, whose manifests name each provider as the catalogue does.
+	// Billing is Google's Cloud Billing Catalog for Agent Platform; nil where there is none, such as locally.
+	Billing ports.BillingCatalog
+	// Connectors are this release's connectors, whose manifests name each provider as the catalogues do.
 	Connectors *connector.Catalogue
 	Clock      ports.Clock
+}
+
+// sources are what a read prices from: LiteLLM's latest valid download, if any, and Agent Platform's SKUs, if read.
+type sources struct {
+	rec     *storage.AIPriceCatalogue
+	cat     aiprice.Catalogue
+	skus    []ports.BillingSKU
+	skusErr error // why Google's catalogue could not be read
+}
+
+// billing reads Agent Platform's SKUs once for a read; with no catalogue configured, none.
+func (p Pricer) billing(ctx context.Context, src *sources) {
+	if p.Billing == nil {
+		src.skusErr = errors.New("no billing catalogue is configured here")
+		return
+	}
+	src.skus, src.skusErr = p.Billing.SKUs(ctx)
 }
 
 // documentKey is where a download is kept in the file store: under its digest, so the same document is kept once.
@@ -93,26 +114,35 @@ func cut(s string) string {
 	return s
 }
 
-// Daily downloads the catalogue and, when it is valid, prices every organisation's models from it (AI-82). A
-// rejected download changes no price: the ones in force stay.
+// Daily downloads LiteLLM's catalogue and prices every organisation's models from their sources (AI-82). A download
+// that fails or is rejected changes no price from it: the latest valid one prices instead, and the providers' lists and
+// Google's catalogue still do. The download's failure is still reported.
 func (p Pricer) Daily(ctx context.Context) error {
-	if p.Catalogue == nil {
-		return nil // none configured: every model stays unpriced, as with no source
-	}
-	rec, parsed, err := p.Download(ctx)
-	if errors.Is(err, ports.ErrNoCatalogue) {
-		return nil // none configured: every model stays unpriced, as with no source
-	}
-	if err != nil || rec.Outcome != storage.AIPriceCatalogueValid {
-		return err
-	}
 	orgs, err := p.Store.Organisations(ctx)
 	if err != nil {
 		return err
 	}
 	var failed []error
+	var src sources
+	if p.Catalogue != nil {
+		rec, parsed, err := p.Download(ctx)
+		switch {
+		case err == nil && rec.Outcome == storage.AIPriceCatalogueValid:
+			src.rec, src.cat = &rec, parsed
+		case err != nil && !errors.Is(err, ports.ErrNoCatalogue):
+			failed = append(failed, err)
+		}
+	}
+	if src.rec == nil && len(orgs) > 0 {
+		if rec, cat, err := p.Latest(ctx, orgs[0]); err == nil {
+			src.rec, src.cat = &rec, cat
+		} else if !errors.Is(err, ports.ErrNotFound) {
+			failed = append(failed, err)
+		}
+	}
+	p.billing(ctx, &src)
 	for _, org := range orgs {
-		if err := p.Price(ctx, org, uuid.Nil, rec, parsed); err != nil {
+		if err := p.price(ctx, org, uuid.Nil, src); err != nil {
 			failed = append(failed, fmt.Errorf("%s: %w", org, err))
 		}
 	}
@@ -145,22 +175,32 @@ func (p Pricer) Latest(ctx context.Context, org uuid.UUID) (storage.AIPriceCatal
 	return rec, parsed, err
 }
 
-// naming is how the catalogue names a connection's provider, from its connector's manifest; false for a self-hosted
-// server or a provider the catalogue does not name.
-func (p Pricer) naming(c storage.AIConnection) (aiprice.Naming, bool) {
+// naming is how the catalogues name a connection's provider, from its connector's manifest; false for a self-hosted
+// server or a provider they do not name.
+func (p Pricer) naming(c storage.AIConnection) (connector.PriceNaming, bool) {
 	if c.SelfHosted || p.Connectors == nil {
-		return aiprice.Naming{}, false
+		return connector.PriceNaming{}, false
 	}
 	b, ok := p.Connectors.Get(c.Connector)
 	if !ok || b.Manifest.Model == nil {
-		return aiprice.Naming{}, false
+		return connector.PriceNaming{}, false
 	}
-	n, ok := b.Manifest.Model.Naming(c.Preset, c.Auth)
-	return aiprice.Naming{Provider: n.Provider, Prefix: n.Prefix}, ok
+	return b.Manifest.Model.Naming(c.Preset, c.Auth)
 }
 
-// Price prices the models of every connection of org (or of only, when not uuid.Nil) from a valid catalogue.
-func (p Pricer) Price(ctx context.Context, org, only uuid.UUID, rec storage.AIPriceCatalogue, cat aiprice.Catalogue) error {
+// location is where an Agent Platform connection processes its calls: its configured location, Singapore by default.
+func location(c storage.AIConnection) string {
+	var config struct {
+		Location string `json:"location"`
+	}
+	if json.Unmarshal(c.Configuration, &config) != nil || config.Location == "" {
+		return "asia-southeast1"
+	}
+	return config.Location
+}
+
+// price prices the models of every connection of org (or of only, when not uuid.Nil) from src.
+func (p Pricer) price(ctx context.Context, org, only uuid.UUID, src sources) error {
 	now := p.Clock.Now()
 	return p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		all, err := u.AIConnections().List(ctx)
@@ -171,7 +211,7 @@ func (p Pricer) Price(ctx context.Context, org, only uuid.UUID, rec storage.AIPr
 			if only != uuid.Nil && c.ID != only {
 				continue
 			}
-			if err := p.priceConnection(ctx, u, c, rec, cat, now); err != nil {
+			if err := p.priceConnection(ctx, u, c, src, now); err != nil {
 				return fmt.Errorf("%s: %w", c.ID, err)
 			}
 		}
@@ -179,8 +219,7 @@ func (p Pricer) Price(ctx context.Context, org, only uuid.UUID, rec storage.AIPr
 	})
 }
 
-func (p Pricer) priceConnection(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection, rec storage.AIPriceCatalogue,
-	cat aiprice.Catalogue, now time.Time) error {
+func (p Pricer) priceConnection(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection, src sources, now time.Time) error {
 	models, err := u.AIModels().Of(ctx, c.ID)
 	if err != nil {
 		return err
@@ -189,23 +228,17 @@ func (p Pricer) priceConnection(ctx context.Context, u storage.UnitOfWork, c sto
 	if err != nil {
 		return err
 	}
-	active, pending, declined := map[string]storage.AIPrice{}, map[string]storage.AIPrice{}, map[string]storage.AIPrice{}
+	versions := map[string]map[string]storage.AIPrice{aiprice.Active: {}, aiprice.Pending: {}, aiprice.Declined: {}}
 	for _, v := range current {
-		switch v.Status {
-		case aiprice.Active:
-			active[v.Model] = v
-		case aiprice.Pending:
-			pending[v.Model] = v
-		case aiprice.Declined:
-			declined[v.Model] = v
+		if by, ok := versions[v.Status]; ok {
+			by[v.Model] = v
 		}
 	}
-	naming, named := p.naming(c)
 	for _, m := range models {
 		if !m.Listed {
 			continue // no longer listed: it serves nothing, and keeps the price it had
 		}
-		why, next := p.decide(c, m.Model, naming, named, active, pending, declined, rec, cat, now)
+		why, next := p.decide(c, m, versions, src, now)
 		if next != nil {
 			if _, err := u.AIPrices().Record(ctx, *next); err != nil {
 				return fmt.Errorf("%s: %w", m.Model, err)
@@ -218,40 +251,86 @@ func (p Pricer) priceConnection(ctx context.Context, u storage.UnitOfWork, c sto
 	return nil
 }
 
+// find is the first source that prices a model, in AI-82's order, with its source; or why none does.
+func (p Pricer) find(c storage.AIConnection, m storage.AIModel, src sources) (aiprice.Found, string, string) {
+	naming, named := p.naming(c)
+	var notes []string
+	// (a) The provider's own list.
+	if lp := listedPriceOf(m.ListedPrice); lp != nil {
+		price, err := aiprice.FromList(*lp)
+		if err == nil {
+			return aiprice.Found{Entry: &aiprice.Entry{Key: m.Model, Provider: aiprice.SourceProviderList, Price: price}, Match: aiprice.MatchExact},
+				aiprice.SourceProviderList, ""
+		}
+		notes = append(notes, err.Error())
+	}
+	// (b) Google's billing catalogue, for Agent Platform.
+	if named && naming.GoogleBilling {
+		if src.skusErr != nil {
+			notes = append(notes, "Google's billing catalogue could not be read: "+src.skusErr.Error())
+		} else if f := aiprice.FromBilling(src.skus, location(c), m.Name); f.Problem == "" {
+			return f, aiprice.SourceGoogleBilling, ""
+		} else {
+			notes = append(notes, f.Problem)
+		}
+	}
+	// (c) LiteLLM's public price catalogue.
+	switch {
+	case !named:
+		notes = append(notes, "the price catalogue does not name this connection's provider")
+	case src.rec == nil:
+		notes = append(notes, "there is no valid download of LiteLLM's price catalogue yet")
+	default:
+		f := src.cat.Find(aiprice.Naming{Provider: naming.Provider, Prefix: naming.Prefix}, m.Model)
+		if f.Problem == "" {
+			return f, aiprice.SourceLiteLLM, ""
+		}
+		notes = append(notes, f.Problem)
+	}
+	return aiprice.Found{}, "", strings.Join(notes, "; ")
+}
+
 // decide is what a read makes of one model: the version to record, if any, and why it has no new price ("" when it
 // has, or needs none).
-func (p Pricer) decide(c storage.AIConnection, model string, naming aiprice.Naming, named bool, active, pending, declined map[string]storage.AIPrice,
-	rec storage.AIPriceCatalogue, cat aiprice.Catalogue, now time.Time) (string, *storage.AIPrice) {
-	was, inForce := active[model]
+func (p Pricer) decide(c storage.AIConnection, m storage.AIModel, versions map[string]map[string]storage.AIPrice, src sources,
+	now time.Time) (string, *storage.AIPrice) {
+	was, inForce := versions[aiprice.Active][m.Model]
 	switch {
 	case inForce && was.Source == aiprice.SourceOwner:
 		return "", nil // an Owner's price is never overwritten by a read (AI-82)
 	case c.SelfHosted:
 		return "a self-hosted server needs no per-token price", nil
-	case !named:
-		return "the price catalogue does not name this connection's provider", nil
+	case inForce && was.Source == aiprice.SourceGoogleBilling && src.skusErr != nil:
+		// The source in force could not be read this time: its price stays, rather than the next source's.
+		return "Google's billing catalogue could not be read: " + src.skusErr.Error() + "; the price in force is kept", nil
 	}
-	f := cat.Find(naming, model)
-	if f.Problem != "" {
+	f, source, why := p.find(c, m, src)
+	if f.Entry == nil {
 		if inForce {
-			return f.Problem + "; the price in force is kept", nil
+			return why + "; the price in force is kept", nil
 		}
-		return f.Problem, nil
+		return why, nil
 	}
 	next := storedPrice(f.Entry.Price)
-	next.ConnectionID, next.Model, next.Source, next.CatalogueID, next.CatalogueKey, next.Match = c.ID, model, aiprice.SourceLiteLLM,
-		&rec.ID, f.Entry.Key, f.Match
+	next.ConnectionID, next.Model, next.Source, next.CatalogueKey, next.Match = c.ID, m.Model, source, f.Entry.Key, f.Match
+	if source == aiprice.SourceLiteLLM {
+		next.CatalogueID = &src.rec.ID
+	}
 	next.RecordedBy, next.RecordedAt, next.Status = priceBy, now, aiprice.Active
-	// The same price as the one in force, the one waiting, or the one the Owner last declined: nothing to record.
-	for _, v := range []storage.AIPrice{was, pending[model], declined[model]} {
-		if v.ID != uuid.Nil && v.CatalogueKey == next.CatalogueKey && aiprice.Same(domainPrice(v), f.Entry.Price) {
+	// The same price from the same entry as the one in force, the one waiting, or the one the Owner last declined:
+	// nothing to record.
+	for _, v := range []storage.AIPrice{was, versions[aiprice.Pending][m.Model], versions[aiprice.Declined][m.Model]} {
+		if v.ID != uuid.Nil && v.Source == source && v.CatalogueKey == next.CatalogueKey && aiprice.Same(domainPrice(v), f.Entry.Price) {
 			return "", nil
 		}
 	}
 	switch {
 	case f.Match == aiprice.MatchNormalised:
 		next.Status, next.Review = aiprice.Pending, aiprice.ReviewNormalised
-		next.ReviewDetail = "matched the catalogue's " + f.Entry.Key + " only after removing a provider prefix or a version date"
+		next.ReviewDetail = "matched " + f.Entry.Key + " of the " + source + " source only by its name, not exactly"
+		if source == aiprice.SourceLiteLLM {
+			next.ReviewDetail = "matched the catalogue's " + f.Entry.Key + " only after removing a provider prefix or a version date"
+		}
 	case inForce:
 		if drop := aiprice.Drop(domainPrice(was), f.Entry.Price); drop != "" {
 			next.Status, next.Review, next.ReviewDetail = aiprice.Pending, aiprice.ReviewDrop, drop
@@ -282,16 +361,16 @@ func domainPrice(v storage.AIPrice) aiprice.Price {
 	return out
 }
 
-// PriceItem is the outbox item that prices a connection's models from the latest valid catalogue, once for the read
-// of its list that added models.
-func PriceItem(connection, read uuid.UUID) (storage.NewOutboxItem, error) {
+// PriceItem is the outbox item that prices a connection's models from their sources, once for the change that asked
+// for it: a read of its list that added models or gave prices, or an Owner's price withdrawn.
+func PriceItem(connection, change uuid.UUID) (storage.NewOutboxItem, error) {
 	payload, err := json.Marshal(map[string]string{"connection_id": connection.String()})
 	return storage.NewOutboxItem{Class: storage.ClassWorker, Kind: PriceKind, Payload: payload,
-		BusinessKey: "ai-prices:" + connection.String() + ":" + read.String()}, err
+		BusinessKey: "ai-prices:" + connection.String() + ":" + change.String()}, err
 }
 
-// Work is the outbox's work of PriceKind: price the connection its payload names from the latest valid catalogue; with
-// none yet, the daily read prices it.
+// Work is the outbox's work of PriceKind: price the connection its payload names from its sources, LiteLLM's latest
+// valid download among them when there is one.
 func (p Pricer) Work() outbox.Work {
 	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 		var in struct {
@@ -300,13 +379,15 @@ func (p Pricer) Work() outbox.Work {
 		if err := json.Unmarshal(row.Payload, &in); err != nil {
 			return fmt.Errorf("%s: %w", PriceKind, err)
 		}
+		var src sources
 		rec, cat, err := p.Latest(ctx, org)
-		if errors.Is(err, ports.ErrNotFound) {
-			return nil
-		}
-		if err != nil {
+		switch {
+		case err == nil:
+			src.rec, src.cat = &rec, cat
+		case !errors.Is(err, ports.ErrNotFound):
 			return err
 		}
-		return p.Price(ctx, org, in.Connection, rec, cat)
+		p.billing(ctx, &src)
+		return p.price(ctx, org, in.Connection, src)
 	}
 }

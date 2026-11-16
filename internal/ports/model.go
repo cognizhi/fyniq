@@ -145,6 +145,21 @@ type ListedModel struct {
 	MaxOutput     int        `json:"max_output,omitempty"`
 	// Reports are the capabilities, modalities and methods the list reports, as the provider names them.
 	Reports []string `json:"reports,omitempty"`
+	// Price is the price the list gives, when it gives one, such as OpenRouter's (AI-82 (a)).
+	Price *ListedPrice `json:"price,omitempty"`
+}
+
+// ListedPrice is a price a provider's own list gives (AI-82 (a)): its currency, and each rate as the provider's decimal
+// text, never parsed as a binary float.
+type ListedPrice struct {
+	Currency string `json:"currency"`
+	// PerToken are rates per token by kind: input, output, cache_read, cache_write, cache_write_1h and reasoning.
+	PerToken   map[string]string `json:"per_token,omitempty"`
+	PerImage   string            `json:"per_image,omitempty"`
+	PerRequest string            `json:"per_request,omitempty"`
+	// Conditional is a price the list says changes under conditions, such as a discount or overrides: Fyniq does not
+	// price with it.
+	Conditional bool `json:"conditional,omitempty"`
 }
 
 // ModelCapabilities are a provider's proved capabilities (AI-71).

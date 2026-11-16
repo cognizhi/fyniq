@@ -116,6 +116,9 @@ type AIModel struct {
 	// PriceCheckedAt is when its price was last looked for, and Unpriced why that found no new price for it (AI-82).
 	PriceCheckedAt *time.Time
 	Unpriced       string
+	// ListedPrice is the price the provider's list gave when it last listed it, as JSON (ports.ListedPrice); nil when
+	// it gave none (AI-82 (a)).
+	ListedPrice json.RawMessage
 }
 
 // AIModelListRead is one read of a connection's model list (AI-84).

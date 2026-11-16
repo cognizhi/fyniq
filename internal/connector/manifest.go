@@ -268,6 +268,9 @@ type ModelSpec struct {
 type PriceNaming struct {
 	Provider string `json:"provider"`
 	Prefix   string `json:"prefix,omitempty"`
+	// GoogleBilling prices the provider's models from Google's Cloud Billing Catalog first, as Agent Platform's
+	// (AI-82 (b)) [live-verify].
+	GoogleBilling bool `json:"google_billing,omitempty"`
 }
 
 // Naming is how the price catalogue names a connection's provider for its preset and authentication: false when it

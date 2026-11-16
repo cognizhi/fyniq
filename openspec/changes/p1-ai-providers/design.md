@@ -88,6 +88,11 @@ See proposal.md for why. What exists today:
   provider it does not name stays unpriced. A key with the provider's own prefix is an exact match. A normalised match
   waits for the Owner each time its price changes, and a price the Owner declined is not proposed again. A rate the
   catalogue gives as zero leaves the model unpriced; batch, flex, priority, audio and search rates are listed, not used.
+  The sources are taken in AI-82's order: a provider's own list (OpenRouter's pricing, kept on the model as decimal text;
+  a discounted or overridden price is not used; xAI's list prices are not read `[verify]`), Google's Cloud Billing
+  Catalog for Agent Platform (input and output token SKUs found by the model's listed name in its location, always held
+  for the Owner's confirmation, and none where a long-context SKU exists `[live-verify]`), then LiteLLM's catalogue. An
+  Owner's price, entered with a second approver, is withdrawn at once by the Owner.
 - Metering amounts are not ledger money: each call's cost is kept exactly (`NUMERIC(24,10)`) in the price's currency
   and in SGD at the organisation's rate for the day, never as a binary float; screens round by RND-DISPLAY; provider
   invoices are entered as bills, where the ledger's rules apply (AI-77).
