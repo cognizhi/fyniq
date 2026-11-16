@@ -141,6 +141,9 @@ takes, such as INV-0042.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
+- The AI assistant is the exception when you switch it **off**: that takes effect at once, with no second
+  approver, and the AI stops: new requests are refused, and a reply being written stops within seconds.
+  Switching it back on still needs a second approver.
 
 ## Features
 
@@ -152,7 +155,7 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | Payroll | Off | Off while the company has no employees and the founders draw no salary; turn it on before the first pay run |
 | Projects and time | Off | Off until you track time or costs by project |
 | Portals for customers and investors | Off | Off until there are customers or investors to invite |
-| AI assistant | Off | AI stays off until an Owner turns it on with a second approver |
+| AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
 
 ## Payment terms
 

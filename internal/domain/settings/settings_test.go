@@ -67,6 +67,9 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if !ok || !headings[section] {
 			t.Errorf("%s: the guide link %q has no section in the guide", d.Key, d.Guide)
 		}
+		if d.OffAtOnce && (d.Kind != Switch || !d.DualControl) {
+			t.Errorf("%s: only a switch under dual control turns off at once (AI-13)", d.Key)
+		}
 		if d.Fixed {
 			continue
 		}

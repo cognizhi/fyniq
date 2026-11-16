@@ -70,6 +70,7 @@ var chatSuite = fstest.MapFS{"chat/suite.json": {Data: []byte(`{"id": "chat-fixt
 // req: CMP-AI-03
 func TestModelsServeOnlyOnceQualified(t *testing.T) {
 	e := newEnv(t)
+	aiSwitchedOn(e)
 	f := foundersIn(e)
 	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
 	sg := routable(e, "Qualify Singapore", "SG", []string{"gpt-6", "gpt-7"})

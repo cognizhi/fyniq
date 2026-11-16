@@ -63,6 +63,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/ai/routes` (getAIRoutes): Get every agent's route
 - `GET /v1/ai/routes/{agent}` (getAIRoute): Get an agent's route and its versions
 - `PUT /v1/ai/routes/{agent}` (setAIRoute): Set an agent's route
+- `GET /v1/ai/settings` (getAISettings): Get the AI's switch and budgets
+- `POST /v1/ai/settings/switch-off` (switchOffAI): Switch the AI off at once
 - `GET /v1/ai/usage` (getAIUsage): Get the AI usage of a month
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation

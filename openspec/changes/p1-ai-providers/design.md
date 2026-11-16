@@ -156,6 +156,15 @@ See proposal.md for why. What exists today:
   type's). Turning it off is immediate and needs no second person; turning it on is dual-controlled (golden rule 6).
   The router reads it at admission (cached at most 30 s) and every 10 s during a stream, so new calls are refused at
   once and running ones stop within 60 s.
+- As built (task 6.2, the switch): **superseded in part.** The switch is the setting `features.ai_assistant`, which
+  P0's feature switches already held (FR-ORG-06: off by default, dual-controlled), not a new `ai.enabled`. A setting
+  gains `OffAtOnce`: turning such a switch off is recorded at once with no second approver, by anyone who may change
+  settings; turning it on is a request a second approver approves, as before. The Owner, who holds A but not C on the
+  settings' row, has `POST /v1/ai/settings/switch-off` (no step-up, so it stays quick), which also cancels a change
+  already approved to turn it on later; `GET /v1/ai/settings` shows the switch and the budgets. The router reads the
+  switch at each run, uncached (stricter than the 30 s cache), refusing with AI-ROUTER-05 before anything is sent, and
+  every 10 s during a stream, stopping it as a cancelled attempt whose reservation stays whole. Probes and eval runs,
+  which send synthetic text only, are not stopped by it: a person can still set connections up while the AI is off.
 
 **D10. Qualification gates every model (AI-78, AI-87, CMP-AI-03, CTL-AI-05).**
 - `ai_qualification` (agent, connection, model version, eval suite and version, thresholds, result, run, time). A step
