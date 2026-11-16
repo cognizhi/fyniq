@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agents": {
+      "items": {
+        "$ref": "AIPresetAgent.schema.json"
+      },
+      "type": "array"
+    },
+    "description": {
+      "examples": [
+        "Claude on Agent Platform in Singapore (asia-southeast1) for every agent."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ],
+      "examples": [
+        "A"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Singapore only"
+      ],
+      "type": "string"
+    },
+    "targets": {
+      "description": "Where its steps go, in order; none for C, which takes A's or B's by the agent's classes.",
+      "items": {
+        "$ref": "AIPresetTarget.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "description",
+    "targets",
+    "agents"
+  ],
+  "title": "AIPreset",
+  "type": "object"
+}

@@ -18,9 +18,16 @@ import (
 // priced, as each step of a route needs (AI-72, AI-75, AI-82); unpriced models are allowed but have no price.
 func routable(e *env, name, country string, priced []string, unpriced ...string) uuid.UUID {
 	e.t.Helper()
+	return routableOn(e, storage.AIConnection{Name: name, Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`), Host: "api.openai.com"},
+		country, priced, unpriced...)
+}
+
+// routableOn is routable for a connection to c's provider, with c's configuration.
+func routableOn(e *env, c storage.AIConnection, country string, priced []string, unpriced ...string) uuid.UUID {
+	e.t.Helper()
+	name := c.Name
 	now := e.clock.Now()
 	approval := uuid.Must(uuid.NewV7())
-	var c storage.AIConnection
 	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
 		entry, err := u.Compliance().SaveInventoryEntry(ctx, storage.InventoryEntry{What: "Prompts to " + name, Why: "The AI assistant", Where: "The provider",
 			Who: "The founders", Retention: "None", Transfers: "None", State: "open", SavedBy: "user:routes", SavedAt: now, Version: 1})
@@ -29,9 +36,11 @@ func routable(e *env, name, country string, priced []string, unpriced ...string)
 		}
 		handling := `{"inventory_id":"` + entry.EntryID.String() + `","handling":[{"model":"*","endpoint":"api.openai.com","feature":"*",` +
 			`"processed_in":["` + country + `"],"training":"no","evidence":{"kind":"source","url":"https://example.com/terms","title":"Terms","checked_on":"2026-10-01"}}]}`
-		if c, err = u.AIConnections().Create(ctx, storage.AIConnection{Name: name, Connector: "openai", Auth: "api-key", Configuration: []byte(`{}`),
-			Host: "api.openai.com", CredentialRef: "routes/" + strings.ReplaceAll(name, " ", "-"), CredentialSetAt: &now, Billing: "usage",
-			DataHandling: []byte(handling), CreatedBy: "user:routes", CreatedAt: now}, approval); err != nil {
+		c.Billing, c.DataHandling, c.CreatedBy, c.CreatedAt = "usage", []byte(handling), "user:routes", now
+		if c.Auth == "api-key" {
+			c.CredentialRef, c.CredentialSetAt = "routes/"+strings.ReplaceAll(name, " ", "-"), &now
+		}
+		if c, err = u.AIConnections().Create(ctx, c, approval); err != nil {
 			return err
 		}
 		var models []storage.AIModel
@@ -184,4 +193,81 @@ func matrixRouteConnection(e *env) string {
 		id = routable(e, "Matrix routes", "SG", []string{"gpt-6"}).String()
 	}
 	return id
+}
+
+// The presets give each agent the route that pins the newest allowed model of its lines (AI-26): A in Singapore with
+// every class the agent handles, B on the global endpoint without personal data or payroll, C by the agent's classes;
+// the route is set from it as any other, naming its preset.
+// req: AI-26
+// req: AI-74
+func TestPresetsGiveEachAgentItsRoute(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Owner, authz.Administrator), f.as(f.weiling, authz.Owner)
+	claude := func(name, location string) storage.AIConnection {
+		return storage.AIConnection{Name: name, Connector: "anthropic", Auth: "workload-identity",
+			Configuration: []byte(`{"endpoint":"agent-platform","project":"fyniq-test","location":"` + location + `"}`), Host: location + "-aiplatform.googleapis.com"}
+	}
+	sg := routableOn(e, claude("Claude in Singapore", "asia-southeast1"), "SG", []string{"claude-opus-4-7", "claude-sonnet-4-6"})
+	global := routableOn(e, claude("Claude global", "global"), "US", []string{"claude-opus-5-5", "claude-haiku-5-5"})
+	r := e.call(http.MethodGet, "/v1/ai/presets", admin, nil)
+	if r.Status != http.StatusOK {
+		t.Fatalf("getAIPresets: %d %s", r.Status, r.Raw)
+	}
+	agentOf := func(preset, agent string) map[string]any {
+		for _, p := range r.Body["presets"].([]any) {
+			if p.(map[string]any)["id"] != preset {
+				continue
+			}
+			for _, a := range p.(map[string]any)["agents"].([]any) {
+				if a.(map[string]any)["agent"] == agent {
+					return a.(map[string]any)
+				}
+			}
+		}
+		t.Fatalf("no %s for %s", preset, agent)
+		return nil
+	}
+	steps := func(a map[string]any) string {
+		var out []string
+		for _, s := range a["route"].(map[string]any)["steps"].([]any) {
+			id := s.(map[string]any)["connection_id"].(string)
+			where := map[string]string{sg.String(): "sg", global.String(): "global"}[id]
+			out = append(out, s.(map[string]any)["model"].(string)+"@"+where)
+		}
+		return strings.Join(out, ",")
+	}
+	for _, tc := range []struct{ preset, agent, steps, why string }{
+		{"A", "chat", "claude-opus-4-7@sg,claude-sonnet-4-6@sg", ""},
+		{"A", "bank_categorisation", "claude-sonnet-4-6@sg,claude-opus-4-7@sg", ""},
+		{"B", "chat", "claude-opus-5-5@global,claude-haiku-5-5@global", ""},
+		{"C", "chat", "claude-opus-4-7@sg,claude-sonnet-4-6@sg", ""},
+		{"C", "report_commentary", "claude-opus-5-5@global,claude-haiku-5-5@global", ""},
+	} {
+		a := agentOf(tc.preset, tc.agent)
+		if got := steps(a); got != tc.steps || a["why"] != nil {
+			t.Errorf("%s for %s: %s %v", tc.preset, tc.agent, got, a["why"])
+		}
+	}
+	if b := agentOf("B", "chat"); len(b["notes"].([]any)) != 2 || len(b["route"].(map[string]any)["classes"].([]any)) != 2 {
+		t.Errorf("B leaves personal data and payroll in Singapore: %v", b)
+	}
+	if kb := agentOf("B", "kb_compiler"); kb["route"] == nil {
+		t.Errorf("the compiler under B: %v", kb)
+	}
+
+	// The route is set from the preset as any other: the agent's first route waits for a second approver.
+	a := agentOf("A", "chat")
+	asked := e.call(http.MethodPut, "/v1/ai/routes/chat", steppedUp(e, admin), a["route"], "If-Match", `"0"`)
+	approvalBody, _ := asked.Body["approval"].(map[string]any)
+	if asked.Status != http.StatusAccepted || approvalBody == nil {
+		t.Fatalf("setting A: %d %s", asked.Status, asked.Raw)
+	}
+	req := response{Status: http.StatusAccepted, Body: approvalBody}
+	if d := f.decide(owner, req.str("id"), "approve", hashOf(req)); d.Status != http.StatusOK {
+		t.Fatalf("approving A: %d %s", d.Status, d.Raw)
+	}
+	if got := e.call(http.MethodGet, "/v1/ai/routes/chat", admin, nil); got.Body["route"].(map[string]any)["preset"] != "A" {
+		t.Errorf("the route's preset: %s", got.Raw)
+	}
 }

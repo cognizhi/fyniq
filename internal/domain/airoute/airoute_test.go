@@ -2,7 +2,9 @@ package airoute
 
 import (
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -84,5 +86,63 @@ func TestWideningNeedsASecondApprover(t *testing.T) {
 	}
 	if err := Unknown("dreamer"); !errors.As(err, &e) || e.Code != CodeAgent {
 		t.Errorf("an unknown agent: %v", err)
+	}
+}
+
+// A preset pins the newest allowed model of each line from the discovered list, never a model ID (AI-26): A in
+// Singapore, B on the global endpoint without personal data or payroll, C by the agent's classes; a dated model before
+// a moving alias; none when no connection on the target has a model of the lines.
+// req: AI-26
+// req: AI-74
+func TestPresetsPinTheNewestModelOfTheirLine(t *testing.T) {
+	day := func(d int) *time.Time { t := time.Date(2026, 10, d, 0, 0, 0, 0, time.UTC); return &t }
+	sg, gl, other := uuid.New(), uuid.New(), uuid.New()
+	cs := []Candidate{
+		{Connection: sg, Name: "Claude SG", Connector: "anthropic", Auth: "workload-identity", Location: "asia-southeast1", Models: []CandidateModel{
+			{ID: "claude-opus-4-6", Created: day(1)}, {ID: "claude-opus-4-7", Created: day(9)}, {ID: "claude-opus-latest", AliasOf: "claude-opus-4-7", Created: day(10)},
+			{ID: "claude-sonnet-4-6", Created: day(1)}}},
+		{Connection: gl, Name: "Claude global", Connector: "anthropic", Auth: "workload-identity", Location: "global", Models: []CandidateModel{
+			{ID: "claude-opus-5-5", Created: day(5)}, {ID: "claude-haiku-5-5", Created: day(5)}}},
+		{Connection: other, Name: "OpenAI", Connector: "openai", Auth: "api-key", Models: []CandidateModel{{ID: "claude-opus-9"}}},
+	}
+	classify := Agent{ID: "bank_categorisation", Name: "Bank categorisation", Classes: []string{"business-figures", "personal-data"}, Line: LineClassification}
+	report := Agent{ID: "report_commentary", Name: "Report commentary", Classes: []string{"business-figures"}, Line: LineMain}
+	payroll := Agent{ID: "payroll_only", Name: "Payroll", Classes: []string{"payroll"}, Line: LineMain}
+	steps := func(p Proposal) string {
+		var out []string
+		for _, s := range p.Route.Steps {
+			out = append(out, s.Model+"@"+map[uuid.UUID]string{sg: "sg", gl: "global", other: "other"}[s.Connection])
+		}
+		return strings.Join(out, ",")
+	}
+	a, _ := PresetOf("A")
+	b, _ := PresetOf("B")
+	c, _ := PresetOf("C")
+	for name, tc := range map[string]struct {
+		p              Preset
+		agent          Agent
+		steps, classes string
+		why            string
+	}{
+		"A for chat":               {a, chat, "claude-opus-4-7@sg,claude-sonnet-4-6@sg", "know-how,business-figures,personal-data", ""},
+		"A for classification":     {a, classify, "claude-sonnet-4-6@sg,claude-opus-4-7@sg", "business-figures,personal-data", ""},
+		"B leaves personal data":   {b, classify, "claude-haiku-5-5@global,claude-opus-5-5@global", "business-figures", ""},
+		"C keeps personal data in": {c, classify, "claude-sonnet-4-6@sg,claude-opus-4-7@sg", "business-figures,personal-data", ""},
+		"C sends the rest abroad":  {c, report, "claude-opus-5-5@global,claude-haiku-5-5@global", "business-figures", ""},
+		"B for payroll alone":      {b, payroll, "", "", "handles only personal data or payroll"},
+	} {
+		got := Apply(tc.p, tc.agent, cs)
+		if steps(got) != tc.steps || strings.Join(got.Route.Classes, ",") != tc.classes || !strings.Contains(got.Why, tc.why) {
+			t.Errorf("%s: %s %v %q", name, steps(got), got.Route.Classes, got.Why)
+		}
+	}
+	if got := Apply(a, chat, cs[1:]); got.Why == "" || len(got.Route.Steps) != 0 {
+		t.Errorf("no Singapore connection: %+v", got)
+	}
+	if got := Apply(b, classify, cs); len(got.Notes) != 1 || !strings.Contains(got.Notes[0], "personal-data stays with preset A") {
+		t.Errorf("the note: %v", got.Notes)
+	}
+	if _, ok := PresetOf("D"); ok {
+		t.Error("a preset D")
 	}
 }
