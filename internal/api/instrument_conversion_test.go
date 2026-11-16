@@ -31,6 +31,7 @@ import (
 // req: FR-EQ-18
 // req: RND-SHARE
 // req: FR-EQ-20
+// req: G4-044
 func TestASAFEConvertsAtTheRound(t *testing.T) {
 	c := newClaimants(t)
 	e := c.e
@@ -89,6 +90,13 @@ func TestASAFEConvertsAtTheRound(t *testing.T) {
 		t.Fatalf("drafting the SAFE: %d %s", safe.Status, safe.Raw)
 	}
 	asked("/v1/instruments/"+safe.str("id"), safe, "Signed SAFE")
+	// G4-044: until its template is enabled, no approved template covers the SAFE, so its conversion is a draft the
+	// accountant completes: the working is shown, never taken as it stands.
+	before := e.call(http.MethodGet, "/v1/instruments/conversion-preview?price=3.00", prep, nil)
+	if bw := before.Body["conversions"].([]any)[0].(map[string]any); before.Status != http.StatusOK || bw["covered"] != false ||
+		bw["review"] != "the accountant completes it: its template is not enabled" || bw["shares"] != "52631" {
+		t.Errorf("the preview before the template is enabled: %d %s", before.Status, before.Raw)
+	}
 	en := e.call(http.MethodPost, "/v1/instrument-templates/yc-sg-post-money-cap@1/enablement", prep, map[string]any{})
 	asked("/v1/instrument-template-enablements/"+en.str("enablement_id"), en, "Lawyer's confirmation")
 

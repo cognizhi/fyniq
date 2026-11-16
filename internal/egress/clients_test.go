@@ -16,6 +16,7 @@ import (
 // the guard allows; a connection that names none reaches nothing.
 // req: SEC-36
 // req: QA-SEC-04
+// req: G4-097
 // asvs: V1.3.6, V15.3.2
 func TestAConnectionReachesOnlyItsOwnHosts(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }))
