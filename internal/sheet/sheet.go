@@ -3,8 +3,9 @@
 // with an ASCII minus, unquoted; in XLSX a number cell with the currency's decimals. No text ever becomes a formula: in
 // CSV every text cell is quoted, inner quotes doubled, and one that starts with =, +, -, @, a tab, CR or LF is prefixed
 // with an apostrophe (OWASP CSV injection guidance); in XLSX text is an inline string, which a spreadsheet never
-// evaluates. The platform writes no formula from text. Numbers past 15 significant digits lose precision in a
-// spreadsheet that reads them as binary floating point (ENG-10's precision boundary); the CSV keeps them exact.
+// evaluates. The platform writes no formula from text. A spreadsheet reads a number cell as binary floating point,
+// which keeps 15 significant digits (ENG-10's precision boundary): in XLSX a figure past them is written as text, with a
+// note in the sheet's footer; the CSV keeps every figure exact.
 package sheet
 
 import (
@@ -79,6 +80,16 @@ func Footed(sheets []Sheet, footer ...string) []Sheet {
 // decimal is a number as a cell takes it: an optional minus, digits, and optional decimals (FR-UX-20's strict
 // pattern). Anything else is written as text.
 var decimal = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
+
+// LongNumbers is the footer's note on a sheet that holds a number past 15 significant digits (ENG-10).
+const LongNumbers = "A figure with more than 15 significant digits is written as text, so that the spreadsheet keeps every digit."
+
+// exact reports whether a spreadsheet keeps a plain decimal exactly as a number: at most 15 significant digits, from
+// its first non-zero digit to its last, a fraction's trailing zeros left out (ENG-10). A longer one is written as text.
+func exact(d string) bool {
+	whole, frac, _ := strings.Cut(strings.TrimPrefix(d, "-"), ".")
+	return len(strings.TrimLeft(whole+strings.TrimRight(frac, "0"), "0")) <= 15
+}
 
 // CSV is the first sheet as CSV: UTF-8 with CRLF line ends, the header first.
 func CSV(s Sheet) []byte {
