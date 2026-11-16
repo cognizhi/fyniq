@@ -1,0 +1,13 @@
+{
+ "doc": "The launch subset's exceptions (p1-launch-readiness design D1), kept by hand: a requirement or acceptance scenario of launch-subset.json that a launch does not prove with a tagged test. after-go-live: moved by the decision it names (a revision of the PRD's history). live-verify: proved in the dev cloud by the evidence it names. covered-elsewhere: proved by the gate it names. make roadmap-check refuses an exception that names nothing of the subset or rests on nothing.",
+ "exceptions": [
+  {"id": "FR-TAX-01", "kind": "after-go-live", "why": "The reverse-charge codes and their F5 boxes are built with the GST F5 return, when the company registers for GST; the registration monitor and the statutory calendar launch.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "FR-TAX-02", "kind": "after-go-live", "why": "The GST F5 return is built when the company registers for GST.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "FR-TAX-03", "kind": "after-go-live", "why": "The F5's roll-forward to the GST control account is built with the return, at registration.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "FR-TAX-04", "kind": "after-go-live", "why": "The IRAS audit listings are built with the F5 return, at registration.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "FR-TAX-12", "kind": "after-go-live", "why": "GST adjustments and their queue are built with the F5 return, at registration.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "C.2 #46", "kind": "after-go-live", "why": "The GST adjustment check is built with the adjustments, at registration.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "C.2 #47", "kind": "after-go-live", "why": "The GST adjustment check is built with the adjustments, at registration.", "decision": "rev 0.25 (open question 25 and Q2: p1-gst's monitor and calendar at launch, the F5 at registration)"},
+  {"id": "SOD-4", "kind": "after-go-live", "why": "Pay runs come with the payroll link after go-live, so no one prepares or approves one at launch.", "decision": "rev 0.25 (open question 25, Q4 and Q16: the payroll link after go-live)"}
+ ]
+}

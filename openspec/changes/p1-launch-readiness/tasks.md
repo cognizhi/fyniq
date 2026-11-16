@@ -5,13 +5,19 @@ and names the requirement IDs it proves.
 
 ## 1. The launch subset and the trace gate (QA-TRACE-01)
 
-- [ ] 1.1 `scripts/roadmap.py` writes `docs/prd/plans/launch-subset.json`, which `make roadmap-check` keeps current
+- [x] 1.1 `scripts/roadmap.py` writes `docs/prd/plans/launch-subset.json`, which `make roadmap-check` keeps current
   (design D1). It holds the launch changes, with their requirements and acceptance scenarios.
   `docs/prd/plans/launch-exceptions.json` is written by hand, its kinds `after-go-live`, `live-verify` and
   `covered-elsewhere`, each with its revision or evidence path. Tests `scripts/test_roadmap.py`:
   - a change whose Launch column changes moves in or out of the subset;
   - an exception without its reference fails.
   `# req: QA-TRACE-01`
+  As built:
+  - The subset holds 37 changes and 854 requirements, with the Appendix G scenarios found under each change's
+    requirements.
+  - The exceptions are seeded with the plan's own: `p1-gst`'s F5 part at registration, and SOD-4 with payroll after
+    go-live (rev 0.25). Task 1.3 adds the rest.
+  - The scripts' tests run with `make script-tests`, part of `make check`.
 - [ ] 1.2 `scripts/trace_requirements.py` (design D2), with `make trace` in `make check`, `make trace-gate PHASE=…` and
   its nightly CI job; the report goes to `.data/trace/report.json`. Tests `scripts/test_trace_requirements.py`, on
   planted PRD rows and test files, prove QA-TRACE-01's scenarios:
