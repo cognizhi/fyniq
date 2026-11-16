@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:8c270def303ad44c9097c42240f472b538c2c45db773507aa7ec529308922003
+  - docs/user-guide/organisation-settings.md sha256:c4f58d612337049afdf055dd5f06e468e1bc019d26fe39ca7b76767b7665b743
 data_class: general
 taint: trusted
 status: draft
@@ -34,6 +34,8 @@ aliases:
   - feature switches
   - switch off the AI
   - AI kill switch
+  - AI fallbacks
+  - route falls back
   - default settings
   - tolerance
   - retention period
@@ -142,6 +144,14 @@ The calendar itself: [[compliance.calendar]].
 - The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once.
 
 (src: docs/user-guide/organisation-settings.md#features)
+
+## AI routes
+
+- Each AI agent runs on a route: a model on a connection first, then the fallbacks it may use when the first fails.
+- **Fallbacks a day before a route needs attention**: 5 unless changed, from 1 to 1,000. When an agent's route falls back more often than this in a day, **Checks** shows it ([[checks.overview]]), so someone looks at the route's first step.
+- Changing it needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#ai-routes)
 
 ## Payment terms
 
