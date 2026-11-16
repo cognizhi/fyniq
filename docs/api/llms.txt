@@ -50,6 +50,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/ai/connections/{connection_id}/models/allow` (allowAIConnectionModel): Ask to put a model on an AI connection's allow-list
 - `POST /v1/ai/connections/{connection_id}/models/price` (priceAIConnectionModel): Ask to put an Owner's price on a model
 - `POST /v1/ai/connections/{connection_id}/models/probe` (probeAIConnectionModel): Probe a listed model on an AI connection
+- `POST /v1/ai/connections/{connection_id}/models/qualify` (qualifyAIConnectionModel): Qualify a listed model for an agent
 - `POST /v1/ai/connections/{connection_id}/models/refresh` (refreshAIConnectionModels): Read an AI connection's model list from its provider now
 - `POST /v1/ai/connections/{connection_id}/models/remove` (removeAIConnectionModel): Take a model off an AI connection's allow-list
 - `GET /v1/ai/data-policy` (getAIDataPolicy): Get the AI's data-class policy

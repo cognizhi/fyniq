@@ -76,6 +76,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   synthetic suite; moving aliases re-qualified weekly; a route, model or prompt change applied only with a passing eval
   run on its approval request; CTL-AI-05's control file and CI gate. Tests `// req: AI-78`, `// req: CMP-AI-03`,
   `// req: CTL-AI-05`.
+  Built so far (slice 20): runs per agent, connection, model and reported version; the suite format and the probe
+  suite; the qualify operation; the router's skips and the out-of-date marking; the daily `ai.qualify` job; route
+  changes and presets gated on a current pass (design D10, as built); `make evals` (`cmd/evals`) in replay with its
+  report, CTL-AI-05's control file and the CI job's artefact. Left: automatic qualification (AI-81).
 
 ## 6. The activity log and the switch
 

@@ -10,5 +10,6 @@ evidence: "Eval report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-ai-providers"
+    status: running
+    how: "make evals"
+    evidence: "each suite checked to judge soundly and each model's recorded run replayed against its threshold; the AI evals CI job's artefact eval-report (90 days). Until a model's answers are recorded the report says so; each agent's own suites arrive with it (p1-ai-assistant)"

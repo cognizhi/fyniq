@@ -87,6 +87,13 @@
       "$ref": "AIModelProbe.schema.json",
       "description": "The last probe on this connection: a few tokens of synthetic text (AI-80)."
     },
+    "qualifications": {
+      "description": "Its latest run of each agent's evals on this connection: it serves an agent only on a pass that is not out of date (AI-78, AI-87).",
+      "items": {
+        "$ref": "AIQualification.schema.json"
+      },
+      "type": "array"
+    },
     "reports": {
       "description": "What the list reports it supports, as the provider names it: hints, never proof (AI-71).",
       "items": {
@@ -144,7 +151,8 @@
     "last_listed",
     "allowed",
     "priced",
-    "serves"
+    "serves",
+    "qualifications"
   ],
   "title": "AIModel",
   "type": "object"

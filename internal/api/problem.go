@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
@@ -262,6 +263,10 @@ var codeFacts = map[string]struct {
 	aibudget.CodeBudget:           {422, "The AI budget is not valid"},
 	aibudget.CodeSpent:            {409, "An AI budget is spent this month"},
 	storage.CodeAIBudget:          {409, "An AI budget keeps its scope and each version, and its reservations are kept"},
+	aiqual.CodeNoSuite:            {422, "The agent has no eval suite yet"},
+	aiqual.CodeUnanswered:         {502, "The provider did not answer the evals"},
+	aiqual.CodeUnqualified:        {422, "A step's model has not passed the agent's evals on its connection"},
+	storage.CodeAIQualification:   {409, "A qualification is kept as it ran"},
 	airoute.CodeRoute:             {422, "The route is not valid"},
 	airoute.CodeStep:              {422, "A step of the route cannot serve it"},
 	airoute.CodeAgent:             {404, "Not an agent of this release"},

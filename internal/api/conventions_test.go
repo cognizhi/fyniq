@@ -74,6 +74,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "createTenantExportDownload Idempotency-Key", "createTenantExportDownload Prefer")                      // FR-MIG-04: a link, no record
 	want = append(want, "refreshAIConnectionModels Idempotency-Key", "refreshAIConnectionModels Prefer")                        // AI-80: a read of the provider's list
 	want = append(want, "probeAIConnectionModel Idempotency-Key", "probeAIConnectionModel Prefer")                              // AI-80: a probe of the provider
+	want = append(want, "qualifyAIConnectionModel Idempotency-Key", "qualifyAIConnectionModel Prefer")                          // AI-78: a run of an agent's evals
 	want = append(want, "removeAIConnectionModel Idempotency-Key", "removeAIConnectionModel Prefer")                            // AI-72: off at once, idempotent
 	want = append(want, "reviewAIPrice Idempotency-Key", "reviewAIPrice Prefer")                                                // AI-85: one review per version
 	want = append(want, "withdrawAIPrice Idempotency-Key", "withdrawAIPrice Prefer")                                            // AI-82: withdrawn once, at once
