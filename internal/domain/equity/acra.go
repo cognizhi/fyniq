@@ -22,6 +22,20 @@ const CodeAcra = "EQUITY-22"
 // MaxAcraHoldings is the most holdings an extract types in.
 const MaxAcraHoldings = 500
 
+// MaxAcraOfficers is the most officers an extract types in (p1-company-secretary design D3).
+const MaxAcraOfficers = 50
+
+// AcraRoles are the officers' roles the business profile lists, as the corporate profile names them.
+var AcraRoles = []string{"director", "secretary", "ceo", "auditor"}
+
+// AcraOfficer is one officer as the business profile lists them (FR-CS-01, design D3): their name, role and the day
+// they were appointed.
+type AcraOfficer struct {
+	Name      string
+	Role      string
+	Appointed time.Time
+}
+
 // AcraHolding is one holding as ACRA's register of members lists it: a holder's shares of a class, the class named by
 // its share-capital account (3010 ordinary, 3020 preference) [accountant to confirm for several preference series].
 type AcraHolding struct {
@@ -38,7 +52,15 @@ type AcraExtract struct {
 	Date      time.Time // the day it was drafted
 	ProfileOn time.Time // the business profile's day
 	Holdings  []AcraHolding
+	Officers  []AcraOfficer // the officers it lists (design D3); none on an extract typed before they were
+	Office    string        // the registered office it gives; empty on one typed before
 	Note      string
+}
+
+type acraOfficerPayload struct {
+	Name      string `json:"name"`
+	Role      string `json:"role"`
+	Appointed string `json:"appointed_on"`
 }
 
 type acraHoldingPayload struct {
@@ -51,6 +73,8 @@ type acraPayload struct {
 	Date      string               `json:"date"`
 	ProfileOn string               `json:"profile_on"`
 	Holdings  []acraHoldingPayload `json:"holdings"`
+	Officers  []acraOfficerPayload `json:"officers,omitempty"`
+	Office    string               `json:"registered_office,omitempty"`
 	Note      string               `json:"note,omitempty"`
 }
 
@@ -60,7 +84,12 @@ func EncodeAcra(x AcraExtract) ([]byte, error) {
 	for _, h := range x.Holdings {
 		holdings = append(holdings, acraHoldingPayload{HolderID: idText(h.HolderID), AccountID: idText(h.AccountID), Shares: h.Shares})
 	}
-	return json.Marshal(acraPayload{Date: dateText(x.Date), ProfileOn: dateText(x.ProfileOn), Holdings: holdings, Note: x.Note})
+	var officers []acraOfficerPayload
+	for _, o := range x.Officers {
+		officers = append(officers, acraOfficerPayload{Name: strings.TrimSpace(o.Name), Role: o.Role, Appointed: dateText(o.Appointed)})
+	}
+	return json.Marshal(acraPayload{Date: dateText(x.Date), ProfileOn: dateText(x.ProfileOn), Holdings: holdings, Officers: officers,
+		Office: strings.TrimSpace(x.Office), Note: x.Note})
 }
 
 // ReadAcra reads an extract's version as it was saved.
@@ -69,8 +98,15 @@ func ReadAcra(doc storage.Document) (AcraExtract, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return AcraExtract{}, err
 	}
-	out := AcraExtract{Note: p.Note}
+	out := AcraExtract{Office: p.Office, Note: p.Note}
 	var err error
+	for _, o := range p.Officers {
+		x := AcraOfficer{Name: o.Name, Role: o.Role}
+		if x.Appointed, err = time.Parse(time.DateOnly, o.Appointed); err != nil {
+			return out, err
+		}
+		out.Officers = append(out.Officers, x)
+	}
 	for _, h := range p.Holdings {
 		x := AcraHolding{Shares: h.Shares}
 		if x.HolderID, err = uuid.Parse(h.HolderID); err != nil {
@@ -125,6 +161,30 @@ func CheckAcra(x AcraExtract, s ledger.Settings, today time.Time) ledger.Problem
 			add(field, "the holder's shares of this class are typed twice", "Type each holder's shares of a class once")
 		}
 		seen[key{h.HolderID, h.AccountID}] = true
+	}
+	if len(x.Officers) > MaxAcraOfficers {
+		add("officers", fmt.Sprintf("%d officers are more than %d", len(x.Officers), MaxAcraOfficers), "Ask for help to reconcile a profile this large")
+	}
+	for k, o := range x.Officers {
+		field := fmt.Sprintf("officers[%d]", k)
+		if n := utf8.RuneCountInString(strings.TrimSpace(o.Name)); n == 0 || n > 200 {
+			add(field+".name", "the name is empty or longer than 200 characters", "Type the name as the business profile lists it")
+		}
+		if !slices.Contains(AcraRoles, o.Role) {
+			add(field+".role", fmt.Sprintf("%q is not an officer's role", o.Role), "Choose director, secretary, ceo or auditor")
+		}
+		switch {
+		case o.Appointed.IsZero():
+			add(field+".appointed_on", "the day appointed is missing", "Type it as the business profile lists it")
+		case !x.ProfileOn.IsZero() && o.Appointed.After(x.ProfileOn):
+			add(field+".appointed_on", "appointed after the business profile's day", "Type the day the business profile lists")
+		}
+		if fullNRIC.MatchString(o.Name) {
+			add(field+".name", "it shows an NRIC or FIN in full", "Type the name only")
+		}
+	}
+	if utf8.RuneCountInString(x.Office) > MaxAddress {
+		add("registered_office", fmt.Sprintf("the registered office is longer than %d characters", MaxAddress), "Shorten it")
 	}
 	if utf8.RuneCountInString(x.Note) > MaxNote {
 		add("note", fmt.Sprintf("the note is longer than %d characters", MaxNote), "Shorten it")

@@ -329,6 +329,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/officers/{version_id}/evidence` (addCorporateOfficerEvidence): Attach an officer's evidence
 - `GET /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (getCorporateOfficerEvidence): Get an officer's version's file
 - `DELETE /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (removeCorporateOfficerEvidence): Remove a file from a drafted officer's version
+- `GET /v1/corporate-profile/reconciliation` (getCorporateReconciliation): Reconcile the corporate profile with ACRA's business profile
 - `POST /v1/corporate-profile/statements-approvals` (createStatementsApproval): Draft the directors' approval of a year's financial statements
 - `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}` (getStatementsApproval): Get a statements approval
 - `PUT /v1/corporate-profile/statements-approvals/{statements_approval_id}` (replaceStatementsApproval): Change a drafted statements approval

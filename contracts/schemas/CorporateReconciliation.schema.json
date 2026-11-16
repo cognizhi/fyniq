@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "differences": {
+      "description": "Each difference: fix the profile by a new version citing the extract, or the typing by a newer extract.",
+      "items": {
+        "$ref": "CorporateDifference.schema.json"
+      },
+      "type": "array"
+    },
+    "extract_id": {
+      "description": "The extract in force.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "profile_on": {
+      "description": "Its business profile's day: the day compared.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is not assessed, naming the input.",
+      "examples": [
+        "No ACRA business profile is recorded: type one in with its officers and registered office, with its PDF"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "reconciled: the officers and office agree on the extract's day; differs: each difference is listed; not_assessed: the reason names the missing input.",
+      "enum": [
+        "reconciled",
+        "differs",
+        "not_assessed"
+      ],
+      "examples": [
+        "differs"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "differences"
+  ],
+  "title": "CorporateReconciliation",
+  "type": "object"
+}

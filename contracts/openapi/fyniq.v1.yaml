@@ -5547,11 +5547,25 @@ components:
             - Business profile bought on 1 Oct 2026
           maxLength: 1000
           type: string
+        officers:
+          description: "The officers it lists, to reconcile the corporate profile with (FR-CS-01, C.2 #34): an extract without them leaves the profile not assessed."
+          items:
+            $ref: "#/components/schemas/AcraOfficerDraft"
+          maxItems: 50
+          type:
+            - array
+            - "null"
         profile_on:
           description: The day the business profile was generated, as printed on it.
           examples:
             - "2026-10-01"
           format: date
+          type: string
+        registered_office:
+          description: The registered office it gives.
+          examples:
+            - "1 North Bridge Road, #08-08, Singapore 179094"
+          maxLength: 500
           type: string
       required:
         - profile_on
@@ -5602,6 +5616,11 @@ components:
           examples:
             - Business profile bought on 1 Oct 2026
           type: string
+        officers:
+          description: The officers typed in; none on an extract typed before they were (design D3).
+          items:
+            $ref: "#/components/schemas/AcraOfficerDraft"
+          type: array
         profile_on:
           description: The business profile's day.
           examples:
@@ -5617,6 +5636,11 @@ components:
         recorded_by:
           $ref: "#/components/schemas/Person"
           description: Who recorded it.
+        registered_office:
+          description: The registered office typed in.
+          examples:
+            - "1 North Bridge Road, #08-08, Singapore 179094"
+          type: string
         status:
           description: "draft: waiting for its PDF and to be recorded; recorded: in force; superseded: a later business profile is recorded."
           enum:
@@ -5638,6 +5662,7 @@ components:
         - version
         - profile_on
         - holdings
+        - officers
         - evidence
         - checks
       type: object
@@ -5704,6 +5729,36 @@ components:
         - holder_id
         - class_account_id
         - shares
+      type: object
+    AcraOfficerDraft:
+      additionalProperties: false
+      properties:
+        appointed_on:
+          description: The day the business profile says they were appointed.
+          examples:
+            - "2026-03-02"
+          format: date
+          type: string
+        name:
+          description: Their name as the business profile lists it.
+          examples:
+            - Tan Mei Lin
+          maxLength: 200
+          type: string
+        role:
+          description: Their office.
+          enum:
+            - director
+            - secretary
+            - ceo
+            - auditor
+          examples:
+            - director
+          type: string
+      required:
+        - name
+        - role
+        - appointed_on
       type: object
     AcraReconciliation:
       additionalProperties: false
@@ -17695,6 +17750,47 @@ components:
         - evidence
         - checks
       type: object
+    CorporateDifference:
+      additionalProperties: false
+      properties:
+        acra:
+          description: What ACRA's extract lists.
+          examples:
+            - "2026-03-03"
+          type: string
+        kind:
+          description: "missing_in_fyniq: ACRA lists an officer the profile does not have in office; missing_at_acra: the profile has one ACRA does not list; appointed_differs: the day appointed differs; office_differs: the registered office differs."
+          enum:
+            - missing_in_fyniq
+            - missing_at_acra
+            - appointed_differs
+            - office_differs
+          examples:
+            - appointed_differs
+          type: string
+        name:
+          description: The officer's name.
+          examples:
+            - Tan Mei Lin
+          type: string
+        profile:
+          description: "What the profile holds: the day appointed, or the office."
+          examples:
+            - "2026-03-02"
+          type: string
+        role:
+          description: The officer's role.
+          enum:
+            - director
+            - secretary
+            - ceo
+            - auditor
+          examples:
+            - director
+          type: string
+      required:
+        - kind
+      type: object
     CorporateOfficerDraft:
       additionalProperties: false
       properties:
@@ -18039,6 +18135,44 @@ components:
         - nominees
         - nominee_history
         - statements_approvals
+      type: object
+    CorporateReconciliation:
+      additionalProperties: false
+      properties:
+        differences:
+          description: "Each difference: fix the profile by a new version citing the extract, or the typing by a newer extract."
+          items:
+            $ref: "#/components/schemas/CorporateDifference"
+          type: array
+        extract_id:
+          description: The extract in force.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01
+          format: uuid
+          type: string
+        profile_on:
+          description: "Its business profile's day: the day compared."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        reason:
+          description: Why it is not assessed, naming the input.
+          examples:
+            - "No ACRA business profile is recorded: type one in with its officers and registered office, with its PDF"
+          type: string
+        status:
+          description: "reconciled: the officers and office agree on the extract's day; differs: each difference is listed; not_assessed: the reason names the missing input."
+          enum:
+            - reconciled
+            - differs
+            - not_assessed
+          examples:
+            - differs
+          type: string
+      required:
+        - status
+        - differences
       type: object
     CreditApplication:
       additionalProperties: false
@@ -103321,6 +103455,108 @@ paths:
         - API-INPUT-02
         - API-NOT-FOUND-01
         - API-RATE-01
+      x-fyniq-permission:
+        capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
+        right: V
+  /v1/corporate-profile/reconciliation:
+    get:
+      description: "The corporate profile on the day of the ACRA extract in force, against the officers and registered office it lists (FR-CS-01, design D3, C.2 #34): an officer missing on either side, a day appointed that differs, an office that differs. Not assessed, naming the input, while no extract is recorded, the extract has no officers typed in, or it is older than the profile's last recorded change. Read-only; no side effects."
+      operationId: getCorporateReconciliation
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorporateReconciliation"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Reconcile the corporate profile with ACRA's business profile
+      tags:
+        - Corporate profile
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
         right: V

@@ -922,3 +922,60 @@ func registerCorporateProfile(a *API) {
 		}
 	}
 }
+
+// CorporateDifference is one way the profile and ACRA's business profile differ on the extract's day (C.2 #34).
+type CorporateDifference struct {
+	Kind    string `json:"kind" enum:"missing_in_fyniq,missing_at_acra,appointed_differs,office_differs" doc:"missing_in_fyniq: ACRA lists an officer the profile does not have in office; missing_at_acra: the profile has one ACRA does not list; appointed_differs: the day appointed differs; office_differs: the registered office differs." example:"appointed_differs"`
+	Role    string `json:"role,omitempty" enum:"director,secretary,ceo,auditor" doc:"The officer's role." example:"director"`
+	Name    string `json:"name,omitempty" doc:"The officer's name." example:"Tan Mei Lin"`
+	Profile string `json:"profile,omitempty" doc:"What the profile holds: the day appointed, or the office." example:"2026-03-02"`
+	ACRA    string `json:"acra,omitempty" doc:"What ACRA's extract lists." example:"2026-03-03"`
+}
+
+// CorporateReconciliation is the corporate profile against the ACRA extract in force (FR-CS-01, design D3).
+type CorporateReconciliation struct {
+	Status      string                `json:"status" enum:"reconciled,differs,not_assessed" doc:"reconciled: the officers and office agree on the extract's day; differs: each difference is listed; not_assessed: the reason names the missing input." example:"differs"`
+	Reason      string                `json:"reason,omitempty" doc:"Why it is not assessed, naming the input." example:"No ACRA business profile is recorded: type one in with its officers and registered office, with its PDF"`
+	ExtractID   string                `json:"extract_id,omitempty" format:"uuid" doc:"The extract in force." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01"`
+	ProfileOn   string                `json:"profile_on,omitempty" format:"date" doc:"Its business profile's day: the day compared." example:"2026-10-01"`
+	Differences []CorporateDifference `json:"differences" nullable:"false" doc:"Each difference: fix the profile by a new version citing the extract, or the typing by a newer extract."`
+}
+
+type corporateReconcileOutput struct{ Body CorporateReconciliation }
+
+func registerCorporateReconciliation(a *API) {
+	register(a, authz.GetCorporateReconciliation, huma.Operation{
+		OperationID: "getCorporateReconciliation", Method: http.MethodGet, Path: "/v1/corporate-profile/reconciliation", Tags: []string{"Corporate profile"},
+		Summary: "Reconcile the corporate profile with ACRA's business profile",
+		Description: "The corporate profile on the day of the ACRA extract in force, against the officers and registered office it lists " +
+			"(FR-CS-01, design D3, C.2 #34): an officer missing on either side, a day appointed that differs, an office that differs. Not " +
+			"assessed, naming the input, while no extract is recorded, the extract has no officers typed in, or it is older than the " +
+			"profile's last recorded change. Read-only; no side effects.",
+	}, []string{storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, in *struct{}) (*corporateReconcileOutput, error) {
+		p, _ := authn.From(ctx)
+		var out corporateReconcileOutput
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			r, err := corporate.ReconcileProfileIn(ctx, u)
+			if err != nil {
+				return err
+			}
+			out.Body = CorporateReconciliation{Status: "not_assessed", Reason: r.Reason, Differences: []CorporateDifference{}}
+			if r.Extract != nil {
+				out.Body.ExtractID, out.Body.ProfileOn = r.Extract.Doc.ID.String(), r.Extract.Value.ProfileOn.Format(time.DateOnly)
+			}
+			if r.Assessed {
+				out.Body.Status = "reconciled"
+				for _, d := range r.Differences {
+					out.Body.Status = "differs"
+					x := CorporateDifference{Kind: d.Kind, Role: d.Role, Name: d.Name, Profile: d.Profile, ACRA: d.ACRA}
+					if masked(ctx) && d.Kind != corporate.DiffOffice {
+						x.Profile, x.ACRA = "", ""
+					}
+					out.Body.Differences = append(out.Body.Differences, x)
+				}
+			}
+			return nil
+		})
+		return &out, err
+	})
+}
