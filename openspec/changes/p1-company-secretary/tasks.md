@@ -117,9 +117,14 @@
 
 ## 5. The role
 
-- [ ] 5.1 The Company secretary role's own cells (Appendix D's note): C on the corporate profile, registers and
+- [x] 5.1 The Company secretary role's own cells (Appendix D's note): C on the corporate profile, registers and
   evidence; V on the equity register and the runs; nothing on transactions, payroll or bank details; the matrix's
   expectations (design D7). Tests `// req: FR-CS-08`.
+  As built: `authz.SecretaryCells` gives the role C on "Corporate profile and registers" (rev 0.282) and on Evidence, V
+  on the cap table (every holding) and on the AI company secretary; elsewhere the Board viewer's column. Evidence of a
+  transaction needs a view of its own row, which the role does not hold, so C on Evidence reaches only the profile's,
+  the registers' and the runs' files. The matrix test keeps its own copy of the note (`secretaryNote`), apart from the
+  code, and checks every operation of those rows and the approvals for every role.
 
 ## 6. The screen
 

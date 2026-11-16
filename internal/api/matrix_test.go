@@ -2536,7 +2536,11 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		}
 		// "Accountant review" reaches the approvals too: the Accountant signs a step that names their review (FM-9, rev 0.205).
 		for _, c := range append(slices.Clip(authz.ApprovalRows), authz.AccountantReview) {
-			cell := authztest.ParseCell(rows[string(c)][authz.Column(role)])
+			text := rows[string(c)][authz.Column(role)]
+			if own, ok := secretaryNote[c]; ok && role == authz.CompanySecretary {
+				text = own
+			}
+			cell := authztest.ParseCell(text)
 			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts || c == authz.CapTable) && cell.Qualifier != "" {
 				continue // an Employee's own claims are reached from the claim, not the approvals (design D10); nor is "C (salaries)",
 				// nor a qualified view of director accounts (own, deferred pay, share issues, repayments), nor an Employee's own
@@ -2570,10 +2574,14 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		}
 		return c
 	}
-	allowed, masked = authztest.Allows(cellOf(row[col]), p.Need)
+	text := row[col]
+	if own, ok := secretaryNote[p.Capability]; ok && role == authz.CompanySecretary {
+		text = own
+	}
+	allowed, masked = authztest.Allows(cellOf(text), p.Need)
 	// A qualified cell, such as Reports' "V sales" (rev 0.52), grants an Unqualified operation only when the operation reads
 	// that part of the books alone: the sales reports for "sales" (p1-reports design D9).
-	if q := cellOf(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
+	if q := cellOf(text).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
 		return false, false
 	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
@@ -2587,6 +2595,11 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	}
 	return allowed, masked
 }
+
+// secretaryNote is Appendix D's note on the Company secretary, as cells (rev 0.6, 0.280, 0.282; FR-CS-08): C on the
+// corporate profile and registers and on evidence, V on the equity register and the AI company secretary's runs, the
+// Board viewer's column elsewhere. Written here from the note, apart from the code's SecretaryCells.
+var secretaryNote = map[authz.Capability]string{authz.CorporateProfile: "C", authz.Evidence: "C", authz.CapTable: "V", authz.AICompanySecretary: "V"}
 
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
 // allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half).
