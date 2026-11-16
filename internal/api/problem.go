@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aimodel"
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
+	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -257,6 +258,10 @@ var codeFacts = map[string]struct {
 	aiprice.CodeReview:            {409, "The price is not waiting for that review"},
 	aiprice.CodeEntered:           {422, "The Owner's price is not valid"},
 	aiprice.CodeWithdraw:          {409, "Only an Owner's price in force can be withdrawn"},
+	airoute.CodeRoute:             {422, "The route is not valid"},
+	airoute.CodeStep:              {422, "A step of the route cannot serve it"},
+	airoute.CodeAgent:             {404, "Not an agent of this release"},
+	storage.CodeAIRoute:           {409, "A route keeps each version as it was made, and names only allowed models"},
 	storage.CodeAIPrice:           {409, "A price is kept as recorded, and an Owner's price is never overwritten by a read"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
 	migration.CodeMapping:         {422, "The mapping does not fit the organisation's set-up"},

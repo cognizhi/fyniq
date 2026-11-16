@@ -90,6 +90,8 @@ The model price catalogue's downloads (000350, AI-82, AI-85): `ai_price_catalogu
 catalogue, with its SHA-256, size, source, licence check and outcome; the document itself in the file store under its
 digest), read by every service through `ai_price_catalogues` and written only by the worker's daily read through
 `record_ai_price_catalogue`; no role holds a grant on the table, and a download never changes or goes.
+The agents that call a model (000356, AI-74): `ai_agent` (each agent, the data classes it may ever handle and the model
+line its presets pin), written only by the migrations, read by every service through `ai_agents`.
 The registry of email-in address names (000102, FR-INT-22): `capture_name` (a name, its owning organisation for good,
 and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
 the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to

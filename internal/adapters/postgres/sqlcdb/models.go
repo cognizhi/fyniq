@@ -123,6 +123,24 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAiAgent struct {
+	ID          string
+	Name        string
+	Description string
+	Classes     []string
+	Line        string
+	Position    int32
+}
+
+type FyniqAiAgents struct {
+	ID          string
+	Name        string
+	Description string
+	Classes     []string
+	Line        string
+	Position    int32
+}
+
 type FyniqAiConnection struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -273,6 +291,30 @@ type FyniqAiPriceRate struct {
 	Above          int64
 	Unit           string
 	Amount         string
+}
+
+type FyniqAiRoute struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	Version        int32
+	Classes        []string
+	Preset         *string
+	ApprovalID     *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+	CreatedXact    int64
+}
+
+type FyniqAiRouteStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RouteID        uuid.UUID
+	Position       int32
+	ConnectionID   uuid.UUID
+	Model          string
+	Effort         string
+	Cache          bool
 }
 
 type FyniqAllocation struct {
