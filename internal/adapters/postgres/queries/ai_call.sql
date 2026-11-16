@@ -27,3 +27,16 @@ FROM fyniq.ai_call
 WHERE started_at >= sqlc.arg(from_at) AND started_at < sqlc.arg(to_at)
 GROUP BY connection_id, model_requested, agent, actor
 ORDER BY connection_id, model_requested, agent, actor;
+
+-- name: AICallsPage :many
+SELECT id, run_id, agent, route_version, step, fell_back_from, connection_id, model_requested, model_reported, version_reported, actor,
+  classes, outcome, detail, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, coalesce(cost::text, '')::text AS cost, currency,
+  price_id, coalesce(cost_base::text, '')::text AS cost_base, latency_ms, started_at, recorded_at
+FROM fyniq.ai_call
+WHERE (sqlc.narg(actor)::text IS NULL OR actor = sqlc.narg(actor)::text)
+  AND (sqlc.narg(agent)::text IS NULL OR agent = sqlc.narg(agent)::text)
+  AND (sqlc.narg(run)::uuid IS NULL OR run_id = sqlc.narg(run)::uuid)
+  AND started_at >= sqlc.arg(from_at) AND started_at < sqlc.arg(to_at)
+  AND (sqlc.narg(before_at)::timestamptz IS NULL OR (started_at, id) < (sqlc.narg(before_at)::timestamptz, sqlc.narg(before_id)::uuid))
+ORDER BY started_at DESC, id DESC
+LIMIT sqlc.arg(page_size)::integer;

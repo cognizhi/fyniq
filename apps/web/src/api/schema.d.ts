@@ -388,6 +388,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the AI activity log
+         * @description The AI activity log (AI-12), newest first, a page at a time: every attempt of a model call, with the agent, the route's step and what it fell back from, the connection, the model requested and the model and version that answered, who it ran for, the classes it carried, the outcome, the tokens and the cost; filtered by agent, person, run and days. Each member reads their own entries; the Owner and the DPO read everyone's (Appendix D, rev 0.276). Someone else's entry that carried payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such an entry unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["listAIActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/budgets": {
         parameters: {
             query?: never;
@@ -818,6 +838,46 @@ export interface paths {
          */
         put: operations["setAIRoute"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI's switch and budgets
+         * @description The AI switch (features.ai_assistant, AI-13) as it stands today, with its pending changes, and the monthly AI budgets with what this month used of each (AI-77). Switch it on with updateSetting, which a second approver approves; switch it off at once with switchOffAI. Read-only; no side effects.
+         */
+        get: operations["getAISettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/settings/switch-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch the AI off at once
+         * @description The Owner's kill switch (AI-13): turns features.ai_assistant off from today, with no second approver, and cancels any change already approved to turn it on later. New calls are refused at once, and a stream running now stops at its next check, within 10 seconds; accounting, checks and deadlines keep working. Switching it on again needs updateSetting and a second approver. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. Side effects: the setting's next versions and their audit events. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["switchOffAI"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11384,7 +11444,7 @@ export interface paths {
         head?: never;
         /**
          * Change an organisation setting
-         * @description Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once: the answer is 202 with an approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the setting's next version and its audit event, with the value before and after; or the approval request and its audit event. Needs If-Match with its ETag ("0" before any change). Prefer: return=preview checks it and saves nothing.
+         * @description Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once, except a kill switch turned off, which is (AI-13: the AI assistant): the answer is 202 with an approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the setting's next version and its audit event, with the value before and after; or the approval request and its audit event. Needs If-Match with its ETag ("0" before any change). Prefer: return=preview checks it and saves nothing.
          */
         patch: operations["updateSetting"];
         trace?: never;
@@ -14377,6 +14437,149 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIActivityEntry: {
+            /** @example chat */
+            agent: string;
+            /** @description The classes of data it carried (AI-83). */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * @description The connection's name.
+             * @example Claude in Singapore
+             */
+            connection: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            connection_id: string;
+            /**
+             * @description Its exact cost in the price's currency; absent when unpriced.
+             * @example 0.006
+             */
+            cost?: string;
+            /**
+             * @description Its cost in the base currency at the day's rate, exact.
+             * @example 0.0081
+             */
+            cost_base?: string;
+            /** @example USD */
+            currency?: string;
+            /**
+             * @description Why it was skipped, stopped or failed, or why it has no cost; absent when masked.
+             * @example the connection's AI budget is spent this month
+             */
+            detail?: string;
+            /**
+             * Format: int64
+             * @description The step before it, which failed or was skipped (AI-76).
+             * @example 1
+             */
+            fell_back_from?: number;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a41
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @example 1840
+             */
+            latency_ms: number;
+            /**
+             * @description It carried payroll and you may not see payroll unmasked: its detail is withheld (FR-PAY-13).
+             * @example false
+             */
+            masked: boolean;
+            /**
+             * @description The model the provider says answered (AI-87).
+             * @example claude-opus-4-6
+             */
+            model_reported?: string;
+            /** @example claude-opus-4-6 */
+            model_requested: string;
+            /**
+             * @description ok: served; skipped: not sent, as the detail says; stopped: refused before sending, or cancelled.
+             * @example ok
+             * @enum {string}
+             */
+            outcome: "ok" | "skipped" | "busy" | "timeout" | "not_found" | "refused" | "failed" | "stopped";
+            /**
+             * @description Who it ran for: user:<id>, or the system for a job.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            person: string;
+            /**
+             * Format: int64
+             * @description The route's version it followed; 0 for a probe or an eval run, outside any route.
+             * @example 2
+             */
+            route_version: number;
+            /**
+             * Format: uuid
+             * @description The run its attempts share: a call and its fallbacks, or an eval run.
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a42
+             */
+            run: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-14T09:00:00Z
+             */
+            started_at: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            step: number;
+            tokens: components["schemas"]["AIActivityTokens"];
+            /**
+             * @description Its version, where the provider reports one (AI-87).
+             * @example 20260801
+             */
+            version_reported?: string;
+        };
+        AIActivityPage: {
+            items: components["schemas"]["AIActivityEntry"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTEtMTRUMDk6MDA6MDBafDAxOTMifQ
+             */
+            next_cursor?: string;
+            /**
+             * @description own: your own entries only; all: every member's, for the Owner and the DPO (Appendix D).
+             * @example own
+             * @enum {string}
+             */
+            scope: "own" | "all";
+        };
+        AIActivityTokens: {
+            /**
+             * Format: int64
+             * @example 0
+             */
+            cache_read: number;
+            /**
+             * Format: int64
+             * @example 0
+             */
+            cache_write: number;
+            /**
+             * Format: int64
+             * @description Fresh input, without what was read from or written to the cache.
+             * @example 1200
+             */
+            input: number;
+            /**
+             * Format: int64
+             * @description Output, reasoning included.
+             * @example 340
+             */
+            output: number;
+            /**
+             * Format: int64
+             * @example 120
+             */
+            reasoning: number;
+        };
         AIAgentRoute: {
             /** @example chat */
             agent: string;
@@ -15564,6 +15767,12 @@ export interface components {
              * @example claude-opus-4-6
              */
             model: string;
+        };
+        AISettings: {
+            /** @description The monthly AI budgets and what this month used of each (AI-77, AI-86). */
+            budgets: components["schemas"]["AIBudgetList"];
+            /** @description The AI switch, the setting features.ai_assistant: switched on only with a second approver; switched off at once (AI-13). */
+            switch: components["schemas"]["Setting"];
         };
         AIUsage: {
             by_agent: components["schemas"]["AIUsageByAgent"][];
@@ -43098,6 +43307,11 @@ export interface components {
              */
             needs_second_approver: boolean;
             /**
+             * @description A kill switch (AI-13): turning it off needs no second approver and takes effect at once; turning it on still needs one.
+             * @example false
+             */
+            off_at_once: boolean;
+            /**
              * @description Why the recommended value.
              * @example An invoice to a customer with no terms of its own falls due 30 days after its date
              */
@@ -49542,6 +49756,114 @@ export interface operations {
             };
         };
     };
+    listAIActivity: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this agent's entries. */
+                agent?: string;
+                /** @description Only this member's entries, by user ID: for the Owner and the DPO; anyone else reads only their own. */
+                person?: string;
+                /** @description Only one run's attempts. */
+                run?: string;
+                /** @description Only entries on or after this day, in Singapore time. */
+                from?: string;
+                /** @description Only entries on or before this day. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIActivityPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAIBudgets: {
         parameters: {
             query?: never;
@@ -52408,6 +52730,209 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAISettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    switchOffAI: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

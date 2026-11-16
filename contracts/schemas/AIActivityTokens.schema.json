@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cache_read": {
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cache_write": {
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "input": {
+      "description": "Fresh input, without what was read from or written to the cache.",
+      "examples": [
+        1200
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "output": {
+      "description": "Output, reasoning included.",
+      "examples": [
+        340
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reasoning": {
+      "examples": [
+        120
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "input",
+    "output",
+    "cache_read",
+    "cache_write",
+    "reasoning"
+  ],
+  "title": "AIActivityTokens",
+  "type": "object"
+}
