@@ -264,12 +264,14 @@ func TestAttackApprovalPoliciesAreApprovedVersions(t *testing.T) {
 	if err := decides(st, a.Org, pol, "approved", now); err != nil {
 		t.Fatal(err)
 	}
-	other, gap, by, typ := ok, ok, ok, ok
+	other, gap, by, typ, ruled := ok, ok, ok, ok, ok
 	other.Steps = one
 	gap.Version = 2
 	by.CreatedBy = approver
 	typ.ObjectType = "membership"
+	ruled.Rules = []storage.ApprovalRule{{Conditions: storage.ApprovalConditions{AmountAtLeast: "1.00"}, Steps: one}} // rev 0.178
 	wantState(t, "a version with steps other than the approved", add(other), "FY105")
+	wantState(t, "a version with rules the approved request does not hold", add(ruled), "FY105")
 	wantState(t, "a version past the next", add(gap), "FY105")
 	wantState(t, "a version made by someone other than its requester", add(by), "FY105")
 	wantState(t, "a version of another object type", add(typ), "FY105")
