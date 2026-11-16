@@ -10,8 +10,41 @@
    },
    "fixtures": {
     "posting/expected.json": "b1e20f7a6fd7af2bb2e8f155a47045ac52aa9475596dc938251517ab99e61a02",
-    "posting/mapping.json": "baa193c936d23bcb5430744d508c8ed12ee2046db62757abdb8d1ba4213b0156",
-    "posting/scenario.json": "2e8080bd96d7b537f364467f84071a909c63b555a12780e40b95ec3f88e1164f"
+    "posting/mapping.json": "e61869632d16129b4e8a2aae69ca69c6f31f73f6c72477aac2a1e367eb859d34",
+    "posting/scenario.json": "a94f1c5f8c49387abc33d303ad4b16d84867d53ce0e24a9d0ed8915f15fe9f4a"
+   }
+  },
+  "document-numbers": {
+   "sources": {
+    "tests/test_edge_docnumbers.py": "1ff48ac465f305ea8b806701799d1f06fcdc811251f3f2683a969d9bbcbb71ff",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "document-numbers/expected.json": "a2ba1b2136132b31426b6d4d42af177f0bd284b77254993b44550020295385a0",
+    "document-numbers/mapping.json": "4665c6d0d0a221ba9e27201ed11f2161f266420c6e5709c8fa62d5053670df58",
+    "document-numbers/scenario.json": "5027038c058f79060560d22b6ac0c540670f2f11f3a70809463b42b09c4a278a"
+   }
+  },
+  "regressions": {
+   "sources": {
+    "tests/test_regressions.py": "4bc25eb24bf1b92ec75f8f4b69c0860fd80c77fdf8d0f7454d420aea155f999b",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "regressions/expected.json": "0885ef9f350310ca477ceda75b2091f34037befc522ca161295d9156ed2cf2ca",
+    "regressions/mapping.json": "1c362e52fd232561f7e277972feb748cf09ba65d8e6ebd95e162dd5d968c2826",
+    "regressions/scenario.json": "ca94ac6d1c79bf61cf4727e8be921e706feb2f36d7d71150ca84867ef73d1cfa"
+   }
+  },
+  "miscellaneous": {
+   "sources": {
+    "tests/test_edge_misc.py": "fa941182ce9a7dc6d37bb77f027e375b1199c6a7f5ed75b5c309de92aa668cc5",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "miscellaneous/expected.json": "267187e0395bc1acd4f06b5e6a4d622791b031d2ff65925d818c9046b2187762",
+    "miscellaneous/mapping.json": "45dc261e6ffa8767bfda338de0466c0c9e7440a96aab53a237818db1d8664925",
+    "miscellaneous/scenario.json": "2aa2eb0edb651af946c018067d1ffd95d44b0fed2eb6be2e182024558e0c47e9"
    }
   }
  }

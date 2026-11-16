@@ -540,13 +540,13 @@
    "2150": "SGD"
   },
   "gst": {
-   "registered_from": "2025-01-01",
    "rates": [
     {
      "from": "2024-01-01",
      "percent": "9"
     }
-   ]
+   ],
+   "registered_from": "2025-01-01"
   }
  },
  "as_of": "2026-10-15",
@@ -556,7 +556,7 @@
    "id": "OB",
    "version": 1,
    "date": "2026-01-01",
-   "memo": "The edge data set's opening position",
+   "memo": "The data set's opening position",
    "lines": [
     {
      "account": "1020",
@@ -564,14 +564,14 @@
      "amount": "60000.00"
     },
     {
-     "account": "3010",
-     "currency": "SGD",
-     "amount": "-65450.00"
-    },
-    {
      "account": "3900",
      "currency": "SGD",
      "amount": "5450.00"
+    },
+    {
+     "account": "3010",
+     "currency": "SGD",
+     "amount": "-65450.00"
     }
    ]
   },
@@ -728,6 +728,26 @@
      "gst_code": "NA"
     }
    ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-ACCT-11",
+   "version": 1,
+   "date": "2026-03-04",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [],
+   "unapplied": "200.00"
+  },
+  {
+   "type": "bill_payment",
+   "id": "PY-ACCT-13",
+   "version": 1,
+   "date": "2026-03-04",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [],
+   "unapplied": "400.00"
   },
   {
    "type": "bank_transaction",

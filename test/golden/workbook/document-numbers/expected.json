@@ -1,0 +1,181 @@
+{
+ "schema": "fyniq-workbook-golden@1",
+ "set": "document-numbers",
+ "scenario": "scenario.json",
+ "rejected": [
+  "J-star",
+  "J1"
+ ],
+ "checks": [
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "INV-9*: outstanding (Inv_Outstanding)",
+   "documents": [
+    "INV-9-star",
+    "RC-INV-9-star"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "INV-9*: paid (Inv_Paid), by its own payment only",
+   "documents": [
+    "RC-INV-9-star"
+   ],
+   "account": "1100",
+   "base": "-1000.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "INV-90: outstanding (Inv_Outstanding)",
+   "documents": [
+    "INV-90",
+    "RC-INV-90"
+   ],
+   "account": "1100",
+   "base": "1500.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "INV-90: paid (Inv_Paid), by its own payment only",
+   "documents": [
+    "RC-INV-90"
+   ],
+   "account": "1100",
+   "base": "-500.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "INV-91: outstanding (Inv_Outstanding)",
+   "documents": [
+    "INV-91",
+    "RC-INV-91"
+   ],
+   "account": "1100",
+   "base": "400.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "1001 (typed as a number): outstanding (Inv_Outstanding)",
+   "documents": [
+    "1001",
+    "RC-1001"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "1001 (typed as a number): paid (Inv_Paid), by its own payment only",
+   "documents": [
+    "RC-1001"
+   ],
+   "account": "1100",
+   "base": "-300.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "1002 (digits as text): outstanding (Inv_Outstanding)",
+   "documents": [
+    "1002",
+    "RC-1002"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "1002 (digits as text): paid (Inv_Paid), by its own payment only",
+   "documents": [
+    "RC-1002"
+   ],
+   "account": "1100",
+   "base": "-250.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "~A: outstanding (Inv_Outstanding)",
+   "documents": [
+    "tilde-A",
+    "RC-tilde-A"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "~A: paid (Inv_Paid), by its own payment only",
+   "documents": [
+    "RC-tilde-A"
+   ],
+   "account": "1100",
+   "base": "-50.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "<B1>: outstanding (Bill_Outstanding)",
+   "documents": [
+    "lt-B1-gt",
+    "PY-lt-B1-gt"
+   ],
+   "account": "2010",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "<B1>: paid (Bill_Paid), once",
+   "documents": [
+    "PY-lt-B1-gt"
+   ],
+   "account": "2010",
+   "base": "700.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "A-7, which sorts before B1>: outstanding (Bill_Outstanding)",
+   "documents": [
+    "A-7",
+    "PY-A-7"
+   ],
+   "account": "2010",
+   "base": "0.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "A-7, which sorts before B1>: paid (Bill_Paid), once",
+   "documents": [
+    "PY-A-7"
+   ],
+   "account": "2010",
+   "base": "60.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "Wild Customer owes 1,500 + 400: the payment quoting INV-9?, which names no invoice, waits",
+   "months": [
+    "2026-01",
+    "2026-12"
+   ],
+   "account": "1100",
+   "base": "1900.00"
+  },
+  {
+   "test": "test_payments_find_only_their_own_document",
+   "what": "Wild Supplier: both bills paid",
+   "months": [
+    "2026-01",
+    "2026-12"
+   ],
+   "account": "2010",
+   "base": "0.00"
+  },
+  {
+   "test": "test_unbalanced_journal_entries_do_not_post",
+   "what": "J2, balanced, posts; J* and J1 do not",
+   "month": "2026-06",
+   "account": "6340",
+   "base": "30.00"
+  }
+ ]
+}
