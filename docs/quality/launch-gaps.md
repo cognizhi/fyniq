@@ -10,18 +10,18 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 597 |
+| Covered by a tagged test | 599 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 34 |
 | Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
-| Untested, blocking | 127 |
+| Untested, blocking | 125 |
 
-Once the stacked chain (#643 to #739) merges, 81 stay untested. The chain's tests cover 46.
+Once the stacked chain (#645 to #739) merges, 81 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
-### When the chain merges (46)
+### When the chain merges (44)
 
-- `p1-ai-providers`: AI-12, CTL-AI-05, CMP-AI-02, CMP-AI-03, C.2 #55.
+- `p1-ai-providers`: AI-12, CMP-AI-02, C.2 #55.
 - `p1-ai-assistant`: AI-01 to AI-05, AI-18 to AI-25, AI-68, AI-69, QA-AI-01 to QA-AI-03, QA-AI-07, CTL-AI-06.
 - `p1-scheduled-agents`: AI-61 to AI-65, AI-67, CTL-AI-09, C.2 #36, G4-076.
 - `p1-company-secretary`: FR-CS-01, FR-CS-02, FR-CS-04, FR-CS-06, FR-CS-08, C.2 #32 to C.2 #35, C.2 #54, G4-102,

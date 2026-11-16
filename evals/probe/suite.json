@@ -1,0 +1,12 @@
+{
+  "id": "probe",
+  "agent": "probe",
+  "version": 1,
+  "description": "The probe agent's synthetic suite (AI-80, AI-78): a model answers a few tokens of synthetic text as asked, so a connection can call it. No organisation data.",
+  "threshold": "1",
+  "cases": [
+    {"id": "single-word", "prompt": "Reply with the single word OK, and nothing else.", "max_tokens": 16, "expect": {"contains": "ok"}},
+    {"id": "arithmetic", "prompt": "What is 17 plus 25? Reply with the number only.", "max_tokens": 16, "expect": {"contains": "42"}},
+    {"id": "follows-format", "prompt": "Reply with the word READY in capital letters, and nothing else.", "max_tokens": 16, "expect": {"equals": "READY"}}
+  ]
+}

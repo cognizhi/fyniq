@@ -158,6 +158,27 @@ See proposal.md for why. What exists today:
   (QA-AI-01…03 with the assistant). Automatic qualification of new models is off by default.
 - A route, model or prompt change is applied only through its approval request carrying a passing eval run (the
   dual-approved change record, CMP-AI-03); CI's `make evals` job is CTL-AI-05's gate, with its report kept as evidence.
+- As built (task 5.4, first slice): `ai_qualification` keeps each run (agent, connection, model, the version the
+  provider reported, suite and version, threshold, cases, passed, result, run, who and when), never changed (FY339)
+  but for going out of date once, with why. Suites are `evals/<suite>/suite.json`, embedded by the top-level `evals`
+  package; only `probe`'s ships. `POST /v1/ai/connections/{id}/models/qualify` runs one as the `eval_runner` agent
+  outside any route (route version 0), each case reserved and recorded like any call; the threshold decides exactly; a
+  case the provider does not answer records nothing (AI-QUAL-02), so a busy provider never unqualifies a model. The
+  router skips a step whose latest run for the agent is missing or failed, and an out-of-date one for personal data
+  and payroll. A served call reporting another version than the run's, or a version where the run had none, puts it
+  out of date. `ai.qualify` (daily, 06:30 SGT) runs again an alias's pass older than six days and every out-of-date
+  one, on connections that are on. A route change that widens needs a current pass of every step (AI-QUAL-03); its
+  approval request carries the runs (`evals`, and a diff line per step) and execution checks them again; narrowing is
+  not gated, so a step can always be dropped. Presets pin only qualified models. `make evals` (`cmd/evals`) checks
+  each suite judges soundly and replays every model's recorded answers in `evals/cassettes/` (the same requests a
+  qualification sends), failing on a run below its threshold or a recording that is not whole; its report is the CI
+  job's artefact, CTL-AI-05's evidence. No model's answers are recorded yet, and the report says so. Automatic
+  qualification (AI-81) is the connection's `auto_qualify` (task 4.1), off by default and changed only as a connection
+  change, with a second approver: a read that lists a model for the first time queues it (`ai.qualify` in
+  the outbox) for the evals of every agent whose route in force uses the connection; the worker runs it as the system
+  on a connection that is on, within the eval runner's budget, and a spent budget or an agent without a suite leaves the
+  model as it was. It joins no allow-list or route by itself. AI-87's acceptance of an alias with no version for a named
+  route by the Owner and a second approver is not built: such a step is always skipped for personal data and payroll.
 
 **D11. Where it runs; the AI writes nothing of the books (golden rule 5).**
 - The router runs wherever a model is called: the AI service for agents, the worker for list and price reads, probes

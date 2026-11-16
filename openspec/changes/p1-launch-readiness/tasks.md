@@ -42,7 +42,7 @@ and names the requirement IDs it proves.
   Each is tagged where a test already proves it (task 2), built here (tasks 3 to 7), recorded as an exception, or left
   to its own change. Verified by `make trace` printing the same counts as the file.
   As built (16 Nov 2026):
-  - On main, 597 of the subset are covered, 127 untested, 166 reported and 34 excepted. Once the chain (#643 to #739)
+  - On main, 599 of the subset are covered, 125 untested, 166 reported and 34 excepted. Once the chain (#645 to #739)
     merges, 81 stay untested.
   - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
     They also add 24 cloud-proved items, each naming its runbook or control file.

@@ -153,6 +153,9 @@ func (l Lister) Read(ctx context.Context, org, id uuid.UUID, trigger, by string)
 		if read, err = u.AIModels().Record(ctx, read, models); err != nil || (read.Added == 0 && !priced) {
 			return err
 		}
+		if err := newlyListed(ctx, l.Outbox, u, org, c, read.ID, kept, models); err != nil {
+			return err
+		}
 		// New models, and the prices the list gives, are priced at once, not on the next daily read (AI-82).
 		item, err := PriceItem(id, read.ID)
 		switch {
