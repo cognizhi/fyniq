@@ -72,7 +72,7 @@ func TestApprovalPolicyChangesAreApprovedAndKept(t *testing.T) {
 
 	l := e.call(http.MethodGet, "/v1/approval-policies", ben, nil)
 	if l.Status != 200 || len(l.Body["items"].([]any)) != len(approval.Policies) ||
-		!strings.Contains(l.Raw, `{"object_type":"approval_policy","row":"Approval policies, AI catalogue","version":"founder/approval_policy@2026-10-20.1","number":0,"built_in":true,"fixed":true,"steps":[{"quorum":1,"roles":[],"users":[]}]}`) {
+		!strings.Contains(l.Raw, `{"object_type":"approval_policy","row":"Approval policies, AI catalogue","version":"founder/approval_policy@2026-10-20.1","number":0,"built_in":true,"fixed":true,"steps":[{"quorum":1,"roles":[],"users":[]}],"rules":[]}`) {
 		t.Fatalf("the policies in force: %d %s", l.Status, l.Raw)
 	}
 	if g := e.call(http.MethodGet, path, ben, nil); g.Status != 200 || g.Header.Get("ETag") != `"0"` || g.Body["built_in"] != true ||
