@@ -1,0 +1,18 @@
+{
+ "repository": "cognizhi/zh-sheet-accounting",
+ "commit": "a705fd1446639eed84a764b49d8a6472e3808d8b",
+ "sets": {
+  "posting": {
+   "sources": {
+    "tests/edge_posting.py": "4bc9122f9d2966608198f9bb5ab8b0e3833e7c897ce29282ddf99703d858ab20",
+    "tests/test_edge_posting.py": "f811a70645e688a0db03e9623cb719c7421d3fd5348322af7623453443cf7118",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "posting/expected.json": "b1e20f7a6fd7af2bb2e8f155a47045ac52aa9475596dc938251517ab99e61a02",
+    "posting/mapping.json": "baa193c936d23bcb5430744d508c8ed12ee2046db62757abdb8d1ba4213b0156",
+    "posting/scenario.json": "2e8080bd96d7b537f364467f84071a909c63b555a12780e40b95ec3f88e1164f"
+   }
+  }
+ }
+}
