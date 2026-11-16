@@ -165,6 +165,13 @@ See proposal.md for why. What exists today:
   switch at each run, uncached (stricter than the 30 s cache), refusing with AI-ROUTER-05 before anything is sent, and
   every 10 s during a stream, stopping it as a cancelled attempt whose reservation stays whole. Probes and eval runs,
   which send synthetic text only, are not stopped by it: a person can still set connections up while the AI is off.
+- As built (task 6.2, token budgets): AI-13's "organisation and per-user token budgets with alerts" are two more
+  scopes of `ai_budget`, `tokens_organisation` and `tokens_person` (whole numbers of tokens a month; `tokens:organisation`
+  and `tokens:person:<id>` in the API), beside the budgets in the base currency. Each reservation also holds the most
+  tokens its attempt could use (the input estimate and all its output, as for the cost) and, settled, the tokens it
+  used (input, output and the cache's reads and writes); `ai_reserve` and `ai_settle` take them under the same locks
+  (000364). A token budget refuses what it cannot cover (FY338) and alerts at 80%, as the others do, so it bounds a
+  subscription or a self-hosted server too, whose calls cost nothing per token.
 
 **D10. Qualification gates every model (AI-78, AI-87, CMP-AI-03, CTL-AI-05).**
 - `ai_qualification` (agent, connection, model version, eval suite and version, thresholds, result, run, time). A step

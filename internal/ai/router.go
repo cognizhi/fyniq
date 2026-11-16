@@ -436,7 +436,7 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 		var alerts []storage.AIBudgetAlert
 		var err error
 		id, alerts, err = u.AIBudgets().Reserve(ctx, storage.AIReservation{Run: a.Run, Step: a.Step, Agent: a.Agent, Connection: a.ConnectionID,
-			Person: a.Actor, Month: aibudget.Month(a.StartedAt), Amount: most})
+			Person: a.Actor, Month: aibudget.Month(a.StartedAt), Amount: most, Tokens: aibudget.MostTokens(call.Request)})
 		if err != nil {
 			return err
 		}
@@ -447,6 +447,10 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 		for _, al := range alerts {
 			key := uuid.NewSHA1(uuid.NameSpaceOID, []byte(org.String()+" ai-budget "+al.Scope+" "+al.Subject+" "+aibudget.Month(a.StartedAt)))
 			title := fmt.Sprintf("The AI budget of the %s reached %d%%: %s of %s used this month", budgetName(al), aibudget.AlertAt, al.Used, al.Amount)
+			if aibudget.Tokens(al.Scope) {
+				title = fmt.Sprintf("The AI token budget of the %s reached %d%%: %s of %s tokens used this month", budgetName(al), aibudget.AlertAt,
+					al.Used, al.Amount)
+			}
 			if _, err := notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AIBudgetType, RecordType: "ai_budget", RecordID: &key, Title: title,
 				Link: "/settings/ai/usage", At: a.StartedAt, Audience: notify.Audience{Capability: string(authz.AIProviders), Need: "A"}}); err != nil {
 				return err
@@ -458,16 +462,20 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 }
 
 func budgetName(a storage.AIBudgetAlert) string {
+	scope := strings.TrimPrefix(a.Scope, "tokens_")
 	if a.Subject == "" {
-		return a.Scope
+		return scope
 	}
-	return a.Scope + " " + a.Subject
+	return scope + " " + a.Subject
 }
 
-// settle settles an attempt's reservation to what it cost in the base currency, or keeps it whole when the outcome or
-// the cost is not known (AI-86), and puts the cost in the base currency on the attempt.
+// settle settles an attempt's reservation to what it cost in the base currency and the tokens it used, or keeps it whole
+// when the outcome or the cost is not known (AI-86, AI-13), and puts the cost in the base currency on the attempt.
 func (r Router) settle(ctx context.Context, org, reservation uuid.UUID, s step, a *storage.AICall, known bool) error {
-	actual := "0"
+	actual, tokens := "0", int64(0)
+	if a.Outcome == airoute.Served {
+		tokens = aibudget.UsedTokens(ports.ModelUsage{Input: a.Input, Output: a.Output, CacheRead: a.CacheRead, CacheWrite: a.CacheWrite})
+	}
 	if a.Outcome == airoute.Served {
 		switch {
 		case s.price == nil:
@@ -482,7 +490,7 @@ func (r Router) settle(ctx context.Context, org, reservation uuid.UUID, s step, 
 		}
 	}
 	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.AIBudgets().Settle(ctx, reservation, actual, known)
+		return u.AIBudgets().Settle(ctx, reservation, actual, tokens, known)
 	})
 }
 

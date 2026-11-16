@@ -18,17 +18,19 @@ import (
 
 // ------------------------------------------------------------------ AI budgets (AI-77, AI-86, AI-13)
 //
-// Monthly budgets in the base currency for the organisation, an agent, a connection or a person, set by the Owner.
+// Monthly budgets in the base currency for the organisation, an agent, a connection or a person, and in tokens for the
+// organisation and a person (AI-13), set by the Owner.
 // Before an attempt is sent the router reserves its most against every budget that applies; at 80% the Owner is
 // alerted once a month, and at 100% nothing a budget cannot cover is admitted.
 
 // AIBudget is a monthly AI budget and what this month used of it.
 type AIBudget struct {
-	Key     string     `json:"key" doc:"The budget: organisation, agent:<agent>, connection:<id> or person:<user id>." example:"agent:chat"`
-	Scope   string     `json:"scope" enum:"organisation,agent,connection,person" example:"agent"`
+	Key     string     `json:"key" doc:"The budget: organisation, agent:<agent>, connection:<id> or person:<user id> in the base currency; tokens:organisation or tokens:person:<user id> in tokens (AI-13)." example:"agent:chat"`
+	Scope   string     `json:"scope" enum:"organisation,agent,connection,person,tokens_organisation,tokens_person" example:"agent"`
+	Unit    string     `json:"unit" enum:"base,tokens" doc:"base: the base currency; tokens: a month's tokens, whatever the connections cost, so it bounds a subscription too (AI-13)." example:"base"`
 	Subject string     `json:"subject,omitempty" doc:"The agent, the connection's ID or user:<id>; absent for the organisation." example:"chat"`
-	Amount  string     `json:"amount,omitempty" doc:"Per calendar month in Singapore, in the base currency, as an exact decimal; absent when removed." example:"50"`
-	Used    string     `json:"used" doc:"What this month's reservations hold or settled against it, in the base currency: a reservation whose outcome is unknown counts whole until it is reconciled." example:"12.5"`
+	Amount  string     `json:"amount,omitempty" doc:"Per calendar month in Singapore: in the base currency as an exact decimal, or a whole number of tokens; absent when removed." example:"50"`
+	Used    string     `json:"used" doc:"What this month's reservations hold or settled against it, in its unit: a reservation whose outcome is unknown counts whole until it is reconciled." example:"12.5"`
 	Version int        `json:"version" example:"1"`
 	Alerted bool       `json:"alerted" doc:"Its 80% alert was raised this month." example:"false"`
 	SetBy   string     `json:"set_by" example:"user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"`
@@ -44,14 +46,14 @@ type AIBudgetList struct {
 
 // AIBudgetSet is a budget's new amount.
 type AIBudgetSet struct {
-	Amount *string `json:"amount" required:"false" doc:"Per calendar month in the base currency, above zero with at most four decimal places; null removes the budget." example:"50.00"`
+	Amount *string `json:"amount" required:"false" doc:"Per calendar month: in the base currency, above zero with at most four decimal places, or for a token budget a whole number of tokens above zero; null removes the budget." example:"50.00"`
 }
 
 type (
 	aiBudgetListOutput struct{ Body AIBudgetList }
 	// AIBudgetPath names a budget in a path: exported, as huma fills only an exported embedded path struct.
 	AIBudgetPath struct {
-		Budget string `path:"budget" minLength:"3" maxLength:"100" doc:"organisation, agent:<agent>, connection:<id> or person:<user id>." example:"agent:chat"`
+		Budget string `path:"budget" minLength:"3" maxLength:"100" doc:"organisation, agent:<agent>, connection:<id> or person:<user id>; tokens:organisation or tokens:person:<user id> for a token budget." example:"agent:chat"`
 	}
 	aiBudgetSetInput struct {
 		AIBudgetPath
@@ -68,26 +70,38 @@ type (
 	}
 )
 
-// budgetKey splits a budget's key into its scope and subject.
+// aiBudgetKey splits a budget's key into its scope and subject: tokens:organisation and tokens:person:<id> are the token
+// budgets.
 func aiBudgetKey(key string) (string, string) {
+	prefix := ""
+	if rest, ok := strings.CutPrefix(key, "tokens:"); ok {
+		prefix, key = "tokens_", rest
+	}
 	scope, subject, _ := strings.Cut(key, ":")
 	if scope == "person" && subject != "" {
 		subject = "user:" + subject
 	}
-	return scope, subject
+	if prefix != "" && scope != "organisation" && scope != "person" {
+		return "tokens:" + scope, subject // no such token budget: the domain refuses it
+	}
+	return prefix + scope, subject
 }
 
 func aiBudgetOut(b storage.AIBudget, month string) AIBudget {
-	key := b.Scope
+	key, unit := b.Scope, "base"
 	switch b.Scope {
 	case "person":
 		key += ":" + strings.TrimPrefix(b.Subject, "user:")
 	case "organisation":
+	case "tokens_organisation":
+		key, unit = "tokens:organisation", "tokens"
+	case "tokens_person":
+		key, unit = "tokens:person:"+strings.TrimPrefix(b.Subject, "user:"), "tokens"
 	default:
 		key += ":" + b.Subject
 	}
-	out := AIBudget{Key: key, Scope: b.Scope, Subject: b.Subject, Amount: b.Amount, Used: b.Used, Version: b.Version, Alerted: b.Alerted == month,
-		SetBy: b.SetBy}
+	out := AIBudget{Key: key, Scope: b.Scope, Unit: unit, Subject: b.Subject, Amount: b.Amount, Used: b.Used, Version: b.Version,
+		Alerted: b.Alerted == month, SetBy: b.SetBy}
 	if out.Used == "" {
 		out.Used = "0"
 	}
@@ -117,7 +131,7 @@ func (a *API) aiBudgetSubjectExists(ctx context.Context, u storage.UnitOfWork, s
 		id, _ := uuid.Parse(subject)
 		_, err := u.AIConnections().Get(ctx, id)
 		return err
-	case "person":
+	case "person", "tokens_person":
 		id, _ := uuid.Parse(strings.TrimPrefix(subject, "user:"))
 		members, err := u.Members().List(ctx, a.deps.Clock.Now())
 		if err != nil {
@@ -154,7 +168,7 @@ func registerAIBudgets(a *API) {
 	register(a, authz.GetAIBudgets, huma.Operation{
 		OperationID: "getAIBudgets", Method: http.MethodGet, Path: "/v1/ai/budgets", Tags: []string{"AI"},
 		Summary: "Get the AI budgets",
-		Description: "The organisation's monthly AI budgets in its base currency (AI-77, AI-86): the organisation's, each agent's, connection's " +
+		Description: "The organisation's monthly AI budgets (AI-77, AI-86, AI-13), in its base currency and in tokens: the organisation's, each agent's, connection's " +
 			"and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until " +
 			"it is reconciled, and whether its 80% alert was raised. Read-only; no side effects.",
 	}, locks, func(ctx context.Context, _ *struct{}) (*aiBudgetListOutput, error) {
@@ -170,8 +184,10 @@ func registerAIBudgets(a *API) {
 	register(a, authz.SetAIBudget, huma.Operation{
 		OperationID: "setAIBudget", Method: http.MethodPut, Path: "/v1/ai/budgets/{budget}", Tags: []string{"AI"},
 		Summary: "Set an AI budget",
-		Description: "The Owner sets a monthly AI budget in the base currency (AI-77, AI-86): the organisation's, an agent's, a connection's or a " +
-			"person's; a null amount removes it. From the next call the router reserves each attempt's most against it: at 80% the Owner is " +
+		Description: "The Owner sets a monthly AI budget (AI-77, AI-86, AI-13): in the base currency, the organisation's, an agent's, a " +
+			"connection's or a person's; in tokens, the organisation's (tokens:organisation) or a person's (tokens:person:<user id>), which " +
+			"bound every connection, a subscription's too; a null amount removes it. From the next call the router reserves each attempt's " +
+			"most cost and most tokens against it: at 80% the Owner is " +
 			"alerted once a month, and at 100% nothing it cannot cover is admitted, while accounting, checks and deadlines keep working. Needs " +
 			"If-Match with the budget's version (0 before it has one); idempotent with Idempotency-Key; Prefer: return=preview checks it and saves " +
 			"nothing. Side effects: the audit event ai_budget.set. On the never-list for the AI and MCP (§9.6).",
