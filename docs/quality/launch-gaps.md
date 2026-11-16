@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 633 |
+| Covered by a tagged test | 634 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
 | Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
-| Untested, blocking | 87 |
+| Untested, blocking | 86 |
 
-Once the stacked chain (#645 to #743) merges, 43 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 42 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -62,15 +62,17 @@ Built behaviour that no test asserted in full:
 - QA-UI-03, FR-VIZ-04, FR-VIZ-07 and QA-IMG-01: `scripts/test_quality_checks.py` runs the contrast, palette and image
   checks on planted failures, and checks the sequential and diverging scales from the tokens.
 
-### Gates built (1)
+### Gates built (2)
 
 - QA-REL-01 (task 3.4): `scripts/release_policy.py` in CI fails a `fix` of calculation code without its test; the
   bug-fix skill has the root-cause record's template.
+- QA-MCP-01, the shell's part (task 6.3): the MCP shell exposes no tool and refuses every call with `MCP-OFF-01`,
+  each refusal logged. The suite in full comes with `p1-mcp-first-party`, before any tool is exposed.
 
-### Built in this change (15)
+### Built in this change (14)
 
-- Tasks 3 to 7 (13): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-MCP-01 (the shell's
-  part), QA-UI-01, QA-UI-02, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08, QA-SEC-05 and QA-E2E-01.
+- Tasks 3 to 7 (12): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-UI-01, QA-UI-02,
+  QA-UI-06 with G4-104, QA-UI-07, QA-UI-08, QA-SEC-05 and QA-E2E-01.
 - Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
 
