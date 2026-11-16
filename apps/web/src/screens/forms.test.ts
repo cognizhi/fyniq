@@ -14,48 +14,14 @@ function read(d: string, out: Files = {}): Files {
   return out;
 }
 
-// The forms whose validation messages tests do not trigger yet (task 4.2). It only shrinks: a form covered since must
-// leave it, and a form not on it must be covered.
-const pending = new Set<string>([
-  "screens/claims/CardLines.tsx",
-  "screens/claims/ClaimEditor.tsx",
-  "screens/claims/ExpensePolicy.tsx",
-  "screens/claims/MileageClaim.tsx",
-  "screens/contacts/Contacts.tsx",
-  "screens/contacts/Items.tsx",
-  "screens/founders/DirectorAccounts.tsx",
-  "screens/founders/DirectorSettlement.tsx",
-  "screens/founders/PreIncorporationCosts.tsx",
-  "screens/planning/Forecast.tsx",
-  "screens/public/DocumentView.tsx",
-  "screens/purchases/BillLines.tsx",
-  "screens/purchases/BillPage.tsx",
-  "screens/purchases/PaymentBatchPage.tsx",
-  "screens/purchases/Payments.tsx",
-  "screens/purchases/PurchaseOrderPage.tsx",
-  "screens/purchases/RecurringBillPage.tsx",
-  "screens/purchases/Withholding.tsx",
-  "screens/sales/InvoiceLines.tsx",
-  "screens/sales/InvoicePage.tsx",
-  "screens/sales/QuotePage.tsx",
-  "screens/sales/Receipts.tsx",
-  "screens/sales/RecurringInvoicePage.tsx",
-  "screens/sales/Statements.tsx",
-  "screens/settings/Accounting.tsx",
-  "screens/settings/IntegrationDetail.tsx",
-  "screens/settings/Members.tsx",
-  "screens/settings/Organisation.tsx",
-  "screens/settings/TeamMode.tsx",
-  "screens/settings/TemplateEditor.tsx",
-]);
-
+// QA-UI-01 (p1-launch-readiness task 4.2): every form's validation messages are triggered by a test, and a test checks
+// that the field refused is marked invalid, described by its message.
+// req: QA-UI-01
 describe("the forms", () => {
-  const all = coverage(read(root));
-  const ok = (c: (typeof all)[number]) => c.untriggered.length === 0 && c.invalidChecked;
-
   it("each have tests that trigger every validation message they write and check an invalid field", () => {
-    expect(all.filter((c) => !ok(c) && !pending.has(c.form)).map((c) => `${c.form}: ${c.invalidChecked ? "" : "no aria-invalid checked; "}${c.untriggered.join(" | ")}`)).toEqual([]);
-    expect(all.filter((c) => ok(c) && pending.has(c.form)).map((c) => c.form)).toEqual([]);
+    const all = coverage(read(root));
+    expect(all.length).toBeGreaterThan(50); // the check reads the app (56 forms on 16 Nov 2026), not an empty folder
+    expect(all.filter((c) => c.untriggered.length > 0 || !c.invalidChecked).map((c) => `${c.form}: ${c.invalidChecked ? "" : "no aria-invalid checked; "}${c.untriggered.join(" | ")}`)).toEqual([]);
   });
 
   it("are caught without: a planted form whose message no test triggers, and one whose test checks no invalid field", () => {
@@ -65,12 +31,16 @@ describe("the forms", () => {
       "screens/a/New.test.tsx": 'import { New } from "./New";\nexpect("Give the account a name.");\nexpect("The code ");\naria-invalid',
       "screens/b/Other.tsx": 'errors.when = "Give the date.";\naria-invalid',
       "screens/b/Other.test.tsx": 'import { Other } from "./Other";\nexpect("Give the date.")',
+      "screens/c/Third.tsx": 'out.push("description matches /x/");\nproblems.push("Enter the rate first.");\naria-invalid',
+      "screens/c/Third.test.tsx": 'import { invalid } from "../../test/invalid";\nimport { Third } from "./Third";\nexpect("Enter the rate first.")',
     };
     expect(messages(planted["screens/a/New.tsx"]!)).toEqual(["Give the account a name.", "The code"]);
+    expect(messages(planted["screens/c/Third.tsx"]!)).toEqual(["Enter the rate first."]); // a summary pushed to a list is no message
     expect(coverage(planted)).toEqual([
       { form: "screens/a/New.tsx", untriggered: [], invalidChecked: true },
       { form: "screens/a/lines.tsx", untriggered: ["Enter a debit or a credit."], invalidChecked: true },
       { form: "screens/b/Other.tsx", untriggered: [], invalidChecked: false },
+      { form: "screens/c/Third.tsx", untriggered: [], invalidChecked: true }, // invalid() checks aria-invalid
     ]);
   });
 });

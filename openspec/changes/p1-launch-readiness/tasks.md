@@ -137,13 +137,22 @@ and names the requirement IDs it proves.
     `make storybook` runs every story in light, dark, high contrast and high-contrast dark, then expects the planted
     story (`src/test/planted/`: an image without text, a button without a name) to fail.
   - Its own CI job, outside `make test`.
-- [ ] 4.2 Stories for every shared component in `src/components/`, and `stories.test.ts` failing on a component without
+- [x] 4.2 Stories for every shared component in `src/components/`, and `stories.test.ts` failing on a component without
   a story. `component-coverage.test.ts` fails on a shared component without a component test, or a form's validation
   message no test triggers. Tests `// req: QA-UI-01`, `// req: QA-UI-02`.
-  So far (16 Nov 2026): stories for the six shared components (19 stories). `coverage.test.ts` holds both checks
-  (`coverage.ts`), each failing on a planted component without a story or a test. The button and the dialog gained
-  their component tests. Left: the forms. 51 of the 56 screens with a form have no test that triggers a validation
-  message; until each has one, QA-UI-01 is not tagged.
+  As built (16 Nov 2026):
+  - Stories for the six shared components (19 stories). `coverage.test.ts` holds the component checks
+    (`coverage.ts`), each failing on a planted component without a story or a test. The button and the dialog
+    gained their component tests.
+  - The forms: `src/screens/forms.test.ts` (`src/test/forms.ts`) reads every screen that marks a field invalid (56),
+    the validation messages it writes, and the tests that reach it through up to three imports. Each message must
+    appear in one of them, and one must check a refused field: `invalid()` (`src/test/invalid.ts`) checks it is
+    marked `aria-invalid` and described by its message, waiting for a refusal that comes from the API. It fails on
+    planted forms.
+  - Writing the tests found fields whose error a screen reader did not read with them: first-run setup's three (now
+    described by the summary's message), a credit note's date applied, and an item price's currency (its error sat
+    on the price). The director settlement's check moved into `checkSettlement`, since the page always chooses an
+    account and its message cannot be reached from the page. First-run setup gained its component test.
 
 ## 5. The browser gates against the local stack (QA-E2E-01, QA-UI-06 to QA-UI-08, QA-RPT-04)
 

@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 639 |
+| Covered by a tagged test | 640 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
 | Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
-| Untested, blocking | 81 |
+| Untested, blocking | 80 |
 
-Once the stacked chain (#645 to #743) merges, 37 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 36 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -62,7 +62,7 @@ Built behaviour that no test asserted in full:
 - QA-UI-03, FR-VIZ-04, FR-VIZ-07 and QA-IMG-01: `scripts/test_quality_checks.py` runs the contrast, palette and image
   checks on planted failures, and checks the sequential and diverging scales from the tokens.
 
-### Gates built (6)
+### Gates built (7)
 
 - QA-REL-01 (task 3.4): `scripts/release_policy.py` in CI fails a `fix` of calculation code without its test; the
   bug-fix skill has the root-cause record's template.
@@ -76,11 +76,15 @@ Built behaviour that no test asserted in full:
 - QA-PROD-01 (task 6.2): the canary's nightly transactions through the public API, by the owner's decision of 16 Nov
   2026; its cloud run waits for the integration client (`p1-public-api` task 3.1) and is `[live-verify]`
   (`docs/runbooks/canary.md`).
+- QA-UI-01 (task 4.2): `src/screens/forms.test.ts` reads each of the 56 forms, the validation messages it writes and
+  the tests that reach it; every message is triggered, and every form's tests check a refused field marked invalid
+  and described by its message (`src/test/invalid.ts`). Building it found fields whose error a screen reader did not
+  read with them: first-run setup's, a credit note's date applied, and an item price's currency.
 
-### Built in this change (10)
+### Built in this change (9)
 
-- Tasks 3 to 7 (8): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-04, QA-UI-01 (its forms: 51 of 56 have no test
-  triggering a validation message), QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and QA-E2E-01.
+- Tasks 3 to 7 (7): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and
+  QA-E2E-01.
 - Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
 
