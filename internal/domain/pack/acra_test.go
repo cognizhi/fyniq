@@ -116,3 +116,17 @@ func TestBusinessDaysSkipPublicHolidays(t *testing.T) {
 		t.Fatalf("got %v; want ErrNoRule", err)
 	}
 }
+
+// req: FR-CS-02
+// A standing rule applies to an event before the version's first day when asked for since: a company registered on 2
+// Mar 2026 appoints its secretary by 2 Sep 2026, though the rule's first day is 16 Nov 2026; asked for as on the
+// event's day, the version has no rule then.
+func TestAStandingRuleReachesBackToItsEvent(t *testing.T) {
+	v := acraPack(t)
+	if _, due, err := pack.AcraDueSince(v, "secretary_appointed", day(t, "2026-03-02"), pack.Weekdays); err != nil || !due.Equal(day(t, "2026-09-02")) {
+		t.Fatalf("since: %v, %v; want 2026-09-02", due, err)
+	}
+	if _, _, err := pack.AcraDue(v, "secretary_appointed", day(t, "2026-03-02"), pack.Weekdays); !errors.Is(err, pack.ErrNoRule) {
+		t.Fatalf("on the event's day: %v; want ErrNoRule", err)
+	}
+}

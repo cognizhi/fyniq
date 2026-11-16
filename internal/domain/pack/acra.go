@@ -140,7 +140,23 @@ func PeriodOn(v Version, rule string, on time.Time) (Period, error) {
 // months after event. Business days start the day after the event and skip the days workday says are not working
 // days. ErrNoRule when no period of the rule is in force on the event's day; workday's error when it fails.
 func AcraDue(v Version, rule string, event time.Time, workday Workday) (Period, time.Time, error) {
-	p, err := PeriodOn(v, rule, event)
+	return acraDue(v, rule, event, event, workday)
+}
+
+// AcraDueSince is AcraDue for an event that may come before the version's first day, such as a company's incorporation:
+// the period in force on the later of the event's day and the version's first day, counted from the event. The checks
+// read it for a standing rule, such as a secretary within six months of incorporation, that the version states and
+// that held before it [accountant to confirm for an event long before it].
+func AcraDueSince(v Version, rule string, event time.Time, workday Workday) (Period, time.Time, error) {
+	on := event
+	if on.Before(v.EffectiveFrom) {
+		on = v.EffectiveFrom
+	}
+	return acraDue(v, rule, event, on, workday)
+}
+
+func acraDue(v Version, rule string, event, ruleOn time.Time, workday Workday) (Period, time.Time, error) {
+	p, err := PeriodOn(v, rule, ruleOn)
 	if err != nil {
 		return Period{}, time.Time{}, err
 	}
