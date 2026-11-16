@@ -66,8 +66,11 @@ QA-IMG-01, QA-UI-01, QA-UI-02, QA-UI-03, QA-UI-06 with G4-104, QA-UI-07, QA-UI-0
   FR-UX-25, FR-UX-30, FR-UX-32, FR-UX-34 (the first-run tour, which QA-UI-06 waits for), FR-UX-37, G4-077.
 - `p1-ai-assistant` (2): QA-AI-06, the knowledge evals, since the launch's assistant reads the knowledge base; G4-087,
   the pre-go-live check of the model IDs, proved in the dev cloud with `p1-go-live`.
-- `p1-approval-engine` (1): FM-6, the AI's advisory review in Founder mode, which waits for the owner's decision on
-  whether it launches.
+- `p1-approval-engine` (1): FM-6, the AI's advisory review in Founder mode. It launches, by the owner's decision of 16
+  Nov 2026, taken interactively: a scheduled agent like the company secretary reviews the week's journals, vendor bank
+  changes and payments, and writes advisory findings into the weekly review, never approving. It is built on the
+  scheduled agents of the chain, once they merge.
+  - *Not chosen:* after go-live with `p1-ai-proposals`, or deterministic rule checks at launch with the AI later.
 
 ## The exceptions
 
