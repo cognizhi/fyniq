@@ -4,7 +4,7 @@ type: task
 title: Keep the corporate profile and registers
 summary: The company's details, officers, nominee registers and statements approvals, their lodgements and ACRA check, and drafting resolutions and minutes
 sources:
-  - docs/user-guide/corporate-profile.md sha256:98965becc74f15a46f6b78652694027096bb565132219bd3dd0a7fe27b14afb7
+  - docs/user-guide/corporate-profile.md sha256:0804a5902da60da96074b952ec0f2f23b38165ac8e401bb06890126a429c69c0
 data_class: general
 taint: trusted
 status: draft
@@ -27,6 +27,8 @@ aliases:
   - AGM notice
   - minutes of the AGM
   - draft a resolution
+  - minute book
+  - signed copy
 ---
 
 # Keep the corporate profile and registers
@@ -75,7 +77,9 @@ aliases:
 ## Draft a resolution, notice or minutes
 
 - Fyniq drafts the company's papers from its own templates, filled from the records on the day: directors' resolutions (approving the statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment, changing the registered office), a members' written resolution, the AGM's notice and minutes, and the notice that the statements were sent without an AGM.
-- Choose the kind, fill in what it asks for, read the draft, download it as PDF and have it signed outside Fyniq; keep the signed copy.
+- Choose the kind, fill in what it asks for, read the draft, download it as PDF and have it signed outside Fyniq.
+- Attach the signed copy and choose **Record in the minute book** with the day it was signed; another person approves, and it stays in the minute book unchanged.
+- Once the signed copy is attached, the text stays as signed; remove the signed copy to draft it again.
 - Fyniq never signs or files a draft, and each says so at its top; the templates are Fyniq's and a lawyer has yet to confirm them.
 - A directors' resolution needs the directors in office, a members' resolution the shares issued ([[equity.register]]), a notice the company secretary.
 - Fyniq does not yet check a notice's period, a written resolution's majority or when minutes go in the minute book.

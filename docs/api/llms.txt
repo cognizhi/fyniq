@@ -316,6 +316,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/documents` (createCorporateDocument): Draft a corporate document
 - `GET /v1/corporate-profile/documents/{document_id}` (getCorporateDocument): Get a corporate document
 - `PUT /v1/corporate-profile/documents/{document_id}` (replaceCorporateDocument): Draft a corporate document again
+- `POST /v1/corporate-profile/documents/{document_id}/approval` (requestCorporateDocumentApproval): Ask to record a signed corporate document in the minute book
+- `GET /v1/corporate-profile/documents/{document_id}/evidence` (listCorporateDocumentEvidence): List a corporate document's files
+- `POST /v1/corporate-profile/documents/{document_id}/evidence` (addCorporateDocumentEvidence): Attach a corporate document's signed copy
+- `GET /v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}` (getCorporateDocumentEvidence): Get a corporate document's file
+- `DELETE /v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}` (removeCorporateDocumentEvidence): Remove a file from a drafted corporate document
 - `GET /v1/corporate-profile/documents/{document_id}/pdf` (getCorporateDocumentPDF): Get a corporate document as PDF
 - `POST /v1/corporate-profile/nominees` (createNomineeEntry): Draft a nominee entry, or a later version of one
 - `GET /v1/corporate-profile/nominees/{nominee_id}` (getNomineeEntry): Get a nominee entry's version

@@ -83,6 +83,7 @@ const operations: Record<Approval["operation"], string> = {
   "corporate_officer.record": "Record an officer's appointment or its change",
   "nominee_entry.record": "Record a nominee director or shareholder",
   "statements_approval.record": "Record the directors' approval of the financial statements",
+  "corporate_document.record": "Record a signed corporate document in the minute book",
 };
 
 export function operationLabel(op: string): string {
@@ -151,6 +152,7 @@ const objects: Record<string, string> = {
   corporate_officer: "Officer",
   nominee_entry: "Nominee entry",
   statements_approval: "Statements approval",
+  corporate_document: "Corporate document",
 };
 
 export function objectLabel(t: string): string {

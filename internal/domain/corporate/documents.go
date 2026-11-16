@@ -662,3 +662,48 @@ func Documents(ctx context.Context, u storage.UnitOfWork) ([]equity.Recorded[Doc
 	})
 	return out, nil
 }
+
+// SignedDocumentIn saves a new version of a corporate document not recorded yet, in u, with the day it was signed
+// outside Fyniq: on or after the day it was drafted and not after today. Its text stays as it was signed.
+func SignedDocumentIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, signed, today time.Time) (storage.Document, error) {
+	doc, err := equity.Drafted(ctx, u, storage.DocumentCorporateDocument, id)
+	if err != nil {
+		return doc, err
+	}
+	d, err := ReadDocument(doc)
+	if err != nil {
+		return doc, err
+	}
+	p := &problems{code: CodeDocument, today: today}
+	if signed.Before(d.Date) {
+		p.add("signed_on", "it was signed before it was drafted on "+d.Date.Format("2 January 2006"), "Enter the day it was signed")
+	}
+	p.future("signed_on", &signed, "the day it was signed")
+	if len(p.out) > 0 {
+		return doc, p.out
+	}
+	d.SignedOn = &signed
+	b, err := EncodeDocument(d)
+	if err != nil {
+		return doc, err
+	}
+	return u.Documents().Revise(ctx, id, b)
+}
+
+// RecordDocumentIn records an approved corporate document in u, with its signed copy attached (RecordIn): an entry of
+// the minute book, which never changes. It needs the day it was signed.
+func RecordDocumentIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (storage.Document, error) {
+	doc, err := equity.Drafted(ctx, u, storage.DocumentCorporateDocument, id)
+	if err != nil {
+		return doc, err
+	}
+	d, err := ReadDocument(doc)
+	if err != nil {
+		return doc, err
+	}
+	if d.SignedOn == nil {
+		return doc, ledger.Problems{{Code: CodeDocument, Field: "signed_on", Message: "the day it was signed is missing",
+			Fix: "Ask again with the day it was signed"}}
+	}
+	return equity.RecordIn(ctx, u, storage.DocumentCorporateDocument, id)
+}

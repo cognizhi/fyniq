@@ -192,6 +192,9 @@ const (
 	// ObjectStatementsApproval is the directors' approval of a year's financial statements, to record (FR-CS-03): another
 	// person who holds A on the corporate profile approves; its key is the approval's document ID.
 	ObjectStatementsApproval = "statements_approval"
+	// ObjectCorporateDocument is a corporate document with its signed copy, to record in the minute book (FR-CS-05):
+	// another person who holds A on the corporate profile approves; its key is the document's ID.
+	ObjectCorporateDocument = "corporate_document"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -331,6 +334,8 @@ const (
 	OpNomineeEntryRecord = "nominee_entry.record"
 	// OpStatementsApprovalRecord records the directors' approval of a year's statements, with its evidence (FR-CS-03).
 	OpStatementsApprovalRecord = "statements_approval.record"
+	// OpCorporateDocumentRecord records a corporate document, signed, with its signed copy: an entry of the minute book.
+	OpCorporateDocumentRecord = "corporate_document.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -386,6 +391,7 @@ var Operations = map[string]string{
 	OpCorporateOfficerRecord:   ObjectCorporateOfficer,
 	OpNomineeEntryRecord:       ObjectNomineeEntry,
 	OpStatementsApprovalRecord: ObjectStatementsApproval,
+	OpCorporateDocumentRecord:  ObjectCorporateDocument,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -512,6 +518,8 @@ var Dependencies = map[string][]string{
 	ObjectNomineeEntry: {"status", "entry"},
 	// the approval's version and status, and its year's end: what is recorded
 	ObjectStatementsApproval: {"status", "fy_end"},
+	// the document's version and status, and the day it was signed: what is recorded
+	ObjectCorporateDocument: {"status", "signed_on"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -580,6 +588,7 @@ var Rows = map[string]string{
 	ObjectCorporateOfficer:   "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 	ObjectNomineeEntry:       "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 	ObjectStatementsApproval: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateDocument:  "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 }
 
 // The limits of a policy.
@@ -677,6 +686,7 @@ var Policies = map[string]Policy{
 	ObjectCorporateOfficer:   {ObjectType: ObjectCorporateOfficer, Version: "founder/corporate_officer@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 	ObjectNomineeEntry:       {ObjectType: ObjectNomineeEntry, Version: "founder/nominee_entry@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 	ObjectStatementsApproval: {ObjectType: ObjectStatementsApproval, Version: "founder/statements_approval@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateDocument:  {ObjectType: ObjectCorporateDocument, Version: "founder/corporate_document@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

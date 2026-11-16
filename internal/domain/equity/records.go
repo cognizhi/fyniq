@@ -516,6 +516,7 @@ var evidenceFix = map[storage.DocumentType]string{
 	storage.DocumentCorporateOfficer:   "Attach the officer's consent to act or the resolution, the BizFile+ acknowledgement, or the business profile that shows them",
 	storage.DocumentNomineeEntry:       "Attach the nominee's notice to the company, the register's extract or ACRA's acknowledgement",
 	storage.DocumentStatementsApproval: "Attach the directors' resolution or statement approving the financial statements",
+	storage.DocumentCorporateDocument:  "Attach the signed copy",
 }
 
 // attached counts the files attached to a document and not removed.
