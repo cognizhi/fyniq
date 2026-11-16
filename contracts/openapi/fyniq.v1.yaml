@@ -46805,7 +46805,7 @@ components:
             - /equity/holders/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
           type: string
         obligation:
-          description: "What is due: the register_ ones are a register's own, done and checked on their record."
+          description: "What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded."
           enum:
             - gst_f5
             - cpf
@@ -46821,8 +46821,15 @@ components:
             - register_controller_central
             - register_controller_notice
             - register_share_lodgement
+            - register_officer_appointment
+            - register_officer_cessation
+            - register_detail_change
+            - register_nominee_informs
+            - register_nominee_entry
+            - register_nominee_central
             - financial_year
             - sg-deadlines
+            - sg-acra
           examples:
             - eci
           type: string
