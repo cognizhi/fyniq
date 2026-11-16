@@ -134,9 +134,27 @@
     - `getCorporateDocumentPDF`, whose content is masked for the DPO.
     The profile lists the documents.
   - The record operation (the signed copy into the minute book) is task 4.2's.
-- [ ] 4.2 `sec.draft_document` and `DraftCorporateDocument`: the draft kept, never signed or filed; the signed copy
+- [x] 4.2 `sec.draft_document` and `DraftCorporateDocument`: the draft kept, never signed or filed; the signed copy
   uploaded as evidence into the minute book; the one-month minute book finding (design D6). Tests
   `// req: ai/task-catalogue sec.draft_document Draft a corporate document`, `// req: FR-CS-05`.
+  As built:
+  - The minute book:
+    - a drafted document takes its signed copy as evidence, after which its text stays;
+    - `requestCorporateDocumentApproval` saves the day it was signed and asks another person;
+    - `corporate_document.record` (migration 000401, validated by 000402) records it with the copy, never to change.
+    The profile's recorded documents are the minute book.
+  - `sec.draft_document` (tier 1, one document, the Owner or the Company secretary approves) maps to
+    `DraftCorporateDocument`, the command `createCorporateDocument` runs. Its schema asks for the templates' kinds and
+    fields, a test holding them equal.
+    - The dry run shows the paper's text and drafts nothing.
+    - Executed as the approving person, it drafts the document naming the proposal.
+    - The text approved is its base: when a director, the secretary or a member changes meanwhile, it is stale and
+      drafts nothing (AI-P5).
+  - The executor gains SELECT on `holding_movement` (migration 000403), to name a members' resolution's signers;
+    `grants.golden` shows the one line.
+  - The eval suite `sec-draft-document` has two AGM minutes cases (the sample company records no officers).
+  - Left for `sg-acra@2026.2`, by the owner's decision of 16 Nov 2026 (rev 0.283): the one-month minute book finding
+    (s188), with the notice period (s177) and the written resolutions' majorities (s184A–G).
 
 ## 5. The role
 

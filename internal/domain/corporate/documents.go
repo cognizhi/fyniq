@@ -578,8 +578,9 @@ func ReadDocument(doc storage.Document) (Document, error) {
 // ErrNoTemplate is a kind of document no template drafts.
 var ErrNoTemplate = errors.New("corporate: no template drafts that kind of document")
 
-// drafted fills kind's template with v from the records on today, as a document to save, or says what is wrong.
-func drafted(ctx context.Context, u storage.UnitOfWork, kind string, v Values, note string, today time.Time) (Document, error) {
+// FillDocument fills kind's template with v from the records on today, as a document to save, or says what is wrong:
+// what createCorporateDocument and sec.draft_document's dry run show.
+func FillDocument(ctx context.Context, u storage.UnitOfWork, kind string, v Values, note string, today time.Time) (Document, error) {
 	t, ok := Templates[kind]
 	if !ok {
 		return Document{}, ledger.Problems{{Code: CodeDocument, Field: "kind", Message: fmt.Sprintf("%q is not a kind of document Fyniq drafts", kind),
@@ -605,7 +606,7 @@ func drafted(ctx context.Context, u storage.UnitOfWork, kind string, v Values, n
 // the fields v (DraftCorporateDocument): a draft to review, download and have signed, never signed or filed by Fyniq.
 // proposal is the sec.draft_document proposal it comes from, if it does.
 func DraftDocumentIn(ctx context.Context, u storage.UnitOfWork, kind string, v Values, note string, proposal *uuid.UUID, today time.Time) (storage.Document, error) {
-	d, err := drafted(ctx, u, kind, v, note, today)
+	d, err := FillDocument(ctx, u, kind, v, note, today)
 	if err != nil {
 		return storage.Document{}, err
 	}
@@ -628,7 +629,7 @@ func ReviseDocumentIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, v
 	if err != nil {
 		return doc, err
 	}
-	d, err := drafted(ctx, u, was.Kind, v, note, today)
+	d, err := FillDocument(ctx, u, was.Kind, v, note, today)
 	if err != nil {
 		return doc, err
 	}

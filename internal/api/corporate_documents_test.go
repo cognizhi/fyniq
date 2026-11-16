@@ -181,6 +181,14 @@ func documentCompany(t *testing.T) (claimants, string, string) {
 	e.clock.Set(time.Date(2027, 1, 5, 9, 0, 0, 0, time.UTC)) // before the sessions, so their step-up is fresh
 	prep := c.as(c.weiling, authz.Accountant)
 	kow := c.as(c.ahkow, authz.Owner)
+	recordCompany(t, e, prep, kow)
+	return c, prep, kow
+}
+
+// recordCompany records, as prep and approved by kow, the company's details from 2 Mar 2026, two directors and a
+// secretary.
+func recordCompany(t *testing.T, e *env, prep, kow string) {
+	t.Helper()
 	record := func(path string, body map[string]any) {
 		t.Helper()
 		d := e.call(http.MethodPost, path, prep, body)
@@ -198,7 +206,6 @@ func documentCompany(t *testing.T) (claimants, string, string) {
 		o["kind"], o["appointed_on"], o["nominee"] = "individual", "2026-03-02", false
 		record("/v1/corporate-profile/officers", o)
 	}
-	return c, prep, kow
 }
 
 // Every field a template asks for is a field of CorporateDocumentFields, with the type it takes, and the draft's kinds

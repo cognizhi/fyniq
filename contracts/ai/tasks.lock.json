@@ -3,6 +3,10 @@
     "version": 1,
     "sha256": "9ad70a323e277f6e0589476330c1d888dd33eac8b9254c61f9bc5a9b151d532f"
   },
+  "sec.draft_document": {
+    "version": 1,
+    "sha256": "fd3ae1cf82c2df2db01ee381b50f42b46eefd57abe85f17a4b9572cd376963fd"
+  },
   "sec.draft_reminder": {
     "version": 1,
     "sha256": "dac59cdedd223bd7a2bafbaa25ad380cbe3bb852e6b53d76d4086c8b02393212"

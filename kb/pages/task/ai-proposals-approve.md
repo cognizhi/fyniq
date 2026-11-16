@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:b8c02158e365254202fda6bcf5cafc06ead3744a4e7fd59d47458e21add5224c
+  - docs/user-guide/ai-proposals.md sha256:214d6d51c38df6c3c7bca5d20a9ffc886bd31873138be3051c5ec9e6f27b0e90
 data_class: general
 taint: trusted
 status: draft
@@ -86,6 +86,15 @@ aliases:
 - A role in which no one has a sign-in email cannot be reminded: the proposal says so and is not kept.
 
 (src: docs/user-guide/ai-proposals.md#send-a-reminder-the-ai-drafted)
+
+## Review a corporate document the AI drafted
+
+- **Draft a corporate document** (`sec.draft_document`, tier 1): a resolution, notice or minutes the AI asks Fyniq to draft from its templates, filled from the records, as in [[compliance.corporate-profile]].
+- The review shows the paper's text; nothing is drafted until the Owner or the Company secretary approves, and then the draft appears in the corporate profile.
+- The AI never signs, files or puts a draft in the minute book; a person records the signed copy.
+- If the directors, the secretary or the members change before approval, the proposal is out of date and drafts nothing.
+
+(src: docs/user-guide/ai-proposals.md#review-a-corporate-document-the-ai-drafted)
 
 ## Turn a task type on or off
 

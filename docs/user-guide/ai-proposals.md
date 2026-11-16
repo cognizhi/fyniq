@@ -73,6 +73,18 @@ status: draft
   saying the AI drafted it and a person approved it.
 - A role in which no one has a sign-in email cannot be reminded: the proposal says so and is not kept for approval.
 
+## Review a corporate document the AI drafted
+
+- **Draft a corporate document** (`sec.draft_document`, tier 1) is a resolution, a notice or minutes the AI asks Fyniq
+  to draft from its own templates, filled from the company's records: the same papers as
+  [the corporate profile's](corporate-profile.md) drafts.
+- The review shows the paper's text as it would be drafted. Nothing is drafted until the Owner or the Company secretary
+  approves it; then the draft appears in the corporate profile, saying the AI proposed it.
+- A draft is never signed, filed or put in the minute book by the AI. A person has it signed and records the signed
+  copy.
+- If the directors, the secretary or the members change before it is approved, the text approved is no longer what
+  would be drafted: the proposal is marked out of date and drafts nothing, and the AI can propose it again.
+
 ## Turn a task type on or off
 
 - Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in

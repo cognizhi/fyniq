@@ -585,6 +585,7 @@ fyniq_executor  SELECT    fx_feed_rates
 fyniq_executor  SELECT    fx_rate
 fyniq_executor  SELECT    gst_registration
 fyniq_executor  EXECUTE   hold_outbox()
+fyniq_executor  SELECT    holding_movement
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
