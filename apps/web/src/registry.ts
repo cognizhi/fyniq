@@ -242,6 +242,9 @@ export const actions = [
   { kind: "action", id: "ai-tasks.turn", mode: "basic", help: "ai-tasks.turn", guide: "ai.proposals#turn-a-task-type-on-or-off" },
   { kind: "action", id: "company-secretary.run-now", mode: "basic", help: "compliance.secretary-run-now", guide: "compliance.secretary#run-now-and-pause" },
   { kind: "action", id: "corporate-profile.ask", mode: "expert", help: "corporate-profile.ask", guide: "compliance.corporate-profile#record-a-change" },
+  { kind: "action", id: "corporate-profile.draft-paper", mode: "expert", help: "corporate-profile.draft-paper", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
+  { kind: "action", id: "corporate-profile.paper-pdf", mode: "expert", help: "corporate-profile.paper-pdf", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
+  { kind: "action", id: "corporate-profile.record-minute-book", mode: "expert", help: "corporate-profile.record-minute-book", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },

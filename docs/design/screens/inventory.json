@@ -3639,6 +3639,7 @@
    "mode": "expert",
    "requirements": [
     "FR-CS-01",
+    "FR-CS-05",
     "FR-CS-06",
     "FR-EQ-25",
     "FR-EQ-11"
@@ -3650,12 +3651,14 @@
     "Registrable controllers (> 25% shares or votes, board-appointment rights), annual notices and 30-day replies; nominee directors and nominee shareholders",
     "ACRA business-profile extract upload and differences; P2 fetched via ACRA API",
     "A change opens its lodgement checklist (14 days for officers and registered office)",
-    "No secretary 6 months after incorporation ✖; sole director as secretary ✖"
+    "No secretary 6 months after incorporation ✖; sole director as secretary ✖",
+    "Papers and minute book: resolutions, notices and minutes drafted from Fyniq's templates (counsel to confirm) and the records, read and downloaded as PDF; the signed copy attached and recorded in the minute book on another person's approval; a draft the AI proposed labelled AI"
    ],
    "states": [
     "differs from ACRA extract",
     "lodgement due ⏰",
-    "extract out of date (Not assessed)"
+    "extract out of date (Not assessed)",
+    "paper drafted, waiting for its signed copy"
    ]
   },
   {

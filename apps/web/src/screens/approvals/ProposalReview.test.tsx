@@ -89,6 +89,29 @@ describe("an AI proposal's review", () => {
     await noViolations(container);
   });
 
+  // req: ai/task-catalogue sec.draft_document Draft only
+  it("shows a drafted corporate document as its paper reads, and axe finds nothing", async () => {
+    const paper = {
+      title: "Directors' resolution in writing",
+      author: "Cognizhi Pte. Ltd.",
+      lines: ["UEN 202612345K"],
+      banner: "Draft by Fyniq from the company's records on 5 January 2027. Fyniq does not sign or file it.",
+      sections: [{ heading: "Resolved", items: ["That the financial statements be approved."] }],
+      signatures: [{ name: "Tan Mei Lin", role: "Director" }],
+      footer: "directors.approve_statements@1",
+    };
+    serve({ ...proposal, task_type: "sec.draft_document", task_name: "Draft a corporate document", items: 1, item_list: [],
+      impact: { corporate_documents: [{ change: "draft", kind: "directors.approve_statements", title: paper.title, paper }] } });
+    const { container } = renderPage(ApprovalPage, { path: "/approvals/a-9", route: "/approvals/$approvalId" });
+    const changes = (await screen.findByRole("heading", { name: "What changes" })).closest("section") as HTMLElement;
+    const doc = await within(changes).findByRole("article", { name: "Directors' resolution in writing" });
+    expect(within(doc).getByText("That the financial statements be approved.")).toBeTruthy();
+    expect(within(doc).getByText("Tan Mei Lin, Director")).toBeTruthy();
+    expect(within(doc).getByText(/Fyniq does not sign or file it/)).toBeTruthy();
+    expect(within(changes).queryByText("paper")).toBeNull();
+    await noViolations(container);
+  });
+
   it("approves only the items kept, named in the approval", async () => {
     noAuthenticator();
     const seen = serve(proposal, request, { "POST /v1/approvals/a-9/approve": { status: 200, body: { ...request, status: "approved" } } });
