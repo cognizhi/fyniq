@@ -145,6 +145,13 @@ See proposal.md for why. What exists today:
   it fell back from. The activity log reads calls and, as later changes add them, turns, tool calls and proposals;
   each person sees their own, the Owner and compliance all; restricted classes are masked without the right, and
   reading them is audited (AUD-05). Retained as audit data.
+- As built (task 6.1): `GET /v1/ai/activity` lists the attempts newest first, by agent, person, run and days. Who reads
+  what is a new row of Appendix D, "AI activity log" (PRD-001 rev 0.276, derived from AI-12's "own" and "Owner/
+  Compliance"): each member reads their own (V (own)), the Owner and the DPO everyone's (V), the AI none. Someone
+  else's entry that carried payroll is masked (its detail withheld) to a reader who may not see payroll unmasked: the
+  DPO, whose payroll cell is M; showing one unmasked writes `ai_activity.read`. A call entry holds no prompt or answer,
+  so the detail is all there is to mask; the turns and tool calls that `p1-ai-assistant` adds carry their own masks.
+  Indexes by time and by person (000363) serve both readings.
 - The switch is the organisation setting `ai.enabled` (and, with `p1-ai-proposals`, the propose tool's and each task
   type's). Turning it off is immediate and needs no second person; turning it on is dual-controlled (golden rule 6).
   The router reads it at admission (cached at most 30 s) and every 10 s during a stream, so new calls are refused at
