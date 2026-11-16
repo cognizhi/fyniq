@@ -102,9 +102,9 @@ func TestARunChecksFirstAndKeepsOneTaskPerFinding(t *testing.T) {
 	if first.Status != storage.AgentRunDone || gst.Status != agents.FindingDue || gst.Window != "7" || gst.DueOn != "2027-01-31" || gst.Rule == "" || gst.Pack == "" {
 		t.Fatalf("the first run: %+v %+v", first, gst)
 	}
-	if na := findings(first)["corporate:profile"]; na.Status != agents.FindingNotAssessed || strings.Contains(strings.ToLower(first.Report.Summary), "all clear") &&
+	if na := findings(first)["check:corporate.secretary"]; na.Status != agents.FindingNotAssessed || strings.Contains(strings.ToLower(first.Report.Summary), "all clear") &&
 		!strings.Contains(first.Report.Summary, "not an all clear") {
-		t.Errorf("the corporate profile's checks and the summary: %+v %q", na, first.Report.Summary)
+		t.Errorf("the corporate profile's secretary check and the summary: %+v %q", na, first.Report.Summary)
 	}
 	if !first.Report.ModelUsed || first.Report.ModelText == "" || asked != 1 || first.Report.LedgerRevision < 0 || first.Report.PackVersions["sg-deadlines"] == "" {
 		t.Errorf("the model step and the inputs: %+v (asked %d)", first.Report, asked)

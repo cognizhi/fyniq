@@ -14,7 +14,7 @@ import (
 func TestASummaryIsNeverAnAllClearWithAnythingOpen(t *testing.T) {
 	due := agents.Finding{Key: "calendar:gst_f5:2026-12-31", Status: agents.FindingDue, Title: "GST return for October to December", DueOn: "2027-01-31"}
 	later := agents.Finding{Key: "calendar:annual_return:2026-12-31", Status: agents.FindingDue, Title: "Annual return", DueOn: "2027-07-31"}
-	na := agents.Finding{Key: "corporate:profile", Status: agents.FindingNotAssessed, Title: "The corporate profile's checks"}
+	na := agents.Finding{Key: "check:corporate.secretary", Status: agents.FindingNotAssessed, Title: "The company has its secretary"}
 	ok := agents.Finding{Key: "check:gst.return-due", Status: agents.FindingOK, Title: "GST returns"}
 	for _, c := range []struct {
 		findings []agents.Finding
@@ -40,7 +40,7 @@ func TestASummaryIsNeverAnAllClearWithAnythingOpen(t *testing.T) {
 func TestTheInputsChangeWhenADeadlineCrossesAWindow(t *testing.T) {
 	packs := map[string]string{"sg-deadlines": "sg-deadlines@2026.1"}
 	a := agents.Finding{Key: "calendar:gst_f5:2026-12-31", Status: agents.FindingDue, Window: "14", DueOn: "2027-01-31"}
-	b := agents.Finding{Key: "corporate:profile", Status: agents.FindingNotAssessed}
+	b := agents.Finding{Key: "check:corporate.secretary", Status: agents.FindingNotAssessed}
 	base := agents.Fingerprint([]agents.Finding{a, b}, packs)
 	if agents.Fingerprint([]agents.Finding{b, a}, packs) != base {
 		t.Error("the same findings in another order changed the inputs")
