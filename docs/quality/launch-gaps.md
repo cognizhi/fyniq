@@ -1,8 +1,8 @@
 # The launch's gaps
 
 The first report of the trace gate (QA-TRACE-01; `p1-launch-readiness` task 1.3), on 16 Nov 2026, with task 2's
-tags. `make trace` writes the live report to `.data/trace/report.json`; this page says how each gap closes. It is kept
-by hand, and its counts are those of the day it was written.
+tags and tests. `make trace` writes the live report to `.data/trace/report.json`; this page says how each gap closes.
+It is kept by hand, and its counts are those of the day it was written.
 
 ## Counts
 
@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 623 |
+| Covered by a tagged test | 632 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
 | Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
-| Untested, blocking | 97 |
+| Untested, blocking | 88 |
 
-Once the stacked chain (#645 to #743) merges, 53 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 44 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -48,25 +48,28 @@ G4-054 gained its race test. The pull request lists each tag with the clauses it
 - `p1-security-hardening`: G4-097.
 - `p1-launch-readiness`: G4-013 (the database's NaN refusal).
 
-### Built in this change (27)
+### Tests written for task 2 (9)
 
-- Tasks 3 to 7 (16): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-REL-01, QA-MCP-01
-  (the shell's part), QA-IMG-01, QA-UI-01, QA-UI-02, QA-UI-03, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08, QA-SEC-05 and
-  QA-E2E-01.
-- Task 2's tests to write, for behaviour that is built but that no test asserts in full (9):
-  - G4-020: a document dated before the registration, posted once it is recorded, carries no GST;
-  - C.2 #49: a write-off posted by the person who recorded the invoice's receipt (SOD-9);
-  - G4-044: an instrument with no enabled template converts by a draft for the accountant;
-  - G4-105: deferred revenue differing from its schedules by S$10.00 is ✖ and holds the close (C.2 #52 is P2);
-  - SEC-26: Dependabot covers every ecosystem with its group and cooldown, and each release image has its SBOM;
-  - G4-085: with the AI's budget spent, the assistant says it is paused while postings, approvals and the deadline
-    alert go on;
-  - FR-VIZ-04, FR-VIZ-05 and FR-VIZ-07: the sequential and diverging scales and the reserved status colours checked
-    from the tokens, and the palette validator, each run from a test.
+Built behaviour that no test asserted in full:
+- G4-020: `TestGSTFollowsTheTaxPointAcrossTheRegistration`, invoices dated before the registration posting no GST once
+  it is recorded;
+- C.2 #49: the write-off whose approver then records the invoice's receipt, named for review (SOD-9);
+- G4-044: before its template is enabled, the SAFE's conversion is the accountant's to complete;
+- G4-105: deferred revenue S$10.00 short of its schedule fails the check, and the close's checks are not clean
+  (C.2 #52 is P2);
+- SEC-26: `TestEveryDependencyHasItsUpdates`. Building it found that Dependabot did not update the infrastructure's
+  OpenTofu providers or the dev container's base image; both now have their updates, grouped with a 14-day cooldown;
+- QA-UI-03, FR-VIZ-04, FR-VIZ-07 and QA-IMG-01: `scripts/test_quality_checks.py` runs the contrast, palette and image
+  checks on planted failures, and checks the sequential and diverging scales from the tokens.
+
+### Built in this change (16)
+
+- Tasks 3 to 7 (14): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-REL-01, QA-MCP-01
+  (the shell's part), QA-UI-01, QA-UI-02, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08, QA-SEC-05 and QA-E2E-01.
 - Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
 
-### In their own change (26)
+### In their own change (28)
 
 - `p1-app-shell` (14): NFR-A11Y-03, NFR-A11Y-04, NFR-A11Y-05, NFR-PERF-UI-01, FR-UX-06, FR-UX-08, FR-UX-11, FR-UX-14,
   FR-UX-25, FR-UX-30, FR-UX-32, FR-UX-34 (the first-run tour, which QA-UI-06 waits for), FR-UX-37, G4-077.
@@ -86,10 +89,15 @@ G4-054 gained its race test. The pull request lists each tag with the clauses it
 - `p1-documents-evidence` (2): G4-068's contract, kept until the year its transactions complete (the bill's part is
   `TestRetainUntil`); G4-069's staging sweeper, which the evidence package describes but nothing runs, and a locked
   orphan found within one tick rather than by the daily retention check.
-- `p1-operations-dr` (1): G4-073's dead row, shown on Checks with a replay. Its unknown email outcome and its posting
-  once are tested.
-- `p1-reports` (1): G4-052. A re-run as at a board pack's revision shows today's names, flagged restated presentation;
-  the pack's own names and grouping, and its stored PDF's hash, are not kept.
+- `p1-operations-dr` (2): G4-073's dead row, shown on Checks with a replay (its unknown email outcome and its posting
+  once are tested); G4-085, the assistant saying it is paused while postings, approvals and the deadline alert go on.
+  The budget that stops the calls is `TestBudgetsAdmitOnlyWhatTheyCover`; the assistant is the chain's, so G4-085
+  follows its merge.
+- `p1-reports` (2):
+  - FR-VIZ-05, status colours always beside an icon and a label: some chips in a status tone show a label alone (Home's
+    set-up steps, the invitations on Join);
+  - G4-052: a re-run as at a board pack's revision shows today's names, flagged restated presentation; the pack's own
+    names and grouping, and its stored PDF's hash, are not kept.
 - `p1-scheduled-agents` (1): G4-103, an ACRA extract older than the last share change and a mandatory pack update not
   accepted, each not assessed with the pack version labelled.
 

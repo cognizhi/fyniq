@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -167,6 +168,7 @@ func TestPrepaymentSchedulesReconcileWith1210(t *testing.T) {
 // schedule holds, and the close says so.
 // req: INV-07
 // req: FR-GL-03
+// req: G4-105
 func TestDeferredRevenueSchedulesReconcileWith2400(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
 	s := store(t, "fyniq_api")
@@ -192,5 +194,28 @@ func TestDeferredRevenueSchedulesReconcileWith2400(t *testing.T) {
 	}
 	if c := closeChecks(t, ctx, s, b.Org, b.Oct.ID)["deferred-revenue"]; c.Severity != closing.OK || c.Title != "The deferred revenue schedules agree with deferred revenue" {
 		t.Errorf("the deferred revenue check: %+v", c)
+	}
+
+	// G4-105: a release of S$10.00 for May 2027, which the schedule does not have, posted on 26 October with the
+	// invoice's ID. 2400 then differs from its schedule by S$10.00: the check fails (✖) and the close cannot go ahead.
+	may := time.Date(2027, 5, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(10, 26),
+			PostingIdentity: ledger.InvoiceReleaseIdentity(doc.ID, 1, 1, may, ledger.RuleInvoiceRelease), RuleVersion: ledger.RuleInvoiceRelease,
+			Memo: "Forged", Source: storage.Source{Type: ledger.SourceInvoiceRelease, ID: doc.ID.String(), Version: 1},
+			Lines: []storage.NewLine{
+				{AccountID: b.Deferred.ID, Currency: "SGD", Amount: "10.00", FXRate: "1", FXRateSource: "base", BaseAmount: "10.00"},
+				{AccountID: b.Sales.ID, Currency: "SGD", Amount: "-10.00", FXRate: "1", FXRateSource: "base", BaseAmount: "-10.00"},
+			}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if c := closeChecks(t, ctx, s, b.Org, b.Oct.ID)["deferred-revenue"]; c.Severity != closing.Failed || !strings.Contains(c.Detail, "590.00") ||
+		!strings.Contains(c.Detail, "600.00") {
+		t.Errorf("after the forged release: %+v", c)
+	}
+	if cc, err := (closing.Service{Store: s}).RunChecks(ctx, b.Org, b.Oct.ID); err != nil || cc.Clean {
+		t.Errorf("the close's checks with 2400 S$10.00 short of its schedule: clean %v, %v", cc.Clean, err)
 	}
 }

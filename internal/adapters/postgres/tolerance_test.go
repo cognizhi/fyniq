@@ -35,6 +35,7 @@ import (
 // req: FR-BNK-08
 // req: ledger/posting-rules Settlement tolerances
 // req: ledger/posting-rules Settlement difference on an invoice or bill
+// req: C.2 #49
 func TestSettlementDifferencesWithinTolerance(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")
