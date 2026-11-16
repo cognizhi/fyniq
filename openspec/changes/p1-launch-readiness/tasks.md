@@ -152,8 +152,17 @@ and names the requirement IDs it proves.
 - [ ] 6.2 QA-PROD-01: the canary organisation and its nightly synthetic transactions (design D8), beside the ledger and
   audit-chain verifications. Its failure raises the verification alert. Test `TestTheCanaryPostsAndVerifiesNightly`
   `// req: QA-PROD-01`; the cloud run recorded `live-verify` with its runbook.
-- [ ] 6.3 QA-MCP-01 at launch: the MCP shell exposes no tool and refuses every call, with each refusal audited. Test
+- [x] 6.3 QA-MCP-01 at launch: the MCP shell exposes no tool and refuses every call, with each refusal audited. Test
   `// req: QA-MCP-01` (the shell's part). The full suite is recorded `after-go-live` with `p1-mcp-first-party`.
+  As built (16 Nov 2026): `internal/mcpshell`, which `cmd/mcp` serves.
+  - Every request under `/mcp`, whatever its method, gets 403 with an RFC 9457 problem coded `MCP-OFF-01`, which names
+    no tool: initialize, tools/list, tools/call, a stream and a session's close.
+  - Each refusal is logged as the security event `mcp.call_refused`, with its method, path, origin and whether it
+    carried a bearer token, never the token or the body (SEC-15).
+  - The shell holds no database, as §12.3 has it reach data only through the API, so the refusals are in the service's
+    log, not the audit trail.
+  - Test `TestTheShellExposesNoToolAndRefusesEveryCall`. QA-MCP-01 is covered by it until `p1-mcp-first-party` opens the
+    server. That change's suite must pass before any tool is exposed, so no exception is recorded.
 
 ## 7. UAT and the launch gate
 
