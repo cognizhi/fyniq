@@ -38,9 +38,15 @@ and names the requirement IDs it proves.
     rows.
   - `make trace` is part of `make check`. The daily `controls` workflow uploads the report. The release gate joins in
     task 7.2.
-- [ ] 1.3 The first report, for this change: the untested launch rows listed by change in `docs/quality/launch-gaps.md`.
+- [x] 1.3 The first report, for this change: the untested launch rows listed by change in `docs/quality/launch-gaps.md`.
   Each is tagged where a test already proves it (task 2), built here (tasks 3 to 7), recorded as an exception, or left
   to its own change. Verified by `make trace` printing the same counts as the file.
+  As built (16 Nov 2026):
+  - On main, 597 of the subset are covered, 127 untested, 166 reported and 34 excepted. Once the chain (#643 to #739)
+    merges, 81 stay untested.
+  - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
+    They also add 24 cloud-proved items, each naming its runbook or control file.
+  - FM-6 waits for the owner's decision on whether it launches.
 
 ## 2. Tags where the tests already prove the requirement (design D3)
 
