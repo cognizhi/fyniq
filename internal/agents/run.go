@@ -95,10 +95,15 @@ type Runner struct {
 
 var errSkip = errors.New("the run is skipped")
 
-// Work runs a queued run: early, it holds until its slot; off, paused or with the AI off, it is skipped with why;
-// otherwise the deterministic findings, their tasks, the model step if an input changed and the entry uses it, the
-// report, the recipients told and the next slot queued. A run that cannot finish fails with why, which the watchdog
-// raises (C.2 #36).
+// AIOff is why the AI step cannot run while the organisation's AI is switched off: the API's model step refuses it, and
+// a run still ends with its deterministic findings (AI-64, rev 0.283).
+const AIOff = "the AI is switched off"
+
+// Work runs a queued run: early, it holds until its slot; off, paused or acting for someone no longer an Owner, it is
+// skipped with why; otherwise the deterministic findings, their tasks, the model step if an input changed and the entry
+// uses it, the report, the recipients told and the next slot queued. With the AI off, or a model step that fails, the
+// run still ends with its findings and Fyniq's summary, the report saying why the AI step did not run (AI-64, rev
+// 0.283). A run that cannot finish fails with why. The watchdog raises both (C.2 #36).
 func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 	var in RunWork
 	if err := json.Unmarshal(row.Payload, &in); err != nil || in.RunID == uuid.Nil {
@@ -109,6 +114,7 @@ func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) 
 	var skill Skill
 	var st State
 	var why string
+	aiOff := false
 	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 		if run, err = u.AgentRuns().Get(ctx, in.RunID); err != nil {
 			return err
@@ -128,6 +134,9 @@ func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) 
 		} else if why, err = Skipped(ctx, u, st, run, now); err != nil {
 			return err
 		}
+		if why == AIOff {
+			why, aiOff = "", true
+		}
 		if why != "" {
 			_, err = u.AgentRuns().Skip(ctx, run.ID, run.Version, why, now)
 			return err
@@ -141,7 +150,7 @@ func (r Runner) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow) 
 	case err != nil:
 		return err
 	}
-	if err := r.finish(ctx, org, run, skill, st); err != nil {
+	if err := r.finish(ctx, org, run, skill, st, aiOff); err != nil {
 		reason := "it could not finish: " + err.Error()
 		return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			cur, err := u.AgentRuns().Get(ctx, run.ID)
@@ -170,7 +179,7 @@ func Skipped(ctx context.Context, u storage.UnitOfWork, st State, run storage.Ag
 		return "", err
 	}
 	if settings.On(def, changes, day).Value != "true" {
-		return "the AI is switched off", nil
+		return AIOff, nil
 	}
 	roles, err := u.Members().Roles(ctx, run.ActsFor, now)
 	if err != nil && !errors.Is(err, ports.ErrNotFound) {
@@ -184,7 +193,7 @@ func Skipped(ctx context.Context, u storage.UnitOfWork, st State, run storage.Ag
 
 // finish runs a started run: the findings first, the model step outside any transaction, then the tasks, the report,
 // the recipients told and the next slot, in one unit of work.
-func (r Runner) finish(ctx context.Context, org uuid.UUID, run storage.AgentRun, skill Skill, st State) error {
+func (r Runner) finish(ctx context.Context, org uuid.UUID, run storage.AgentRun, skill Skill, st State, aiOff bool) error {
 	now := r.Clock.Now()
 	var findings []Finding
 	var packs map[string]string
@@ -209,12 +218,16 @@ func (r Runner) finish(ctx context.Context, org uuid.UUID, run storage.AgentRun,
 	fingerprint := Fingerprint(findings, packs)
 	changed := last.Report == nil || last.Report.Fingerprint != fingerprint
 	var outcome ModelOutcome
-	used := false
+	used, missed := false, ""
 	if r.Model != nil && (changed || !onlyIfChanged(run.Trigger)) {
-		if outcome, err = r.Model(ctx, org, run, findings); err != nil {
-			return fmt.Errorf("the model step: %w", err)
+		// Deterministic first (AI-64, rev 0.283): the findings stand without the model; the report says why.
+		if aiOff {
+			missed = AIOff
+		} else if outcome, err = r.Model(ctx, org, run, findings); err != nil {
+			missed, outcome = cut("the AI step could not run: "+err.Error(), 1000), ModelOutcome{}
+		} else {
+			used = true
 		}
-		used = true
 	}
 	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		if err := r.tasks(ctx, u, run, st, findings, now); err != nil {
@@ -225,9 +238,12 @@ func (r Runner) finish(ctx context.Context, org uuid.UUID, run storage.AgentRun,
 			return err
 		}
 		summary := Summary(findings)
+		if missed != "" {
+			summary += " The AI could not add its explanation this time."
+		}
 		done, err := u.AgentRuns().Finish(ctx, run.ID, run.Version, storage.AgentReport{Fingerprint: fingerprint, LedgerRevision: revision,
 			PackVersions: packs, KBSnapshot: "none", Findings: body, Summary: summary, ModelUsed: used, Model: outcome.Model,
-			ModelText: cut(outcome.Text, 20000), Tokens: outcome.Tokens, ToolCalls: outcome.ToolCalls, Tools: outcome.Tools}, now)
+			ModelText: cut(outcome.Text, 20000), Tokens: outcome.Tokens, ToolCalls: outcome.ToolCalls, Tools: outcome.Tools, ModelMissed: missed}, now)
 		if err != nil {
 			return err
 		}

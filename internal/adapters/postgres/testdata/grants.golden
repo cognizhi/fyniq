@@ -833,7 +833,7 @@ fyniq_worker    SELECT    accounting_framework
 fyniq_worker    SELECT    accounting_policy
 fyniq_worker    INSERT    agent_run (acts_for, agent, queued_at, requested_by, skill_sha256, skill_version, slot_at, trigger)
 fyniq_worker    SELECT    agent_run
-fyniq_worker    UPDATE    agent_run (findings, fingerprint, finished_at, kb_snapshot, ledger_revision, model, model_text, model_used, pack_versions, reason, started_at, status, summary, tokens, tool_calls, tools, version)
+fyniq_worker    UPDATE    agent_run (findings, fingerprint, finished_at, kb_snapshot, ledger_revision, model, model_missed, model_text, model_used, pack_versions, reason, started_at, status, summary, tokens, tool_calls, tools, version)
 fyniq_worker    SELECT    ai_agents
 fyniq_worker    SELECT    ai_budget
 fyniq_worker    SELECT    ai_call

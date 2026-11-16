@@ -79,7 +79,9 @@ type AgentRunSummary struct {
 	Summary    string             `json:"summary,omitempty" doc:"Fyniq's summary, never \"all clear\" while anything is open (AI-65)." example:"2 things need you this week."`
 	Counts     AgentFindingCounts `json:"counts" doc:"Its findings by status, once done."`
 	ModelUsed  bool               `json:"model_used" doc:"Whether it asked the model: only when an input changed, for the monitor and events." example:"true"`
-	New        bool               `json:"new" doc:"Whether what it found differs from the run done before it: new since the last run." example:"true"`
+	// (AI-64, rev 0.283)
+	ModelMissed string `json:"model_missed,omitempty" doc:"Why its AI step did not run when it was due to: the model unavailable, the AI off, no route or the budget spent. Its findings and tasks stand; C.2 #36 shows it." example:"the AI is switched off"`
+	New         bool   `json:"new" doc:"Whether what it found differs from the run done before it: new since the last run." example:"true"`
 }
 
 // CompanySecretary is the assistant's workspace: its state, who it acts for, its schedule, when it runs next, its latest
@@ -457,7 +459,7 @@ func runSummary(r storage.AgentRun, prev *storage.AgentRun) AgentRunSummary {
 		out.FinishedAt = r.FinishedAt.UTC().Format(time.RFC3339)
 	}
 	if rep := r.Report; rep != nil {
-		out.Summary, out.ModelUsed = rep.Summary, rep.ModelUsed
+		out.Summary, out.ModelUsed, out.ModelMissed = rep.Summary, rep.ModelUsed, rep.ModelMissed
 		out.New = prev == nil || prev.Report == nil || prev.Report.Fingerprint != rep.Fingerprint
 		for _, f := range runFindings(r) {
 			switch f.Status {

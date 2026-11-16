@@ -128,12 +128,19 @@ func (r agentRuns) Finish(ctx context.Context, id uuid.UUID, version int, rep st
 	if rep.ModelUsed {
 		tools = append([]string{}, rep.Tools...)
 	}
+	var missed *string // why its AI step did not run; none when it ran or was not due
+	if !rep.ModelUsed && rep.ModelMissed != "" {
+		missed = &rep.ModelMissed
+	}
 	changes := map[string][2]any{"fingerprint": {nil, rep.Fingerprint}, "ledger_revision": {nil, rep.LedgerRevision},
 		"findings_sha256": {nil, hashOf(findings)}, "model_used": {nil, rep.ModelUsed}}
+	if missed != nil {
+		changes["model_missed"] = [2]any{nil, *missed}
+	}
 	return r.step(ctx, id, "done", changes, func() (sqlcdb.FyniqAgentRun, error) {
 		return r.u.q.FinishAgentRun(ctx, sqlcdb.FinishAgentRunParams{FinishedAt: &at, Fingerprint: &rep.Fingerprint, LedgerRevision: &rep.LedgerRevision,
 			PackVersions: packs, KbSnapshot: &rep.KBSnapshot, Findings: findings, Summary: &rep.Summary, ModelUsed: &rep.ModelUsed, Model: model,
-			ModelText: text, Tokens: &tokens, ToolCalls: &calls, Tools: tools, ID: id, Version: v32(version)})
+			ModelText: text, Tokens: &tokens, ToolCalls: &calls, Tools: tools, ModelMissed: missed, ID: id, Version: v32(version)})
 	})
 }
 
@@ -177,7 +184,7 @@ func toAgentRun(row sqlcdb.FyniqAgentRun) (storage.AgentRun, error) {
 	}
 	rep.Fingerprint, rep.LedgerRevision, rep.KBSnapshot, rep.Summary = deref(row.Fingerprint), deref(row.LedgerRevision), deref(row.KbSnapshot), deref(row.Summary)
 	rep.ModelUsed, rep.Model, rep.ModelText = deref(row.ModelUsed), deref(row.Model), deref(row.ModelText)
-	rep.Tokens, rep.ToolCalls, rep.Tools = int(deref(row.Tokens)), int(deref(row.ToolCalls)), row.Tools
+	rep.Tokens, rep.ToolCalls, rep.Tools, rep.ModelMissed = int(deref(row.Tokens)), int(deref(row.ToolCalls)), row.Tools, deref(row.ModelMissed)
 	out.Report = &rep
 	return out, nil
 }
