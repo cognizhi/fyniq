@@ -113,13 +113,21 @@ and names the requirement IDs it proves.
     reconciliation (QA-MIG-01: 1,649 figures against the workbook's engine) with the differential suite on each rule it
     posts by; it is not one oracle scenario, since it holds pay runs, which the format has not (design D4).
   - Tagged `// req: QA-ENG-07` and the six sets.
-- [ ] 3.2 The pinned cases of Appendix G.2 that launch: document totals, FX and rounding on 7030, depreciation,
+- [x] 3.2 The pinned cases of Appendix G.2 that launch: document totals, FX and rounding on 7030, depreciation,
   unrealised revaluation, a balance converted to shares (RND-SHARE) and a SAFE's conversion and dilution. Each is
   worked by hand from its source, asserted in Go and in the oracle, and tagged with its requirement. The hourly cost is
   recorded `after-go-live` with projects (rev 0.146).
-  So far (16 Nov 2026): the document totals, 7030's June and August, and the assets' depreciation hold in the posting
-  set (`TestTheWorkbookGoldenSets`, tagged with each). Left: the unrealised revaluation (the miscellaneous set), the
-  tags on RND-SHARE's and the SAFE's pinned tests, and the hourly cost's exception.
+  As built (16 Nov 2026):
+  - The document totals, 7030's June and August, and the assets' depreciation hold in the workbook's posting set on the
+    engine and the oracle (`TestTheWorkbookGoldenSets`).
+  - The unrealised revaluation: the memo's 240 - 30 = 210 posts as each month-end's revaluation and is reversed on
+    day 1 (the miscellaneous set, engine and oracle); on the imported sample, the revaluations the scheduler would post
+    are the register's class (b) lines by account and month (`TestRevaluationAfterTheImportIsARuleChangeInTheRegister`,
+    G4-016).
+  - RND-SHARE's 10,288 and 329,217 shares were pinned by hand already (`TestSharePinnedCases`, the oracle's
+    `test_rnd_share_allots_whole_shares_and_leaves_the_rest_owed`), and the SAFE's pre-money and post-money conversion
+    and dilution (`TestP1SAFEConversion` on the engine and the oracle, `TestARoundIsModelledByHand`): tagged.
+  - The hourly cost is in `launch-exceptions.json`, after go-live with `p1-projects` (rev 0.146).
 - [x] 3.3 Export round-trip (QA-RPT-03) for every export of the launch:
   - financial statements, the cap table, a director's statement, the report exports and the tenant export's CSVs;
   - XLSX re-read figure by figure, including a value at 15 significant digits and one above it written as text;

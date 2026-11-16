@@ -167,7 +167,9 @@ func (g workbookGolden) check(t *testing.T, r Result) []string {
 // req: quality/calculation-correctness Golden data set, regressions
 // req: quality/calculation-correctness Pinned document totals
 // req: quality/calculation-correctness Pinned FX and rounding on account 7030
+// req: G4-038
 // req: quality/calculation-correctness Pinned asset depreciation
+// req: quality/calculation-correctness Pinned unrealised FX revaluation
 func TestTheWorkbookGoldenSets(t *testing.T) {
 	sets, _ := filepath.Glob(filepath.Join(repo, "test/golden/workbook/*/expected.json"))
 	if len(sets) == 0 {
