@@ -157,17 +157,13 @@ func aiModelRoutes(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, e
 			if err != nil {
 				return Result{}, err
 			}
-			var used int64
+			units := map[string]int64{}
 			for _, r := range rows {
-				if r.ConnectionID != c.ID {
-					continue
-				}
-				if q.Unit == "requests" {
-					used += r.Requests
-				} else {
-					used += r.Input + r.Output + r.CacheRead + r.CacheWrite
+				if r.ConnectionID == c.ID {
+					units[r.Model] += q.Units(r.Requests, r.Input+r.Output+r.CacheRead+r.CacheWrite)
 				}
 			}
+			used := q.Drawn(units)
 			if q.Amount > 0 && used*100 >= q.Amount*aiNearPercent {
 				items = append(items, Item{Kind: "ai_connection", ID: c.ID.String(), Label: "The quota of " + c.Name,
 					Detail: fmt.Sprintf("%d of %d %s used this %s; it resets on %s", used, q.Amount, q.Unit, q.Window, day(resets))})

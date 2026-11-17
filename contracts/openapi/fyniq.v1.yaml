@@ -716,6 +716,17 @@ components:
             - "30.00"
           pattern: ^[0-9]+(\.[0-9]{1,4})?$
           type: string
+        rates:
+          description: The models the plan draws its quota from at another rate, as its published terms say; a model not named draws at 1 (AI-73).
+          items:
+            $ref: "#/components/schemas/AIConnectionQuotaRate"
+          maxItems: 100
+          type:
+            - array
+            - "null"
+        terms:
+          $ref: "#/components/schemas/AIConnectionQuotaTerms"
+          description: The plan's published terms the rates come from; required with rates.
         unit:
           description: What the quota counts.
           enum:
@@ -738,6 +749,54 @@ components:
         - window
         - fee
         - currency
+      type: object
+    AIConnectionQuotaRate:
+      additionalProperties: false
+      properties:
+        model:
+          description: The model, as the provider lists it.
+          examples:
+            - kimi-k2-thinking
+          maxLength: 200
+          minLength: 1
+          type: string
+        rate:
+          description: Units of the quota each token or request draws, a decimal string.
+          examples:
+            - "3"
+          pattern: ^[0-9]{1,6}(\.[0-9]{1,4})?$
+          type: string
+      required:
+        - model
+        - rate
+      type: object
+    AIConnectionQuotaTerms:
+      additionalProperties: false
+      properties:
+        checked_on:
+          description: The day they were read.
+          examples:
+            - "2026-11-14"
+          format: date
+          type: string
+        title:
+          description: The page's title.
+          examples:
+            - Pricing
+          maxLength: 300
+          minLength: 1
+          type: string
+        url:
+          description: The plan's published terms.
+          examples:
+            - https://platform.moonshot.ai/docs/pricing
+          maxLength: 2000
+          pattern: ^https://
+          type: string
+      required:
+        - url
+        - title
+        - checked_on
       type: object
     AIDataEvidence:
       additionalProperties: false
@@ -2148,6 +2207,7 @@ components:
             - tokens
           type: string
         used:
+          description: "What the window drew from the quota: each model's use at its rate from the plan's terms (1 where they name none), rounded down."
           examples:
             - 908000
           format: int64

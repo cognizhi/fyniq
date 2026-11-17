@@ -47,6 +47,9 @@ on its route. Every connection starts off.
 - **Usage-based**: Fyniq works out each request's cost from the provider's own usage figures and its price.
 - **Subscription**: when the quota runs out, the agent moves to the next step of its route or stops; it never
   switches to paying per token on its own.
+- **Models that draw at another rate**: when a plan's published terms count some models at more or less than one unit
+  of the quota per token or request, list them as `model = rate`, one a line, with the terms' address, title and the
+  day you read them. Each model's use then draws its rate from the quota; a model not listed draws 1.
 - **A person's own plan** is not offered yet. Signing in with a consumer chat plan meant for the provider's own apps,
   or reusing a chat session or browser cookie, is not supported.
 

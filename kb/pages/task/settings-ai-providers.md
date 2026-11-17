@@ -4,7 +4,7 @@ type: task
 title: Connect the AI to a model provider, and see which data may go where
 summary: Settings › AI › AI providers: connections, which data may go where, adding one; a connection's page: on and off, key, models, qualification, data handling
 sources:
-  - docs/user-guide/ai-providers.md sha256:e1509e51d4943aa18c004f216e4450354ae8cee82597a66e8084565b5f821dfc
+  - docs/user-guide/ai-providers.md sha256:a0b69d0592d8d22e729a1302ce191faf723335d50214afe1aa0cf04b2a8dcafa
 data_class: general
 taint: trusted
 status: published
@@ -60,7 +60,7 @@ aliases:
 
 ## How a connection is paid for
 
-- **Usage-based**: each request's cost from the provider's usage figures and its price. **Subscription**: when the quota runs out the agent moves to its route's next step or stops, never switching to paying per token by itself.
+- **Usage-based**: each request's cost from the provider's usage figures and its price. **Subscription**: when the quota runs out the agent moves to its route's next step or stops, never switching to paying per token by itself. Models that draw at another rate are listed as `model = rate` with the plan's published terms; others draw 1.
 - A person's own plan is not offered yet; a consumer chat plan meant for the provider's own apps, or a reused chat session or browser cookie, is not supported.
 
 (src: docs/user-guide/ai-providers.md#how-a-connection-is-paid-for)
