@@ -82,14 +82,14 @@ and names the requirement IDs it proves.
 
 ## 3. Calculation correctness (QA-ENG-07, QA-RPT-03, the 13 sets of Appendix G.1 and G.2)
 
-- [ ] 3.1 `scripts/workbook_golden.py` ports, from a pinned commit of `zh-sheet-accounting` (design D4), the sample
+- [x] 3.1 `scripts/workbook_golden.py` ports, from a pinned commit of `zh-sheet-accounting` (design D4), the sample
   company and the posting, non-posting, document-number, regression and miscellaneous sets into `test/golden/workbook/`,
   with their verified results and a README naming each source file. The Go engine and the oracle reproduce every
   figure. Tests:
   - `// req: QA-ENG-07`;
   - `// req: quality/calculation-correctness Golden data set, sample company` and the other five sets;
   - `TestTheFixturesAreTheRecordedOnes` (hashes and commit).
-  So far (16 Nov 2026):
+  As built (16 Nov 2026):
   - The script reads the workbook's files as data (literals, dates and rows; nothing of that repository runs) at
     `a705fd14`, the commit the migration's sample is pinned at, and writes each set's scenario, a mapping of every row
     to the document it became or why it does not post, and `sources.json` with the hashes. `expected.json` is kept by
@@ -103,10 +103,16 @@ and names the requirement IDs it proves.
     posted at each month's end and reversed on day 1 among them) hold the same way. The bank matcher's
     `TestAWorkbookNumberNamesOnlyItself` holds the workbook's numbers with `*`, `?`, `~` and `<`, and its spaced
     references. The posting set's payments with no reference are now recorded on account for their contact (FR-AR-18).
-  - The sample company is reconciled by the migration (QA-MIG-01: 1,649 figures against the workbook's engine); its
-    oracle side is still to do.
-  - Left: the non-posting set, the sample's oracle side, the miscellaneous set's planning and reminder cases (matched
-    to Fyniq's tests or recorded), then `// req: QA-ENG-07`.
+  - The non-posting set's 125 cases (`statuses.json`, read by the script) are each mapped to the Fyniq rule and the
+    tests that hold it, or to after the launch (employees, projects, timesheets), or said to have no counterpart (the
+    print sheet): `TestTheNonPostingCasesHaveTheirTests` checks every case is mapped once and every test named exists.
+    The miscellaneous set's other tests are held the same way. Mapping them added
+    `TestTheWorkbooksStudyWithoutAnInvestment` and `TestADiscountBudgetReducesRevenue` (the migration's sign rule for
+    a discount budget, now its own function).
+  - The sample company: the owner's decision of 16 Nov 2026, taken interactively, accepts the migration's
+    reconciliation (QA-MIG-01: 1,649 figures against the workbook's engine) with the differential suite on each rule it
+    posts by; it is not one oracle scenario, since it holds pay runs, which the format has not (design D4).
+  - Tagged `// req: QA-ENG-07` and the six sets.
 - [ ] 3.2 The pinned cases of Appendix G.2 that launch: document totals, FX and rounding on 7030, depreciation,
   unrealised revaluation, a balance converted to shares (RND-SHARE) and a SAFE's conversion and dilution. Each is
   worked by hand from its source, asserted in Go and in the oracle, and tagged with its requirement. The hourly cost is

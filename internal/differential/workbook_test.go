@@ -158,6 +158,10 @@ func (g workbookGolden) check(t *testing.T, r Result) []string {
 // The document numbers, the regressions and the miscellaneous cases post too: payments settle only their own documents,
 // spaced references settle theirs (the bank matcher's TestAWorkbookNumberNamesOnlyItself names the numbers themselves),
 // and the unrealised FX of 210 posts as each month-end's revaluation, reversed on day 1.
+// With the sample company reconciled by the migration (the owner's decision of 16 Nov 2026: its 1,649 figures against
+// the workbook's engine, and the differential suite on each rule it posts by) and the non-posting cases mapped
+// (TestTheNonPostingCasesHaveTheirTests), every set of Appendix G.1 is ported.
+// req: QA-ENG-07
 // req: quality/calculation-correctness Golden data set, posting edge cases
 // req: quality/calculation-correctness Golden data set, document numbers
 // req: quality/calculation-correctness Golden data set, regressions
