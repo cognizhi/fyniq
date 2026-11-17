@@ -1,9 +1,27 @@
 ## 1. The ACRA pack
 
-- [ ] 1.1 `packs/sg-acra/2026.1`: `pack.toml` with its sources, `rules.csv` (deadlines, thresholds and guidance, each
+- [x] 1.1 `packs/sg-acra/2026.1`: `pack.toml` with its sources, `rules.csv` (deadlines, thresholds and guidance, each
   with its section, source and verdict) and `pinned/` tests; the loader and its activation under dual control, as the
   statutory packs' (design D1). A test holds the controllers' periods equal to the equity register's. Tests
   `// req: FR-CS-02`, `// req: governance/company-secretary FR-CS-02 Guidance kept apart from the Act`.
+  As built:
+  - Three tables, not one: `periods.csv` (a rule, its event, the rule it follows, a count in days, business days or
+    months, the section and the verdict), `thresholds.csv` (the Simplified XBRL and audit-exemption figures) and
+    `rules.csv` (rules with no period, such as who may be the secretary, and the solvent exempt private company's
+    declaration instead of statements).
+  - The verdict is `act` or `guidance`. The loader refuses `act` unless a cited source is of kind law or regulation,
+    and `guidance` unless one is official guidance. ACRA's pages were read again on 16 Nov 2026; the Act's sections
+    are as the 12 Oct notes read them on SSO, which refuses the fetch tool. So only s143, s171 and s173A are `act`; the
+    controllers' and nominees' periods are `guidance` (the Regulations behind them were never read).
+  - `pack.AcraDue` counts days, business days (from the day after, skipping weekends and sg-deadlines' holidays through
+    `WorkdaysOf`) and months (the same day, or the month's last: 31 Aug and six months is 28 or 29 Feb, not the
+    calendar's last-day rule). `PeriodOn`, `AcraThreshold` and `CorporateRuleOn` read the rest. Loading into the
+    global tables and activation under dual control are the packs' own, unchanged.
+  - Left for `sg-acra@2026.2`, as their only source is the Act on SSO: minutes within one month (s188), 14 days'
+    notice of a general meeting (s177), written-resolution majorities (s184A–G) and the lapse of a share-issue
+    approval (s161). Tasks 4.1 and 4.2 need the first two: they wait for a person to read SSO.
+  - The open question on the nominees' central register is settled by ACRA's page: two business days "starting after
+    you update your private registers".
 
 ## 2. The corporate profile
 

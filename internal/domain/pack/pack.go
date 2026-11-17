@@ -137,6 +137,19 @@ var Schemas = map[string]Schema{
 			"extensions":   {"case", "obligation", "due", "want", "why", "source"},
 		},
 	},
+	// The corporate rules the company secretary's checks and assistant read (FR-CS-02; p1-company-secretary design D1).
+	"sg-acra": {
+		Tables: map[string][]string{
+			"periods": {"rule", "event", "after", "count", "unit", "section", "verdict", "effective_from", "effective_to",
+				"description", "source"},
+			"thresholds": {"threshold", "value", "unit", "effective_from", "effective_to", "description", "source"},
+			"rules":      {"rule", "section", "verdict", "effective_from", "effective_to", "description", "source"},
+		},
+		Pinned: map[string][]string{
+			"periods":    {"case", "rule", "event_on", "want", "why", "source"},
+			"thresholds": {"case", "threshold", "date", "want", "why", "source"},
+		},
+	},
 	// Corporate income tax by Year of Assessment, for the forecast's tax estimate and feasibility (FR-PLN-03, FR-PLN-06).
 	"sg-cit": {
 		Tables: map[string][]string{
@@ -422,6 +435,8 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		out = append(out, checkGST(dir, v)...)
 	case "sg-deadlines":
 		out = append(out, checkDeadlines(dir, v)...)
+	case "sg-acra":
+		out = append(out, checkAcra(dir, v)...)
 	case "sg-cit":
 		out = append(out, checkCIT(dir, v)...)
 	case "sg-cpf":

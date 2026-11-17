@@ -1,0 +1,8 @@
+threshold,value,unit,effective_from,effective_to,description,source
+simplified_xbrl_revenue,500000,SGD,2026-11-16,,"A smaller company files Simplified XBRL: its revenue for the current financial year does not exceed this, whatever the year's length",acra-xbrl
+simplified_xbrl_assets,500000,SGD,2026-11-16,,"And its total assets for the current financial year do not exceed this",acra-xbrl
+audit_exempt_revenue,10000000,SGD,2026-11-16,,"A small company's total annual revenue: at most this",acra-audit-exemption
+audit_exempt_assets,10000000,SGD,2026-11-16,,"A small company's total assets: at most this",acra-audit-exemption
+audit_exempt_employees,50,count,2026-11-16,,"A small company's employees: at most this",acra-audit-exemption
+audit_exempt_criteria,2,count,2026-11-16,,"A private company meeting at least this many of the three criteria is a small company",acra-audit-exemption
+audit_exempt_years,2,count,2026-11-16,,"For each of this many immediate past consecutive financial years; a company less than two years old for the current year",acra-audit-exemption
