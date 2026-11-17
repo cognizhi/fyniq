@@ -159,6 +159,16 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | Portals for customers and investors | Off | Off until there are customers or investors to invite |
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
 
+## Motion
+
+Fyniq uses a few short transitions so you can follow what changed: a page or panel fading in, rows
+entering, a count changing. An Administrator can turn **Motion** off for the whole organisation; every
+screen then shows its final state at once, for everyone. It is on by default, and the change is kept in
+the setting's history.
+
+Each person can still choose **Reduce motion** in the Appearance menu, and a device set to reduce motion
+always wins.
+
 ## AI routes
 
 - Each AI agent runs on a route: a model on a connection first, then the fallbacks it may use when the first fails.

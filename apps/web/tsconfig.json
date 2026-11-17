@@ -25,6 +25,7 @@
     "src",
     "e2e",
     "journeys",
+    "visual",
     "vite.config.ts",
     "playwright.config.ts",
     ".storybook",

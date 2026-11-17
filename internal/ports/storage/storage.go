@@ -152,6 +152,8 @@ type UnitOfWork interface {
 	AICalls() AICalls
 	AIBudgets() AIBudgets
 	AIQualifications() AIQualifications
+	// APIClients are the organisation's integration clients and personal access tokens (FR-INT-02, SEC-07).
+	APIClients() APIClients
 	// AIGrants are the assistant's delegated read grants, one per turn (AI-01, AI-36).
 	AIGrants() AIGrants
 	// AIConversations are the assistant's conversations, turns, tool calls and feedback (AI-12, AI-P8).

@@ -50,7 +50,7 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
 	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue",
-	"ai_agent"}
+	"ai_agent", "api_client_route"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}

@@ -32,6 +32,8 @@ FLAVOURS ?= release local
 PLATFORM ?=
 # make images also checks that every pinned image has both platforms, which reads the registries; make up skips it
 PIN_CHECK ?= yes
+# The pinned container the visual snapshots draw in (p1-launch-readiness design D5): Playwright's own, both platforms.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f
 # Docker in a VM on a Mac (Colima, OrbStack, Docker Desktop) is reached through the docker CLI's context,
 # which Testcontainers does not read: give it the context's socket as DOCKER_HOST, and the socket's path
 # inside the VM for the containers it starts that mount it
@@ -47,7 +49,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -159,6 +161,9 @@ test-journeys: ## The browser journeys (QA-E2E-01; p1-launch-readiness design D6
 	if ! curl -fsS -o /dev/null "http://localhost:$$port/api/version"; then FYNIQ_TICK_INTERVAL=$${FYNIQ_TICK_INTERVAL:-20s} $(MAKE) --no-print-directory up || exit 1; started=1; fi; \
 	$(MISE) pnpm --filter @fyniq/web test:journeys; s=$$?; \
 	if [ $$started = 1 ] && [ "$${KEEP:-0}" != 1 ]; then $(MAKE) --no-print-directory down; fi; exit $$s
+
+test-visual: ## The visual snapshots (QA-UI-07, QA-RPT-04; design D5): a stack of their own on a fixed business date, Playwright in its pinned container, each key page at the five frames in light and dark against apps/web/visual/baselines.json; VISUAL_ALL=1 every route (nightly, before a release), KEEP=1 leaves the stack
+	@PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/visual.sh
 
 storybook: ## Storybook (QA-UI-02): build it, run every shared component's stories in Chrome with axe in the four themes, and check a planted axe violation fails the run
 	@$(MISE) pnpm --filter @fyniq/web build:storybook

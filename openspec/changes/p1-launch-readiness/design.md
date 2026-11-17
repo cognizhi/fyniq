@@ -98,7 +98,16 @@ See proposal.md for why. What exists today:
 - QA-E2E-01, QA-UI-08 and QA-UI-07's device-class journeys sign in through the local sign-in page.
 - Each journey starts from a fresh organisation with the sample company loaded through `make seed-load`.
 - Each asserts both what the screen shows and what the API then returns.
-- The AI journey uses the replay model the eval suites use.
+- ~~The AI journey uses the replay model the eval suites use.~~ Superseded on 17 Nov 2026 by the owner's decision,
+  taken interactively: no model was recorded yet (recording needs a live key), and a recording is keyed on the exact
+  request, tool results included, so a journey's fresh organisation never matches one. The AI journeys (AI ask; AI
+  propose → approve → execute) use a **scripted local model**, in the local build only like the replay adapter: it makes
+  the reads the journey names and cites what they return, or makes the named proposal. The journeys so cover the panel,
+  the API, the orchestrator, the tools, numeric grounding, the proposal, its approval in the Inbox and the executor,
+  offline on every pull request; answer quality stays the eval suites' (QA-AI-01…03). Rejected: normalising IDs and
+  timestamps in replay keys and recording the journeys live (a key now, a re-recording at every prompt or tool change,
+  and a key that could hide a request that really changed); running them live in the dev cloud only, with a launch-gate
+  exception.
 - Rejected: fixture-answered journeys for these gates, which prove the screens but not the journeys.
 
 **D7. Storybook as written (rev 0.284).**

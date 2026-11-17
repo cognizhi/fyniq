@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,6 +63,13 @@ type Principal struct {
 	// CoolingOffUntil is when the cooling-off after the user's account recovery ends; zero when there is none (SEC-35).
 	// Until then the API holds the operations whose policy says so.
 	CoolingOffUntil time.Time
+	// Scoped is set for an API client Fyniq registered, an integration client or a personal access token (FR-INT-02):
+	// its Scopes then narrow its member's Roles to whole areas (authz.ScopeAllows), never widen them.
+	Scoped bool
+	// AllowedIPs are the networks a scoped client may call from (SEC-07); none: anywhere.
+	AllowedIPs []netip.Prefix
+	// ReadsPerMinute and WritesPerMinute are a scoped client's own rate limits (FR-INT-16); 0: the platform's.
+	ReadsPerMinute, WritesPerMinute int
 	// Turn is the assistant's turn a delegated AI read token was issued for (AIGrants); Nil for every other caller.
 	// Such a caller only reads (PRD-001 §9.3 rev 0.277).
 	Turn uuid.UUID

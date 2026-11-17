@@ -200,6 +200,12 @@
    "evidence": "docs/runbooks/cost-review.md"
   },
   {
+   "id": "G4-087",
+   "kind": "live-verify",
+   "why": "The pre-go-live check of the configured model IDs reads Google's live pages and calls Agent Platform in asia-southeast1 from the production project: proved in the dev cloud with p1-go-live.",
+   "evidence": "docs/runbooks/ai-go-live.md"
+  },
+  {
    "id": "QA-API-04",
    "kind": "after-go-live",
    "why": "Fyniq's and Nemura's shared contract fixtures need Nemura, built after Fyniq's go-live; the contracts' own tests (QA-API-01 to QA-API-03) launch.",

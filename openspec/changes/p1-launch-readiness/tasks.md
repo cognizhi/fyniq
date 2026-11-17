@@ -207,7 +207,8 @@ and names the requirement IDs it proves.
   `// req: QA-E2E-01`, each journey naming the scenarios it asserts.
   Built in part: set-up, record, sell, buy, pay, reconcile, close and the GST monitor and calendar pass on the local
   stack (`apps/web/journeys/README.md`). Left: AI ask and AI propose → approve → execute, when the assistant and the
-  proposals of the AI chain reach main. Building them found the sample company's chart without the 2330 and 2410
+  proposals of the AI chain reach main. (17 Nov 2026: the AI chain reached main in #771; the owner decided the two AI
+  journeys run on a scripted local model, design D6.) Building them found the sample company's chart without the 2330 and 2410
   system accounts, so no sample month could close; the loader now adds the standard chart's accounts for the roles it
   lacks (FR-COA-03).
 - [ ] 5.3 QA-UI-08: a walkthrough per role of §7.1, covering the landing page, the navigation, the Home blocks, the
@@ -220,7 +221,11 @@ and names the requirement IDs it proves.
   and the not-available page were built for it (p1-app-shell 2.1). **Left:** the Home blocks §7.1 names per role
   beyond the pulse (the Approver's "My department", the Bookkeeper's cash today and bank lines, the releaser's
   batches and balances, the Administrator's users and roles waiting, the DPO's data requests), the Auditor's
-  workspace, and each role's Inbox items, which need records waiting for that role.)
+  workspace, and each role's Inbox items, which need records waiting for that role.
+  17 Nov 2026, later: Home's **Your work** gives the Bookkeeper, the AR and AP specialists and the payment releaser
+  their rows of §7.1 (p1-app-shell 2.1), and the walkthroughs check each role's rows, and none for the full-Home
+  roles. **Left:** the Approver's "My department", the Administrator's, Company secretary's and DPO's blocks on the
+  pages they land on, the Auditor's workspace, and each role's Inbox items.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
@@ -228,6 +233,21 @@ and names the requirement IDs it proves.
   - diffs uploaded as artefacts.
   Then a journey per device class with a fold that keeps a draft, and the motion tests (computed durations 0 with
   motion Off, Reduce motion and `prefers-reduced-motion`). Tests `// req: QA-UI-07`, `// req: QA-RPT-04`.
+  (17 Nov 2026, in part: `make test-visual` (`scripts/visual.sh`, `apps/web/visual/`) starts a stack of its own with the
+  business date fixed at 31 Dec 2026, makes an organisation with the sample company, a customer and a draft invoice,
+  and runs Playwright in its pinned container (Makefile `PLAYWRIGHT_IMAGE`, both platforms): the key pages at the five
+  frames in light and dark, the browser's clock and locale fixed, motion reduced, each picture's SHA-256 against
+  `baselines.json`. A page the per-minute read limit refused is opened again after its Retry-After, and the viewport
+  grows to the page's height so the frame is drawn where it stands. Two runs, each in an organisation of its own, drew
+  the same 50 hashes. CI runs it in the images job on every pull request, uploads `visual-diffs`, and refuses a change
+  to the baselines without the label `visual-baseline`; `scripts/visual.py approve` takes a run's hashes in. Until the
+  first baselines are approved, from CI's linux/amd64 run, a run only records. The device-class journeys with a fold
+  that keeps a draft are p1-app-shell 5.1's `e2e/devices.spec.ts`, and the motion tests `e2e/motion.spec.ts` (#772).
+  `VISUAL_ALL=1` adds every signed-in route of the registry whose path names no record (102 pages, 1,020 pictures),
+  drawn nightly (`.github/workflows/visual.yml`) and by release.yml's visual job, which the images job waits for, so a
+  changed picture builds no image (archtest `TestTheReleaseWaitsForEveryRoutesPictures`). **Left:** the first
+  baselines, from CI's first runs; a picture of a route that still changes run to run (a time of day) is masked once a
+  nightly shows it; the run uploads the changed picture, not a drawn diff, as the baseline image is not kept.)
 - [ ] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.

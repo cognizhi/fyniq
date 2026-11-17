@@ -1,4 +1,4 @@
-import { expect, expert, organisation, test } from "./harness";
+import { api, expect, expert, organisation, test } from "./harness";
 
 interface Walkthrough {
   role: string;
@@ -6,6 +6,7 @@ interface Walkthrough {
   landing: string; // the path the person lands on from /
   areas: string[]; // the sidebar's items, in Expert mode, as §7.1's table gives them
   pulse?: boolean; // Home shows the company pulse (cash, runway, books health): "the full Home" of §7.1, and never to a role it leaves out
+  work?: RegExp[]; // the rows of Home's "Your work" (§7.1's "Home shows" beyond the pulse); [] for none
   outside?: { path: string; read?: string }; // a page outside the person's areas, and the API read behind it
 }
 
@@ -14,21 +15,23 @@ const all = ["Home", "Inbox", "Contacts", "Sales", "Purchases", "Expense claims"
 // PRD-001 §7.1's table of what each role sees (the reference for QA-UI-08): each role's landing page, its areas, whether
 // Home shows the company pulse, and a page outside its access with the read the API then refuses. Accountants,
 // Controllers, Owners and Tax agents have every finance area and the full Home; the Approver, AR, AP and payroll roles
-// never see the company's cash. The Bookkeeper's and the Payment releaser's Home blocks (cash today, bank balances)
-// are not built yet, so their pulse is not checked. The Auditor's workspace hides areas whose records Appendix D still
+// never see the company's cash. Home's "Your work" holds the rest of each role's Home: the Bookkeeper's bank lines and
+// drafts, the AR and AP specialists' overdue documents and what they work through, the payment releaser's batches,
+// rejected payments and bank balances; the full-Home roles have none of its rows. The Bookkeeper's and the payment
+// releaser's pulse is not checked. The Auditor's workspace hides areas whose records Appendix D still
 // lets it read, so only the page is checked for it.
 const walkthroughs: Walkthrough[] = [
   { role: "employee", name: "Eve Employee", landing: "/me/claims", areas: ["My claims", "My shares and options", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
   { role: "approver", name: "Abe Approver", landing: "/", areas: ["Home", "Inbox", "Reports", "Planning", "Settings"], pulse: false, outside: { path: "/banking", read: "/v1/bank-lines" } },
-  { role: "bookkeeper", name: "Bea Bookkeeper", landing: "/", areas: ["Home", "Inbox", "Contacts", "Sales", "Purchases", "Expense claims", "Banking", "Reports", "Accounting", "Settings"], outside: { path: "/equity", read: "/v1/cap-table" } },
-  { role: "ar_specialist", name: "Ari Receivables", landing: "/", areas: ["Home", "Inbox", "Contacts", "Sales", "Banking", "Reports", "Settings"], pulse: false, outside: { path: "/accounting/journals", read: "/v1/journals" } },
-  { role: "ap_specialist", name: "Apu Payables", landing: "/", areas: ["Home", "Inbox", "Contacts", "Purchases", "Expense claims", "Banking", "Reports", "Settings"], pulse: false, outside: { path: "/sales/invoices", read: "/v1/invoices" } },
-  { role: "payment_releaser", name: "Rae Releaser", landing: "/", areas: ["Home", "Inbox", "Purchases", "Banking", "Reports", "Settings"], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
-  { role: "payroll_administrator", name: "Pat Payroll", landing: "/", areas: ["Home", "Inbox", "Reports", "Settings"], pulse: false, outside: { path: "/banking", read: "/v1/bank-lines" } },
-  { role: "accountant", name: "Cal Accountant", landing: "/", areas: all, pulse: true },
-  { role: "controller", name: "Cora Controller", landing: "/", areas: all, pulse: true },
-  { role: "owner", name: "Ann Owner", landing: "/", areas: ["Money I put in", ...all], pulse: true },
-  { role: "tax_agent", name: "Tam Tax", landing: "/", areas: all, pulse: true },
+  { role: "bookkeeper", name: "Bea Bookkeeper", landing: "/", areas: ["Home", "Inbox", "Contacts", "Sales", "Purchases", "Expense claims", "Banking", "Reports", "Accounting", "Settings"], work: [/bank lines? to categorise/, /draft invoices? to finish/, /draft bills? to finish/], outside: { path: "/equity", read: "/v1/cap-table" } },
+  { role: "ar_specialist", name: "Ari Receivables", landing: "/", areas: ["Home", "Inbox", "Contacts", "Sales", "Banking", "Reports", "Settings"], pulse: false, work: [/draft invoices? to finish/, /invoices? overdue/, /receipts? to apply/, /quotes? waiting for an answer/], outside: { path: "/accounting/journals", read: "/v1/journals" } },
+  { role: "ap_specialist", name: "Apu Payables", landing: "/", areas: ["Home", "Inbox", "Contacts", "Purchases", "Expense claims", "Banking", "Reports", "Settings"], pulse: false, work: [/draft bills? to finish/, /bills? overdue/, /bills? to pay/, /payment batch(es)? being prepared/, /approved claims? to pay/, /bank-detail changes? waiting/], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
+  { role: "payment_releaser", name: "Rae Releaser", landing: "/", areas: ["Home", "Inbox", "Purchases", "Banking", "Reports", "Settings"], work: [/batch(es)? waiting for release/, /payments? the bank rejected/], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
+  { role: "payroll_administrator", name: "Pat Payroll", landing: "/", areas: ["Home", "Inbox", "Reports", "Settings"], pulse: false, work: [], outside: { path: "/banking", read: "/v1/bank-lines" } },
+  { role: "accountant", name: "Cal Accountant", landing: "/", areas: all, pulse: true, work: [] },
+  { role: "controller", name: "Cora Controller", landing: "/", areas: all, pulse: true, work: [] },
+  { role: "owner", name: "Ann Owner", landing: "/", areas: ["Money I put in", ...all], pulse: true, work: [] },
+  { role: "tax_agent", name: "Tam Tax", landing: "/", areas: all, pulse: true, work: [] },
   { role: "administrator", name: "Ada Admin", landing: "/settings", areas: ["Home", "Inbox", "Reports", "Compliance", "Settings"], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
   { role: "auditor", name: "Aud Auditor", landing: "/reports", areas: ["Home", "Inbox", "Reports", "Accounting", "Compliance", "Settings"], outside: { path: "/banking" } },
   { role: "board_viewer", name: "Bo Board", landing: "/reports", areas: ["Home", "Inbox", "Reports", "Equity", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
@@ -60,6 +63,18 @@ for (const w of walkthroughs) {
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await page.waitForLoadState("networkidle");
       await expect(page.getByRole("region", { name: /^Company pulse/ })).toHaveCount(w.pulse ? 1 : 0);
+    }
+    if (w.work) {
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+      const card = page.getByRole("region", { name: "Your work" });
+      if (w.work.length === 0) await expect(card).toHaveCount(0);
+      for (const row of w.work) await expect(card.getByRole("link", { name: row })).toBeVisible();
+      if (w.role === "payment_releaser") {
+        // The bank balances are the cash position's accounts: shown when the API has any, as it says.
+        const cash = await api<{ accounts: unknown[] }>(page, "/v1/cash-position");
+        await expect(card.getByRole("heading", { name: /^Bank balances on/ })).toHaveCount(cash.accounts.length > 0 ? 1 : 0);
+      }
     }
     if (w.role !== "employee") {
       await page.goto("/inbox");

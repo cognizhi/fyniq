@@ -37,7 +37,11 @@ func init() {
 	newAuthenticator = func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator {
 		r := authn.Release{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
-			r.OAuth = &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache}
+			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache}
+			if routes, ok := sessions.(storage.APIClientRoutes); ok { // FR-INT-02: the API clients Fyniq registered
+				in.Clients = routes
+			}
+			r.OAuth = in
 		}
 		if _, err := releaseSignIn(); err == nil && sessions != nil {
 			r.Sessions = authn.Sessions{Store: sessions, Clock: clock, Cookie: authn.SessionCookie(true)}

@@ -57,11 +57,12 @@ recorded as an exception with the owner's decision; none is waived here.
 
 ## Found while writing the UAT scripts (task 7.1)
 
-- The Company secretary takes the Board column's rights in Appendix D (rev 0.6), and the Board column holds no right
-  on the statutory calendar (its row of rev 0.211). §7.1 gives the Company secretary Compliance, with the statutory
-  calendar first. Today the API refuses the Company secretary `GET /v1/compliance/calendar`, so
-  `docs/uat/roles/company-secretary.md` fails at its first step. The PRD's two tables disagree: a decision for the
-  owner, before task 5.3's walkthrough asserts either.
+- ~~The Company secretary takes the Board column's rights in Appendix D (rev 0.6), and the Board column holds no right
+  on the statutory calendar (its row of rev 0.211), so the API refused them the calendar §7.1 gives them.~~ Decided
+  by the owner on 17 Nov 2026 (PRD-001 rev 0.285) and built in #766: the Company secretary views the whole statutory
+  calendar and records its corporate items (the annual return, the AGM and the financial statements to members); the
+  tax and payroll items stay with the Owner, the Controller, the Accountant and the Tax agent.
+  `docs/uat/roles/company-secretary.md` steps 6 and 7 walk it.
 
 ## How the first report's gaps close (16 Nov 2026)
 
@@ -181,11 +182,12 @@ Built behaviour that no test asserted in full:
   - QA-API-04, with Nemura;
   - G4-046, contracted MRR, with P2's subscription schedules (rev 0.8).
   The others rest on rev 0.25.
-- **Proved in the dev cloud (23):**
+- **Proved in the dev cloud (24):**
   - the controls whose checks run in the cloud (CTL-IAM-03, CTL-IAM-04, CTL-DP-01, CTL-RES-01, CTL-AUD-04, CTL-RES-03,
     CTL-CHG-04, CTL-CHG-05);
   - DR-01, DR-03, NFR-DR-02, NFR-PERF-06, NFR-AVAIL-01 and SEC-30;
   - the costs (NFR-COST-01 to NFR-COST-04, G4-078, G4-086);
-  - the drills (G4-072, G4-074, G4-075).
+  - the drills (G4-072, G4-074, G4-075);
+  - the configured model IDs' pre-go-live check (G4-087, `docs/runbooks/ai-go-live.md`), recorded on 17 Nov 2026.
   Each names its runbook or control file.
 - **Covered elsewhere (1):** C.1 #34, the workbook's fast-mode staleness, which C.2 #12 replaced.
