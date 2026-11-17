@@ -79,9 +79,14 @@
   signed selection's. A tier-1 batch may be approved whole; above tier 1 the approver names the items. The next turn of
   the conversation reads its rejected proposals (the latest five) with the person's reasons, quoted as untrusted text,
   each screened first and withheld when flagged. The run's side waits for `p1-scheduled-agents`.
-- [ ] 4.3 The public operations: list and read proposals (each member their own and those they may approve; the Owner
+- [x] 4.3 The public operations: list and read proposals (each member their own and those they may approve; the Owner
   and the DPO every one), the summary from platform code, the impact, the diff and the evidence, the rationale apart
   (design D5); the authorisation matrix's rows. Tests `// req: AI-07`, `// req: ai/task-catalogue AI tasks page`.
+  As built: `listAIProposals`, `getAIProposal` and `listAITaskTypes` under "AI activity log" (V for every member, none
+  for the AI), the handler deciding each proposal: made for them, decided by them, signable by them now, or the Owner
+  and the DPO. The review holds the platform's summary, the payload and its hash, the items by number, the impact as its
+  task type reports it, the evidence and the rationale as AI text; the catalogue each type's tier, limits, approvers,
+  expiry, whether it is on and whether this release can run it (exempt from paging: a small fixed set).
 
 ## 5. The executor
 
