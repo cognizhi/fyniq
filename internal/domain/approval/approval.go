@@ -427,20 +427,22 @@ var Dependencies = map[string][]string{
 	ObjectJournal: {"journal_version", "status", "debits"},
 	// the opening balances' version and status, and their debits in the base currency
 	ObjectOpening: {"opening_version", "status", "debits"},
-	// the bill's version and status, and what it adds to accounts payable in the base currency
-	ObjectBill: {"bill_version", "status", "payable"},
+	// the bill's version and status, what it adds to accounts payable in the base currency, and the GST pack its
+	// codes and rates are read from (G4-057)
+	ObjectBill: {"bill_version", "status", "payable", "gst_pack"},
 	// the payment's status, and what it paid in the base currency
 	ObjectPayment: {"status", "paid"},
 	// the application's status, and the amount it applied
 	ObjectApplication: {"status", "applied"},
 	// the refund's status, and what it settled of the credit
 	ObjectRefund: {"status", "refunded"},
-	// the order's version and status, and its total in the base currency
-	ObjectOrder: {"order_version", "status", "total"},
+	// the order's version and status, its total in the base currency, and the GST pack (G4-057)
+	ObjectOrder: {"order_version", "status", "total", "gst_pack"},
 	// the template's version, the SHA-256 of the content to publish, and the latest version published
 	ObjectTemplate: {"template_version", "content", "published"},
-	// the invoice's version and status, and what it adds to accounts receivable in the base currency
-	ObjectInvoice: {"invoice_version", "status", "receivable"},
+	// the invoice's version and status, what it adds to accounts receivable in the base currency, and the GST pack its
+	// codes and rates are read from (G4-057)
+	ObjectInvoice: {"invoice_version", "status", "receivable", "gst_pack"},
 	// the receipt's status, and what it received
 	ObjectReceipt: {"status", "received"},
 	// the write-off's version and status, and the carrying amount it clears in the base currency
@@ -449,8 +451,8 @@ var Dependencies = map[string][]string{
 	ObjectCustomerApplication: {"status", "applied"},
 	// the refund's status, and what it settled of the credit
 	ObjectCustomerRefund: {"status", "refunded"},
-	// the deposit's status, and what it received
-	ObjectDeposit: {"status", "received"},
+	// the deposit's status, what it received, and the GST pack (G4-057)
+	ObjectDeposit: {"status", "received", "gst_pack"},
 	// the recurring invoice's content version and mode
 	ObjectRecurringInvoice: {"content_version", "mode"},
 	// the installed connector's version and state, or for an install whether the connector is installed already
@@ -458,7 +460,7 @@ var Dependencies = map[string][]string{
 	// the rule's version, and the SHA-256 of its conditions and action: what the back-test was run on
 	ObjectBankRule: {"rule_version", "rule"},
 	// the claim's version and status, and what the company owes for it in the base currency, with what it settles of an advance
-	ObjectClaim: {"claim_version", "status", "owed"},
+	ObjectClaim: {"claim_version", "status", "owed", "gst_pack"},
 	// the reimbursement's status, and what it paid back in the base currency
 	ObjectReimbursement: {"status", "paid"},
 	// the advance's status, and its amount in the base currency
