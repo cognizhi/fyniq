@@ -1,8 +1,10 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Info, LayoutGrid, LogOut, Search, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { Info, LayoutGrid, LogOut, Search, Sparkles, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session } from "../api/client";
+import type { TurnContext } from "../components/ai/assistant";
+import { AssistantContext } from "../components/ai/context";
 import { Button, buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
 import { setMode } from "../mode";
@@ -13,6 +15,7 @@ import { About, HelpMenu } from "./HelpMenu";
 import { bottomBar, navFor } from "./navigation";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
+const AssistantPanel = lazy(() => import("../components/ai/AssistantPanel"));
 
 const mainGroups = [
   ["personal", "For you"],
@@ -97,7 +100,8 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // the organisation's feature switches (FR-UX-40), the header with search and commands (Ctrl+K or
 // ⌘K), the Basic | Expert switch, the operations tray (FR-INT-11), the notification bell, appearance and sign out, and the main region with the
 // banners on top (FR-NTF-01, FR-NTF-03; the signed-in layout passes both, which read the API). The organisation
-// switcher and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
+// switcher joins it with p1-app-shell 2.1–4.1. The assistant's button and Ctrl+J or ⌘J open the AI panel (FR-UX-17,
+// p1-ai-assistant design D12), docked beside the page in expanded, a sheet in medium and full screen in compact.
 export function AppFrame({ session, title, mode, operations, bell, banners, logo, children }: {
   session: Pick<Session, "roles" | "features">;
   title: string;
@@ -113,6 +117,9 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
   const [wanted, setWanted] = useState(false); // load the palette's code only once it is asked for
   const [more, setMore] = useState(false);
   const [about, setAbout] = useState(false);
+  const [assistant, setAssistant] = useState(false);
+  const [context, setContext] = useState<TurnContext | undefined>(undefined);
+  const opener = useRef<HTMLButtonElement>(null);
   const visible = navFor(nav, session, mode);
   const bottom = bottomBar(visible);
   const search = helpText("shell.command-palette");
@@ -122,6 +129,20 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
     setWanted(true);
     setOpen(true);
   };
+  const ai = helpText("shell.assistant");
+  const closeAssistant = () => {
+    setAssistant(false);
+    opener.current?.focus();
+  };
+  const panel = useMemo(
+    () => ({
+      openWith: (c?: TurnContext) => {
+        setContext(c);
+        setAssistant(true);
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -130,13 +151,18 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         setWanted(true);
         setOpen((o) => !o);
       }
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setAssistant((o) => !o);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   return (
-    <div className="fy-app">
+    <AssistantContext.Provider value={panel}>
+    <div className="fy-app" data-ai={assistant ? "open" : undefined}>
       <a href="#main" className="fy-sr focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-(--z-toast) focus:rounded-md focus:bg-surface-1 focus:px-3 focus:py-2 focus:shadow-2">
         Skip to content
       </a>
@@ -165,6 +191,11 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         </button>
         <div className="fy-top__actions">
           <ModeSwitch mode={mode} />
+          <Button ref={opener} variant="ghost" size="sm" onClick={() => (assistant ? closeAssistant() : setAssistant(true))} aria-expanded={assistant}
+            aria-label={ai.label} title={ai.tooltip} aria-keyshortcuts="Control+J Meta+J">
+            <Icon of={Sparkles} size={20} />
+            <span className="fy-from-expanded">{ai.label}</span>
+          </Button>
           <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip}>
             <Icon of={Search} size={20} />
           </Button>
@@ -233,11 +264,18 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         </Dialog.Portal>
       </Dialog.Root>
       <About open={about} onOpenChange={setAbout} />
+      {assistant && (
+        <Suspense fallback={null}>
+          <AssistantPanel enabled={session.features?.ai_assistant ?? false} mode={mode} context={context} onClearContext={() => setContext(undefined)}
+            onClose={closeAssistant} />
+        </Suspense>
+      )}
       {wanted && (
         <Suspense fallback={null}>
           <CommandPalette open={open} onOpenChange={setOpen} />
         </Suspense>
       )}
     </div>
+    </AssistantContext.Provider>
   );
 }

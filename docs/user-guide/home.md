@@ -122,8 +122,8 @@ read, such as -1234.56, so you can check it before you save.
 
 ### Change how Fyniq looks
 
-Select **Appearance** in the header to change the theme, high contrast, density and motion. See
-[Change how Fyniq looks](appearance.md).
+Select **Appearance** in the header (on a phone, under **More**) to change the theme, high contrast, density and
+motion. See [Change how Fyniq looks](appearance.md).
 
 ### Settings
 
@@ -134,15 +134,15 @@ mode: in Basic mode, Settings says how many more there are and offers to switch.
 
 ### See which version you are on
 
-Select **Help** (the question mark in the header), then **About Fyniq**. It shows the version, the commit (the git
+Select **Help** (the question mark in the header; on a phone, under **More**), then **About Fyniq**. It shows the version, the commit (the git
 SHA the services were built from), when they were built and, for a published release, its tag. Quote the version and
 the commit when you report a problem. Every exported report names the same version and commit in its footer: the last
 line of a CSV or a spreadsheet, and the footer of a PDF.
 
 ### Sign out
 
-Select **Sign out** in the header. Fyniq ends your session in this browser and returns you to the
-sign-in page.
+Select **Sign out** in the header (on a phone, under **More**). Fyniq ends your session in this browser and returns
+you to the sign-in page.
 
 ## Common problems
 

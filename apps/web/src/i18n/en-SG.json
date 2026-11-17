@@ -40,6 +40,10 @@
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
     },
+    "shell.assistant": {
+      "label": "Assistant",
+      "tooltip": "Ask about your books in your own words; every figure comes from Fyniq with its source. Shortcut: Ctrl+J, or ⌘J on a Mac."
+    },
     "shell.about": {
       "label": "About Fyniq",
       "tooltip": "Quote the version and the commit when you report a problem. Every exported report names them in its footer."

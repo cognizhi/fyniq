@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -13,14 +14,17 @@ const owner: Pick<Session, "roles" | "features"> = {
 };
 
 function renderFrame(session = owner, mode: Mode = "basic") {
+  const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const root = createRootRoute();
   const home = createRoute({
     getParentRoute: () => root,
     path: "/",
     component: () => (
-      <AppFrame session={session} title="Home" mode={mode}>
-        <h1>Home</h1>
-      </AppFrame>
+      <QueryClientProvider client={queries}>
+        <AppFrame session={session} title="Home" mode={mode}>
+          <h1>Home</h1>
+        </AppFrame>
+      </QueryClientProvider>
     ),
   });
   const router = createRouter({ routeTree: root.addChildren([home]), history: createMemoryHistory({ initialEntries: ["/"] }) });
@@ -40,6 +44,18 @@ describe("the app frame", () => {
     expect(within(side).getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("main").id).toBe("main");
     await noViolations(document.body);
+  });
+
+  // In compact, the top bar keeps the title, search and the assistant; More holds the appearance, help and signing out,
+  // for every person, so the top bar fits the folded foldable's 344 px (MASTER.md §5.1).
+  // req: FR-UX-37
+  it("puts appearance, help and signing out in More, for every person", async () => {
+    renderFrame({ roles: [], features: undefined });
+    await screen.findByRole("banner");
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const more = await screen.findByRole("dialog", { name: "More" });
+    for (const name of ["Appearance", "Help", "Sign out"]) expect(within(more).getByRole("button", { name })).toBeTruthy();
+    await noViolations(more);
   });
 
   // req: FR-UX-40
@@ -63,6 +79,28 @@ describe("the app frame", () => {
 
   // req: experience/visual-design Themes
   // req: FR-UX-01
+  // req: FR-UX-17
+  it("opens the assistant from its button or with Ctrl+J, docked beside the page, and gives focus back when it closes", async () => {
+    renderFrame();
+    const button = await screen.findByRole("button", { name: "Assistant" });
+    expect(button.getAttribute("aria-keyshortcuts")).toBe("Control+J Meta+J");
+    fireEvent.click(button);
+    const panel = await screen.findByRole("complementary", { name: "Assistant" });
+    expect(within(panel).getByText("The assistant is switched off")).toBeTruthy(); // this session's AI switch is off
+    expect(document.querySelector(".fy-app")?.getAttribute("data-ai")).toBe("open");
+    act(() => {
+      fireEvent.keyDown(window, { key: "j", ctrlKey: true });
+    });
+    await waitFor(() => expect(screen.queryByRole("complementary", { name: "Assistant" })).toBeNull());
+    act(() => {
+      fireEvent.keyDown(window, { key: "j", metaKey: true });
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Close the assistant" }));
+    await waitFor(() => expect(screen.queryByRole("complementary", { name: "Assistant" })).toBeNull());
+    expect(document.activeElement).toBe(button);
+    expect(document.querySelector(".fy-app")?.getAttribute("data-ai")).toBeNull();
+  });
+
   it("opens the command palette with Ctrl+K and switches the theme from it", async () => {
     startAppearance();
     renderFrame();
