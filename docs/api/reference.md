@@ -790,6 +790,102 @@ Runs the connector's test action through the egress guard (SEC-36) and records t
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CONNECTOR-01`, `CONNECTOR-02`, `CONNECTOR-03`, `CONNECTOR-04`, `CONNECTOR-05`, `CONNECTOR-06`, `CONNECTOR-07`, `CONNECTOR-08`, `CONNECTOR-09`, `EML-01`, `STORAGE-CONNECTOR-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+## Integrations
+
+Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07).
+
+### `GET /v1/integration-clients`
+
+**List the organisation's integration clients** (`listIntegrationClients`)
+
+The organisation's integration clients (FR-INT-02, SEC-07), oldest first, a page at a time (FR-INT-10): each one's OAuth client ID, the member it acts for, its scopes, networks, own rate limits, key thumbprint, expiry and status, revoked ones included, for the quarterly access review (FR-CTL-06). Never a key or a token. Read-only; no side effects.
+
+- **Permission:** View on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`IntegrationClientList`](../../contracts/schemas/IntegrationClientList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/integration-clients`
+
+**Ask to register an integration client** (`createIntegrationClient`)
+
+Asks to register an integration client (FR-INT-02, SEC-07, AI-34): a system that obtains its own access tokens from Fyniq's OAuth server with the client-credentials grant, authenticating with private_key_jwt (RFC 7523) signed by the key whose public half you give; no shared secret exists. It acts for the member you name (you, when you name none) and never does more than they may now; its scopes narrow that to whole areas, and no scope approves or releases. Give the networks it calls from where you can, and its expiry, within a year. Every field is checked at once. It is dual controlled (golden rule 6, FR-INT-02): the answer is the approval request, which the Owner, who holds A on "Connected apps", approves; only then is the client registered with the OAuth server, and its client ID appears on getIntegrationClient. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`IntegrationClientCreate`](../../contracts/schemas/IntegrationClientCreate.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CLIENT-01` The client's name is not valid; `API-CLIENT-02` Not a scope an API client may be granted; `API-CLIENT-03` Not a network in CIDR form; `API-CLIENT-04` The client's limit is outside the platform's; `API-CLIENT-05` The client's expiry is not within a year; `API-CLIENT-06` Not a public key an integration may sign with; `API-CLIENT-07` The client's member is not an active member with a role; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-CLIENT-01`, `API-CLIENT-02`, `API-CLIENT-03`, `API-CLIENT-04`, `API-CLIENT-05`, `API-CLIENT-06`, `API-CLIENT-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/integration-clients/{integration_client_id}`
+
+**Get an integration client** (`getIntegrationClient`)
+
+One integration client (FR-INT-02) with its ETag for revoking it. Never a key or a token. Read-only; no side effects.
+
+- **Permission:** View on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `integration_client_id` (path, required): The integration client's ID in Fyniq.
+- **Responses:**
+  - `200` OK [`IntegrationClient`](../../contracts/schemas/IntegrationClient.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/integration-clients/{integration_client_id}/revoke`
+
+**Revoke an integration client** (`revokeIntegrationClient`)
+
+Revokes an integration client at once (FR-INT-02, SEC-07): never held back for a second person. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it was issued. It is kept, revoked, for the access review; it is never live again. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Needs If-Match with its ETag; idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `integration_client_id` (path, required): The integration client's ID in Fyniq.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Request body:** [`IntegrationClientRevoke`](../../contracts/schemas/IntegrationClientRevoke.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`IntegrationClient`](../../contracts/schemas/IntegrationClient.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ## Session
 
 Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08).
