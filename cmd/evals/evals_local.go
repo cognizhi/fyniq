@@ -22,12 +22,15 @@ import (
 
 func init() { run = evaluate }
 
-// Report is a run of the suites: CTL-AI-05's evidence.
+// Report is a run of the suites: CTL-AI-05's evidence. Assistant is the run of the assistant's own suites
+// (evals/<suite>/assistant.json), which the API's TestTheAssistantSuites makes through the real orchestrator just
+// before (scripts/evals.sh) and writes beside this report.
 type Report struct {
-	Mode   string        `json:"mode"`
-	RanAt  time.Time     `json:"ran_at"`
-	Passed bool          `json:"passed"`
-	Suites []SuiteReport `json:"suites"`
+	Mode      string          `json:"mode"`
+	RanAt     time.Time       `json:"ran_at"`
+	Passed    bool            `json:"passed"`
+	Suites    []SuiteReport   `json:"suites"`
+	Assistant json.RawMessage `json:"assistant,omitempty"`
 }
 
 // SuiteReport is one suite: whether its harness is sound, and each recorded model's run.
@@ -101,6 +104,12 @@ func evaluate(ctx context.Context, o Options) error {
 		}
 		rep.Suites = append(rep.Suites, sr)
 	}
+	assistantPath := filepath.Join(o.Out, "assistant.json")
+	if raw, err := os.ReadFile(assistantPath); err == nil { // #nosec G304 -- the report directory this run writes
+		rep.Assistant = raw
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	if err := write(o.Out, rep); err != nil {
 		return err
 	}
@@ -121,6 +130,9 @@ func evaluate(ctx context.Context, o Options) error {
 	}
 	fmt.Printf("✔ evals (%s): %d of %d suites run on a recorded model, every suite sound; report in %s\n", rep.Mode, ranOn(rep), len(rep.Suites),
 		filepath.Join(o.Out, "report.json"))
+	if len(rep.Assistant) > 0 {
+		fmt.Println("✔ the assistant's suites are in the report, as TestTheAssistantSuites ran them")
+	}
 	return nil
 }
 

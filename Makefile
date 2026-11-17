@@ -155,7 +155,7 @@ storybook: ## Storybook (QA-UI-02): build it, run every shared component's stori
 	@if FYNIQ_STORY_PLANTED=1 $(MISE) pnpm --filter @fyniq/web test:stories > /dev/null 2>&1; then echo "✖ the planted axe violation passed the Storybook run"; exit 1; fi
 	@echo "✔ Storybook: every shared component's stories pass axe in four themes, and the planted violation fails"
 
-evals: ## Run the AI eval suites (CTL-AI-05): replay each model's recorded answers, check each suite judges soundly, report in .data/evals/report.json; FYNIQ_AI_LIVE=1 MODEL=<id> runs one model live on synthetic text and records it
+evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden and red-team suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
 
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)

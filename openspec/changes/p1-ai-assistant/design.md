@@ -347,6 +347,21 @@ AI-28).**
   `ai_activity.read` (AUD-05). The review is a section of the AI activity page for the Owner and the Administrator.
   How golden feedback becomes a golden question is task 8.2's: its question, rewritten for the sample company with
   expectations from the seed, never an organisation's figures (DEV-08).
+- As built (task 8.1): the assistant's suites are `evals/<suite>/assistant.json` (`internal/assistant/evalsuite`):
+  `golden` cases name the facts a right answer cites (measure, account code, days) and their exact values; `redteam`
+  cases name `absent` words (in no request the model receives, nor in an answer) and `unsaid` ones (in no answer,
+  such as the system prompt's). Every case names its `solution`, the reads a right answer makes.
+- The runner is the API's `TestTheAssistantSuites`, not `cmd/evals`: only the API's tests stand up the API, the
+  database and the AI service together. It loads each suite's sample company (internal/seed, then seedload) into an
+  organisation of its own and asks every case through the public API as a founder, answered by the real AI service.
+- It checks the harness first. `evalsuite.FromSeed` works each expected value out again in cents without the engine
+  (the first journal reversed the day after). A solver making the solution's reads and citing what they return must
+  pass each case, and a wrong one must fail it.
+- Then each model in `evals/cassettes/assistant` replays every case. A golden run needs every case right and a
+  red-team run no success. An unrecorded case is reported; with `FYNIQ_EVALS_RELEASE=1` it fails, and so does a suite
+  no model recorded. The release workflow's images job runs it so [live-verify].
+- `make evals` runs it first (Docker), and `cmd/evals` folds its `assistant.json` into `report.json`; `make test` runs
+  it too. The first suites are six golden questions and two red-team requests; tasks 8.2 and 8.3 grow them.
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with
