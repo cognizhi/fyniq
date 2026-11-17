@@ -36,12 +36,23 @@ type AIModelRequest struct {
 	System    string               `json:"system,omitempty" doc:"The system prompt, versioned in contracts/ai/prompts/ (AI-24)."`
 	Messages  []ports.ModelMessage `json:"messages" nullable:"false" doc:"The conversation, in parts: text, images, PDFs, tool calls and their results."`
 	Tools     []AIToolName         `json:"tools,omitempty" doc:"The read tools the model may call, by name: it is offered the registry's own definitions, never one the AI service writes (AI-49, AI-19)."`
+	Proposals []AITaskTypeID       `json:"proposals,omitempty" maxItems:"50" doc:"The task types the model may propose, by catalogue ID: each offered as its propose_ tool with the catalogue's own definition, only to a turn that may propose and only while it is on for the organisation (AI-P3, AI-32; p1-ai-proposals-core design D7)."`
 	Output    *ports.ModelSchema   `json:"output,omitempty" doc:"A strict structured output the answer must match (AI-27)."`
 	MaxTokens int                  `json:"max_tokens" minimum:"1" maximum:"64000" doc:"The answer's output limit." example:"1024"`
 }
 
 // AIToolName names a read tool of the registry, contracts/ai/tools (AI-49).
 type AIToolName string
+
+// AITaskTypeID names a task type of the catalogue, contracts/ai/tasks (§9.6).
+type AITaskTypeID string
+
+// Schema implements huma.SchemaProvider.
+func (AITaskTypeID) Schema(huma.Registry) *huma.Schema {
+	most := 56
+	return &huma.Schema{Type: "string", Pattern: `^[a-z]+\.[a-z]+(_[a-z]+)*$`, MaxLength: &most, Description: "A task type of the catalogue (§9.6).",
+		Examples: []any{"sec.create_task"}}
+}
 
 // Schema implements huma.SchemaProvider.
 func (AIToolName) Schema(huma.Registry) *huma.Schema {
@@ -110,6 +121,10 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 	if err != nil {
 		return ai.Call{}, err
 	}
+	if len(in.Request.Proposals) > 0 && !slices.Contains(p.Scopes, authn.AIProposeScope) {
+		return ai.Call{}, problem(CodeProposeNotAllowed, "This turn may not propose changes: no task type is on for the organisation.",
+			"Offer the model no propose_ tool")
+	}
 	if err := a.screen(ctx, false, promptTexts(request)...); err != nil {
 		return ai.Call{}, err
 	}
@@ -123,6 +138,19 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 		read, err := u.AIGrants().Classes(ctx, p.Turn, now)
 		if err != nil {
 			return err
+		}
+		if len(in.Request.Proposals) > 0 {
+			on, err := a.proposable(ctx, u)
+			if err != nil {
+				return err
+			}
+			for _, id := range slices.Compact(slices.Sorted(slices.Values(in.Request.Proposals))) {
+				if !slices.Contains(on, string(id)) {
+					return problem(CodeProposeNotAllowed, string(id)+" is not a task type the turn may propose.", "Offer the model only the turn's task types")
+				}
+				tt, _ := a.catalogue().Get(string(id))
+				request.Tools = append(request.Tools, tt.ModelTool())
+			}
 		}
 		classes = union(read, declared)
 		return u.AIGrants().Widen(ctx, p.Turn, declared, now)
@@ -158,7 +186,7 @@ func (a *API) modelCallResult(res ai.Result, classes []string) AIModelCallResult
 
 // modelCallCodes are the codes a model call is refused with.
 var modelCallCodes = []string{airoute.CodeNoRoute, airoute.CodeUnhandled, airoute.CodeNoStep, airoute.CodeRefused, airoute.CodeSwitchOff,
-	aibudget.CodeSpent, storage.CodeRetry, storage.CodeLockTimeout, CodeScreened, CodeScreenIncomplete}
+	aibudget.CodeSpent, storage.CodeRetry, storage.CodeLockTimeout, CodeScreened, CodeScreenIncomplete, CodeProposeNotAllowed}
 
 func registerModelCalls(a *API) {
 	internalOp(a, huma.Operation{

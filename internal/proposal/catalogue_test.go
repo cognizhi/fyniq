@@ -9,6 +9,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/proposal"
 )
 
@@ -51,6 +52,11 @@ func TestTheCatalogueLoadsStrictly(t *testing.T) {
 	tt, ok := c.Get("test.annotate_note")
 	if !ok || !tt.Bulk() || tt.Expiry().Hours() != 72 || tt.ModelName() != "propose_test_annotate_note" || len(tt.SHA256) != 64 {
 		t.Errorf("the task type: %+v", tt)
+	}
+	// The tool the model is offered is as strict and bounded as the read tools' (AI-27).
+	if m := tt.ModelTool(); m.Name != "propose_test_annotate_note" || aitool.CheckInput(m.Schema) != nil ||
+		!strings.Contains(m.Description, "A person approves it") {
+		t.Errorf("the model's tool: %+v %v", m, aitool.CheckInput(m.Schema))
 	}
 	if two, _ := load("test.annotate_note", fixture(func(m map[string]any) { m["tier"] = 2 })); two != nil {
 		if tt, _ := two.Get("test.annotate_note"); tt.Bulk() {

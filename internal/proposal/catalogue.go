@@ -24,6 +24,7 @@ import (
 	contracts "github.com/cognizhi/fyniq/contracts/ai"
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 // The risk tiers (§9.6): 1 routine and reversible, 2 posts or changes master data, 3 reserved and never allowed today.
@@ -72,6 +73,25 @@ func (t TaskType) Expiry() time.Duration { return time.Duration(t.ExpiryHours) *
 
 // ModelName is the tool the model is offered to propose it (design D7).
 func (t TaskType) ModelName() string { return "propose_" + strings.ReplaceAll(t.ID, ".", "_") }
+
+// ModelTool is the tool the model is offered to propose t (design D7): its name, the catalogue's description, and an
+// input of the payload by the task type's own schema, the reasons for the approver and the records relied on.
+func (t TaskType) ModelTool() ports.ModelTool {
+	payload := map[string]any{}
+	_ = json.Unmarshal(t.InputSchema, &payload) // checked as the catalogue loaded
+	if _, ok := payload["description"]; !ok {
+		payload["description"] = "What to do: " + t.Name + "."
+	}
+	in, _ := json.Marshal(payload)
+	schema := `{"type":"object","additionalProperties":false,"required":["payload","rationale"],"properties":{"payload":` + string(in) +
+		`,"rationale":{"type":"string","maxLength":4000,"description":"Why you propose it, for the person who approves it."},` +
+		`"evidence":{"type":"array","maxItems":50,"description":"The records and documents you relied on.","items":{"type":"object",` +
+		`"additionalProperties":false,"required":["kind","id"],"properties":{"kind":{"type":"string","maxLength":40,` +
+		`"description":"The kind of record, such as task or invoice."},"id":{"type":"string","maxLength":100,"description":"Its ID."},` +
+		`"title":{"type":"string","maxLength":200,"description":"What it is, in a few words."}}}}}}`
+	return ports.ModelTool{Name: t.ModelName(), Description: t.Description + " A person approves it in Fyniq before anything changes.",
+		Schema: json.RawMessage(schema)}
+}
 
 // Catalogue is the release's task types.
 type Catalogue struct {

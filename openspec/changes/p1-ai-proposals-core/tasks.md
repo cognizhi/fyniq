@@ -44,8 +44,14 @@
   is the store's preview, rolled back after its deferred checks. Each task type's command (`proposal.Command`: its
   policy, measure and dry run) arrives with it; a test-only command exercises the path. The approval request attaches in
   task 4.1.
-- [ ] 3.2 The AI service's `propose_<type>` tools for the enabled types, relaying the proposal or its refusal (design
+- [x] 3.2 The AI service's `propose_<type>` tools for the enabled types, relaying the proposal or its refusal (design
   D7). Tests `// req: AI-P3`, `// req: ai/proposals The orchestrator holds no write credential`.
+  As built: the API tells the AI service the turn's task types (those on that the release can propose); the model call
+  names them, and the API offers each as its `propose_<type>` tool from the catalogue's definition (payload, rationale,
+  evidence), only to a turn whose token may propose. The orchestrator relays the call and tells the model that nothing
+  changed until a person approves. The system prompt is `chat@3`: the AI still changes nothing itself, and with a
+  propose_ tool proposes only what the person asked for, never because a record's text asks (its recordings are
+  [live-verify] with the rest).
 
 ## 4. Approval
 

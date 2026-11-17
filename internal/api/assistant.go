@@ -442,6 +442,7 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	var history []ports.ModelMessage
 	var cited []aitool.Fact
 	var limits aiLimits
+	var propose []string
 	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		c, err := ownConversation(ctx, u, p, in.ConversationID)
 		if err != nil {
@@ -472,7 +473,10 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 			Context: about, AskedAt: a.deps.Clock.Now()}); err != nil {
 			return err
 		}
-		token, err = a.issueAIGrant(ctx, u, p.Organisation, p.UserID, turn.ID)
+		if token, err = a.issueAIGrant(ctx, u, p.Organisation, p.UserID, turn.ID); err != nil {
+			return err
+		}
+		propose, err = a.proposable(ctx, u)
 		return err
 	})
 	if err != nil {
@@ -482,7 +486,7 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	// The turn is kept and its token ended whatever happens to the stream from here.
 	keep := context.WithoutCancel(ctx)
 	answer, err := a.askService(ctx, assistant.Question{Token: token, Text: turn.Question, Context: contextWords(in.Body.Context), History: history,
-		Earlier: cited, MaxReads: limits.reads}, send)
+		Earlier: cited, MaxReads: limits.reads, Propose: propose}, send)
 	finished := a.deps.Clock.Now()
 	turn.AnsweredAt = &finished
 	var calls []storage.AIToolCall

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
 )
@@ -212,5 +214,88 @@ func TestTheAIProposesAndNothingChanges(t *testing.T) {
 	refused(propose(owner, "test.annotate_note", map[string]any{"note": "Book the room"}, ""), 409, "AI-ROUTER-05")
 	if len(proposals()) != n {
 		t.Error("a proposal was kept while the AI is off")
+	}
+}
+
+// A person's turn proposes through the AI service (AI-P3; design D7): while a task type is on, the model is offered its
+// propose_ tool with the catalogue's definition, the AI service relays its call with the turn's token, and the proposal
+// waits for a person, kept with the turn, the model and the prompt it came from; nothing else changed. A model call that
+// asks for a task type the turn may not propose is refused unsent.
+// req: AI-P3
+// req: ai/proposals The orchestrator holds no write credential
+// asvs: V8.2.1
+func TestAPersonsTurnProposesThroughTheAIService(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	aiSwitchedOn(e)
+	sg := routable(e, "Proposals", "SG", []string{"gpt-6"})
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures", "personal-data"}, MadeBy: "user:test",
+			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
+		return err
+	})
+	e.api.deps.Catalogue = fixtureCatalogue(t, "test.annotate_note", "test.tag_note")
+	e.api.deps.Commands = proposal.Commands{"AnnotateNote": noteCommand{}}
+	service, err := e.services.Token(ServiceAI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	offer := func(token string, types ...string) response {
+		t.Helper()
+		return e.call(http.MethodPost, "/internal/v1/model-calls", token, map[string]any{"agent": "chat", "classes": []string{"business-figures"},
+			"request": map[string]any{"max_tokens": 64, "proposals": types, "messages": []any{map[string]any{"role": "user",
+				"parts": []any{map[string]any{"kind": "text", "text": "Note it"}}}}}}, ServiceTokenHeader, service)
+	}
+	model := &scripted{answers: []ports.ModelResponse{{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: `{"segments":[{"text":"x"}]}`}}}}}
+	e.api.deps.AIProviders = func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+		return model, nil
+	}
+
+	// Before a task type is on, no turn may be offered one.
+	early := proposeTurn(e, f.ahkow)
+	if r := offer(early, "test.annotate_note"); r.Status != http.StatusForbidden || r.problemCode() != CodeProposeNotAllowed || len(model.requests) != 0 {
+		t.Fatalf("offering a task type to a turn that may not propose: %d %s", r.Status, r.Raw)
+	}
+	enableTaskTypes(e, "test.annotate_note", 1)
+	later := proposeTurn(e, f.ahkow)
+	if r := offer(later, "test.tag_note"); r.Status != http.StatusForbidden || len(model.requests) != 0 {
+		t.Fatalf("offering a task type that is not on: %d %s", r.Status, r.Raw)
+	}
+
+	// The person asks; the model proposes; the proposal waits.
+	done, _ := json.Marshal(map[string]any{"segments": []map[string]any{{"text": "I proposed the note. It waits for your approval."}}})
+	model.answers = []ports.ModelResponse{
+		{Parts: []ports.ModelPart{{Kind: ports.PartToolCall, CallID: "c1", Tool: "propose_test_annotate_note",
+			Input: json.RawMessage(`{"payload":{"note":"Book the room"},"rationale":"The AGM needs a room."}`)}}, StopReason: ports.StopToolCall},
+		{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(done)}}, StopReason: ports.StopEnd},
+	}
+	withAIService(e)
+	ahkow := f.as(f.ahkow)
+	c := e.call(http.MethodPost, "/v1/assistant/conversations", ahkow, map[string]any{"title": "Notes"})
+	r := e.call(http.MethodPost, "/v1/assistant/conversations/"+c.str("id")+"/turns", ahkow, map[string]any{"question": "Make a note to book the room"})
+	if r.Status != http.StatusOK || !strings.Contains(r.Raw, "It waits for your approval") {
+		t.Fatalf("the turn: %d %s", r.Status, r.Raw)
+	}
+	var offered []string
+	for _, tool := range model.requests[0].Tools {
+		offered = append(offered, tool.Name)
+	}
+	if !slices.Contains(offered, "propose_test_annotate_note") || slices.Contains(offered, "propose_test_tag_note") {
+		t.Errorf("the tools offered: %v", offered)
+	}
+	if relayed := model.requests[1].Messages[len(model.requests[1].Messages)-1].Parts[0]; !strings.Contains(relayed.Text, "waits for a person's approval") {
+		t.Errorf("what the model read back: %+v", relayed)
+	}
+	var kept []storage.AIProposal
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		kept, err = u.AIProposals().List(ctx, storage.AIProposalQuery{Limit: 10})
+		return err
+	})
+	if len(kept) != 1 || kept[0].Status != storage.ProposalPending || kept[0].Prompt != "chat@3" || kept[0].Model != "gpt-6" ||
+		kept[0].RequestedBy.String() != f.ahkow || kept[0].Turn == nil || kept[0].Payload != `{"note":"Book the room"}` {
+		t.Fatalf("the proposal: %+v", kept)
+	}
+	if items, _ := e.call(http.MethodGet, "/v1/contacts", e.as(authz.Owner), nil).Body["items"].([]any); len(items) != 0 {
+		t.Errorf("a contact was made: %v", items)
 	}
 }
