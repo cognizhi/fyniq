@@ -1,5 +1,13 @@
 {
   "help": {
+    "help.guide": {
+      "label": "User guide",
+      "tooltip": "How to do each thing in Fyniq, and what its words mean: every page for your roles and mode, searchable and printable."
+    },
+    "help.page": {
+      "label": "A page of the guide",
+      "tooltip": "One page of the user guide, with a link to each of its sections and a way to print it."
+    },
     "home.overview": {
       "label": "Home",
       "tooltip": "Where you start: the company's cash, runway and the figures that matter this month, what waits for you, and while the company is new, the set-up steps."
