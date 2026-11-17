@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -48,7 +49,7 @@ type Execution struct {
 type Commands map[string]Command
 
 // Release are the release's commands. Each task type's change adds its own with what it acts on.
-var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}}
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {
@@ -64,6 +65,9 @@ type Actor struct {
 	Today time.Time
 	// Proposal is the proposal it executes: Nil in the dry run.
 	Proposal uuid.UUID
+	// Outbox is where the command's side work goes as it executes, such as an email's send (outbox.Dispatcher): the
+	// executor's own; zero in the dry run, which sends nothing.
+	Outbox outbox.Dispatcher
 }
 
 // Impact is a dry run's: its summary, from platform code and never the model (AI-07, design D5); what the review shows,

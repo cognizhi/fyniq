@@ -578,6 +578,8 @@ fyniq_executor  SELECT    document_template_default
 fyniq_executor  SELECT    document_template_version
 fyniq_executor  INSERT    document_version (created_by, document_id, payload, version)
 fyniq_executor  SELECT    document_version
+fyniq_executor  INSERT    email_message (purpose, recipient, subject)
+fyniq_executor  SELECT    email_message
 fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    fx_feed_rates
 fyniq_executor  SELECT    fx_rate
@@ -592,6 +594,7 @@ fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
+fyniq_executor  EXECUTE   member_emails()
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
