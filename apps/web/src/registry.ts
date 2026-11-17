@@ -710,27 +710,28 @@ export const actions = [
 ] as const satisfies readonly ActionFeature[];
 
 // The sidebar's items in the designed order (the NAV list in docs/design/screens/build.py). Each
-// module adds its item with its first screen; the sidebar holds at most 13 (§7.1).
+// module adds its item with its first screen; the sidebar holds at most 13 (§7.1). Each area's roles are §7.1's table
+// of what each role sees (FR-UX-40, the reference for QA-UI-08): a right that only reads reference data (the chart,
+// the policies) or only approves within a department or a limit gives no area; the approvals arrive in the Inbox. The
+// API decides what each role may do, whatever the sidebar shows.
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "nav", id: "nav.my-shares", route: "/me/shares", icon: ChartPie, group: "personal", roles: ["employee"], mode: "basic", help: "equity.my-shares", guide: "equity.register#my-shares-and-options" },
   { kind: "nav", id: "nav.money-i-put-in", route: "/me/money-i-put-in", icon: HandCoins, group: "personal", roles: ["owner"], mode: "basic", help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
-  { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
-  { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
+  { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["bookkeeper", "ar_specialist", "ap_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["bookkeeper", "ar_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
-  { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
-  // Banking shows to the roles that may view bank transactions (Appendix D, V or more); the API decides the rest.
-  { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["approver", "controller", "accountant", "ap_specialist", "bookkeeper", "owner", "auditor", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
-  { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "auditor", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
-  // Reports show to the roles that read every account (Appendix D "Reports, dashboards", V without a qualifier).
-  { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
-  { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
-  { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
-  // Planning shows to the roles that read the plans (Appendix D "Budgets, forecasts", V), in Expert's sidebar.
-  { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "auditor", "tax_agent", "board_viewer"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
-  { kind: "nav", id: "nav.compliance", route: "/compliance", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
+  { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["bookkeeper", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
+  { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["controller", "accountant", "ap_specialist", "bookkeeper", "owner", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
+  { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
+  { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "approver", "auditor", "tax_agent", "board_viewer"], mode: "basic", help: "reports.index", guide: "reports.statements" },
+  { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
+  { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "tax_agent", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
+  // Planning is in Expert's sidebar.
+  { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "tax_agent"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
+  { kind: "nav", id: "nav.compliance", route: "/compliance", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo", "company_secretary"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 

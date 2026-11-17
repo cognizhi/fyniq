@@ -15,6 +15,7 @@ the screen and in what the API then returns. Run them with `make test-journeys`;
 | Close | `close.spec.ts` | Accountant, Owner and Controller | January's checklist and checks, attested and closed by another person; a January posting refused |
 | GST | `gst.spec.ts` | Owner and Controller, Accountant | The registration monitor and the statutory calendar: a forecast with its contract makes the company liable, and the calendar says by when |
 | Smoke | `smoke.spec.ts` | Owner | The harness itself: the Owner lands in the organisation, and the screen and the API agree |
+| Roles | `walkthroughs.spec.ts` | Each role of §7.1, alone | QA-UI-08: where the role lands, the areas its sidebar shows, whether Home shows the company pulse, the Inbox, and a page outside its access, which says so while the API refuses the read behind it |
 
 Not here yet:
 

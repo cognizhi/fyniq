@@ -212,6 +212,15 @@ and names the requirement IDs it proves.
   lacks (FR-COA-03).
 - [ ] 5.3 QA-UI-08: a walkthrough per role of §7.1, covering the landing page, the navigation, the Home blocks, the
   Inbox items, the not-available page, and the API's refusal of the same reads. Test `// req: QA-UI-08`.
+  (17 Nov 2026, in part: `apps/web/journeys/walkthroughs.spec.ts`, one walkthrough per role of §7.1 (16; the line
+  manager is a relationship and the HR officer is Nemura's), each alone in an organisation with the sample company:
+  the landing page, the sidebar's areas in Expert mode, the company pulse on Home for the full-Home roles and never
+  for the Approver, AR, AP and payroll roles, the Inbox, and a page outside the role's areas, which shows "This page
+  isn't part of your access" while the API refuses its list (403). The sidebar, the personal workspace, the landings
+  and the not-available page were built for it (p1-app-shell 2.1). **Left:** the Home blocks §7.1 names per role
+  beyond the pulse (the Approver's "My department", the Bookkeeper's cash today and bank lines, the releaser's
+  batches and balances, the Administrator's users and roles waiting, the DPO's data requests), the Auditor's
+  workspace, and each role's Inbox items, which need records waiting for that role.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
