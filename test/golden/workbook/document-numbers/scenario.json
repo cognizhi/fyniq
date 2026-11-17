@@ -1,0 +1,841 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "workbook-document-numbers",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1020",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1030",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1040",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1050",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1150",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1210",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1220",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1250",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1510",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1520",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1530",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1540",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1590",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2020",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2030",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2100",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2110",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2150",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2300",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2400",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2410",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2600",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2700",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "share-capital"
+  },
+  {
+   "code": "3020",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "share-capital"
+  },
+  {
+   "code": "3100",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3200",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4010",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4020",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4030",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4090",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4095",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5040",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5050",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5090",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6011",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6012",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6013",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6040",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6050",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6060",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6070",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6110",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6120",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6130",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6210",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6220",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6230",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6310",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6320",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6330",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6340",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6350",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6410",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6420",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6430",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6440",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6450",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6460",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6510",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6520",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6530",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6610",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6620",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6900",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7010",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7020",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7030",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7040",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7110",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7120",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "8010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3900",
+   "type": "equity",
+   "group": false,
+   "active": true
+  }
+ ],
+ "settings": {
+  "books_start": "2026-01-01",
+  "first_year_end": "2026-12-31",
+  "accounts": {
+   "receivable": "1100",
+   "payable": "2010",
+   "gst": "2200",
+   "prepayments": "1210",
+   "deferred_revenue": "2400",
+   "fx": "7030",
+   "bank_charges": "6460",
+   "depreciation": "6610",
+   "accumulated_depreciation": "1590",
+   "disposal": "7040",
+   "opening_clearing": "3900"
+  },
+  "money_accounts": {
+   "1010": "SGD",
+   "1020": "SGD",
+   "1030": "SGD",
+   "1040": "SGD",
+   "1050": "SGD",
+   "2030": "SGD",
+   "2150": "SGD"
+  },
+  "gst": {
+   "rates": [
+    {
+     "from": "2024-01-01",
+     "percent": "9"
+    }
+   ]
+  }
+ },
+ "as_of": "2026-06-30",
+ "documents": [
+  {
+   "type": "opening_balances",
+   "id": "OB",
+   "version": 1,
+   "date": "2026-01-01",
+   "memo": "The data set's opening position",
+   "lines": [
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "20000.00"
+    },
+    {
+     "account": "3010",
+     "currency": "SGD",
+     "amount": "-20000.00"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "INV-9-star",
+   "version": 1,
+   "date": "2026-03-01",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "1000.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "INV-90",
+   "version": 1,
+   "date": "2026-03-02",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "2000.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "INV-91",
+   "version": 1,
+   "date": "2026-03-03",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "400.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "1001",
+   "version": 1,
+   "date": "2026-03-04",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "300.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "1002",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "250.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "tilde-A",
+   "version": 1,
+   "date": "2026-03-06",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4020",
+     "amount": "50.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "bill",
+   "id": "lt-B1-gt",
+   "version": 1,
+   "date": "2026-04-01",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "6340",
+     "amount": "700.00",
+     "gst_code": "TX"
+    }
+   ]
+  },
+  {
+   "type": "bill",
+   "id": "A-7",
+   "version": 1,
+   "date": "2026-04-02",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "6340",
+     "amount": "60.00",
+     "gst_code": "TX"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-INV-9-star",
+   "version": 1,
+   "date": "2026-04-10",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "INV-9-star",
+     "amount": "1000.00"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-INV-90",
+   "version": 1,
+   "date": "2026-04-11",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "INV-90",
+     "amount": "500.00"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-1001",
+   "version": 1,
+   "date": "2026-04-12",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "1001",
+     "amount": "300.00"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-1002",
+   "version": 1,
+   "date": "2026-04-13",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "1002",
+     "amount": "250.00"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-tilde-A",
+   "version": 1,
+   "date": "2026-04-14",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "tilde-A",
+     "amount": "50.00"
+    }
+   ]
+  },
+  {
+   "type": "bill_payment",
+   "id": "PY-lt-B1-gt",
+   "version": 1,
+   "date": "2026-04-20",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "lt-B1-gt",
+     "amount": "700.00"
+    }
+   ]
+  },
+  {
+   "type": "bill_payment",
+   "id": "PY-A-7",
+   "version": 1,
+   "date": "2026-04-21",
+   "account": "1020",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "A-7",
+     "amount": "60.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "J-star",
+   "version": 1,
+   "date": "2026-06-30",
+   "memo": "Does not balance",
+   "lines": [
+    {
+     "account": "6340",
+     "currency": "SGD",
+     "amount": "100.00"
+    },
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "-90.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "J1",
+   "version": 1,
+   "date": "2026-06-30",
+   "memo": "Off the other way",
+   "lines": [
+    {
+     "account": "6340",
+     "currency": "SGD",
+     "amount": "50.00"
+    },
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "-60.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "J2",
+   "version": 1,
+   "date": "2026-06-30",
+   "memo": "Balanced",
+   "lines": [
+    {
+     "account": "6340",
+     "currency": "SGD",
+     "amount": "30.00"
+    },
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "-30.00"
+    }
+   ]
+  }
+ ],
+ "reversals": []
+}

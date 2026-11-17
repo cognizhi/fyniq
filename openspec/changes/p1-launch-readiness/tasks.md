@@ -99,10 +99,14 @@ and names the requirement IDs it proves.
     the oracle, which agree to the cent and both refuse the 8 ✖ rows the format can hold
     (`TestTheWorkbookGoldenSets`). Payroll waits for pay runs, which are not in the launch; the F5 boxes for F5
     (`p1-gst`).
+  - The document numbers (18 figures), the regressions (9) and the miscellaneous cases (7, the unrealised FX of 210
+    posted at each month's end and reversed on day 1 among them) hold the same way. The bank matcher's
+    `TestAWorkbookNumberNamesOnlyItself` holds the workbook's numbers with `*`, `?`, `~` and `<`, and its spaced
+    references. The posting set's payments with no reference are now recorded on account for their contact (FR-AR-18).
   - The sample company is reconciled by the migration (QA-MIG-01: 1,649 figures against the workbook's engine); its
     oracle side is still to do.
-  - Left: the non-posting, document-number, regression and miscellaneous sets, the sample's oracle side, then
-    `// req: QA-ENG-07`.
+  - Left: the non-posting set, the sample's oracle side, the miscellaneous set's planning and reminder cases (matched
+    to Fyniq's tests or recorded), then `// req: QA-ENG-07`.
 - [ ] 3.2 The pinned cases of Appendix G.2 that launch: document totals, FX and rounding on 7030, depreciation,
   unrealised revaluation, a balance converted to shares (RND-SHARE) and a SAFE's conversion and dilution. Each is
   worked by hand from its source, asserted in Go and in the oracle, and tagged with its requirement. The hourly cost is

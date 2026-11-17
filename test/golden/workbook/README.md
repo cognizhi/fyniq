@@ -37,9 +37,9 @@ Then review the diff. `expected.json` changes only by hand, from the workbook's 
 | Posting edge cases | `tests/edge_posting.py`, `tests/test_edge_posting.py`, `src/cfh/coa.py` | `posting/`: 71 figures, 8 documents refused |
 | Sample company | `src/cfh/sample.py`, `tests/reference.py`, `tests/ref_*.py` | Reconciled by the migration (QA-MIG-01): `TestTheReconciliationComparesTheBooksWithTheWorkbook` compares 1,649 figures of the imported sample with the workbook's own engine, each account's opening, movement and closing of every month. The oracle's side is to come (task 3.1) |
 | Non-posting edge cases | `tests/edge_nonposting.py`, `tests/test_edge_nonposting.py` | To come (task 3.1) |
-| Document numbers | `tests/test_edge_docnumbers.py` | To come (task 3.1) |
-| Regressions | `tests/test_regressions.py` | To come (task 3.1) |
-| Miscellaneous | `tests/test_edge_misc.py` | To come (task 3.1) |
+| Document numbers | `tests/test_edge_docnumbers.py` | `document-numbers/`: 18 figures, 2 journals refused; and the bank matcher's `TestAWorkbookNumberNamesOnlyItself` |
+| Regressions | `tests/test_regressions.py` | `regressions/` (its two fixtures in one scenario): 9 figures; and `TestAWorkbookNumberNamesOnlyItself` |
+| Miscellaneous | `tests/test_edge_misc.py` | `miscellaneous/`: 7 figures, the unrealised FX among them; its other cases below |
 
 ## The posting edge cases: how Fyniq reads them
 
@@ -83,3 +83,39 @@ Fyniq reads a row otherwise, `mapping.json` says so:
   reference ledger, which is its Python and is not run (D4); the engine and the oracle are compared on the whole result
   instead.
 - **Payroll** (`PINNED_PAY`): pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch; these cases come with them.
+
+## The document numbers and the regressions
+
+The workbook found its numbers with look-up functions that read `*`, `?`, `~` and a leading `<` as patterns or
+comparisons, and missed a reference with spaces around it. Fyniq names a document by its ID, and its bank matcher
+(`internal/domain/banking/suggest.go`) compares numbers as text, on word boundaries, trimmed and normalised:
+`TestAWorkbookNumberNamesOnlyItself` holds each of the workbook's numbers and references. The scenarios hold the
+settlements those references make. Their IDs spell out what the format's IDs do not take (`INV-9*` is `INV-9-star`,
+`<B1>` is `lt-B1-gt`; each said in `mapping.json`).
+
+- A reference that names no document (`INV-9?`) waits for its match, as the workbook flags it; one of only spaces, or
+  none, with its contact named, is recorded on account for that contact (FR-AR-18), which is how the workbook counts
+  it.
+- A journal has one date in Fyniq (FR-GL-01), so the workbook's entry with two (`J-1`) cannot be entered; the
+  unbalanced ones (`J*`, `J1`) are refused by both sides.
+- Not figures: quotes' lines, the print sheet and timesheets (`test_quotes_lines_print_and_timesheets`) post nothing;
+  projects and timesheets are not in the launch.
+
+## The miscellaneous cases
+
+Ported as figures: the unrealised FX of 240 − 30 = 210 at the latest monthly rate, which Fyniq posts as a revaluation
+at each month's end and reverses on the next day (FR-GL-04; Appendix G.3), on its own unrealised FX account (7045 here:
+the workbook's 7040 is its disposal account), the scenario running to 1 October to show September's reversed; the
+customer's statement balance of 372 (an invoice, a credit note and a payment not matched to an invoice); and the
+transfer from savings, recorded once.
+
+Elsewhere, or later:
+
+- The bank import seeing a transfer recorded from the other account: `TestATransfersOtherSideIsRecognised`
+  (`internal/domain/banking`).
+- The hourly cost with employer CPF stopping at the wage ceiling, and timesheets: with projects and pay runs, after the
+  launch (the pinned hourly cost is recorded `after-go-live`, rev 0.146).
+- The reminder in the invoice's currency, the carry-forward of foreign items in their currency, the budget of
+  discounts, the overdraft check by month-end, the print's blank dates, a feasibility study without an IRR and the
+  averages over the months available: still to be matched to Fyniq's tests (task 3.1), so the miscellaneous set is not
+  yet tagged.

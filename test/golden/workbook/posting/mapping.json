@@ -74,28 +74,30 @@
   "row": 11,
   "status": "⚠ Put the invoice # in Reference",
   "workbook": "Customer paid, no ref",
-  "not_ported": "a bank line on the receivable or payable account waits for the document it pays (FR-BNK-07): it posts when matched"
+  "document": "RC-ACCT-11",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
  },
  {
   "sheet": "Transactions",
   "row": 12,
   "status": "⚠ Invoice # not on Invoices",
   "workbook": "Customer paid, bad ref",
-  "not_ported": "a bank line on the receivable or payable account waits for the document it pays (FR-BNK-07): it posts when matched"
+  "not_ported": "its reference names no document: the line waits for its match (FR-BNK-07)"
  },
  {
   "sheet": "Transactions",
   "row": 13,
   "status": "⚠ Put the bill # in Reference",
   "workbook": "Paid supplier, no ref",
-  "not_ported": "a bank line on the receivable or payable account waits for the document it pays (FR-BNK-07): it posts when matched"
+  "document": "PY-ACCT-13",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
  },
  {
   "sheet": "Transactions",
   "row": 14,
   "status": "⚠ Bill # not on Bills",
   "workbook": "Paid supplier, bad ref",
-  "not_ported": "a bank line on the receivable or payable account waits for the document it pays (FR-BNK-07): it posts when matched"
+  "not_ported": "its reference names no document: the line waits for its match (FR-BNK-07)"
  },
  {
   "sheet": "Transactions",

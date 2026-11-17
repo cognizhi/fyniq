@@ -155,7 +155,12 @@ func (g workbookGolden) check(t *testing.T, r Result) []string {
 // workbook's tests pin, from its documents' totals to each month's FX, spreads, depreciation and GST. The posting edge
 // cases (tests/edge_posting.py) give the pinned figures of Appendix G.3: the document totals, 7030's June and August,
 // and each asset's depreciation. mapping.json says where each of its rows went, or why Fyniq posts it otherwise.
+// The document numbers, the regressions and the miscellaneous cases post too: payments settle only their own documents,
+// spaced references settle theirs (the bank matcher's TestAWorkbookNumberNamesOnlyItself names the numbers themselves),
+// and the unrealised FX of 210 posts as each month-end's revaluation, reversed on day 1.
 // req: quality/calculation-correctness Golden data set, posting edge cases
+// req: quality/calculation-correctness Golden data set, document numbers
+// req: quality/calculation-correctness Golden data set, regressions
 // req: quality/calculation-correctness Pinned document totals
 // req: quality/calculation-correctness Pinned FX and rounding on account 7030
 // req: quality/calculation-correctness Pinned asset depreciation
