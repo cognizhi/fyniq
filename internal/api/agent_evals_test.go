@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/assistant/evalsuite"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -30,9 +32,12 @@ import (
 
 // The scheduled agents' eval suites (QA-AI-07; p1-scheduled-agents task 8.1, design D10). Each case of
 // evals/<suite>/agent.json runs the agent on an organisation of its own: the synthetic sample company with the suite's
-// plants, the agent turned on, its task types on, and the business date the case names. Its daily monitor runs through
-// the real worker, the API's model step and the AI service, as in production, and the case is judged by the last run's
-// findings, Fyniq's summary, the model's words, the open tasks and the proposals.
+// plants and the case's own, made on the case's business date, the agent turned on and its task types on. Each day the
+// checks run, then its daily monitor runs through the real worker, the API's model step and the AI service, as in
+// production; a case whose model is unavailable has a provider that never answers. The case is judged by the last run's
+// findings, Fyniq's summary, the model's words, the open tasks and the proposals. The corporate cases (p1-company-
+// secretary task 7.1): the nominee and controller registers' filings overdue (G4-102), and a run whose model does not
+// answer, with no financial year or corporate profile (G4-110).
 //
 // First the harness checks itself: a right model (the case's own solution) passes each case, and the same run with a
 // planted finding missing, with "all clear" in its words or, for a red-team case, carrying the injected words, fails it.
@@ -40,6 +45,8 @@ import (
 // With FYNIQ_EVALS_OUT the report is written there as agent.json, which `make evals` folds into its report.
 // req: QA-AI-07
 // req: CTL-AI-05
+// req: G4-102
+// req: G4-110
 func TestTheAgentSuites(t *testing.T) {
 	suites, err := evalsuite.LoadAgents(os.DirFS("../../evals"))
 	if err != nil {
@@ -78,7 +85,9 @@ func TestTheAgentSuites(t *testing.T) {
 					continue
 				}
 				missing := o
-				missing.Findings = slices.DeleteFunc(slices.Clone(o.Findings), func(f evalsuite.WantFinding) bool { return f.Key == c.Expect.Findings[0].Key })
+				missing.Findings = slices.DeleteFunc(slices.Clone(o.Findings), func(f evalsuite.WantFinding) bool {
+					return evalsuite.SameKey(f.Key, c.Expect.Findings[0].Key)
+				})
 				if evalsuite.JudgeAgent(c, missing).Pass {
 					weak = append(weak, c.ID+": a run missing "+c.Expect.Findings[0].Key+" passes")
 				}
@@ -156,8 +165,8 @@ func TestTheAgentSuites(t *testing.T) {
 	}
 }
 
-// runAgentCase runs case c of suite s on an organisation of its own, its model step answered by provider p as model, and
-// judges it.
+// runAgentCase runs case c of suite s on an organisation of its own, its model step answered by provider p as model (or
+// by none, when the case's model is unavailable), and judges it.
 func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, company seed.Company, p ports.ModelProvider, model string) (evalsuite.Verdict, evalsuite.AgentOutcome) {
 	t.Helper()
 	e := newEnv(t)
@@ -170,21 +179,20 @@ func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, c
 		t.Fatal(err)
 	}
 	e.books = porttest.Books{Org: org.ID}
+	today, _ := time.Parse(time.DateOnly, c.Today)
+	e.clock.Set(time.Date(today.Year(), today.Month(), today.Day(), 6, 0, 0, 0, clock.Singapore)) // the plants are made on the case's day
 	f := foundersIn(e)
 	aiSwitchedOn(e)
 	owner := steppedUp(e, f.as(f.ahkow))
-	_, secretary := companySecretary(e, f) // the role a reminder may reach, by their verified email
+	secretaryToken, secretary := companySecretary(e, f) // the role a reminder may reach, by their verified email
 	verifiedEmail(t, e, secretary, "secretary@example.test")
 	if len(s.TaskTypes) > 0 {
 		enableTaskTypes(e, strings.Join(s.TaskTypes, ","), 1)
 	}
-	for _, pl := range s.Plant {
-		var body map[string]any
-		_ = json.Unmarshal(pl.Body, &body)
-		if r := e.call(http.MethodPost, pl.Path, owner, body, "Idempotency-Key", uuid.NewString()); r.Status != http.StatusCreated {
-			t.Fatalf("%s: plant %s: %d %s", c.ID, pl.ID, r.Status, r.Raw)
-		}
-	}
+	as := map[string]string{"": owner, "owner": owner, "accountant": f.as(f.weiling, authz.Accountant), "company_secretary": secretaryToken}
+	ids := map[string]string{}
+	plant(t, e, c.ID, s.Plant, as, ids)
+	plant(t, e, c.ID, c.Plant, as, ids)
 	enableSecretary(e, f)
 	sg := routable(e, "Agent evals "+model, "SG", []string{model})
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
@@ -192,6 +200,9 @@ func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, c
 			MadeBy: "user:evals", MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: model}}})
 		return err
 	})
+	if c.Model == "unavailable" {
+		p = downModel{}
+	}
 	e.api.deps.AIProviders = func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
 		return p, nil
 	}
@@ -202,11 +213,11 @@ func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, c
 		HTTP: e.srv.Client()}
 	runner := agents.Runner{Store: workerStore(t), Dispatcher: dispatcher, Clock: e.clock, Skills: agents.Default(), Model: step.Step}
 	scheduler := agents.Scheduler{Store: workerStore(t), Dispatcher: dispatcher, Clock: e.clock, Skills: agents.Default()}
-	today, _ := time.Parse(time.DateOnly, c.Today)
 	var last storage.AgentRun
 	for i := range max(c.Runs, 1) {
 		day := today.AddDate(0, 0, i)
 		e.clock.Set(time.Date(day.Year(), day.Month(), day.Day(), 6, 58, 0, 0, clock.Singapore))
+		e.runCatalogue() // the checks run before the monitor, as they do each night, so its check findings are the day's
 		if _, err := scheduler.ScheduleIn(ctx, e.books.Org); err != nil {
 			t.Fatal(err)
 		}
@@ -240,10 +251,13 @@ func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, c
 		o.Status += ": " + last.Reason
 	}
 	if rep := last.Report; rep != nil {
-		o.Summary, o.ModelText = rep.Summary, rep.ModelText
+		o.Summary, o.ModelText, o.ModelMissed = rep.Summary, rep.ModelText, rep.ModelMissed
 		var fs []agents.Finding
 		_ = json.Unmarshal(rep.Findings, &fs)
 		for _, x := range fs {
+			if x.Detail == "The check has not run yet" {
+				t.Fatalf("%s: %s did not run before the monitor, so its finding says nothing of the case", c.ID, x.Key)
+			}
 			o.Findings = append(o.Findings, evalsuite.WantFinding{Key: x.Key, Status: x.Status, Window: x.Window})
 		}
 	}
@@ -262,6 +276,59 @@ func runAgentCase(t *testing.T, s evalsuite.AgentSuite, c evalsuite.AgentCase, c
 		return err
 	})
 	return evalsuite.JudgeAgent(c, o), o
+}
+
+// plant makes plants in order through the public API, each as its role (as, the Owner when it names none), a body's
+// "$<id>" taking that earlier plant's ID in ids. A recorded plant has its evidence attached and its approval asked by its
+// role, then signed by the Owner, so it is in force as a person would have recorded it.
+func plant(t *testing.T, e *env, caseID string, plants []evalsuite.Plant, as map[string]string, ids map[string]string) {
+	t.Helper()
+	for _, pl := range plants {
+		var body map[string]any
+		_ = json.Unmarshal(pl.Body, &body)
+		for k, v := range body {
+			if ref, ok := v.(string); ok && strings.HasPrefix(ref, "$") {
+				body[k] = ids[ref[1:]]
+			}
+		}
+		tok := as[pl.As]
+		r := e.call(http.MethodPost, pl.Path, tok, body, "Idempotency-Key", uuid.NewString())
+		if r.Status != http.StatusCreated {
+			t.Fatalf("%s: plant %s: %d %s", caseID, pl.ID, r.Status, r.Raw)
+		}
+		ids[pl.ID] = r.str("id")
+		if !pl.Record {
+			continue
+		}
+		path := pl.Path + "/" + r.str("id")
+		if f := e.upload(path+"/evidence", tok, map[string]string{"evidence_type": "Evidence"}, "evidence.pdf", []byte("%PDF-1.7 evidence"),
+			"If-Match", r.Header.Get("ETag")); f.Status != http.StatusCreated {
+			t.Fatalf("%s: plant %s's evidence: %d %s", caseID, pl.ID, f.Status, f.Raw)
+		}
+		cur := e.call(http.MethodGet, path, tok, nil)
+		req := e.call(http.MethodPost, path+"/approval", tok, nil, "If-Match", cur.Header.Get("ETag"))
+		if req.Status != http.StatusAccepted {
+			t.Fatalf("%s: plant %s's approval asked: %d %s", caseID, pl.ID, req.Status, req.Raw)
+		}
+		if a := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", as["owner"], hashOf(req), "If-Match", `"1"`); a.Status != http.StatusOK ||
+			a.Body["status"] != "approved" {
+			t.Fatalf("%s: plant %s approved: %d %s", caseID, pl.ID, a.Status, a.Raw)
+		}
+	}
+}
+
+// downModel is a model step's provider that never answers: a case whose model is unavailable (AI-64, rev 0.283).
+type downModel struct{}
+
+func (downModel) Capabilities() ports.ModelCapabilities { return full }
+func (downModel) Stream(context.Context, ports.ModelRequest, func(ports.ModelEvent) error) (ports.ModelResponse, error) {
+	return ports.ModelResponse{}, errors.New("the provider did not answer")
+}
+func (downModel) ListModels(context.Context, string) (ports.ModelPage, error) {
+	return ports.ModelPage{}, nil
+}
+func (downModel) Call(context.Context, ports.ModelRequest) (ports.ModelResponse, error) {
+	return ports.ModelResponse{}, errors.New("the provider did not answer")
 }
 
 // agentProposed reports whether the run's model already made its proposals: a propose_ tool's result is in the request.

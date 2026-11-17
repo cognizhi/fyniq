@@ -142,6 +142,25 @@
 
 ## 7. Evals and the finish
 
-- [ ] 7.1 The `secretary-launch` suite's G4-102 and G4-110 cases (design D9). Tests `// req: QA-AI-07`.
+- [x] 7.1 The `secretary-launch` suite's G4-102 and G4-110 cases (design D9). Tests `// req: QA-AI-07`.
+  As built:
+  - The suite is version 2. `nominee-and-controller-registers` (G4-102) plants on 1 Jul 2027:
+    - a nominee shareholder entered in the register on 24 Jun and not filed centrally;
+    - Lion Rock Fund I, a controller by its right to appoint the board's majority, with no yearly notice since 5 Jun
+      2026.
+    Both are overdue with a task each, and C.2 #35 is ⏰.
+  - `model-unavailable` (G4-110): no financial year and no corporate profile, with a provider that never answers. The run
+    keeps its findings, the GST return's task and each check Not assessed. Its report says the AI step did not run, and
+    its summary that the AI could not explain (rev 0.283).
+  - The harness gains, in the format:
+    - a case's own plants;
+    - a plant made as the Accountant or the Company secretary and recorded (evidence, ask, the Owner signs);
+    - `$<id>` for an earlier plant's ID;
+    - a wanted key ending in `*` that matches by prefix;
+    - `"model": "unavailable"`.
+    `TestTheAgentSuitesAreWellFormed` and `TestTheAgentJudge` cover them.
+  - Building it found the harness's check findings were "has not run yet": nothing ran the checks before the monitor. Each
+    case's day now runs them first, as the nightly checks do, and a finding that still says so fails the harness. The
+    launch cases' check expectations are now real.
 - [ ] 7.2 The review register's entries for the pack and the checks (FR-UX-41), in a pull request of their own; the
   build plan's paragraph; `make check`, `make test` and `make evals` pass.
