@@ -29,6 +29,7 @@ const activities: Record<Activity, string> = {
   equity: "The equity register",
   filing: "Statutory filings and payments",
   gst_forecast: "GST forecasts",
+  corporate: "The corporate profile",
 };
 
 // recordLink is where a record's page is, for the kinds that have one: the record itself, or the page that lists it.
