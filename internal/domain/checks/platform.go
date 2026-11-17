@@ -79,7 +79,7 @@ var platformChecks = []Definition{
 		Explain: "Fyniq makes the recurring documents, posts depreciation, the spreads and the month-end revaluation, and sends " +
 			"the bills-due reminders by itself. A job that has not run within its time, or whose last run failed, leaves the " +
 			"books short of those entries.",
-		Rules: "FR-AUT-01, ADR-T7", Owner: "controller", View: viewClose, Triggers: []string{"outbox"}, Run: jobsOnTime},
+		Rules: "FR-AUT-01, ADR-T7", Owner: "controller", View: viewClose, Run: jobsOnTime},
 	{Key: "parameters.packs-current", Ref: "C.2 #16", Area: "Parameters", Worst: Warning, Title: "The statutory parameters in force are current",
 		Explain: "GST, CPF and the other statutory values come from versioned packs, each with a date by which it is checked " +
 			"against its official source. A pack in force past that date, or one with a later version loaded and not yet " +

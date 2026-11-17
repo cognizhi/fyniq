@@ -49,8 +49,8 @@ func registerBackgroundWork(a *API) {
 			"counted afresh and its last error kept, once what stopped it is fixed (§12.11, C.2 #12, G4-073). It is dispatched at " +
 			"once after the change commits, and the next tick sends it if that fails. Only a stopped task replays: any other is " +
 			"API-404-01. An Owner or an Administrator, who are told when a task stops (FR-NTF-01). Side effects: the task pending " +
-			"again, its audit event, and the checks run again. Idempotent with Idempotency-Key; Prefer: return=preview checks it " +
-			"and saves nothing.",
+			"again and its audit event; the check lists it no more from its next run. Idempotent with Idempotency-Key; " +
+			"Prefer: return=preview checks it and saves nothing.",
 	}, "If-Match", "A replay acts on a task that stopped, which nothing else changes: replaying one not stopped is refused."),
 		[]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeRetry, storage.CodeLockTimeout},
 		func(ctx context.Context, in *backgroundWorkReplayInput) (*backgroundWorkOutput, error) {

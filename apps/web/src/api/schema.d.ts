@@ -1571,7 +1571,7 @@ export interface paths {
         put?: never;
         /**
          * Replay a background task that stopped
-         * @description Sends a task of the organisation's background work whose attempts ran out back to pending, with its attempts counted afresh and its last error kept, once what stopped it is fixed (§12.11, C.2 #12, G4-073). It is dispatched at once after the change commits, and the next tick sends it if that fails. Only a stopped task replays: any other is API-404-01. An Owner or an Administrator, who are told when a task stops (FR-NTF-01). Side effects: the task pending again, its audit event, and the checks run again. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Sends a task of the organisation's background work whose attempts ran out back to pending, with its attempts counted afresh and its last error kept, once what stopped it is fixed (§12.11, C.2 #12, G4-073). It is dispatched at once after the change commits, and the next tick sends it if that fails. Only a stopped task replays: any other is API-404-01. An Owner or an Administrator, who are told when a task stops (FR-NTF-01). Side effects: the task pending again and its audit event; the check lists it no more from its next run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["replayBackgroundWork"];
         delete?: never;
