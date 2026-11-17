@@ -8,6 +8,7 @@ import { Icon } from "../ui";
 import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
 import { Deadlines, YourWork } from "./HomeWork";
+import { WhatHappened } from "./WhatHappened";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
 // rather than shown as not done (the API decides who sees what).
@@ -230,6 +231,7 @@ function Workspace() {
           <Deadlines />
           <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
+          <WhatHappened />
         </>
       )}
     </div>

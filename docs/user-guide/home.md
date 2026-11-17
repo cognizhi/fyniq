@@ -67,6 +67,16 @@ Work down the list. Each step opens the page where you do it:
 A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
 from the workbook join the list as they arrive.
 
+### What happened? Where to record it
+
+Not sure where something goes? Under **What happened? Where to record it**, choose what happened,
+such as "A customer paid us" or "I paid a company cost with my own money". Fyniq says where to
+record it and what to do there, with a link to that page and to the guide's page about it. It lists
+only what your access lets you record.
+
+Every list that is empty says what goes there, and offers the first thing to do, such as **Add your
+first contact**.
+
 ### Your work
 
 **Your work** shows what your roles work through, each row counting a list and opening it:

@@ -164,7 +164,14 @@
   health has one; the suspense note's terms are glossary terms. Guide `glossary.md`, compiled into
   `reference.glossary`. Tests `HelpPopover.test.tsx`, `glossary.test.tsx`, `kpis.test.tsx`. **Left:** FR-UX-30's
   breadth: help on every field label, column header, status chip, stat tile and chart across the screens (most have a
-  help key's native tooltip only), screen by screen; FR-UX-11's "What happened" helper and empty-state audit.)
+  help key's native tooltip only), screen by screen.)
+  (18 Nov 2026, FR-UX-11's rest, for the launch gate: "What happened? Where to record it" on Home
+  (`screens/WhatHappened.tsx`, from the workbook's Start Here: nine things that happen, each with the page that records
+  it and what to do there, listed only when the person's access opens that page). Every empty list explains what goes
+  there and offers its first action: rates, dimensions, payment batches, items, contacts, pre-incorporation costs and
+  bank rules now offer "Add your first …" in the empty state, the fixed-asset register what is not in it yet, and
+  Categorise importing a statement; those filled from elsewhere are listed with why. Guide `home.md`, compiled. Tests
+  `whatHappened.test.tsx`.)
 
 ## 5. Devices, accessibility and budgets
 

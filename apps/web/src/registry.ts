@@ -236,6 +236,8 @@ export const actions = [
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
+  // "What happened? Where to record it" on Home (FR-UX-11), from the workbook's Start Here.
+  { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
   // Books health on Home's pulse card, explained behind its ⓘ (FR-UX-30).
   { kind: "action", id: "home.books-health", mode: "basic", help: "home.books-health", guide: "checks.overview" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },

@@ -695,6 +695,12 @@ export function Currencies() {
             <Icon of={Coins} size={24} />
             <h2 className="fy-h3">{cur ? `No ${cur} rates of your own` : "No rates of your own"}</h2>
             <p className="fy-secondary">The daily feed covers most days. Add a rate for a day the feed missed, or a monthly rate for postings with no rate of their own.</p>
+            {mayEnter && (
+              <Button variant="secondary" size="sm" className="self-center" onClick={() => setAdding(true)}>
+                <Icon of={Plus} />
+                Add a rate of your own
+              </Button>
+            )}
           </div>
         )}
         {items.length > 0 && (

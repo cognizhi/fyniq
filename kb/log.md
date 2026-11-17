@@ -621,3 +621,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
 
 ## [2026-11-18] compile | docs/user-guide/glossary.md → reference.glossary (new page: the glossary the terms on pages read, FR-UX-11, FR-UX-30)
+
+## [2026-11-18] compile | docs/user-guide/home.md → home.overview (What happened? Where to record it, and empty lists' first actions, FR-UX-11)

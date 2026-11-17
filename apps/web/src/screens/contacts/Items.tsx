@@ -349,6 +349,12 @@ export function Items() {
           <h2 className="fy-h3">No items yet</h2>
           <p className="fy-secondary">Add what you sell, so invoices start with its name, price, account and GST code.</p>
           {!may && <p className="fy-small fy-secondary">A Bookkeeper, an AR or AP specialist, an Accountant or a Controller adds them.</p>}
+          {may && (
+            <Button variant="secondary" size="sm" className="self-center" onClick={() => setEditing("new")}>
+              <Icon of={Plus} />
+              Add your first item
+            </Button>
+          )}
         </div>
       )}
       {(q.data ?? []).length > 0 && (

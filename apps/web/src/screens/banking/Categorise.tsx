@@ -151,6 +151,11 @@ export function Categorise() {
           <Icon of={PartyPopper} size={24} />
           <h2 className="fy-h3">All caught up</h2>
           <p className="fy-secondary">No line waits{account ? " on this account" : ""}. New lines arrive with each statement, report or sync.</p>
+          {may && (
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm self-center" to="/banking/import">
+              Import a statement
+            </Link>
+          )}
         </div>
       )}
       {lines.length > 0 &&

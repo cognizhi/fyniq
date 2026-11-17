@@ -51,6 +51,10 @@
       "example": "a bank line left in suspense at the month end shows here until someone says what it is for.",
       "expert": "The score is the worst status among the checks that ran; a check not assessed is counted beside it, not in it."
     },
+    "home.what-happened": {
+      "label": "What happened? Where to record it",
+      "tooltip": "Pick what happened, such as a customer paid you, and Fyniq says where to record it and what to do there."
+    },
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
