@@ -1,5 +1,6 @@
 import { Menu } from "@base-ui/react/menu";
-import { CircleHelp, Info } from "lucide-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { BookOpen, CircleHelp, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
@@ -7,6 +8,7 @@ import { Refusal } from "../components/Refusal";
 import { buttonVariants } from "../components/ui/button";
 import { Dialog } from "../components/ui/dialog";
 import { dateTime } from "../format/date";
+import { guideFor } from "../help/links";
 import { helpText } from "../i18n";
 import { cn } from "../lib/utils";
 import { Icon, problemOf } from "../ui";
@@ -22,6 +24,14 @@ export function HelpMenu({ className }: { className?: string }) {
   const [about, setAbout] = useState(false);
   const help = helpText("shell.help");
   const a = helpText("shell.about");
+  const g = helpText("help.guide");
+  const navigate = useNavigate();
+  const path = useRouterState({ select: (st) => st.location.pathname });
+  // The guide opens on the page of the screen the person is on (FR-UX-33), else at its index.
+  const open = () => {
+    const to = guideFor(path);
+    void navigate(to ? { to: to.to, hash: to.hash } : { to: "/help" });
+  };
   return (
     <>
       <Menu.Root>
@@ -31,6 +41,10 @@ export function HelpMenu({ className }: { className?: string }) {
         <Menu.Portal>
           <Menu.Positioner sideOffset={4} align="end" className="z-(--z-popover)">
             <Menu.Popup data-slot="menu-popup" className="min-w-48 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-2 outline-none">
+              <Menu.Item className={item} onClick={open}>
+                <Icon of={BookOpen} />
+                <span>{g.label}</span>
+              </Menu.Item>
               <Menu.Item className={item} onClick={() => setAbout(true)}>
                 <Icon of={Info} />
                 <span>{a.label}</span>

@@ -112,6 +112,12 @@
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
+  (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
+  DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
+  item's price list replaced with its audited version); TRUNCATE was refused already. Every DELETE operation of the API
+  withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
+  a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
+  confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
@@ -144,6 +150,17 @@
   If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
   `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
   **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
+  (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
+  (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
+  roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
+  renders a page's Markdown as elements (`help/markdown.tsx`: headings with their anchors, nested lists, tables,
+  notes, code; a link to another page opens it, one to an outside site a new tab, any other its words), with its
+  sections in a sticky contents column and a print without the shell; `/help/whats-new` is the release notes. Help ›
+  User guide opens the page of the screen the person is on, from the registry's guide keys (FR-UX-33's guide half;
+  `help/links.ts`, kept apart so the shell does not load the pages). Guide `help.md`, compiled into `help.guide`.
+  Tests `help.test.tsx` (`// req: FR-UX-32`, `// req: FR-UX-33`). **Left:** the glossary and the keyboard shortcuts'
+  pages, which wait for their sources; screenshots from the end-to-end tests; "Try it in the sample company"; the
+  tour and practice.)
 
 ## 5. Devices, accessibility and budgets
 
@@ -159,6 +176,15 @@
   label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
   5.4); devices without the Viewport Segments API split by CSS alone.)
 - [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
+  (17 Nov 2026, in part, for the launch gate: NFR-A11Y-03 to 05. `e2e/focus.spec.ts` tabs through Home, the invoices,
+  a statement and Settings at the desktop and phone frames, and through Home with the AI panel open: no focused control
+  is hidden by the sticky header, the bottom bar or the AI panel (by what is drawn at its centre, so stacking counts)
+  or by a toast (by covering it entirely); a planted toast must be caught. `draggingAlternatives.test.ts`: nothing is
+  done only by dragging (a drop zone offers the file chooser; a drag that moves or resizes names its alternative, none
+  yet). `accessibleAuthentication.test.tsx`: the way in leaves paste and password managers alone and asks no
+  cognitive test, the step-up offers a passkey and a new sign-in, a pasted recovery code is taken, and a refused
+  submit's summary takes focus. **Left:** NFR-A11Y-01 and 02's axe pass on every shell screen and keyboard tests; the
+  sticky first column's scrolling when the grid is built.)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
 ## 6. Screens
