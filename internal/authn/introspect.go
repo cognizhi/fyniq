@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"net/netip"
 	"slices"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // DevPrefix starts every local dev token; the Introspector never sends one to the OAuth server.
@@ -46,6 +48,10 @@ type Introspector struct {
 	// Delegation, when set, also accepts the tokens the MCP server obtains for a person (open question
 	// 40, option (b)); nil accepts none.
 	Delegation *Delegation
+	// Clients, when set, accepts the tokens of the API clients Fyniq registered: integration clients and personal access
+	// tokens (FR-INT-02). What such a client may do is Fyniq's record of it, read at introspection, never the token's
+	// claims; nil accepts none of them.
+	Clients storage.APIClientRoutes
 
 	mu    sync.Mutex
 	cache map[[32]byte]cached
@@ -78,6 +84,9 @@ func (i *Introspector) Authenticate(ctx context.Context, c Credentials) (Princip
 		return Principal{}, fmt.Errorf("introspection: %w", err) // not cached: the server may be back
 	}
 	p, perr := i.principal(ctx, in, now)
+	if perr != nil && !errors.Is(perr, ErrUnauthenticated) {
+		return Principal{}, perr // not cached: the database may be back
+	}
 	ttl := min(i.TTL, MaxCache)
 	until := now.Add(ttl)
 	if perr == nil && in.ExpiresAt.Before(until) {
@@ -106,6 +115,14 @@ func (i *Introspector) principal(ctx context.Context, in ports.Introspection, no
 	}
 	if i.Delegation != nil && in.ClientID == i.Delegation.Client {
 		return i.Delegation.principal(ctx, in)
+	}
+	if i.Clients != nil {
+		switch c, err := i.Clients.APIClientAccess(ctx, in.ClientID, now); {
+		case err == nil:
+			return clientPrincipal(c, in, now)
+		case !errors.Is(err, ports.ErrNotFound):
+			return Principal{}, fmt.Errorf("the API client %s: %w", in.ClientID, err)
+		}
 	}
 	granted, ok := in.Claims["granted_at"].(float64) // JSON numbers decode as float64; seconds since 1970
 	if !ok || now.Sub(time.Unix(int64(granted), 0)) > MaxGrantAge {
@@ -191,4 +208,60 @@ func (d *Delegation) principal(ctx context.Context, in ports.Introspection) (Pri
 	}
 	return Principal{Via: ViaToken, Subject: in.Subject, UserID: user, Client: in.ClientID, Class: ClassAgent, Organisation: org,
 		Roles: roles, Scopes: in.Scopes}, nil
+}
+
+// clientPrincipal is an API client Fyniq registered (FR-INT-02, SEC-07): its class, organisation, scopes, networks and
+// limits come from Fyniq's record, and its rights from the roles its member holds now, which its scopes then narrow
+// (authz.ScopeAllows). It is refused once revoked or expired here, when its member is no longer an active member, or for a
+// token not issued to the client itself (the client-credentials grant's subject is the client).
+func clientPrincipal(c storage.APIClientAccess, in ports.Introspection, now time.Time) (Principal, error) {
+	refuse := func(why string) (Principal, error) {
+		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("the API client %s %s (FR-INT-02)", in.ClientID, why))
+	}
+	switch {
+	case c.Revoked:
+		return refuse("was revoked")
+	case !now.Before(c.ExpiresAt):
+		return refuse("has expired")
+	case !c.OwnerActive || len(c.Roles) == 0:
+		return refuse("acts for a member who is no longer an active member with a role")
+	case in.Subject != in.ClientID:
+		return refuse("presented a token issued to someone else")
+	case c.Class != ClassIntegration && c.Class != ClassAgent:
+		return refuse("has no client class (AI-34)")
+	}
+	p := Principal{Via: ViaToken, Subject: in.ClientID, UserID: c.OwnerID, Client: in.ClientID, Class: c.Class, Organisation: c.Organisation,
+		Scoped: true, ReadsPerMinute: c.ReadsPerMinute, WritesPerMinute: c.WritesPerMinute, Scopes: []string{}}
+	for _, s := range in.Scopes { // what the token was granted and the record still holds
+		if slices.Contains(c.Scopes, s) {
+			p.Scopes = append(p.Scopes, s)
+		}
+	}
+	for _, r := range c.Roles {
+		if _, known := authz.Roles[authz.Role(r)]; known {
+			p.Roles = append(p.Roles, authz.Role(r))
+		}
+	}
+	for _, a := range c.IPAllow {
+		prefix, err := netip.ParsePrefix(a)
+		if err != nil {
+			return refuse("has a network that is not a CIDR prefix")
+		}
+		p.AllowedIPs = append(p.AllowedIPs, prefix.Masked())
+	}
+	return p, nil
+}
+
+// AllowsIP reports whether a scoped client may call from ip: anywhere when it names no network.
+func (p Principal) AllowsIP(ip netip.Addr) bool {
+	if len(p.AllowedIPs) == 0 {
+		return true
+	}
+	ip = ip.Unmap()
+	for _, n := range p.AllowedIPs {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }

@@ -175,6 +175,11 @@ const (
 	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
 	// row's A; its key is the agent's ID.
 	ObjectAIRoute = "ai_route"
+	// ObjectAPIClient is an API client of the organisation (FR-INT-02, SEC-07): registering an integration client with its
+	// narrow scopes, and reclassing a personal access token as an integration, are asked by a person with C on "Connected
+	// apps" and approved by the Owner, who holds its A with a second approver; its key is the client's ID. Revoking one is
+	// never held back.
+	ObjectAPIClient = "api_client"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -301,6 +306,10 @@ const (
 	OpAIConnectionPrice = "ai_connection.price"
 	// OpAIRouteChange makes the asked route its agent's next version (AI-74).
 	OpAIRouteChange = "ai_route.change"
+	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
+	OpAPIClientCreate = "api_client.create"
+	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
+	OpAPIClientReclass = "api_client.reclass"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
 )
@@ -353,6 +362,8 @@ var Operations = map[string]string{
 	OpAIConnectionAllowModel:   ObjectAIConnection,
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
+	OpAPIClientCreate:          ObjectAPIClient,
+	OpAPIClientReclass:         ObjectAPIClient,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -469,6 +480,8 @@ var Dependencies = map[string][]string{
 	ObjectAIDataPolicy: {"version"},
 	// the route's version: what it replaces
 	ObjectAIRoute: {"version"},
+	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
+	ObjectAPIClient: {"status"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -530,6 +543,7 @@ var Rows = map[string]string{
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
 }
 
 // The limits of a policy.
@@ -621,6 +635,7 @@ var Policies = map[string]Policy{
 	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

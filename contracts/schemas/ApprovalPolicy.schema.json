@@ -81,7 +81,8 @@
         "tenant_export",
         "ai_connection",
         "ai_data_policy",
-        "ai_route"
+        "ai_route",
+        "api_client"
       ],
       "examples": [
         "organisation_setting"

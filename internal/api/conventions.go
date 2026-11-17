@@ -467,8 +467,14 @@ func (a *API) limit(ctx huma.Context, next func(huma.Context)) {
 		limits = DefaultLimits
 	}
 	kind, quota, name := storage.RateWrite, limits.Writes, writesPolicy
+	if p.WritesPerMinute > 0 { // a registered client's own limit only lowers the platform's (FR-INT-02, FR-INT-16)
+		quota = min(quota, p.WritesPerMinute)
+	}
 	if authn.Safe(ctx.Method()) {
 		kind, quota, name = storage.RateRead, limits.Reads, readsPolicy
+		if p.ReadsPerMinute > 0 {
+			quota = min(quota, p.ReadsPerMinute)
+		}
 	}
 	now := a.deps.Clock.Now()
 	start := now.UTC().Truncate(rateWindow)

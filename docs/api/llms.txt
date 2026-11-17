@@ -508,6 +508,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/instruments/{instrument_id}/evidence` (addInstrumentEvidence): Attach a SAFE's or note's documents
 - `GET /v1/instruments/{instrument_id}/evidence/{evidence_id}` (getInstrumentEvidence): Get a SAFE's or note's file
 - `DELETE /v1/instruments/{instrument_id}/evidence/{evidence_id}` (removeInstrumentEvidence): Remove a file from a drafted SAFE or note
+- `GET /v1/integration-clients` (listIntegrationClients): List the organisation's integration clients
+- `POST /v1/integration-clients` (createIntegrationClient): Ask to register an integration client
+- `GET /v1/integration-clients/{integration_client_id}` (getIntegrationClient): Get an integration client
+- `POST /v1/integration-clients/{integration_client_id}/revoke` (revokeIntegrationClient): Revoke an integration client
 - `POST /v1/investor-rights` (createInvestorRights): Draft a holder's rights from the agreements
 - `GET /v1/investor-rights/{rights_id}` (getInvestorRights): Get a holder's rights from the agreements
 - `PUT /v1/investor-rights/{rights_id}` (replaceInvestorRights): Change a holder's drafted rights

@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
+	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -243,6 +244,15 @@ var codeFacts = map[string]struct {
 	storage.CodeRestoreDrill:      {409, "A restore drill, once recorded, never changes"},
 	storage.CodeMigration:         {409, "The migration keeps its record, in an organisation without posted entries"},
 	storage.CodeAIConnection:      {409, "An AI connection keeps each version, and is switched off, never removed"},
+	storage.CodeAPIClient:         {409, "An API client is kept, revoked once, and never rewritten"},
+	apiclient.CodeName:            {422, "The client's name is not valid"},
+	apiclient.CodeScope:           {422, "Not a scope an API client may be granted"},
+	apiclient.CodeNetwork:         {422, "Not a network in CIDR form"},
+	apiclient.CodeLimit:           {422, "The client's limit is outside the platform's"},
+	apiclient.CodeExpiry:          {422, "The client's expiry is not within a year"},
+	apiclient.CodeKey:             {422, "Not a public key an integration may sign with"},
+	apiclient.CodeOwner:           {422, "The client's member is not an active member with a role"},
+	apiclient.CodeState:           {409, "The client is revoked already"},
 	aiconnection.CodeProvider:     {422, "Not a model provider of this release"},
 	aiconnection.CodeAuth:         {422, "Not an authentication the provider offers"},
 	aiconnection.CodeConfig:       {422, "The configuration does not match the provider's"},
@@ -1040,6 +1050,7 @@ var storageFixes = map[string]string{
 	storage.CodeRestoreDrill:         "Record the next drill instead",
 	storage.CodeMigration:            "Start the migration in a new organisation without posted entries; upload the workbook again once the last validation is done",
 	storage.CodeAIConnection:         "Read the connection again and ask for its next version; switch it off instead of removing it",
+	storage.CodeAPIClient:            "Revoke the client once; register a new one for any other change",
 	storage.CodeHeartbeatDrill:       "Record the next drill instead",
 	storage.CodeTransfer:             "Save a transfer's next version over the one you read; for another flow, retire it and record a new one",
 	storage.CodeShredding:            "Approve a listed run once, at the version you read; the daily run then shreds it, register first",

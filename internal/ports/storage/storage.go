@@ -152,6 +152,8 @@ type UnitOfWork interface {
 	AICalls() AICalls
 	AIBudgets() AIBudgets
 	AIQualifications() AIQualifications
+	// APIClients are the organisation's integration clients and personal access tokens (FR-INT-02, SEC-07).
+	APIClients() APIClients
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
