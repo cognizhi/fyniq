@@ -16,6 +16,7 @@ import (
 // The image budgets are the PRD's (NFR-IMG-04): deploy/docker/budgets.json equals the §12.9 table,
 // and every image `make images` builds has one.
 // req: NFR-IMG-04
+// req: QA-IMG-01
 func TestImageBudgetsAreThePRDs(t *testing.T) {
 	root := repoRoot(t)
 	var budgets struct {
@@ -78,6 +79,7 @@ func TestImageBudgetsAreThePRDs(t *testing.T) {
 
 // Every base image is pinned by digest (NFR-IMG-03), in the Dockerfiles and in the local stack.
 // req: NFR-IMG-03
+// req: QA-IMG-01
 func TestImagesArePinnedByDigest(t *testing.T) {
 	root := repoRoot(t)
 	pinned := regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)

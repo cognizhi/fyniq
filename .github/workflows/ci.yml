@@ -48,6 +48,18 @@ jobs:
             RANGE="$BASE..$HEAD"
           fi
           scripts/check-commits.sh "$RANGE"
+      - name: Calculation fixes carry their regression test (QA-REL-01)
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="$HEAD^!"   # first push: the commit pushed
+          else
+            RANGE="$BASE..$HEAD"
+          fi
+          python3 scripts/release_policy.py "$RANGE" --title "$PR_TITLE"
 
   checks:
     name: Design tokens and configuration
@@ -232,6 +244,19 @@ jobs:
       - run: make test-e2e   # in Chrome, Firefox and WebKit (apps/web/browsers.ts)
         env:
           FYNIQ_E2E_BROWSERS: all
+
+  storybook:
+    name: Storybook (make storybook)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      - run: make storybook   # QA-UI-02: in the runner's own Chrome, each story with axe in four themes
 
   local-mode:
     name: Local mode timings (make setup && make dev)

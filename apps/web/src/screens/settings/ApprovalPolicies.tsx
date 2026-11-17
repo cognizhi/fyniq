@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Hourglass, Lock, Pencil, Plus, Stamp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Hourglass, Lock, Pencil, Plus, Stamp, Trash2 } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -12,6 +12,7 @@ import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { objectLabel, roleLabel, stepWho, type Approval } from "../approvals/words";
+import { listAccounts, listDimensions } from "../accounting/data";
 import { assignable } from "./Members";
 import { SettingsPage } from "./SettingsPage";
 
@@ -41,6 +42,128 @@ async function listMembers() {
   const { data, error } = await api.GET("/v1/members", { params: { query: { page_size: 200 } } });
   if (error) return [] as Member[];
   return data.items ?? [];
+}
+
+// RuleDraft is a rule of a policy as the form holds it (FR-APR-01, rev 0.178): its conditions and its steps.
+interface RuleDraft {
+  amount: string;
+  departments: string[];
+  accounts: string[];
+  vendors: string[];
+  steps: Step[];
+}
+
+interface Option {
+  id: string;
+  label: string;
+}
+
+function rulesOf(p: { rules?: Policy["rules"] }): RuleDraft[] {
+  return (p.rules ?? []).map((r) => ({
+    amount: r.conditions.amount_at_least?.amount ?? "",
+    departments: r.conditions.departments ?? [],
+    accounts: r.conditions.accounts ?? [],
+    vendors: r.conditions.vendors ?? [],
+    steps: stepsOf(r),
+  }));
+}
+
+const stepBody = (s: Step) => ({ quorum: s.quorum, ...(s.who === "roles" ? { roles: s.roles } : {}), ...(s.who === "users" ? { users: s.users } : {}) });
+
+// ruleOptions are what a rule's conditions may name: the departments' values, the accounts that post, the vendors.
+async function ruleOptions(): Promise<{ departments: Option[]; accounts: Option[]; vendors: Option[] }> {
+  const [dims, accounts, contacts] = await Promise.all([
+    listDimensions(),
+    listAccounts(),
+    api.GET("/v1/contacts", { params: { query: { role: "vendor", page_size: 500 } } }),
+  ]);
+  const department = dims.dimensions.find((d) => d.kind === "department");
+  return {
+    departments: dims.values.filter((v) => v.dimension_id === department?.id).map((v) => ({ id: v.id, label: `${v.code} ${v.name}` })),
+    accounts: accounts.filter((a) => a.active && !a.group).map((a) => ({ id: a.id, label: `${a.code} ${a.name}` })),
+    vendors: (contacts.data?.items ?? []).map((c) => ({ id: c.id, label: c.legal_name })),
+  };
+}
+
+function Pick({ id, label, options, value, onChange }: { id: string; label: string; options: Option[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="fy-field">
+      <label className="fy-label" htmlFor={id}>
+        {label}
+      </label>
+      <select className="fy-select" id={id} multiple size={Math.min(5, Math.max(2, options.length))} value={value}
+        onChange={(e) => onChange(Array.from(e.target.selectedOptions, (o) => o.value))} aria-describedby={`${id}-help`}>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <span className="fy-help" id={`${id}-help`}>
+        Any of those chosen; none for no condition.
+      </span>
+    </div>
+  );
+}
+
+// RuleEditor is one rule: what it matches, and the steps a change that matches takes instead of the default steps.
+function RuleEditor({ n, rule, members, options, onChange, onUp, onDown, onRemove }: {
+  n: number; rule: RuleDraft; members: Member[]; options: { departments: Option[]; accounts: Option[]; vendors: Option[] }; onChange: (r: RuleDraft) => void;
+  onUp?: () => void; onDown?: () => void; onRemove: () => void;
+}) {
+  const id = useId();
+  return (
+    <fieldset className="fy-fieldset fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3">
+      <legend className="fy-strong">Rule {n}</legend>
+      <div className="fy-form fy-form--2">
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-amount`}>
+            Amount at or above
+          </label>
+          <input className="fy-input" id={`${id}-amount`} inputMode="decimal" value={rule.amount} onChange={(e) => onChange({ ...rule, amount: e.target.value })}
+            aria-describedby={`${id}-amount-help`} />
+          <span className="fy-help" id={`${id}-amount-help`}>
+            In the base currency; leave it empty for no amount.
+          </span>
+        </div>
+        <Pick id={`${id}-departments`} label="Departments" options={options.departments} value={rule.departments} onChange={(v) => onChange({ ...rule, departments: v })} />
+        <Pick id={`${id}-accounts`} label="Accounts" options={options.accounts} value={rule.accounts} onChange={(v) => onChange({ ...rule, accounts: v })} />
+        <Pick id={`${id}-vendors`} label="Vendors" options={options.vendors} value={rule.vendors} onChange={(v) => onChange({ ...rule, vendors: v })} />
+      </div>
+      {rule.steps.map((s, i) => (
+        <StepEditor
+          key={i}
+          n={i + 1}
+          step={s}
+          members={members}
+          onChange={(next) => onChange({ ...rule, steps: rule.steps.map((x, j) => (j === i ? next : x)) })}
+          onRemove={rule.steps.length > 1 ? () => onChange({ ...rule, steps: rule.steps.filter((_, j) => j !== i) }) : undefined}
+        />
+      ))}
+      <div className="fy-row fy-row--wrap gap-2">
+        <Button type="button" size="sm" disabled={rule.steps.length >= 5} onClick={() => onChange({ ...rule, steps: [...rule.steps, { quorum: 1, who: "anyone", roles: [], users: [] }] })}>
+          <Icon of={Plus} />
+          Add a step to rule {n}
+        </Button>
+        {onUp && (
+          <Button type="button" size="sm" variant="ghost" onClick={onUp}>
+            <Icon of={ArrowUp} />
+            Move rule {n} up
+          </Button>
+        )}
+        {onDown && (
+          <Button type="button" size="sm" variant="ghost" onClick={onDown}>
+            <Icon of={ArrowDown} />
+            Move rule {n} down
+          </Button>
+        )}
+        <Button type="button" size="sm" variant="ghost" onClick={onRemove}>
+          <Icon of={Trash2} />
+          Remove rule {n}
+        </Button>
+      </div>
+    </fieldset>
+  );
 }
 
 function stepsOf(p: { steps?: Policy["steps"] }): Step[] {
@@ -129,15 +252,25 @@ function ChangePolicy({ policy, onClose, onAsked }: { policy: Policy | null; onC
     },
   });
   const members = useQuery({ queryKey: ["members", "policies"], queryFn: listMembers, enabled: policy !== null });
+  const options = useQuery({ queryKey: ["approval-policy", "rule-options"], queryFn: ruleOptions, enabled: policy !== null });
   const [steps, setSteps] = useState<Step[] | null>(null);
+  const [rules, setRules] = useState<RuleDraft[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [error, setError] = useState("");
   const current = steps ?? (detail.data ? stepsOf(detail.data.policy) : []);
+  const currentRules = rules ?? (detail.data ? rulesOf(detail.data.policy) : []);
+  const move = (i: number, by: number) => {
+    const next = [...currentRules];
+    const [r] = next.splice(i, 1);
+    if (r) next.splice(i + by, 0, r);
+    setRules(next);
+  };
   const ask = helpText("approval-policy.change");
 
   const close = () => {
     setSteps(null);
+    setRules(null);
     setProblem(null);
     setError("");
     onClose();
@@ -146,9 +279,20 @@ function ChangePolicy({ policy, onClose, onAsked }: { policy: Policy | null; onC
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!policy || !detail.data) return;
-    const empty = current.findIndex((s) => (s.who === "roles" && s.roles.length === 0) || (s.who === "users" && s.users.length === 0));
+    const unnamed = (s: Step) => (s.who === "roles" && s.roles.length === 0) || (s.who === "users" && s.users.length === 0);
+    const empty = current.findIndex(unnamed);
     if (empty >= 0) {
       setError(`Step ${empty + 1}: choose at least one ${current[empty]?.who === "roles" ? "role" : "member"}, or let anyone who may approve sign it.`);
+      return;
+    }
+    const blank = currentRules.findIndex((r) => !r.amount.trim() && !r.departments.length && !r.accounts.length && !r.vendors.length);
+    if (blank >= 0) {
+      setError(`Rule ${blank + 1}: set an amount, departments, accounts or vendors, or remove the rule.`);
+      return;
+    }
+    const ruleStep = currentRules.findIndex((r) => r.steps.some(unnamed));
+    if (ruleStep >= 0) {
+      setError(`Rule ${ruleStep + 1}: each step names at least one role or member, or lets anyone who may approve sign it.`);
       return;
     }
     setError("");
@@ -156,7 +300,16 @@ function ChangePolicy({ policy, onClose, onAsked }: { policy: Policy | null; onC
     setProblem(null);
     const key = newKey();
     const body = {
-      steps: current.map((s) => ({ quorum: s.quorum, ...(s.who === "roles" ? { roles: s.roles } : {}), ...(s.who === "users" ? { users: s.users } : {}) })),
+      steps: current.map(stepBody),
+      rules: currentRules.map((r) => ({
+        conditions: {
+          ...(r.amount.trim() ? { amount_at_least: r.amount.trim() } : {}),
+          ...(r.departments.length ? { departments: r.departments } : {}),
+          ...(r.accounts.length ? { accounts: r.accounts } : {}),
+          ...(r.vendors.length ? { vendors: r.vendors } : {}),
+        },
+        steps: r.steps.map(stepBody),
+      })),
     };
     const etag = detail.data.etag;
     const out = await guarded(confirm, () =>
@@ -186,6 +339,7 @@ function ChangePolicy({ policy, onClose, onAsked }: { policy: Policy | null; onC
       {problem && <Refusal problem={problem} title="The change was not asked for" />}
       {detail.data && (
         <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+          <h3 className="fy-h3">Default steps</h3>
           {current.map((s, i) => (
             <StepEditor
               key={i}
@@ -196,16 +350,43 @@ function ChangePolicy({ policy, onClose, onAsked }: { policy: Policy | null; onC
               onRemove={current.length > 1 ? () => setSteps(current.filter((_, j) => j !== i)) : undefined}
             />
           ))}
+          <Button type="button" size="sm" className="self-start" disabled={current.length >= 5} onClick={() => setSteps([...current, { quorum: 1, who: "anyone", roles: [], users: [] }])}>
+            <Icon of={Plus} />
+            Add a step
+          </Button>
+          <section className="fy-stack fy-stack--3" aria-labelledby="policy-rules">
+            <h3 className="fy-h3" id="policy-rules">
+              Rules
+            </h3>
+            <p className="fy-small fy-secondary">
+              Checked in order before the steps above: the first rule whose conditions all hold decides who approves a change instead. Leave them out to use the steps
+              above for every change.
+            </p>
+            {currentRules.map((r, i) => (
+              <RuleEditor
+                key={i}
+                n={i + 1}
+                rule={r}
+                members={members.data ?? []}
+                options={options.data ?? { departments: [], accounts: [], vendors: [] }}
+                onChange={(next) => setRules(currentRules.map((x, j) => (j === i ? next : x)))}
+                onUp={i > 0 ? () => move(i, -1) : undefined}
+                onDown={i < currentRules.length - 1 ? () => move(i, 1) : undefined}
+                onRemove={() => setRules(currentRules.filter((_, j) => j !== i))}
+              />
+            ))}
+            <Button type="button" size="sm" className="self-start" disabled={currentRules.length >= 10}
+              onClick={() => setRules([...currentRules, { amount: "", departments: [], accounts: [], vendors: [], steps: [{ quorum: 1, who: "anyone", roles: [], users: [] }] }])}>
+              <Icon of={Plus} />
+              Add a rule
+            </Button>
+          </section>
           {error && (
             <p className="fy-error" role="alert">
               {error}
             </p>
           )}
-          <div className="fy-row fy-row--wrap justify-between">
-            <Button type="button" size="sm" disabled={current.length >= 5} onClick={() => setSteps([...current, { quorum: 1, who: "anyone", roles: [], users: [] }])}>
-              <Icon of={Plus} />
-              Add a step
-            </Button>
+          <div className="fy-row fy-row--wrap justify-end">
             <Button variant="primary" type="submit" disabled={busy} title={ask.tooltip}>
               <Icon of={Stamp} />
               {busy ? "Asking…" : "Ask for this policy"}
@@ -286,7 +467,10 @@ export function ApprovalPolicies() {
                   </span>
                   <span className="fy-list__main">
                     <span className="fy-list__title whitespace-normal">{objectLabel(p.object_type)}</span>
-                    <span className="fy-list__meta whitespace-normal">{(p.steps ?? []).map((s, i) => `Step ${i + 1}: ${stepWho(s)}`).join(" · ")}</span>
+                    <span className="fy-list__meta whitespace-normal">
+                      {(p.steps ?? []).map((s, i) => `Step ${i + 1}: ${stepWho(s)}`).join(" · ")}
+                      {(p.rules ?? []).length ? ` · ${(p.rules ?? []).length === 1 ? "1 rule" : `${(p.rules ?? []).length} rules`} before them` : ""}
+                    </span>
                     <span className="fy-list__meta whitespace-normal">
                       {p.built_in ? "Built-in policy" : `Version ${p.number}`} · approvers hold A on "{p.row}"
                     </span>

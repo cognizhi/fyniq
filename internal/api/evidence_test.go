@@ -159,6 +159,7 @@ func TestEvidenceOnADraftJournal(t *testing.T) {
 // req: FR-DOC-01
 // req: FR-DOC-08
 // req: FR-DOC-09
+// req: G4-069
 // asvs: V5.2.1, V5.2.2
 func TestEvidenceRefusals(t *testing.T) {
 	e := newEnv(t)
@@ -229,6 +230,7 @@ func TestEvidenceAIProposesAndIntegrationsUpload(t *testing.T) {
 // req: FR-DOC-13
 // req: FR-DOC-02
 // req: C.2 #31
+// req: G4-069
 // asvs: V16.2.1
 func TestEvidenceOnAPostedJournalIsCommitted(t *testing.T) {
 	e := newEnv(t)
