@@ -45,7 +45,7 @@ only write path to `user_identity`).
 
 | Threat | Control | Test that proves it (`// req:` and `// asvs:`) |
 |---|---|---|
-| T1 | Identities are (issuer, subject) pairs; a sign-in with an unknown pair signs nobody in, whatever its email; only `link_identity` adds a pair to a user | `TestYourSignIns` (FR-ADM-08; V6.8.1) |
+| T1 | Identities are (issuer, subject) pairs; a sign-in with an unknown pair signs nobody in, whatever its email; only `link_identity` adds a pair to a user. Such a sign-in whose verified email is a member's is recorded (`session.email_matched`, linked false) against the member in each of their organisations' trails, its actor the provider and a hash of the pair, never the subject (`email_matches`, migration 000440; G4-061) | `TestYourSignIns` (FR-ADM-08, G4-061; V6.8.1) |
 | T2 | Linking needs a session whose second factor is less than 5 minutes old, checked when the link starts, and again by `link_identity` (FY270) when it completes; every link is notified at once | `TestLinkingASignInAddsItToTheSessionsUser`, `TestYourSignIns` (V7.5.1) |
 | T3 | The link starts only with `Sec-Fetch-Site: same-origin` (AUTH-SIGNIN-05) | `TestLinkingASignInAddsItToTheSessionsUser`, `TestYourSignIns` |
 | T4 | The provider's answer is bound to the browser that started the link by the start cookie's seed (state, nonce, PKCE), as a sign-in is; the link goes to the session in the same browser | `TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan`, `TestLinkingASignInAddsItToTheSessionsUser` |
