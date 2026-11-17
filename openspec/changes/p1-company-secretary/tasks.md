@@ -25,9 +25,25 @@
 
 ## 2. The corporate profile
 
-- [ ] 2.1 `corporate_detail` (name, registered office, SSIC, effective-dated) and `corporate_officer` (directors, the
+- [x] 2.1 `corporate_detail` (name, registered office, SSIC, effective-dated) and `corporate_officer` (directors, the
   secretary, auditors, the CEO, nominee directors): migrations, guards, grants, the storage port and the postgres
   adapter, with attack tests (design D2). Tests `// req: FR-CS-01`, `// req: FR-CS-06`.
+  As built:
+  - Both are document types in the document store, as the equity register's records are, so its port, adapter, grants,
+    versions and evidence serve them: drafted, then recorded on another person's approval with a file attached, and
+    never changed after. Migration 000392 adds the types, their approval operations and the guard
+    `corporate_record_guard` (FY352 a detail, FY353 an officer); 000393 validates the widened checks.
+  - A detail holds the name, the office, a five-digit SSIC code from a day, and the day it was lodged; the one in force
+    on a day is the latest recorded to take effect by then (a correction of the same day wins).
+  - An officer is one appointment: a role, a name, the member they sign in as if any, an individual's identifier as its
+    last 4 characters (an audit firm's UEN), the days appointed and ceased and the day each was lodged, and a nominee
+    director with whom they act for. A later version (a cessation, a lodgement, a correction) names the first and needs
+    one recorded; the last recorded is in force. A director, the secretary and the CEO must be individuals.
+  - The owner's decision of 16 Nov 2026 (rev 0.282): Appendix D gains the row "Corporate profile and registers" (Owner
+    and Finance controller A, Accountant C, Auditor, Tax agent and Board viewer V, DPO M, AI V). The API for these two
+    records is built here (part of 2.3): `getCorporateProfile` on a day, and create, get, replace, ask and evidence for
+    each, with the matrix's rows. An officer never approves their own appointment (FM-1). The officers are a class of
+    the data inventory; the tenant export already carries every document.
 - [ ] 2.2 `nominee_shareholding` and `statements_approval` (the directors' approval of a financial year's statements):
   the same (design D2, D4). Tests `// req: FR-CS-01`, `// req: FR-CS-03`.
 - [ ] 2.3 The API: the profile, its officers, nominees and approvals, each recorded forward with Idempotency-Key and

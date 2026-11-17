@@ -82,7 +82,9 @@
         "ai_connection",
         "ai_data_policy",
         "ai_route",
-        "ai_proposal"
+        "ai_proposal",
+        "corporate_detail",
+        "corporate_officer"
       ],
       "examples": [
         "organisation_setting"

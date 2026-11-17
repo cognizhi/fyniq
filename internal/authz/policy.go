@@ -42,6 +42,7 @@ const (
 	ExpenseClaims       Capability = "Expense claims"
 	DirectorAccounts    Capability = "Director accounts, settlements, share issues (rev 0.3)"
 	CapTable            Capability = "Cap table, holders, investors, equity transactions (rev 0.3)"
+	CorporateProfile    Capability = "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
 	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
 	KnowledgeBase       Capability = "Knowledge base: compiled pages and index (rev 0.4)"
 	AICompanySecretary  Capability = "AI company secretary: enable, schedule, runs and drafts (rev 0.6)" // #nosec G101 -- a permission row's name, not a credential
@@ -83,7 +84,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -121,10 +122,10 @@ const (
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
-// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258).
+// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258); recording the corporate profile's records (FR-CS-01, rev 0.282).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -186,6 +187,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	CapTable: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {"V", "own grants"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "own holding; all if granted"}, "DPO": {"M", ""}, "AI": {"", "Scenarios only, if `fyniq.read.equity` granted"},
+	},
+	CorporateProfile: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"M", ""}, "AI": {"V", ""},
 	},
 	Evidence: {
 		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"", "Proposal (`doc.attach`)"},
@@ -1553,6 +1557,29 @@ var (
 	GetStatutoryTests              = Policy{Operation: "getStatutoryTests", Capability: CapTable, Need: View, Unqualified: true}
 )
 
+// The corporate profile (FR-CS-01, FR-CS-06; p1-company-secretary design D2, rev 0.282): the company's name, registered
+// office and SSIC code, and its officers, drafted by the Accountant and recorded on another person's approval with their
+// evidence; an officer never approves their own record.
+var (
+	GetCorporateProfile             = Policy{Operation: "getCorporateProfile", Capability: CorporateProfile, Need: View, Unqualified: true}
+	CreateCorporateDetail           = Policy{Operation: "createCorporateDetail", Capability: CorporateProfile, Need: Create}
+	GetCorporateDetail              = Policy{Operation: "getCorporateDetail", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateDetail          = Policy{Operation: "replaceCorporateDetail", Capability: CorporateProfile, Need: Create}
+	RequestCorporateDetailApproval  = Policy{Operation: "requestCorporateDetailApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddCorporateDetailEvidence      = Policy{Operation: "addCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateDetailEvidence     = Policy{Operation: "listCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateDetailEvidence      = Policy{Operation: "getCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateDetailEvidence   = Policy{Operation: "removeCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	CreateCorporateOfficer          = Policy{Operation: "createCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	GetCorporateOfficer             = Policy{Operation: "getCorporateOfficer", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateOfficer         = Policy{Operation: "replaceCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	RequestCorporateOfficerApproval = Policy{Operation: "requestCorporateOfficerApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the officer."}
+	AddCorporateOfficerEvidence     = Policy{Operation: "addCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateOfficerEvidence    = Policy{Operation: "listCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateOfficerEvidence     = Policy{Operation: "getCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateOfficerEvidence  = Policy{Operation: "removeCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+)
+
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
 // Accountant, who holds P on the cap table, with the business profile attached; read by whoever reads the whole table.
 var (
@@ -1963,7 +1990,10 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
 	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, GetFxRatesTemplate, ImportFxRates, GetBankRulesTemplate, ImportBankRules, GetOpeningBalancesTemplate, ImportOpeningBalances, GetBudgetsTemplate, ImportBudgets, RequestTenantExport, ListTenantExports, CreateTenantExportDownload, GetTenantExportDownload, ListAIConnections, GetAIConnection, CreateAIConnection, ChangeAIConnection, SetAIConnectionCredential, EnableAIConnection, DisableAIConnection, GetAIDataPolicy, ChangeAIDataPolicy, GetAIConnectionModels, RefreshAIConnectionModels, ProbeAIConnectionModel, AllowAIConnectionModel, RemoveAIConnectionModel, ListAIPriceCatalogues, ReviewAIPrice, PriceAIConnectionModel, WithdrawAIPrice, GetAIRoutes, GetAIRoute, SetAIRoute, GetAIPresets, GetAIBudgets, SetAIBudget, GetAIUsage, QualifyAIConnectionModel, ListAIActivity, CreateAIConversation, ListAIConversations, GetAIConversation, DeleteAIConversation, AskAIConversation, ListAITurnActivity, GiveAIFeedback, ListAIFeedback, ReviewAIFeedback, ListAIProposals, GetAIProposal, ListAITaskTypes, ListComplianceTasks, GetComplianceTask, CompleteComplianceTask, DismissComplianceTask, GetCompanySecretary, ListAgentRuns, GetAgentRun, RunCompanySecretary, GetAISettings, SwitchOffAI, GetAIInventory, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
-	GetFeasibilityResults)
+	GetFeasibilityResults, GetCorporateProfile, CreateCorporateDetail, GetCorporateDetail, ReplaceCorporateDetail, RequestCorporateDetailApproval,
+	AddCorporateDetailEvidence, ListCorporateDetailEvidence, GetCorporateDetailEvidence, RemoveCorporateDetailEvidence, CreateCorporateOfficer,
+	GetCorporateOfficer, ReplaceCorporateOfficer, RequestCorporateOfficerApproval, AddCorporateOfficerEvidence, ListCorporateOfficerEvidence,
+	GetCorporateOfficerEvidence, RemoveCorporateOfficerEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

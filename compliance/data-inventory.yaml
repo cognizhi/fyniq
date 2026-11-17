@@ -107,6 +107,15 @@ classes:
     protection: "A file that shows an NRIC or FIN in full is flagged when attached (FR-DOC-09)"
     transfers: "None"
     columns: [evidence.nric_flagged]
+  - key: corporate-officers
+    what: "The company's officers (directors, the secretary, the CEO and auditors): their names, the last 4 characters of an individual's identifier, the days they were appointed and ceased, whether a director is a nominee and for whom, and the member they sign in as"
+    why: "To keep the corporate profile ACRA's registers mirror, its lodgement deadlines and the company secretary's checks (FR-CS-01, FR-CS-06)"
+    where: "The database, in Singapore, in the corporate_officer documents' versions; their evidence (consents to act, BizFile+ acknowledgements) in the document store"
+    who: "Appendix D's Corporate profile and registers (rev 0.282): the Accountant prepares, the Owner and the Finance controller approve, the Auditor, the Tax agent and the Board viewer view, the DPO views masked; the AI within the user's rights"
+    retention: "The records' retention (retention.records_years), as the registers ACRA keeps them for"
+    protection: "Never a full NRIC or FIN: only its last 4 characters, refused in full by the database (FY353, SEC-15); the DPO reads the identifiers masked; recorded versions never change"
+    transfers: "None"
+    columns: [document_version.payload]
   - key: workbook-migration
     what: "The finance workbook uploaded for the move to Fyniq: its employees' names, departments and monthly pay, and its contacts and records"
     why: "To import the books and prove the import against the workbook (FR-MIG-01, FR-MIG-02, §17.1)"

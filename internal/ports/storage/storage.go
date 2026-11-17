@@ -717,6 +717,14 @@ const (
 	// design D10): the grounds, the register days and the yearly notices, or the reason they are not one, recorded on
 	// another person's approval with the company secretary's confirmation attached.
 	DocumentControllerEntry DocumentType = "controller_entry"
+	// DocumentCorporateDetail is the company's name, registered office and SSIC code from a day (FR-CS-01,
+	// p1-company-secretary design D2), recorded on another person's approval with its evidence; the one in force on a day
+	// is the latest recorded to take effect by then.
+	DocumentCorporateDetail DocumentType = "corporate_detail"
+	// DocumentCorporateOfficer is one appointment of a director, the secretary, an auditor or the CEO (FR-CS-01,
+	// FR-CS-06, design D2), with its days and lodgements, recorded on another person's approval with its evidence; a
+	// later version names the first, and the last recorded is in force.
+	DocumentCorporateOfficer DocumentType = "corporate_officer"
 	// DocumentAcraExtract is ACRA's register of members as a business profile gives it (FR-EQ-26, design D11): its day
 	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
 	// supersedes it.
@@ -1014,6 +1022,13 @@ const (
 	// CodeControllerEntry: a controller entry keeps its own keys, a holder marked shareholder or investor, grounds for a
 	// controller and a reason for one who is not, and its days in order (FY296).
 	CodeControllerEntry = "STORAGE-SHARE-10"
+	// CodeCorporateDetail: a corporate detail keeps its own keys, a day, a name, an office, a five-digit SSIC code, its
+	// lodgement on or after it, and no NRIC or FIN in full (FY352).
+	CodeCorporateDetail = "STORAGE-CORP-01"
+	// CodeCorporateOfficer: an officer keeps their own keys, a known role, a natural person unless an auditor, an
+	// identifier as its last 4 characters, the days in order, a nominee only as a director, a member of the organisation,
+	// and no NRIC or FIN in full (FY353).
+	CodeCorporateOfficer = "STORAGE-CORP-02"
 	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
 	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
 	CodeAcraExtract = "STORAGE-SHARE-11"

@@ -230,6 +230,7 @@ func Config(version string) huma.Config {
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
 		{Name: "Equity", Description: "The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17)."},
+		{Name: "Corporate profile", Description: "The corporate profile (§9.12): the company's name, registered office and SSIC code from a day, and its officers (directors, the secretary, the CEO and auditors) with their days and lodgements, each recorded on another person's approval with its evidence (FR-CS-01, FR-CS-06)."},
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
 		{Name: "Migration", Description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."},
@@ -396,6 +397,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerOptionEvents(a)
 	registerRoundScenarios(a)
 	registerHolderRights(a)
+	registerCorporateProfile(a)
 	registerAcra(a)
 	registerGSTMonitor(a)
 	registerCalendar(a)
