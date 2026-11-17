@@ -12548,6 +12548,104 @@ Asks another person to approve a drafted corporate detail at the version read (F
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CORP-01`, `CORP-02`, `EQUITY-05`, `EQUITY-06`, `STORAGE-CORP-01`, `STORAGE-CORP-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/corporate-profile/documents`
+
+**Draft a corporate document** (`createCorporateDocument`)
+
+Drafts a corporate document from one of Fyniq's templates (FR-CS-05; DraftCorporateDocument): its kind, with the fields getCorporateTemplates says it asks for, filled from the records on today: the company's name, UEN and registered office, and the directors, the secretary or the members who sign it. The draft is a paper to review, download as PDF with getCorporateDocumentPDF and have signed outside Fyniq: Fyniq never signs or files it. The Owner drafts one too, as they approve the AI's sec.draft_document. Side effects: the draft, audit events. Every problem comes back together, each naming its field. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the paper.
+
+- **Permission:** Create on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282). The Owner drafts one too, as they approve sec.draft_document (Appendix E); a draft is never signed or filed.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CorporateDocumentDraft`](../../contracts/schemas/CorporateDocumentDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CorporateDocumentView`](../../contracts/schemas/CorporateDocumentView.schema.json)
+  - `201` Created [`CorporateDocumentView`](../../contracts/schemas/CorporateDocumentView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CORP-05`, `EQUITY-05`, `STORAGE-CORP-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/corporate-profile/documents/{document_id}`
+
+**Get a corporate document** (`getCorporateDocument`)
+
+Returns a corporate document with its ETag: its kind, template, fields and text as filled from the records on the day it was drafted (FR-CS-05). The DPO sees what it is, not its fields or text. Read-only; no side effects.
+
+- **Permission:** View on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)
+- **Parameters:**
+  - `document_id` (path, required): The corporate document.
+- **Responses:**
+  - `200` OK [`CorporateDocumentView`](../../contracts/schemas/CorporateDocumentView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/corporate-profile/documents/{document_id}`
+
+**Draft a corporate document again** (`replaceCorporateDocument`)
+
+Saves a new version of a drafted corporate document: its fields filled again from the records on today (FR-CS-05); its kind stays. A recorded one changes no more (EQUITY-05). Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)
+- **Parameters:**
+  - `document_id` (path, required): The corporate document.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CorporateDocumentChange`](../../contracts/schemas/CorporateDocumentChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CorporateDocumentView`](../../contracts/schemas/CorporateDocumentView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CORP-05` The corporate document does not fit; `STORAGE-CORP-05` The corporate document does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CORP-05`, `EQUITY-05`, `STORAGE-CORP-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/corporate-profile/documents/{document_id}/pdf`
+
+**Get a corporate document as PDF** (`getCorporateDocumentPDF`)
+
+The document's text as filled on the day it was drafted, as a PDF to print and sign (FR-CS-05): archival (PDF/A-2a) and accessible (PDF/UA-1), with a line to sign for each signer and a banner saying it is Fyniq's draft, never signed or filed by Fyniq. The same version gives the same bytes. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. The DPO, who sees no text, gets its name with the content masked, and nothing is rendered. Side effects: an audit event of the download, with the file's hash (AUD-05). Never cached.
+
+- **Permission:** View on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)
+- **Parameters:**
+  - `document_id` (path, required): The corporate document.
+- **Responses:**
+  - `200` OK [`DocumentFile`](../../contracts/schemas/DocumentFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/corporate-profile/nominees`
 
 **Draft a nominee entry, or a later version of one** (`createNomineeEntry`)
@@ -12888,6 +12986,22 @@ Asks another person to approve a drafted statements approval at the version read
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CORP-03`, `CORP-04`, `EQUITY-05`, `EQUITY-06`, `STORAGE-CORP-03`, `STORAGE-CORP-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/corporate-profile/templates`
+
+**Get the corporate document templates** (`getCorporateTemplates`)
+
+Returns Fyniq's corporate templates (FR-CS-05): directors' resolutions approving the financial statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment or changing the registered office; a members' written resolution; the AGM's notice and minutes; and the notice that the statements were sent without an AGM (s175A). Each with its version, who signs it and the fields it asks for. The templates are Fyniq's, which a lawyer has yet to confirm. Read-only; no side effects.
+
+- **Permission:** View on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)
+- **Responses:**
+  - `200` OK [`CorporateTemplates`](../../contracts/schemas/CorporateTemplates.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
 ## Operations
 

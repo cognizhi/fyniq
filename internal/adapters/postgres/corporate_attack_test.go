@@ -220,3 +220,43 @@ func TestAttackAcraExtractOfficersKeepTheirRules(t *testing.T) {
 		}
 	}
 }
+
+// A corporate document keeps its rules whoever writes it (FR-CS-05; FY356): its own keys, a known kind, a template named
+// for its kind with a version, its fields and paper as objects, signed on or after it was drafted, a note of at most
+// 1,000 characters, and no NRIC or FIN in full anywhere in it.
+// req: FR-CS-05
+// asvs: V8.2.1, V8.3.1
+func TestAttackCorporateDocumentsKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack corporate documents Pte Ltd")
+	api := store(t, "fyniq_api")
+	create := func(payload string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentCorporateDocument, Payload: []byte(payload)})
+			return err
+		})
+	}
+	doc := `{"date":"2027-01-05","kind":"directors.approve_statements","template":"directors.approve_statements@1","fields":{"fy_end":"2026-12-31"},` +
+		`"paper":{"title":"Directors' resolution in writing","sections":[{"items":["That the statements be approved."]}]}%s}`
+	if err := create(fmt.Sprintf(doc, `,"signed_on":"2027-01-10","note":"For the AGM"`)); err != nil {
+		t.Fatalf("a corporate document as its rules allow: %v", err)
+	}
+	for name, payload := range map[string]string{
+		"a key of its own":              fmt.Sprintf(doc, `,"signed_by":"Tan Mei Lin"`),
+		"an unknown kind":               strings.Replace(fmt.Sprintf(doc, ``), `"kind":"directors.approve_statements"`, `"kind":"directors.sell_company"`, 1),
+		"another kind's template":       strings.Replace(fmt.Sprintf(doc, ``), `"template":"directors.approve_statements@1"`, `"template":"agm.notice@1"`, 1),
+		"a template with no version":    strings.Replace(fmt.Sprintf(doc, ``), `@1"`, `"`, 1),
+		"a template whose dot is any":   strings.Replace(fmt.Sprintf(doc, ``), `"template":"directors.approve_statements@1"`, `"template":"directorsXapprove_statements@1"`, 1),
+		"fields that are not an object": strings.Replace(fmt.Sprintf(doc, ``), `{"fy_end":"2026-12-31"}`, `["2026-12-31"]`, 1),
+		"no paper":                      strings.Replace(fmt.Sprintf(doc, ``), `"paper":{"title":"Directors' resolution in writing","sections":[{"items":["That the statements be approved."]}]}`, `"paper":"text"`, 1),
+		"signed before it was drafted":  fmt.Sprintf(doc, `,"signed_on":"2027-01-04"`),
+		"a note of 1,001 letters":       fmt.Sprintf(doc, `,"note":"`+strings.Repeat("x", 1001)+`"`),
+		"an NRIC in full in its paper":  strings.Replace(fmt.Sprintf(doc, ``), `That the statements be approved.`, `That S1234567D be appointed.`, 1),
+		"an NRIC in full in a field":    strings.Replace(fmt.Sprintf(doc, ``), `{"fy_end":"2026-12-31"}`, `{"fy_end":"2026-12-31","name":"Tan T7654321A"}`, 1),
+		"no day":                        strings.Replace(fmt.Sprintf(doc, ``), `"date":"2027-01-05",`, ``, 1),
+	} {
+		if err := create(payload); storage.CodeOf(err) != storage.CodeCorporateDocument {
+			t.Errorf("a corporate document with %s: %v", name, err)
+		}
+	}
+}

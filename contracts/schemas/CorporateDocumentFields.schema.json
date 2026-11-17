@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "A change of office: the new registered office.",
+      "examples": [
+        "71 Ayer Rajah Crescent, #03-11, Singapore 139951"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "allottee": {
+      "description": "An allotment: whom the shares are allotted to.",
+      "examples": [
+        "Lion Rock Fund I"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "chair": {
+      "description": "The AGM's minutes: who chaired it.",
+      "examples": [
+        "Tan Mei Lin"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "circulated_on": {
+      "description": "A members' written resolution: the day it is sent to the members.",
+      "examples": [
+        "2027-04-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "from": {
+      "description": "An appointment or a change of office: the day it takes effect.",
+      "examples": [
+        "2027-01-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fy_end": {
+      "description": "The financial year's last day: approving its statements, the AGM's notice and minutes, the notice that they were sent.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "meeting_on": {
+      "description": "The AGM's notice or minutes: the meeting's day.",
+      "examples": [
+        "2027-06-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "members_approved_on": {
+      "description": "An allotment: the day the members approved the issue (s161).",
+      "examples": [
+        "2027-01-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "An appointment: the officer's name.",
+      "examples": [
+        "Rachel Teo"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "notice_on": {
+      "description": "The AGM's notice: the day it is given.",
+      "examples": [
+        "2027-05-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "officer_id": {
+      "description": "A cessation: the secretary or CEO in office, by their first version's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7e01"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "on": {
+      "description": "A cessation: the day the appointment ends.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "other_business": {
+      "description": "The AGM's notice: other business, one a line.",
+      "examples": [
+        [
+          "To approve the directors' fees."
+        ]
+      ],
+      "items": {
+        "examples": [
+          "To approve the directors' fees."
+        ],
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "place": {
+      "description": "The AGM's notice or minutes: its place.",
+      "examples": [
+        "71 Ayer Rajah Crescent, #03-11, Singapore 139951"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "present": {
+      "description": "The AGM's minutes: who was present, one a line.",
+      "examples": [
+        [
+          "Tan Mei Lin",
+          "Ah Kow"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "Tan Mei Lin"
+        ],
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "price": {
+      "description": "An allotment: the price of each share in the base currency, a decimal string.",
+      "examples": [
+        "1.00"
+      ],
+      "pattern": "^[0-9]{1,12}(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "resolution_kind": {
+      "description": "A members' written resolution: ordinary or special.",
+      "examples": [
+        "ordinary"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "resolutions": {
+      "description": "A members' written resolution or the AGM's minutes: the resolutions, one a line.",
+      "examples": [
+        [
+          "That the financial statements be adopted."
+        ]
+      ],
+      "items": {
+        "examples": [
+          "That the financial statements be adopted."
+        ],
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "role": {
+      "description": "An appointment: the office, director, secretary, ceo or auditor.",
+      "examples": [
+        "secretary"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "sent_on": {
+      "description": "The notice that the statements were sent: the day they were sent to the members (s175A).",
+      "examples": [
+        "2027-04-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "share_class": {
+      "description": "An allotment: the shares' class.",
+      "examples": [
+        "ordinary"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "shares": {
+      "description": "An allotment: how many shares, a whole number with no commas.",
+      "examples": [
+        "10000"
+      ],
+      "pattern": "^[1-9][0-9]{0,14}$",
+      "type": "string"
+    },
+    "time": {
+      "description": "The AGM's notice or minutes: its time, 24-hour.",
+      "examples": [
+        "10:30"
+      ],
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+      "type": "string"
+    }
+  },
+  "title": "CorporateDocumentFields",
+  "type": "object"
+}

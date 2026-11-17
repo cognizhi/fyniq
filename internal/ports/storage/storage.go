@@ -732,6 +732,10 @@ const (
 	// DocumentStatementsApproval is the directors' approval of a financial year's statements (FR-CS-03, C.2 #33, design
 	// D4): the year's end, the day approved and the day sent to the members, recorded with its evidence.
 	DocumentStatementsApproval DocumentType = "statements_approval"
+	// DocumentCorporateDocument is a resolution, a notice or minutes drafted from one of Fyniq's templates and filled
+	// from the records on its day (FR-CS-05, design D6): a draft to review and have signed, never signed or filed by
+	// Fyniq; recorded with its signed copy on another person's approval, it is an entry of the minute book.
+	DocumentCorporateDocument DocumentType = "corporate_document"
 	// DocumentAcraExtract is ACRA's register of members as a business profile gives it (FR-EQ-26, design D11): its day
 	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
 	// supersedes it.
@@ -1042,6 +1046,9 @@ const (
 	// CodeStatementsApproval: a statements approval keeps its own keys, a year's end, and the days approved and sent after
 	// it, in order (FY355).
 	CodeStatementsApproval = "STORAGE-CORP-04"
+	// CodeCorporateDocument: a corporate document keeps its own keys, a known kind, its template's kind and version, its
+	// fields and its paper, and no NRIC or FIN in full (FY356).
+	CodeCorporateDocument = "STORAGE-CORP-05"
 	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
 	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
 	CodeAcraExtract = "STORAGE-SHARE-11"
