@@ -23744,6 +23744,10 @@ components:
             - person_bank_change
             - founders
             - owner_succession
+            - equity
+            - filing
+            - gst_forecast
+            - corporate
           examples:
             - bill
           type: string
@@ -45505,6 +45509,8 @@ components:
               - founders
               - owner_succession
               - equity
+              - filing
+              - gst_forecast
               - corporate
             examples:
               - bill
@@ -125604,6 +125610,10 @@ paths:
               - person_bank_change
               - founders
               - owner_succession
+              - equity
+              - filing
+              - gst_forecast
+              - corporate
             examples:
               - bill
             type: string

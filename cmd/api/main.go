@@ -73,7 +73,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 			hooks = signin.Hooks{
 				Alert: signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out),
-					signin.AuditSignIn(kit.Store, kit.Store), security.QueueSignInCheck(kit.Store, kit.Store, out)), // SEC-31: an admin's sign-in, checked by the worker
+					signin.AuditSignIn(kit.Store, kit.Store), signin.AuditEmailMatch(kit.Store, kit.Store), // G4-061: another identity with a member's email
+					security.QueueSignInCheck(kit.Store, kit.Store, out)), // SEC-31: an admin's sign-in, checked by the worker
 				Linked:    signin.NotifyLink(kit.Store, kit.Store, out),
 				SignedOut: signin.AuditSignOut(kit.Store, kit.Store),
 			}

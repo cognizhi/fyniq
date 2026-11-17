@@ -17,6 +17,8 @@
           "founders",
           "owner_succession",
           "equity",
+          "filing",
+          "gst_forecast",
           "corporate"
         ],
         "examples": [

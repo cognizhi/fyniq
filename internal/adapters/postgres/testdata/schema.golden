@@ -7885,6 +7885,7 @@ document_version_created_by() → trigger | security invoker | v | search_path=p
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 dpia_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 219729e646b308525974d7a3aabdfd87
 email_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 990580601ef047ba0fb748308b38b333
+email_matches(p_email text, p_issuer text, p_subject text) → TABLE(organisation_id uuid, user_id uuid) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d53b8f7526007ea9c3d6dc1019c8277a
 email_message_executor_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5524095d97232cd2a609e73a8e80dabd
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b6a284761fd3d84057f1716d568cfe8c

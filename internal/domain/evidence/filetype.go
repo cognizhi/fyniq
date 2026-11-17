@@ -3,10 +3,12 @@ package evidence
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -65,6 +67,35 @@ func Sniff(data []byte, name string) (mediaType string, ok bool) {
 		return CSV, true
 	}
 	return Text, true
+}
+
+// heifBrands are the brands of an ISO base media file that hold HEVC pictures: an iPhone's HEIC photo.
+var heifBrands = []string{"heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs"}
+
+// IsHEIC reports whether data is a HEIC picture by its file-type box: its major brand, or a generic HEIF brand (mif1,
+// msf1) with a HEVC brand among the compatible ones. It is refused with its own message until its conversion to
+// JPEG is built (FR-DOC-08, rev 0.38).
+func IsHEIC(data []byte) bool {
+	if len(data) < 16 || string(data[4:8]) != "ftyp" {
+		return false
+	}
+	size := int(binary.BigEndian.Uint32(data[:4]))
+	if size < 16 || size > len(data) || size > 4096 {
+		size = min(len(data), 4096)
+	}
+	major := string(data[8:12])
+	if slices.Contains(heifBrands, major) {
+		return true
+	}
+	if major != "mif1" && major != "msf1" {
+		return false
+	}
+	for i := 16; i+4 <= size; i += 4 { // the compatible brands, after the minor version
+		if slices.Contains(heifBrands, string(data[i:i+4])) {
+			return true
+		}
+	}
+	return false
 }
 
 // officeType tells an XLSX from a DOCX by its parts; any other ZIP is refused.
@@ -174,23 +205,25 @@ func isText(data []byte) bool {
 	return true
 }
 
-// SafeName keeps a file's name as data (FR-DOC-08): its last path element, with control characters
-// replaced, at most 255 characters; "file" when nothing is left. It is never used as a path or a key.
+// SafeName keeps a file's name as data (FR-DOC-08): its last path element, with control characters, line
+// separators and invisible format characters replaced (a right-to-left override makes "invoice\u202efdp.exe" read as
+// a PDF), at most 255 characters, no space at either end; "file" when nothing is left. It is never used as a path or
+// a key, and a safe name is its own safe name.
 func SafeName(name string) string {
 	if i := strings.LastIndexAny(name, `/\`); i >= 0 {
 		name = name[i+1:]
 	}
 	name = strings.ToValidUTF8(name, "_")
 	name = strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) || r == unicode.ReplacementChar {
+		if unicode.IsControl(r) || unicode.In(r, unicode.Cf, unicode.Zl, unicode.Zp) || r == unicode.ReplacementChar {
 			return '_'
 		}
 		return r
 	}, name)
-	name = strings.TrimSpace(name)
 	if r := []rune(name); len(r) > 255 {
 		name = string(r[:255])
 	}
+	name = strings.TrimSpace(name)
 	if name == "" || name == "." || name == ".." {
 		return "file"
 	}

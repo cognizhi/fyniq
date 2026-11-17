@@ -606,6 +606,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-16] compile | docs/user-guide/ai-proposals.md → ai.proposals-approve (sec.draft_document, FR-CS-05)
 
+## [2026-11-17] compile | docs/user-guide/evidence-search.md → compliance.evidence (files open from the search, only my files, show more, filings and GST forecasts searched, a filing missing its acknowledgement)
+
+## [2026-11-17] compile | docs/user-guide/journals.md, docs/user-guide/bills.md → accounting.journals, purchases.bills (a HEIC photo is not accepted yet: export it as JPEG)
+
 ## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)
 
 ## [2026-11-17] compile | docs/user-guide/statutory-calendar.md → compliance.record-filing, compliance.calendar (the Company secretary records the corporate items, PRD-001 rev 0.285)
