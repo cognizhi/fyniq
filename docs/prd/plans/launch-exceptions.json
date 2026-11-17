@@ -240,6 +240,12 @@
    "kind": "after-go-live",
    "why": "The hourly cost is a person's cost rate for projects (FR-PRJ-06: salary and employer CPF over the standard hours), which comes with p1-projects after go-live.",
    "decision": "rev 0.146 (the owner's decisions of 26 Oct 2026 on open question 25: p1-projects follows go-live, displaced by expense claims and payment files)"
+  },
+  {
+   "id": "G4-058",
+   "kind": "after-go-live",
+   "why": "Self-approving an AI-drafted tier-2 journal needs a tier-2 task type; launch's catalogue holds only the company secretary's tier-1 ones, so it is built and proved with the first tier-2 task types, and until then a tier-2 proposal's requester never approves it.",
+   "decision": "rev 0.286 (the owner's decision of 17 Nov 2026: G4-058 after go-live, with the first tier-2 task types)"
   }
  ]
 }
