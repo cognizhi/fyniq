@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 634 |
+| Covered by a tagged test | 636 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
 | Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
-| Untested, blocking | 86 |
+| Untested, blocking | 84 |
 
-Once the stacked chain (#645 to #743) merges, 42 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 40 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -62,21 +62,23 @@ Built behaviour that no test asserted in full:
 - QA-UI-03, FR-VIZ-04, FR-VIZ-07 and QA-IMG-01: `scripts/test_quality_checks.py` runs the contrast, palette and image
   checks on planted failures, and checks the sequential and diverging scales from the tokens.
 
-### Gates built (2)
+### Gates built (3)
 
 - QA-REL-01 (task 3.4): `scripts/release_policy.py` in CI fails a `fix` of calculation code without its test; the
   bug-fix skill has the root-cause record's template.
 - QA-MCP-01, the shell's part (task 6.3): the MCP shell exposes no tool and refuses every call with `MCP-OFF-01`,
   each refusal logged. The suite in full comes with `p1-mcp-first-party`, before any tool is exposed.
+- QA-SEC-05 (task 6.1): `internal/hostile`, one suite of hostile files, logos and exports, each refused, neutralised
+  or bounded.
 
-### Built in this change (14)
+### Built in this change (13)
 
-- Tasks 3 to 7 (12): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-UI-01, QA-UI-02,
-  QA-UI-06 with G4-104, QA-UI-07, QA-UI-08, QA-SEC-05 and QA-E2E-01.
+- Tasks 3 to 7 (11): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-03, QA-RPT-04, QA-PROD-01, QA-UI-01, QA-UI-02,
+  QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and QA-E2E-01.
 - Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
 
-### In their own change (28)
+### In their own change (27)
 
 - `p1-app-shell` (14): NFR-A11Y-03, NFR-A11Y-04, NFR-A11Y-05, NFR-PERF-UI-01, FR-UX-06, FR-UX-08, FR-UX-11, FR-UX-14,
   FR-UX-25, FR-UX-30, FR-UX-32, FR-UX-34 (the first-run tour, which QA-UI-06 waits for), FR-UX-37, G4-077.
@@ -93,9 +95,9 @@ Built behaviour that no test asserted in full:
 - `p1-users-roles` (2): SEC-07, its OAuth clients' classes, `private_key_jwt` and exact redirect URIs (task 3.1);
   G4-061, a refused sign-in matching an existing user's email, audited (FR-ADM-08).
 - `p1-public-api` (1): FR-INT-02, the integration clients and personal access tokens (task 3.1).
-- `p1-documents-evidence` (2): G4-068's contract, kept until the year its transactions complete (the bill's part is
-  `TestRetainUntil`); G4-069's staging sweeper, which the evidence package describes but nothing runs, and a locked
-  orphan found within one tick rather than by the daily retention check.
+- `p1-documents-evidence` (1): G4-068's contract, kept until the year its transactions complete (the bill's part is
+  `TestRetainUntil`). G4-069, first listed here, is covered: its staging sweep is built (`evidence.Sweep`, the hourly
+  `evidence.sweep` job) and was tagged with task 6.1.
 - `p1-operations-dr` (2): G4-073's dead row, shown on Checks with a replay (its unknown email outcome and its posting
   once are tested); G4-085, the assistant saying it is paused while postings, approvals and the deadline alert go on.
   The budget that stops the calls is `TestBudgetsAdmitOnlyWhatTheyCover`; the assistant is the chain's, so G4-085
