@@ -6,6 +6,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { PeriodClose } from "./PeriodClose";
+import { invalid } from "../../test/invalid";
 
 type Item = components["schemas"]["ChecklistItem"];
 
@@ -75,7 +76,7 @@ describe("the month's close checklist", () => {
     fireEvent.click(screen.getByRole("button", { name: "Skip: Payroll and CPF posted" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Skip" }));
-    expect(await within(dialog).findByText("Say why the task does not apply this month.")).toBeTruthy();
+    await invalid(dialog, "Why it does not apply this month", "Say why the task does not apply this month.");
     fireEvent.change(within(dialog).getByLabelText("Why it does not apply this month"), { target: { value: "No employees yet" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Skip" }));
     expect(await screen.findByText("Skipped for this month: Payroll and CPF posted. Run the checks again so they see it.")).toBeTruthy();

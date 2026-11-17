@@ -78,6 +78,12 @@ const operations: Record<Approval["operation"], string> = {
   "ai_connection.allow_model": "Allow a model on an AI provider's connection",
   "ai_connection.price": "Price a model on an AI provider's connection",
   "ai_route.change": "Change an AI agent's route",
+  "ai_proposal.execute": "Approve a change the AI proposed",
+  "corporate_detail.record": "Record the company's name, registered office and SSIC code",
+  "corporate_officer.record": "Record an officer's appointment or its change",
+  "nominee_entry.record": "Record a nominee director or shareholder",
+  "statements_approval.record": "Record the directors' approval of the financial statements",
+  "corporate_document.record": "Record a signed corporate document in the minute book",
 };
 
 export function operationLabel(op: string): string {
@@ -141,6 +147,12 @@ const objects: Record<string, string> = {
   ai_connection: "AI provider connection",
   ai_data_policy: "AI data-class policy",
   ai_route: "AI agent's route",
+  ai_proposal: "AI proposal",
+  corporate_detail: "Corporate details",
+  corporate_officer: "Officer",
+  nominee_entry: "Nominee entry",
+  statements_approval: "Statements approval",
+  corporate_document: "Corporate document",
 };
 
 export function objectLabel(t: string): string {

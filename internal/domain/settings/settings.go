@@ -17,6 +17,7 @@ import (
 
 	"github.com/cockroachdb/apd/v3"
 
+	"github.com/cognizhi/fyniq/internal/domain/cron"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -40,6 +41,19 @@ const (
 	AccountCode Kind = "account_code"
 	// Choice is one of the definition's Choices, such as "keep".
 	Choice Kind = "choice"
+	// Fields is a list of field names, such as "notes,memo": comma-separated, each lower-case words joined by underscores.
+	Fields Kind = "fields"
+	// TaskTypes is a list of the proposal catalogue's task types, such as "sec.create_task,sec.draft_reminder":
+	// comma-separated IDs; the API checks each is in the release's catalogue (AI-32).
+	TaskTypes Kind = "task_types"
+	// Cron is a schedule's entry: five cron fields in Singapore time, such as "0 7 * * *", or "off" (AI-62).
+	Cron Kind = "cron"
+	// TimeRange is a daily range in Singapore time, such as "22:00-07:00", or "off" (AI-62).
+	TimeRange Kind = "time_range"
+	// Choices are several of the definition's Choices, such as "inbox,email": comma-separated, in Choices' order.
+	Choices Kind = "choices"
+	// Tokens is a whole number of a model's tokens (AI-67).
+	Tokens Kind = "tokens"
 )
 
 // Definition is one setting: what it holds, its recommended value and why, and the rules a change to it meets.
@@ -53,7 +67,7 @@ type Definition struct {
 	Guide        string   // the guide page and section that explains it, such as /help/organisation-settings#features
 	Requirement  string   // the PRD requirement it implements
 	DualControl  bool     // FM-1: a change needs a second approver
-	OffAtOnce    bool     // a kill switch (AI-13): turning it off needs no second approver and takes effect as recorded
+	OffAtOnce    bool     // a kill switch (AI-13): turning it off, or narrowing it, needs no second approver and takes effect as recorded
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
@@ -69,10 +83,79 @@ var Catalogue = []Definition{
 	{Key: "accounting.signing_step_up", Group: "Approvals", Label: "Second factor to sign the accounting framework and policies", Kind: Switch, Recommended: "true",
 		Reason: "The accountant's signature turns management statements into financial statements, so it asks for a passkey or authenticator app, as other approvals do",
 		Guide:  guide + "accounting-sign-off", Requirement: "FR-ORG-10", DualControl: true},
+	// The company secretary's assistant, the first scheduled agent (§9.12; p1-scheduled-agents design D2). Its schedule
+	// and its enabling are dual-controlled (CTL-AI-09); turning it off, or pausing it, takes effect at once (AI-13).
+	{Key: "agents.company_secretary.after_close", Group: "Company secretary assistant", Label: "Run after each month's close", Kind: Switch, Recommended: "true",
+		Reason: "Checks the books against the registers once a month is closed, and reports what is new",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.channels", Group: "Company secretary assistant", Label: "How it tells them", Kind: Choices, Recommended: "inbox,email",
+		Choices: []string{"inbox", "email"},
+		Reason:  "Tasks and reports wait in the Inbox; an email says what is new, outside quiet hours",
+		Guide:   guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.cross_check", Group: "Company secretary assistant", Label: "Full cross-check", Kind: Cron, Recommended: "0 8 * * 1",
+		Reason: "Weekly on Monday at 08:00, Singapore time, with a summary for the directors",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.enabled", Group: "Company secretary assistant", Label: "Company secretary assistant", Kind: Switch, Recommended: "false",
+		Reason: "The agent is off until an Owner turns it on with a second approver; its runs then act for that Owner; turning it off takes effect at once",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-63", DualControl: true, OffAtOnce: true},
+	{Key: "agents.company_secretary.escalate_days", Group: "Company secretary assistant", Label: "Tell the Owner this many days before a deadline", Kind: Days,
+		Recommended: "7", Min: "1", Max: "30",
+		Reason: "A deadline a week away goes to the Owner too, whoever owns its task",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.events", Group: "Company secretary assistant", Label: "Events that start a run", Kind: Choices,
+		Recommended: "period_closed,shares_changed,filing_recorded,deadline_windows", Choices: []string{"period_closed", "shares_changed", "filing_recorded", "deadline_windows"},
+		Reason: "A run follows each event that changes what is due; the model drafts only what the event needs",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.fy_end_pack", Group: "Company secretary assistant", Label: "Run one month after the financial year ends", Kind: Switch, Recommended: "true",
+		Reason: "Prepares the year-end route: the financial statements, the AGM or its dispensation, the annual return and ECI",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.monitor", Group: "Company secretary assistant", Label: "Deadline and lodgement monitor", Kind: Cron, Recommended: "0 7 * * *",
+		Reason: "Daily at 07:00, Singapore time: the deterministic monitor, asking the model only if something changed",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.paused", Group: "Company secretary assistant", Label: "Paused", Kind: Switch, Recommended: "false",
+		Reason: "Pausing stops its runs at once and keeps its schedule; the statutory calendar's reminders keep coming",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-67"},
+	{Key: "agents.company_secretary.quiet_hours", Group: "Company secretary assistant", Label: "Quiet hours", Kind: TimeRange, Recommended: "22:00-07:00",
+		Reason: "A run in quiet hours still runs and records; its emails wait until they end",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.recipients", Group: "Company secretary assistant", Label: "Who it tells", Kind: Choices, Recommended: "owner,company_secretary",
+		Choices: []string{"owner", "administrator", "controller", "accountant", "company_secretary", "board_viewer"},
+		Reason:  "Its findings go to the named secretary and the directors; their tasks belong to the first of these roles",
+		Guide:   guide + "company-secretary-assistant", Requirement: "AI-62", DualControl: true},
+	{Key: "agents.company_secretary.run_tokens", Group: "Company secretary assistant", Label: "Tokens one run may use", Kind: Tokens, Recommended: "200000",
+		Min: "1000", Max: "999999",
+		Reason: "A cap on one run's model tokens, beside the agent's monthly AI budget",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-67", DualControl: true},
+	{Key: "agents.company_secretary.tool_calls", Group: "Company secretary assistant", Label: "Reads one run may make", Kind: Count, Recommended: "20", Min: "1", Max: "50",
+		Reason: "A cap on a run's reads of the books bounds its time and cost",
+		Guide:  guide + "company-secretary-assistant", Requirement: "AI-67", DualControl: true},
+	{Key: "ai.conversation_turns", Group: "AI", Label: "Questions in one conversation", Kind: Count, Recommended: "40", Min: "2", Max: "200",
+		Reason: "A long conversation costs more with every question; past 20, the oldest questions are summarised with their figures kept",
+		Guide:  guide + "ai-limits", Requirement: "AI-23", DualControl: true},
+	{Key: "ai.exclusions", Group: "AI", Label: "Fields the AI never reads", Kind: Fields, Recommended: "",
+		Reason: "The never-send list (identity numbers, bank account numbers, secrets, home addresses) always applies; add fields of your own, such as notes, to keep them from the AI too",
+		Guide:  guide + "ai-and-personal-data", Requirement: "AI-02", DualControl: true},
 	{Key: "ai.fallbacks_per_day", Group: "AI", Label: "Fallbacks a day before a route needs attention", Kind: Count, Recommended: "5", Min: "1",
 		Max:    "1000",
 		Reason: "A primary that fails over five times in a day is not reliable enough to lead its route: Checks shows it so someone looks",
 		Guide:  guide + "ai-routes", Requirement: "AI-76", DualControl: true},
+	{Key: "ai.payroll_access", Group: "AI", Label: "AI payroll access", Kind: Switch, Recommended: "false",
+		Reason: "Pay stays away from the AI unless an Owner turns this on with a second approver, and then only for people with a payroll right; turning it off takes effect at once",
+		Guide:  guide + "ai-and-personal-data", Requirement: "AI-02", DualControl: true, OffAtOnce: true},
+	{Key: "ai.questions_per_day", Group: "AI", Label: "Questions a person may ask the assistant a day", Kind: Count, Recommended: "200",
+		Min: "1", Max: "100000",
+		Reason: "Enough for a working day of questions; more than this in 24 hours is a runaway script or a misuse, and stops until it eases",
+		Guide:  guide + "ai-limits", Requirement: "AI-23", DualControl: true},
+	{Key: "ai.questions_per_minute", Group: "AI", Label: "Questions a person may ask the assistant a minute", Kind: Count, Recommended: "20",
+		Min: "1", Max: "1000",
+		Reason: "No one types 20 questions a minute: more is a script, which this stops before it spends the AI budget",
+		Guide:  guide + "ai-limits", Requirement: "AI-23", DualControl: true},
+	{Key: "ai.reads_per_question", Group: "AI", Label: "Reads of the books for one question", Kind: Count, Recommended: "8", Min: "1", Max: "20",
+		Reason: "Eight reads answer most questions; a question needing more is better asked in parts, and each read costs a model call",
+		Guide:  guide + "ai-limits", Requirement: "AI-23", DualControl: true},
+	{Key: "ai.task_types", Group: "AI", Label: "Changes the AI may propose", Kind: TaskTypes, Recommended: "",
+		Reason: "Every task type starts off: an Owner turns each on with a second approver, and each proposal still waits for a person's approval; turning one off takes effect at once",
+		Guide:  guide + "ai-task-types", Requirement: "AI-32", DualControl: true, OffAtOnce: true},
 	{Key: "appearance.motion", Group: "Appearance", Label: "Motion", Kind: Switch, Recommended: "true",
 		Reason: "Short transitions help people follow what changed; off shows every screen's final state at once, for everyone in the organisation",
 		Guide:  guide + "motion", Requirement: "FR-UX-38"},
@@ -261,7 +344,11 @@ var (
 	percent = regexp.MustCompile(`^(0|[1-9][0-9]{0,2})(\.[0-9]{1,2})?$`)
 	// accountCode is the chart's code format (FR-COA-01): the account must also exist when a posting reads it.
 	accountCode = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$`)
-	sgd         = money.MustLookup("SGD")
+	// fieldName is a field's name in the API's JSON, as an exclusion names it.
+	fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
+	// taskTypeID is a proposal catalogue's task type, as internal/proposal names it.
+	taskTypeID = regexp.MustCompile(`^[a-z]+\.[a-z]+(_[a-z]+)*$`)
+	sgd        = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
@@ -274,13 +361,16 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 	if raw == "" && d.Recommended == "" && !d.Fixed {
 		return "", nil
 	}
+	if list := d.Kind == Fields || d.Kind == TaskTypes; (!list && len(raw) > 200) || len(raw) > 4000 {
+		return bad("Send at most 200 characters, or 4,000 for a list")
+	}
 	switch d.Kind {
 	case Switch:
 		if raw != "true" && raw != "false" {
 			return bad("Send true or false")
 		}
 		return raw, nil
-	case Minutes, Hours, Days, Months, Years, Count:
+	case Minutes, Hours, Days, Months, Years, Count, Tokens:
 		unit := string(d.Kind)
 		if d.Kind == Count {
 			unit = "times"
@@ -311,6 +401,64 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send one of " + strings.Join(d.Choices, ", "))
 		}
 		return raw, nil
+	case Fields:
+		var names []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !fieldName.MatchString(n) {
+				return bad("Send field names separated by commas, each in lower case with underscores, such as notes, memo")
+			}
+			if !slices.Contains(names, n) {
+				names = append(names, n)
+			}
+		}
+		if len(names) > 50 {
+			return bad("Send at most 50 field names")
+		}
+		slices.Sort(names)
+		return strings.Join(names, ","), nil
+	case TaskTypes:
+		var ids []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !taskTypeID.MatchString(n) || len(n) > 56 {
+				return bad("Send task types separated by commas, each as the AI tasks page names it, such as sec.create_task")
+			}
+			if !slices.Contains(ids, n) {
+				ids = append(ids, n)
+			}
+		}
+		if len(ids) > 50 {
+			return bad("Send at most 50 task types")
+		}
+		slices.Sort(ids)
+		return strings.Join(ids, ","), nil
+	case Cron:
+		if _, err := cron.Parse(raw); err != nil {
+			return bad("Send five cron fields in Singapore time, minute hour day month weekday, such as 0 7 * * * for 07:00 daily, or off")
+		}
+		return strings.Join(strings.Fields(raw), " "), nil
+	case TimeRange:
+		if _, err := cron.ParseRange(raw); err != nil {
+			return bad("Send two times of the day in Singapore time, such as 22:00-07:00, or off")
+		}
+		return strings.TrimSpace(raw), nil
+	case Choices:
+		picked := map[string]bool{}
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !slices.Contains(d.Choices, n) {
+				return bad("Send some of " + strings.Join(d.Choices, ", ") + ", separated by commas")
+			}
+			picked[n] = true
+		}
+		var out []string
+		for _, c := range d.Choices {
+			if picked[c] {
+				out = append(out, c)
+			}
+		}
+		return strings.Join(out, ","), nil
 	case Percent:
 		var v apd.Decimal
 		if !percent.MatchString(raw) {
@@ -398,4 +546,22 @@ func Check(d Definition, value string, from, today time.Time, changes []storage.
 		}
 	}
 	return out
+}
+
+// Narrows is whether a change from was to value only takes away, so a kill switch applies it at once (AI-13, AI-32): a
+// switch turned off, or task types removed and none added.
+func Narrows(d Definition, was, value string) bool {
+	switch d.Kind {
+	case Switch:
+		return value == "false"
+	case TaskTypes:
+		before := strings.Split(was, ",")
+		for _, id := range strings.Split(value, ",") {
+			if id != "" && !slices.Contains(before, id) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

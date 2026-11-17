@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { AutoReconciled } from "./AutoReconciled";
 import { BankRules, checkRule, conditionWords } from "./BankRules";
+import { invalid } from "../../test/invalid";
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
@@ -37,8 +38,13 @@ describe("bank rules", () => {
   it("words a rule's conditions, and says what a rule form lacks, every field at once", () => {
     expect(conditionWords({ direction: "out", description_contains: "aws", amount_max: "500.00" }, new Map())).toBe('money out, description contains "aws", at most 500.00');
     expect(conditionWords({}, new Map())).toBe("every line");
-    expect(Object.keys(checkRule({ name: "", position: "0", active: true, when: { amount_min: "1,000" }, then: { account_id: "" } }).errors).sort()).toEqual(["account", "amount_min", "name", "position"]);
-    expect(checkRule({ name: "x", position: "1", active: true, when: {}, then: { account_id: "a1" } }).errors.when).toBeTruthy();
+    expect(checkRule({ name: "", position: "0", active: true, when: { amount_min: "1,000" }, then: { account_id: "" } }).errors).toEqual({
+      account: "Choose the account the lines go to.",
+      amount_min: "Enter the amount's size as a plain decimal, such as 500.00.",
+      name: "Name the rule, such as what it codes.",
+      position: "Enter its place in the order: 1 is first.",
+    });
+    expect(checkRule({ name: "x", position: "1", active: true, when: {}, then: { account_id: "a1" } }).errors.when).toBe("Give the rule at least one condition.");
     expect(checkRule({ name: " AWS ", position: "3", active: true, when: { description_contains: "aws", currency: undefined }, then: { account_id: "a1", gst_code: "" } }).draft).toEqual({
       name: "AWS",
       position: 3,
@@ -91,6 +97,15 @@ describe("bank rules", () => {
     await screen.findByRole("table", { name: "Bank rules" });
     fireEvent.click(screen.getByRole("button", { name: "New rule" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Order"), { target: { value: "first" } });
+    fireEvent.change(within(dialog).getByLabelText("At least"), { target: { value: "1,000" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the rule" }));
+    await invalid(dialog, "Name", "Name the rule, such as what it codes.");
+    await invalid(dialog, "Order", "Enter its place in the order: 1 is first.");
+    await invalid(dialog, "At least", "Enter the amount's size as a plain decimal, such as 500.00.");
+    await invalid(dialog, "Account", "Choose the account the lines go to.");
+    fireEvent.change(within(dialog).getByLabelText("Order"), { target: { value: "2" } });
+    fireEvent.change(within(dialog).getByLabelText("At least"), { target: { value: "" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the rule" }));
     expect(within(dialog).getByText("Give the rule at least one condition.")).toBeTruthy();
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Atlassian" } });
@@ -177,7 +192,7 @@ describe("what the system reconciled", () => {
     fireEvent.click(within(rows[1]!).getByRole("button", { name: /Undo the line/ }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Undo it" }));
-    expect(within(dialog).getByText(/Say why/)).toBeTruthy();
+    await invalid(dialog, "Why undo it", "Say why: the reason is kept with the reversal.");
     fireEvent.change(within(dialog).getByLabelText("Why undo it"), { target: { value: "Not AWS: a refund" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Undo it" }));
     await waitFor(() => expect(sent.find((s) => s.path === "/v1/bank-lines/l1/unreconcile")?.body).toEqual({ reason: "Not AWS: a refund" }));

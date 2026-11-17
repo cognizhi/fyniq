@@ -1,0 +1,338 @@
+package postgres
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+)
+
+func (u *unitOfWork) AIConversations() storage.AIConversations { return aiConversations{u} }
+
+type aiConversations struct{ u *unitOfWork }
+
+func (r aiConversations) Create(ctx context.Context, c storage.AIConversation) (storage.AIConversation, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIConversation{}, err
+	}
+	id, err := r.u.q.InsertAIConversation(ctx, sqlcdb.InsertAIConversationParams{UserID: c.UserID, Title: c.Title, CreatedAt: c.CreatedAt})
+	if err != nil {
+		return storage.AIConversation{}, mapError(err)
+	}
+	c.ID = id
+	return c, r.u.event(ctx, "ai_conversation.created", "ai_conversation", id, nil, map[string][2]any{"conversation": {nil, map[string]any{
+		"user_id": c.UserID.String(), "title": c.Title}}})
+}
+
+func (r aiConversations) Get(ctx context.Context, id uuid.UUID) (storage.AIConversation, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIConversation{}, err
+	}
+	row, err := r.u.q.GetAIConversation(ctx, id)
+	if err != nil {
+		return storage.AIConversation{}, mapError(err)
+	}
+	return storage.AIConversation{ID: row.ID, UserID: row.UserID, Title: row.Title, CreatedAt: row.CreatedAt, DeletedAt: row.DeletedAt}, nil
+}
+
+func (r aiConversations) OfUser(ctx context.Context, user uuid.UUID, after uuid.UUID, limit int) ([]storage.AIConversation, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIConversationsOfUser(ctx, sqlcdb.AIConversationsOfUserParams{UserID: user, After: after,
+		MaxRows: int32(min(max(limit, 1), 500))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIConversation, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, storage.AIConversation{ID: row.ID, UserID: row.UserID, Title: row.Title, CreatedAt: row.CreatedAt, DeletedAt: row.DeletedAt})
+	}
+	return out, nil
+}
+
+func (r aiConversations) Delete(ctx context.Context, id uuid.UUID, now time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	n, err := r.u.q.DeleteAIConversation(ctx, sqlcdb.DeleteAIConversationParams{At: &now, ID: id})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	return r.u.event(ctx, "ai_conversation.deleted", "ai_conversation", id, nil, map[string][2]any{"deleted_at": {nil, now.UTC().Format(time.RFC3339)}})
+}
+
+func (r aiConversations) Ask(ctx context.Context, t storage.AITurn) (storage.AITurn, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AITurn{}, err
+	}
+	id, err := r.u.q.InsertAITurn(ctx, sqlcdb.InsertAITurnParams{ConversationID: t.Conversation, UserID: t.UserID, Question: t.Question,
+		Context: []byte(t.Context), AskedAt: t.AskedAt})
+	if err != nil {
+		return storage.AITurn{}, mapError(err)
+	}
+	t.ID, t.Status = id, storage.TurnAnswering
+	return t, nil
+}
+
+func (r aiConversations) Finish(ctx context.Context, t storage.AITurn, calls []storage.AIToolCall) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	for i, c := range calls {
+		input := []byte(c.Input)
+		if !json.Valid(input) {
+			input = []byte(`{}`)
+		}
+		if err := r.u.q.InsertAIToolCall(ctx, sqlcdb.InsertAIToolCallParams{TurnID: t.ID, N: int32(min(i+1, 100)), Tool: c.Tool, // #nosec G115 -- capped
+			Version: int32(min(max(c.Version, 0), 1<<30)), Input: input, OutputSha256: c.OutputSHA256, Outcome: c.Outcome, Code: c.Code, // #nosec G115 -- capped
+			Facts: int32(min(max(c.Facts, 0), 1<<30)), Omitted: int32(min(max(c.Omitted, 0), 1<<30)), Withheld: c.Withheld, // #nosec G115 -- capped
+			DurationMs: int32(min(max(c.DurationMS, 0), 1<<30))}); err != nil { // #nosec G115 -- capped
+			return mapError(err)
+		}
+	}
+	or := func(b json.RawMessage, empty string) []byte {
+		if len(b) == 0 {
+			return []byte(empty)
+		}
+		return b
+	}
+	cited := t.Cited
+	if cited == nil {
+		cited = []string{}
+	}
+	runs := t.Runs
+	if runs == nil {
+		runs = []uuid.UUID{}
+	}
+	n, err := r.u.q.FinishAITurn(ctx, sqlcdb.FinishAITurnParams{Status: t.Status, Code: t.Code, Answer: t.Answer, Segments: or(t.Segments, "[]"),
+		Cited: cited, Facts: or(t.Facts, "[]"), Prompt: t.Prompt, PromptSha256: t.PromptSHA256, Runs: runs, InputTokens: t.InputTokens,
+		OutputTokens: t.OutputTokens, Regenerated: t.Regenerated, Withheld: int32(min(max(t.Withheld, 0), 1<<30)), // #nosec G115 -- capped
+		Classes: orEmpty(t.Classes), AnsweredAt: t.AnsweredAt, ID: t.ID})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	// The record names how the turn ended and what it used, never the question's or the answer's words (AUD-01, SEC-15).
+	return r.u.event(ctx, "ai_turn."+t.Status, "ai_turn", t.ID, nil, map[string][2]any{"turn": {nil, map[string]any{
+		"conversation_id": t.Conversation.String(), "status": t.Status, "code": t.Code, "prompt": t.Prompt, "prompt_sha256": t.PromptSHA256,
+		"cited": len(cited), "tool_calls": len(calls), "regenerated": t.Regenerated, "withheld": t.Withheld, "classes": orEmpty(t.Classes)}}})
+}
+
+func orEmpty(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
+
+func (r aiConversations) Turns(ctx context.Context, conversation uuid.UUID) ([]storage.AITurn, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AITurnsOfConversation(ctx, conversation)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AITurn, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, storage.AITurn{ID: row.ID, Conversation: row.ConversationID, UserID: row.UserID, Question: row.Question,
+			Context: row.Context, Status: row.Status, Code: row.Code, Answer: row.Answer, Segments: row.Segments, Cited: row.Cited, Facts: row.Facts,
+			Prompt: row.Prompt, PromptSHA256: row.PromptSha256, Runs: row.Runs, InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
+			Regenerated: row.Regenerated, Withheld: int(row.Withheld), Classes: row.Classes, AskedAt: row.AskedAt, AnsweredAt: row.AnsweredAt})
+	}
+	return out, nil
+}
+
+func (r aiConversations) Page(ctx context.Context, q storage.AITurnQuery) ([]storage.AITurn, map[uuid.UUID][]storage.AIToolCall, error) {
+	if err := r.u.check(); err != nil {
+		return nil, nil, err
+	}
+	var user *uuid.UUID
+	if q.User != uuid.Nil {
+		user = &q.User
+	}
+	rows, err := r.u.q.AITurnsPage(ctx, sqlcdb.AITurnsPageParams{UserID: user, Since: q.From, Until: q.To, BeforeAt: q.BeforeAt, BeforeID: q.BeforeID,
+		MaxRows: int32(min(max(q.Limit, 1), 501))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	turns := make([]storage.AITurn, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		turns = append(turns, storage.AITurn{ID: row.ID, Conversation: row.ConversationID, UserID: row.UserID, Question: row.Question,
+			Context: row.Context, Status: row.Status, Code: row.Code, Answer: row.Answer, Segments: row.Segments, Cited: row.Cited, Facts: row.Facts,
+			Prompt: row.Prompt, PromptSHA256: row.PromptSha256, Runs: row.Runs, InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
+			Regenerated: row.Regenerated, Withheld: int(row.Withheld), Classes: row.Classes, AskedAt: row.AskedAt, AnsweredAt: row.AnsweredAt})
+		ids = append(ids, row.ID)
+	}
+	calls := map[uuid.UUID][]storage.AIToolCall{}
+	if len(ids) == 0 {
+		return turns, calls, nil
+	}
+	callRows, err := r.u.q.AIToolCallsOfTurns(ctx, ids)
+	if err != nil {
+		return nil, nil, mapError(err)
+	}
+	for _, row := range callRows {
+		calls[row.TurnID] = append(calls[row.TurnID], storage.AIToolCall{ID: row.ID, Turn: row.TurnID, N: int(row.N), Tool: row.Tool,
+			Version: int(row.Version), Input: row.Input, OutputSHA256: row.OutputSha256, Outcome: row.Outcome, Code: row.Code, Facts: int(row.Facts),
+			Omitted: int(row.Omitted), Withheld: row.Withheld, DurationMS: int(row.DurationMs)})
+	}
+	return turns, calls, nil
+}
+
+func (r aiConversations) ToolCalls(ctx context.Context, turn uuid.UUID) ([]storage.AIToolCall, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIToolCallsOfTurn(ctx, turn)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIToolCall, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, storage.AIToolCall{ID: row.ID, Turn: row.TurnID, N: int(row.N), Tool: row.Tool, Version: int(row.Version), Input: row.Input,
+			OutputSHA256: row.OutputSha256, Outcome: row.Outcome, Code: row.Code, Facts: int(row.Facts), Omitted: int(row.Omitted),
+			Withheld: row.Withheld, DurationMS: int(row.DurationMs)})
+	}
+	return out, nil
+}
+
+func (r aiConversations) Asked(ctx context.Context, user uuid.UUID, since time.Time) (int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.AITurnsAskedSince(ctx, sqlcdb.AITurnsAskedSinceParams{UserID: user, Since: since})
+	return int(n), mapError(err)
+}
+
+func (r aiConversations) Give(ctx context.Context, f storage.AIFeedback) (storage.AIFeedback, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIFeedback{}, err
+	}
+	id, err := r.u.q.InsertAIFeedback(ctx, sqlcdb.InsertAIFeedbackParams{TurnID: f.Turn, UserID: f.UserID, Rating: f.Rating, Reason: f.Reason,
+		GivenAt: f.GivenAt})
+	if err != nil {
+		return storage.AIFeedback{}, mapError(err)
+	}
+	f.ID = id
+	return f, r.u.event(ctx, "ai_feedback.given", "ai_feedback", id, nil, map[string][2]any{"feedback": {nil, map[string]any{
+		"turn_id": f.Turn.String(), "rating": f.Rating}}})
+}
+
+func (r aiConversations) Monitor(ctx context.Context, from, to time.Time) (storage.AITurnMonitor, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AITurnMonitor{}, err
+	}
+	t, err := r.u.q.AITurnMonitor(ctx, sqlcdb.AITurnMonitorParams{Since: from, Until: to})
+	if err != nil {
+		return storage.AITurnMonitor{}, mapError(err)
+	}
+	x, err := r.u.q.AIToolCallMonitor(ctx, sqlcdb.AIToolCallMonitorParams{Since: from, Until: to})
+	if err != nil {
+		return storage.AITurnMonitor{}, mapError(err)
+	}
+	return storage.AITurnMonitor{Turns: int(t.Turns), Answered: int(t.Answered), Refused: int(t.Refused), Failed: int(t.Failed),
+		Regenerated: int(t.Regenerated), Withheld: int(t.Withheld), Reads: int(x.Reads), ReadsRefused: int(x.Refused),
+		Screened: int(t.Screened + x.Withheld), Conversations: int(t.Conversations)}, nil
+}
+
+func (r aiConversations) Ratings(ctx context.Context, conversation, user uuid.UUID) (map[uuid.UUID]storage.AIFeedback, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIFeedbackOfConversation(ctx, sqlcdb.AIFeedbackOfConversationParams{ConversationID: conversation, UserID: user})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make(map[uuid.UUID]storage.AIFeedback, len(rows))
+	for _, row := range rows {
+		f := storage.AIFeedback{ID: row.ID, Turn: row.TurnID, UserID: row.UserID, Rating: row.Rating, Reason: row.Reason, GivenAt: row.GivenAt,
+			ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt}
+		if row.Decision != nil {
+			f.Decision = *row.Decision
+		}
+		out[row.TurnID] = f
+	}
+	return out, nil
+}
+
+func (r aiConversations) Feedback(ctx context.Context, q storage.AIFeedbackQuery) ([]storage.AIFeedbackEntry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	var state, rating *string
+	if q.State != "" {
+		state = &q.State
+	}
+	if q.Rating != "" {
+		rating = &q.Rating
+	}
+	rows, err := r.u.q.AIFeedbackPage(ctx, sqlcdb.AIFeedbackPageParams{State: state, Rating: rating, BeforeAt: q.BeforeAt, BeforeID: q.BeforeID,
+		MaxRows: int32(min(max(q.Limit, 1), 501))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIFeedbackEntry, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, feedbackEntry(sqlcdb.GetAIFeedbackRow(row)))
+	}
+	return out, nil
+}
+
+func (r aiConversations) FeedbackEntry(ctx context.Context, id uuid.UUID) (storage.AIFeedbackEntry, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIFeedbackEntry{}, err
+	}
+	row, err := r.u.q.GetAIFeedback(ctx, id)
+	if err != nil {
+		return storage.AIFeedbackEntry{}, mapError(err)
+	}
+	return feedbackEntry(row), nil
+}
+
+func feedbackEntry(row sqlcdb.GetAIFeedbackRow) storage.AIFeedbackEntry {
+	e := storage.AIFeedbackEntry{AIFeedback: storage.AIFeedback{ID: row.ID, Turn: row.TurnID, UserID: row.UserID, Rating: row.Rating, Reason: row.Reason,
+		GivenAt: row.GivenAt, ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt}, Conversation: row.ConversationID, Asker: row.Asker,
+		Question: row.Question, Answer: row.Answer, Classes: row.Classes}
+	if row.Decision != nil {
+		e.Decision = *row.Decision
+	}
+	return e
+}
+
+func (r aiConversations) Review(ctx context.Context, id, by uuid.UUID, decision string, at time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	n, err := r.u.q.ReviewAIFeedback(ctx, sqlcdb.ReviewAIFeedbackParams{ReviewedBy: &by, ReviewedAt: &at, Decision: &decision, ID: id})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	return r.u.event(ctx, "ai_feedback.reviewed", "ai_feedback", id, nil, map[string][2]any{"decision": {nil, decision}})
+}
+
+func (r aiConversations) Purge(ctx context.Context, before time.Time) (int, int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, 0, err
+	}
+	row, err := r.u.q.PurgeAIConversations(ctx, before)
+	if err != nil {
+		return 0, 0, mapError(err)
+	}
+	return int(row.Conversations), int(row.Turns), nil
+}

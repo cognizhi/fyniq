@@ -1,0 +1,6391 @@
+{
+  "id": "golden",
+  "agent": "chat",
+  "version": 1,
+  "kind": "golden",
+  "description": "The golden questions (QA-AI-01): questions on the synthetic sample company's measures and accounts, month by month and by quarter, each with the fact a right answer cites and its exact value, worked out by the oracle from the seed and checked against the seed's own sums and the API. 100% numeric accuracy is the release gate. Regenerate with FYNIQ_GOLDEN_WRITE=1. No organisation data.",
+  "company": {
+    "seed": 1,
+    "journals": 240
+  },
+  "cases": [
+    {
+      "id": "revenue-2026-01",
+      "question": "What was revenue in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "466784.87"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "measure": "revenue",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-01",
+      "question": "How much gross profit did we make in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "526968.96"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "measure": "gross_profit",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-01",
+      "question": "EBITDA for January 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-692725.39"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "measure": "ebitda",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-01",
+      "question": "What was net profit in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-1051259.10"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "measure": "net_profit",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-01",
+      "question": "How much did we spend on cost of sales and operating expenses in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "1159510.26"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "measure": "costs",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-02",
+      "question": "Revenue for February 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "340124.62"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-02",
+            "measure": "revenue",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-02",
+      "question": "What was gross profit in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-26470.07"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-02",
+            "measure": "gross_profit",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-02",
+      "question": "How much EBITDA did we have in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-642493.50"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-02",
+            "measure": "ebitda",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-02",
+      "question": "Net profit for February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-526588.95"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-02",
+            "measure": "net_profit",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-02",
+      "question": "What did cost of sales and operating expenses come to in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "982618.12"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-02",
+            "measure": "costs",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-03",
+      "question": "How much revenue did we recognise in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-1108254.63"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-03",
+            "measure": "revenue",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-03",
+      "question": "Gross profit for March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "59635.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-03",
+            "measure": "gross_profit",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-03",
+      "question": "What was EBITDA in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-797421.39"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-03",
+            "measure": "ebitda",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-03",
+      "question": "How much did we make or lose, after every expense, in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-343645.86"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-03",
+            "measure": "net_profit",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-03",
+      "question": "Total costs, cost of sales and operating expenses together, for March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-310833.24"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-03",
+            "measure": "costs",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-04",
+      "question": "What was revenue in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-470436.28"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "measure": "revenue",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-04",
+      "question": "How much gross profit did we make in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "128128.21"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "measure": "gross_profit",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-04",
+      "question": "EBITDA for April 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "3228498.07"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "measure": "ebitda",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-04",
+      "question": "What was net profit in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "3244735.18"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "measure": "net_profit",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-04",
+      "question": "How much did we spend on cost of sales and operating expenses in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-3698934.35"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "measure": "costs",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-05",
+      "question": "Revenue for May 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "0.00"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-05",
+            "measure": "revenue",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-05",
+      "question": "What was gross profit in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "629191.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-05",
+            "measure": "gross_profit",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-05",
+      "question": "How much EBITDA did we have in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "1389913.27"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-05",
+            "measure": "ebitda",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-05",
+      "question": "Net profit for May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "2340334.06"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-05",
+            "measure": "net_profit",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-05",
+      "question": "What did cost of sales and operating expenses come to in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-1389913.27"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-05",
+            "measure": "costs",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-06",
+      "question": "How much revenue did we recognise in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "1133585.41"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-06",
+            "measure": "revenue",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-06",
+      "question": "Gross profit for June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "1001622.32"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-06",
+            "measure": "gross_profit",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-06",
+      "question": "What was EBITDA in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "270732.18"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-06",
+            "measure": "ebitda",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-06",
+      "question": "How much did we make or lose, after every expense, in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "1650973.60"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-06",
+            "measure": "net_profit",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-06",
+      "question": "Total costs, cost of sales and operating expenses together, for June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "862853.23"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-06",
+            "measure": "costs",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-07",
+      "question": "What was revenue in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "-398407.68"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "measure": "revenue",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-07",
+      "question": "How much gross profit did we make in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "-478337.64"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "measure": "gross_profit",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-07",
+      "question": "EBITDA for July 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "-967955.81"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "measure": "ebitda",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-07",
+      "question": "What was net profit in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "419398.81"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "measure": "net_profit",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-07",
+      "question": "How much did we spend on cost of sales and operating expenses in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "569548.13"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "measure": "costs",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-08",
+      "question": "Revenue for August 2026, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "-409427.11"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-08",
+            "measure": "revenue",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-08",
+      "question": "What was gross profit in August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "-2050079.13"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-08",
+            "measure": "gross_profit",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-08",
+      "question": "How much EBITDA did we have in August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "-817388.87"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-08",
+            "measure": "ebitda",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-08",
+      "question": "Net profit for August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "-252247.91"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-08",
+            "measure": "net_profit",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-08",
+      "question": "What did cost of sales and operating expenses come to in August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "407961.76"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-08",
+            "measure": "costs",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-09",
+      "question": "How much revenue did we recognise in September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "-218065.83"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-09",
+            "measure": "revenue",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-09",
+      "question": "Gross profit for September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "234859.14"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-09",
+            "measure": "gross_profit",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-09",
+      "question": "What was EBITDA in September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "22896.62"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-09",
+            "measure": "ebitda",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-09",
+      "question": "How much did we make or lose, after every expense, in September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "102757.35"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-09",
+            "measure": "net_profit",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-09",
+      "question": "Total costs, cost of sales and operating expenses together, for September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "-240962.45"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-09",
+            "measure": "costs",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-q1",
+      "question": "What was revenue in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "-301345.14"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "revenue",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-q1",
+      "question": "How much gross profit did we make in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "560134.54"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "gross_profit",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-q1",
+      "question": "EBITDA for January to March 2026 in total, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "-2132640.28"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "ebitda",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-q1",
+      "question": "What was net profit in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "-1921493.91"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "net_profit",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-q1",
+      "question": "How much did we spend on cost of sales and operating expenses in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "1831295.14"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "costs",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-sm-2026-q1",
+      "question": "How much did we spend on sales and marketing in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_sm",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "-696592.49"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "spend_sm",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-rd-2026-q1",
+      "question": "How much did we spend on research and development in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_rd",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "581426.62"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "spend_rd",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-ga-2026-q1",
+      "question": "How much did we spend on general and administrative costs in January to March 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_ga",
+            "from": "2026-01-01",
+            "to": "2026-03-31",
+            "value": "2571086.49"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-01",
+            "grain": "total",
+            "measure": "spend_ga",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-q2",
+      "question": "Revenue for April to June 2026 in total, please.",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "663149.13"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "revenue",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-q2",
+      "question": "What was gross profit in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "1758941.78"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "gross_profit",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-q2",
+      "question": "How much EBITDA did we have in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "4889143.52"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "ebitda",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-q2",
+      "question": "Net profit for April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "7236042.84"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "net_profit",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-q2",
+      "question": "What did cost of sales and operating expenses come to in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "-4225994.39"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "costs",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-sm-2026-q2",
+      "question": "How much did we spend on sales and marketing in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_sm",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "-483373.48"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "spend_sm",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-rd-2026-q2",
+      "question": "How much did we spend on research and development in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_rd",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "-726993.77"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "spend_rd",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-ga-2026-q2",
+      "question": "How much did we spend on general and administrative costs in April to June 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_ga",
+            "from": "2026-04-01",
+            "to": "2026-06-30",
+            "value": "-1669715.74"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-04",
+            "grain": "total",
+            "measure": "spend_ga",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revenue-2026-q3",
+      "question": "How much revenue did we recognise in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "revenue",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "-1025900.62"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "revenue",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gross-profit-2026-q3",
+      "question": "Gross profit for July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "gross_profit",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "-2293557.63"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "gross_profit",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ebitda-2026-q3",
+      "question": "What was EBITDA in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "ebitda",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "-1762448.06"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "ebitda",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "net-profit-2026-q3",
+      "question": "How much did we make or lose, after every expense, in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "net_profit",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "269908.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "net_profit",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "costs-2026-q3",
+      "question": "Total costs, cost of sales and operating expenses together, for July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "costs",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "736547.44"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "costs",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-sm-2026-q3",
+      "question": "How much did we spend on sales and marketing in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_sm",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "-2549164.77"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "spend_sm",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-rd-2026-q3",
+      "question": "How much did we spend on research and development in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_rd",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "314718.33"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "spend_rd",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spend-ga-2026-q3",
+      "question": "How much did we spend on general and administrative costs in July to September 2026 in total?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "spend_ga",
+            "from": "2026-07-01",
+            "to": "2026-09-30",
+            "value": "2009826.40"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "from": "2026-07",
+            "grain": "total",
+            "measure": "spend_ga",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1010-2026-01",
+      "question": "How did the dbs business multi-currency account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "8554.56"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1010-2026-06",
+      "question": "What was the net movement on dbs business multi-currency in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1010",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "492695.22"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "1010",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1010-2026-08",
+      "question": "By how much did dbs business multi-currency change in August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1010",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "-402145.36"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-08",
+            "measure": "account_movement",
+            "member": "1010",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1020-2026-01",
+      "question": "How did the ocbc business growth account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1020",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-350785.76"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1020",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1020-2026-03",
+      "question": "What was the net movement on ocbc business growth in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1020",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-186495.58"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1020",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1020-2026-05",
+      "question": "By how much did ocbc business growth change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1020",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "330382.63"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "1020",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1030-2026-01",
+      "question": "How did the wise (usd) account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1030",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "207366.85"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1030",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1030-2026-02",
+      "question": "What was the net movement on wise (usd) in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1030",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-197145.68"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "1030",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1030-2026-04",
+      "question": "By how much did wise (usd) change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1030",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "222125.17"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "1030",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1040-2026-03",
+      "question": "How did the airwallex (usd) account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1040",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-343106.69"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1040",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1040-2026-04",
+      "question": "What was the net movement on airwallex (usd) in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1040",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "199678.17"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "1040",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1040-2026-05",
+      "question": "By how much did airwallex (usd) change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1040",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "87656.76"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "1040",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1100-2026-01",
+      "question": "How did the accounts receivable account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1100",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "358562.79"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1100",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1100-2026-02",
+      "question": "What was the net movement on accounts receivable in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1100",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "696032.16"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "1100",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1100-2026-03",
+      "question": "By how much did accounts receivable change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1100",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-169587.33"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1100",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1210-2026-03",
+      "question": "How did the prepayments account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1210",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-429425.11"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1210",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1210-2026-05",
+      "question": "What was the net movement on prepayments in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1210",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "8350.32"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "1210",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1210-2026-06",
+      "question": "By how much did prepayments change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1210",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "490247.71"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "1210",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1250-2026-01",
+      "question": "How did the staff \u0026 director advances account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1250",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "514380.21"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1250",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1250-2026-03",
+      "question": "What was the net movement on staff \u0026 director advances in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1250",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "184566.93"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1250",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1250-2026-04",
+      "question": "By how much did staff \u0026 director advances change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1250",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "715326.59"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "1250",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1350-2026-01",
+      "question": "How did the due from related companies account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1350",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-422626.45"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "1350",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1350-2026-02",
+      "question": "What was the net movement on due from related companies in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1350",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "207189.18"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "1350",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1350-2026-03",
+      "question": "By how much did due from related companies change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1350",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-342181.19"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1350",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1510-2026-02",
+      "question": "How did the computer equipment account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1510",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-594195.60"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "1510",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1510-2026-03",
+      "question": "What was the net movement on computer equipment in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1510",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "65400.40"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1510",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1510-2026-04",
+      "question": "By how much did computer equipment change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1510",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "189741.59"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "1510",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1590-2026-03",
+      "question": "How did the accumulated depreciation account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1590",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "517261.66"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "1590",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1590-2026-04",
+      "question": "What was the net movement on accumulated depreciation in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1590",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "766139.08"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "1590",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-1590-2026-05",
+      "question": "By how much did accumulated depreciation change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "1590",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "25070.08"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "1590",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2010-2026-01",
+      "question": "How did the accounts payable account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "73318.09"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2010-2026-02",
+      "question": "What was the net movement on accounts payable in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "270597.78"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2010-2026-04",
+      "question": "By how much did accounts payable change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2010",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-322236.93"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2010",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2050-2026-03",
+      "question": "How did the accrued expenses account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2050",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-267586.88"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2050",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2050-2026-04",
+      "question": "What was the net movement on accrued expenses in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2050",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-274400.12"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2050",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2050-2026-05",
+      "question": "By how much did accrued expenses change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2050",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "76562.97"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2050",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2100-2026-01",
+      "question": "How did the salaries payable account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2100",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "355808.85"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2100",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2100-2026-02",
+      "question": "What was the net movement on salaries payable in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2100",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "135433.15"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2100",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2100-2026-04",
+      "question": "By how much did salaries payable change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2100",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "322236.93"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2100",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2110-2026-02",
+      "question": "How did the cpf \u0026 sdl payable account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2110",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-391989.78"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2110",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2110-2026-04",
+      "question": "What was the net movement on cpf \u0026 sdl payable in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2110",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-188587.90"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2110",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2110-2026-05",
+      "question": "By how much did cpf \u0026 sdl payable change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2110",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-330382.63"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2110",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2115-2026-01",
+      "question": "How did the epf payable account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2115",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "136165.52"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2115",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2115-2026-04",
+      "question": "What was the net movement on epf payable in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2115",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-10950.95"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2115",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2115-2026-05",
+      "question": "By how much did epf payable change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2115",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "183573.24"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2115",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2116-2026-02",
+      "question": "How did the socso and eis payable account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2116",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "139667.11"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2116",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2116-2026-03",
+      "question": "What was the net movement on socso and eis payable in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2116",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-96434.68"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2116",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2116-2026-04",
+      "question": "By how much did socso and eis payable change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2116",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "151356.74"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2116",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2120-2026-02",
+      "question": "How did the deferred remuneration payable account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2120",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-803876.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2120",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2120-2026-04",
+      "question": "What was the net movement on deferred remuneration payable in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2120",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "512738.15"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2120",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2120-2026-05",
+      "question": "By how much did deferred remuneration payable change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2120",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-285268.81"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2120",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2150-2026-02",
+      "question": "How did the expense claims payable account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2150",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-565401.99"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2150",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2150-2026-04",
+      "question": "What was the net movement on expense claims payable in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2150",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "149786.24"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2150",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2150-2026-05",
+      "question": "By how much did expense claims payable change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2150",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "354544.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2150",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2200-2026-01",
+      "question": "How did the gst control account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2200",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-355808.85"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2200",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2200-2026-02",
+      "question": "What was the net movement on gst control in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2200",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "373420.37"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2200",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2200-2026-03",
+      "question": "By how much did gst control change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2200",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-482990.13"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2200",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2300-2026-01",
+      "question": "How did the income tax payable account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2300",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-422954.34"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2300",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2300-2026-03",
+      "question": "What was the net movement on income tax payable in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2300",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "420479.95"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2300",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2300-2026-05",
+      "question": "By how much did income tax payable change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2300",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "213033.09"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2300",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2350-2026-01",
+      "question": "How did the due to related companies account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2350",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-336530.94"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2350",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2350-2026-02",
+      "question": "What was the net movement on due to related companies in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2350",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "151190.71"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2350",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2350-2026-04",
+      "question": "By how much did due to related companies change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2350",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-450138.49"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2350",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2400-2026-04",
+      "question": "How did the deferred revenue account move in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2400",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "64831.40"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "2400",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2400-2026-05",
+      "question": "What was the net movement on deferred revenue in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2400",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-62992.33"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "2400",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2400-2026-07",
+      "question": "By how much did deferred revenue change in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2400",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "-185416.62"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-07",
+            "measure": "account_movement",
+            "member": "2400",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2500-2026-01",
+      "question": "How did the loan from director account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2500",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-498037.49"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2500",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2500-2026-02",
+      "question": "What was the net movement on loan from director in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2500",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "620256.31"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "2500",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2500-2026-03",
+      "question": "By how much did loan from director change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2500",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "303958.76"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2500",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2999-2026-01",
+      "question": "How did the suspense account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2999",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-318672.14"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "2999",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2999-2026-03",
+      "question": "What was the net movement on suspense in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2999",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "393003.75"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "2999",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-2999-2026-09",
+      "question": "By how much did suspense change in September 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "2999",
+            "from": "2026-09-01",
+            "to": "2026-09-30",
+            "value": "494307.30"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-09",
+            "measure": "account_movement",
+            "member": "2999",
+            "to": "2026-09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3100-2026-01",
+      "question": "How did the retained earnings account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3100",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "0.00"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "3100",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3100-2026-03",
+      "question": "What was the net movement on retained earnings in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3100",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "89490.28"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "3100",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3100-2026-04",
+      "question": "By how much did retained earnings change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3100",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "801571.16"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "3100",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3300-2026-02",
+      "question": "How did the capital contribution account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3300",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-567766.42"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "3300",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3300-2026-04",
+      "question": "What was the net movement on capital contribution in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3300",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-543673.16"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "3300",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-3300-2026-05",
+      "question": "By how much did capital contribution change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "3300",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "735678.79"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "3300",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4010-2026-01",
+      "question": "How did the subscription revenue account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-11030.83"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "4010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4010-2026-02",
+      "question": "What was the net movement on subscription revenue in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-618964.79"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "4010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4010-2026-06",
+      "question": "By how much did subscription revenue change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4010",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "-1144376.96"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "4010",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4020-2026-01",
+      "question": "How did the services revenue account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4020",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-562259.52"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "4020",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4020-2026-02",
+      "question": "What was the net movement on services revenue in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4020",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "278840.17"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "4020",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4020-2026-04",
+      "question": "By how much did services revenue change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4020",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "321962.96"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "4020",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4090-2026-01",
+      "question": "How did the recharged costs account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4090",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "106505.48"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "4090",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4090-2026-03",
+      "question": "What was the net movement on recharged costs in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4090",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "1108254.63"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "4090",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-4090-2026-04",
+      "question": "By how much did recharged costs change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "4090",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "148473.32"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "4090",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5010-2026-01",
+      "question": "How did the cloud hosting account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-401265.78"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "5010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5010-2026-02",
+      "question": "What was the net movement on cloud hosting in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "44661.58"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "5010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5010-2026-03",
+      "question": "By how much did cloud hosting change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5010",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-939499.41"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "5010",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5020-2026-02",
+      "question": "How did the ai and api usage account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5020",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-418054.72"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "5020",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5020-2026-03",
+      "question": "What was the net movement on ai and api usage in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5020",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-288194.81"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "5020",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5020-2026-06",
+      "question": "By how much did ai and api usage change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5020",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "64143.74"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "5020",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5030-2026-01",
+      "question": "How did the delivery contractors account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5030",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "349636.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "5030",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5030-2026-02",
+      "question": "What was the net movement on delivery contractors in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5030",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "418418.59"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "5030",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5030-2026-03",
+      "question": "By how much did delivery contractors change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5030",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "650783.46"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "5030",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5040-2026-01",
+      "question": "How did the payment processing fees account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5040",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-8554.56"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "5040",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5040-2026-02",
+      "question": "What was the net movement on payment processing fees in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5040",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "321569.24"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "5040",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-5040-2026-03",
+      "question": "By how much did payment processing fees change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "5040",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-590979.52"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "5040",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6010-2026-01",
+      "question": "How did the salaries account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-395488.19"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6010-2026-02",
+      "question": "What was the net movement on salaries in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "620570.07"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6010-2026-03",
+      "question": "By how much did salaries change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6010",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "241953.49"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6010",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6020-2026-03",
+      "question": "How did the employer cpf account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6020",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "619399.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6020",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6020-2026-04",
+      "question": "What was the net movement on employer cpf in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6020",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-591160.37"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6020",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6020-2026-05",
+      "question": "By how much did employer cpf change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6020",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "636528.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6020",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6030-2026-01",
+      "question": "How did the sdl account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6030",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "65613.25"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6030",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6030-2026-02",
+      "question": "What was the net movement on sdl in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6030",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "220039.70"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6030",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6030-2026-03",
+      "question": "By how much did sdl change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6030",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "109214.57"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6030",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6050-2026-02",
+      "question": "How did the directors' fees account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6050",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "374178.39"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6050",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6050-2026-03",
+      "question": "What was the net movement on directors' fees in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6050",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-28513.83"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6050",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6050-2026-04",
+      "question": "By how much did directors' fees change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6050",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "475931.55"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6050",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6060-2026-01",
+      "question": "How did the contract staff account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6060",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "382764.88"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6060",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6060-2026-03",
+      "question": "What was the net movement on contract staff in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6060",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "71670.69"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6060",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6060-2026-04",
+      "question": "By how much did contract staff change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6060",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "818005.23"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6060",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6110-2026-02",
+      "question": "How did the rent and office account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6110",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-1042770.30"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6110",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6110-2026-05",
+      "question": "What was the net movement on rent and office in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6110",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-47805.64"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6110",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6110-2026-06",
+      "question": "By how much did rent and office change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6110",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "100601.47"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "6110",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6120-2026-01",
+      "question": "How did the software subscriptions account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6120",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "121984.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6120",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6120-2026-02",
+      "question": "What was the net movement on software subscriptions in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6120",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-205221.03"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6120",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6120-2026-03",
+      "question": "By how much did software subscriptions change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6120",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "614703.32"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6120",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6135-2026-01",
+      "question": "How did the saas tools account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6135",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "335652.53"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6135",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6135-2026-03",
+      "question": "What was the net movement on saas tools in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6135",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-897256.54"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6135",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6135-2026-04",
+      "question": "By how much did saas tools change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6135",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "107256.36"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6135",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6140-2026-01",
+      "question": "How did the printing and stationery account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6140",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "416155.12"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6140",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6140-2026-02",
+      "question": "What was the net movement on printing and stationery in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6140",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-278840.17"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6140",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6140-2026-03",
+      "question": "By how much did printing and stationery change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6140",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "79854.48"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6140",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6150-2026-01",
+      "question": "How did the marketing and design account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6150",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-136165.52"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6150",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6150-2026-03",
+      "question": "What was the net movement on marketing and design in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6150",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "250418.93"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6150",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6150-2026-04",
+      "question": "By how much did marketing and design change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6150",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "123118.50"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6150",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6210-2026-02",
+      "question": "How did the utilities account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6210",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "40502.28"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6210",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6210-2026-03",
+      "question": "What was the net movement on utilities in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6210",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "540924.34"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6210",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6210-2026-04",
+      "question": "By how much did utilities change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6210",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-807890.28"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6210",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6310-2026-04",
+      "question": "How did the local travel account move in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6310",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-1308168.46"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6310",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6310-2026-05",
+      "question": "What was the net movement on local travel in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6310",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-185122.22"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6310",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6310-2026-06",
+      "question": "By how much did local travel change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6310",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "284948.64"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "6310",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6320-2026-03",
+      "question": "How did the overseas travel account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6320",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-183059.87"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6320",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6320-2026-04",
+      "question": "What was the net movement on overseas travel in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6320",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "465819.94"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6320",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6320-2026-05",
+      "question": "By how much did overseas travel change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6320",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-1174646.54"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6320",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6350-2026-01",
+      "question": "How did the staff welfare account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6350",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "199152.17"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6350",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6350-2026-03",
+      "question": "What was the net movement on staff welfare in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6350",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "298012.46"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6350",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6350-2026-04",
+      "question": "By how much did staff welfare change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6350",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-558477.03"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6350",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6410-2026-03",
+      "question": "How did the insurance account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6410",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-659324.35"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6410",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6410-2026-04",
+      "question": "What was the net movement on insurance in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6410",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "15672.22"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6410",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6410-2026-07",
+      "question": "By how much did insurance change in July 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6410",
+            "from": "2026-07-01",
+            "to": "2026-07-31",
+            "value": "388310.97"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-07",
+            "measure": "account_movement",
+            "member": "6410",
+            "to": "2026-07"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6420-2026-02",
+      "question": "How did the bank charges account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6420",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "598561.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6420",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6420-2026-03",
+      "question": "What was the net movement on bank charges in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6420",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-207760.48"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6420",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6420-2026-04",
+      "question": "By how much did bank charges change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6420",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-343925.90"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6420",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6430-2026-02",
+      "question": "How did the small equipment account move in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6430",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "97957.07"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6430",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6430-2026-03",
+      "question": "What was the net movement on small equipment in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6430",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-121360.85"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6430",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6430-2026-04",
+      "question": "By how much did small equipment change in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6430",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-550613.21"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6430",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6510-2026-03",
+      "question": "How did the accounting fees account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6510",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "406281.08"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6510",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6510-2026-04",
+      "question": "What was the net movement on accounting fees in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6510",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "-149786.24"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6510",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6510-2026-05",
+      "question": "By how much did accounting fees change in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6510",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "475056.77"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6510",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6520-2026-01",
+      "question": "How did the legal and secretarial account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6520",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "230025.46"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6520",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6520-2026-02",
+      "question": "What was the net movement on legal and secretarial in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6520",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-137214.94"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6520",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6520-2026-03",
+      "question": "By how much did legal and secretarial change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6520",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-278099.65"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "6520",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6530-2026-01",
+      "question": "How did the consultancy account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6530",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "0.00"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "6530",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6530-2026-02",
+      "question": "What was the net movement on consultancy in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6530",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "328260.71"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "6530",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6530-2026-06",
+      "question": "By how much did consultancy change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6530",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "331457.59"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "6530",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6610-2026-04",
+      "question": "How did the depreciation expense account move in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6610",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "2376.58"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "6610",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6610-2026-05",
+      "question": "What was the net movement on depreciation expense in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6610",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-341744.35"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "6610",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-6610-2026-06",
+      "question": "By how much did depreciation expense change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "6610",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "-348822.57"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "6610",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7010-2026-01",
+      "question": "How did the interest income account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "367519.54"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "7010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7010-2026-02",
+      "question": "What was the net movement on interest income in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "-352519.15"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "7010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7010-2026-03",
+      "question": "By how much did interest income change in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7010",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-146098.76"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "7010",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7030-2026-01",
+      "question": "How did the fx \u0026 rounding differences account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7030",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "-367519.54"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "7030",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7030-2026-04",
+      "question": "What was the net movement on fx \u0026 rounding differences in April 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7030",
+            "from": "2026-04-01",
+            "to": "2026-04-30",
+            "value": "117335.53"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-04",
+            "measure": "account_movement",
+            "member": "7030",
+            "to": "2026-04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7030-2026-08",
+      "question": "By how much did fx \u0026 rounding differences change in August 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7030",
+            "from": "2026-08-01",
+            "to": "2026-08-31",
+            "value": "456580.05"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-08",
+            "measure": "account_movement",
+            "member": "7030",
+            "to": "2026-08"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7040-2026-03",
+      "question": "How did the unrealised fx gain or loss account move in March 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7040",
+            "from": "2026-03-01",
+            "to": "2026-03-31",
+            "value": "-307676.77"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-03",
+            "measure": "account_movement",
+            "member": "7040",
+            "to": "2026-03"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7040-2026-05",
+      "question": "What was the net movement on unrealised fx gain or loss in May 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7040",
+            "from": "2026-05-01",
+            "to": "2026-05-31",
+            "value": "-149534.71"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-05",
+            "measure": "account_movement",
+            "member": "7040",
+            "to": "2026-05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-7040-2026-06",
+      "question": "By how much did unrealised fx gain or loss change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "7040",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "-50311.85"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "7040",
+            "to": "2026-06"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-8010-2026-01",
+      "question": "How did the income tax expense account move in January 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "8010",
+            "from": "2026-01-01",
+            "to": "2026-01-31",
+            "value": "358533.71"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-01",
+            "measure": "account_movement",
+            "member": "8010",
+            "to": "2026-01"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-8010-2026-02",
+      "question": "What was the net movement on income tax expense in February 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "8010",
+            "from": "2026-02-01",
+            "to": "2026-02-28",
+            "value": "236614.60"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-02",
+            "measure": "account_movement",
+            "member": "8010",
+            "to": "2026-02"
+          }
+        }
+      ]
+    },
+    {
+      "id": "account-8010-2026-06",
+      "question": "By how much did income tax expense change in June 2026?",
+      "expect": {
+        "facts": [
+          {
+            "measure": "account_movement",
+            "account": "8010",
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "value": "-918137.94"
+          }
+        ]
+      },
+      "solution": [
+        {
+          "tool": "metrics.query",
+          "input": {
+            "by": "account",
+            "from": "2026-06",
+            "measure": "account_movement",
+            "member": "8010",
+            "to": "2026-06"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -20,8 +20,8 @@ things move on screen. The choices change only how Fyniq looks for you, never yo
 
 ## Steps
 
-Select **Appearance** in the header, or press **Ctrl+K** (**⌘K** on a Mac) and type the choice,
-such as "dark theme".
+Select **Appearance** in the header (on a phone, under **More**), or press **Ctrl+K** (**⌘K** on a Mac) and type the
+choice, such as "dark theme".
 
 ### Theme
 

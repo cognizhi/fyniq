@@ -7,9 +7,11 @@ import { api, type Organisation, type Session } from "./api/client";
 import { setOrganisationMotion } from "./appearance";
 import { helpText } from "./i18n";
 import { setMode, useMode } from "./mode";
-import { routes, type Mode } from "./registry";
+import { nav, routes, type Mode } from "./registry";
 import { go } from "./route";
 import { AppFrame } from "./shell/AppFrame";
+import { mayOpen, personalOnly } from "./shell/navigation";
+import { NotPartOfAccess } from "./shell/NotPartOfAccess";
 import { CoolingOff, RecoverAccount } from "./screens/Recovery";
 import { CompanyLogo } from "./screens/settings/Brand";
 import { Banners } from "./shell/Banners";
@@ -128,6 +130,7 @@ export function SignedIn() {
   const session = state.kind === "signed-in" ? state.session : undefined;
   const mode = useMode(session?.roles);
   const route = useRoute();
+  const path = useRouterState({ select: (s) => s.location.pathname });
   const title = helpText(route?.help ?? "home.overview").label;
   const device = useContext(DeviceRoot);
 
@@ -155,13 +158,15 @@ export function SignedIn() {
     );
   }
   if (!state.session.step_up_method) return <SecondFactor provider={state.session.provider} />;
+  // A link outside the person's areas shows that it is not part of their access (FR-UX-39, FR-UX-40).
+  const allowed = mayOpen(nav, state.session, path);
   return (
     <Ctx.Provider value={{ session: state.session, organisation: state.organisation, mode }}>
       <StepUpProvider provider={state.session.provider}>
         <AppFrame session={state.session} title={title} mode={mode} operations={<OperationsTray />} bell={<NotificationBell />} banners={<Banners />} logo={<CompanyLogo name={state.organisation?.name} />}>
           <CoolingOff session={state.session} />
-          {route?.mode === "expert" && mode === "basic" && <ExpertHint />}
-          <Outlet />
+          {allowed && route?.mode === "expert" && mode === "basic" && <ExpertHint />}
+          {allowed ? <Outlet /> : <NotPartOfAccess personal={personalOnly(state.session.roles)} />}
         </AppFrame>
       </StepUpProvider>
     </Ctx.Provider>

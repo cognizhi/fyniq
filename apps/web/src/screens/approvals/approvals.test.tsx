@@ -8,6 +8,7 @@ import { ApprovalPage } from "./ApprovalPage";
 import { Inbox } from "./Inbox";
 import { ReviewLog } from "./ReviewLog";
 import type { Approval, ReviewEntry } from "./words";
+import { invalid } from "../../test/invalid";
 
 const hash = "ab".repeat(32);
 const other = "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d99";
@@ -208,7 +209,7 @@ describe("an approval request", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Reject…" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Reject" }));
-    expect(await within(dialog).findByText(/Say why you reject it/)).toBeTruthy();
+    await invalid(dialog, /Why you reject it/, "Say why you reject it, in up to 500 characters: the person who asked sees it.");
     expect(calls()).not.toContain("POST /v1/approvals/a-1/reject");
     fireEvent.change(within(dialog).getByLabelText(/Why you reject it/), { target: { value: "Not this month" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Reject" }));

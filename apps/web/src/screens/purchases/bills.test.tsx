@@ -10,6 +10,7 @@ import { Bills } from "./Bills";
 import { today } from "./BillsBoard";
 import { usualTax } from "./InputTax";
 import { paymentOf } from "./Payments";
+import { invalid } from "../../test/invalid";
 
 type Bill = components["schemas"]["Bill"];
 
@@ -192,6 +193,28 @@ describe("A bill", () => {
     expect(errors["l1.account"]).toBe("Choose what the line is for.");
     expect(errors["l1.gst_code"]).toBe("Choose the GST code on the supplier's invoice.");
     expect(errors["l1.net"]).toBe("Enter the amount before GST, such as 1,200.00.");
+    const line = { key: "l1", account_id: "a6120", description: "x", gst_code: "TX", net: "100", gst: "x", stated_gst: "y", spread_months: "", spread_from: "", business_share: "120", dimension_value_ids: [] };
+    const usd = { supplier_id: "c1", supplier_ref: "", date: "2026-10-14", due_date: "", currency: "USD", fx_rate: "1,35", notes: "", tax: usualTax(), nature: "", lines: [line] };
+    expect(check(usd, "SGD").errors).toEqual({
+      fx_rate: "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
+      "l1.gst": "Enter the GST as the invoice states it, or 0.",
+      "l1.stated_gst": "Enter the GST in SGD as the invoice states it, or leave it blank.",
+      "l1.business_share": "Enter the share used for the business, 0 to 100, such as 60, or leave it blank for all of it.",
+    });
+    expect(check({ ...usd, currency: "US$", fx_rate: "", lines: [] }, "SGD").errors).toEqual({ currency: "Enter a currency code, such as SGD.", lines: "Add a line for what the bill is for." });
+  });
+
+  // QA-UI-01: a line's fields are marked, with what each needs beside it, before anything is sent.
+  it("marks each field of a line it cannot read, before anything is sent", async () => {
+    const sent = answer(reads);
+    renderPage(BillPage, { path: "/purchases/bills/new", session: accountant, organisation: standard });
+    await screen.findByRole("option", { name: "Atlassian Pty Ltd" });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Jira" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await invalid(document.body, "What it is for", "Choose what the line is for.");
+    await invalid(document.body, "GST code", "Choose the GST code on the supplier's invoice.");
+    await invalid(document.body, "Amount before GST (SGD)", "Enter the amount before GST, such as 1,200.00.");
+    expect(sent.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   // req: FR-AP-20
@@ -326,8 +349,8 @@ describe("A bill", () => {
     const dialog = await screen.findByRole("dialog");
     fireEvent.change(within(dialog).getByLabelText("Decision"), { target: { value: "withhold" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Record decision" }));
-    expect(await within(dialog).findByText("Enter the rate the tax agent advised, above 0 and up to 100, such as 15.")).toBeTruthy();
-    expect(within(dialog).getByText("Name the tax agent who decided.")).toBeTruthy();
+    await invalid(dialog, "Rate (%)", "Enter the rate the tax agent advised, above 0 and up to 100, such as 15.");
+    await invalid(dialog, "Tax agent", "Name the tax agent who decided.");
     fireEvent.change(within(dialog).getByLabelText("Rate (%)"), { target: { value: "15" } });
     fireEvent.change(within(dialog).getByLabelText("Tax agent"), { target: { value: "Grace Ho" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Record decision" }));
@@ -379,8 +402,10 @@ describe("A bill", () => {
     expect(check(form("12", "2026-09"), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: "2026-09-01" });
     expect(check(form("12", ""), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: undefined });
     expect(check(form("", ""), "SGD").draft?.lines?.[0]?.spread_months).toBeUndefined();
-    for (const [months, from, field] of [["0", "", "spread_months"], ["121", "", "spread_months"], ["", "2026-09", "spread_months"], ["12", "Sept", "spread_from"]] as const) {
-      expect(check(form(months, from), "SGD").errors[`l1.${field}`], `${months} from ${from}`).toBeTruthy();
+    const months = "Enter how many months to spread it over, 1 to 120, or leave both spread fields blank.";
+    const start = "Enter the month the service starts, such as 2026-10, or leave it blank for the invoice's month.";
+    for (const [spread, from, field, message] of [["0", "", "spread_months", months], ["121", "", "spread_months", months], ["", "2026-09", "spread_months", months], ["12", "Sept", "spread_from", start]] as const) {
+      expect(check(form(spread, from), "SGD").errors[`l1.${field}`], `${spread} from ${from}`).toBe(message);
     }
   });
 
@@ -553,6 +578,9 @@ describe("A bill's payments", () => {
     expect(paymentOf(usd, "SGD", { ...f, paid: "1,420.00" }).payment).toMatchObject({ paid: { amount: "1420.00", currency: "SGD" }, fx_rate: undefined });
     expect(paymentOf(usd, "SGD", { ...f, account: "a1021", accountCurrency: "USD", rate: "1.30" }).payment).toMatchObject({ fx_rate: "1.30", paid: undefined });
     expect(paymentOf(posted, "SGD", { ...f, amount: "0" }).errors.amount).toBe("Enter what was paid of the bill in SGD, such as 400.00.");
+    expect(paymentOf(usd, "SGD", { ...f, account: "a1021", accountCurrency: "USD", rate: "1,30" }).errors.rate).toBe(
+      "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
+    );
   });
 });
 
@@ -604,6 +632,14 @@ describe("A credit note", () => {
     const dialog = await screen.findByRole("dialog");
     await within(dialog).findByRole("option", { name: /BILL-0007/ });
     expect(within(dialog).queryByRole("option", { name: /BILL-0008/ })).toBeNull(); // another supplier's
+    fireEvent.change(within(dialog).getByLabelText("Amount to apply (SGD)"), { target: { value: "0" } });
+    fireEvent.change(within(dialog).getByLabelText("Date applied"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Apply to a bill" }));
+    await invalid(dialog, "Bill", "Choose the bill the credit settles.");
+    await invalid(dialog, "Amount to apply (SGD)", "Enter what to apply in SGD, such as 100.00.");
+    await invalid(dialog, "Date applied", "Enter the day the credit is applied.");
+    expect(sent.some((x) => x.path === "/v1/credit-applications")).toBe(false);
+    fireEvent.change(within(dialog).getByLabelText("Date applied"), { target: { value: "2026-10-20" } });
     fireEvent.change(within(dialog).getByLabelText("Bill"), { target: { value: "b7" } });
     expect((within(dialog).getByLabelText("Amount to apply (SGD)") as HTMLInputElement).value).toBe("100.00");
     await noViolations(container);

@@ -19,6 +19,7 @@ import (
 // 13.89%, from nothing, so it "loses" -13.89 points.
 // req: FR-EQ-21
 // req: RND-SHARE
+// req: quality/calculation-correctness Pinned SAFE conversion and dilution
 func TestARoundIsModelledByHand(t *testing.T) {
 	sgd, err := money.Lookup("SGD")
 	if err != nil {

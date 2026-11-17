@@ -4,14 +4,14 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:774c335bb1830c35173bc5b7ee68249de4d952ee2b96f951cfa58efe81a0ab59
+  - docs/user-guide/equity-register.md sha256:2cad9655309fb7eeee065587ba8eb21cd75834d4af569aa1c7bb4738685a0e17
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-16
 aliases:
   - cap table
   - who owns the company
@@ -442,6 +442,9 @@ aliases:
 - Each difference shows on the page and the checks: where ACRA is right, correct the register by a
   reversal citing the extract; where the typing is wrong, type the profile in again. With shares
   and no profile recorded, the check is not assessed.
+- The extract can also hold the officers the profile lists, with the day each was appointed, and its
+  registered office, names only (**Add an officer**); the corporate profile is compared with them on the
+  extract's day ([[compliance.corporate-profile]]).
 
 (src: docs/user-guide/equity-register.md#reconcile-the-register-to-acra)
 

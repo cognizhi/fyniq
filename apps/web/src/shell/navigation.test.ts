@@ -2,7 +2,7 @@ import { BookOpen, House, Inbox, Landmark, Receipt, ReceiptText, Wallet } from "
 import { describe, expect, it } from "vitest";
 import type { Session } from "../api/client";
 import { nav, routes, settingsNav, type NavFeature } from "../registry";
-import { bottomBar, navFor } from "./navigation";
+import { areaOf, bottomBar, landingOf, mayOpen, navFor } from "./navigation";
 
 // req: FR-UX-40
 // req: experience/modes Basic and Expert navigation
@@ -36,7 +36,7 @@ const ids = (xs: NavFeature[]) => xs.map((x) => x.id);
 
 describe("navigation cut to the person", () => {
   it("shows each role only its areas", () => {
-    expect(ids(navFor(items, as(["employee"]), "expert"))).toEqual(["my-claims", "home"]);
+    expect(ids(navFor(items, as(["employee"]), "expert"))).toEqual(["my-claims"]); // the personal workspace (FR-UX-39)
     expect(ids(navFor(items, as(["ar_specialist"]), "expert"))).toEqual(["home", "sales"]);
     expect(ids(navFor(items, as(["bookkeeper", "ar_specialist"]), "expert"))).toEqual(["home", "inbox", "sales", "banking"]);
   });
@@ -68,5 +68,77 @@ describe("navigation cut to the person", () => {
     const paths = new Set<string>(routes.map((r) => r.path));
     for (const n of nav) expect(paths.has(n.route), n.id).toBe(true);
     expect(nav.filter((n) => n.group === "main").length).toBeLessThanOrEqual(13);
+  });
+});
+
+// What each role sees, as PRD-001 §7.1's table says it (FR-UX-40; the reference for QA-UI-08): the areas of the
+// registry's sidebar for each role alone, in Expert mode, with the switched features off. Every finance role also has
+// Home, which takes it to its landing page, the Inbox, where approvals arrive, and Settings, where its profile is.
+// req: FR-UX-40
+// req: FR-UX-39
+// req: QA-UI-08
+describe("§7.1's table of what each role sees", () => {
+  const all = ["nav.contacts", "nav.sales", "nav.purchases", "nav.claims-review", "nav.banking", "nav.reports", "nav.accounting", "nav.equity", "nav.planning", "nav.compliance"];
+  const finance = (...areas: string[]) => ["nav.home", "nav.inbox", ...areas, "nav.settings"];
+  const table: Record<string, string[]> = {
+    employee: ["nav.my-claims", "nav.my-shares", "nav.settings"],
+    approver: finance("nav.reports", "nav.planning"),
+    bookkeeper: finance("nav.contacts", "nav.sales", "nav.purchases", "nav.claims-review", "nav.banking", "nav.reports", "nav.accounting"),
+    ar_specialist: finance("nav.contacts", "nav.sales", "nav.banking", "nav.reports"),
+    ap_specialist: finance("nav.contacts", "nav.purchases", "nav.claims-review", "nav.banking", "nav.reports"),
+    payment_releaser: finance("nav.purchases", "nav.banking", "nav.reports"),
+    payroll_administrator: finance("nav.reports"),
+    accountant: finance(...all),
+    controller: finance(...all),
+    owner: ["nav.money-i-put-in", ...finance(...all)],
+    tax_agent: finance(...all),
+    administrator: finance("nav.reports", "nav.compliance"),
+    auditor: finance("nav.reports", "nav.accounting", "nav.compliance"),
+    board_viewer: finance("nav.reports", "nav.equity"),
+    company_secretary: finance("nav.equity", "nav.compliance"),
+    dpo: finance("nav.compliance"),
+  };
+  const order = (xs: string[]) => nav.map((n) => n.id).filter((id) => xs.includes(id));
+
+  for (const [role, areas] of Object.entries(table)) {
+    it(`gives ${role} its areas and no other`, () => {
+      expect(ids(navFor(nav, as([role]), "expert"))).toEqual(order(areas));
+    });
+  }
+
+  it("gives a person with two roles the union of their areas", () => {
+    expect(ids(navFor(nav, as(["ar_specialist", "ap_specialist"]), "expert"))).toEqual(order([...table.ar_specialist!, ...table.ap_specialist!]));
+  });
+
+  it("finds the area a page is in, the longest route first", () => {
+    expect(areaOf(nav, "/purchases/claims/0192")?.id).toBe("nav.claims-review");
+    expect(areaOf(nav, "/purchases/orders/new")?.id).toBe("nav.purchases");
+    expect(areaOf(nav, "/sales/quotes")?.id).toBe("nav.sales");
+    expect(areaOf(nav, "/planning/budgets")?.id).toBe("nav.planning");
+    expect(areaOf(nav, "/settings/profile")).toBeUndefined();
+    expect(areaOf(nav, "/inbox")).toBeUndefined();
+  });
+
+  it("opens a page only inside the person's areas, and a person with personal rights only their own pages", () => {
+    expect(mayOpen(nav, as(["ar_specialist"]), "/sales/invoices/new")).toBe(true);
+    expect(mayOpen(nav, as(["ar_specialist"]), "/accounting/journals")).toBe(false);
+    expect(mayOpen(nav, as(["ar_specialist", "accountant"]), "/accounting/journals")).toBe(true);
+    expect(mayOpen(nav, as(["approver"]), "/purchases/bills")).toBe(false);
+    expect(mayOpen(nav, as(["approver"]), "/inbox")).toBe(true);
+    expect(mayOpen(nav, as(["employee"]), "/me/claims/new")).toBe(true);
+    expect(mayOpen(nav, as(["employee"]), "/settings/profile")).toBe(true);
+    expect(mayOpen(nav, as(["employee"]), "/inbox")).toBe(false);
+    expect(mayOpen(nav, as(["employee"]), "/banking/accounts/0192")).toBe(false);
+  });
+
+  it("lands each role where §7.1 says", () => {
+    expect(landingOf(["employee"])).toBe("/me/claims");
+    expect(landingOf(["bookkeeper"])).toBeUndefined();
+    expect(landingOf(["administrator"])).toBe("/settings");
+    expect(landingOf(["company_secretary"])).toBe("/compliance");
+    expect(landingOf(["dpo"])).toBe("/compliance");
+    expect(landingOf(["board_viewer"])).toBe("/reports");
+    expect(landingOf(["auditor"])).toBe("/reports");
+    expect(landingOf(["administrator", "accountant"])).toBeUndefined(); // Home wins
   });
 });

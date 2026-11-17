@@ -271,6 +271,19 @@ function Overview({ c, entry, onAsked }: { c: Connection; entry?: CatalogueEntry
                 : `Subscription: ${formatAmount(String(c.billing.quota?.amount ?? 0))} ${c.billing.quota?.unit} a ${c.billing.quota?.window}, ${c.billing.quota?.currency} ${formatAmount(c.billing.quota?.fee ?? "0")}`}
             </dd>
           </div>
+          {(c.billing.quota?.rates ?? []).length > 0 && (
+            <div>
+              <dt>Models that draw at another rate</dt>
+              <dd>
+                {(c.billing.quota?.rates ?? []).map((r) => `${r.model} ${r.rate}`).join(", ")}; others 1.{" "}
+                {c.billing.quota?.terms && (
+                  <>
+                    From <a href={c.billing.quota.terms.url}>{c.billing.quota.terms.title}</a>, read {date(c.billing.quota.terms.checked_on)}.
+                  </>
+                )}
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Qualify new models automatically</dt>
             <dd>{c.auto_qualify ? "On" : "Off"}</dd>

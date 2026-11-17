@@ -83,6 +83,23 @@ func (c compliance) DualControl(ctx context.Context, since time.Time) ([]storage
 	return a, rel, nil
 }
 
+func (c compliance) ExecutedProposals(ctx context.Context, since time.Time) ([]storage.ExecutedProposal, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ExecutedProposals(ctx, &since)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ExecutedProposal, len(rows))
+	for i, r := range rows {
+		out[i] = storage.ExecutedProposal{ID: r.ID, FinishedAt: r.FinishedAt, PayloadSHA256: r.PayloadSha256, ApprovedPayload: r.ApprovedPayload,
+			ApprovedSHA256: r.ApprovedSha256, DecidedBy: r.DecidedBy, RequestID: r.RequestID, RequestObject: r.RequestObject,
+			RequestStatus: r.RequestStatus, Envelope: r.Envelope, Signers: r.Signers, NotByAPerson: int(r.NotByAPerson)}
+	}
+	return out, nil
+}
+
 func (c compliance) SecondFactors(ctx context.Context, since time.Time) ([]storage.MemberSecondFactor, error) {
 	if err := c.u.check(); err != nil {
 		return nil, err

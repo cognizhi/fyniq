@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { answer, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
-import { DirectorSettlement } from "./DirectorSettlement";
+import { blank, checkSettlement, DirectorSettlement } from "./DirectorSettlement";
+import { invalid } from "../../test/invalid";
 
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
 const loan = { account_id: "acc-2500", code: "2500", name: "Loan from director / shareholder", role: "director-loan" as const };
@@ -163,6 +164,39 @@ describe("Settle a director's balance", () => {
   // req: FR-EQ-06
   // req: equity/founders-money Approve the conversion
   // req: equity/founders-money The conversion becomes effective
+  it("says what each route needs, every field at once", () => {
+    expect(checkSettlement({ ...blank("keep", ""), interest_rate: "-1" }, "SGD")).toEqual({
+      account: "Choose the account the company owes them on.", // the page chooses the first account owed; the check names it all the same
+      amount: "Enter the amount in SGD, more than zero.",
+      interest_rate: "Enter the interest a year as a percentage, such as 0.",
+    });
+    expect(checkSettlement({ ...blank("safe", "acc-2500"), amount: "100" }, "SGD")).toEqual({ instrument: "Choose the SAFE or note they hold." });
+  });
+
+  // QA-UI-01: each route's fields are marked, with what each needs beside it, before anything is sent.
+  it("marks each field of each route it cannot read, before anything is sent", async () => {
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: people },
+      "GET /v1/accounts": { status: 200, body: chart },
+      "GET /v1/director-settlements": { status: 200, body: { items: [], default_route: "keep" } },
+    });
+    page();
+    await screen.findByRole("option", { name: /^2500 Loan from director/ });
+    fireEvent.change(screen.getByLabelText("Interest a year (%)"), { target: { value: "-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    await invalid(document.body, "Amount (SGD)", "Enter the amount in SGD, more than zero.");
+    await invalid(document.body, "Interest a year (%)", "Enter the interest a year as a percentage, such as 0.");
+    fireEvent.click(screen.getByRole("radio", { name: /Waive/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    await invalid(document.body, "Credit to", "Choose the account the waiver credits.");
+    await invalid(document.body, "Why they waive it", "Say why they waive it.");
+    fireEvent.click(screen.getByRole("radio", { name: /Convert to shares/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    await invalid(document.body, "Class of shares", "Choose the class of shares allotted.");
+    await invalid(document.body, "Price per share (SGD)", "Enter the price per share, such as 1.20.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
+  });
+
   it("drafts a conversion with the shares it allots, and records it as registered by ACRA once approved; axe finds nothing", async () => {
     const shares = { shares: "833", converted: sgd("999.60"), remainder: sgd("0.40") };
     const drafted = settlement({ id: "ds-3", route: "convert", waiver: undefined, amount: sgd("1000.00"), conversion: { class_account_id: "acc-3010", price: "1.20", price_basis: "latest_priced_round", capacity: "lender", measurement: "carrying" }, shares,

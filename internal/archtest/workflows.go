@@ -332,23 +332,31 @@ func ReleaseAppTokenViolations(src []byte) []string {
 	return out
 }
 
+// LaunchGateJob is release.yml's job that runs the launch gate (QA-TRACE-01) before any image is built.
+const LaunchGateJob = "launch-gate"
+
 // ReleaseWorkflowViolations checks release.yml against SEC-22 and CTL-CHG-04 (p1-security-hardening design D1): it runs
 // only when a release is published, on its tag; the images job publishes as the publisher; the SLSA generator attests each digest the images
 // job pushed; the attest job, as the attester, verifies before it attests, and only after the provenance exists; and no
-// step signs with a key, so every signature is keyless and tied to the workflow's identity.
+// step signs with a key, so every signature is keyless and tied to the workflow's identity. (QA-TRACE-01;
+// p1-launch-readiness task 7.2) The images job waits for the launch gate, a job whose step is exactly
+// `make trace-gate PHASE=launch` and which no continue-on-error softens, so a release with an untested launch
+// requirement builds no image.
 func ReleaseWorkflowViolations(src []byte) []string {
 	type step struct {
-		Uses string            `yaml:"uses"`
-		Run  string            `yaml:"run"`
-		With map[string]string `yaml:"with"`
+		Uses            string            `yaml:"uses"`
+		Run             string            `yaml:"run"`
+		With            map[string]string `yaml:"with"`
+		ContinueOnError yaml.Node         `yaml:"continue-on-error"`
 	}
 	var w struct {
 		On   yaml.Node `yaml:"on"`
 		Jobs map[string]struct {
-			Needs yaml.Node         `yaml:"needs"`
-			Uses  string            `yaml:"uses"`
-			With  map[string]string `yaml:"with"`
-			Steps []step            `yaml:"steps"`
+			Needs           yaml.Node         `yaml:"needs"`
+			Uses            string            `yaml:"uses"`
+			With            map[string]string `yaml:"with"`
+			Steps           []step            `yaml:"steps"`
+			ContinueOnError yaml.Node         `yaml:"continue-on-error"`
 		} `yaml:"jobs"`
 	}
 	if err := yaml.Unmarshal(src, &w); err != nil {
@@ -405,6 +413,15 @@ func ReleaseWorkflowViolations(src []byte) []string {
 	}
 	if !slices.Contains(needs("attest"), "provenance") {
 		bad("the attest job must wait for the provenance, which it verifies")
+	}
+	gate, softened := false, w.Jobs[LaunchGateJob].ContinueOnError.Kind != 0
+	for _, s := range w.Jobs[LaunchGateJob].Steps {
+		if strings.TrimSpace(s.Run) == "make trace-gate PHASE=launch" {
+			gate, softened = true, softened || s.ContinueOnError.Kind != 0
+		}
+	}
+	if !gate || softened || !slices.Contains(needs("images"), LaunchGateJob) {
+		bad("the images job must wait for the %s job, whose step is exactly make trace-gate PHASE=launch, with no continue-on-error (QA-TRACE-01)", LaunchGateJob)
 	}
 	for id, j := range w.Jobs {
 		for _, s := range j.Steps {

@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: What Home shows (pulse, tiles, plans, set-up), Search and commands (Ctrl+K), Operations (long work), Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:fde6a1462f2f1c806ab2f8c1328be089c669a019abacedcd7404dfca8a4b1503
+  - docs/user-guide/home.md sha256:767c34cc8464533ccea4b973f7f6234f62820082c9909703222cd3358a299e72
 data_class: general
 taint: trusted
 status: draft
@@ -90,7 +90,7 @@ aliases:
 - Type part of a page's name or a command, pick a result with the arrow keys and press **Enter**; **Esc** closes it.
 - Results marked **Expert** belong to Expert mode.
 - **Search the records for …**, at the end of the list, finds a record such as an invoice by its number or a document by its amount: [[shell.search]].
-- **Appearance** in the header changes theme, high contrast, density and motion: [[preferences.appearance]].
+- **Appearance** in the header (on a phone, under **More**) changes theme, high contrast, density and motion: [[preferences.appearance]].
 
 (src: docs/user-guide/home.md#find-anything-with-search) (src: docs/user-guide/home.md#change-how-fyniq-looks)
 
@@ -123,7 +123,7 @@ aliases:
 
 ## See which version you are on
 
-- Select **Help** (the question mark in the header), then **About Fyniq**.
+- Select **Help** (the question mark in the header; on a phone, under **More**), then **About Fyniq**.
 - It shows the version, the commit (the git SHA the services were built from), when they were built and, for a published release, its tag.
 - Quote the version and the commit when reporting a problem.
 - Every exported report names the same version and commit in its footer: the last line of a CSV or a spreadsheet, and the footer of a PDF.
@@ -132,7 +132,7 @@ aliases:
 
 ## Sign out
 
-- Select **Sign out** in the header: the session in this browser ends and the sign-in page opens.
+- Select **Sign out** in the header (on a phone, under **More**): the session in this browser ends and the sign-in page opens.
 
 (src: docs/user-guide/home.md#sign-out)
 

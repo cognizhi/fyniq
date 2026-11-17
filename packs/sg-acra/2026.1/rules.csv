@@ -1,0 +1,4 @@
+rule,section,verdict,effective_from,effective_to,description,source
+secretary_not_sole_director,s171(1E),act,2026-11-16,,"The secretary is not the same person as the sole director","acra-officers coa-officers"
+secretary_natural_person,s171(1),act,2026-11-16,,"The secretary is a natural person: a Singapore citizen, a permanent resident, or someone who meets the local residency rules","acra-officers coa-officers"
+solvent_epc_no_statements,,guidance,2026-11-16,,"An exempt private company (fewer than 20 members, no corporation holding a beneficial interest in its shares) that can meet its debts as they fall due files no financial statements and declares its solvency online with the annual return",acra-xbrl

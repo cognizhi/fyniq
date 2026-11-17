@@ -1125,6 +1125,9 @@ func registerEquityTransactions(a *API) {
 					Today: today, RecordedBy: p.UserID}); err != nil {
 					return EquityTransaction{}, equityProblems(err)
 				}
+				if err := a.agentEvent(ctx, u, p.Organisation, EventSharesChanged, id.String()); err != nil { // AI-62
+					return EquityTransaction{}, err
+				}
 				out, d, err := a.shownEquityTransaction(ctx, u, id)
 				doc = d
 				return out, err

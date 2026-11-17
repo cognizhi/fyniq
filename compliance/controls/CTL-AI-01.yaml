@@ -20,7 +20,7 @@ checks:
   - frequency: CI
     status: running
     how: "test TestTheAIToolsAreReadOnly"
-    evidence: "every tool of the AI tool registry is read-only; it passes, saying so, until p1-ai-assistant adds the registry; CI artefact test-report (90 days)"
+    evidence: "every tool of the AI tool registry (contracts/ai/tools) is annotated read-only, and internal/aitool refuses to load a tool that writes, holds another scope or takes an open input; CI artefact test-report (90 days)"
   - frequency: N
     status: running
     how: "job schema.verify"

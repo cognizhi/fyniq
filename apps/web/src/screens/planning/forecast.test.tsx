@@ -6,6 +6,7 @@ import { answer, ownerSession, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Forecast } from "./Forecast";
+import { invalid } from "../../test/invalid";
 
 type Plan = components["schemas"]["ForecastPlan"];
 type Run = components["schemas"]["ForecastRun"];
@@ -122,5 +123,21 @@ describe("Forecast", () => {
     fireEvent.click(screen.getByRole("button", { name: "Record" }));
     await vi.waitFor(() => expect(seen.some((s) => s.path === `/v1/forecasts/${id}/record`)).toBe(true));
     expect(seen.find((s) => s.path === `/v1/forecasts/${id}/record`)!.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  // QA-UI-01: the API checks the plan; the field it refuses is marked, with the API's message and fix beside it.
+  it("marks the field the API refuses, with its message and fix", async () => {
+    const refused = { code: "FORECAST-02", title: "The plan cannot be read", status: 422, errors: [{ field: "body.horizon", message: "The forecast covers 12 to 60 months", fix: "Enter a number of months from 12 to 60" }] };
+    answer({
+      "GET /v1/forecasts": { status: 200, body: { items: [{ id, status: "draft", version: 1, plan }] } },
+      [`GET /v1/forecasts/${id}`]: { status: 200, body: { id, status: "draft", version: 1, plan }, headers: { ETag: `"1-draft"` } },
+      [`GET /v1/forecasts/${id}/results`]: { status: 200, body: results },
+      [`PUT /v1/forecasts/${id}`]: { status: 422, body: refused },
+    });
+    renderPage(Forecast, { path: "/planning/forecast", session: accountant, mode: "expert" });
+    await screen.findByText("Runway, without the funding planned");
+    fireEvent.change(screen.getByLabelText("Months"), { target: { value: "6" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await invalid(document.body, "Months", "The forecast covers 12 to 60 months: Enter a number of months from 12 to 60");
   });
 });

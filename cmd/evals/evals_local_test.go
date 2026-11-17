@@ -7,12 +7,16 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
+	"github.com/cognizhi/fyniq/internal/aitool"
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/proposal"
 )
 
 const suite = `{"id": "chat-fixture", "agent": "chat", "version": 1, "description": "A fixture: synthetic text only.", "threshold": "1",
@@ -117,5 +121,40 @@ func TestEvalsReplayTheRecordedRuns(t *testing.T) {
 	// The release's own suites are sound.
 	if err := evaluate(ctx, Options{Suites: "../../evals", Cassettes: "../../evals/cassettes", Out: t.TempDir()}); err != nil {
 		t.Errorf("the release's suites: %v", err)
+	}
+}
+
+// The report names every AI contract the run checked, at its version and hash: each read tool, each task type of the
+// catalogue and each agent's system prompt in use, so a release's evidence says what its evals passed on.
+// req: platform/release-and-versioning AI catalogue, prompt and tool versions
+// req: CTL-AI-05
+func TestTheReportNamesTheContractsItChecked(t *testing.T) {
+	t.Setenv(local.LiveEnv, "")
+	o := Options{Suites: "../../evals", Cassettes: "../../evals/cassettes", Out: t.TempDir()}
+	if err := evaluate(context.Background(), o); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(o.Out, "report.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r Report
+	if err := json.Unmarshal(raw, &r); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Versions.Tools) != len(aitool.Default().Tools()) || len(r.Versions.Tasks) != len(proposal.Default().Types()) {
+		t.Errorf("the tools and task types: %+v", r.Versions)
+	}
+	chat, _ := assistant.DefaultPrompt("chat")
+	if !slices.Contains(r.Versions.Prompts, Pinned{"chat", chat.Version, chat.SHA256}) {
+		t.Errorf("the chat prompt in use, %s: %+v", chat.Name(), r.Versions.Prompts)
+	}
+	for _, p := range append(append(r.Versions.Tools, r.Versions.Tasks...), r.Versions.Prompts...) {
+		if p.ID == "" || p.Version < 1 || len(p.SHA256) != 64 {
+			t.Errorf("a contract without its version or hash: %+v", p)
+		}
+	}
+	if !strings.Contains(string(raw), `"tasks": [`) {
+		t.Error("the task types are not listed, even as none")
 	}
 }

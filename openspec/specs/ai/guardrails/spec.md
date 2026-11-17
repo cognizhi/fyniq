@@ -191,3 +191,7 @@ Source: PRD-001 §9.8
 #### Scenario: Only allowlisted clients connect
 - **WHEN** a client not on the allowlist connects
 - **THEN** it is refused
+
+#### Scenario: Built with the MCP server (rev 0.277)
+- **WHEN** it is built
+- **THEN** it is built with `p1-mcp-first-party`, with the MCP and agent clients it guards against (the owner's decision of 14 Nov 2026)
