@@ -8,6 +8,7 @@ package seedload
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ import (
 // Result is what a load wrote.
 type Result struct {
 	Accounts int
+	Standard int // the standard chart's accounts added for the system roles the sample's chart lacks
 	Periods  int
 	Journals int // posted, the first of them reversed the day after
 }
@@ -53,6 +55,38 @@ func AccountType(code string) storage.AccountType {
 // periods of 2026, and its journals, posted, with the first reversed the day after, as the golden
 // scenarios do. An organisation that has a chart already is refused, so a load never mixes with
 // real or earlier data.
+// missingSystemAccounts are the standard chart's accounts for the system roles the sample company's chart holds no
+// account for, by its own role or the standard role of its code.
+func missingSystemAccounts(c seed.Company) ([]storage.NewAccount, error) {
+	std, err := chart.Standard()
+	if err != nil {
+		return nil, err
+	}
+	byCode := map[string]chart.Account{}
+	for _, a := range std {
+		byCode[a.Code] = a
+	}
+	held := map[storage.AccountRole]bool{}
+	taken := map[string]bool{}
+	for _, a := range c.Accounts {
+		taken[a.Code] = true
+		if a.Role != "" {
+			held[storage.AccountRole(a.Role)] = true
+		} else if s, ok := byCode[a.Code]; ok && s.Role != "" {
+			held[s.Role] = true
+		}
+	}
+	var out []storage.NewAccount
+	for _, a := range std {
+		if a.Role == "" || held[a.Role] || taken[a.Code] || !slices.Contains(storage.SystemRoles, a.Role) {
+			continue
+		}
+		out = append(out, a.NewAccount)
+		held[a.Role] = true
+	}
+	return out, nil
+}
+
 // standardAccounts are the standard chart's accounts by code: an account of the sample company takes the system role of
 // the standard account with its code (FR-COA-03), unless it has a role of its own, and its attributes when it is of the
 // same type, so the rules find what they look for as they do in a chart loaded from the standard one: a bill its 2010
@@ -121,6 +155,19 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 			}
 			ids[a.Code], codes[acc.ID] = acc.ID, a.Code
 		}
+		// Every system role has its account, as in a chart loaded from the standard one (FR-COA-03): a role the sample's
+		// chart lacks gets the standard chart's account for it, which no journal of the sample posts to, so the sample's
+		// figures stay as generated and its months can close (the close checks ask for every system account).
+		added, err := missingSystemAccounts(c)
+		if err != nil {
+			return err
+		}
+		for _, n := range added {
+			if _, err := u.Accounts().Create(ctx, n); err != nil {
+				return fmt.Errorf("account %s: %w", n.Code, err)
+			}
+		}
+		r.Standard = len(added)
 		for m := time.January; m <= time.December; m++ {
 			start := time.Date(2026, m, 1, 0, 0, 0, 0, time.UTC)
 			p, err := u.Periods().Create(ctx, storage.NewPeriod{StartsOn: start, EndsOn: start.AddDate(0, 1, -1)})

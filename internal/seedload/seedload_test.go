@@ -18,10 +18,12 @@ import (
 
 // The sample company loads into an organisation through the engine, its share-capital accounts marked (INV-13) and the
 // standard chart's system roles on the accounts with their codes, and its trial balance equals the seed's own totals; a
-// second load into the same organisation is refused rather than mixed in (QA-LOCAL-01, DEV-04).
+// second load into the same organisation is refused rather than mixed in (QA-LOCAL-01, DEV-04). Every system role has
+// its account, so the sample's months can close (FR-COA-03).
 // req: DEV-04
 // req: QA-LOCAL-01
 // req: INV-13
+// req: FR-COA-03
 func TestTheSampleCompanyLoadsAndBalances(t *testing.T) {
 	ctx := context.Background()
 	db, err := pgtest.Start(ctx)
@@ -65,6 +67,26 @@ func TestTheSampleCompanyLoadsAndBalances(t *testing.T) {
 			if a, err := u.Accounts().ByCode(ctx, code); err != nil || a.Role != role {
 				t.Errorf("%s: want the role %s, got %+v %v", code, role, a, err)
 			}
+		}
+		// Every system role has an active account, so a month of the sample company can close: the roles its chart lacks
+		// (2330 withholding tax and 2410 customer deposits) take the standard chart's accounts, which nothing posts to.
+		all, err := u.Accounts().List(ctx)
+		if err != nil {
+			return err
+		}
+		held := map[storage.AccountRole]bool{}
+		for _, a := range all {
+			if a.Active {
+				held[a.Role] = true
+			}
+		}
+		for _, role := range storage.SystemRoles {
+			if !held[role] {
+				t.Errorf("no active account holds the system role %s: the close checks block every month", role)
+			}
+		}
+		if r.Standard != 2 {
+			t.Errorf("added %d standard accounts for the missing roles; want 2 (2330 and 2410)", r.Standard)
 		}
 		if a, err := u.Accounts().ByCode(ctx, "1010"); err != nil || !a.MoneyAccount || !a.Revalue || a.Guidance != "" || a.Name == "Petty cash" {
 			t.Errorf("1010: want the sample company's money account with the standard attributes, got %+v %v", a, err)

@@ -6,13 +6,13 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "*.journey.ts",
+  testMatch: "*.spec.ts",
   outputDir: "../test-results/journeys", // traces of a failed journey; CI keeps them
   globalSetup: "./setup.ts",
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",
   timeout: 180_000,
   workers: 1, // one stack: the journeys run one after another
-  use: { baseURL: `http://localhost:${process.env.FYNIQ_HTTP_PORT ?? "8080"}`, trace: "retain-on-failure" },
+  use: { baseURL: `http://localhost:${process.env.FYNIQ_HTTP_PORT ?? "8080"}`, trace: "retain-on-failure", actionTimeout: 15_000 },
   projects: [{ name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } }],
 });
