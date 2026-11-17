@@ -24,6 +24,7 @@ func signed(by string) *string { return &by }
 // from 1 Jan 2027 under SFRS for Small Entities shows the Third Edition. Versions apply from their year until a later
 // one replaces them.
 // req: FR-ORG-10
+// req: G4-017
 func TestAYearsStatementsAreManagementStatementsUntilTheAccountantApproves(t *testing.T) {
 	y2026 := period.Span{StartsOn: date("2026-01-01"), EndsOn: date("2026-12-31")}
 	y2027 := period.Span{StartsOn: date("2027-01-01"), EndsOn: date("2027-12-31")}

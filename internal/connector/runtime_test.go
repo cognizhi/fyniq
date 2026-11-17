@@ -263,6 +263,7 @@ func TestBreakerFailsOverOnlyWhatWasNeverHandedOver(t *testing.T) {
 // before connecting to an address the connector may not reach.
 // req: SEC-36
 // req: FR-INT-20
+// req: G4-097
 // asvs: V15.3.1
 func TestTestActionNeverReturnsTheBody(t *testing.T) {
 	c := clock.NewFrozen(time.Date(2026, 10, 25, 9, 0, 0, 0, time.UTC))

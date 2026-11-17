@@ -108,7 +108,11 @@ and the accountant decides.
 Write `docs/postmortems/YYYY-MM-DD-<slug>.md` within 5 working days: timeline; impact (which
 organisations, periods, figures); root cause; **why the oracle, the properties and the invariants
 did not catch it**, and what now does (a new property, invariant, fixture or check); the data
-correction; follow-ups with owners. Blameless; facts only.
+correction; follow-ups with owners. Blameless; facts only. Start from
+`templates/root-cause.md`.
+
+A `fix` that changes calculation code (`internal/domain/`, `oracle/src/`, `packs/`) carries its regression test in
+the same pull request: `scripts/release_policy.py` fails it in CI otherwise (`make release-policy`; QA-REL-01).
 
 ## 8. Ship
 
