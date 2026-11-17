@@ -48,6 +48,7 @@ var verifications = map[string]verification{
 	"payments.dual-control":    dualControl,
 	"members.second-factor":    secondFactor,
 	"audit.exports-reconciled": exportsReconciled,
+	"ai.traces":                aiTraces,
 }
 
 // Built reports whether the verification name is built.

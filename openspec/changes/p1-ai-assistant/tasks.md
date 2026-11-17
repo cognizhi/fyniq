@@ -39,7 +39,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 4.2 Untrusted text quoted as `untrusted_text` in tool results and screened through the `Screening` port with
   prompts and answers, failing closed. Tests `// req: AI-18`, `// req: AI-P7`, `// req: AI-25` (organisation text
   labelled untrusted).
-- [ ] 4.3 CTL-AI-06 (design D8): planted NRIC, bank numbers and payroll in the sample company reach no recorded model
+- [x] 4.3 CTL-AI-06 (design D8): planted NRIC, bank numbers and payroll in the sample company reach no recorded model
   request, in `make test` and weekly, with its report as evidence; `compliance/controls/CTL-AI-06.yaml` running. Test
   `// req: CTL-AI-06`.
 

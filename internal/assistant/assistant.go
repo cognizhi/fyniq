@@ -219,7 +219,7 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	if q.Context != "" {
 		question = "About " + q.Context + ":\n\n" + q.Text
 	}
-	messages := append(slices.Clone(q.History), ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText,
+	messages := append(filtered(q.History), ports.ModelMessage{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText,
 		Text: aiexclusion.Filter(question)}}})
 	if err := emit(Event{Kind: EventStatus, Text: "Reading the books"}); err != nil {
 		return out, err
@@ -400,4 +400,19 @@ func cmpOr(v, d int) int {
 		return v
 	}
 	return d
+}
+
+// filtered are the conversation's earlier messages as the model reads them: every text through the output filter, as the
+// question is (AI-20, CTL-AI-06). The API keeps each question as its person typed it, so an NRIC or account number in
+// an earlier question never reaches the model with a later one.
+func filtered(history []ports.ModelMessage) []ports.ModelMessage {
+	out := make([]ports.ModelMessage, len(history))
+	for i, m := range history {
+		m.Parts = slices.Clone(m.Parts)
+		for j := range m.Parts {
+			m.Parts[j].Text = aiexclusion.Filter(m.Parts[j].Text)
+		}
+		out[i] = m
+	}
+	return out
 }

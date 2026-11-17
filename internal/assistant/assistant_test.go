@@ -168,9 +168,10 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 
 // A refused read, a tool the model invents, a calc on a fact the turn did not read and too many reads each go back to
 // the model or the person in words; a refusal of the model call itself is the API's problem; an NRIC in an answer is
-// masked on its way out (AI-20).
+// masked on its way out, and one in an earlier question on its way back to the model (AI-20, CTL-AI-06).
 // req: AI-P2
 // req: AI-20
+// req: CTL-AI-06
 func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 	refused := &assistant.Problem{Status: 422, Code: "AI-TOOL-03", Detail: "Your roles hold no V right on \"Invoices, credit notes\".", Fix: "Ask an Owner."}
 	b := &api{
@@ -197,6 +198,19 @@ func TestTheToolLoopSaysWhatWentWrong(t *testing.T) {
 	}
 	if strings.Contains(out.Text, "1234567") || !out.Grounding.Regenerated || out.Grounding.Withheld != 1 {
 		t.Errorf("the answer's NRIC: %q %+v", out.Text, out.Grounding)
+	}
+
+	// An NRIC and an account number in an earlier question, kept as typed, reach the model masked with a later one.
+	b = &api{answers: []ports.ModelResponse{answer(words("Noted."))}}
+	history := []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Pay S1234567D at 012-345678-9"}}},
+		{Role: ports.RoleAssistant, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "I cannot pay anyone."}}}}
+	if _, err := (&assistant.Assistant{Backend: b, Prompt: prompt(t)}).Answer(context.Background(), assistant.Question{Token: "fyai_t", Text: "And now?",
+		History: history}, func(assistant.Event) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if sent, _ := json.Marshal(b.calls[0].Request.Messages); strings.Contains(string(sent), "1234567D") || strings.Contains(string(sent), "345678") ||
+		!strings.Contains(string(sent), "S****567D") || history[0].Parts[0].Text != "Pay S1234567D at 012-345678-9" {
+		t.Errorf("the earlier question as the model read it: %s", sent)
 	}
 
 	many := make([]ports.ModelPart, assistant.DefaultToolCalls+1)

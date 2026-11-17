@@ -236,6 +236,16 @@ AI-28).**
   AI-18, AI-25: the organisation's own text too), screened with the names its facts carry; a finding withholds every
   quoted text and name, saying what was found, and keeps the figures. A finding in a model call refuses it
   (AI-SCREEN-01) and sends nothing; a screening that did not finish, or none set up, refuses either (AI-SCREEN-02).
+- As built (task 4.3): `TestPlantedExclusionsReachNoModelRequest` plants an NRIC, a bank account number and a home
+  address in the books and an NRIC and an account number in an earlier question, asks through the API and the real AI
+  service, and scans every request the model received; the model must still have read the contact's name and the
+  masked values. Building it found that the API sends each earlier question as its person typed it: the AI service now
+  passes every text of the history through the output filter, as it did the question (local screening had refused the
+  later question instead). `verify ai.traces` runs daily, more often than the weekly the PRD asks: up to 1,000 of the
+  last day's turns, their answers, segments, facts and reads' inputs scanned with `aiexclusion.Found`, and their
+  classes against `ai.payroll_access` on the day. A finding names the turn and the kind, never the value. The question
+  is the person's own words, so it is not scanned. No read tool reaches pay records in this release, so the payroll
+  leg is the policy test (`TestWhatNeverReachesTheAI`) and the classes check.
 
 **D9. Denial of wallet and limits (AI-23).**
 - Per person: 20 turns a minute and 200 a day (settings, dual controlled); per turn: at most 8 tool calls and the
