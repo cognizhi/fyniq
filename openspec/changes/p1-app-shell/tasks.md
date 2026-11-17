@@ -30,8 +30,11 @@
   appears, and a test keeps it so. Tests: `appearance.test.ts`, `styles/visual-design.test.ts` (12 of the 13 titles),
   `format/amount.test.ts`, `shell/AppFrame.test.tsx`, `components/ai/AiBadge.test.tsx`. Provisional: the appearance
   choice is kept in the browser until the preferences operation exists (4.1). **Left:** "Illustration and signature
-  moments" (the Home pulse card and teaching empty states, 3.2 and 6.1); reading the organisation's motion switch
-  from its settings (the session does not carry it; it is On); Basic mode forcing Comfortable density (4.1).)
+  moments" (the Home pulse card and teaching empty states, 3.2 and 6.1); Basic mode forcing Comfortable density (4.1).
+  17 Nov 2026: the organisation's motion switch is the setting `appearance.motion` (On by default; an Administrator
+  turns it off, audited), carried by `GET /v1/session` to everyone and applied before any page is drawn;
+  `e2e/motion.spec.ts` finds no animation or transition with it Off, with Reduce motion or with
+  `prefers-reduced-motion`, and finds some with it On (`// req: QA-UI-07`, `// req: FR-UX-38`).)
 
 ## 2. Navigation and workspaces
 
