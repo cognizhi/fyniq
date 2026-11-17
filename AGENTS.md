@@ -43,6 +43,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make release-policy` | A `fix` that changes calculation code (`internal/domain/`, `oracle/src/`, `packs/`) adds or changes a test in the same range (QA-REL-01); CI runs it on every pull request with its title | Today |
+| `make storybook` | Storybook in `apps/web` (QA-UI-02): builds it and runs every shared component's stories in Chrome with axe, in light, dark and both high-contrast themes; a planted axe violation must fail the run. Its own CI job, outside `make test`; `pnpm --filter @fyniq/web storybook` serves it | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
 | `make prototype` | Prints the path of the static UI prototype | Today |
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |

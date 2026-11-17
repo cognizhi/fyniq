@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -148,6 +148,12 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's gen
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
+
+storybook: ## Storybook (QA-UI-02): build it, run every shared component's stories in Chrome with axe in the four themes, and check a planted axe violation fails the run
+	@$(MISE) pnpm --filter @fyniq/web build:storybook
+	@for t in light dark contrast contrast-dark; do echo "stories in the $$t theme"; VITE_STORY_THEME=$$t $(MISE) pnpm --filter @fyniq/web test:stories || exit 1; done
+	@if FYNIQ_STORY_PLANTED=1 $(MISE) pnpm --filter @fyniq/web test:stories > /dev/null 2>&1; then echo "✖ the planted axe violation passed the Storybook run"; exit 1; fi
+	@echo "✔ Storybook: every shared component's stories pass axe in four themes, and the planted violation fails"
 
 evals: ## Run the AI eval suites (CTL-AI-05): replay each model's recorded answers, check each suite judges soundly, report in .data/evals/report.json; FYNIQ_AI_LIVE=1 MODEL=<id> runs one model live on synthetic text and records it
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
