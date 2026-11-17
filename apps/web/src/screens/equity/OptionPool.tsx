@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Plus, ScrollText, TriangleAlert } from "lucide-react";
+import { CalendarClock, CircleCheck, Plus, ScrollText, TriangleAlert } from "lucide-react";
 import { Refusal } from "../../components/Refusal";
 import { date } from "../../format/date";
 import { helpText } from "../../i18n";
@@ -244,7 +244,12 @@ function Resolutions({ p }: { p: Pool }) {
               {count(r.size)} from {date(r.resolved_on)}
             </Link>
             <span className="fy-row gap-2">
-              {r.in_force && <span className="fy-chip fy-chip--good">In force</span>}
+              {r.in_force && (
+                <span className="fy-chip fy-chip--good">
+                  <Icon of={CircleCheck} />
+                  In force
+                </span>
+              )}
               <RecordStatus status={r.status} asked={r.approval_id} />
             </span>
           </li>

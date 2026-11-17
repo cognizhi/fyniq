@@ -160,7 +160,10 @@ function SetUp({ steps }: { steps: Step[] }) {
                 <span className="fy-list__title whitespace-normal">{s.title}</span>
                 <span className="fy-list__meta whitespace-normal">{s.why}</span>
               </span>
-              <span className={s.done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>{s.done ? "Done" : "To do"}</span>
+              <span className={s.done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>
+                <Icon of={s.done ? CircleCheck : Circle} />
+                {s.done ? "Done" : "To do"}
+              </span>
             </Link>
           </li>
         ))}

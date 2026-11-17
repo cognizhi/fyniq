@@ -285,7 +285,7 @@ function Upgrade({ c, busy, onConsent }: { c: Connector; busy: boolean; onConsen
   return (
     <Card
       title={`Upgrade ${c.manifest_version} to ${c.release_version}`}
-      aside={c.upgrade_widens ? <span className="fy-chip fy-chip--warning">Needs consent</span> : <span className="fy-chip fy-chip--neutral">Asks nothing new</span>}
+      aside={c.upgrade_widens ? <span className="fy-chip fy-chip--warning"><Icon of={TriangleAlert} />Needs consent</span> : <span className="fy-chip fy-chip--neutral">Asks nothing new</span>}
       foot={
         <>
           <span className="fy-small fy-secondary fy-grow">{c.upgrade_widens ? "It runs under the old consent until a second person approves yours." : "Consenting moves it to the new manifest."}</span>
