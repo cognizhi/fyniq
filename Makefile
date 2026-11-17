@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -157,6 +157,9 @@ storybook: ## Storybook (QA-UI-02): build it, run every shared component's stori
 
 evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden and red-team suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
+
+golden-set: ## Rewrite the assistant's golden questions (evals/golden/assistant.json) from the oracle on the sample company (Docker, uv); make evals then checks each against the oracle, the seed and the API
+	@FYNIQ_GOLDEN_WRITE=1 $(MISE) go test -tags local ./internal/api/ -run '^TestWriteTheGoldenSet$$' -count=1
 
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \

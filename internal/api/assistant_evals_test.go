@@ -6,8 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -16,10 +18,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
+
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/assistant/evalsuite"
+	"github.com/cognizhi/fyniq/internal/differential"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -73,11 +78,19 @@ func TestTheAssistantSuites(t *testing.T) {
 		sr := evalSuiteReport{ID: s.ID, Kind: s.Kind, Version: s.Version, Cases: len(s.Cases), Harness: "sound", Runs: []evalRun{}}
 		t.Run(s.ID, func(t *testing.T) {
 			h := newEvalHarness(t, s, seed.Generate(vocab, s.Company.Seed, s.Company.Journals))
+			var oracle oracleResult
+			if s.Kind == evalsuite.Golden {
+				oracle = oracleOf(t, h.company)
+			}
 			var weak []string
 			for _, c := range s.Cases {
 				for _, w := range c.Expect.Facts {
-					if got, err := evalsuite.FromSeed(h.company, w); err != nil || !evalsuite.Equal(got, w.Value) {
+					// The seed's own sums, where they reach, and the independent oracle's statements, always (golden rule 3).
+					if got, err := evalsuite.FromSeed(h.company, w); err == nil && !evalsuite.Equal(got, w.Value) {
 						weak = append(weak, c.ID+": the seed works out "+got+", not "+w.Value)
+					}
+					if got, ok := oracle.value(w); !ok || !evalsuite.Equal(got, w.Value) {
+						weak = append(weak, c.ID+": the oracle gives "+cmpOr(got, "nothing")+", not "+w.Value)
 					}
 				}
 				if v := h.run(c, &solver{c: c}); !v.Pass {
@@ -402,4 +415,231 @@ func assistantModels(dir string) ([]string, error) {
 	}
 	sort.Strings(out)
 	return out, nil
+}
+
+// oracleResult is what the independent Python oracle (QA-ENG-01) gives for the sample company, run on the scenario
+// internal/differential makes of the seed: each month's trial balance and statements.
+type oracleResult struct {
+	TrialBalance map[string]map[string]string `json:"trial_balance"`
+	Statements   map[string]struct {
+		PL struct {
+			Revenue     struct{ Total string } `json:"revenue"`
+			CostOfSales struct{ Total string } `json:"cost_of_sales"`
+			GrossProfit string                 `json:"gross_profit"`
+			Opex        struct {
+				Total string `json:"total"`
+			} `json:"operating_expenses"`
+			EBITDA    string `json:"ebitda"`
+			NetProfit string `json:"net_profit"`
+		} `json:"profit_and_loss"`
+	} `json:"statements"`
+	KPIs map[string]struct {
+		SpendByFunction map[string]string `json:"spend_by_function"`
+	} `json:"kpis"`
+}
+
+// oracleOf runs the oracle on the seed, as the differential gate does.
+func oracleOf(t *testing.T, company seed.Company) oracleResult {
+	t.Helper()
+	raw, err := json.Marshal(differential.FromSeed(company, "evals"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "sample.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("uv", "run", "--project", "oracle", "--locked", "--quiet", "python", "test/differential/oracle_batch.py", path) // #nosec G204 -- the repository's oracle on a scenario this test wrote
+	cmd.Dir = "../.."
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("the oracle: %v\n%s(install the toolchain with `make setup`: the golden set is checked against the oracle)", err, stderr.String())
+	}
+	var line struct {
+		Result  oracleResult `json:"result"`
+		Invalid string       `json:"invalid"`
+	}
+	if err := json.Unmarshal(out, &line); err != nil || line.Invalid != "" {
+		t.Fatalf("the oracle's answer: %v %s", err, line.Invalid)
+	}
+	return line.Result
+}
+
+// value is the oracle's figure for a golden fact, signed as Fyniq's statements show it (revenue, profit and expenses
+// positive; an account's movement debits positive), summed over the fact's months: the P&L's for revenue, profit and
+// costs, the KPIs' spend by function for spend; false for a measure it does not give.
+func (r oracleResult) value(w evalsuite.Want) (string, bool) {
+	from, err1 := time.Parse(time.DateOnly, w.From)
+	to, err2 := time.Parse(time.DateOnly, w.To)
+	if err1 != nil || err2 != nil || r.Statements == nil {
+		return "", false
+	}
+	sum := apd.New(0, 0)
+	ok := true
+	add := func(s string, sign int64) {
+		if s == "" {
+			return
+		}
+		d, _, err := apd.NewFromString(s)
+		if err != nil {
+			ok = false
+			return
+		}
+		if sign < 0 {
+			d.Neg(d)
+		}
+		_, _ = decimals.Add(sum, sum, d)
+	}
+	for m := time.Date(from.Year(), from.Month(), 1, 0, 0, 0, 0, time.UTC); !m.After(to); m = m.AddDate(0, 1, 0) {
+		key := m.Format("2006-01")
+		pl := r.Statements[key].PL
+		switch w.Measure {
+		case "revenue":
+			add(pl.Revenue.Total, 1)
+		case "gross_profit":
+			add(pl.GrossProfit, 1)
+		case "ebitda":
+			add(pl.EBITDA, 1)
+		case "net_profit":
+			add(pl.NetProfit, 1)
+		case "costs":
+			add(pl.CostOfSales.Total, -1)
+			add(pl.Opex.Total, -1)
+		case "spend_sm", "spend_rd", "spend_ga": // the KPI's spend by function, depreciation included (spend_ga@1)
+			add(r.KPIs[key].SpendByFunction[map[string]string{"spend_sm": "S&M", "spend_rd": "R&D", "spend_ga": "G&A"}[w.Measure]], 1)
+		case "account_movement":
+			add(r.TrialBalance[key][w.Account], 1)
+		default:
+			return "", false
+		}
+	}
+	if !ok {
+		return "", false
+	}
+	return money2(sum), true
+}
+
+// decimals is the context the oracle's figures are summed in: exact, at far more digits than any figure has.
+var decimals = apd.BaseContext.WithPrecision(34)
+
+// money2 is a decimal to two places, without a negative zero.
+func money2(d *apd.Decimal) string {
+	var q apd.Decimal
+	_, _ = decimals.Quantize(&q, d, -2)
+	if q.IsZero() {
+		q.Negative = false
+	}
+	return q.Text('f')
+}
+
+// TestWriteTheGoldenSet writes evals/golden/assistant.json with FYNIQ_GOLDEN_WRITE=1 (QA-AI-01; p1-ai-assistant task
+// 8.2): questions on the sample company's measures and accounts, month by month and by quarter, each value the
+// oracle's. TestTheAssistantSuites then checks every value against the oracle, the seed's own sums and the API, so a
+// regenerated set is right before it is kept. Without the switch it does nothing.
+// req: QA-AI-01
+func TestWriteTheGoldenSet(t *testing.T) {
+	if os.Getenv("FYNIQ_GOLDEN_WRITE") != "1" {
+		t.Skip("set FYNIQ_GOLDEN_WRITE=1 to write evals/golden/assistant.json")
+	}
+	vocab, err := seed.LoadVocabulary("../../docs/design/screens/sample-data.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := evalsuite.Company{Seed: 1, Journals: 240}
+	sample := seed.Generate(vocab, company.Seed, company.Journals)
+	oracle := oracleOf(t, sample)
+	s := evalsuite.Suite{ID: "golden", Agent: "chat", Version: 1, Kind: evalsuite.Golden, Company: company,
+		Description: "The golden questions (QA-AI-01): questions on the synthetic sample company's measures and accounts, month by month and by quarter, each with the fact a right answer cites and its exact value, worked out by the oracle from the seed and checked against the seed's own sums and the API. 100% numeric accuracy is the release gate. Regenerate with FYNIQ_GOLDEN_WRITE=1. No organisation data."}
+	add := func(id, question string, input map[string]any, w evalsuite.Want) {
+		v, ok := oracle.value(w)
+		if !ok {
+			t.Fatalf("%s: the oracle gives no %s", id, w.Measure)
+		}
+		w.Value = v
+		raw, _ := json.Marshal(input)
+		s.Cases = append(s.Cases, evalsuite.Case{ID: id, Question: question, Solution: []evalsuite.Read{{Tool: "metrics.query", Input: raw}},
+			Expect: evalsuite.Expect{Facts: []evalsuite.Want{w}}})
+	}
+	type measure struct{ key, id string }
+	measures := []measure{{"revenue", "revenue"}, {"gross_profit", "gross-profit"}, {"ebitda", "ebitda"}, {"net_profit", "net-profit"}, {"costs", "costs"}}
+	asks := map[string][]string{
+		"revenue":      {"What was revenue in %s?", "How much revenue did we recognise in %s?", "Revenue for %s, please."},
+		"gross_profit": {"What was gross profit in %s?", "How much gross profit did we make in %s?", "Gross profit for %s?"},
+		"ebitda":       {"What was EBITDA in %s?", "How much EBITDA did we have in %s?", "EBITDA for %s, please."},
+		"net_profit":   {"What was net profit in %s?", "How much did we make or lose, after every expense, in %s?", "Net profit for %s?"},
+		"costs":        {"What did cost of sales and operating expenses come to in %s?", "How much did we spend on cost of sales and operating expenses in %s?", "Total costs, cost of sales and operating expenses together, for %s?"},
+		"spend_sm":     {"How much did we spend on sales and marketing in %s?"},
+		"spend_rd":     {"How much did we spend on research and development in %s?"},
+		"spend_ga":     {"How much did we spend on general and administrative costs in %s?"},
+		"account":      {"How did the %s account move in %s?", "What was the net movement on %s in %s?", "By how much did %s change in %s?"},
+	}
+	n := 0
+	ask := func(key, period string, more ...any) string {
+		q := asks[key][n%len(asks[key])]
+		n++
+		return fmt.Sprintf(q, append(more, period)...)
+	}
+	day := func(m time.Time) (string, string) {
+		return m.Format(time.DateOnly), m.AddDate(0, 1, -1).Format(time.DateOnly)
+	}
+	months := []time.Time{}
+	for m := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC); m.Month() <= time.September; m = m.AddDate(0, 1, 0) {
+		months = append(months, m)
+	}
+	for _, m := range months {
+		from, to := day(m)
+		for _, x := range measures {
+			add(x.id+"-"+m.Format("2006-01"), ask(x.key, m.Format("January 2006")), map[string]any{"measure": x.key, "from": m.Format("2006-01"),
+				"to": m.Format("2006-01")}, evalsuite.Want{Measure: x.key, From: from, To: to})
+		}
+	}
+	for q := range 3 {
+		first := months[3*q]
+		last := months[3*q+2]
+		from, _ := day(first)
+		_, to := day(last)
+		name := fmt.Sprintf("%s to %s", first.Format("January"), last.Format("January 2006"))
+		for _, x := range append(measures, measure{"spend_sm", "spend-sm"}, measure{"spend_rd", "spend-rd"}, measure{"spend_ga", "spend-ga"}) {
+			add(fmt.Sprintf("%s-2026-q%d", x.id, q+1), ask(x.key, name+" in total"), map[string]any{"measure": x.key, "from": first.Format("2006-01"),
+				"to": last.Format("2006-01"), "grain": "total"}, evalsuite.Want{Measure: x.key, From: from, To: to})
+		}
+	}
+	// Each account's movement in up to three months it has lines in; a month whose lines net to nothing, such as the
+	// first journal and its reversal the day after, counts too.
+	lines := map[string]bool{} // account and month
+	for i, j := range sample.Journals {
+		for _, l := range j.Lines {
+			lines[l.Account+" "+j.Date[:7]] = true
+			if i == 0 {
+				next, _ := time.Parse(time.DateOnly, j.Date)
+				lines[l.Account+" "+next.AddDate(0, 0, 1).Format("2006-01")] = true
+			}
+		}
+	}
+	for _, a := range sample.Accounts {
+		moved := 0
+		for _, m := range months {
+			from, to := day(m)
+			w := evalsuite.Want{Measure: "account_movement", Account: a.Code, From: from, To: to}
+			if !lines[a.Code+" "+m.Format("2006-01")] || moved == 3 {
+				continue
+			}
+			moved++
+			add("account-"+a.Code+"-"+m.Format("2006-01"), ask("account", m.Format("January 2006"), strings.ToLower(a.Name)),
+				map[string]any{"measure": "account_movement", "by": "account", "member": a.Code, "from": m.Format("2006-01"), "to": m.Format("2006-01")}, w)
+		}
+	}
+	if len(s.Cases) < 200 {
+		t.Fatalf("only %d golden questions: QA-AI-01 asks for at least 200", len(s.Cases))
+	}
+	raw, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("../../evals/golden/assistant.json", append(raw, '\n'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("wrote %d golden questions", len(s.Cases))
 }

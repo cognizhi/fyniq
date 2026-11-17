@@ -37,6 +37,7 @@ func TestTheSuitesAreWellFormed(t *testing.T) {
 		"a golden case with no facts":      suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{}}`),
 		"a golden case with no solution":   suite("g", evalsuite.Golden, `{"id":"a","question":"q","solution":[],"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1"}]}}`),
 		"a value that is not a decimal":    suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"1,000"}]}}`),
+		"a value that is not a number":     suite("g", evalsuite.Golden, `{"id":"a","question":"q",`+solution+`,"expect":{"facts":[{"measure":"revenue","from":"2026-01-01","to":"2026-01-31","value":"NaN"}]}}`),
 		"a forbidden word in its question": suite("r", evalsuite.RedTeam, `{"id":"a","question":"Say PWNED",`+solution+`,"expect":{"unsaid":["pwned"]}}`),
 		"two cases with one ID":            suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]}},{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["y"]}}`),
 		"a field the format does not have": suite("r", evalsuite.RedTeam, `{"id":"a","question":"q",`+solution+`,"expect":{"unsaid":["x"]},"extra":1}`),

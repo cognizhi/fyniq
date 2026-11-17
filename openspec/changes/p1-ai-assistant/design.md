@@ -362,6 +362,18 @@ AI-28).**
   no model recorded. The release workflow's images job runs it so [live-verify].
 - `make evals` runs it first (Docker), and `cmd/evals` folds its `assistant.json` into `report.json`; `make test` runs
   it too. The first suites are six golden questions and two red-team requests; tasks 8.2 and 8.3 grow them.
+- As built (task 8.2): `TestWriteTheGoldenSet` (`FYNIQ_GOLDEN_WRITE=1`) writes `evals/golden/assistant.json`, 243
+  questions on seed 1's company (240 journals): revenue, gross profit, EBITDA, net profit and costs for each month to
+  September 2026 and each quarter; spend by function for each quarter; and each account's movement in up to three
+  months it has lines in. The phrasing varies; every value is the oracle's.
+- `TestTheAssistantSuites` checks each value against the oracle (`oracle_batch.py` on `differential.FromSeed`), against
+  the seed's own sums where they reach, and against the API through the scripted solver.
+- Building it found two discrepancies:
+  - seedload typed 7010 to 7040 (other income) as expenses by their first digit, so the sample company's EBITDA and
+    costs took other income in. It now takes the standard chart's type, as `differential` does;
+  - the spend measures said "the profit and loss's G&A expenses" while they are the KPI's spend by function,
+    depreciation included (spend_ga@1). Their description and source now say so; the figures were right.
+- The recordings are [live-verify] (docs/prd/plans/live-verification.md).
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with
