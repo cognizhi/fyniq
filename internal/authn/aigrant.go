@@ -25,6 +25,9 @@ const (
 	AssistantClient = "fyniq-assistant"
 	// AIScope is all a delegated AI read token grants: reading through the AI's tools.
 	AIScope = "ai.read"
+	// AIProposeScope is the one more a turn's token holds while the organisation has a task type on: making proposals
+	// through the internal API, and nothing else (AI-P3; p1-ai-proposals-core design D3).
+	AIProposeScope = "ai.propose"
 )
 
 var aiTokenEncoding = base64.RawURLEncoding
@@ -80,6 +83,9 @@ func (a AIGrants) Authenticate(ctx context.Context, c Credentials) (Principal, e
 	}
 	p := Principal{Via: ViaToken, Subject: g.UserID.String(), UserID: g.UserID, Client: AssistantClient, Class: ClassAgent, Organisation: org,
 		Scopes: []string{AIScope}, Turn: g.Turn}
+	if g.Propose {
+		p.Scopes = append(p.Scopes, AIProposeScope)
+	}
 	for _, r := range g.Roles {
 		if _, known := authz.Roles[authz.Role(r)]; known {
 			p.Roles = append(p.Roles, authz.Role(r))

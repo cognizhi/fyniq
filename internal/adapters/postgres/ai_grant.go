@@ -20,12 +20,12 @@ func (r aiGrants) Issue(ctx context.Context, g storage.AIGrant) (storage.AIGrant
 		return storage.AIGrant{}, err
 	}
 	row, err := r.u.q.InsertAIGrant(ctx, sqlcdb.InsertAIGrantParams{TokenHash: g.TokenHash, UserID: g.UserID, TurnID: g.Turn, IssuedAt: g.IssuedAt,
-		ExpiresAt: g.ExpiresAt})
+		ExpiresAt: g.ExpiresAt, Propose: g.Propose})
 	if err != nil {
 		return storage.AIGrant{}, mapError(err)
 	}
 	return storage.AIGrant{ID: row.ID, TokenHash: row.TokenHash, UserID: row.UserID, Turn: row.TurnID, IssuedAt: row.IssuedAt, ExpiresAt: row.ExpiresAt,
-		EndedAt: row.EndedAt}, nil
+		EndedAt: row.EndedAt, Propose: row.Propose}, nil
 }
 
 func (r aiGrants) End(ctx context.Context, turn uuid.UUID, now time.Time) error {
@@ -79,7 +79,7 @@ func (s *Store) AIGrant(ctx context.Context, org uuid.UUID, tokenHash []byte, no
 	if row.UserID == uuid.Nil {
 		return storage.AIGrantHolder{}, ports.ErrNotFound
 	}
-	return storage.AIGrantHolder{UserID: row.UserID, Turn: row.TurnID, Roles: row.Roles, ExpiresAt: row.ExpiresAt}, nil
+	return storage.AIGrantHolder{UserID: row.UserID, Turn: row.TurnID, Roles: row.Roles, ExpiresAt: row.ExpiresAt, Propose: row.Propose}, nil
 }
 
 var _ storage.AIGrantLookup = (*Store)(nil)

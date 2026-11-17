@@ -33,6 +33,7 @@ func (g grantStore) AIGrant(_ context.Context, org uuid.UUID, hash []byte, _ tim
 // local builds route it only to this authenticator (PRD-001 §9.3 rev 0.277).
 // req: AI-01
 // req: ai/proposals The orchestrator holds no write credential
+// req: AI-P3
 // asvs: V7.2.3, V8.2.1
 func TestDelegatedAITokens(t *testing.T) {
 	org, user, turn := uuid.New(), uuid.New(), uuid.New()
@@ -59,6 +60,14 @@ func TestDelegatedAITokens(t *testing.T) {
 	if err != nil || !p.AI() || p.UserID != user || p.Turn != turn || p.Organisation != org || p.Via != authn.ViaToken ||
 		!slices.Equal(p.Roles, []authz.Role{authz.Bookkeeper}) || !slices.Equal(p.Scopes, []string{authn.AIScope}) || p.Client != authn.AssistantClient {
 		t.Fatalf("the principal: %+v %v", p, err)
+	}
+
+	// A grant issued while a task type is on may also propose, and only that (AI-P3).
+	proposing, phash, _ := authn.NewAIToken(org)
+	store[org.String()+string(phash)] = storage.AIGrantHolder{UserID: user, Turn: turn, Roles: []string{"bookkeeper"}, Propose: true}
+	if q, err := a.Authenticate(context.Background(), authn.Credentials{Authorization: "Bearer " + proposing}); err != nil ||
+		!slices.Equal(q.Scopes, []string{authn.AIScope, authn.AIProposeScope}) || !q.AI() {
+		t.Errorf("a grant that may propose: %+v %v", q, err)
 	}
 	for name, c := range map[string]authn.Credentials{
 		"an unknown token":   {Authorization: "Bearer " + again},

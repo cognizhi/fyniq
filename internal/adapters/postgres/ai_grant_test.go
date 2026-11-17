@@ -101,6 +101,8 @@ func TestAttackAIGrantsReadOnlyForTheirTurn(t *testing.T) {
 		{"the owner moving a grant to another person", "fyniq_migrator", `UPDATE fyniq.ai_grant SET user_id = '` + outsider.String() + `'`, []string{"FY340"}},
 		{"the owner lengthening a grant", "fyniq_migrator", `UPDATE fyniq.ai_grant SET expires_at = expires_at + interval '1 hour'`, []string{"FY340"}},
 		{"the owner reopening a grant", "fyniq_migrator", `UPDATE fyniq.ai_grant SET ended_at = NULL WHERE ended_at IS NOT NULL`, []string{"FY340"}},
+		{"the owner letting a grant propose", "fyniq_migrator", `UPDATE fyniq.ai_grant SET propose = NOT propose`, []string{"FY340"}},
+		{"the API letting a grant propose", "fyniq_api", `UPDATE fyniq.ai_grant SET propose = true`, []string{"42501"}},
 		{"the owner removing a grant", "fyniq_migrator", `DELETE FROM fyniq.ai_grant`, []string{"FY340"}},
 		{"the owner emptying them", "fyniq_migrator", `TRUNCATE fyniq.ai_grant`, []string{"FY060", "0A000"}},
 		{"a grant of an hour", "fyniq_api", `INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, issued_at, expires_at)

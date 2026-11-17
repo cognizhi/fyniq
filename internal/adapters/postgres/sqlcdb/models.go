@@ -261,6 +261,7 @@ type FyniqAiGrant struct {
 	ExpiresAt      time.Time
 	EndedAt        *time.Time
 	Classes        []string
+	Propose        bool
 }
 
 type FyniqAiModel struct {
