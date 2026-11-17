@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   CircleCheck,
   Fingerprint,
@@ -17,7 +18,7 @@ import {
 import { useId, useState, type FormEvent } from "react";
 import { api, type Session, type SignInProvider } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
-import { Button } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { browserOf, clock, date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
@@ -587,6 +588,19 @@ export function Profile() {
       <ModeChoice mode={mode} />
       <MyBankAccount />
       <MyPersonalData />
+      <section className="fy-card" aria-labelledby="ai-plan-title">
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id="ai-plan-title">
+            AI
+          </h2>
+        </div>
+        <div className="fy-card__body fy-stack fy-stack--2">
+          <p className="fy-secondary">The assistant uses the organisation's own AI connections.</p>
+          <Link className={`${buttonVariants({ variant: "secondary", size: "sm" })} self-start`} to="/settings/profile/ai-plan">
+            {helpText("settings.ai-plan").label}
+          </Link>
+        </div>
+      </section>
       <section className="fy-card" aria-labelledby="security-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="security-title">

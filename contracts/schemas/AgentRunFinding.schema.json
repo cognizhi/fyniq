@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "What, why and what to do next.",
+      "examples": [
+        "The GST return for Oct to Dec 2026 is due on 31 Jan 2027 and is not filed."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When it is due.",
+      "examples": [
+        "2027-01-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "The records and documents behind it, as links in the web app.",
+      "items": {
+        "examples": [
+          "/compliance/calendar"
+        ],
+        "type": "string"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "key": {
+      "description": "The finding's stable key.",
+      "examples": [
+        "calendar:gst_f5:2027-01-31"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "next": {
+      "description": "The next step.",
+      "examples": [
+        "Record it in Compliance › Statutory calendar once it is filed"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "pack": {
+      "description": "The statutory pack read.",
+      "examples": [
+        "sg-gst@2026.1"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "rule": {
+      "description": "The rule it applies.",
+      "examples": [
+        "gst.return-due"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "source": {
+      "description": "The rule's source.",
+      "examples": [
+        "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "status": {
+      "description": "Its status: ✔, ⚠, ✖, ⏰ or Not assessed.",
+      "enum": [
+        "ok",
+        "review",
+        "blocked",
+        "due",
+        "not_assessed"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    },
+    "task": {
+      "description": "Its compliance task.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"
+      ],
+      "maxLength": 64,
+      "type": "string"
+    },
+    "title": {
+      "description": "In plain words.",
+      "examples": [
+        "File the GST return"
+      ],
+      "maxLength": 300,
+      "type": "string"
+    },
+    "window": {
+      "description": "The deadline window it is in: 30, 14, 7 or 1 days ahead, or overdue.",
+      "examples": [
+        "14"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "status",
+    "title"
+  ],
+  "title": "AgentRunFinding",
+  "type": "object"
+}

@@ -5,13 +5,14 @@ import { answer, ownerSession, problem, seen, type Answer } from "../../test/api
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { noAuthenticator } from "../../test/webauthn";
-import { personalOnly } from "../Home";
+import { personalOnly } from "../../shell/navigation";
 import { checkClaim, ClaimEditor, newReceipt, type ClaimForm } from "./ClaimEditor";
 import type { Advance, CardLine, Claim } from "./claims";
 import { ClaimsReview } from "./ClaimsReview";
 import { checkCategory, ExpensePolicy } from "./ExpensePolicy";
 import { checkTrips, MileageClaim, newTrip } from "./MileageClaim";
 import { claimsCSV, MyClaims } from "./MyClaims";
+import { invalid } from "../../test/invalid";
 
 const me = "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01";
 const employee = { ...ownerSession, user_id: me, roles: ["employee"] } as Session;
@@ -127,7 +128,7 @@ describe("my claims", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Card lines/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Complete: Grab" }));
     fireEvent.click(await screen.findByRole("button", { name: "Complete" }));
-    expect(await screen.findByText("Choose the category it was for, or mark it personal spend.")).toBeTruthy();
+    await invalid(document.body, "Category", "Choose the category it was for, or mark it personal spend.");
     await screen.findByRole("option", { name: "Local travel" });
     expect(screen.queryByRole("option", { name: "Mileage" })).toBeNull();
     fireEvent.change(screen.getByLabelText("Category"), { target: { value: "travel" } });
@@ -177,10 +178,32 @@ describe("my claims", () => {
 // req: FR-AP-17
 describe("the claim editor", () => {
   it("checks the form before it is sent: every field at once", () => {
-    const f: ClaimForm = { date: "2026-10-15", title: "", notes: "", late_reason: "", advance_id: "", settle_to: "reimburse", trips: [], lines: [{ ...newReceipt("SGD", "2026-10-14"), amount: "abc", gst: "x", currency: "sg" }] };
+    const f: ClaimForm = { date: "2026-10-15", title: "", notes: "", late_reason: "", advance_id: "", settle_to: "reimburse", trips: [], lines: [{ ...newReceipt("SGD", "2026-10-14"), amount: "abc", gst: "x", paid: "y", currency: "sg" }] };
     const { draft, errors } = checkClaim(f, "SGD");
     expect(draft).toBeUndefined();
-    expect(Object.keys(errors).sort()).toEqual(["lines.0.amount", "lines.0.category_id", "lines.0.currency", "lines.0.gst"]);
+    expect(errors).toEqual({
+      "lines.0.amount": "Enter the amount on the receipt, such as 27.30.",
+      "lines.0.category_id": "Choose what the expense was for.",
+      "lines.0.currency": "Enter the currency's three-letter code, such as SGD or IDR.",
+      "lines.0.gst": "Enter the GST on the receipt as an amount, or leave it empty.",
+      "lines.0.paid": "Enter what left your account in the base currency, or leave it empty.",
+    });
+    expect(checkClaim({ ...f, lines: [] }, "SGD").errors).toEqual({ lines: "Add a receipt line." });
+  });
+
+  // QA-UI-01: a receipt line's fields are marked, with what each needs beside it, before anything is sent.
+  it("marks each field of a receipt line it cannot read, before anything is sent", async () => {
+    answer({
+      "GET /v1/claim-categories": { status: 200, body: categories },
+      "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+      "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/new", session: employee, organisation, mode: "basic" });
+    fireEvent.change(await screen.findByLabelText("What it is for"), { target: { value: "Acme visit" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await invalid(document.body, "Category", "Choose what the expense was for.");
+    await invalid(document.body, "Amount on the receipt (SGD)", "Enter the amount on the receipt, such as 27.30.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("saves a new claim, then submits it, confirming it's the claimant", async () => {
@@ -329,7 +352,14 @@ describe("mileage trips", () => {
   it("checks the trips before they are sent: every field at once, and the policy's mileage category", () => {
     const { lines, errors } = checkTrips([{ ...newTrip("2026-10-14"), date: "", distance: "18.45.1" }], "");
     expect(lines).toBeUndefined();
-    expect(Object.keys(errors).sort()).toEqual(["category", "trips.0.date", "trips.0.distance", "trips.0.from", "trips.0.to"]);
+    expect(errors).toEqual({
+      category: "The expense policy has no mileage category yet: ask the person who sets the policy to add it.",
+      "trips.0.date": "Enter the day of the trip.",
+      "trips.0.distance": "Enter the distance driven in km, such as 18.4.",
+      "trips.0.from": "Enter where the trip started, or pick a saved place.",
+      "trips.0.to": "Enter where the trip went, or pick a saved place.",
+    });
+    expect(checkTrips([], "mileage").errors).toEqual({ trips: "Add a trip." });
     const ok = checkTrips([{ ...newTrip("2026-10-14"), from: "Office", to: "Acme HQ", return: true, distance: "36.8" }], "mileage");
     expect(ok.lines).toEqual([{ kind: "mileage", date: "2026-10-14", category_id: "mileage", from: "Office", to: "Acme HQ", return: true, vehicle: "car", distance: "36.8" }]);
   });
@@ -341,7 +371,13 @@ describe("mileage trips", () => {
       "POST /v1/expense-claims": { status: 201, body: claim({ lines: [] }), headers: { ETag: '"1-draft"' } },
     });
     renderPage(MileageClaim, { path: "/me/claims/new/mileage", session: employee, organisation, mode: "basic" });
-    const from = await screen.findByRole("group", { name: "Saved places for From" });
+    await screen.findByRole("group", { name: "Saved places for From" });
+    await waitFor(() => expect(screen.queryByText(/no mileage category/)).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await invalid(document.body, "From", "Enter where the trip started, or pick a saved place.");
+    await invalid(document.body, "Distance driven, the whole trip (km)", "Enter the distance driven in km, such as 18.4.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
+    const from = screen.getByRole("group", { name: "Saved places for From" });
     fireEvent.click(within(from).getByRole("button", { name: "Office" }));
     const to = screen.getByRole("group", { name: "Saved places for To" });
     fireEvent.click(within(to).getByRole("button", { name: "Acme HQ" }));
@@ -470,12 +506,12 @@ describe("approving claims and the expense policy", () => {
   });
 
   it("checks a category before it is sent, loads the starter categories and adds one", async () => {
-    expect(Object.keys(checkCategory({ name: " ", account_id: "", mileage: false, limit: "-5", receipt_above: "abc", attendees_above: "", active: true }, "SGD").errors).sort()).toEqual([
-      "account_id",
-      "limit",
-      "name",
-      "receipt_above",
-    ]);
+    expect(checkCategory({ name: " ", account_id: "", mileage: false, limit: "-5", receipt_above: "abc", attendees_above: "", active: true }, "SGD").errors).toEqual({
+      account_id: "Choose the account its claims cost.",
+      limit: "Enter an amount, such as 50.00, or leave it empty.",
+      name: "Name what its claims are for, such as Meals.",
+      receipt_above: "Enter an amount, such as 50.00, or leave it empty.",
+    });
     let loaded = false;
     answer({
       "GET /v1/claim-categories": () => ({ status: 200, body: loaded ? categories : { items: [] } }),
@@ -493,6 +529,9 @@ describe("approving claims and the expense policy", () => {
     await noViolations(document.body);
     fireEvent.click(screen.getByRole("button", { name: "Add a category" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await invalid(dialog, "Name", "Name what its claims are for, such as Meals.");
+    await invalid(dialog, "Account it costs", "Choose the account its claims cost.");
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Client gifts" } });
     await within(dialog).findByRole("option", { name: "6530 Meals & entertainment" });
     fireEvent.change(within(dialog).getByLabelText("Account it costs"), { target: { value: "a6530" } });

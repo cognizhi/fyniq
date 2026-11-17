@@ -920,6 +920,9 @@ var matrixCalls = map[string]matrixCall{
 	"getStatutoryPack": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/statutory-packs/sg-gst@2026.1", tok, nil), nil
 	},
+	"getStatutoryValues": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/statutory-values?pack=sg-gst&on=2026-10-15", tok, nil), nil
+	},
 	// Asking to activate always waits for approval; an allowed role's request is withdrawn again, so the next role
 	// can ask too.
 	"activateStatutoryPack": func(e *env, tok string) (response, func() bool) {
@@ -1379,6 +1382,9 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"getKpis": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/kpis?month=2026-10", tok, nil), nil
+	},
+	"queryMetrics": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/metrics:query", tok, map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"}), nil
 	},
 	"listKpiInputs": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/kpi-inputs", tok, nil), nil
@@ -2530,7 +2536,11 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		}
 		// "Accountant review" reaches the approvals too: the Accountant signs a step that names their review (FM-9, rev 0.205).
 		for _, c := range append(slices.Clip(authz.ApprovalRows), authz.AccountantReview) {
-			cell := authztest.ParseCell(rows[string(c)][authz.Column(role)])
+			text := rows[string(c)][authz.Column(role)]
+			if own, ok := secretaryNote[c]; ok && role == authz.CompanySecretary {
+				text = own
+			}
+			cell := authztest.ParseCell(text)
 			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts || c == authz.CapTable) && cell.Qualifier != "" {
 				continue // an Employee's own claims are reached from the claim, not the approvals (design D10); nor is "C (salaries)",
 				// nor a qualified view of director accounts (own, deferred pay, share issues, repayments), nor an Employee's own
@@ -2540,7 +2550,9 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 				return true, false
 			}
 		}
-		return false, false
+		// Appendix D's note (rev 0.280): the Company secretary holds A on every sec.* proposal, its tasks included; the
+		// request's own rule decides which they sign.
+		return role == authz.CompanySecretary && slices.Contains(authz.SignsRequests, p.Operation), false
 	}
 	col := authz.Column(role)
 	if col == "" {
@@ -2553,10 +2565,23 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	if !ok {
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
-	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	// (rev 0.278) Proposal or Proposal (draft) in the AI column is a view of the rows, and no other right; a proposal of a
+	// named kind is none: the legend of Appendix D.
+	cellOf := func(text string) authz.Cell {
+		c := authztest.ParseCell(text)
+		if col == "AI" && c.Rights == "" && (c.Qualifier == "Proposal" || c.Qualifier == "Proposal (draft)") {
+			return authz.Cell{Rights: "V"}
+		}
+		return c
+	}
+	text := row[col]
+	if own, ok := secretaryNote[p.Capability]; ok && role == authz.CompanySecretary {
+		text = own
+	}
+	allowed, masked = authztest.Allows(cellOf(text), p.Need)
 	// A qualified cell, such as Reports' "V sales" (rev 0.52), grants an Unqualified operation only when the operation reads
 	// that part of the books alone: the sales reports for "sales" (p1-reports design D9).
-	if q := authztest.ParseCell(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
+	if q := cellOf(text).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
 		return false, false
 	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
@@ -2564,24 +2589,33 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		if !ok {
 			t.Fatalf("Appendix D has no row %q", p.Parent)
 		}
-		if sees, partly := authztest.Allows(authztest.ParseCell(parent[col]), authz.View); !sees || partly {
+		if sees, partly := authztest.Allows(cellOf(parent[col]), authz.View); !sees || partly {
 			return false, false
 		}
 	}
 	return allowed, masked
 }
 
+// secretaryNote is Appendix D's note on the Company secretary, as cells (rev 0.6, 0.280, 0.282; FR-CS-08): C on the
+// corporate profile and registers and on evidence, V on the equity register and the AI company secretary's runs, the
+// statutory calendar with its corporate items, the Board viewer's column elsewhere. Written here from the note, apart
+// from the code's SecretaryCells.
+var secretaryNote = map[authz.Capability]string{authz.CorporateProfile: "C", authz.Evidence: "C", authz.CapTable: "V", authz.AICompanySecretary: "V",
+	authz.StatutoryCalendar: "C (corporate)"} // rev 0.285: the whole calendar in view, and its corporate items to record
+
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
-// allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half).
+// allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half). The Company
+// secretary's cells come from Appendix D's note (FR-CS-08, secretaryNote).
 // req: QA-SEC-03
 // req: SEC-02
+// req: FR-CS-08
 // asvs: V8.2.1, V8.3.1
 func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	seedMigration(e) // a migration starts only before anything is posted (rev 0.254)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
-	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixDimensions, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals, matrixPayee, matrixClaimantBank, matrixPaymentBatches, matrixPaymentBatchRelease, matrixBreakGlass, matrixSuccession, matrixAccountantReview, matrixDirectors, matrixPreCosts, matrixPayChoices, matrixFees, matrixExemptStatuses, matrixConfirmations, matrixSettlements, matrixRepayments, matrixShareIssues, matrixConversions, matrixJoin, matrixBrand, matrixOperations, matrixEquityRecords, matrixEquityTransactions, matrixCapTable, matrixInstruments, matrixOptions, matrixOptionEvents, matrixRoundScenarios, matrixHeldRights, matrixAcraRows, matrixGSTMonitor, matrixCalendar, matrixForecasts, matrixBudgets, matrixBudgetReports, matrixCashProjection, matrixFeasibility, matrixAuditTrail, matrixAuditEvents, matrixAuditRecoveries, matrixAuditPurges, matrixControls, matrixReviews, matrixRisks, matrixPolicies, matrixConsent, matrixInventory, matrixDPIAs, matrixPDRequests, matrixBreaches, matrixIncidents, matrixRestoreDrills, matrixMigrations, matrixImports, matrixTenantExports, matrixAIConnections, matrixIntegrationClients, matrixHeartbeatDrills, matrixPDTransfers, matrixShredding} {
+	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixDimensions, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals, matrixPayee, matrixClaimantBank, matrixPaymentBatches, matrixPaymentBatchRelease, matrixBreakGlass, matrixSuccession, matrixAccountantReview, matrixDirectors, matrixPreCosts, matrixPayChoices, matrixFees, matrixExemptStatuses, matrixConfirmations, matrixSettlements, matrixRepayments, matrixShareIssues, matrixConversions, matrixJoin, matrixBrand, matrixOperations, matrixEquityRecords, matrixEquityTransactions, matrixCapTable, matrixInstruments, matrixOptions, matrixOptionEvents, matrixRoundScenarios, matrixHeldRights, matrixCorporate, matrixCorporateDocuments, matrixAcraRows, matrixGSTMonitor, matrixCalendar, matrixForecasts, matrixBudgets, matrixBudgetReports, matrixCashProjection, matrixFeasibility, matrixAuditTrail, matrixAuditEvents, matrixAuditRecoveries, matrixAuditPurges, matrixControls, matrixReviews, matrixRisks, matrixPolicies, matrixConsent, matrixInventory, matrixDPIAs, matrixPDRequests, matrixBreaches, matrixIncidents, matrixRestoreDrills, matrixMigrations, matrixImports, matrixTenantExports, matrixAIConnections, matrixConversations, matrixProposals, matrixComplianceTasks, matrixCompanySecretary, matrixHeartbeatDrills, matrixPDTransfers, matrixShredding, matrixIntegrationClients} {
 		for op, call := range rows {
 			matrixCalls[op] = call
 		}
@@ -2630,7 +2664,8 @@ func TestAuthorisationMatrix(t *testing.T) {
 		p := authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: []authz.Role{role}}
 		switch role {
 		case authz.AI:
-			p.Class, p.Roles = authn.ClassAgent, every
+			// The AI acts for a person (AI-01), as a turn's token names one.
+			p.Class, p.Roles, p.UserID = authn.ClassAgent, every, uuid.MustParse(matrixApprover(e))
 		case authz.SuperAdmin:
 			p.Organisation = [16]byte{} // outside every organisation (FR-ADM-07)
 		}

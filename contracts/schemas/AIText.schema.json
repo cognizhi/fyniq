@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "origin": {
+      "description": "Who wrote it: always the AI, to show with the AI label.",
+      "enum": [
+        "ai"
+      ],
+      "examples": [
+        "ai"
+      ],
+      "type": "string"
+    },
+    "text": {
+      "description": "What the AI wrote: its own words, never the platform's.",
+      "examples": [
+        "The AGM is due by 30 June 2027 and has no task yet."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "origin"
+  ],
+  "title": "AIText",
+  "type": "object"
+}

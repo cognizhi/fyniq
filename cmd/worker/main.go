@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
@@ -75,6 +76,7 @@ func main() {
 		}
 		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()  // FR-BNK-15: an early sync a bank's verified webhook asked for
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
+		kinds[agents.RunKind] = kit.AgentRuns(deps.Clock).Work   // AI-64, AI-65: a scheduled agent's run at its slot
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
 		for kind, work := range kit.CheckKinds(deps.Clock) {     // FR-CTL-01: the checks after a change, and Run now
 			kinds[kind] = work

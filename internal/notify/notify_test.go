@@ -25,6 +25,7 @@ func member(user uuid.UUID, status string, roles ...string) storage.Member {
 // Accountant who asked, or a removed member. Any of several rights will do: C or A on users and roles is the
 // Administrator and the Owner.
 // req: FR-NTF-01
+// req: FR-CS-08
 // req: FR-NTF-05
 func TestAnEventConcernsItsAudience(t *testing.T) {
 	owner, controller, accountant, gone, named := uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()
@@ -38,6 +39,22 @@ func TestAnEventConcernsItsAudience(t *testing.T) {
 	members = append(members, member(admin, "active", "administrator"))
 	if got := Recipients(Audience{Capability: "Users, roles, team mode", Need: "CA"}, members); len(got) != 2 || got[0] != owner || got[1] != admin {
 		t.Fatalf("any of the rights: %v", got)
+	}
+	// The statutory calendar's items reach those who record them: a tax item the Accountant, a corporate one the Company
+	// secretary too, whose right is to the corporate items (rev 0.285); without Qualified any right counts, as before.
+	secretary := uuid.New()
+	members = append(members, member(secretary, "active", "company_secretary"))
+	calendar := func(q []string) []uuid.UUID {
+		return Recipients(Audience{Capability: string(authz.StatutoryCalendar), Need: "C", Qualified: q, Except: []uuid.UUID{owner, controller}}, members)
+	}
+	if got := calendar([]string{"tax"}); !slices.Equal(got, []uuid.UUID{accountant}) {
+		t.Errorf("a tax item: %v", got)
+	}
+	if got := calendar([]string{"corporate"}); !slices.Equal(got, []uuid.UUID{accountant, secretary}) {
+		t.Errorf("a corporate item: %v", got)
+	}
+	if got := calendar(nil); !slices.Equal(got, []uuid.UUID{accountant, secretary}) {
+		t.Errorf("no qualifier: %v", got)
 	}
 }
 

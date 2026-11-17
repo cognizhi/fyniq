@@ -50,14 +50,19 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// tokens is the fake authenticator: a token is a key of the map.
+// tokens is the fake authenticator: a token is a key of the map; the assistant's delegated read tokens go to ai, the
+// real one.
 type tokens struct {
 	mu sync.Mutex
 	m  map[string]authn.Principal
+	ai authn.Authenticator
 }
 
-func (f *tokens) Authenticate(_ context.Context, c authn.Credentials) (authn.Principal, error) {
+func (f *tokens) Authenticate(ctx context.Context, c authn.Credentials) (authn.Principal, error) {
 	authorization := c.Authorization
+	if strings.HasPrefix(authorization, "Bearer "+authn.AITokenPrefix) && f.ai != nil {
+		return f.ai.Authenticate(ctx, c)
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	p, ok := f.m[strings.TrimPrefix(authorization, "Bearer ")]
@@ -82,6 +87,8 @@ type env struct {
 	anchors *local.Dir
 	signer  *local.Ed25519
 	queue   *local.Memory // the outbox's tasks
+	// services sign the AI service's tokens for the internal API (internal.go).
+	services *local.HMACTokens
 	// standard is a second organisation of the same database and server in Standard mode, once inStandardMode made it.
 	standard *env
 	// emailing says readyToEmail ran; links are the online links tests share, by name.
@@ -110,6 +117,7 @@ func newEnv(t *testing.T) *env {
 	orgs++
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
+	e.tokens.ai = authn.AIGrants{Store: store, Clock: e.clock}
 	relaxEvidence(t, store, e.books.Org)
 	if e.blobs, err = local.NewDir(t.TempDir()); err != nil {
 		t.Fatal(err)
@@ -121,11 +129,12 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	e.queue = local.NewMemory()
+	e.services = local.NewHMACTokens([]byte("the test services' key"), e.clock, time.Minute)
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
-		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
+		Clock: e.clock, Auth: e.tokens, Services: e.services, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
 		Build:   PlatformBuild{Commit: "3f2c1a9d", BuildTime: "2026-10-15T08:00:00Z", Flavour: "local"},
-		Staging: e.blobs, Evidence: e.blobs, Scanner: local.EICARScanner{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
+		Staging: e.blobs, Evidence: e.blobs, Scanner: local.EICARScanner{}, Screening: local.Screen{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
 		Anchors: e.anchors, Signer: e.signer, Keyed: testFields(t).Fingerprint,
 		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},
 			CaptureDomain: "in.example.com",

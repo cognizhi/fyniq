@@ -293,15 +293,6 @@ func TestIntegrationClients(t *testing.T) {
 	}
 }
 
-func mustJSON(t *testing.T, v any) json.RawMessage {
-	t.Helper()
-	b, err := json.Marshal(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return b
-}
-
 // fakeOAuthClients registers nothing anywhere: the matrix's previews never reach it.
 type fakeOAuthClients struct{}
 

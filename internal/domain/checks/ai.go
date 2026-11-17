@@ -18,7 +18,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The AI's model routes (PRD-001 C.2 #55; AI-76…AI-78, AI-80, AI-81, AI-86; p1-ai-providers task 7.1).
+// The AI's model routes (PRD-001 C.2 #55; AI-76…AI-78, AI-80, AI-81, AI-86; p1-ai-providers task 7.1) and its proposals
+// waiting for a decision (C.2 #19; p1-ai-proposals-core task 5.2).
 
 // viewAI is the Appendix D row whose view opens the AI's items.
 const viewAI = "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
@@ -41,6 +42,45 @@ var aiChecks = []Definition{
 			"week, a budget or a subscription's quota within 20% of its limit, a model on a route retiring within 30 days or no " +
 			"longer listed, and a connection with a stored key whose model list has not been read for 3 days.",
 		Rules: "AI-76, AI-77, AI-78, AI-80, AI-81, AI-86", Owner: "owner", View: viewAI, Run: aiModelRoutes},
+	{Key: "ai.proposals-waiting", Ref: "C.2 #19", Area: "AI", Worst: Warning, Title: "No AI proposal waits more than 48 hours",
+		Explain: "A change the AI proposes waits for a person to approve or reject it, and expires after 72 hours. This flags each " +
+			"one that has waited more than 48 hours, so it is decided before it expires.",
+		Rules: "§9.5, AI-06", Owner: "owner", View: viewAIActivity, Run: aiProposalsWaiting},
+}
+
+// viewAIActivity is the Appendix D row whose view opens the AI's proposals: each member their own, the Owner and the DPO
+// every one.
+const viewAIActivity = "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+
+// proposalsWaitAfter is how long a proposal may wait for its decision before C.2 #19 flags it.
+const proposalsWaitAfter = 48 * time.Hour
+
+// C.2 #19: the AI's proposals pending approval for more than 48 hours.
+func aiProposalsWaiting(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	var items []Item
+	q := storage.AIProposalQuery{Statuses: []string{storage.ProposalPending}, Limit: 500}
+	for {
+		page, err := u.AIProposals().List(ctx, q)
+		if err != nil {
+			return Result{}, err
+		}
+		for _, p := range page {
+			if waited := e.Now.Sub(p.ProposedAt); waited > proposalsWaitAfter {
+				items = append(items, Item{Kind: "ai_proposal", ID: p.ID.String(), Label: p.TaskType,
+					Detail:  fmt.Sprintf("waiting %d hours; it expires %s", int(waited.Hours()), p.ExpiresAt.UTC().Format("2 January 2006 15:04 UTC")),
+					Version: strconv.Itoa(p.Version)})
+			}
+		}
+		if len(page) < q.Limit {
+			break
+		}
+		q.After = page[len(page)-1].ID
+	}
+	if len(items) == 0 {
+		return Fine("No AI proposal has waited more than 48 hours"), nil
+	}
+	return Found(Warning, items, fmt.Sprintf("%d AI proposals have waited more than 48 hours", len(items)),
+		"Approve or reject each in the Inbox before it expires"), nil
 }
 
 // C.2 #55: what about the AI's routes, budgets and connections needs a person (AI-76…AI-78, AI-80, AI-81).
@@ -157,17 +197,13 @@ func aiModelRoutes(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, e
 			if err != nil {
 				return Result{}, err
 			}
-			var used int64
+			units := map[string]int64{}
 			for _, r := range rows {
-				if r.ConnectionID != c.ID {
-					continue
-				}
-				if q.Unit == "requests" {
-					used += r.Requests
-				} else {
-					used += r.Input + r.Output + r.CacheRead + r.CacheWrite
+				if r.ConnectionID == c.ID {
+					units[r.Model] += q.Units(r.Requests, r.Input+r.Output+r.CacheRead+r.CacheWrite)
 				}
 			}
+			used := q.Drawn(units)
 			if q.Amount > 0 && used*100 >= q.Amount*aiNearPercent {
 				items = append(items, Item{Kind: "ai_connection", ID: c.ID.String(), Label: "The quota of " + c.Name,
 					Detail: fmt.Sprintf("%d of %d %s used this %s; it resets on %s", used, q.Amount, q.Unit, q.Window, day(resets))})

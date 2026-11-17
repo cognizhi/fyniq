@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "A record's ID, or a figure's fact ID.",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it is.",
+      "enum": [
+        "invoice",
+        "credit_note",
+        "bill",
+        "vendor_credit",
+        "journal",
+        "expense_claim",
+        "quote",
+        "sales_order",
+        "purchase_order",
+        "contact",
+        "account",
+        "item",
+        "report",
+        "figure"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "How the screen names it.",
+      "examples": [
+        "INV-0012, Acme Pte Ltd"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "label"
+  ],
+  "title": "AITurnContext",
+  "type": "object"
+}

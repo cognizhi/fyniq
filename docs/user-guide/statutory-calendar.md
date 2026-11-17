@@ -2,7 +2,7 @@
 key: compliance.calendar
 title: The statutory calendar
 mode: basic
-roles: [owner, administrator, controller, accountant, auditor, tax_agent, dpo]
+roles: [owner, administrator, controller, accountant, auditor, tax_agent, dpo, company_secretary]
 requirements: [FR-TAX-07, CMP-02, FR-DOC-06, FR-EQ-09, FR-EQ-25, FR-NTF-01]
 status: draft
 ---
@@ -39,6 +39,9 @@ and **Keeps a branch register outside Singapore** ([Organisation settings](organ
 An item whose input is missing, such as the financial year, shows **Not assessed** with what to set.
 
 ## Record a filing
+
+The Owner, the Controller, the Accountant and the Tax agent record every item. The Company secretary
+records the corporate items: the annual return, the AGM and the financial statements to members.
 
 1. Select **Record as filed** on the item.
 2. Enter the day you filed or paid, and the acknowledgement or transaction number.

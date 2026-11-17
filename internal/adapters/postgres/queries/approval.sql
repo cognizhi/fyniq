@@ -7,6 +7,13 @@ VALUES (sqlc.arg(object_type), sqlc.arg(object_key), sqlc.arg(operation), sqlc.a
 RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
   requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version;
 
+-- name: LastApprovedRequest :one
+-- The latest approved request to change a record: who asked for a scheduled agent to be turned on (AI-63).
+SELECT id FROM fyniq.approval_request
+WHERE object_type = sqlc.arg(object_type) AND object_key = sqlc.arg(object_key) AND status = 'approved'
+ORDER BY decided_at DESC, id DESC
+LIMIT 1;
+
 -- name: GetApprovalRequest :one
 SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
   requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
@@ -38,10 +45,10 @@ SELECT id, version, status_reason FROM fyniq.approval_request
 
 -- name: InsertApprovalSignature :one
 INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason,
-  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature)
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, selection_sha256)
 VALUES (sqlc.arg(request_id), sqlc.arg(step), sqlc.arg(signer), sqlc.arg(decision), sqlc.arg(envelope_hash), sqlc.arg(mfa_method),
   sqlc.arg(mfa_at), sqlc.arg(signed_at), sqlc.narg(reason), sqlc.narg(passkey_challenge_id), sqlc.narg(passkey_id),
-  sqlc.narg(authenticator_data), sqlc.narg(client_data), sqlc.narg(assertion_signature))
+  sqlc.narg(authenticator_data), sqlc.narg(client_data), sqlc.narg(assertion_signature), sqlc.narg(selection_sha256))
 RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
   passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature;
 

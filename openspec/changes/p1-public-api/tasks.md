@@ -53,7 +53,7 @@
 ## 3. Clients and contracts
 
 - [ ] 3.1 Client classes for integration clients and personal access tokens, issued by Hydra, with per-client limits and audit; personal access tokens are agent-class by default. Test `// req: FR-INT-02` (P1 part)
-  (17 Nov 2026, in part: integration clients. `fyniq.api_client` (migrations 000420 and 000421) keeps what a client is
+  (17 Nov 2026, in part: integration clients. `fyniq.api_client` (migrations 000432 and 000433) keeps what a client is
   to the organisation: its class, the member it acts for, its narrow scopes, networks, limits, key thumbprint and
   expiry; Hydra keeps the OAuth client and its tokens. An Administrator asks with `createIntegrationClient`; the Owner
   approves with a second approver (the approval object `api_client`), and only then is it registered with Hydra

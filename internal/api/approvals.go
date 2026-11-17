@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/budget"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
+	"github.com/cognizhi/fyniq/internal/domain/corporate"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
@@ -65,9 +66,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class,equity_transaction,instrument,instrument_template,option_pool,option_grant,option_event,round_scenario,investor_right,controller_entry,budget,migration_commit,tenant_export,ai_connection,ai_data_policy,ai_route,api_client" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment,account,bank_reconciliation,holder_record,share_class,equity_transaction,instrument,instrument_template,option_pool,option_grant,option_event,round_scenario,investor_right,controller_entry,budget,migration_commit,tenant_export,ai_connection,ai_data_policy,ai_route,ai_proposal,corporate_detail,corporate_officer,nominee_entry,statements_approval,corporate_document,api_client" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record,equity_transaction.approve,instrument.record,instrument_template.enable,option_pool.record,option_grant.record,option_event.record,round_scenario.approve,investor_right.record,controller_entry.record,budget.record,migration.commit,tenant_export.prepare,ai_connection.create,ai_connection.change,ai_connection.credential,ai_connection.enable,ai_data_policy.change,ai_connection.allow_model,ai_connection.price,ai_route.change,api_client.create,api_client.reclass" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void,account.merge,bank_reconciliation.sign,holder_record.record,share_class.record,equity_transaction.approve,instrument.record,instrument_template.enable,option_pool.record,option_grant.record,option_event.record,round_scenario.approve,investor_right.record,controller_entry.record,budget.record,migration.commit,tenant_export.prepare,ai_connection.create,ai_connection.change,ai_connection.credential,ai_connection.enable,ai_data_policy.change,ai_connection.allow_model,ai_connection.price,ai_route.change,ai_proposal.execute,corporate_detail.record,corporate_officer.record,nominee_entry.record,statements_approval.record,corporate_document.record,api_client.create,api_client.reclass" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -110,6 +111,16 @@ type ApprovalDecision struct {
 	EnvelopeHash string           `json:"envelope_hash" minLength:"64" maxLength:"64" pattern:"^[0-9a-f]{64}$" doc:"The envelope_hash of the request you were shown: a request whose envelope differs is not signed (FR-APR-03)." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Reason       string           `json:"reason,omitempty" maxLength:"500" doc:"Why you reject it: needed to reject." example:"Not this month"`
 	Passkey      *ApprovalPasskey `json:"passkey,omitempty" doc:"Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44)."`
+	Items        []ProposalItem   `json:"items,omitempty" minItems:"1" maxItems:"100" doc:"For an AI proposal of several items, the items you approve, from 1: what executes is those alone, re-hashed and signed with the envelope (AI-32). Without it you approve them all, which only a tier-1 proposal allows."`
+}
+
+// ProposalItem is an item of an AI proposal's batch, from 1.
+type ProposalItem int
+
+// Schema implements huma.SchemaProvider.
+func (ProposalItem) Schema(huma.Registry) *huma.Schema {
+	low, high := 1.0, 100.0
+	return &huma.Schema{Type: "integer", Minimum: &low, Maximum: &high, Description: "An item of the proposal's batch, from 1.", Examples: []any{1}}
 }
 
 // ApprovalPasskey is your authenticator's answer to a request's challenge: it signs the request's envelope hash.
@@ -768,6 +779,33 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectNomineeEntry, approval.ObjectStatementsApproval: // the record's version and status, its entry or year (FR-CS-01, FR-CS-03)
+		version, deps, err := registerRecordDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
+	case approval.ObjectCorporateDocument: // the document's version and status, and the day it was signed (FR-CS-05)
+		version, deps, err := documentRecordDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
+	case approval.ObjectCorporateDetail, approval.ObjectCorporateOfficer: // the record's version and status, its day or officer (FR-CS-01)
+		version, deps, err := corporateRecordDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectAIConnection: // the connection's version and state, "new" before it exists (AI-72)
 		version, deps, err := aiConnectionDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -779,6 +817,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		}
 	case approval.ObjectAPIClient: // the client's version and whether it is live, "new" before it exists (FR-INT-02)
 		version, deps, err := apiClientDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
+	case approval.ObjectAIProposal: // the proposal's status and payload's hash (AI-P5)
+		version, deps, err := aiProposalDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
 			return nil, err
 		}
@@ -1077,7 +1124,8 @@ func (a *API) notifyDecided(ctx context.Context, u storage.UnitOfWork, r storage
 }
 
 func requestOf(r storage.ApprovalRequest) approval.Request {
-	return approval.Request{Status: approval.Status(r.Status), RequestedBy: r.RequestedBy, ExpiresAt: r.ExpiresAt}
+	rule, _ := proposalRuleOf(r)
+	return approval.Request{Status: approval.Status(r.Status), RequestedBy: r.RequestedBy, ExpiresAt: r.ExpiresAt, SelfSign: rule.SelfSign}
 }
 
 // reconciliationFor is the reconciliation an override's change names: its money account and period.
@@ -1121,8 +1169,8 @@ func signaturesOf(sigs []storage.ApprovalSignature) []approval.Signature {
 // mayDecide reports whether p may sign a request's current step now: a person other than its requester who has not
 // signed it, holds A on its row and is one the step names.
 func mayDecide(p authn.Principal, r storage.ApprovalRequest, sigs []storage.ApprovalSignature) bool {
-	approver := mayApprove(p, r.ObjectType)
-	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy || !approver && !accountantReviewer(p) {
+	approver := approverOf(p, r)
+	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy && !requestOf(r).SelfSign || !approver && !accountantReviewer(p) {
 		return false
 	}
 	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
@@ -1150,6 +1198,9 @@ func mayApprove(p authn.Principal, objectType string) bool {
 func maySee(p authn.Principal, r storage.ApprovalRequest) bool {
 	if p.UserID != uuid.Nil && p.UserID == r.RequestedBy {
 		return true
+	}
+	if r.ObjectType == approval.ObjectAIProposal {
+		return seesProposal(p, r)
 	}
 	view := authz.Policy{Operation: "view", Capability: approvalRow(r.ObjectType), Need: authz.View}
 	if r.ObjectType == approval.ObjectClaim {
@@ -1257,10 +1308,9 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	if err != nil {
 		return r, 0, err
 	}
-	approver := mayApprove(p, r.ObjectType)
+	approver := approverOf(p, r)
 	if !approver && !accountantReviewer(p) {
-		return r, 0, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
-			"Ask a member who holds it, such as an Owner, to decide it")
+		return r, 0, notApprover(r)
 	}
 	// SOD-6 when approving: a transaction's approver whose roles conflict needs an override for the mode in force, as
 	// one who posts does (TEAM-04; PRD-001 rev 0.179).
@@ -1296,14 +1346,23 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	steps := domainSteps(r.PolicySteps)
 	step := approval.CurrentStep(steps, signaturesOf(sigs))
 	if !approver && (step == 0 || !approval.Reviews(steps[step-1])) { // the Accountant signs the review step only (FM-9)
-		return r, 0, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
-			"Ask a member who holds it, such as an Owner, to decide it")
+		return r, 0, notApprover(r)
 	}
 	if step == 0 || !approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) {
 		return r, 0, problem(approval.CodeNotYourStep, fmt.Sprintf("Step %d of the request's policy needs %s.", step, describe(steps[max(step, 1)-1])),
 			"Ask a member that step names to sign it; the steps are signed in order")
 	}
 	return r, step, nil
+}
+
+// notApprover is the refusal of a person who holds no right to sign r.
+func notApprover(r storage.ApprovalRequest) *Problem {
+	if rule, ok := proposalRuleOf(r); ok {
+		return problem(approval.CodeNotApprover, "You hold no right to "+rule.Command.Operation+" yourself, so you cannot approve this AI proposal (AI-10).",
+			"Ask a member who may do it, and whom the task type names, to decide it")
+	}
+	return problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
+		"Ask a member who holds it, such as an Owner, to decide it")
 }
 
 // describe says whom a step needs, in a sentence's words.
@@ -1333,7 +1392,7 @@ func (a *API) recheck(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		i := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == g.Signer })
 		if i >= 0 {
 			roles := memberRoles(members[i])
-			if (approves(roles, r.ObjectType) || approval.Reviews(steps[g.Step-1]) && reviews(roles)) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
+			if (approvesRequest(roles, r) || approval.Reviews(steps[g.Step-1]) && reviews(roles)) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
 				continue
 			}
 		}
@@ -1436,6 +1495,10 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return eventExecutable(ctx, u, r, signer)
 	case approval.OpInvestorRightsRecord, approval.OpControllerEntryRecord: // FR-EQ-22, FR-EQ-25, FM-1: never the holder
 		return heldRecordExecutable(ctx, u, r, signer)
+	case approval.OpCorporateOfficerRecord: // FR-CS-01, FM-1: never the officer themselves
+		return corporateOfficerExecutable(ctx, u, r, signer)
+	case approval.OpNomineeEntryRecord: // s386AL, FM-1: never the nominee themselves
+		return nomineeExecutable(ctx, u, r, signer)
 	case approval.OpEquityTransactionApprove: // FR-EQ-17, FM-9: never a holder it moves shares of or for
 		return equityTransactionExecutable(ctx, u, r, signer)
 	case approval.OpContactMemberLink: // FR-EQ-01, FM-1: never the member linked or unlinked
@@ -1880,6 +1943,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executeAIRoute(ctx, u, r, s)
 	case approval.OpAPIClientCreate: // FR-INT-02: the integration client registered with the OAuth server, then recorded
 		return a.executeAPIClient(ctx, u, r, s)
+	case approval.OpAIProposalExecute: // AI-P5: Approved, and queued for the executor, which runs it as the approver
+		return a.executeAIProposal(ctx, u, r, signer)
 	case approval.OpBudgetRecord: // FR-PLN-01: the budget recorded and locked, the year's budget from then on
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1940,6 +2005,41 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			return err
 		}
 		_, err = equity.RecordControllerIn(ctx, u, id)
+		return err
+	case approval.OpCorporateDetailRecord: // FR-CS-01: the detail recorded with its evidence; the latest to take effect is in force
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = corporate.RecordDetailIn(ctx, u, id)
+		return err
+	case approval.OpCorporateOfficerRecord: // FR-CS-01, FR-CS-06: the officer's version recorded with its evidence
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = corporate.RecordOfficerIn(ctx, u, id)
+		return err
+	case approval.OpNomineeEntryRecord: // s386AL: the entry's version recorded with its evidence
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = corporate.RecordNomineeIn(ctx, u, id)
+		return err
+	case approval.OpStatementsApprovalRecord: // FR-CS-03: the directors' approval recorded with their resolution or statement
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = corporate.RecordStatementsApprovalIn(ctx, u, id)
+		return err
+	case approval.OpCorporateDocumentRecord: // FR-CS-05: the signed document recorded with its signed copy, in the minute book
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, err = corporate.RecordDocumentIn(ctx, u, id)
 		return err
 	case approval.OpRoundScenarioApprove: // FR-EQ-21: the scenario approved, its issues and a top-up drafted
 		id, err := uuid.Parse(r.ObjectKey)
@@ -2260,6 +2360,13 @@ func registerApprovals(a *API) {
 				now := a.deps.Clock.Now()
 				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
 					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}
+				sel, err := a.proposalSelection(ctx, u, r, proposalItems(in.Body.Items))
+				if err != nil {
+					return decided{}, err
+				}
+				if sel != nil {
+					signature.SelectionSHA256, ctx = sel.sha, withSelection(ctx, *sel)
+				}
 				if err := a.withPasskey(ctx, u, p, name, r, in.Body.Passkey, &signature); err != nil {
 					return decided{}, err
 				}
@@ -2350,6 +2457,11 @@ func registerApprovals(a *API) {
 				if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Rejected), reason, now); err != nil {
 					return decided{}, err
 				}
+				if r.ObjectType == approval.ObjectAIProposal { // the proposal Rejected, with the person's reason (AI-14)
+					if err := a.rejectAIProposal(ctx, u, r, p.UserID, reason, now); err != nil {
+						return decided{}, err
+					}
+				}
 				if err := a.notifyDecided(ctx, u, r, "Rejected"); err != nil {
 					return decided{}, err
 				}
@@ -2397,9 +2509,8 @@ func registerApprovals(a *API) {
 				if err != nil {
 					return err
 				}
-				if !mayApprove(p, r.ObjectType) {
-					return problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
-						"Ask a member who holds it, such as an Owner, to decide it")
+				if !approverOf(p, r) {
+					return notApprover(r)
 				}
 				if x := approval.CheckSigner(requestOf(r), p.UserID, a.deps.Clock.Now()); x != nil {
 					return problem(x.Code, strings.ToUpper(x.Message[:1])+x.Message[1:]+".", x.Fix)

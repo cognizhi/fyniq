@@ -27,6 +27,21 @@
       "pattern": "^[0-9]+(\\.[0-9]{1,4})?$",
       "type": "string"
     },
+    "rates": {
+      "description": "The models the plan draws its quota from at another rate, as its published terms say; a model not named draws at 1 (AI-73).",
+      "items": {
+        "$ref": "AIConnectionQuotaRate.schema.json"
+      },
+      "maxItems": 100,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "terms": {
+      "$ref": "AIConnectionQuotaTerms.schema.json",
+      "description": "The plan's published terms the rates come from; required with rates."
+    },
     "unit": {
       "description": "What the quota counts.",
       "enum": [

@@ -17,23 +17,11 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The KPIs through the API (FR-KPI-02, FR-KPI-03, RND-KPI; rev 0.161), worked by hand. October: 100,000.00 of share
-// capital in the bank; 4,000.00 of subscriptions invoiced and 3,000.00 of it received; advertising 2,000.00 and rent
-// 6,000.00 paid; hosting 500.00 on credit. November: 5,000.00 of subscriptions invoiced, 1,000.00 of services paid in
-// cash, 4,000.00 received; advertising 1,000.00 and rent 6,000.00 paid; October's hosting paid, November's 600.00 on
-// credit. So November's revenue is 6,000.00 (5,000.00 subscriptions), gross profit 5,400.00, EBITDA and net profit
-// -1,600.00; net burn 2,500.00 (October's 5,000.00); at its end cash 92,500.00, receivables 2,000.00, payables 600.00,
-// equity 93,900.00. With 5 paying customers, 1 new and none lost, and 4 people entered for November:
-// ARPA 1,000.00; churn 0.0%, so the LTV is unbounded; CAC 1,000.00; payback 1,000 ÷ 900 = 1.1 months; runway
-// 92,500 ÷ 3,750 = 24.7 months; burn multiple 2,500 ÷ 12,000 = 0.2; DSO 2,000 ÷ (5,000 ÷ 30) = 12.0 days; DPO 600 ÷
-// (8,050 ÷ 30) = 2.2 days; the year to date's net profit, October's and November's, -6,100.00. October had no
-// counts: its customer KPIs have none.
-// req: FR-KPI-02
-// req: FR-KPI-03
-// req: RND-KPI
-// asvs: V8.2.1
-func TestKPIsThroughTheAPI(t *testing.T) {
-	e := newEnv(t)
+// kpiBooks are the KPIs' hand-worked October and November (TestKPIsThroughTheAPI's comment works them out): its
+// accounts by code.
+func kpiBooks(e *env) map[string]storage.Account {
+	t := e.t
+	t.Helper()
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
 	acc := map[string]storage.Account{}
 	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -86,6 +74,27 @@ func TestKPIsThroughTheAPI(t *testing.T) {
 	post(mj, 11, 20, "6200", "1010", "6000.00")
 	post(mj, 11, 22, "2010", "1010", "500.00")
 	post(mj, 11, 25, "5010", "2010", "600.00")
+	return acc
+}
+
+// The KPIs through the API (FR-KPI-02, FR-KPI-03, RND-KPI; rev 0.161), worked by hand. October: 100,000.00 of share
+// capital in the bank; 4,000.00 of subscriptions invoiced and 3,000.00 of it received; advertising 2,000.00 and rent
+// 6,000.00 paid; hosting 500.00 on credit. November: 5,000.00 of subscriptions invoiced, 1,000.00 of services paid in
+// cash, 4,000.00 received; advertising 1,000.00 and rent 6,000.00 paid; October's hosting paid, November's 600.00 on
+// credit. So November's revenue is 6,000.00 (5,000.00 subscriptions), gross profit 5,400.00, EBITDA and net profit
+// -1,600.00; net burn 2,500.00 (October's 5,000.00); at its end cash 92,500.00, receivables 2,000.00, payables 600.00,
+// equity 93,900.00. With 5 paying customers, 1 new and none lost, and 4 people entered for November:
+// ARPA 1,000.00; churn 0.0%, so the LTV is unbounded; CAC 1,000.00; payback 1,000 ÷ 900 = 1.1 months; runway
+// 92,500 ÷ 3,750 = 24.7 months; burn multiple 2,500 ÷ 12,000 = 0.2; DSO 2,000 ÷ (5,000 ÷ 30) = 12.0 days; DPO 600 ÷
+// (8,050 ÷ 30) = 2.2 days; the year to date's net profit, October's and November's, -6,100.00. October had no
+// counts: its customer KPIs have none.
+// req: FR-KPI-02
+// req: FR-KPI-03
+// req: RND-KPI
+// asvs: V8.2.1
+func TestKPIsThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	kpiBooks(e)
 
 	accountant := e.as(authz.Accountant)
 	// The counts: If-Match needed, "0" for a month without them; the three customer counts together.

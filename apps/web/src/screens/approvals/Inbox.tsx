@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, Stamp } from "lucide-react";
+import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, ListChecks, Stamp } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { api } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -10,6 +10,7 @@ import { Icon, problemOf } from "../../ui";
 import { ControlsFailing } from "../compliance/Controls";
 import { ReviewsDue } from "../compliance/Attestations";
 import { PoliciesToAcknowledge } from "../compliance/Policies";
+import { TasksToDo } from "../compliance/ComplianceTasks";
 import { DeadlinesSoon } from "../compliance/DeadlinesSoon";
 import { recorders } from "../compliance/StatutoryCalendar";
 import { BillsToPay } from "../purchases/BillsBoard";
@@ -149,6 +150,10 @@ export function Inbox() {
           <h1 className="fy-h1">Inbox</h1>
           <p className="fy-secondary">What waits for you: requests to approve, your own requests, and the weekly review.</p>
         </div>
+        <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/inbox/ai-tasks">
+          <Icon of={ListChecks} />
+          AI tasks
+        </Link>
       </div>
       <p className="fy-sr" role="status" aria-live="polite">
         {said || (approvals.data ? `${toYou.length} ${toYou.length === 1 ? "approval waits" : "approvals wait"} for you` : "")}
@@ -164,7 +169,7 @@ export function Inbox() {
       )}
       {approvals.data && pending.length > 0 && (
         <div className="fy-stack fy-stack--2">
-          <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm self-start" aria-expanded={keys} onClick={() => setKeys(!keys)}>
+          <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm h-auto min-h-8 self-start py-1 text-start whitespace-normal pointer-coarse:min-h-(--touch-target)" aria-expanded={keys} onClick={() => setKeys(!keys)}>
             <Icon of={Keyboard} />
             Keyboard: J and K move, E opens, A and R confirm
           </button>
@@ -183,6 +188,7 @@ export function Inbox() {
       )}
       {(session.roles ?? []).some((r) => payers.includes(r)) && <BillsToPay />}
       {(session.roles ?? []).some((r) => recorders.includes(r)) && <DeadlinesSoon />}
+      <TasksToDo />
       <ControlsFailing />
       <ReviewsDue />
       <PoliciesToAcknowledge />

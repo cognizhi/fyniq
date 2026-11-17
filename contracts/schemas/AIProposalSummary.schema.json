@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "description": "The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary.",
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "Its approval request, where a person decides it.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0f"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "expires_at": {
+      "examples": [
+        "2026-11-18T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "items": {
+      "description": "A batch's items; 0 when it is not a batch.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "proposed_at": {
+      "examples": [
+        "2026-11-15T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is invalid, rejected, stale or failed.",
+      "examples": [
+        "Not this year"
+      ],
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "The person it was made for.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "invalid",
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "superseded",
+        "executing",
+        "executed",
+        "stale",
+        "failed"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it does, in the platform's words (AI-07).",
+      "examples": [
+        "Creates the task Hold the AGM, due 30 June 2027"
+      ],
+      "type": "string"
+    },
+    "task_name": {
+      "description": "The task type's name in the catalogue.",
+      "examples": [
+        "Create a compliance task"
+      ],
+      "type": "string"
+    },
+    "task_type": {
+      "examples": [
+        "sec.create_task"
+      ],
+      "type": "string"
+    },
+    "tier": {
+      "description": "Its risk tier (§9.6).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 3,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "task_type",
+    "task_name",
+    "tier",
+    "status",
+    "requested_by",
+    "agent",
+    "items",
+    "proposed_at",
+    "expires_at"
+  ],
+  "title": "AIProposalSummary",
+  "type": "object"
+}

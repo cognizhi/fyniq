@@ -42,6 +42,14 @@ var PlatformSchedules = []Schedule{
 	{Job: "audit.erase", Every: 24 * time.Hour, Offset: 17*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// The purge after retention, weekly, where an organisation switched it on (AUD-09, AUD-10).
 	{Job: "retention.purge", Every: 7 * 24 * time.Hour, Offset: 17*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Daily at 01:55 Singapore time, the assistant's conversations past their retention, and those their people deleted
+	// (§11.9; p1-ai-assistant design D11).
+	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
+	// Every 15 minutes, the AI's proposals that waited past their expiry undecided (§9.5; p1-ai-proposals-core design D9).
+	{Job: "ai.proposals.expire", Every: 15 * time.Minute, Offset: 7 * time.Minute, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Every tick, the scheduled agents' slots due before the next one, each delivered at its time (AI-62; p1-scheduled-agents
+	// design D4).
+	{Job: "agents.schedule", Every: TickInterval, Lease: 4 * time.Minute, Stale: 30 * time.Minute},
 	// Daily at 01:50 Singapore time, the person keys of years past their retention listed for the DPO, and the runs they
 	// approved shredded, register first (§11.8, rev 0.244).
 	{Job: "pdpa.shred", Every: 24 * time.Hour, Offset: 17*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},

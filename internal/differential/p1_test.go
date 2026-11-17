@@ -754,6 +754,7 @@ func TestP1AccountMergesMoveWhatTheAccountHolds(t *testing.T) {
 // req: RND-SHARE
 // req: QA-ENG-02
 // req: G4-044
+// req: quality/calculation-correctness Pinned SAFE conversion and dilution
 func TestP1SAFEConversion(t *testing.T) {
 	lines := func(r Result, doc string) string {
 		for _, e := range r.Entries {

@@ -16,6 +16,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
+	"github.com/cognizhi/fyniq/internal/agents"
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -68,13 +70,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	renderURL := cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086")
+	aiURL := cmp.Or(os.Getenv("FYNIQ_AI_URL"), "http://localhost:8082")
+	apiInternalURL := cmp.Or(os.Getenv("FYNIQ_API_INTERNAL_URL"), "http://localhost:8081/internal/v1")
 	kit := &Kit{
 		// The connectors' keys in files under .data/secrets; their traffic through the guard, which lets the local
 		// substitutes (Mailpit, Prism) through on loopback and the Docker network, never the metadata service.
 		Connectors: catalogue, ConnectorSecrets: secrets, ConnectorNames: names, Egress: &egress.Guard{Local: true},
 		Store:  store,
 		Tokens: tokens,
-		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, 5, time.Second),
+		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, clock, 5, time.Second),
 		Jobs:   local.HTTPJobs{URL: worker, Tokens: tokens},
 		Blobs:  blobs,
 		Signer: signer,
@@ -101,9 +105,20 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		OpenClone:     copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
 		DrillOnDemand: true,
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
-		Posture:    local.Posture{},
-		Scheduling: local.Scheduling{},
-		Logs:       local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
+		Posture: local.Posture{},
+		// Local mode's stub of Model Armor: it flags the red-team corpus's patterns (QA-AI-03).
+		Screening: local.Screen{},
+		// The AI service beside it (`make dev`: :8082; the stack: ai:8080), called with a task token.
+		AssistantURL:   aiURL,
+		AssistantToken: func(context.Context) (string, error) { return tokens.Token(assistant.Class) },
+		AssistantHTTP:  PlatformEgress().Bounded(16<<20, 5*time.Minute).For(egress.HostOf(aiURL)),
+		// The API's internal operations (`make dev`: :8081; the stack: api:8080), which the worker asks for a run's model
+		// step with a task token; the step waits while the model works, within the run's caps.
+		AgentModelURL:   apiInternalURL,
+		AgentModelToken: func(context.Context) (string, error) { return tokens.Token(agents.ModelClass) },
+		AgentModelHTTP:  PlatformEgress().Bounded(1<<20, 31*time.Minute).For(egress.HostOf(apiInternalURL)),
+		Scheduling:      local.Scheduling{},
+		Logs:            local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}
 	kit.watchChanges(clock)
 	return kit, nil

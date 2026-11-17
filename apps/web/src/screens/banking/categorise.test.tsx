@@ -6,6 +6,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Categorise } from "./Categorise";
 import { acceptRequest, checkCategorisation, settles, type Line, type Suggestion } from "./lineActions";
+import { invalid } from "../../test/invalid";
 
 const bookkeeper = { ...ownerSession, roles: ["bookkeeper"] } as Session;
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
@@ -233,6 +234,13 @@ describe("the categorise queue", () => {
     expect(await screen.findByRole("button", { name: "Split" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Transfer" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Match" })).toBeTruthy();
+    // QA-UI-01: a transfer names the other account first.
+    fireEvent.click(screen.getByRole("button", { name: "Transfer" }));
+    const transfer = await screen.findByRole("dialog");
+    fireEvent.click(within(transfer).getByRole("button", { name: "Record the transfer" }));
+    await invalid(transfer, "Moved to", "Choose the account the money moved to.");
+    fireEvent.click(within(transfer).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Suspense" }));
     await waitFor(() => expect(sent.some((s) => s.path === "/v1/bank-lines/l1/suspend" && s.headers.get("If-Match") === '"4"')).toBe(true));
   });

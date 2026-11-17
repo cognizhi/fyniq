@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "Their status.",
+      "examples": [
+        "Fyniq's templates, which a lawyer has yet to confirm."
+      ],
+      "type": "string"
+    },
+    "templates": {
+      "description": "Every template, by kind.",
+      "items": {
+        "$ref": "CorporateTemplate.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "templates",
+    "note"
+  ],
+  "title": "CorporateTemplates",
+  "type": "object"
+}

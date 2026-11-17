@@ -13,6 +13,7 @@ import { Icon, problemOf } from "../../ui";
 import { IncidentsTab } from "./Incidents";
 import { HeartbeatDrillsTab } from "./HeartbeatDrills";
 import { RestoreDrillsTab } from "./RestoreDrills";
+import { useHingeSplit } from "../../shell/hinge";
 
 type Control = components["schemas"]["Control"];
 type Check = components["schemas"]["ControlCheck"];
@@ -79,6 +80,7 @@ export function Controls() {
   const id = useId();
   const h = helpText("compliance.controls");
   const list = useQuery({ queryKey: ["controls"], queryFn: controls });
+  const hinge = useHingeSplit<HTMLDivElement>();
   const [framework, setFramework] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [open, setOpen] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export function Controls() {
               {shown.length === 0 ? (
                 <p className="fy-card__body fy-small fy-secondary">No control matches the filters.</p>
               ) : (
-                <div className="fy-listdetail" data-show={open ? "detail" : "list"}>
+                <div className="fy-listdetail" data-show={open ? "detail" : "list"} ref={hinge}>
                   <div className="fy-listdetail__list">
                     <ul className="fy-list" aria-labelledby={`${id}-list`}>
                       {shown.map((c) => (

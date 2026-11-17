@@ -206,7 +206,7 @@ function PurposeForm({ onClose }: { onClose: () => void }) {
             <option value="members">Members</option>
           </select>
         </div>
-        <label className="fy-check">
+        <label className="fy-row gap-2">
           <input type="checkbox" checked={form.needs_consent} onChange={(e) => setForm({ ...form, needs_consent: e.target.checked })} />
           It needs each person's consent
         </label>

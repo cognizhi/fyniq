@@ -3,7 +3,7 @@ key: settings.ai
 title: Turn the AI off, and set what it may spend
 mode: expert
 roles: [owner, administrator, controller, auditor, dpo]
-requirements: [AI-13, AI-77, AI-86]
+requirements: [AI-13, AI-77, AI-86, QA-AI-04]
 ---
 
 # Turn the AI off, and set what it may spend
@@ -41,4 +41,9 @@ Administrator, the Controller, the Auditor and the Compliance officer can see th
   the use by agent, by connection and model, and by person, each beside its budget.
 - Costs are exact, in the base currency at each day's exchange rate. A subscription shows its quota used and when it
   resets.
+- **The assistant** counts its month:
+  - the questions, and how many were answered, refused or failed;
+  - the figures that failed the check and were asked for again, and those withheld;
+  - the reads of the books, those refused, and what screening stopped or withheld;
+  - the cost per conversation, rounded to four decimal places, with the number of conversations and the cost in all.
 - Providers invoice the company as a supplier: enter the invoice as a bill, and compare it with the usage here.

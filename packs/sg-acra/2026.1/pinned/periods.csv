@@ -1,0 +1,15 @@
+case,rule,event_on,want,why,source
+AC-01,officer_change,2027-03-02,2027-03-16,"an officer appointed on 2 Mar is lodged by 16 Mar: 14 days",acra-updating
+AC-02,office_change,2027-03-02,2027-03-16,"the registered office changed on 2 Mar is lodged by 16 Mar: 14 days",acra-updating
+AC-03,share_change,2027-02-10,2027-02-24,"shares issued on 10 Feb are reported by 24 Feb: 14 days, ACRA's guidance",acra-updating
+AC-04,secretary_appointed,2026-11-30,2027-05-30,"a company registered on 30 Nov 2026 appoints its secretary by 30 May 2027: six months",acra-officers
+AC-05,secretary_appointed,2027-08-31,2028-02-29,"registered on 31 Aug 2027, by 29 Feb 2028: six months on is 31 Feb, which February lacks, so its last day in a leap year",acra-officers
+AC-06,controller_register,2027-03-02,2027-03-09,"a controller's change on 2 Mar is entered by 9 Mar: seven days",acra-registers
+AC-07,controller_central,2027-04-06,2027-04-08,"entered on Tuesday 6 Apr, filed centrally by Thursday 8 Apr: two business days",acra-registers
+AC-08,controller_central,2027-04-09,2027-04-13,"entered on Friday 9 Apr, filed centrally by Tuesday 13 Apr: the weekend is not counted",acra-registers
+AC-09,nominee_register,2027-03-02,2027-03-09,"a nominee's change on 2 Mar is entered by 9 Mar: seven days",acra-rond-rons
+AC-10,nominee_central,2027-04-09,2027-04-13,"entered on Friday 9 Apr, filed with the central ROND and RONS by Tuesday 13 Apr",acra-rond-rons
+AC-11,nominee_informs,2027-03-02,2027-04-01,"a director who becomes a nominee on 2 Mar informs the company by 1 Apr: 30 days",acra-rond-rons
+AC-12,controller_notice,2027-01-15,2028-01-15,"a notice sent on 15 Jan 2027 is sent again by 15 Jan 2028: at least once a year",acra-registers
+AC-13,auditor_appointed,2026-11-30,2027-02-28,"a company registered on 30 Nov 2026 appoints its auditor by 28 Feb 2027, unless exempt: three months",acra-officers
+AC-14,officer_change,2026-11-01,none,"an appointment before the pack's first day has no rule in this version",acra-updating

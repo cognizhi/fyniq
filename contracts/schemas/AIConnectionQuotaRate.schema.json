@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "description": "The model, as the provider lists it.",
+      "examples": [
+        "kimi-k2-thinking"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "rate": {
+      "description": "Units of the quota each token or request draws, a decimal string.",
+      "examples": [
+        "3"
+      ],
+      "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "rate"
+  ],
+  "title": "AIConnectionQuotaRate",
+  "type": "object"
+}

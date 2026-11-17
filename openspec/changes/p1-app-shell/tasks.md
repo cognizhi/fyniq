@@ -49,7 +49,17 @@
   person, the organisation, the mode and the "Confirm it's you" dialog (`stepup.tsx`: a passkey, or signing in again;
   an action the API refuses with API-AUTHZ-05 runs once more after it, with the same Idempotency-Key). Settings sits at
   the sidebar's foot; the Settings page lists its pages from the registry's `settingsNav`, cut by role and mode, and in
-  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.)
+  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.
+  17 Nov 2026, with p1-launch-readiness 5.3: the sidebar follows §7.1's table of what each role sees (FR-UX-40: an
+  area for a right in one of its capabilities; a right that only approves, or reads one reference list, gives none).
+  A person with personal rights only gets the personal workspace (FR-UX-39), and lands on My claims; the
+  Administrator lands on Settings, the Auditor and the Board viewer on Reports, the Company secretary and the DPO on
+  Compliance (`landingOf`). A page outside the person's areas shows "This page isn't part of your access"
+  (`shell/NotPartOfAccess.tsx`, `mayOpen`) with a way back, never part of the page. Tests `navigation.test.ts` (each
+  role's areas, the union of two, landings) and the browser walkthroughs `journeys/walkthroughs.spec.ts`, which also
+  read the hidden area's list through the API and expect 403. **Left:** badges, the record page anatomy, the
+  organisation switcher, the Finance | People switch; the Approver's "Home: My department" and the Auditor's
+  workspace.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
@@ -120,7 +130,17 @@
 
 ## 5. Devices, accessibility and budgets
 
-- [ ] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+- [x] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+  (17 Nov 2026: `e2e/devices.spec.ts` opens each shell screen at the five reference frames, the 320 px small phone and
+  four landscapes: no sideways page scroll, the class's own navigation (sidebar, rail, or the bottom bar of four and
+  More) and the same safety information in every class; on a touch screen every control's hit area is 44 × 44 px;
+  folding, unfolding and rotating keep the page, its filters, the scroll position and an unsaved draft; and on a screen
+  that spans a hinge a list and its detail split at it (`shell/hinge.ts`, from the Viewport Segments API). Built for it:
+  the compact header's mode pill, More always in the bottom bar with the account (appearance, About, sign out) the
+  compact header has no room for, scroll padding that keeps a focused field clear of the header and the bottom bar,
+  and 44 px targets on coarse pointers (app.css); twelve radios and checkboxes had the 18 px box's class as their
+  label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
+  5.4); devices without the Viewport Segments API split by CSS alone.)
 - [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 

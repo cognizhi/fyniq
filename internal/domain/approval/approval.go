@@ -180,6 +180,26 @@ const (
 	// apps" and approved by the Owner, who holds its A with a second approver; its key is the client's ID. Revoking one is
 	// never held back.
 	ObjectAPIClient = "api_client"
+	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
+	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
+	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
+	ObjectAIProposal = "ai_proposal"
+	// ObjectCorporateDetail is the company's name, registered office and SSIC code from a day, to record (FR-CS-01,
+	// p1-company-secretary design D2): another person who holds A on the corporate profile approves; its key is the
+	// detail's document ID.
+	ObjectCorporateDetail = "corporate_detail"
+	// ObjectCorporateOfficer is an officer's appointment, or a later version of it, to record (FR-CS-01, FR-CS-06, design
+	// D2): another person who holds A on the corporate profile approves; its key is the version's document ID.
+	ObjectCorporateOfficer = "corporate_officer"
+	// ObjectNomineeEntry is an entry of the register of nominee directors or shareholders, to record (s386AL, FR-CS-01):
+	// another person who holds A on the corporate profile approves, never the nominee; its key is the version's ID.
+	ObjectNomineeEntry = "nominee_entry"
+	// ObjectStatementsApproval is the directors' approval of a year's financial statements, to record (FR-CS-03): another
+	// person who holds A on the corporate profile approves; its key is the approval's document ID.
+	ObjectStatementsApproval = "statements_approval"
+	// ObjectCorporateDocument is a corporate document with its signed copy, to record in the minute book (FR-CS-05):
+	// another person who holds A on the corporate profile approves; its key is the document's ID.
+	ObjectCorporateDocument = "corporate_document"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -312,6 +332,19 @@ const (
 	OpAPIClientReclass = "api_client.reclass"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
+	// OpAIProposalExecute marks the proposal Approved and queues it for the executor, which runs it as the approver
+	// (AI-11, AI-P5).
+	OpAIProposalExecute = "ai_proposal.execute"
+	// OpCorporateDetailRecord records a corporate detail as drafted, with its evidence (FR-CS-01).
+	OpCorporateDetailRecord = "corporate_detail.record"
+	// OpCorporateOfficerRecord records an officer's version as drafted, with its evidence (FR-CS-01, FR-CS-06).
+	OpCorporateOfficerRecord = "corporate_officer.record"
+	// OpNomineeEntryRecord records a nominee entry's version as drafted, with its evidence (s386AL).
+	OpNomineeEntryRecord = "nominee_entry.record"
+	// OpStatementsApprovalRecord records the directors' approval of a year's statements, with its evidence (FR-CS-03).
+	OpStatementsApprovalRecord = "statements_approval.record"
+	// OpCorporateDocumentRecord records a corporate document, signed, with its signed copy: an entry of the minute book.
+	OpCorporateDocumentRecord = "corporate_document.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -364,6 +397,12 @@ var Operations = map[string]string{
 	OpAIRouteChange:            ObjectAIRoute,
 	OpAPIClientCreate:          ObjectAPIClient,
 	OpAPIClientReclass:         ObjectAPIClient,
+	OpAIProposalExecute:        ObjectAIProposal,
+	OpCorporateDetailRecord:    ObjectCorporateDetail,
+	OpCorporateOfficerRecord:   ObjectCorporateOfficer,
+	OpNomineeEntryRecord:       ObjectNomineeEntry,
+	OpStatementsApprovalRecord: ObjectStatementsApproval,
+	OpCorporateDocumentRecord:  ObjectCorporateDocument,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -482,6 +521,18 @@ var Dependencies = map[string][]string{
 	ObjectAIRoute: {"version"},
 	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
 	ObjectAPIClient: {"status"},
+	// the proposal's status and its payload's hash: what executes
+	ObjectAIProposal: {"status", "payload_sha256"},
+	// the detail's version and status, and the day it takes effect: what is recorded
+	ObjectCorporateDetail: {"status", "from"},
+	// the officer's version and status, and the officer it follows: what is recorded
+	ObjectCorporateOfficer: {"status", "officer"},
+	// the entry's version and status, and the entry it follows: what is recorded
+	ObjectNomineeEntry: {"status", "entry"},
+	// the approval's version and status, and its year's end: what is recorded
+	ObjectStatementsApproval: {"status", "fy_end"},
+	// the document's version and status, and the day it was signed: what is recorded
+	ObjectCorporateDocument: {"status", "signed_on"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -544,6 +595,14 @@ var Rows = map[string]string{
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
+	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
+	// AI activity log's: each member their own, the Owner and the DPO every one.
+	ObjectAIProposal:         "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
+	ObjectCorporateDetail:    "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateOfficer:   "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectNomineeEntry:       "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectStatementsApproval: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateDocument:  "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 }
 
 // The limits of a policy.
@@ -636,6 +695,14 @@ var Policies = map[string]Policy{
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
+	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
+	// narrows its step to the task type's approver roles.
+	ObjectAIProposal:         {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectCorporateDetail:    {ObjectType: ObjectCorporateDetail, Version: "founder/corporate_detail@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateOfficer:   {ObjectType: ObjectCorporateOfficer, Version: "founder/corporate_officer@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectNomineeEntry:       {ObjectType: ObjectNomineeEntry, Version: "founder/nominee_entry@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectStatementsApproval: {ObjectType: ObjectStatementsApproval, Version: "founder/statements_approval@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateDocument:  {ObjectType: ObjectCorporateDocument, Version: "founder/corporate_document@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -748,6 +815,8 @@ type Request struct {
 	Status      Status
 	RequestedBy uuid.UUID
 	ExpiresAt   time.Time
+	// SelfSign is whether the person who asked may sign it: a tier-1 AI proposal's alone (AI-10, AI-89).
+	SelfSign bool
 }
 
 // StatusAt is the request's status at now: a pending request past its expiry is expired.
@@ -772,7 +841,7 @@ func CheckSigner(r Request, signer uuid.UUID, now time.Time) *Problem {
 	default:
 		return &Problem{CodeNotPending, fmt.Sprintf("the request is %s already", r.Status), "Nothing to do; ask for the change again if it is still needed"}
 	}
-	if signer == r.RequestedBy {
+	if signer == r.RequestedBy && !r.SelfSign {
 		return &Problem{CodeOwnRequest, "you asked for this change, so another founder approves it (FM-1)",
 			"Ask another member who holds the approval right to approve it"}
 	}

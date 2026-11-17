@@ -107,6 +107,32 @@
       "format": "date",
       "type": "string"
     },
+    "payment_file": {
+      "description": "The file a payment batch paying from it gives when released (FR-BNK-12, rev 0.157): payment-list, the payment list keyed into any bank (the default); wise-batch, Wise's batch payment file; dbs-uff, DBS IDEAL's UFF. A batch released before a change keeps its file.",
+      "enum": [
+        "payment-list",
+        "wise-batch",
+        "dbs-uff"
+      ],
+      "examples": [
+        "payment-list"
+      ],
+      "type": "string"
+    },
+    "payment_files": {
+      "description": "Every payment file, whether it may be set to it now and, when not, why: a bank's own file only for an account at that bank, and only once Fyniq writes it.",
+      "items": {
+        "$ref": "PaymentFileChoice.schema.json"
+      },
+      "type": "array"
+    },
+    "provider": {
+      "description": "The bank or provider Fyniq recognises it as: its statement connector's when it syncs through one (wise, airwallex), else its institution matched by name against Fyniq's list (dbs, ocbc, uob, standard-chartered, hsbc, citibank, maybank, cimb, bank-of-china, icbc, rhb, gxs, trust, maribank, anext, aspire, airwallex, wise). Absent: another bank. It decides which payment files it may give (FR-BNK-12).",
+      "examples": [
+        "dbs"
+      ],
+      "type": "string"
+    },
     "source": {
       "$ref": "MoneySource.schema.json",
       "description": "Where its data comes from now; absent while its statements are uploaded as files."
@@ -142,6 +168,8 @@
     "kind",
     "name",
     "currency",
+    "payment_file",
+    "payment_files",
     "freshness",
     "waiting",
     "gaps",

@@ -4,7 +4,7 @@ type: task
 title: Turn the AI off at once, ask to turn it on, and set the AI's monthly budgets
 summary: Settings › AI, the AI switch off at once and on with a second approver, budgets in money and tokens with their 80% alert and 100% stop, and the monthly usage
 sources:
-  - docs/user-guide/ai-settings.md sha256:1bd4d71019f28aac2fd78ee95fa72c8eb081387a34c4dd0ecac3cc3ddc111b1a
+  - docs/user-guide/ai-settings.md sha256:c95a64027802122fd14a9a6be72162e27269fe6f027d5ca8195773dc9418da73
 data_class: general
 taint: trusted
 status: published
@@ -53,6 +53,7 @@ aliases:
 
 - **AI usage and budgets** shows a month at a time: spent, tokens, requests and fallbacks, then the use by agent, by connection and model, and by person, each beside its budget.
 - Costs are exact, in the base currency at each day's exchange rate; a subscription shows its quota used and when it resets.
+- **The assistant** counts its month: questions answered, refused or failed; figures that failed the check and were asked for again, and those withheld; reads, those refused, and what screening stopped or withheld; the cost per conversation, rounded to four decimal places, with the conversations and the cost in all.
 - Enter a provider's invoice as a bill, and compare it with the usage here.
 
 (src: docs/user-guide/ai-settings.md#usage-and-budgets)

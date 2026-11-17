@@ -123,6 +123,37 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAgentRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	SkillVersion   int32
+	SkillSha256    string
+	Trigger        string
+	SlotAt         time.Time
+	ActsFor        uuid.UUID
+	RequestedBy    *uuid.UUID
+	Status         string
+	Reason         string
+	QueuedAt       time.Time
+	StartedAt      *time.Time
+	FinishedAt     *time.Time
+	Fingerprint    *string
+	LedgerRevision *int64
+	PackVersions   []byte
+	KbSnapshot     *string
+	Findings       []byte
+	Summary        *string
+	ModelUsed      *bool
+	Model          *string
+	ModelText      *string
+	Tokens         *int32
+	ToolCalls      *int32
+	Version        int32
+	Tools          []string
+	ModelMissed    *string
+}
+
 type FyniqAiAgent struct {
 	ID          string
 	Name        string
@@ -219,6 +250,15 @@ type FyniqAiConnectionVersion struct {
 	MadeAt         time.Time
 }
 
+type FyniqAiConversation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Title          string
+	CreatedAt      time.Time
+	DeletedAt      *time.Time
+}
+
 type FyniqAiDataPolicy struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -227,6 +267,35 @@ type FyniqAiDataPolicy struct {
 	ApprovalID     uuid.UUID
 	MadeBy         string
 	MadeAt         time.Time
+}
+
+type FyniqAiFeedback struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	UserID         uuid.UUID
+	Rating         string
+	Reason         string
+	GivenAt        time.Time
+	ReviewedBy     *uuid.UUID
+	ReviewedAt     *time.Time
+	Decision       *string
+}
+
+type FyniqAiGrant struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TokenHash      []byte
+	UserID         uuid.UUID
+	TurnID         *uuid.UUID
+	IssuedAt       time.Time
+	ExpiresAt      time.Time
+	EndedAt        *time.Time
+	Classes        []string
+	Propose        bool
+	RunID          *uuid.UUID
+	Tools          []string
+	TaskTypes      []string
 }
 
 type FyniqAiModel struct {
@@ -335,6 +404,45 @@ type FyniqAiPriceRate struct {
 	Amount         string
 }
 
+type FyniqAiProposal struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	TaskType          string
+	TaskVersion       int32
+	TaskSha256        string
+	Payload           string
+	PayloadSha256     string
+	ItemCount         int32
+	Rationale         string
+	Evidence          []byte
+	Impact            []byte
+	BaseVersions      []byte
+	RiskTier          int16
+	RequiredApprovals int16
+	Agent             string
+	RequestedBy       uuid.UUID
+	TurnID            *uuid.UUID
+	RunID             *uuid.UUID
+	Model             string
+	Prompt            string
+	ToolsSha256       string
+	Status            string
+	Reason            string
+	ApprovalRequestID *uuid.UUID
+	DecidedBy         *uuid.UUID
+	DecidedAt         *time.Time
+	ApprovedItems     []int32
+	ApprovedPayload   *string
+	ApprovedSha256    *string
+	SupersededBy      *uuid.UUID
+	Execution         []byte
+	StartedAt         *time.Time
+	FinishedAt        *time.Time
+	ProposedAt        time.Time
+	ExpiresAt         time.Time
+	Version           int32
+}
+
 type FyniqAiQualification struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -395,6 +503,48 @@ type FyniqAiRouteStep struct {
 	Model          string
 	Effort         string
 	Cache          bool
+}
+
+type FyniqAiToolCall struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	N              int32
+	Tool           string
+	Version        int32
+	Input          []byte
+	OutputSha256   string
+	Outcome        string
+	Code           string
+	Facts          int32
+	Omitted        int32
+	Withheld       bool
+	DurationMs     int32
+}
+
+type FyniqAiTurn struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+	Question       string
+	Context        []byte
+	Status         string
+	Code           string
+	Answer         string
+	Segments       []byte
+	Cited          []string
+	Facts          []byte
+	Prompt         string
+	PromptSha256   string
+	Runs           []uuid.UUID
+	InputTokens    int64
+	OutputTokens   int64
+	Regenerated    bool
+	Withheld       int32
+	AskedAt        time.Time
+	AnsweredAt     *time.Time
+	Classes        []string
 }
 
 type FyniqAllocation struct {
@@ -533,6 +683,7 @@ type FyniqApprovalSignature struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	SelectionSha256    *string
 }
 
 type FyniqAuditBoundary struct {
@@ -983,6 +1134,27 @@ type FyniqCloseChecklistTemplate struct {
 	Tasks          []byte
 	WrittenBy      string
 	WrittenAt      time.Time
+}
+
+type FyniqComplianceTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FindingKey     string
+	Title          string
+	Detail         string
+	OwnerRole      *string
+	OwnerUser      *uuid.UUID
+	DueOn          pgtype.Date
+	Escalated      bool
+	Source         string
+	RunID          *uuid.UUID
+	ProposalID     *uuid.UUID
+	Status         string
+	Reason         string
+	CreatedAt      time.Time
+	ClosedAt       *time.Time
+	ClosedBy       *uuid.UUID
+	Version        int32
 }
 
 type FyniqConnectorRoute struct {
@@ -1925,6 +2097,7 @@ type FyniqMoneyAccount struct {
 	ChangedAt      time.Time
 	Version        int32
 	CardholderID   *uuid.UUID
+	PaymentFile    string
 }
 
 type FyniqMoneyAccountSource struct {

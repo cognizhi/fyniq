@@ -299,11 +299,15 @@ func TestRoleChangesAfterTheBootstrapWaitForApproval(t *testing.T) {
 }
 
 // Every object type the engine covers names an Appendix D row the API grants from, one of the rows approvals cover,
-// and declares its dependencies.
+// and declares its dependencies. An AI proposal's row is the AI activity log's, who sees every one (the Owner and the
+// DPO); who signs it is its task type's, checked per request (AI-89, design D4).
 // req: FR-APR-01
 func TestApprovalPoliciesNameAppendixDRows(t *testing.T) {
 	for typ := range approval.Policies {
 		row := authz.Capability(approval.Rows[typ])
+		if typ == approval.ObjectAIProposal && row == authz.AIActivity {
+			continue
+		}
 		if _, ok := authz.Grants[row]; !ok || !slices.Contains(authz.ApprovalRows, row) {
 			t.Errorf("%s: the row %q is not a capability authz grants and approvals cover", typ, row)
 		}
