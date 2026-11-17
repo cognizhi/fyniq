@@ -112,6 +112,12 @@
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
+  (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
+  DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
+  item's price list replaced with its audited version); TRUNCATE was refused already. Every DELETE operation of the API
+  withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
+  a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
+  confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any

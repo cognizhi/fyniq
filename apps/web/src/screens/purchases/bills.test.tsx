@@ -499,6 +499,8 @@ describe("A bill", () => {
     expect(sent.find((s) => s.path === "/v1/bills/b1/post-approval")!.headers.get("If-Match")).toBe('"1-draft"');
   });
 
+  // FR-UX-14's screen half: a void is confirmed in a dialog and refused without its reason.
+  // req: FR-UX-14
   it("in Founder mode asks to void a posted bill, with a reason", async () => {
     const sent = answer({ ...reads, "GET /v1/bills/b1": read(posted), "POST /v1/bills/b1/void-approval": { status: 202, body: { id: "ap2" } } });
     renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: founder });
