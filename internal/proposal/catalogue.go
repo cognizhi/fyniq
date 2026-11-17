@@ -272,6 +272,13 @@ var never = []struct {
 	{[]string{"lodge", "file", "filing", "submit"}, "filing or lodging with an authority"},
 	{[]string{"export"}, "exporting the organisation's data"},
 	{[]string{"audit"}, "the audit trail"},
+	// (rev 0.3) equity and a director's balance; (rev 0.6) officers, registers and an obligation marked met (AI-66).
+	{[]string{"share", "shares", "shareholder", "shareholders", "holder", "holders", "instrument", "instruments", "investor", "investors",
+		"equity", "allot", "allotment"}, "issuing or transferring shares, or changing holders, instruments or investor rights"},
+	{[]string{"director", "directors", "repay", "repayment", "convert", "conversion", "waive", "waiver"},
+		"repaying, converting or waiving a director's balance"},
+	{[]string{"officer", "officers", "register", "registers", "met", "fulfil", "fulfilled"},
+		"changing officers or registers, or marking an obligation as met"},
 }
 
 // Refuse is what on the never-list a task type would do, or "" when it does none of it: by the words of its ID and of

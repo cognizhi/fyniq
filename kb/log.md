@@ -580,3 +580,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI task types setting, ai.task_types: off at once when narrowed)
 
 ## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (reviewing and deciding an AI proposal: the summary apart from the AI's reasons, items, rejection reasons, expiry)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the AI tasks page: its proposal history, catalogue and never-list; turning a task type on or off)
